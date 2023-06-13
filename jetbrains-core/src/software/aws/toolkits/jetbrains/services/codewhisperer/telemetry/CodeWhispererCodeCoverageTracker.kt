@@ -25,6 +25,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispere
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererUserActionListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererCodeCompletionServiceListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_SECONDS_IN_MINUTE
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
 import java.time.Duration
@@ -203,7 +204,8 @@ abstract class CodeWhispererCodeCoverageTracker(
                 language.toTelemetryType(),
                 percentage,
                 totalTokensSize,
-                successCount = myServiceInvocationCount.get()
+                successCount = myServiceInvocationCount.get(),
+                codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
             )
         }
     }

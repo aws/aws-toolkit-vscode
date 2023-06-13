@@ -57,6 +57,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.Res
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.AcceptedSuggestionEntry
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererCodeCoverageTracker
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererUserModificationTracker
@@ -126,6 +127,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
     @Test
     fun `test accepting recommendation will send user modification events with 1 accepted other unseen`() {
         val trackerSpy = spy(CodeWhispererUserModificationTracker(projectRule.project))
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         projectRule.project.replaceService(CodeWhispererUserModificationTracker::class.java, trackerSpy, disposableRule.disposable)
 
         runInEdtAndWait {
@@ -168,25 +170,29 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 allValues,
                 userModification,
                 1,
-                "codewhispererSessionId" to testSessionId
+                "codewhispererSessionId" to testSessionId,
+                "codewhispererUserGroup" to userGroup.name,
             )
             assertEventsContainsFieldsAndCount(
                 allValues,
                 userDecision,
                 1,
-                codewhispererSuggestionState to CodewhispererSuggestionState.Accept.toString()
+                codewhispererSuggestionState to CodewhispererSuggestionState.Accept.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
             assertEventsContainsFieldsAndCount(
                 allValues,
                 userDecision,
                 count - 1,
-                codewhispererSuggestionState to CodewhispererSuggestionState.Unseen.toString()
+                codewhispererSuggestionState to CodewhispererSuggestionState.Unseen.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
 
     @Test
     fun `test cancelling popup will send user decision event for all unseen but one rejected`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         withCodeWhispererServiceInvokedAndWait { states ->
             popupManagerSpy.cancelPopup(states.popup)
 
@@ -197,19 +203,22 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     allValues,
                     serviceInvocation,
                     1,
-                    "result" to Result.Succeeded.toString()
+                    "result" to Result.Succeeded.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                 )
                 assertEventsContainsFieldsAndCount(
                     allValues,
                     userDecision,
                     1,
-                    codewhispererSuggestionState to CodewhispererSuggestionState.Reject.toString()
+                    codewhispererSuggestionState to CodewhispererSuggestionState.Reject.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                 )
                 assertEventsContainsFieldsAndCount(
                     allValues,
                     userDecision,
                     count - 1,
-                    codewhispererSuggestionState to CodewhispererSuggestionState.Unseen.toString()
+                    codewhispererSuggestionState to CodewhispererSuggestionState.Unseen.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                 )
             }
         }
@@ -217,6 +226,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test invoking CodeWhisperer will send service invocation event with succeeded status`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         withCodeWhispererServiceInvokedAndWait {
             argumentCaptor<MetricEvent>().apply {
                 verify(batcher, atLeastOnce()).enqueue(capture())
@@ -224,7 +234,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     allValues,
                     serviceInvocation,
                     1,
-                    "result" to Result.Succeeded.toString()
+                    "result" to Result.Succeeded.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                 )
             }
         }
@@ -232,6 +243,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test moving caret backwards before getting back response will send user decision events for all discarded`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val editorManagerSpy = spy(editorManager)
         editorManagerSpy.stub {
             onGeneric {
@@ -252,13 +264,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     allValues,
                     serviceInvocation,
                     1,
-                    "result" to Result.Succeeded.toString()
+                    "result" to Result.Succeeded.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                 )
                 assertEventsContainsFieldsAndCount(
                     allValues,
                     userDecision,
                     count,
-                    codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString()
+                    codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                 )
             }
         }
@@ -266,6 +280,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test user's typeahead before getting response will discard recommendations whose prefix not matching`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val editorManagerSpy = spy(editorManager)
         val typeahead = "(x, y)"
         editorManagerSpy.stub {
@@ -292,19 +307,22 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 allValues,
                 serviceInvocation,
                 1,
-                "result" to Result.Succeeded.toString()
+                "result" to Result.Succeeded.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
             assertEventsContainsFieldsAndCount(
                 allValues,
                 userDecision,
                 prefixNotMatchCount,
-                codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString()
+                codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
 
     @Test
     fun `test getting non-CodeWhisperer Exception will return empty request id`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         mockClient.stub {
             on {
                 this.generateCompletions(any<GenerateCompletionsRequest>())
@@ -322,13 +340,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 serviceInvocation,
                 1,
                 "codewhispererRequestId" to "",
-                "result" to Result.Failed.toString()
+                "result" to Result.Failed.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
 
     @Test
     fun `test getting CodeWhispererException will capture request id`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         mockClient.stub {
             on {
                 this.generateCompletions(any<GenerateCompletionsRequest>())
@@ -346,13 +366,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 serviceInvocation,
                 1,
                 "codewhispererRequestId" to testRequestIdForCodeWhispererException,
-                "result" to Result.Failed.toString()
+                "result" to Result.Failed.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
 
     @Test
     fun `test user Decision events record CodeWhisperer reference info`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         withCodeWhispererServiceInvokedAndWait {}
         argumentCaptor<MetricEvent>().apply {
             verify(batcher, atLeastOnce()).enqueue(capture())
@@ -363,6 +385,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                     1,
                     "codewhispererSuggestionReferences" to Gson().toJson(it.references().map { ref -> ref.licenseName() }.toSet()),
                     "codewhispererSuggestionReferenceCount" to it.references().size.toString(),
+                    "codewhispererUserGroup" to userGroup.name,
                     atLeast = true
                 )
             }
@@ -371,6 +394,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test invoking CodeWhisperer will send service invocation event with sessionId and requestId from response`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         withCodeWhispererServiceInvokedAndWait { states ->
             val metricCaptor = argumentCaptor<MetricEvent>()
             verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -379,13 +403,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 serviceInvocation,
                 1,
                 "codewhispererSessionId" to states.responseContext.sessionId,
-                "codewhispererRequestId" to states.recommendationContext.details[0].requestId
+                "codewhispererRequestId" to states.recommendationContext.details[0].requestId,
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
 
     @Test
     fun `test userDecision events will record sessionId and requestId from response`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val statesCaptor = argumentCaptor<InvocationContext>()
         withCodeWhispererServiceInvokedAndWait {}
         verify(popupManagerSpy, timeout(5000).atLeastOnce()).render(statesCaptor.capture(), any(), any(), any(), any())
@@ -398,11 +424,13 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             states.recommendationContext.details.size,
             "codewhispererSessionId" to states.responseContext.sessionId,
             "codewhispererRequestId" to states.recommendationContext.details[0].requestId,
+            "codewhispererUserGroup" to userGroup.name,
         )
     }
 
     @Test
     fun `test showing IntelliSense after triggering CodeWhisperer will send userDecision events of state Discard`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val codewhispererServiceSpy = spy(codewhispererService)
         codewhispererServiceSpy.stub {
             onGeneric {
@@ -429,6 +457,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 userDecision,
                 pythonResponse.completions().size,
                 codewhispererSuggestionState to CodewhispererSuggestionState.Discard.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
@@ -471,6 +500,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test codePercentage metric is correct - 1`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val project = projectRule.project
         val fixture = projectRule.fixture
         val emptyFile = fixture.addFileToProject("/anotherFile.py", "")
@@ -510,12 +540,14 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             1,
             "codewhispererAcceptedTokens" to acceptedTokensSize.toString(),
             "codewhispererTotalTokens" to totalTokensSize.toString(),
-            "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString()
+            "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString(),
+            "codewhispererUserGroup" to userGroup.name,
         )
     }
 
     @Test
     fun `test codePercentage metric is correct - 2`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val project = projectRule.project
         val fixture = projectRule.fixture
         val emptyFile = fixture.addFileToProject("/anotherFile.py", "")
@@ -556,7 +588,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             1,
             "codewhispererAcceptedTokens" to acceptedTokensSize.toString(),
             "codewhispererTotalTokens" to totalTokensSize.toString(),
-            "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString()
+            "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString(),
+            "codewhispererUserGroup" to userGroup.name,
         )
     }
 
@@ -566,6 +599,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
      */
     @Test
     fun `test codePercentage metric - switching files and delete tokens`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val project = projectRule.project
         val fixture = projectRule.fixture
         fixture.configureByText("/file1.py", pythonTestLeftContext)
@@ -598,12 +632,14 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             1,
             "codewhispererAcceptedTokens" to pythonResponse.completions()[0].content().length.toString(),
             "codewhispererTotalTokens" to pythonResponse.completions()[0].content().length.toString(),
-            "codewhispererPercentage" to "100"
+            "codewhispererPercentage" to "100",
+            "codewhispererUserGroup" to userGroup.name,
         )
     }
 
     @Test
     fun `test codePercentage metric is correct - simulate IDE adding right closing paren`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val project = projectRule.project
         val fixture = projectRule.fixture
         val emptyFile = fixture.addFileToProject("/anotherFile.py", "")
@@ -645,12 +681,14 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             1,
             "codewhispererAcceptedTokens" to acceptedTokensSize.toString(),
             "codewhispererTotalTokens" to totalTokensSize.toString(),
-            "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString()
+            "codewhispererPercentage" to CodeWhispererCodeCoverageTracker.calculatePercentage(acceptedTokensSize, totalTokensSize).toString(),
+            "codewhispererUserGroup" to userGroup.name,
         )
     }
 
     @Test
     fun `test empty list of recommendations should sent 1 empty userDecision event and no popup shown`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         mockClient.stub {
             on {
                 mockClient.generateCompletions(any<GenerateCompletionsRequest>())
@@ -668,13 +706,15 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 metricCaptor.allValues,
                 userDecision,
                 1,
-                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString()
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }
 
     @Test
     fun `test getting some recommendations and a final empty list of recommendations at session end should not sent empty userDecision events`() {
+        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         mockClient.stub {
             on {
                 mockClient.generateCompletions(any<GenerateCompletionsRequest>())
@@ -691,19 +731,22 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 metricCaptor.allValues,
                 userDecision,
                 0,
-                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString()
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
             assertEventsContainsFieldsAndCount(
                 metricCaptor.allValues,
                 userDecision,
                 1,
-                "codewhispererSuggestionState" to CodewhispererSuggestionState.Accept.toString()
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Accept.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
             assertEventsContainsFieldsAndCount(
                 metricCaptor.allValues,
                 userDecision,
                 4,
-                "codewhispererSuggestionState" to CodewhispererSuggestionState.Unseen.toString()
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Unseen.toString(),
+                "codewhispererUserGroup" to userGroup.name,
             )
         }
     }

@@ -17,6 +17,7 @@ import info.debatty.java.stringsimilarity.Levenshtein
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -150,7 +151,8 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
             codewhispererSessionId = suggestion.sessionId,
             codewhispererSuggestionIndex = suggestion.index,
             codewhispererTriggerType = suggestion.triggerType,
-            credentialStartUrl = startUrl
+            credentialStartUrl = startUrl,
+            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
         )
     }
 

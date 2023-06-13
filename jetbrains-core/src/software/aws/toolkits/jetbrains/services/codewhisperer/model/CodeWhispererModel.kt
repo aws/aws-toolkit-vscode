@@ -15,9 +15,17 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.TimeUnit
+
+data class Chunk(
+    val content: String,
+    val path: String,
+    val nextChunk: String = "",
+    val score: Double = 0.0
+)
 
 data class CaretContext(val leftFileContext: String, val rightFileContext: String, val leftContextOnCurrentLine: String = "")
 
@@ -26,6 +34,22 @@ data class FileContextInfo(
     val filename: String,
     val programmingLanguage: CodeWhispererProgrammingLanguage
 )
+
+data class SupplementalContextInfo(
+    val isUtg: Boolean,
+    val contents: List<Chunk>,
+    val latency: Long,
+    val targetFileName: String
+) {
+    val contentLength: Int
+        get() = contents.fold(0) { acc, chunk ->
+            acc + chunk.content.length
+        }
+
+    val isProcessTimeout: Boolean
+        get() = latency > CodeWhispererConstants.SUPPLEMENTAL_CONTEXT_TIMEOUT
+}
+
 data class RecommendationContext(
     val details: List<DetailContext>,
     val userInputOriginal: String,
@@ -101,6 +125,7 @@ data class CodeScanResponseContext(
     val codeScanTotalIssues: Int = 0,
     val reason: String? = null
 )
+
 data class LatencyContext(
     var credentialFetchingStart: Long = 0L,
     var credentialFetchingEnd: Long = 0L,

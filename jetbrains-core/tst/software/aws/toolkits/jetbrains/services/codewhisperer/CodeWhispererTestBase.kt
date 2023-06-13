@@ -16,6 +16,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.timeout
@@ -41,6 +43,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispere
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererRecommendationManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfiguration
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurationType
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
@@ -71,6 +75,7 @@ open class CodeWhispererTestBase {
     protected lateinit var settingsManager: CodeWhispererSettings
     private lateinit var originalExplorerActionState: CodeWhispererExploreActionState
     private lateinit var originalSettings: CodeWhispererConfiguration
+    private lateinit var userGroupSettings: CodeWhispererUserGroupSettings
 
     @Before
     open fun setUp() {
@@ -134,6 +139,9 @@ open class CodeWhispererTestBase {
         projectRule.project.replaceService(CodeWhispererClientAdaptor::class.java, clientAdaptorSpy, disposableRule.disposable)
         ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, stateManager, disposableRule.disposable)
         stateManager.setAutoEnabled(false)
+
+        userGroupSettings = mock { on { getUserGroup() } doReturn CodeWhispererUserGroup.Control }
+        ApplicationManager.getApplication().replaceService(CodeWhispererUserGroupSettings::class.java, userGroupSettings, disposableRule.disposable)
     }
 
     @After

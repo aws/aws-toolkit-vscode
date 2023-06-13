@@ -15,7 +15,6 @@ import org.junit.Test
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererLanguageManager.Companion.languageExtensionsMap
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererC
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCpp
@@ -35,7 +34,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererSql
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import kotlin.reflect.full.createInstance
@@ -74,33 +72,24 @@ class CodeWhispererLanguageManagerTest {
 
     @Test
     fun `test getProgrammingLanguage(virtualFile)`() {
-        testGetProgrammingLanguageUtil(listOf("java", "Java", "JAVA"), languageExtensionsMap[CodeWhispererJava.INSTANCE], CodeWhispererJava::class.java)
-        testGetProgrammingLanguageUtil(listOf("python", "Python"), languageExtensionsMap[CodeWhispererPython.INSTANCE], CodeWhispererPython::class.java)
-        testGetProgrammingLanguageUtil(
-            listOf("javascript", "JavaScript"),
-            languageExtensionsMap[CodeWhispererJavaScript.INSTANCE],
-            CodeWhispererJavaScript::class.java
-        )
-        testGetProgrammingLanguageUtil(listOf("jsx harmony"), languageExtensionsMap[CodeWhispererJsx.INSTANCE], CodeWhispererJsx::class.java)
-        testGetProgrammingLanguageUtil(listOf("typescript jsx"), languageExtensionsMap[CodeWhispererTsx.INSTANCE], CodeWhispererTsx::class.java)
-        testGetProgrammingLanguageUtil(
-            listOf("typescript", "TypeScript"),
-            languageExtensionsMap[CodeWhispererTypeScript.INSTANCE],
-            CodeWhispererTypeScript::class.java
-        )
-        testGetProgrammingLanguageUtil(listOf("c#", "C#"), languageExtensionsMap[CodeWhispererCsharp.INSTANCE], CodeWhispererCsharp::class.java)
-        testGetProgrammingLanguageUtil(listOf("go", "Go"), languageExtensionsMap[CodeWhispererGo.INSTANCE], CodeWhispererGo::class.java)
-        testGetProgrammingLanguageUtil(listOf("kotlin", "Kotlin"), languageExtensionsMap[CodeWhispererKotlin.INSTANCE], CodeWhispererKotlin::class.java)
-        testGetProgrammingLanguageUtil(listOf("php", "Php"), languageExtensionsMap[CodeWhispererPhp.INSTANCE], CodeWhispererPhp::class.java)
-        testGetProgrammingLanguageUtil(listOf("ruby", "Ruby"), languageExtensionsMap[CodeWhispererRuby.INSTANCE], CodeWhispererRuby::class.java)
-        testGetProgrammingLanguageUtil(listOf("scala", "Scala"), languageExtensionsMap[CodeWhispererScala.INSTANCE], CodeWhispererScala::class.java)
-        testGetProgrammingLanguageUtil(listOf("sql", "Sql"), languageExtensionsMap[CodeWhispererSql.INSTANCE], CodeWhispererSql::class.java)
-        testGetProgrammingLanguageUtil(listOf("plain_text"), languageExtensionsMap[CodeWhispererPlainText.INSTANCE], CodeWhispererPlainText::class.java)
-        testGetProgrammingLanguageUtil(listOf("c++"), languageExtensionsMap[CodeWhispererCpp.INSTANCE], CodeWhispererCpp::class.java)
-        testGetProgrammingLanguageUtil(listOf("c++"), languageExtensionsMap[CodeWhispererC.INSTANCE], CodeWhispererC::class.java)
-        testGetProgrammingLanguageUtil(listOf("Shell Script"), languageExtensionsMap[CodeWhispererShell.INSTANCE], CodeWhispererShell::class.java)
-        testGetProgrammingLanguageUtil(listOf("Rust"), languageExtensionsMap[CodeWhispererRust.INSTANCE], CodeWhispererRust::class.java)
-        testGetProgrammingLanguageUtil(listOf("Python Console"), listOf(null), CodeWhispererPython::class.java)
+        testGetProgrammingLanguageUtil(listOf("java", "Java", "JAVA"), listOf("java"), CodeWhispererJava::class.java)
+        testGetProgrammingLanguageUtil(listOf("python", "Python"), listOf("py"), CodeWhispererPython::class.java)
+        testGetProgrammingLanguageUtil(listOf("javascript", "JavaScript"), listOf("js"), CodeWhispererJavaScript::class.java)
+        testGetProgrammingLanguageUtil(listOf("jsx harmony"), listOf("jsx"), CodeWhispererJsx::class.java)
+        testGetProgrammingLanguageUtil(listOf("typescript jsx"), listOf("tsx"), CodeWhispererTsx::class.java)
+        testGetProgrammingLanguageUtil(listOf("typescript", "TypeScript"), listOf("ts"), CodeWhispererTypeScript::class.java)
+        testGetProgrammingLanguageUtil(listOf("c#", "C#"), listOf("cs"), CodeWhispererCsharp::class.java)
+        testGetProgrammingLanguageUtil(listOf("go", "Go"), listOf("go"), CodeWhispererGo::class.java)
+        testGetProgrammingLanguageUtil(listOf("kotlin", "Kotlin"), listOf("kt"), CodeWhispererKotlin::class.java)
+        testGetProgrammingLanguageUtil(listOf("php", "Php"), listOf("php"), CodeWhispererPhp::class.java)
+        testGetProgrammingLanguageUtil(listOf("ruby", "Ruby"), listOf("rb"), CodeWhispererRuby::class.java)
+        testGetProgrammingLanguageUtil(listOf("scala", "Scala"), listOf("scala"), CodeWhispererScala::class.java)
+        testGetProgrammingLanguageUtil(listOf("sql", "Sql"), listOf("sql"), CodeWhispererSql::class.java)
+        testGetProgrammingLanguageUtil(listOf("plain_text"), listOf("txt"), CodeWhispererPlainText::class.java)
+        testGetProgrammingLanguageUtil(listOf("c++"), listOf("cpp", "c++", "cc"), CodeWhispererCpp::class.java)
+        testGetProgrammingLanguageUtil(listOf("c"), listOf("c", "h"), CodeWhispererC::class.java)
+        testGetProgrammingLanguageUtil(listOf("Shell Script"), listOf("sh"), CodeWhispererShell::class.java)
+        testGetProgrammingLanguageUtil(listOf("Rust"), listOf("rs"), CodeWhispererRust::class.java)
     }
 
     @Test
@@ -108,8 +97,9 @@ class CodeWhispererLanguageManagerTest {
         // psiFile.virtualFile potentially will return null if virtualFile only exist in the memory instead of the disk
         val psiFileMock = mock<PsiFile> {
             on { virtualFile } doReturn null
+            on { name } doReturn "my_python_script_1.py"
         }
-        assertThat(manager.getLanguage(psiFileMock)).isInstanceOf(CodeWhispererUnknownLanguage::class.java)
+        assertThat(manager.getLanguage(psiFileMock)).isInstanceOf(CodeWhispererPython::class.java)
     }
 
     private fun <T : CodeWhispererProgrammingLanguage> testGetProgrammingLanguageUtil(

@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.project.Project
+import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.replaceService
@@ -18,7 +19,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
@@ -30,19 +30,25 @@ import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.Chunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.model.SupplementalContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeInfo
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupStates
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
@@ -65,6 +71,10 @@ class CodeWhispererTelemetryServiceTest {
 
     @Rule
     @JvmField
+    val applicationRule = ApplicationRule()
+
+    @Rule
+    @JvmField
     val projectRule = ProjectRule()
 
     @Rule
@@ -74,7 +84,6 @@ class CodeWhispererTelemetryServiceTest {
     private lateinit var sut: CodeWhispererTelemetryService
     private lateinit var telemetryServiceSpy: TelemetryService
     private lateinit var batcher: TelemetryBatcher
-    private lateinit var autoService: CodeWhispererAutoTriggerService
 
     @Before
     fun setup() {
@@ -87,10 +96,15 @@ class CodeWhispererTelemetryServiceTest {
         telemetryServiceSpy = NoOpToolkitTelemetryService(batcher = batcher)
         ApplicationManager.getApplication().replaceService(TelemetryService::class.java, telemetryServiceSpy, disposableRule.disposable)
 
-        autoService = spy(CodeWhispererAutoTriggerService.getInstance()) {
-            on { isClassifierGroup() } doReturn false
+        val groupSettings = CodeWhispererUserGroupSettings().apply {
+            loadState(
+                CodeWhispererUserGroupStates(
+                    version = AwsToolkit.PLUGIN_VERSION,
+                    settings = mapOf(CodeWhispererUserGroupSettings.USER_GROUP_KEY to CodeWhispererUserGroup.Control.name)
+                )
+            )
         }
-        ApplicationManager.getApplication().replaceService(CodeWhispererAutoTriggerService::class.java, autoService, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(CodeWhispererUserGroupSettings::class.java, groupSettings, disposableRule.disposable)
     }
 
     @After
@@ -217,7 +231,8 @@ class CodeWhispererTelemetryServiceTest {
             disposableRule.disposable
         )
 
-        val requestContext = aRequestContext(projectRule.project)
+        val supplementalContextInfo = aSupplementalContextInfo()
+        val requestContext = aRequestContext(projectRule.project, mySupplementalContextInfo = supplementalContextInfo)
         val responseContext = aResponseContext()
         val recommendationContext = aRecommendationContext()
         val popupShownDuration = Duration.ofSeconds(Random.nextLong(0, 30))
@@ -255,6 +270,10 @@ class CodeWhispererTelemetryServiceTest {
                 },
                 "codewhispererTypeaheadLength" to recommendationContext.userInputSinceInvocation.length,
                 "codewhispererTimeSinceLastDocumentChange" to timeSinceDocumentChanged,
+                "codewhispererUserGroup" to "Control",
+                "codewhispererSupplementalContextTimeout" to supplementalContextInfo.isProcessTimeout,
+                "codewhispererSupplementalContextIsUtg" to supplementalContextInfo.isUtg,
+                "codewhispererSupplementalContextLength" to supplementalContextInfo.contentLength
             )
         }
     }
@@ -283,6 +302,7 @@ class CodeWhispererTelemetryServiceTest {
                     allValues,
                     "codewhisperer_userDecision",
                     count = totalEventCount,
+                    "codewhispererUserGroup" to "Control",
                 )
 
                 eventCount.forEach { (k, v) ->
@@ -330,7 +350,8 @@ class CodeWhispererTelemetryServiceTest {
             expectedState: CodewhispererSuggestionState,
             expectedPreviousSuggestionState: CodewhispererPreviousSuggestionState?
         ) {
-            val requestContext = aRequestContext(projectRule.project)
+            val supplementalContextInfo = aSupplementalContextInfo()
+            val requestContext = aRequestContext(projectRule.project, mySupplementalContextInfo = supplementalContextInfo)
             val responseContext = aResponseContext()
             val (recommendationContext, sessionContext) = aRecommendationContextAndSessionContext(decisions)
             val hasUserAccept = decisions.any { it == CodewhispererSuggestionState.Accept }
@@ -345,6 +366,10 @@ class CodeWhispererTelemetryServiceTest {
                     "codewhisperer_userTriggerDecision",
                     count = 1,
                     "codewhispererSuggestionState" to expectedState,
+                    "codewhispererUserGroup" to "Control",
+                    "codewhispererSupplementalContextTimeout" to supplementalContextInfo.isProcessTimeout,
+                    "codewhispererSupplementalContextIsUtg" to supplementalContextInfo.isUtg,
+                    "codewhispererSupplementalContextLength" to supplementalContextInfo.contentLength,
                     atLeast = true
                 )
 
@@ -353,6 +378,10 @@ class CodeWhispererTelemetryServiceTest {
                     "codewhisperer_userTriggerDecision",
                     count = 1,
                     "codewhispererPreviousSuggestionState" to expectedPreviousSuggestionState,
+                    "codewhispererSupplementalContextTimeout" to supplementalContextInfo.isProcessTimeout,
+                    "codewhispererSupplementalContextIsUtg" to supplementalContextInfo.isUtg,
+                    "codewhispererSupplementalContextLength" to supplementalContextInfo.contentLength,
+                    "codewhispererUserGroup" to "Control",
                     atLeast = true
                 )
             }
@@ -399,7 +428,7 @@ class CodeWhispererTelemetryServiceTest {
 }
 
 // TODO: move these to testUtil
-fun aRequestContext(project: Project): RequestContext {
+fun aRequestContext(project: Project, myFileContextInfo: FileContextInfo? = null, mySupplementalContextInfo: SupplementalContextInfo? = null): RequestContext {
     val triggerType = listOf(CodewhispererTriggerType.AutoTrigger, CodewhispererTriggerType.OnDemand).random()
     val automatedTriggerType = if (triggerType == CodewhispererTriggerType.AutoTrigger) {
         listOf(
@@ -417,7 +446,8 @@ fun aRequestContext(project: Project): RequestContext {
         mock(),
         TriggerTypeInfo(triggerType, automatedTriggerType),
         CaretPosition(Random.nextInt(), Random.nextInt()),
-        aFileContextInfo(),
+        fileContextInfo = myFileContextInfo ?: aFileContextInfo(),
+        supplementalContext = mySupplementalContextInfo ?: aSupplementalContextInfo(),
         null,
         LatencyContext(
             Random.nextLong(),
@@ -433,6 +463,29 @@ fun aRequestContext(project: Project): RequestContext {
             Random.nextLong(),
             aString()
         )
+    )
+}
+
+fun aSupplementalContextInfo(myContents: List<Chunk>? = null, myIsUtg: Boolean? = null, myLatency: Long? = null): SupplementalContextInfo {
+    val contents = mutableListOf<Chunk>()
+    val numberOfContent = Random.nextInt(1, 4)
+    repeat(numberOfContent) {
+        contents.add(
+            Chunk(
+                content = aString(),
+                path = aString(),
+            )
+        )
+    }
+
+    val isUtg = Random.nextBoolean()
+    val latency = Random.nextLong(from = 0L, until = 100L)
+
+    return SupplementalContextInfo(
+        isUtg = myIsUtg ?: isUtg,
+        latency = myLatency ?: latency,
+        contents = myContents ?: contents,
+        targetFileName = aString()
     )
 }
 
@@ -530,11 +583,11 @@ fun aCompletion(isEmpty: Boolean = false, referenceCount: Int? = null, importCou
 
 fun aResponseContext(): ResponseContext = ResponseContext(aString(), listOf(CodewhispererCompletionType.Block, CodewhispererCompletionType.Line).random())
 
-fun aFileContextInfo(): FileContextInfo {
+fun aFileContextInfo(language: CodeWhispererProgrammingLanguage? = null): FileContextInfo {
     val caretContextInfo = CaretContext(aString(), aString(), aString())
     val fileName = aString()
 
-    val programmingLanguage = listOf(
+    val programmingLanguage = language ?: listOf(
         CodeWhispererPython.INSTANCE,
         CodeWhispererJava.INSTANCE
     ).random()

@@ -21,6 +21,8 @@ class CodeWhispererJava private constructor() : CodeWhispererProgrammingLanguage
 
     override fun isAllClassifier(): Boolean = true
 
+    override fun isSupplementalContextSupported() = true
+
     companion object {
         const val ID = "java"
 

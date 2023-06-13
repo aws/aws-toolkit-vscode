@@ -31,14 +31,22 @@ class CodeWhispererLanguageManager {
     // The return type here implicitly means that the corresponding language plugin has been installed to the user's IDE,
     // (e.g. 'Python' plugin for Python and 'JavaScript and TypeScript' for JS/TS). So we can leverage these language
     // plugin features when developing CodeWhisperer features.
+    /**
+     * resolve language by
+     * 1. file type
+     * 2. extension
+     * 3. fallback to unknown
+     */
     fun getLanguage(vFile: VirtualFile): CodeWhispererProgrammingLanguage {
         val fileTypeName = vFile.fileType.name.lowercase()
+
         val fileExtension = vFile.extension?.lowercase()
 
         // We want to support Python Console which does not have a file extension
         if (fileExtension == null && !fileTypeName.contains("python")) {
             return CodeWhispererUnknownLanguage.INSTANCE
         }
+
         return when {
             fileTypeName.contains("python") -> CodeWhispererPython.INSTANCE
             fileTypeName.contains("javascript") -> CodeWhispererJavaScript.INSTANCE
@@ -56,42 +64,58 @@ class CodeWhispererLanguageManager {
             fileTypeName.contains("shell") -> CodeWhispererShell.INSTANCE
             fileTypeName.contains("rust") -> CodeWhispererRust.INSTANCE
             fileTypeName.contains("plain_text") -> CodeWhispererPlainText.INSTANCE
-            languageExtensionsMap.any { it.value.contains(fileExtension) } -> {
-                val language = languageExtensionsMap.entries.find { it.value.contains(fileExtension) }?.key
-                language ?: CodeWhispererUnknownLanguage.INSTANCE
-            }
-            else -> CodeWhispererUnknownLanguage.INSTANCE
+            else -> null
         }
+            ?: languageExtensionsMap[fileExtension]
+            ?: CodeWhispererUnknownLanguage.INSTANCE
     }
 
+    /**
+     * will call getLanguage(virtualFile) first, then fallback to string resolve in case of psi only exists in memeory
+     */
     fun getLanguage(psiFile: PsiFile): CodeWhispererProgrammingLanguage = psiFile.virtualFile?.let {
-        getLanguage(psiFile.virtualFile)
-    } ?: run {
-        CodeWhispererUnknownLanguage.INSTANCE
-    }
+        getLanguage(it)
+    } ?: languageExtensionsMap.keys.find { ext -> psiFile.name.endsWith(ext) }?.let { languageExtensionsMap[it] }
+        ?: CodeWhispererUnknownLanguage.INSTANCE
 
     companion object {
         fun getInstance(): CodeWhispererLanguageManager = service()
-        val languageExtensionsMap = mapOf(
-            CodeWhispererJava.INSTANCE to listOf("java"),
-            CodeWhispererPython.INSTANCE to listOf("py"),
-            CodeWhispererJavaScript.INSTANCE to listOf("js"),
-            CodeWhispererJsx.INSTANCE to listOf("jsx"),
-            CodeWhispererTypeScript.INSTANCE to listOf("ts"),
-            CodeWhispererTsx.INSTANCE to listOf("tsx"),
-            CodeWhispererCsharp.INSTANCE to listOf("cs"),
-            CodeWhispererKotlin.INSTANCE to listOf("kt"),
-            CodeWhispererScala.INSTANCE to listOf("scala"),
-            CodeWhispererC.INSTANCE to listOf("c", "h"),
-            CodeWhispererCpp.INSTANCE to listOf("cpp", "c++", "cc"),
-            CodeWhispererShell.INSTANCE to listOf("sh"),
-            CodeWhispererRuby.INSTANCE to listOf("rb"),
-            CodeWhispererRust.INSTANCE to listOf("rs"),
-            CodeWhispererGo.INSTANCE to listOf("go"),
-            CodeWhispererPhp.INSTANCE to listOf("php"),
-            CodeWhispererSql.INSTANCE to listOf("sql"),
-            CodeWhispererPlainText.INSTANCE to listOf("txt")
-        )
+
+        /**
+         * languageExtensionMap will look like
+         * {
+         *      "cpp" to CodeWhispererCpp,
+         *      "c++" to CodeWhispererCpp,
+         *      "cc" to CodeWhispererCpp,
+         *      "java" to CodeWhispererJava,
+         *      ...
+         * }
+         */
+        val languageExtensionsMap = listOf(
+            listOf("java") to CodeWhispererJava.INSTANCE,
+            listOf("py") to CodeWhispererPython.INSTANCE,
+            listOf("js") to CodeWhispererJavaScript.INSTANCE,
+            listOf("jsx") to CodeWhispererJsx.INSTANCE,
+            listOf("ts") to CodeWhispererTypeScript.INSTANCE,
+            listOf("tsx") to CodeWhispererTsx.INSTANCE,
+            listOf("cs") to CodeWhispererCsharp.INSTANCE,
+            listOf("kt") to CodeWhispererKotlin.INSTANCE,
+            listOf("scala") to CodeWhispererScala.INSTANCE,
+            listOf("c", "h") to CodeWhispererC.INSTANCE,
+            listOf("cpp", "c++", "cc") to CodeWhispererCpp.INSTANCE,
+            listOf("sh") to CodeWhispererShell.INSTANCE,
+            listOf("rb") to CodeWhispererRuby.INSTANCE,
+            listOf("rs") to CodeWhispererRust.INSTANCE,
+            listOf("go") to CodeWhispererGo.INSTANCE,
+            listOf("php") to CodeWhispererPhp.INSTANCE,
+            listOf("sql") to CodeWhispererSql.INSTANCE,
+            listOf("txt") to CodeWhispererPlainText.INSTANCE
+        ).map {
+            val exts = it.first
+            val lang = it.second
+            exts.map { ext -> ext to lang }
+        }.flatten()
+            .associateBy({ it.first }, { it.second })
     }
 }
 

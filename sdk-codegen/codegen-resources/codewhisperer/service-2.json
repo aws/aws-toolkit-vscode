@@ -261,11 +261,44 @@
             "min":0,
             "sensitive":true
         },
+        "SupplementalContext": {
+            "type": "structure",
+            "required": ["filePath", "content"],
+            "members": {
+                "filePath": {
+                    "shape": "SupplementalContextFilePathString"
+                },
+                "content": {
+                    "shape": "SupplementalContextContentString"
+                }
+            }
+        },
+        "SupplementalContextFilePathString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "SupplementalContextContentString": {
+            "type": "string",
+            "max": 5120,
+            "min": 0,
+            "sensitive": true
+        },
+        "SupplementalContextList": {
+            "type": "list",
+            "member": {
+                "shape": "SupplementalContext"
+            },
+            "max": 10,
+            "min": 0
+        },
         "GenerateRecommendationsRequest":{
             "type":"structure",
             "required":["fileContext"],
             "members":{
                 "fileContext":{"shape":"FileContext"},
+                "supplementalContexts": {"shape": "SupplementalContextList"},
                 "maxResults":{
                     "shape":"GenerateRecommendationsRequestMaxResultsInteger",
                     "box":true
