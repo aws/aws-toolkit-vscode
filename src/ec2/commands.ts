@@ -11,7 +11,7 @@ export async function tryConnect(): Promise<void> {
     const prompter = createEc2ConnectPrompter()
     const response = await prompter.prompt()
 
-    if(isValidResponse(response)){
+    if (isValidResponse(response)) {
         const selection = handleEc2ConnectPrompterResponse(response)
         const ec2Client = new Ec2ConnectClient(selection.region)
         await ec2Client.attemptEc2Connection(selection)

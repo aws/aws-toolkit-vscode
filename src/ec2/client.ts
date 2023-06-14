@@ -3,22 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AWSError, EC2, SSM } from "aws-sdk";
-import globals from "../shared/extensionGlobals";
+import { AWSError, EC2, SSM } from 'aws-sdk'
+import globals from '../shared/extensionGlobals'
 import { Session } from 'aws-sdk/clients/ssm'
-import { Ec2Selection, getInstanceIdsFromClient } from "./utils";
-import { getOrInstallCli } from "../shared/utilities/cliUtils";
-import { isCloud9 } from "../shared/extensionUtilities";
-import { withoutShellIntegration } from "../ecs/commands";
-import { ToolkitError } from '../shared/errors';
-import { AsyncCollection } from '../shared/utilities/asyncCollection';
-import { getLogger } from '../shared/logger';
-import { PromiseResult } from 'aws-sdk/lib/request';
+import { Ec2Selection, getInstanceIdsFromClient } from './utils'
+import { getOrInstallCli } from '../shared/utilities/cliUtils'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { withoutShellIntegration } from '../ecs/commands'
+import { ToolkitError } from '../shared/errors'
+import { AsyncCollection } from '../shared/utilities/asyncCollection'
+import { getLogger } from '../shared/logger'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import { getPaginatedAwsCallIter, pageableToCollection } from '../shared/utilities/collectionUtils'
 
 export class Ec2ConnectClient {
-    public constructor(readonly regionCode: string) {
-        
-    }
+    public constructor(readonly regionCode: string) {}
 
     protected async createEc2SdkClient(): Promise<EC2> {
         return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
@@ -28,19 +27,48 @@ export class Ec2ConnectClient {
         return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
-    private async handleStartSessionError(err: AWS.AWSError): Promise<void> {
-        console.log(err);
-        const failureMessage = "SSM: Failed to start session with target instance. Common reasons include: \n 1. SSM Agent not installed on instance. \n 2. The required IAM instance profile isn't attached to the instance.  \n 3. Session manager setup is incomplete."
+    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+        const client = await this.createEc2SdkClient()
+        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
+            client.describeInstanceStatus(request).promise()
+
+        const response = await pageableToCollection(
+            requester,
+            { InstanceIds: [instanceId], IncludeAllInstances: true },
+            'NextToken',
+            'InstanceStatuses'
+        )
+            .flatten()
+            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
+            .promise()
+
+        return response[0]
+    }
+
+    private async checkInstanceStatus(instanceId: string, targetStatus: EC2.InstanceStateName): Promise<boolean> {
+        const status = await this.getInstanceStatus(instanceId)
+        return status == targetStatus
+    }
+
+    private async handleStartSessionError(selection: Ec2Selection, err: AWS.AWSError): Promise<void> {
+        const instanceIsRunning = await this.checkInstanceStatus(selection.instanceId, 'running')
+        console.log(instanceIsRunning)
+
+        const failureMessage =
+            "SSM: Failed to start session with target instance. Common reasons include: \n 1. SSM Agent not installed on instance. \n 2. The required IAM instance profile isn't attached to the instance.  \n 3. Session manager setup is incomplete."
         await vscode.window.showErrorMessage(failureMessage)
 
         throw new ToolkitError('Start Session Failed. ')
     }
 
-    private async terminateSession(session: Session): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>>{
+    private async terminateSession(
+        session: Session
+    ): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>> {
         const sessionId = session.SessionId!
         const ssmClient = await this.createSsmSdkClient()
-        const termination = await ssmClient.terminateSession({ SessionId: sessionId})
-            .promise() 
+        const termination = await ssmClient
+            .terminateSession({ SessionId: sessionId })
+            .promise()
             .catch(err => {
                 getLogger().warn(`ec2: failed to terminate session "${sessionId}": %s`, err)
             })
@@ -49,37 +77,36 @@ export class Ec2ConnectClient {
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
-        const shellArgs = [JSON.stringify(session), selection.region, "StartSession"]
+        const shellArgs = [JSON.stringify(session), selection.region, 'StartSession']
 
         try {
             await withoutShellIntegration(() => {
                 const Ec2Terminal = vscode.window.createTerminal({
-                    name: selection.region + "/" +selection.instanceId,
-                    shellPath: ssmPlugin, 
-                    shellArgs: shellArgs
+                    name: selection.region + '/' + selection.instanceId,
+                    shellPath: ssmPlugin,
+                    shellArgs: shellArgs,
                 })
 
                 const listener = vscode.window.onDidCloseTerminal(terminal => {
                     if (terminal.processId === Ec2Terminal.processId) {
-                        vscode.Disposable.from(listener, {dispose: () => this.terminateSession(session)})
-                            .dispose()
+                        vscode.Disposable.from(listener, { dispose: () => this.terminateSession(session) }).dispose()
                     }
                 })
 
                 Ec2Terminal.show()
             })
         } catch (err) {
-            throw ToolkitError.chain(err, "Failed to open ec2 instance.")
+            throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
         }
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
         const ssmClient = await this.createSsmSdkClient()
-        ssmClient.startSession({Target: selection.instanceId}, async (err, data) => {
-            if(err) {
-                await this.handleStartSessionError(err)
+        ssmClient.startSession({ Target: selection.instanceId }, async (err, data) => {
+            if (err) {
+                await this.handleStartSessionError(selection, err)
             } else {
-                console.log("no error!")
+                console.log('no error!')
                 this.openSessionInTerminal(data, selection)
             }
         })
@@ -89,6 +116,4 @@ export class Ec2ConnectClient {
         const client = await this.createEc2SdkClient()
         return getInstanceIdsFromClient(client)
     }
-
-
 }
