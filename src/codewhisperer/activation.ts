@@ -17,7 +17,6 @@ import { CodeWhispererSettings } from './util/codewhispererSettings'
 import { ExtContext } from '../shared/extensions'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
-import * as codewhispererClient from './client/codewhisperer'
 import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../shared/logger'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -33,6 +32,8 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
+    selectCustomization,
+    notifyNewCustomizationsCmd,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -49,6 +50,8 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { codeWhispererClient as client } from './client/codewhisperer'
+import { notifyNewCustomizations } from './util/customizationUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -69,11 +72,6 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
     activateSecurityScan()
-
-    /**
-     * Service control
-     */
-    const client = new codewhispererClient.DefaultCodeWhispererClient()
 
     context.extensionContext.subscriptions.push(
         /**
@@ -167,6 +165,10 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
+        // select customization
+        selectCustomization.register(),
+        // notify new customizations
+        notifyNewCustomizationsCmd.register(),
         /**
          * On recommendation acceptance
          */
@@ -200,6 +202,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt()
+    }
+    if (auth.isValidEnterpriseSsoInUse()) {
+        await notifyNewCustomizations()
     }
 
     function activateSecurityScan() {

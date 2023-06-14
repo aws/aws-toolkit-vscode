@@ -146,6 +146,10 @@ export const autoTriggerEnabledKey = 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
 
 export const serviceActiveKey = 'CODEWHISPERER_SERVICE_ACTIVE'
 
+export const persistedCustomizationsKey = 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
+
+export const selectedCustomizationKey = 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
+
 export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
@@ -238,6 +242,9 @@ export const throttlingMessage = `Maximum recommendation count reached for this 
 
 export const connectionChangeMessage = `Keep using CodeWhisperer with `
 
+// TODO: align this text with service side
+export const invalidCustomizationMessage = `You are not authorized to access`
+
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
@@ -257,6 +264,12 @@ export const showScannedFilesMessage = 'Show Scanned Files'
 export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
+
+export const newCustomizationMessageSingle = 'You have access to a new CodeWhisperer customization.'
+
+export const newCustomizationMessageMultiple = 'You have access to new CodeWhisperer customizations.'
+
+export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
 
 export enum UserGroup {
     Classifier = 'Classifier',

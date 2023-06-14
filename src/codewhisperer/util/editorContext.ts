@@ -19,6 +19,7 @@ import { supplementalContextTimeoutInMs } from '../models/constants'
 import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { isTestFile } from './supplementalContext/codeParsingUtil'
 import { DependencyGraphFactory } from './dependencyGraph/dependencyGraphFactory'
+import { getSelectedCustomization } from './customizationUtil'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -109,12 +110,14 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    const selectedCustomization = getSelectedCustomization()
     if (allowCodeWithReference === undefined) {
         return {
             request: {
                 fileContext: fileContext,
                 nextToken: nextToken,
                 supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+                customizationArn: selectedCustomization.arn,
             },
             supplementalMetadata: suppelmetalMetadata,
         }
@@ -128,6 +131,7 @@ export async function buildListRecommendationRequest(
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
             supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+            customizationArn: selectedCustomization.arn,
         },
         supplementalMetadata: suppelmetalMetadata,
     }

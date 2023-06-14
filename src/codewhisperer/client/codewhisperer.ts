@@ -2,21 +2,22 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AWSError, Service } from 'aws-sdk'
-import apiConfig = require('./service-2.json')
-import userApiConfig = require('./user-service-2.json')
+import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
+import { ListAvailableCustomizationsResponse } from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { isSsoConnection } from '../../auth/connection'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import apiConfig = require('./service-2.json')
+import userApiConfig = require('./user-service-2.json')
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -191,6 +192,13 @@ export class DefaultCodeWhispererClient {
             .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
             .promise()
     }
+
+    public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
+        const requester = async () => (await this.createUserSdkClient()).listAvailableCustomizations().promise()
+        return pageableToCollection(requester, { nextToken: '' }, 'nextToken').promise()
+    }
 }
+
+export const codeWhispererClient = new DefaultCodeWhispererClient()
 
 export class CognitoCredentialsError extends Error {}
