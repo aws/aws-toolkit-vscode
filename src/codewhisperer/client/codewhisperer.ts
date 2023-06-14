@@ -19,7 +19,6 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 
-
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
 >

@@ -40,12 +40,10 @@ export async function initializeAwsCredentialsStatusBarItem(
 }
 
 function handleDevSettings(statusBarItem: vscode.StatusBarItem, devSettings: DevSettings) {
-    const developerMode = Object.keys(devSettings.activeSettings)
-
-    if (developerMode.length > 0) {
+    if (devSettings.isDevMode()) {
         ;(statusBarItem as any).backgroundColor ??= new vscode.ThemeColor('statusBarItem.warningBackground')
 
-        const devSettingsStr = developerMode.join('  \n')
+        const devSettingsStr = Object.keys(devSettings.activeSettings).join('  \n')
         statusBarItem.tooltip = `Toolkit developer settings:\n${devSettingsStr}`
     }
 }

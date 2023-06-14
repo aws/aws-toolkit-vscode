@@ -6,9 +6,9 @@
 
             <div v-if="stage === 'START'">
                 <div class="form-section">
-                    If your organization has provided you a CodeWhisperer license, sign in with your Identity Center
-                    access portal login page.
-                    <a>Read more.</a>
+                    <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                        >Learn more about IAM Identity Center.</a
+                    >
                 </div>
 
                 <div class="form-section">
@@ -53,7 +53,7 @@ import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
-import { AuthFormId, authForms } from './types.vue'
+import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -199,7 +199,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
 export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     override get id(): AuthFormId {
-        return authForms.IDENTITY_CENTER_CODE_WHISPERER
+        return 'IDENTITY_CENTER_CODE_WHISPERER'
     }
 
     protected override async _startIdentityCenterSetup(): Promise<void> {

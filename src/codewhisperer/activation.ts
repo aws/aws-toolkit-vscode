@@ -53,7 +53,6 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { codeWhispererClient as client } from './client/codewhisperer'
 import { notifyNewCustomizations } from './util/customizationUtil'
 
-
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -201,6 +200,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
     await auth.restore()
 
+    if (auth.isConnectionExpired()) {
+        auth.showReauthenticatePrompt()
+    }
     if (auth.isValidEnterpriseSsoInUse()) {
         await notifyNewCustomizations()
     }

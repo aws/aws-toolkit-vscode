@@ -117,7 +117,7 @@ export async function buildListRecommendationRequest(
                 fileContext: fileContext,
                 nextToken: nextToken,
                 supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
-                customizationArn: selectedCustomization.arn
+                customizationArn: selectedCustomization.arn,
             },
             supplementalMetadata: suppelmetalMetadata,
         }
@@ -131,7 +131,7 @@ export async function buildListRecommendationRequest(
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
             supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
-            customizationArn: selectedCustomization.arn
+            customizationArn: selectedCustomization.arn,
         },
         supplementalMetadata: suppelmetalMetadata,
     }

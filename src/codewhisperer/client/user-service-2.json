@@ -330,24 +330,12 @@
             "type": "structure",
             "required": ["fileContext"],
             "members": {
-                "fileContext": {
-                    "shape": "FileContext"
-                },
-                "maxResults": {
-                    "shape": "GenerateCompletionsRequestMaxResultsInteger"
-                },
-                "nextToken": {
-                    "shape": "GenerateCompletionsRequestNextTokenString"
-                },
-                "referenceTrackerConfiguration": {
-                    "shape": "ReferenceTrackerConfiguration"
-                },
-                "supplementalContexts": {
-                    "shape": "SupplementalContextList"
-                },
-                "customizationArn": { 
-                    "shape": "ResourceArn"
-                }
+                "fileContext": { "shape": "FileContext" },
+                "maxResults": { "shape": "GenerateCompletionsRequestMaxResultsInteger" },
+                "nextToken": { "shape": "GenerateCompletionsRequestNextTokenString" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
+                "supplementalContexts": { "shape": "SupplementalContextList" },
+                "customizationArn": { "shape": "ResourceArn" }
             }
         },
         "GenerateCompletionsRequestMaxResultsInteger": {
