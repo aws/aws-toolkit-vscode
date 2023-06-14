@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -26,6 +26,7 @@ import * as codeLang from '../models/schemaCodeLangs'
 
 import { SchemaItemNode } from '../explorer/schemaItemNode'
 import { recentlyUsed } from '../../shared/localizedText'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export interface SchemaCodeDownloadWizardContext {
     readonly schemaLangs: ImmutableSet<codeLang.SchemaCodeLangs>
@@ -77,7 +78,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
+                    openUrl(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             },
         })
@@ -115,7 +116,7 @@ export class DefaultSchemaCodeDownloadWizardContext extends WizardContext implem
                 if (button === vscode.QuickInputButtons.Back) {
                     resolve(undefined)
                 } else if (button === this.helpButton) {
-                    vscode.env.openExternal(vscode.Uri.parse(eventBridgeSchemasDocUrl))
+                    openUrl(vscode.Uri.parse(eventBridgeSchemasDocUrl))
                 }
             },
         })

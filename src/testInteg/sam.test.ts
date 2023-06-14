@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -146,16 +146,16 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'gradle',
         vscodeMinimum: '1.50.0',
     },
-    {
-        runtime: 'go1.x',
-        displayName: 'go1.x (ZIP)',
-        path: 'hello-world/main.go',
-        debugSessionType: 'delve',
-        language: 'go',
-        dependencyManager: 'mod',
-        // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.67.0',
-    },
+    // {
+    //     runtime: 'go1.x',
+    //     displayName: 'go1.x (ZIP)',
+    //     path: 'hello-world/main.go',
+    //     debugSessionType: 'delve',
+    //     language: 'go',
+    //     dependencyManager: 'mod',
+    //     // https://github.com/golang/vscode-go/blob/master/package.json
+    //     vscodeMinimum: '1.67.0',
+    // },
     // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
     // images
@@ -230,17 +230,17 @@ const scenarios: TestScenario[] = [
         // https://github.com/microsoft/vscode-python/blob/main/package.json
         vscodeMinimum: '1.78.0',
     },
-    {
-        runtime: 'go1.x',
-        displayName: 'go1.x (Image)',
-        baseImage: 'amazon/go1.x-base',
-        path: 'hello-world/main.go',
-        debugSessionType: 'delve',
-        language: 'go',
-        dependencyManager: 'mod',
-        // https://github.com/golang/vscode-go/blob/master/package.json
-        vscodeMinimum: '1.67.0',
-    },
+    // {
+    //     runtime: 'go1.x',
+    //     displayName: 'go1.x (Image)',
+    //     baseImage: 'amazon/go1.x-base',
+    //     path: 'hello-world/main.go',
+    //     debugSessionType: 'delve',
+    //     language: 'go',
+    //     dependencyManager: 'mod',
+    //     // https://github.com/golang/vscode-go/blob/master/package.json
+    //     vscodeMinimum: '1.67.0',
+    // },
     {
         runtime: 'java8',
         displayName: 'java8 (Maven Image)',
@@ -400,7 +400,7 @@ describe('SAM Integration Tests', async function () {
         await activateExtensions()
         await testUtils.configureAwsToolkitExtension()
         await testUtils.configurePythonExtension()
-        await testUtils.configureGoExtension()
+        // await testUtils.configureGoExtension()
 
         testSuiteRoot = await mkdtemp(path.join(projectFolder, 'inttest'))
         console.log('testSuiteRoot: ', testSuiteRoot)

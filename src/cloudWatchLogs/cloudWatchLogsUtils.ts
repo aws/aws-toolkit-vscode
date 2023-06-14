@@ -1,33 +1,101 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { telemetry } from '../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { fromExtensionManifest } from '../shared/settings'
+import { CloudWatchLogsData, CloudWatchLogsGroupInfo } from './registry/logDataRegistry'
+import { CloudWatchLogsParameters } from './registry/logDataRegistry'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.
 // Colons are not valid characters in either the group name or stream name and will be used as separators.
 
+/** Records "filter" metric if a filter was actually applied. */
+export function recordTelemetryFilter(logData: CloudWatchLogsData): void {
+    const hasTimeFilter = !!logData.parameters.startTime
+    const hasTextFilter = !!logData.parameters.filterPattern && logData.parameters.filterPattern !== ''
+    // Update current container (span) metric.
+    telemetry.record({
+        hasTimeFilter: hasTimeFilter,
+        hasTextFilter: hasTextFilter,
+    })
+}
+
+/**
+ * This function concatenates the path and query to create a unique (enough) identifier for a URI.
+ * @param uri
+ * @returns
+ */
+export function uriToKey(uri: vscode.Uri): string {
+    if (uri.query) {
+        try {
+            const { filterPattern, startTime, endTime, limit, streamNameOptions } =
+                parseCloudWatchLogsUri(uri).parameters
+            const parts = [uri.path, filterPattern, startTime, endTime, limit, streamNameOptions]
+            return parts.map(p => p ?? '').join(':')
+        } catch {
+            throw new Error(
+                `Unable to parse ${uri.query} into JSON and therefore cannot key uri with path: ${uri.path}`
+            )
+        }
+    }
+    return uri.path
+}
+
 /**
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */
-export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; streamName: string; regionName: string } {
+export function parseCloudWatchLogsUri(uri: vscode.Uri): {
+    logGroupInfo: CloudWatchLogsGroupInfo
+    parameters: CloudWatchLogsParameters
+} {
     const parts = uri.path.split(':')
 
-    // splits into <CLOUDWATCH_LOGS_SCHEME>:"<groupName>:<streamName>:<regionName>"
-    if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME || parts.length !== 3) {
+    if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME) {
         throw new Error(`URI ${uri} is not parseable for CloudWatch Logs`)
     }
 
-    return {
-        groupName: parts[0],
-        streamName: parts[1],
-        regionName: parts[2],
+    const logGroupInfo: CloudWatchLogsGroupInfo = {
+        regionName: parts[0],
+        groupName: parts[1],
     }
+
+    if (parts.length === 3) {
+        logGroupInfo.streamName = parts[2]
+    }
+
+    return {
+        logGroupInfo,
+        parameters: JSON.parse(uri.query),
+    }
+}
+
+/** True if given URI is a valid Cloud Watch Logs Uri */
+export function isCwlUri(uri: vscode.Uri): boolean {
+    try {
+        parseCloudWatchLogsUri(uri)
+        return true
+    } catch {
+        return false
+    }
+}
+
+export function patternFromCwlUri(uri: vscode.Uri): CloudWatchLogsParameters['filterPattern'] {
+    return parseCloudWatchLogsUri(uri).parameters.filterPattern
+}
+
+/**
+ * Determines if loadOlder codelense should be visible on virtual document
+ * @param uri CloudWatchLogs Document URI
+ * @returns
+ */
+export function isLogStreamUri(uri: vscode.Uri): boolean {
+    const logGroupInfo = parseCloudWatchLogsUri(uri).logGroupInfo
+    return logGroupInfo.streamName !== undefined
 }
 
 /**
@@ -36,8 +104,15 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): { groupName: string; st
  * @param streamName Log stream name
  * @param regionName AWS region
  */
-export function convertLogGroupInfoToUri(groupName: string, streamName: string, regionName: string): vscode.Uri {
-    return vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:${groupName}:${streamName}:${regionName}`)
+export function createURIFromArgs(
+    logGroupInfo: CloudWatchLogsGroupInfo,
+    parameters: CloudWatchLogsParameters
+): vscode.Uri {
+    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.regionName}:${logGroupInfo.groupName}`
+    uriStr += logGroupInfo.streamName ? `:${logGroupInfo.streamName}` : ''
+
+    uriStr += `?${encodeURIComponent(JSON.stringify(parameters))}`
+    return vscode.Uri.parse(uriStr)
 }
 
-export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
+export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}

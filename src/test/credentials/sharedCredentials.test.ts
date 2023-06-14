@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as fs from 'fs-extra'
 import { EnvironmentVariables } from '../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { getCredentialsFilename, getConfigFilename } from '../../credentials/sharedCredentialsFile'
+import { getCredentialsFilename, getConfigFilename } from '../../auth/credentials/sharedCredentialsFile'
 
 describe('sharedCredentials', function () {
     let tempFolder: string

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -82,6 +82,21 @@ export function isExtensionInstalled(
     return semver.gte(extSemver, minSemver)
 }
 
+export async function showExtensionPage(extId: string) {
+    try {
+        // Available commands:
+        //  - extension.open: opens extension page in VS Code extension marketplace view
+        //  - workbench.extensions.installExtension: autoinstalls plugin with no additional feedback
+        //  - workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+        await vscode.commands.executeCommand('extension.open', extId)
+    } catch (e) {
+        const err = e as Error
+        getLogger().error('extension.open command failed: %s', err.message)
+        const uri = vscode.Uri.parse(`https://marketplace.visualstudio.com/items?itemName=${extId}`)
+        openUrl(uri)
+    }
+}
+
 /**
  * Checks if an extension is installed, and shows a message if not.
  */
@@ -103,7 +118,7 @@ export function showInstallExtensionMsg(
     const p = vscode.window.showErrorMessage(msg, ...items)
     p.then<string | undefined>(selection => {
         if (selection === installBtn) {
-            vscode.commands.executeCommand('extension.open', extId)
+            showExtensionPage(extId)
         }
         return selection
     })
