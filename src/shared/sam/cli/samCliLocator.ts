@@ -60,7 +60,7 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
 
 abstract class BaseSamCliLocator {
     /** Indicates that findFileInFolders() returned at least once. */
-    static didFind = false
+    static didSearch = false
     protected readonly logger: Logger = getLogger()
 
     public constructor() {
@@ -70,7 +70,7 @@ abstract class BaseSamCliLocator {
     public async getLocation() {
         let location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
 
-        if (!location) {
+        if (!location?.version) {
             location = await this.getSystemPathLocation()
         }
 
@@ -81,7 +81,16 @@ abstract class BaseSamCliLocator {
     protected abstract getExecutableFilenames(): string[]
     protected abstract getExecutableFolders(): string[]
 
+    /**
+     * Searches for `sam` in various places and the $PATH.
+     *
+     * If only a broken `sam` is found it is returned with an empty `version`.
+     */
     protected async findFileInFolders(files: string[], folders: string[]) {
+        // Keep the first found "sam" even if it is broken.
+        // This allows us to give a better message than "not found".
+        let brokenSam: string | undefined
+
         const fullPaths: string[] = files
             .map(file => folders.filter(folder => !!folder).map(folder => path.join(folder, file)))
             .reduce((accumulator, paths) => {
@@ -91,7 +100,7 @@ abstract class BaseSamCliLocator {
             })
 
         for (const fullPath of fullPaths) {
-            if (!BaseSamCliLocator.didFind) {
+            if (!BaseSamCliLocator.didSearch) {
                 this.logger.verbose(`samCliLocator: searching in: ${fullPath}`)
             }
             const context: SamCliValidatorContext = {
@@ -103,12 +112,13 @@ abstract class BaseSamCliLocator {
                 try {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {
-                        BaseSamCliLocator.didFind = true
+                        BaseSamCliLocator.didSearch = true
                         return { path: fullPath, version: validationResult.version }
                     }
                     this.logger.warn(
                         `samCliLocator: found invalid SAM CLI (${validationResult.validation}): ${fullPath}`
                     )
+                    brokenSam = brokenSam ?? fullPath
                 } catch (e) {
                     const err = e as Error
                     this.logger.error('samCliLocator failed: %s', err.message)
@@ -116,8 +126,8 @@ abstract class BaseSamCliLocator {
             }
         }
 
-        BaseSamCliLocator.didFind = true
-        return undefined
+        BaseSamCliLocator.didSearch = true
+        return brokenSam ? { path: brokenSam, version: '' } : undefined
     }
 
     /**
@@ -180,7 +190,7 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
 
 class UnixSamCliLocator extends BaseSamCliLocator {
     private static readonly locationPaths: string[] = [
-        '/opt/homebrew/bin/sam',
+        '/opt/homebrew/bin',
         '/usr/local/bin',
         '/usr/bin',
         // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if

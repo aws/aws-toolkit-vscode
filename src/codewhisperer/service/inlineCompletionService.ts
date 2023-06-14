@@ -25,6 +25,8 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
 import * as AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
+import { ClassifierTrigger } from './classifierTrigger'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const lock = new AsyncLock({ maxPending: 1 })
@@ -392,10 +394,18 @@ export class InlineCompletionService {
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: CodewhispererAutomatedTriggerType
+        autoTriggerType?: CodewhispererAutomatedTriggerType,
+        event?: vscode.TextDocumentChangeEvent
     ) {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
+        }
+        if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
+            ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
+        }
+        const triggerChar = event?.contentChanges[0]?.text
+        if (autoTriggerType === 'SpecialCharacters' && triggerChar) {
+            TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(triggerChar)
         }
         const isAutoTrigger = triggerType === 'AutoTrigger'
         if (AuthUtil.instance.isConnectionExpired()) {
@@ -488,6 +498,7 @@ export class InlineCompletionService {
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
+                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
     }

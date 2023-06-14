@@ -39,6 +39,7 @@ import { shared } from '../utilities/functionUtils'
 import { SamCliSettings } from './cli/samCliSettings'
 import { Commands } from '../vscode/commands2'
 import { registerSync } from './sync'
+import { showExtensionPage } from '../utilities/vsCodeUtils'
 
 const sharedDetectSamCli = shared(detectSamCli)
 
@@ -423,19 +424,7 @@ async function promptInstallYamlPlugin(disposables: vscode.Disposable[]) {
 
     switch (response) {
         case installBtn:
-            // Available options are:
-            // extension.open: opens extension page in VS Code extension marketplace view
-            // workbench.extensions.installExtension: autoinstalls plugin with no additional feedback
-            // workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
-
-            // not sure if these are 100% stable.
-            // Opting for `extension.open` as this gives the user a good path forward to install while not doing anything potentially unexpected.
-            try {
-                await vscode.commands.executeCommand('extension.open', VSCODE_EXTENSION_ID.yaml)
-            } catch (e) {
-                const err = e as Error
-                getLogger().error(`Extension ${VSCODE_EXTENSION_ID.yaml} could not be opened: `, err.message)
-            }
+            showExtensionPage(VSCODE_EXTENSION_ID.yaml)
             break
         case permanentlySuppress:
             settings.disablePrompt('yamlExtPrompt')

@@ -66,6 +66,7 @@ import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
 import { credentialHelpUrl } from '../../constants'
 import { Auth } from '../../../auth/auth'
+import { openUrl } from '../../utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -553,7 +554,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     : [
                           {
                               label: getHelp,
-                              onClick: () => vscode.env.openExternal(vscode.Uri.parse(credentialHelpUrl)),
+                              onClick: () => openUrl(vscode.Uri.parse(credentialHelpUrl)),
                           },
                       ]
 

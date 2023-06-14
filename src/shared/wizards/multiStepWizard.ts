@@ -12,6 +12,7 @@ import * as vscode from 'vscode'
 import * as picker from '../../shared/ui/picker'
 import { addCodiconToString } from '../utilities/textUtilities'
 import { getLogger } from '../logger/logger'
+import { openUrl } from '../utilities/vsCodeUtils'
 
 export interface WizardStep {
     (stepNumber: number): Thenable<Transition>
@@ -211,7 +212,7 @@ export async function promptUserForLocation(
             if (button === vscode.QuickInputButtons.Back) {
                 resolve(undefined)
             } else if (button === additionalParams?.helpButton?.button) {
-                vscode.env.openExternal(vscode.Uri.parse(additionalParams.helpButton.url))
+                openUrl(vscode.Uri.parse(additionalParams.helpButton.url))
             }
         },
     })

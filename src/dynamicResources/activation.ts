@@ -17,6 +17,7 @@ import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
 import { resourceFileGlobPattern } from './awsResourceManager'
 import { Commands } from '../shared/vscode/commands2'
 import globals from '../shared/extensionGlobals'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -94,7 +95,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         }),
         Commands.register('aws.resources.viewDocs', async (node: ResourceTypeNode) => {
-            await vscode.env.openExternal(vscode.Uri.parse(node.metadata.documentation))
+            await openUrl(vscode.Uri.parse(node.metadata.documentation))
         }),
         vscode.workspace.onDidChangeTextDocument(textDocumentEvent => {
             if (resourceDiagnostics.has(textDocumentEvent.document.uri)) {
