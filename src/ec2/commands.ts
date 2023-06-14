@@ -10,7 +10,7 @@ export async function tryConnect(): Promise<void> {
     const prompter = createEC2ConnectPrompter()
     const response = await prompter.prompt()
 
-    if(isValidResponse(response)){
+    if (isValidResponse(response)) {
         const selection = handleEc2ConnectPrompterResponse(response)
         console.log(selection)
     }
