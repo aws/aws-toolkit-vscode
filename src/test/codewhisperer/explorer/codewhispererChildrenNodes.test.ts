@@ -47,7 +47,7 @@ describe('codewhisperer children nodes', function () {
     it('should build showSsoSignIn command node', function () {
         const node = createSsoSignIn()
 
-        assert.strictEqual(node.resource.id, 'aws.codeWhisperer.sso')
+        assert.strictEqual(node.resource.id, 'aws.auth.showConnectionsPage')
     })
 
     it('should build showLearnMore command node', function () {
