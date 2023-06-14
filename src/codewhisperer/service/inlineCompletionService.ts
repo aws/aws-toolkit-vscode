@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
@@ -25,6 +25,7 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
 import * as AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
+import { ClassifierTrigger } from './classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -393,10 +394,18 @@ export class InlineCompletionService {
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: CodewhispererAutomatedTriggerType
+        autoTriggerType?: CodewhispererAutomatedTriggerType,
+        event?: vscode.TextDocumentChangeEvent
     ) {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
+        }
+        if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
+            ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
+        }
+        const triggerChar = event?.contentChanges[0]?.text
+        if (autoTriggerType === 'SpecialCharacters' && triggerChar) {
+            TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(triggerChar)
         }
         const isAutoTrigger = triggerType === 'AutoTrigger'
         if (AuthUtil.instance.isConnectionExpired()) {

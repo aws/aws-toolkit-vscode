@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -488,3 +488,24 @@ export async function* joinAll<T>(iterable: AsyncIterable<AsyncIterable<T>>): As
         }
     } while (!iterables.completed)
 }
+
+export async function* asyncGenerator<T>(items: T[]): AsyncIterableIterator<T> {
+    yield* items
+}
+
+export function intoCollection<T>(arr: T[]): AsyncCollection<T> {
+    return toCollection(async function* () {
+        yield* arr
+    })
+}
+
+export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> {
+    return toCollection(async function* () {
+        for (let i = 0; i < pages.length - 1; i++) {
+            yield pages[i]
+        }
+
+        return pages[pages.length - 1]
+    })
+}
+

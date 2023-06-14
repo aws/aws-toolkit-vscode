@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,6 +18,7 @@ export type Transform<T, R = T> = (result: T) => R
  */
 export abstract class Prompter<T> {
     private disposed = false
+    private pending?: ReturnType<typeof this.prompt>
     protected transforms: Transform<T, any>[] = []
 
     constructor() {}
@@ -63,10 +64,14 @@ export abstract class Prompter<T> {
      */
     public async prompt(): Promise<PromptResult<T>> {
         if (this.disposed) {
-            throw new Error('Cannot call "prompt" multiple times')
+            throw new Error('Cannot call "prompt" after the prompt is complete')
         }
-        this.disposed = true
-        return this.applyTransforms(await this.promptUser())
+
+        return (this.pending ??= this.promptUser()
+            .then(r => this.applyTransforms(r))
+            .finally(() => {
+                this.disposed = true
+            }))
     }
 
     /** Sets a 'step estimator' function used to predict how many steps are remaining in a given flow */

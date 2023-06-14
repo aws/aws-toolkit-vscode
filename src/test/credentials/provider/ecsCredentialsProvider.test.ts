@@ -1,11 +1,11 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import { Credentials } from 'aws-sdk'
-import { EcsCredentialsProvider } from '../../../credentials/providers/ecsCredentialsProvider'
+import { EcsCredentialsProvider } from '../../../auth/providers/ecsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 
 describe('EcsCredentialsProvider', function () {

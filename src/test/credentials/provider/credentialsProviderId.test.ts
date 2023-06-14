@@ -1,10 +1,10 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
-import { asString, fromString, isEqual } from '../../../credentials/providers/credentials'
+import { asString, fromString, isEqual } from '../../../auth/providers/credentials'
 
 describe('CredentialsProviderId', async function () {
     describe('fromString', async function () {

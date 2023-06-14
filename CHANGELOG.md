@@ -1,3 +1,8 @@
+## 1.77.0 2023-06-12
+
+- **Bug Fix** SAM CLI 1.85-1.86 fails on Windows
+- **Feature** CodeWhisperer: Improve file context fetching logic
+
 ## 1.76.0 2023-06-02
 
 - **Bug Fix** Fix CodeWhisperer not found error when it is disabled by users issue #3490

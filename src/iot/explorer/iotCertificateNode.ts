@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -24,6 +24,7 @@ import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
+import { truncate } from '../../shared/utilities/textUtilities'
 
 const contextBase = 'awsIotCertificateNode'
 /**
@@ -43,7 +44,8 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
     ) {
         //Show only 8 characters in the explorer instead of the full 64. The entire
         //ID can be copied from the context menu or viewed when hovered over.
-        super(certificate.id.substring(0, 8).concat('...'), collapsibleState)
+        super(truncate(certificate.id, 8), collapsibleState)
+
         this.tooltip = localize(
             'AWS.explorerNode.iot.certTooltip',
             '{0}\nStatus: {1}\nCreated: {2}{3}',

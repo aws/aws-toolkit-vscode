@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -36,10 +36,13 @@ export function throwAndNotifyIfInvalid(validationResult: SamCliValidatorResult)
         throwIfInvalid(validationResult)
     } catch (err) {
         if (err instanceof InvalidSamCliError) {
+            // SAM not found.
             // Calling code does not wait for the notification to complete
             notifySamCliValidation(err)
         }
 
+        // SAM found but version is invalid or failed to parse.
+        // code: 'InvalidSamCliVersion'
         throw err
     }
 }

@@ -1,10 +1,16 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
-import { getRelativeDate, getStringHash, removeAnsi, truncateProps } from '../../../shared/utilities/textUtilities'
+import {
+    getRelativeDate,
+    getStringHash,
+    removeAnsi,
+    truncate,
+    truncateProps,
+} from '../../../shared/utilities/textUtilities'
 
 describe('textUtilities', async function () {
     it('truncateProps()', async function () {
@@ -42,6 +48,16 @@ describe('textUtilities', async function () {
             b: '123…',
             d: '123…',
         })
+    })
+
+    it('truncate()', async function () {
+        assert.deepStrictEqual(truncate('abc 123', 3), 'abc…')
+        assert.deepStrictEqual(truncate('abc 123', -3), '…123')
+        assert.deepStrictEqual(truncate('abc 123', 1), 'a…')
+        assert.deepStrictEqual(truncate('abc 123', -1), '…3')
+        assert.deepStrictEqual(truncate('abc 123', 0), '…')
+        assert.deepStrictEqual(truncate('abc 123', 99), 'abc 123')
+        assert.deepStrictEqual(truncate('abc 123', -99), 'abc 123')
     })
 })
 
