@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,7 +17,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { getIcon } from '../../../shared/icons'
 import { stub } from '../../utilities/stubber'
 

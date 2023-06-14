@@ -1,12 +1,12 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { createEC2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 
-export async function connectToEC2Instance(): Promise<void> {
+export async function tryConnect(): Promise<void> {
     const prompter = createEC2ConnectPrompter()
     const response = await prompter.prompt()
 

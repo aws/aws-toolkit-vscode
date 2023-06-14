@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../apigateway/explorer/apiNodes'
 import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'

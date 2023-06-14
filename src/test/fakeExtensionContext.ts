@@ -1,12 +1,12 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { mkdirp } from 'fs-extra'
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { CredentialsStore } from '../credentials/credentialsStore'
+import { CredentialsStore } from '../auth/credentials/store'
 import { ExtContext } from '../shared/extensions'
 import { SamCliContext } from '../shared/sam/cli/samCliContext'
 import {

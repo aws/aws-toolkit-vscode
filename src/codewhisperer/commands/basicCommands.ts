@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -119,13 +119,6 @@ export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () 
 
     vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
 })
-
-export const showAccessTokenErrorLearnMore = Commands.declare(
-    'aws.codeWhisperer.accessTokenErrorLearnMore',
-    () => async () => {
-        vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.accessTokenMigrationLearnMoreUri))
-    }
-)
 
 // TODO: Use a different URI
 export const showFreeTierLimit = Commands.declare('aws.codeWhisperer.freeTierLimit', () => async () => {

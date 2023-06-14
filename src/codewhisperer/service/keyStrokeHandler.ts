@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,6 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
-import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
@@ -18,7 +17,7 @@ import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
-import { isIamConnection } from '../../credentials/auth'
+import { isIamConnection } from '../../auth/connection'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -85,9 +84,6 @@ export class KeyStrokeHandler {
         if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
             return false
         }
-        if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) {
-            return false
-        }
         return true
     }
 
@@ -104,11 +100,6 @@ export class KeyStrokeHandler {
 
             // Skip when output channel gains focus and invoke
             if (editor.document.languageId === 'Log') {
-                return
-            }
-
-            // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
-            if (InlineCompletion.instance.isTypeaheadInProgress) {
                 return
             }
 
@@ -133,10 +124,6 @@ export class KeyStrokeHandler {
                 }
                 case DocumentChangedSource.SpecialCharsKey: {
                     triggerType = 'SpecialCharacters'
-                    break
-                }
-                case DocumentChangedSource.IntelliSense: {
-                    triggerType = 'IntelliSenseAcceptance'
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
@@ -225,17 +212,6 @@ export class KeyStrokeHandler {
                     config,
                     autoTriggerType
                 )
-            } else {
-                if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
-                    await InlineCompletion.instance.resetInlineStates(editor)
-                    InlineCompletion.instance.getPaginatedRecommendation(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType
-                    )
-                }
             }
         }
     }
@@ -323,10 +299,6 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (new RegExp('^[\\S]+$').test(changedText) && !isCloud9()) {
-                // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
-                // multi-words code snippets
-                return DocumentChangedSource.IntelliSense
             } else {
                 return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
             }
@@ -342,7 +314,6 @@ export enum DocumentChangedSource {
     RegularKey = 'RegularKey',
     TabKey = 'TabKey',
     EnterKey = 'EnterKey',
-    IntelliSense = 'IntelliSense',
     Reformatting = 'Reformatting',
     Deletion = 'Deletion',
     Unknown = 'Unknown',

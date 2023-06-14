@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -33,8 +33,7 @@ export class AslVisualizationManager extends AbstractAslVisualizationManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            await this.cache.updateCache(globalStorage)
-
+            await this.updateCache(globalStorage, logger)
             const newVisualization = new AslVisualization(document)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 

@@ -1,16 +1,16 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
-import { CreateProfileWizard, ProfileTemplateProvider } from '../../../credentials/wizards/createProfile'
-import { processCredentialsTemplate, staticCredentialsTemplate } from '../../../credentials/wizards/templates'
+import { CreateProfileWizard, ProfileTemplateProvider } from '../../../auth/wizards/createProfile'
+import { processCredentialsTemplate, staticCredentialsTemplate } from '../../../auth/wizards/templates'
 import { Prompter, PromptResult } from '../../../shared/ui/prompter'
 import { StepEstimator } from '../../../shared/wizards/wizard'
-import { Profile } from '../../../credentials/sharedCredentials'
-import { SharedCredentialsKeys } from '../../../credentials/types'
+import { Profile } from '../../../auth/credentials/sharedCredentials'
+import { SharedCredentialsKeys } from '../../../auth/credentials/types'
 
 class TestPrompter extends Prompter<string | undefined> {
     public constructor(private readonly name: string, private readonly profile: Profile) {
