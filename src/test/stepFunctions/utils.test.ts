@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -121,6 +121,42 @@ describe('StateMachineGraphCache', function () {
 
             assert.ok(globalStorage.update.notCalled)
             assert.ok(writeFile.notCalled)
+        })
+        it('it passes if both files required exist', async function () {
+            const getFileData = sinon.stub().resolves(true)
+            const fileExists = sinon.stub().resolves(true)
+
+            const writeFile = sinon.spy()
+
+            const cache = new StateMachineGraphCache({
+                getFileData,
+                fileExists,
+                writeFile,
+                cssFilePath: '',
+                jsFilePath: '',
+                dirPath: '',
+            })
+
+            await cache.confirmCacheExists()
+
+            assert.ok(fileExists.calledTwice)
+        })
+        it('it rejects if both files required do not exist on filesystem', async function () {
+            const getFileData = sinon.stub()
+            const fileExists = sinon.stub().onFirstCall().resolves(true).onSecondCall().resolves(false)
+
+            const writeFile = sinon.spy()
+
+            const cache = new StateMachineGraphCache({
+                getFileData,
+                fileExists,
+                writeFile,
+                cssFilePath: 'one',
+                jsFilePath: 'two',
+                dirPath: '',
+            })
+
+            assert.rejects(cache.confirmCacheExists())
         })
 
         it('creates assets directory when it does not exist', async function () {

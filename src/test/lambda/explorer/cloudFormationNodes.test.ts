@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,7 +16,7 @@ import { DefaultCloudFormationClient } from '../../../shared/clients/cloudFormat
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import globals from '../../../shared/extensionGlobals'
 import { TestAWSTreeNode } from '../../shared/treeview/nodes/testAWSTreeNode'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,6 +13,7 @@ import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemet
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -125,6 +126,7 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererAcceptedTokens: acceptedTokens,
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
+            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
     }
 

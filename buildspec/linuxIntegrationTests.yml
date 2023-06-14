@@ -1,11 +1,13 @@
 version: 0.2
 
+# Run unprivileged for most phases (except those marked "run-as: root").
+run-as: codebuild-user
+
 env:
     variables:
         # Implicitly passed by the AWS automation pipeline:
         # VSCODE_TEST_VERSION
         # GITHUB_READONLY_TOKEN
-        AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
         AWS_TOOLKIT_TEST_NO_COLOR: '1'
         NO_COVERAGE: 'true'
         # Suppress noisy apt-get/dpkg warnings like "debconf: unable to initialize frontend: Dialog").
@@ -13,13 +15,13 @@ env:
 
 phases:
     install:
+        run-as: root
         runtime-versions:
             nodejs: 16
             dotnet: 6.0
             java: latest
 
         commands:
-            - bash buildspec/setup-github-token.sh
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
@@ -32,23 +34,37 @@ phases:
             - 'python3.7 --version'
             - 'python3.8 --version'
             # Dependencies for running vscode.
-            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libnss3-dev libasound2 libasound2-plugins libsecret-1-0'
-            - '>/dev/null pip3 install --upgrade aws-sam-cli'
-            # Print info about sam (version, location, …).
-            - 'pip3 show aws-sam-cli'
-            - '>/dev/null pip3 install --upgrade awscli'
-            - '>/dev/null pip3 install pylint'
-            # Install latest version of Go (known to 'goenv')
-            - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && 2>/dev/null goenv install $VERSION'
-            - '>/dev/null goenv global $VERSION && go env -w GOPROXY=direct'
-            - go version
+            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libasound2 libasound2-plugins'
             # login to DockerHub so we don't get throttled
-            - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
+            # - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
             - sysctl fs.inotify.max_user_watches=524288
+            # start Docker
+            # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
+            - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+            #
+            # Prepare env for unprivileged user.
+            #
+            - |
+                # adduser --gecos GECOS --disabled-password toolkit-user
+                mkdir -p ~codebuild-user
+                chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
+                chmod +x ~codebuild-user
+                ls -ld ~codebuild-user
+            # Add user to "docker" group.
+            # - usermod -aG docker codebuild-user
+            # Ensure that "docker" group has permissions to the socket.
+            # - chown codebuild-user /var/run/docker.sock
+            - chmod 666 /var/run/docker.sock
 
     pre_build:
+        env:
+            variables:
+                HOME: /home/codebuild-user
         commands:
+            # CodeBuild ignores the env.variables.HOME declaration above? :(
+            - export HOME=/home/codebuild-user
+            - bash buildspec/setup-github-token.sh
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
             # Should only affect tests run through IDEs team-hosted CodeBuild.
             - |
@@ -59,15 +75,28 @@ phases:
                         echo "CodeArtifact connection failed. Falling back to npm"
                     fi
                 fi
-            # make sure that SAM is in the path, is not automatically done on CodeBuild
-            - USER_BASE_PATH=$(python -m site --user-base) && export PATH=$PATH:$USER_BASE_PATH/bin
-            # start Docker
-            - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
-            - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+            # Where non-root "pip3 install" puts things:
+            - 'export PATH="$HOME/.local/bin:$PATH"'
+            - '>/dev/null pip3 install --upgrade aws-sam-cli'
+            - '>/dev/null pip3 install --upgrade awscli'
+            # Print info about sam (version, location, …).
+            - 'pip3 show aws-sam-cli'
+            - 'sam --version'
+            # Install latest version of Go (known to 'goenv')
+            # - eval "$(goenv init -)"
+            # - 'export PATH="$GOROOT/bin:$PATH:$GOPATH/bin"'
+            # - '>/dev/null VERSION=$(goenv install --list | tail -n 1) && 2>/dev/null goenv install $VERSION'
+            # - '>/dev/null goenv global $VERSION && go env -w GOPROXY=direct'
+            # - go version
 
     build:
+        env:
+            variables:
+                HOME: /home/codebuild-user
         commands:
-            - npm ci --unsafe-perm
+            # CodeBuild ignores the env.variables.HOME declaration above? :(
+            - export HOME=/home/codebuild-user
+            - npm ci
             - xvfb-run npm run testInteg
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')

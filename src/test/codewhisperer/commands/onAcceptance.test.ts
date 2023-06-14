@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,6 +13,10 @@ import { assertTelemetryCurried } from '../../testUtil'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import globals from '../../../shared/extensionGlobals'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { extensionVersion } from '../../../shared/vscode/env'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -22,61 +26,7 @@ describe('onAcceptance', function () {
 
         afterEach(function () {
             sinon.restore()
-        })
-
-        it('Should format python code with command editor.action.format when current active document is python', async function () {
-            const mockEditor = createMockTextEditor()
-            const commandSpy = sinon.spy(vscode.commands, 'executeCommand')
-            const extensionContext = await FakeExtensionContext.create()
-            await onAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(1, 0), new vscode.Position(1, 21)),
-                    acceptIndex: 0,
-                    recommendation: "print('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'python',
-                    references: undefined,
-                },
-                extensionContext.globalState
-            )
-            assert.ok(commandSpy.calledWith('editor.action.format'))
-        })
-
-        it('Should format code selection with command vscode.executeFormatRangeProvider when current active document is not python', async function () {
-            const mockEditor = createMockTextEditor("console.log('Hello')", 'test.js', 'javascript', 1, 0)
-            const commandStub = sinon.stub(vscode.commands, 'executeCommand')
-            const extensionContext = await FakeExtensionContext.create()
-            const fakeReferences = [
-                {
-                    message: '',
-                    licenseName: 'MIT',
-                    repository: 'http://github.com/fake',
-                    recommendationContentSpan: {
-                        start: 0,
-                        end: 10,
-                    },
-                },
-            ]
-            await onAcceptance(
-                {
-                    editor: mockEditor,
-                    range: new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 27)),
-                    acceptIndex: 0,
-                    recommendation: "console.log('Hello World!')",
-                    requestId: '',
-                    sessionId: '',
-                    triggerType: 'OnDemand',
-                    completionType: 'Line',
-                    language: 'javascript',
-                    references: fakeReferences,
-                },
-                extensionContext.globalState
-            )
-            assert.ok(commandStub.calledWith('vscode.executeFormatRangeProvider'))
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Should enqueue an event object to tracker', async function () {
@@ -123,6 +73,11 @@ describe('onAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.Control,
+                version: extensionVersion,
+            })
+
             const testStartUrl = 'testStartUrl'
             sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
@@ -162,6 +117,7 @@ describe('onAcceptance', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
+                codewhispererUserGroup: 'Control',
             })
         })
     })

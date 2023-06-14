@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import globals from '../../shared/extensionGlobals'
@@ -23,6 +23,8 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { getImportCount } from './importAdderUtil'
 import { CodeWhispererSettings } from './codewhispererSettings'
+import { CodeWhispererUserGroupSettings } from './userGroupUtil'
+import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -97,7 +99,8 @@ export class TelemetryHelper {
         duration: number | undefined,
         lineNumber: number | undefined,
         language: CodewhispererLanguage,
-        reason: string
+        reason: string,
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
     ) {
         const event = {
             codewhispererRequestId: requestId ? requestId : undefined,
@@ -114,6 +117,11 @@ export class TelemetryHelper {
             reason: reason ? reason.substring(0, 200) : undefined,
             credentialStartUrl: this.startUrl,
             codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLatency: supplementalContextMetadata?.latency,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         }
         telemetry.codewhisperer_serviceInvocation.emit(event)
         this.sessionInvocations.push(event)
@@ -123,7 +131,8 @@ export class TelemetryHelper {
         requestId: string,
         sessionId: string,
         paginationIndex: number,
-        languageId: string
+        languageId: string,
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
@@ -138,6 +147,10 @@ export class TelemetryHelper {
             codewhispererCompletionType: this.completionType,
             codewhispererLanguage: languageContext.language,
             credentialStartUrl: TelemetryHelper.instance.startUrl,
+            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
         })
     }
 
@@ -158,7 +171,8 @@ export class TelemetryHelper {
         acceptIndex: number,
         languageId: string | undefined,
         paginationIndex: number,
-        recommendationSuggestionState?: Map<number, string>
+        recommendationSuggestionState?: Map<number, string>,
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         const events: CodewhispererUserDecision[] = []
@@ -185,6 +199,10 @@ export class TelemetryHelper {
                 codewhispererCompletionType: this.completionType,
                 codewhispererLanguage: languageContext.language,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
+                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+                codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+                codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+                codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             }
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
@@ -201,11 +219,16 @@ export class TelemetryHelper {
             (this.lastRequestId && this.lastRequestId === requestId) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
-            this.sendUserTriggerDecisionTelemetry(sessionId)
+            this.sendUserTriggerDecisionTelemetry(sessionId, supplementalContextMetadata)
         }
     }
 
-    private aggregateUserDecisionByRequest(events: CodewhispererUserDecision[], requestId: string, sessionId: string) {
+    private aggregateUserDecisionByRequest(
+        events: CodewhispererUserDecision[],
+        requestId: string,
+        sessionId: string,
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+    ) {
         // the request level user decision will contain information from both the service_invocation event
         // and the user_decision events for recommendations within that request
         const serviceInvocation = this.sessionInvocations.find(e => e.codewhispererRequestId === requestId)
@@ -228,11 +251,18 @@ export class TelemetryHelper {
                 .map(e => e.codewhispererSuggestionImportCount || 0)
                 .reduce((a, b) => a + b, 0),
             codewhispererTypeaheadLength: 0,
+            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
         }
         return aggregated
     }
 
-    private sendUserTriggerDecisionTelemetry(sessionId: string) {
+    private sendUserTriggerDecisionTelemetry(
+        sessionId: string,
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+    ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
         // and add additional session level insights
         if (!this.sessionDecisions.length) {
@@ -271,6 +301,10 @@ export class TelemetryHelper {
             codewhispererPreviousSuggestionState: this.prevTriggerDecision,
             codewhispererClassifierResult: this.classifierResult,
             codewhispererClassifierThreshold: this.classifierThreshold,
+            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
+            codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
+            codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedUserDecision(this.sessionDecisions)
@@ -464,6 +498,7 @@ export class TelemetryHelper {
             codewhispererTriggerType: this.triggerType,
             codewhispererLanguage: runtimeLanguageContext.getLanguageContext(languageId).language,
             credentialStartUrl: this.startUrl,
+            codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
         this.resetClientComponentLatencyTime()
     }

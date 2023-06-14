@@ -1,3 +1,22 @@
+## 1.77.0 2023-06-12
+
+- **Bug Fix** SAM CLI 1.85-1.86 fails on Windows
+- **Feature** CodeWhisperer: Improve file context fetching logic
+
+## 1.76.0 2023-06-02
+
+- **Bug Fix** Fix CodeWhisperer not found error when it is disabled by users issue #3490
+
+## 1.75.0 2023-05-31
+
+- **Bug Fix** auth: IAM Identity Center connections expire sooner than expected
+- **Bug Fix** CodeWhisperer: user is sometimes required to re-login before token expiration
+- **Bug Fix** Add fallback to local cached files for Step Function Visualizations where host doesn't have internet.
+- **Bug Fix** Update dependency amazon-states-language-service from 1.9->1.10. This fixes  support for Yaml Comments in states machines, ProcessorConfig property & Credentials key.
+- **Bug Fix** CodeWhisperer: Requested operation is not recognized by the service when fetching recommendations
+- **Bug Fix** CodeWhisperer sometimes add extra space at the beginning of suggestion
+- **Feature** CodeWhisperer no longer trigger suggestions on IntelliSense acceptance
+
 ## 1.74.0 2023-05-18
 
 - **Bug Fix** CodeWhisperer: cannot navigate to next or previous code suggestion in VS Code 1.78+

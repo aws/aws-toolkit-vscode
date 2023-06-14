@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -14,6 +14,9 @@ import { vsCodeState } from '../../../codewhisperer/models/model'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import { extensionVersion } from '../../../shared/vscode/env'
 
 describe('codewhispererCodecoverageTracker', function () {
     const language = 'python'
@@ -365,9 +368,15 @@ describe('codewhispererCodecoverageTracker', function () {
         afterEach(function () {
             sinon.restore()
             CodeWhispererCodeCoverageTracker.instances.clear()
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
-        it('should emit correct code coverage telemetry in python file', function () {
+        it('should emit correct code coverage telemetry in python file', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.Control,
+                version: extensionVersion,
+            })
+
             const tracker = CodeWhispererCodeCoverageTracker.getTracker(language)
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
@@ -381,10 +390,16 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererAcceptedTokens: 7,
                 codewhispererPercentage: 7,
                 successCount: 0,
+                codewhispererUserGroup: 'Control',
             })
         })
 
-        it('should emit correct code coverage telemetry in java file', function () {
+        it('should emit correct code coverage telemetry in java file', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.Control,
+                version: extensionVersion,
+            })
+
             const tracker = CodeWhispererCodeCoverageTracker.getTracker('java')
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_codePercentage')
@@ -401,6 +416,7 @@ describe('codewhispererCodecoverageTracker', function () {
                 codewhispererAcceptedTokens: 18,
                 codewhispererPercentage: 60,
                 successCount: 0,
+                codewhispererUserGroup: 'Control',
             })
         })
     })

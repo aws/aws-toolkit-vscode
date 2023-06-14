@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { AwsContext } from './awsContext'
 import { RegionProvider } from './regions/regionProvider'
 import { TelemetryService } from './telemetry/telemetryService'
-import { CredentialsStore } from '../credentials/credentialsStore'
+import { CredentialsStore } from '../auth/credentials/store'
 import { SamCliContext } from './sam/cli/samCliContext'
 import { UriHandler } from './vscode/uriHandler'
 

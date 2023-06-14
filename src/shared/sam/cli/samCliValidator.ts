@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -37,6 +37,7 @@ export enum SamCliVersionValidation {
     VersionTooLow = 'VersionTooLow',
     VersionTooHigh = 'VersionTooHigh',
     VersionNotParseable = 'VersionNotParseable',
+    Version185Win = 'Version185Win',
 }
 
 export type SamCliVersionValidatorResult =
@@ -101,6 +102,10 @@ export class DefaultSamCliValidator implements SamCliValidator {
 
         if (semver.gte(version, maxSamCliVersionExclusive)) {
             return SamCliVersionValidation.VersionTooHigh
+        }
+
+        if (process.platform === 'win32' && semver.gte(version, '1.85.0') && semver.lte(version, '1.86.0')) {
+            return SamCliVersionValidation.Version185Win
         }
 
         return SamCliVersionValidation.Valid

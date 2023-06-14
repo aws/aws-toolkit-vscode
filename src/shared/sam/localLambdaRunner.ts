@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -20,7 +20,7 @@ import { tryGetAbsolutePath } from '../utilities/workspaceUtils'
 import { SamCliBuildInvocation, SamCliBuildInvocationArguments } from './cli/samCliBuild'
 import { SamCliLocalInvokeInvocation, SamCliLocalInvokeInvocationArguments } from './cli/samCliLocalInvoke'
 import { SamLaunchRequestArgs } from './debugger/awsSamDebugger'
-import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
+import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { buildSamCliStartApiArguments } from './cli/samCliStartApi'
 import { DefaultSamCliProcessInvoker } from './cli/samCliInvoker'
 import { APIGatewayProperties } from './debugger/awsSamDebugConfiguration.gen'

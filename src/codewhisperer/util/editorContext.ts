@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,6 +11,14 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
+import {
+    CodeWhispererSupplementalContext,
+    fetchSupplementalContext,
+} from './supplementalContext/supplementalContextUtil'
+import { supplementalContextTimeoutInMs } from '../models/constants'
+import { CodeWhispererUserGroupSettings } from './userGroupUtil'
+import { isTestFile } from './supplementalContext/codeParsingUtil'
+import { DependencyGraphFactory } from './dependencyGraph/dependencyGraphFactory'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -66,62 +74,97 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
     return fileName.substring(0, CodeWhispererConstants.filenameCharsLimit)
 }
 
-export function buildListRecommendationRequest(
+export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
     allowCodeWithReference: boolean | undefined = undefined
-): codewhispererClient.ListRecommendationsRequest {
-    let fileContext: codewhispererClient.FileContext
-    if (editor !== undefined) {
-        fileContext = extractContextForCodeWhisperer(editor)
-    } else {
-        fileContext = {
-            filename: '',
-            programmingLanguage: {
-                languageName: '',
-            },
-            leftFileContent: '',
-            rightFileContent: '',
-        }
-    }
+): Promise<{
+    request: codewhispererClient.ListRecommendationsRequest
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+}> {
+    const fileContext = extractContextForCodeWhisperer(editor)
+
+    const tokenSource = new vscode.CancellationTokenSource()
+    setTimeout(() => {
+        tokenSource.cancel()
+    }, supplementalContextTimeoutInMs)
+
+    // Send Cross file context to CodeWhisperer service if and only if
+    // (1) User is CrossFile user group
+    // (2) The supplemental context is from Supplemental Context but not UTG(unit test generator)
+    const isUtg = await isTestFile(editor, DependencyGraphFactory.getDependencyGraph(editor.document.languageId))
+    const supplementalContexts: CodeWhispererSupplementalContext | undefined =
+        CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.CrossFile && !isUtg
+            ? await fetchSupplementalContext(editor, tokenSource.token)
+            : undefined
+
+    const suppelmetalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined = supplementalContexts
+        ? {
+              isUtg: supplementalContexts.isUtg,
+              isProcessTimeout: supplementalContexts.isProcessTimeout,
+              contentsLength: supplementalContexts.contentsLength,
+              latency: supplementalContexts.latency,
+          }
+        : undefined
+
+    logSupplementalContext(supplementalContexts)
 
     if (allowCodeWithReference === undefined) {
         return {
-            fileContext: fileContext,
-            nextToken: nextToken,
+            request: {
+                fileContext: fileContext,
+                nextToken: nextToken,
+                supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+            },
+            supplementalMetadata: suppelmetalMetadata,
         }
     }
+
     return {
-        fileContext: fileContext,
-        nextToken: nextToken,
-        referenceTrackerConfiguration: {
-            recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
+        request: {
+            fileContext: fileContext,
+            nextToken: nextToken,
+            referenceTrackerConfiguration: {
+                recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
+            },
+            supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
         },
+        supplementalMetadata: suppelmetalMetadata,
     }
 }
 
-export function buildGenerateRecommendationRequest(
-    editor: vscode.TextEditor
-): codewhispererClient.GenerateRecommendationsRequest {
-    let req: codewhispererClient.GenerateRecommendationsRequest = {
-        fileContext: {
-            filename: '',
-            programmingLanguage: {
-                languageName: '',
-            },
-            leftFileContent: '',
-            rightFileContent: '',
-        },
-        maxResults: CodeWhispererConstants.maxRecommendations,
-    }
-    if (editor !== undefined) {
-        const fileContext = extractContextForCodeWhisperer(editor)
-        req = {
-            fileContext: fileContext,
-            maxResults: CodeWhispererConstants.maxRecommendations,
+export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
+    request: codewhispererClient.GenerateRecommendationsRequest
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+}> {
+    const fileContext = extractContextForCodeWhisperer(editor)
+
+    const tokenSource = new vscode.CancellationTokenSource()
+    setTimeout(() => {
+        tokenSource.cancel()
+    }, supplementalContextTimeoutInMs)
+    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
+    let supplemetalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+
+    if (supplementalContexts) {
+        supplemetalMetadata = {
+            isUtg: supplementalContexts.isUtg,
+            isProcessTimeout: supplementalContexts.isProcessTimeout,
+            contentsLength: supplementalContexts.contentsLength,
+            latency: supplementalContexts.latency,
         }
     }
-    return req
+
+    logSupplementalContext(supplementalContexts)
+
+    return {
+        request: {
+            fileContext: fileContext,
+            maxResults: CodeWhispererConstants.maxRecommendations,
+            supplementalContexts: supplementalContexts?.contents ?? [],
+        },
+        supplementalMetadata: supplemetalMetadata,
+    }
 }
 
 export function validateRequest(
@@ -171,4 +214,25 @@ export function getLeftContext(editor: vscode.TextEditor, line: number): string 
     }
 
     return lineText
+}
+
+function logSupplementalContext(supplementalContext: CodeWhispererSupplementalContext | undefined) {
+    if (!supplementalContext) {
+        return
+    }
+
+    getLogger().verbose(`
+            isUtg: ${supplementalContext.isUtg},
+            isProcessTimeout: ${supplementalContext.isProcessTimeout},
+            contentsLength: ${supplementalContext.contentsLength},
+            latency: ${supplementalContext.latency},
+        `)
+
+    supplementalContext.contents.forEach((context, index) => {
+        getLogger().verbose(`
+                -----------------------------------------------
+                Chunk ${index}:${context.content}
+                -----------------------------------------------
+            `)
+    })
 }

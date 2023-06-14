@@ -1,8 +1,8 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AWSError, CognitoIdentityCredentials, Service } from 'aws-sdk'
+import { AWSError, Service } from 'aws-sdk'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import globals from '../../shared/extensionGlobals'
@@ -10,16 +10,13 @@ import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
-import { invalidateAccessToken } from '../util/invalidateToken'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
-import { getCognitoCredentials } from '../util/cognitoIdentity'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import { getLogger } from '../../shared/logger'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { isSsoConnection } from '../../credentials/auth'
+import { isSsoConnection } from '../../auth/connection'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -50,6 +47,9 @@ export type GetCodeScanRequest = Readonly<
 export type ListCodeScanFindingsRequest = Readonly<
     CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
 >
+export type SupplementalContext = Readonly<
+    CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
+>
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
 export type ListCodeScanFindingsResponse =
@@ -64,24 +64,7 @@ export type CreateCodeScanResponse =
 export type Import = CodeWhispererUserClient.Import
 export type Imports = CodeWhispererUserClient.Imports
 export class DefaultCodeWhispererClient {
-    private credentials?: CognitoIdentityCredentials
-
     private async createSdkClient(): Promise<CodeWhispererClient> {
-        try {
-            if (!this.credentials && !isCloud9()) {
-                this.credentials = await getCognitoCredentials()
-            }
-            if (this.credentials && this.credentials.needsRefresh()) {
-                await new Promise<void>((resolve, reject) =>
-                    this.credentials?.refresh(e => (e ? reject(e) : resolve()))
-                )
-            }
-        } catch (e) {
-            getLogger().debug('Error when getting or refreshing Cognito credentials', e)
-            throw new CognitoCredentialsError('Error when getting or refreshing Cognito credentials')
-        }
-
-        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
 
         return (await globals.sdkClientBuilder.createAwsService(
@@ -89,29 +72,18 @@ export class DefaultCodeWhispererClient {
             {
                 apiConfig: apiConfig,
                 region: CodeWhispererConstants.region,
-                credentials: this.credentials ?? (await AuthUtil.instance.getCredentials()),
+                credentials: await AuthUtil.instance.getCredentials(),
                 endpoint: CodeWhispererConstants.endpoint,
                 onRequestSetup: [
                     req => {
-                        if (!isCloud9() && req.operation !== 'getAccessToken') {
-                            req.on('build', () => {
-                                req.httpRequest.headers['x-amzn-codewhisperer-token'] = accessToken || ''
-                            })
-                            req.on('error', e => {
-                                if (e.code === 'AccessDeniedException') {
-                                    invalidateAccessToken()
-                                }
-                            })
-                        }
                         if (req.operation === 'listRecommendations') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
                             })
                         }
-
                         // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
-                        if (isCloud9() && req.operation !== 'getAccessToken') {
+                        if (isCloud9()) {
                             req.on('retry', resp => {
                                 if (
                                     resp.error?.code === 'AccessDeniedException' &&
@@ -161,10 +133,6 @@ export class DefaultCodeWhispererClient {
     }
 
     private isBearerTokenAuth(): boolean {
-        const accessToken = globals.context.globalState.get<string | undefined>(CodeWhispererConstants.accessToken)
-        if (accessToken) {
-            return false
-        }
         return isSsoConnection(AuthUtil.instance.conn)
     }
 
@@ -179,12 +147,6 @@ export class DefaultCodeWhispererClient {
             return await (await this.createUserSdkClient()).generateCompletions(request).promise()
         }
         return (await this.createSdkClient()).listRecommendations(request).promise()
-    }
-
-    public async getAccessToken(
-        request: CodeWhispererClient.GetAccessTokenRequest
-    ): Promise<CodeWhispererClient.GetAccessTokenResponse> {
-        return (await this.createSdkClient()).getAccessToken(request).promise()
     }
 
     public async createUploadUrl(

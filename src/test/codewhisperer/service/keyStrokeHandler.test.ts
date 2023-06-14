@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,11 +13,12 @@ import {
     KeyStrokeHandler,
     DefaultDocumentChangedType,
 } from '../../../codewhisperer/service/keyStrokeHandler'
-import { InlineCompletion } from '../../../codewhisperer/service/inlineCompletion'
 import { createMockTextEditor, createTextDocumentChangeEvent, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
+import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrigger'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -65,21 +66,6 @@ describe('keyStrokeHandler', function () {
             await keyStrokeHandler.processKeyStroke(mockEvent, mockEditor, mockClient, cfg)
             assert.ok(!invokeSpy.called)
             assert.ok(!startTimerSpy.called)
-        })
-
-        it('Should not call invokeAutomatedTrigger when changed text matches active recommendation prefix', async function () {
-            const mockEditor = createMockTextEditor()
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'd'
-            )
-            InlineCompletion.instance.isTypeaheadInProgress = true
-            RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
-            RecommendationHandler.instance.recommendations = [{ content: 'def two_sum(nums, target):\n for i in nums' }]
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
-            InlineCompletion.instance.isTypeaheadInProgress = false
         })
 
         it('Should not call invokeAutomatedTrigger when changed text across multiple lines', async function () {
@@ -202,8 +188,8 @@ describe('keyStrokeHandler', function () {
             assert.ok(!startTimerSpy.called)
         })
 
-        it('Should start idle trigger timer when inputing non-special characters', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
+        it('Should start idle trigger timer when inputing non-special characters for non-classifier language', async function () {
+            const mockEditor = createMockTextEditor('def addTwo', 'test.rb', 'ruby')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
@@ -211,6 +197,30 @@ describe('keyStrokeHandler', function () {
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(startTimerSpy.called)
+        })
+
+        it('Should not call invokeAutomatedTrigger for non-special characters for classifier language if classifier says no', async function () {
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                'a'
+            )
+            sinon.stub(ClassifierTrigger.instance, 'shouldTriggerFromClassifier').returns(false)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.ok(!invokeSpy.called)
+        })
+
+        it('Should call invokeAutomatedTrigger for non-special characters for classifier language if classifier says yes', async function () {
+            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                'a'
+            )
+            sinon.stub(ClassifierTrigger.instance, 'shouldTriggerFromClassifier').returns(true)
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.ok(invokeSpy.called)
         })
     })
 
@@ -227,14 +237,17 @@ describe('keyStrokeHandler', function () {
             sinon.restore()
         })
 
-        it('should call getPaginatedRecommendation', async function () {
+        it('should call getPaginatedRecommendation when inline completion is enabled', async function () {
             const mockEditor = createMockTextEditor()
             const keyStrokeHandler = new KeyStrokeHandler()
-            InlineCompletion.instance.setCodeWhispererStatusBarOk()
-            const oldGetRecommendationsStub = sinon.stub(InlineCompletion.instance, 'getPaginatedRecommendation')
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                ' '
+            )
             const getRecommendationsStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
-            await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config)
-            assert.ok(getRecommendationsStub.calledOnce || oldGetRecommendationsStub.calledOnce)
+            await keyStrokeHandler.invokeAutomatedTrigger('Enter', mockEditor, mockClient, config, mockEvent)
+            assert.strictEqual(getRecommendationsStub.called, isInlineCompletionEnabled())
         })
     })
 
@@ -242,9 +255,8 @@ describe('keyStrokeHandler', function () {
         it('should return false when inline is enabled and inline completion is in progress ', function () {
             const keyStrokeHandler = new KeyStrokeHandler()
             sinon.stub(InlineCompletionService.instance, 'isPaginationRunning').returns(true)
-            sinon.stub(InlineCompletion.instance, 'isPaginationRunning').returns(true)
             const result = keyStrokeHandler.shouldTriggerIdleTime()
-            assert.strictEqual(result, false)
+            assert.strictEqual(result, !isInlineCompletionEnabled())
         })
     })
 
@@ -261,9 +273,6 @@ describe('keyStrokeHandler', function () {
             [':', DocumentChangedSource.SpecialCharsKey],
             ['a', DocumentChangedSource.RegularKey],
             [tabStr, DocumentChangedSource.TabKey],
-            ['__str__', DocumentChangedSource.IntelliSense],
-            ['toString()', DocumentChangedSource.IntelliSense],
-            ['</p>', DocumentChangedSource.IntelliSense],
             ['   ', DocumentChangedSource.Reformatting],
             ['def add(a,b):\n    return a + b\n', DocumentChangedSource.Unknown],
             ['function suggestedByIntelliSense():', DocumentChangedSource.Unknown],

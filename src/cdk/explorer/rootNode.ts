@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,7 @@ import { cdkDocumentationUrl } from '../../shared/constants'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { createPlaceholderItem } from '../../shared/treeview/utils'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands2'
 import { detectCdkProjects } from './detectCdkProjects'
 import { AppNode } from './nodes/appNode'
@@ -50,6 +50,6 @@ export const cdkNode = new CdkRootNode()
 export const refreshCdkExplorer = Commands.register('aws.cdk.refresh', cdkNode.refresh.bind(cdkNode))
 
 Commands.register('aws.cdk.viewDocs', () => {
-    vscode.env.openExternal(vscode.Uri.parse(cdkDocumentationUrl))
+    openUrl(vscode.Uri.parse(cdkDocumentationUrl))
     telemetry.aws_help.emit({ name: 'cdk' })
 })

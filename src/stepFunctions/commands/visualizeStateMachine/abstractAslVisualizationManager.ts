@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -55,5 +55,15 @@ export abstract class AbstractAslVisualizationManager<T extends AslVisualization
 
     protected getExistingVisualization(key: string): T | undefined {
         return this.managedVisualizations.get(key)
+    }
+
+    protected async updateCache(globalStorage: vscode.Memento, logger: Logger): Promise<void> {
+        try {
+            await this.cache.updateCache(globalStorage)
+        } catch (err) {
+            // So we can't update the cache, but can we use an existing on disk version.
+            logger.warn('Updating State Machine Graph Visualisation assets failed, checking for fallback local cache.')
+            await this.cache.confirmCacheExists()
+        }
     }
 }

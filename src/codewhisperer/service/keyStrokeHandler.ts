@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -8,7 +8,6 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { getLogger } from '../../shared/logger'
-import { InlineCompletion } from './inlineCompletion'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
@@ -18,7 +17,7 @@ import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
-import { isIamConnection } from '../../credentials/auth'
+import { isIamConnection } from '../../auth/connection'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -68,7 +67,7 @@ export class KeyStrokeHandler {
             }
 
             try {
-                this.invokeAutomatedTrigger('IdleTime', editor, client, config)
+                this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
             } finally {
                 if (this.idleTriggerTimer) {
                     clearInterval(this.idleTriggerTimer)
@@ -83,9 +82,6 @@ export class KeyStrokeHandler {
             return false
         }
         if (isInlineCompletionEnabled() && InlineCompletionService.instance.isPaginationRunning()) {
-            return false
-        }
-        if (InlineCompletion.instance.getIsActive || InlineCompletion.instance.isPaginationRunning()) {
             return false
         }
         return true
@@ -104,11 +100,6 @@ export class KeyStrokeHandler {
 
             // Skip when output channel gains focus and invoke
             if (editor.document.languageId === 'Log') {
-                return
-            }
-
-            // Pause automated trigger when typed input matches recommendation prefix for inline suggestion
-            if (InlineCompletion.instance.isTypeaheadInProgress) {
                 return
             }
 
@@ -135,10 +126,6 @@ export class KeyStrokeHandler {
                     triggerType = 'SpecialCharacters'
                     break
                 }
-                case DocumentChangedSource.IntelliSense: {
-                    triggerType = 'IntelliSenseAcceptance'
-                    break
-                }
                 case DocumentChangedSource.RegularKey: {
                     if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
                         this.startIdleTimeTriggerTimer(event, editor, client, config)
@@ -155,13 +142,7 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
-                    ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(event, editor, triggerType)
-                }
-                if (changedSource === DocumentChangedSource.SpecialCharsKey) {
-                    TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(event.contentChanges[0].text)
-                }
-                this.invokeAutomatedTrigger(triggerType, editor, client, config)
+                this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
             }
         } catch (error) {
             getLogger().error('Automated Trigger Exception : ', error)
@@ -173,7 +154,8 @@ export class KeyStrokeHandler {
         autoTriggerType: CodewhispererAutomatedTriggerType,
         editor: vscode.TextEditor,
         client: DefaultCodeWhispererClient,
-        config: ConfigurationEntry
+        config: ConfigurationEntry,
+        event: vscode.TextDocumentChangeEvent
     ): Promise<void> {
         if (editor) {
             ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
@@ -223,19 +205,9 @@ export class KeyStrokeHandler {
                     editor,
                     'AutoTrigger',
                     config,
-                    autoTriggerType
+                    autoTriggerType,
+                    event
                 )
-            } else {
-                if (!vsCodeState.isCodeWhispererEditing && !InlineCompletion.instance.isPaginationRunning()) {
-                    await InlineCompletion.instance.resetInlineStates(editor)
-                    InlineCompletion.instance.getPaginatedRecommendation(
-                        client,
-                        editor,
-                        'AutoTrigger',
-                        config,
-                        autoTriggerType
-                    )
-                }
             }
         }
     }
@@ -323,10 +295,6 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
             } else if (new RegExp('^[ ]+$').test(changedText)) {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
-            } else if (new RegExp('^[\\S]+$').test(changedText) && !isCloud9()) {
-                // match single word only, which is general case for intellisense suggestion, it's still possible intllisense suggest
-                // multi-words code snippets
-                return DocumentChangedSource.IntelliSense
             } else {
                 return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
             }
@@ -342,7 +310,6 @@ export enum DocumentChangedSource {
     RegularKey = 'RegularKey',
     TabKey = 'TabKey',
     EnterKey = 'EnterKey',
-    IntelliSense = 'IntelliSense',
     Reformatting = 'Reformatting',
     Deletion = 'Deletion',
     Unknown = 'Unknown',

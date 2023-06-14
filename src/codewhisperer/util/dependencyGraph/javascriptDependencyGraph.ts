@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import { existsSync, statSync, readdirSync } from 'fs'
@@ -198,5 +198,20 @@ export class JavascriptDependencyGraph extends DependencyGraph {
             getLogger().error(`${this._languageId} dependency graph error caused by:`, error)
             throw new Error(`${this._languageId} context processing failed.`)
         }
+    }
+
+    async isTestFile(content: string) {
+        // TODO: Implement this
+        return false
+    }
+
+    async getSourceDependencies(uri: vscode.Uri, content: string) {
+        // TODO: Implement this
+        return []
+    }
+
+    async getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]> {
+        // TODO: Implement this
+        return []
     }
 }

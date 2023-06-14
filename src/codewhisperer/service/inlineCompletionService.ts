@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
@@ -25,6 +25,8 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
 import * as AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
+import { ClassifierTrigger } from './classifierTrigger'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const lock = new AsyncLock({ maxPending: 1 })
@@ -97,9 +99,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         return index
     }
 
-    truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string): string {
+    truncateOverlapWithRightContext(document: vscode.TextDocument, suggestion: string, pos: vscode.Position): string {
         const trimmedSuggestion = suggestion.trim()
-        const pos = vscode.window.activeTextEditor?.selection.active || RecommendationHandler.instance.startPos
         // limit of 5000 for right context matching
         const rightContext = document.getText(new vscode.Range(pos, document.positionAt(document.offsetAt(pos) + 5000)))
         const overlap = getPrefixSuffixOverlap(trimmedSuggestion, rightContext.trim())
@@ -123,7 +124,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         if (!r.content.startsWith(prefix)) {
             return undefined
         }
-        const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content)
+        const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.content, end)
         if (truncatedSuggestion.length === 0) {
             if (RecommendationHandler.instance.getSuggestionState(index) !== 'Showed') {
                 RecommendationHandler.instance.setSuggestionState(index, 'Discard')
@@ -393,10 +394,18 @@ export class InlineCompletionService {
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
         config: ConfigurationEntry,
-        autoTriggerType?: CodewhispererAutomatedTriggerType
+        autoTriggerType?: CodewhispererAutomatedTriggerType,
+        event?: vscode.TextDocumentChangeEvent
     ) {
         if (vsCodeState.isCodeWhispererEditing || this._isPaginationRunning || this.isSuggestionVisible()) {
             return
+        }
+        if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
+            ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
+        }
+        const triggerChar = event?.contentChanges[0]?.text
+        if (autoTriggerType === 'SpecialCharacters' && triggerChar) {
+            TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(triggerChar)
         }
         const isAutoTrigger = triggerType === 'AutoTrigger'
         if (AuthUtil.instance.isConnectionExpired()) {
@@ -489,6 +498,7 @@ export class InlineCompletionService {
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
+                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
     }
