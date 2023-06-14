@@ -1112,6 +1112,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.connectToInstance",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -2041,6 +2045,16 @@
             {
                 "command": "aws.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.connectToInstance",
+                "title": "%AWS.command.ec2.connectToInstance%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
