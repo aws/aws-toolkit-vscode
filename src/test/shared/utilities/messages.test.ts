@@ -4,7 +4,13 @@
  */
 
 import * as assert from 'assert'
-import { showConfirmationMessage, showViewLogsMessage, showOutputMessage } from '../../../shared/utilities/messages'
+import {
+    showConfirmationMessage,
+    showViewLogsMessage,
+    showOutputMessage,
+    showMessageWithCancel,
+} from '../../../shared/utilities/messages'
+import { Timeout } from '../../../shared/utilities/timeoutUtils'
 import { getTestWindow } from '../../shared/vscode/window'
 import { MockOutputChannel } from '../../mockOutputChannel'
 
@@ -60,6 +66,28 @@ describe('messages', function () {
             getTestWindow().onDidShowMessage(m => m.selectItem('View Logs...'))
             await showViewLogsMessage(message)
             getTestWindow().getFirstMessage().assertError(message)
+        })
+    })
+
+    describe('showMessageWithCancel, showProgressWithTimeout', function () {
+        it('does not show if Timeout completes before "showAfterMs"', async function () {
+            const msg = 'test message'
+            const timeout = new Timeout(1) // Completes in 1 ms.
+            showMessageWithCancel(msg, timeout, 20)
+            await assert.rejects(getTestWindow().waitForMessage(msg, 50))
+        })
+
+        it('shows after "showAfterMs"', async function () {
+            const msg = 'test message'
+            const timeout = new Timeout(9999) // Completes in 1 ms.
+            showMessageWithCancel(msg, timeout, 50)
+            // timeout.cancel()  // Force complete.
+            await getTestWindow()
+                .waitForMessage(msg)
+                .then(message => {
+                    message.close()
+                })
+            timeout.cancel() // Cleanup.
         })
     })
 })

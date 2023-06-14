@@ -152,10 +152,10 @@
                     "default": 5000,
                     "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 },
-                "aws.cloudWatchLogs.limit": {
+                "aws.cwl.limit": {
                     "type": "number",
                     "default": 10000,
-                    "description": "%AWS.cloudWatchLogs.limit.desc%",
+                    "description": "%AWS.cwl.limit.desc%",
                     "maximum": 10000
                 },
                 "aws.samcli.manuallySelectedBuckets": {
@@ -844,19 +844,27 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "command": "aws.copyLogResource",
+                    "when": "resourceScheme == aws-cwl"
                 },
                 {
-                    "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "command": "aws.saveCurrentLogDataContent",
+                    "when": "resourceScheme == aws-cwl"
                 },
                 {
                     "command": "aws.s3.editFile",
                     "when": "resourceScheme == s3-readonly"
                 },
                 {
-                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "command": "aws.cwl.viewLogStream",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cwl.changeFilterPattern",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cwl.changeTimeFilter",
                     "when": "false"
                 },
                 {
@@ -1119,8 +1127,18 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "command": "aws.saveCurrentLogDataContent",
+                    "when": "resourceScheme == aws-cwl",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.cwl.changeFilterPattern",
+                    "when": "resourceScheme == aws-cwl",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.cwl.changeTimeFilter",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "navigation"
                 },
                 {
@@ -1151,8 +1169,8 @@
             ],
             "editor/title/context": [
                 {
-                    "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "command": "aws.copyLogResource",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "1_cutcopypaste@1"
                 }
             ],
@@ -1577,6 +1595,16 @@
                     "group": "2@2"
                 },
                 {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
                     "command": "aws.apig.copyUrl",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "2@0"
@@ -1637,7 +1665,7 @@
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "command": "aws.cwl.viewLogStream",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
@@ -2681,7 +2709,7 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.cloudWatchLogs.viewLogStream",
+                "command": "aws.cwl.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2763,8 +2791,8 @@
                 }
             },
             {
-                "command": "aws.copyLogStreamName",
-                "title": "%AWS.command.copyLogStreamName%",
+                "command": "aws.copyLogResource",
+                "title": "%AWS.command.copyLogResource%",
                 "category": "%AWS.title%",
                 "icon": "$(files)",
                 "cloud9": {
@@ -2774,10 +2802,43 @@
                 }
             },
             {
-                "command": "aws.saveCurrentLogStreamContent",
-                "title": "%AWS.command.saveCurrentLogStreamContent%",
+                "command": "aws.cwl.searchLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
-                "icon": "$(save-as)",
+                "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.saveCurrentLogDataContent",
+                "title": "%AWS.command.saveCurrentLogDataContent%",
+                "category": "%AWS.title%",
+                "icon": "$(save)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.changeFilterPattern",
+                "title": "%AWS.command.cwl.changeFilterPattern%",
+                "category": "%AWS.title%",
+                "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.changeTimeFilter",
+                "title": "%AWS.command.cwl.changeTimeFilter%",
+                "category": "%AWS.title%",
+                "icon": "$(calendar)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3214,10 +3275,10 @@
         ],
         "resourceLabelFormatters": [
             {
-                "scheme": "awsCloudWatchLogs",
+                "scheme": "aws-cwl",
                 "formatting": {
                     "label": "${path}",
-                    "separator": "\\"
+                    "separator": "/"
                 }
             },
             {

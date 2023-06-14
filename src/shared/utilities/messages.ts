@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
+import { ProgressEntry } from '../../shared/vscode/window'
 import { Env } from '../../shared/vscode/env'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
@@ -150,44 +151,133 @@ export function showOutputMessage(message: string, outputChannel: vscode.OutputC
 
 /**
  * Attaches a Timeout object to VS Code's Progress notification system.
- * Not exported since it isn't used (yet)
+ *
  * @see showMessageWithCancel for an example usage
  */
 async function showProgressWithTimeout(
     options: vscode.ProgressOptions,
-    timeout: Timeout
+    timeout: Timeout,
+    showAfterMs: number
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
-    // Cloud9 doesn't support Progress notifications. User won't be able to cancel.
+    if (showAfterMs < 0) {
+        throw Error('invalid "showAfterMs" value')
+    }
+    if (showAfterMs === 0) {
+        showAfterMs = 1 // Show immediately.
+    }
+    // Cloud9 doesn't support `ProgressLocation.Notification`. User won't be able to cancel.
     if (isCloud9()) {
         options.location = vscode.ProgressLocation.Window
     }
 
-    const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(resolve => {
-        vscode.window.withProgress(options, function (progress, token) {
-            token.onCancellationRequested(() => timeout.cancel())
-            resolve(progress)
-            return new Promise(timeout.onCompletion)
-        })
-    })
+    // See also: codecatalyst.ts:LazyProgress
+    const progressPromise: Promise<vscode.Progress<{ message?: string; increment?: number }>> = new Promise(
+        (resolve, reject) => {
+            setTimeout(async () => {
+                try {
+                    if (timeout.completed) {
+                        getLogger().debug('showProgressWithTimeout: completed before "showAfterMs"')
+                        resolve({
+                            report: () => undefined, // no-op.
+                        })
+                        return
+                    }
+                    vscode.window.withProgress(options, function (progress, token) {
+                        token.onCancellationRequested(() => timeout.cancel())
+                        resolve(progress)
+                        return new Promise(timeout.onCompletion)
+                    })
+                } catch (e) {
+                    getLogger().error('report(): progressPromise failed', e)
+                    reject(e)
+                }
+            }, showAfterMs)
+        }
+    )
 
     return progressPromise
 }
 
 /**
- * Presents the user with a notification to cancel a pending process.
+ * Shows a Progress message which allows the user to cancel a pending `timeout` task.
  *
  * @param message Message to display
  * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
- * @param window Window to display the message on (default: vscode.window)
+ * @param showAfterMs Do not show the progress message until `showAfterMs` milliseconds.
  *
  * @returns Progress object allowing the caller to update progress status
  */
 export async function showMessageWithCancel(
     message: string,
-    timeout: Timeout
+    timeout: Timeout,
+    showAfterMs: number = 0
 ): Promise<vscode.Progress<{ message?: string; increment?: number }>> {
     const progressOptions = { location: vscode.ProgressLocation.Notification, title: message, cancellable: true }
-    return showProgressWithTimeout(progressOptions, timeout)
+    return showProgressWithTimeout(progressOptions, timeout, showAfterMs)
+}
+
+type MessageItems = { timeout: Timeout; progress: vscode.Progress<ProgressEntry> }
+
+/**
+ * Start or Update VSCode message windows with a 'Cancel' button.
+ *
+ * ---
+ *
+ * This class helps in the scenario of ensuring that a previous
+ * identical message is completed before it attempts to create
+ * a new one.
+ */
+export class Messages {
+    static readonly timeoutMillis = 60000
+    private static messageMap: {
+        [msgId: string]: MessageItems
+    } = {}
+
+    /**
+     * Starts a message if it does not exist, then applies the update with the given
+     * progress data.
+     * @param msgId A unique identifier for a message
+     * @returns The timeout associated with the message, returns an existing timeout
+     *          if the message already exists.
+     */
+    static async putMessage(
+        msgId: string,
+        messageText: string,
+        progressEntry?: ProgressEntry,
+        timeoutMillis?: number
+    ): Promise<Timeout> {
+        let message: MessageItems | undefined = this.messageMap[msgId]
+
+        //  If message already exists but is completed, we want to start a new message
+        if (message?.timeout !== undefined && message.timeout.completed) {
+            message = undefined
+        }
+
+        // Start a new message
+        if (message === undefined) {
+            await this.startMessage(msgId, messageText, timeoutMillis)
+            message = this.messageMap[msgId]
+        }
+
+        // Add an update to the message if it was provided
+        if (progressEntry !== undefined) {
+            message.progress.report(progressEntry)
+        }
+
+        return message.timeout
+    }
+
+    /**
+     * @param timeoutMillis The amount of milliseconds till the message cancels itself.
+     */
+    private static async startMessage(
+        msgId: string,
+        messageText: string,
+        timeoutMillis: number = this.timeoutMillis
+    ): Promise<void> {
+        const timeout = new Timeout(timeoutMillis)
+        this.messageMap[msgId] = { timeout, progress: await showMessageWithCancel(messageText, timeout) }
+    }
 }
 
 /**

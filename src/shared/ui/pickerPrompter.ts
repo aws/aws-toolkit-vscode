@@ -115,7 +115,10 @@ export function isDataQuickPickItem(obj: any): obj is DataQuickPickItem<any> {
  * * A promise for an array of items
  * * An AsyncIterable that generates an array of items every iteration
  */
-export type ItemLoadTypes<T> = Promise<DataQuickPickItem<T>[]> | DataQuickPickItem<T>[] | AsyncIterable<DataQuickPickItem<T>[]>
+export type ItemLoadTypes<T> =
+    | Promise<DataQuickPickItem<T>[]>
+    | DataQuickPickItem<T>[]
+    | AsyncIterable<DataQuickPickItem<T>[]>
 
 /**
  * Creates a UI element that presents a list of items. Information that should be returned when the user selects an
