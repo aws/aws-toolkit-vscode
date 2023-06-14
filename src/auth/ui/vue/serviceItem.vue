@@ -29,6 +29,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
+import { ServiceItemId } from './backend/types'
 
 /* The status of the icon for a service */
 type ServiceIconStatus = keyof typeof serviceIconClasses
@@ -124,33 +125,25 @@ export default defineComponent({
 /**
  * A Service Item ID is the main identifier/representation of a specific service item.
  */
-export type ServiceItemId = (typeof serviceItemIds)[keyof typeof serviceItemIds]
 
-export const serviceItemIds = {
-    NON_AUTH_FEATURES: 'NON_AUTH_FEATURES',
-    RESOURCE_EXPLORER: 'RESOURCE_EXPLORER',
-    CODE_WHISPERER: 'CODE_WHISPERER',
-    CODE_CATALYST: 'CODE_CATALYST',
-} as const
-
-const staticServiceItemProps = {
-    [serviceItemIds.NON_AUTH_FEATURES]: {
-        title: 'Debug Lambda Functions & Edit AWS Document Types',
-        description: "Local features that don't require authentication.",
+const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
+    DOCUMENT_TYPE_SUPPORT: {
+        title: 'Edit CloudFormation Templates',
+        description: 'Invalid syntax validation and auto-completion.',
     },
-    [serviceItemIds.RESOURCE_EXPLORER]: {
-        title: 'Resource Explorer',
-        description: 'View, modify, deploy, and troubleshoot AWS resources.',
+    RESOURCE_EXPLORER: {
+        title: 'View, modify, and deploy AWS Resources',
+        description: 'Work with S3, CloudWatch, and more.',
     },
-    [serviceItemIds.CODE_WHISPERER]: {
-        title: 'Amazon CodeWhisperer',
-        description: 'Build applications faster with AI code recommendations.',
+    CODE_WHISPERER: {
+        title: 'AI-powered code suggestions from CodeWhisperer',
+        description: 'Build applications faster with your AI coding companion.',
     },
-    [serviceItemIds.CODE_CATALYST]: {
-        title: 'Amazon CodeCatalyst',
+    CODE_CATALYST: {
+        title: 'Launch CodeCatalyst Cloud-based Dev Environments',
         description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
-} as const
+}
 
 /* -------------------------------------- */
 
@@ -167,10 +160,10 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set([serviceItemIds.NON_AUTH_FEATURES])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set(['DOCUMENT_TYPE_SUPPORT'])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = serviceItemIds.NON_AUTH_FEATURES
+    private currentlySelected?: ServiceItemId = 'DOCUMENT_TYPE_SUPPORT'
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked
@@ -214,8 +207,10 @@ export class ServiceItemsState {
 
     toggleSelected(id: ServiceItemId) {
         if (this.currentlySelected === id) {
+            console.log(`DESELECTED: ${id}`)
             this.deselect()
         } else {
+            console.log(`SELECTED: ${id}`)
             this.select(id)
         }
     }
@@ -299,6 +294,7 @@ export class ServiceItemsState {
     display: flex;
     flex-direction: column;
     text-align: left;
+    user-select: none;
 }
 
 /* ******** Service Item Content Container ******** */
