@@ -1,7 +1,14 @@
 <template>
     <div class="auth-form container-background border-common" id="identity-center-form">
-        <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
-        <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
+        <div v-if="checkIfConnected">
+            <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
+            <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
+        </div>
+        <div v-else>
+            <!-- In this scenario we do not care about the active IC connection -->
+            <FormTitle :isConnected="false">IAM Identity Center</FormTitle>
+            <div>Successor to AWS Single Sign-on</div>
+        </div>
 
         <div v-if="stage === 'START'">
             <div class="form-section">
@@ -71,6 +78,13 @@ export default defineComponent({
             type: Object as PropType<BaseIdentityCenterState>,
             required: true,
         },
+        checkIfConnected: {
+            type: Boolean,
+            default: true,
+            // In some scenarios we want to show the form and allow setup,
+            // but not care about any current identity center auth connections
+            // and if they are connected or not.
+        },
     },
     data() {
         return {
@@ -110,7 +124,7 @@ export default defineComponent({
         },
         async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
-            this.isConnected = await this.state.isAuthConnected()
+            this.isConnected = this.checkIfConnected ? await this.state.isAuthConnected() : false
             this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async getRegion() {
