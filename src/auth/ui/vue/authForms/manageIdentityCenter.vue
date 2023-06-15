@@ -161,6 +161,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     protected abstract _startIdentityCenterSetup(): Promise<void>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
+    abstract signout(): Promise<void>
 
     setValue(key: IdentityCenterKey, value: string) {
         this._data[key] = value
@@ -179,10 +180,6 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         const isAuthConnected = await this.isAuthConnected()
         this._stage = isAuthConnected ? 'CONNECTED' : 'START'
         return this._stage
-    }
-
-    async signout(): Promise<void> {
-        return client.signoutIdentityCenter()
     }
 
     async getRegion(): Promise<Region> {
@@ -225,6 +222,45 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
 
     override async showView(): Promise<void> {
         client.showCodeWhispererNode()
+    }
+
+    override signout(): Promise<void> {
+        return client.signoutCWIdentityCenter()
+    }
+}
+
+/**
+ * In the context of the Explorer, an Identity Center connection
+ * is not required to be active. This is due to us only needing
+ * the connection to exist so we can grab Credentials from it.
+ *
+ * With this in mind, certain methods in this class don't follow
+ * the typical connection flow.
+ */
+export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
+    override get id(): AuthFormId {
+        return 'identityCenterExplorer'
+    }
+
+    override get name(): string {
+        return 'Resource Explorer'
+    }
+
+    protected override async _startIdentityCenterSetup(): Promise<void> {
+        const data = await this.getSubmittableDataOrThrow()
+        return client.createIdentityCenterConnection(data.startUrl, data.region)
+    }
+
+    override async isAuthConnected(): Promise<boolean> {
+        return client.isIdentityCenterExists()
+    }
+
+    override async showView(): Promise<void> {
+        client.showResourceExplorer()
+    }
+
+    override signout(): Promise<void> {
+        throw new Error('Explorer Identity Center should not use "signout functionality')
     }
 }
 </script>
