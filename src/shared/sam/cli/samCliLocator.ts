@@ -12,11 +12,7 @@ import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation
 import { SystemUtilities } from '../../systemUtilities'
 import { PerfLog } from '../../logger/logger'
 
-export interface SamCliLocationProvider {
-    getLocation(forceSearch?: boolean): Promise<{ path: string; version: string } | undefined>
-}
-
-export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
+export class SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
     protected static cachedSamLocation: { path: string; version: string } | undefined
 
@@ -29,32 +25,31 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
      * Gets the last-found `sam` location, or searches the system if a working
      * `sam` wasn't previously found and cached.
      */
-    public async getLocation(forceSearch?: boolean) {
+    public async getLocation(forceSearch?: boolean): Promise<{ path: string; version: string } | undefined> {
         const perflog = new PerfLog('samCliLocator: getLocation')
-        const cachedLoc = forceSearch ? undefined : DefaultSamCliLocationProvider.cachedSamLocation
+        const cachedLoc = forceSearch ? undefined : SamCliLocationProvider.cachedSamLocation
 
         // Avoid searching the system for `sam` (especially slow on Windows).
-        if (cachedLoc && (await DefaultSamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
+        if (cachedLoc && (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
             perflog.done()
             return cachedLoc
         }
 
-        DefaultSamCliLocationProvider.cachedSamLocation =
-            await DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
+        SamCliLocationProvider.cachedSamLocation = await SamCliLocationProvider.getSamCliLocator().getLocation()
         perflog.done()
-        return DefaultSamCliLocationProvider.cachedSamLocation
+        return SamCliLocationProvider.cachedSamLocation
     }
 
     public static getSamCliLocator(): SamCliLocationProvider {
-        if (!DefaultSamCliLocationProvider.samCliLocator) {
+        if (!SamCliLocationProvider.samCliLocator) {
             if (process.platform === 'win32') {
-                DefaultSamCliLocationProvider.samCliLocator = new WindowsSamCliLocator()
+                SamCliLocationProvider.samCliLocator = new WindowsSamCliLocator()
             } else {
-                DefaultSamCliLocationProvider.samCliLocator = new UnixSamCliLocator()
+                SamCliLocationProvider.samCliLocator = new UnixSamCliLocator()
             }
         }
 
-        return DefaultSamCliLocationProvider.samCliLocator
+        return SamCliLocationProvider.samCliLocator
     }
 }
 
