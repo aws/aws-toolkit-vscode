@@ -261,6 +261,12 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
         return 'Resource Explorer'
     }
 
+    override async stage(): Promise<IdentityCenterStage> {
+        // We always want to allow the user to add a new connection
+        // for this context, so we always keep it as the start
+        return 'START'
+    }
+
     protected override async _startIdentityCenterSetup(): Promise<void> {
         const data = await this.getSubmittableDataOrThrow()
         return client.createIdentityCenterConnection(data.startUrl, data.region)
