@@ -1,51 +1,49 @@
 <template>
     <div class="auth-form container-background border-common" id="identity-center-form">
-        <div v-show="canShowAll">
-            <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
-            <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
+        <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
+        <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
 
-            <div v-if="stage === 'START'">
-                <div class="form-section">
-                    <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
-                        >Learn more about IAM Identity Center.</a
-                    >
-                </div>
-
-                <div class="form-section">
-                    <label class="input-title">Start URL</label>
-                    <label class="small-description">The Start URL</label>
-                    <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
-                    <div class="small-description error-text">{{ errors.startUrl }}</div>
-                </div>
-
-                <div class="form-section">
-                    <label class="input-title">Region</label>
-                    <label class="small-description">The Region</label>
-
-                    <select v-on:click="getRegion()">
-                        <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
-                    </select>
-                </div>
-
-                <div class="form-section">
-                    <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
-                </div>
+        <div v-if="stage === 'START'">
+            <div class="form-section">
+                <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                    >Learn more about IAM Identity Center.</a
+                >
             </div>
 
-            <div v-if="stage === 'WAITING_ON_USER'">
-                <div class="form-section">
-                    <div>Follow instructions...</div>
-                </div>
+            <div class="form-section">
+                <label class="input-title">Start URL</label>
+                <label class="small-description">The Start URL</label>
+                <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
+                <div class="small-description error-text">{{ errors.startUrl }}</div>
             </div>
 
-            <div v-if="stage === 'CONNECTED'">
-                <div class="form-section">
-                    <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
-                </div>
+            <div class="form-section">
+                <label class="input-title">Region</label>
+                <label class="small-description">The Region</label>
 
-                <div class="form-section">
-                    <button v-on:click="showView()">Open {{ authName }} in Toolkit</button>
-                </div>
+                <select v-on:click="getRegion()">
+                    <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
+            </div>
+        </div>
+
+        <div v-if="stage === 'WAITING_ON_USER'">
+            <div class="form-section">
+                <div>Follow instructions...</div>
+            </div>
+        </div>
+
+        <div v-if="stage === 'CONNECTED'">
+            <div class="form-section">
+                <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
+            </div>
+
+            <div class="form-section">
+                <button v-on:click="showView()">Open {{ authName }} in Toolkit</button>
             </div>
         </div>
     </div>
@@ -88,7 +86,6 @@ export default defineComponent({
 
             stage: 'START' as IdentityCenterStage,
 
-            canShowAll: false,
             authName: this.state.name,
         }
     },
@@ -99,7 +96,6 @@ export default defineComponent({
         this.data.region = this.state.getValue('region')
 
         await this.update('created')
-        this.canShowAll = true
     },
     computed: {},
     methods: {
