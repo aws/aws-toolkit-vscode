@@ -3,28 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createQuickPick, QuickPickPrompter } from "../shared/ui/pickerPrompter"
-import { DataQuickPickItem } from "../shared/ui/pickerPrompter"
-import { AsyncCollection } from "../shared/utilities/asyncCollection"
-import { isValidResponse } from '../shared/wizards/wizard'
+import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
+import { getInstanceIdsFromRegion } from './utils'
+import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 
-function asQuickpickItem(stringItem: string): DataQuickPickItem<string>[] 
-{
-    return [{
-        label: stringItem, 
-        data: stringItem
-    }]
+interface EC2Selection {
+    instanceId: string
+    region: string
 }
 
-export function createInstancePrompter(instances: AsyncCollection<string>): QuickPickPrompter<string> {
-    const items = instances.map(asQuickpickItem)
-    const prompter = createQuickPick(items, {title: "Select EC2 instance by id"})
-
-    return prompter
+function asQuickpickItem(instanceId: string): DataQuickPickItem<string> {
+    return {
+        label: instanceId,
+        data: instanceId,
+    }
 }
 
-export async function selectInstance(instances: AsyncCollection<string>): Promise<string | undefined> {
-    const prompter = createInstancePrompter(instances)
-    const response = await prompter.prompt() 
-    return isValidResponse(response) ? response : undefined
+export function handleEc2ConnectPrompterResponse(response: RegionSubmenuResponse<string>): EC2Selection {
+    return {
+        instanceId: response.data,
+        region: response.region,
+    }
+}
+
+export function createEC2ConnectPrompter(): RegionSubmenu<string> {
+    return new RegionSubmenu(
+        async region => (await getInstanceIdsFromRegion(region)).map(asQuickpickItem).promise(),
+        { title: 'Select EC2 Instance Id' },
+        { title: 'Select Region for EC2 Instance' }
+    )
 }
