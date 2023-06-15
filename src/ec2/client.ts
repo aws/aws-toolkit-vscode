@@ -17,6 +17,13 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { pageableToCollection } from '../shared/utilities/collectionUtils'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 
+export type Ec2ConnectErrorName = "permission" | "instanceStatus"
+export interface Ec2ConnectErrorParameters {
+    message: string
+    url?: string 
+    urlItem?: string
+}
+
 export class Ec2ConnectClient {
     public constructor(readonly regionCode: string) {}
 
@@ -51,18 +58,31 @@ export class Ec2ConnectClient {
         return status == targetStatus
     }
 
-    private async handleStartSessionError(selection: Ec2Selection, err: AWS.AWSError): Promise<void> {
-        const instanceIsRunning = await this.checkInstanceStatus(selection.instanceId, 'running')
-        
+    protected async showError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): Promise<string> {
+        switch (errorName) {
+            case "instanceStatus":
+                return (await vscode.window.showErrorMessage(params.message))!
+            case "permission":
+                return (await showMessageWithUrl(params.message, params.url!, params.urlItem!, "error"))!
+        }
+    }
+
+    public async handleStartSessionError(selection: Ec2Selection): Promise<string> {
+        const isInstanceRunning = await this.checkInstanceStatus(selection.instanceId, 'running')
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
-        if(instanceIsRunning){
-            const permissionErrorMessage = generalErrorMessage + "Please ensure the IAM role attached to the instance has the proper policies."
-            const helpUrl = 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
-            await showMessageWithUrl(permissionErrorMessage, helpUrl, "Setup Permissions", "error")
+        if(isInstanceRunning){
+            const errorParams: Ec2ConnectErrorParameters = {
+                message: generalErrorMessage + "Please ensure the IAM role attached to the instance has the proper policies.", 
+                url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
+                urlItem: 'Configure IAM role'
+            }
+            return await this.showError('permission', errorParams)
         } else {
-            const notRunningErrorMessage = generalErrorMessage + "Please ensure the target instance is running and not currently starting, stopping, or stopped."
-            await vscode.window.showErrorMessage(notRunningErrorMessage)
+            const errorParams: Ec2ConnectErrorParameters = {
+                message: generalErrorMessage + "Please ensure the target instance is running and not currently starting, stopping, or stopped."
+            }
+            return await this.showError('instanceStatus', errorParams)
         }
     }
 
@@ -109,7 +129,7 @@ export class Ec2ConnectClient {
         const ssmClient = await this.createSsmSdkClient()
         ssmClient.startSession({ Target: selection.instanceId }, async (err, data) => {
             if (err) {
-                await this.handleStartSessionError(selection, err)
+                await this.handleStartSessionError(selection)
             } else {
                 this.openSessionInTerminal(data, selection)
             }
