@@ -5,7 +5,7 @@
 
 import { createEc2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { Ec2ConnectClient } from './client'
+import { Ec2ConnectClient } from './model'
 
 export async function tryConnect(): Promise<void> {
     const prompter = createEc2ConnectPrompter()
