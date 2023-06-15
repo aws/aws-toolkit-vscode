@@ -3,23 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EC2 } from 'aws-sdk'
-import globals from '../shared/extensionGlobals'
-import { pageableToCollection } from '../shared/utilities/collectionUtils'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { extractInstanceIdsFromReservations } from "./utils"
-import { selectInstance } from './prompter'
+import { createEC2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
+import { isValidResponse } from '../shared/wizards/wizard'
 
-export async function tryConnect(defaultRegion: string): Promise<void> {
-    const client = await globals.sdkClientBuilder.createAwsService(EC2, undefined, defaultRegion)
-            const requester = async (request: EC2.DescribeInstancesRequest) => 
-                client.describeInstances(request).promise() 
-            const collection = extractInstanceIdsFromReservations(pageableToCollection(requester, {}, 'NextToken', 'Reservations'))
+export async function tryConnect(): Promise<void> {
+    const prompter = createEC2ConnectPrompter()
+    const response = await prompter.prompt()
 
-            const selection = await selectInstance(collection)
-            if(!selection){
-                throw new CancellationError('user')
-            } else {
-                console.log(selection)
-            }
+    if (isValidResponse(response)) {
+        const selection = handleEc2ConnectPrompterResponse(response)
+        console.log(selection)
+    }
 }
