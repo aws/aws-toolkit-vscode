@@ -177,4 +177,3 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
         }
     })
 })
- 

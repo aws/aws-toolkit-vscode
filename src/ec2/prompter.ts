@@ -7,7 +7,6 @@ import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/region
 import { Ec2Selection, getInstanceIdsFromRegion } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 
-
 function asQuickpickItem(instanceId: string): DataQuickPickItem<string> {
     return {
         label: instanceId,
