@@ -14,7 +14,8 @@ import { ToolkitError } from '../shared/errors'
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
 import { getLogger } from '../shared/logger'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import { getPaginatedAwsCallIter, pageableToCollection } from '../shared/utilities/collectionUtils'
+import { pageableToCollection } from '../shared/utilities/collectionUtils'
+import { showMessageWithUrl } from '../shared/utilities/messages'
 
 export class Ec2ConnectClient {
     public constructor(readonly regionCode: string) {}
@@ -52,13 +53,17 @@ export class Ec2ConnectClient {
 
     private async handleStartSessionError(selection: Ec2Selection, err: AWS.AWSError): Promise<void> {
         const instanceIsRunning = await this.checkInstanceStatus(selection.instanceId, 'running')
-        console.log(instanceIsRunning)
+        
+        const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
-        const failureMessage =
-            "SSM: Failed to start session with target instance. Common reasons include: \n 1. SSM Agent not installed on instance. \n 2. The required IAM instance profile isn't attached to the instance.  \n 3. Session manager setup is incomplete."
-        await vscode.window.showErrorMessage(failureMessage)
-
-        throw new ToolkitError('Start Session Failed. ')
+        if(instanceIsRunning){
+            const permissionErrorMessage = generalErrorMessage + "Please ensure the IAM role attached to the instance has the proper policies."
+            const helpUrl = 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
+            await showMessageWithUrl(permissionErrorMessage, helpUrl, "Setup Permissions", "error")
+        } else {
+            const notRunningErrorMessage = generalErrorMessage + "Please ensure the target instance is running and not currently starting, stopping, or stopped."
+            await vscode.window.showErrorMessage(notRunningErrorMessage)
+        }
     }
 
     private async terminateSession(
@@ -106,7 +111,6 @@ export class Ec2ConnectClient {
             if (err) {
                 await this.handleStartSessionError(selection, err)
             } else {
-                console.log('no error!')
                 this.openSessionInTerminal(data, selection)
             }
         })
