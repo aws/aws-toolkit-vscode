@@ -3,29 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { AWSError, EC2, SSM } from "aws-sdk";
-import globals from "../shared/extensionGlobals";
+import { DefaultEc2Client } from '../shared/clients/ec2Client';
 import { Session } from 'aws-sdk/clients/ssm'
-import { Ec2Selection, getInstanceIdsFromClient } from "./utils";
+import { Ec2Selection } from "./utils";
 import { getOrInstallCli } from "../shared/utilities/cliUtils";
 import { isCloud9 } from "../shared/extensionUtilities";
 import { withoutShellIntegration } from "../ecs/commands";
 import { ToolkitError } from '../shared/errors';
-import { AsyncCollection } from '../shared/utilities/asyncCollection';
-import { getLogger } from '../shared/logger';
-import { PromiseResult } from 'aws-sdk/lib/request';
+import { DefaultSsmClient } from '../shared/clients/ssmClient';
 
 export class Ec2ConnectClient {
+    private ssmClient: DefaultSsmClient
+    private ec2Client: DefaultEc2Client
+
     public constructor(readonly regionCode: string) {
+        this.ssmClient = new DefaultSsmClient(this.regionCode)
+        this.ec2Client = new DefaultEc2Client(this.regionCode)
         
-    }
-
-    protected async createEc2SdkClient(): Promise<EC2> {
-        return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
-    }
-
-    protected async createSsmSdkClient(): Promise<SSM> {
-        return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
     private async handleStartSessionError(err: AWS.AWSError): Promise<void> {
@@ -36,17 +30,6 @@ export class Ec2ConnectClient {
         throw new ToolkitError('Start Session Failed. ')
     }
 
-    private async terminateSession(session: Session): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>>{
-        const sessionId = session.SessionId!
-        const ssmClient = await this.createSsmSdkClient()
-        const termination = await ssmClient.terminateSession({ SessionId: sessionId})
-            .promise() 
-            .catch(err => {
-                getLogger().warn(`ec2: failed to terminate session "${sessionId}": %s`, err)
-            })
-        return termination
-    }
-
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
         const shellArgs = [JSON.stringify(session), selection.region, "StartSession"]
@@ -54,14 +37,14 @@ export class Ec2ConnectClient {
         try {
             await withoutShellIntegration(() => {
                 const Ec2Terminal = vscode.window.createTerminal({
-                    name: selection.region + "/" +selection.instanceId,
+                    name: selection.region + "/" + selection.instanceId,
                     shellPath: ssmPlugin, 
                     shellArgs: shellArgs
                 })
 
                 const listener = vscode.window.onDidCloseTerminal(terminal => {
                     if (terminal.processId === Ec2Terminal.processId) {
-                        vscode.Disposable.from(listener, {dispose: () => this.terminateSession(session)})
+                        vscode.Disposable.from(listener, {dispose: () => this.ssmClient.terminateSession(session)})
                             .dispose()
                     }
                 })
@@ -74,21 +57,12 @@ export class Ec2ConnectClient {
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
-        const ssmClient = await this.createSsmSdkClient()
-        ssmClient.startSession({Target: selection.instanceId}, async (err, data) => {
+        await this.ssmClient.startSession(selection.instanceId, async (err, data) => {
             if(err) {
                 await this.handleStartSessionError(err)
             } else {
-                console.log("no error!")
                 this.openSessionInTerminal(data, selection)
             }
         })
     }
-
-    public async getInstanceIds(): Promise<AsyncCollection<string>> {
-        const client = await this.createEc2SdkClient()
-        return getInstanceIdsFromClient(client)
-    }
-
-
 }
