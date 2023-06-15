@@ -17,10 +17,10 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { pageableToCollection } from '../shared/utilities/collectionUtils'
 import { showMessageWithUrl } from '../shared/utilities/messages'
 
-export type Ec2ConnectErrorName = "permission" | "instanceStatus"
+export type Ec2ConnectErrorName = 'permission' | 'instanceStatus'
 export interface Ec2ConnectErrorParameters {
     message: string
-    url?: string 
+    url?: string
     urlItem?: string
 }
 
@@ -60,10 +60,10 @@ export class Ec2ConnectClient {
 
     protected async showError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): Promise<string> {
         switch (errorName) {
-            case "instanceStatus":
+            case 'instanceStatus':
                 return (await vscode.window.showErrorMessage(params.message))!
-            case "permission":
-                return (await showMessageWithUrl(params.message, params.url!, params.urlItem!, "error"))!
+            case 'permission':
+                return (await showMessageWithUrl(params.message, params.url!, params.urlItem!, 'error'))!
         }
     }
 
@@ -71,16 +71,20 @@ export class Ec2ConnectClient {
         const isInstanceRunning = await this.checkInstanceStatus(selection.instanceId, 'running')
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
-        if(isInstanceRunning){
+        if (isInstanceRunning) {
             const errorParams: Ec2ConnectErrorParameters = {
-                message: generalErrorMessage + "Please ensure the IAM role attached to the instance has the proper policies.", 
+                message:
+                    generalErrorMessage +
+                    'Please ensure the IAM role attached to the instance has the proper policies.',
                 url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
-                urlItem: 'Configure IAM role'
+                urlItem: 'Configure IAM role',
             }
             return await this.showError('permission', errorParams)
         } else {
             const errorParams: Ec2ConnectErrorParameters = {
-                message: generalErrorMessage + "Please ensure the target instance is running and not currently starting, stopping, or stopped."
+                message:
+                    generalErrorMessage +
+                    'Please ensure the target instance is running and not currently starting, stopping, or stopped.',
             }
             return await this.showError('instanceStatus', errorParams)
         }
