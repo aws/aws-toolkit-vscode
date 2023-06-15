@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { DefaultEc2Client } from '../shared/clients/ec2Client'
 import { Session } from 'aws-sdk/clients/ssm'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
@@ -13,12 +12,13 @@ import { ToolkitError } from '../shared/errors'
 import { DefaultSsmClient } from '../shared/clients/ssmClient'
 
 export class Ec2ConnectClient {
+    // Will need the ec2Client for probing errors, 
     private ssmClient: DefaultSsmClient
-    private ec2Client: DefaultEc2Client
+    //private ec2Client: DefaultEc2Client
 
     public constructor(readonly regionCode: string) {
         this.ssmClient = new DefaultSsmClient(this.regionCode)
-        this.ec2Client = new DefaultEc2Client(this.regionCode)
+        //this.ec2Client = new DefaultEc2Client(this.regionCode)
     }
 
     private async handleStartSessionError(err: AWS.AWSError): Promise<void> {
