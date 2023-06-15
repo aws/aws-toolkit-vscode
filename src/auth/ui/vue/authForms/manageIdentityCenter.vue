@@ -216,7 +216,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
 
     protected override async _startIdentityCenterSetup(): Promise<void> {
         const data = await this.getSubmittableDataOrThrow()
-        return client.startIdentityCenterSetup(data.startUrl, data.region)
+        return client.startCWIdentityCenterSetup(data.startUrl, data.region)
     }
 
     override async isAuthConnected(): Promise<boolean> {
