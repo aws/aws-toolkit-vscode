@@ -4,30 +4,28 @@
  */
 
 import * as vscode from 'vscode'
-import * as codewhispererClient from '../../client/codewhisperer'
 import * as fs from 'fs-extra'
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { BMDocument, performBM25Scoring } from './rankBm25'
-import { getRelevantFilesFromEditor, isRelevant } from './editorFilesUtil'
+import { isRelevant } from './editorFilesUtil'
 import { ToolkitError } from '../../../shared/errors'
-import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 
 const crossFileLanguageConfigs = ['java']
 interface Chunk {
     fileName: string
     content: string
     nextContent: string
+    score?: number
 }
-const chunkSize = 10
-const chunkCount = 60
-const topK = 3
 
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     dependencyGraph: DependencyGraph,
     cancellationToken: vscode.CancellationToken
-) {
+): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     if (crossFileLanguageConfigs.includes(editor.document.languageId) === false) {
         return undefined
     }
@@ -38,40 +36,42 @@ export async function fetchSupplementalContextForSrc(
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
     // Chunk linking is required as we want to pass the next chunk value for matched chunk.
-    const chunkList: Chunk[] = []
+    let chunkList: Chunk[] = []
     for (const relevantFile of relevantCrossFilePaths) {
         throwIfCancelled(cancellationToken)
-
-        const chunks: Chunk[] = splitFileToChunks(relevantFile, chunkSize)
+        const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
-        if (chunkList.length >= chunkCount) {
+        if (chunkList.length >= crossFileContextConfig.numberOfChunkToFetch) {
             break
         }
     }
 
+    // it's required since chunkList.push(...) is likely giving us a list of size > 60
+    chunkList = chunkList.slice(0, crossFileContextConfig.numberOfChunkToFetch)
+
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
-    const inputChunk: Chunk = getInputChunk(editor, chunkSize)
-    const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, topK)
+    const inputChunk: Chunk = getInputChunk(editor, crossFileContextConfig.numberOfLinesEachChunk)
+    const bestChunks: Chunk[] = findBestKChunkMatches(inputChunk, chunkList, crossFileContextConfig.topK)
     throwIfCancelled(cancellationToken)
 
     // Step 4: Transform best chunks to supplemental contexts
-    const supplementalContexts: codewhispererClient.SupplementalContext[] = []
+    const supplementalContexts: CodeWhispererSupplementalContextItem[] = []
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
 
-        const context = {
+        supplementalContexts.push({
             filePath: chunk.fileName,
             content: chunk.nextContent,
-        } as codewhispererClient.SupplementalContext
-        supplementalContexts.push(context)
+            score: chunk.score,
+        })
     }
 
     return supplementalContexts
 }
 
-function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number) {
+function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
     const chunkContentList = chunkReferences.map(chunk => chunk.content)
     //performBM25Scoring returns the output in a sorted order (descending of scores)
     const output: BMDocument[] = performBM25Scoring(chunkContentList, chunkInput.content) as BMDocument[]
@@ -80,7 +80,12 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
     for (let i = 0; i < Math.min(k, output.length); i++) {
         const chunkIndex = output[i].index
         const chunkReference = chunkReferences[chunkIndex]
-        bestChunks.push(chunkReference)
+        bestChunks.push({
+            content: chunkReference.content,
+            fileName: chunkReference.fileName,
+            nextContent: chunkReference.nextContent,
+            score: output[i].score,
+        })
     }
     return bestChunks
 }
@@ -90,7 +95,7 @@ function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: n
  */
 function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
     const cursorPosition = editor.selection.active
-    const startLine = Math.max(cursorPosition.line - 10, 0)
+    const startLine = Math.max(cursorPosition.line - chunkSize, 0)
     const endLine = Math.max(cursorPosition.line - 1, 0)
     const inputChunkContent = editor.document.getText(
         new vscode.Range(startLine, 0, endLine, editor.document.lineAt(endLine).text.length)
@@ -109,7 +114,7 @@ function linkChunks(chunks: Chunk[]) {
 
     // This additional chunk is needed to create a next pointer to chunk 0.
     const firstChunk = chunks[0]
-    const firstChunkSubContent = firstChunk.content.split('\n').slice(0, 3).join('\n')
+    const firstChunkSubContent = firstChunk.content.split('\n').slice(0, 3).join('\n').trimEnd()
     const newFirstChunk = {
         fileName: firstChunk.fileName,
         content: firstChunkSubContent,
@@ -132,12 +137,12 @@ function linkChunks(chunks: Chunk[]) {
 function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
-    const fileContent = fs.readFileSync(filePath, 'utf-8')
+    const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()
     const lines = fileContent.split('\n')
 
     for (let i = 0; i < lines.length; i += chunkSize) {
         const chunkContent = lines.slice(i, Math.min(i + chunkSize, lines.length)).join('\n')
-        const chunk = { fileName: filePath, content: chunkContent, nextContent: '' }
+        const chunk = { fileName: filePath, content: chunkContent.trimEnd(), nextContent: '' }
         chunks.push(chunk)
     }
     return chunks
@@ -148,7 +153,10 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * by referencing open files, imported files and same package files.
  */
 async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
-    const srcDependencies = await dependencyGraph.getSourceDependencies(editor.document.uri, editor.document.getText())
+    const openedFilesInEditor = new Set(openFilesInWindow())
+
+    let srcDependencies = await dependencyGraph.getSourceDependencies(editor.document.uri, editor.document.getText())
+    srcDependencies = moveToFront(srcDependencies, openedFilesInEditor)
 
     const samePackageFiles = await dependencyGraph.getSamePackageFiles(
         editor.document.uri,
@@ -158,21 +166,38 @@ async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph:
         return isRelevant(editor.document.fileName, file, editor.document.languageId)
     })
 
-    const relevantOpenFiles: vscode.Uri[] = await getRelevantFilesFromEditor(
-        editor.document.fileName,
-        editor.document.languageId
-    )
-
-    // We refer to only those open files which are in srcDependencies
-    const filteredRelevantOpenFiles = relevantOpenFiles
-        .filter(file => srcDependencies.includes(file.fsPath))
-        .map(file => file.fsPath)
-
-    const mergedCrossFileList = [
-        ...new Set([...filteredRelevantOpenFiles, ...srcDependencies, ...samePackageRelevantFiles]),
-    ]
+    const mergedCrossFileList = [...new Set([...srcDependencies, ...samePackageRelevantFiles])]
 
     return mergedCrossFileList
+}
+
+// Util to move selected files to the front of the input array if it exists
+function moveToFront(files: string[], picked: Set<string>) {
+    const head: string[] = []
+    const body: string[] = []
+    files.forEach(file => {
+        if (picked.has(file)) {
+            head.push(file)
+        } else {
+            body.push(file)
+        }
+    })
+
+    return [...head, ...body]
+}
+
+function openFilesInWindow(): string[] {
+    const filesOpenedInEditor: string[] = []
+    const tabArrays = vscode.window.tabGroups.all
+    tabArrays.forEach(tabArray => {
+        tabArray.tabs.forEach(tab => {
+            try {
+                filesOpenedInEditor.push(tab.input.uri.path)
+            } catch (e) {}
+        })
+    })
+
+    return filesOpenedInEditor
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {

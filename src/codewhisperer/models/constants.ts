@@ -267,3 +267,9 @@ export enum UserGroup {
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+
+export const crossFileContextConfig = {
+    numberOfChunkToFetch: 60,
+    topK: 3,
+    numberOfLinesEachChunk: 10,
+}

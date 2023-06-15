@@ -8,7 +8,6 @@ import { fetchSupplementalContextForSrc } from './crossFileContextUtil'
 import { isTestFile } from './codeParsingUtil'
 import { DependencyGraphFactory } from '../dependencyGraph/dependencyGraphFactory'
 import * as vscode from 'vscode'
-import * as codewhispererClient from '../../client/codewhisperer'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
@@ -18,9 +17,15 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
-    contents: codewhispererClient.SupplementalContext[]
+    contents: CodeWhispererSupplementalContextItem[]
     contentsLength: number
     latency: number
+}
+
+export interface CodeWhispererSupplementalContextItem {
+    content: string
+    filePath: string
+    score?: number
 }
 
 export async function fetchSupplementalContext(
@@ -37,7 +42,7 @@ export async function fetchSupplementalContext(
     }
 
     const isUtg = await isTestFile(editor, dependencyGraph)
-    let supplementalContextPromise: Promise<codewhispererClient.SupplementalContext[] | undefined>
+    let supplementalContextPromise: Promise<CodeWhispererSupplementalContextItem[] | undefined>
 
     if (isUtg) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, dependencyGraph, cancellationToken)

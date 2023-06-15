@@ -109,12 +109,21 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+        ? supplementalContexts.contents.map(v => {
+              return {
+                  filePath: v.filePath,
+                  content: v.content,
+              }
+          })
+        : []
+
     if (allowCodeWithReference === undefined) {
         return {
             request: {
                 fileContext: fileContext,
                 nextToken: nextToken,
-                supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+                supplementalContexts: supplementalContext,
             },
             supplementalMetadata: suppelmetalMetadata,
         }
@@ -127,7 +136,7 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+            supplementalContexts: supplementalContext,
         },
         supplementalMetadata: suppelmetalMetadata,
     }
@@ -231,7 +240,9 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
     supplementalContext.contents.forEach((context, index) => {
         getLogger().verbose(`
                 -----------------------------------------------
-                Chunk ${index}:${context.content}
+                Path: ${context.filePath}
+                Score: ${context.score}
+                Chunk: ${index}:${context.content}
                 -----------------------------------------------
             `)
     })
