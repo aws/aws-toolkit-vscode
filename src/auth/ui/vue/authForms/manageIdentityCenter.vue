@@ -100,6 +100,7 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
+            this.stage = 'WAITING_ON_USER'
             await this.state.startIdentityCenterSetup()
             await this.update('signIn')
         },
