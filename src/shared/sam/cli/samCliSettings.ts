@@ -7,7 +7,7 @@ import { getLogger } from '../../logger'
 import { fromExtensionManifest, Settings } from '../../settings'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
-import { DefaultSamCliLocationProvider, SamCliLocationProvider } from './samCliLocator'
+import { SamCliLocationProvider } from './samCliLocator'
 import { onceChanged } from '../../utilities/functionUtils'
 
 const localTimeoutDefaultMillis: number = 90000
@@ -60,7 +60,7 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
     protected static readonly logIfChanged = onceChanged((s: string) => getLogger().info(s))
 
     public constructor(
-        private readonly locationProvider: SamCliLocationProvider = new DefaultSamCliLocationProvider(),
+        private readonly locationProvider = new SamCliLocationProvider(),
         settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(settings)
