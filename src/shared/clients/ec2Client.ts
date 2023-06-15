@@ -34,4 +34,27 @@ export class DefaultEc2Client {
             .map(instance => instance?.InstanceId)
             .filter(instanceId => instanceId !== undefined)
     }
+
+    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+        const client = await this.createSdkClient()
+        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
+            client.describeInstanceStatus(request).promise()
+
+        const response = await pageableToCollection(
+            requester,
+            { InstanceIds: [instanceId], IncludeAllInstances: true },
+            'NextToken',
+            'InstanceStatuses'
+        )
+            .flatten()
+            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
+            .promise()
+
+        return response[0]
+    }
+
+    public async checkInstanceStatus(instanceId: string, targetStatus: EC2.InstanceStateName): Promise<boolean> {
+        const status = await this.getInstanceStatus(instanceId)
+        return status == targetStatus
+    }
 }

@@ -13,5 +13,5 @@ export interface Ec2Selection {
 
 export async function getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<string>> {
     const client = new DefaultEc2Client(regionCode)
-    return client.getInstanceIds()
+    return await client.getInstanceIds()
 }
