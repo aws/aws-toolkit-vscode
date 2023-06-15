@@ -50,7 +50,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                 description: `current region: ${this.currentRegion}`,
             },
             {
-                label: 'Log Groups',
+                label: 'Selections',
                 kind: vscode.QuickPickItemKind.Separator,
                 data: undefined,
             },
