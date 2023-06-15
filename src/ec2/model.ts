@@ -12,7 +12,7 @@ import { ToolkitError } from '../shared/errors'
 import { DefaultSsmClient } from '../shared/clients/ssmClient'
 
 export class Ec2ConnectClient {
-    // Will need the ec2Client for probing errors, 
+    // Will need the ec2Client for probing errors,
     private ssmClient: DefaultSsmClient
     //private ec2Client: DefaultEc2Client
 
