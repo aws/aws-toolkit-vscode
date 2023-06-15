@@ -21,7 +21,6 @@ export interface Ec2ConnectErrorParameters {
 }
 
 export class Ec2ConnectClient {
-    // Will need the ec2Client for probing errors,
     private ssmClient: DefaultSsmClient
     private ec2Client: DefaultEc2Client
 
@@ -48,7 +47,7 @@ export class Ec2ConnectClient {
     }
 
     public async handleStartSessionError(selection: Ec2Selection): Promise<string> {
-        const isInstanceRunning = await this.ec2Client.checkInstanceStatus(selection.instanceId, 'running')
+        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
         if (isInstanceRunning) {
