@@ -468,7 +468,8 @@ export const useIamCredentials = Commands.register('_aws.auth.useIamCredentials'
 })
 
 // Legacy commands
-export const login = Commands.register('aws.login', async (auth: Auth = Auth.instance) => {
+export const login = Commands.register('aws.login', async () => {
+    const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
         return addConnection.execute()

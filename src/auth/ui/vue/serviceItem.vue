@@ -29,7 +29,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import { ServiceItemId } from './backend/types'
+import { ServiceItemId } from './types'
 
 /* The status of the icon for a service */
 type ServiceIconStatus = keyof typeof serviceIconClasses
