@@ -37,7 +37,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
             this.itemsProvider(this.currentRegion),
             this.dataOptions as ExtendedQuickPickOptions<T | typeof switchRegion>
         )
-        
+
         prompter.quickPick.items = [
             {
                 label: 'Actions',

@@ -13,12 +13,15 @@ import { DefaultEc2Client } from '../../../shared/clients/ec2Client'
 describe('extractInstanceIdsFromReservations', function () {
     const client = new DefaultEc2Client('')
     it('returns empty when given empty collection', async function () {
-        const actualResult = await client.extractInstanceIdsFromReservations(
-            toCollection(async function* () { yield [] }
-        ) as AsyncCollection<EC2.ReservationList>).promise()
-        
-        assert.strictEqual(0, actualResult.length)
+        const actualResult = await client
+            .extractInstanceIdsFromReservations(
+                toCollection(async function* () {
+                    yield []
+                }) as AsyncCollection<EC2.ReservationList>
+            )
+            .promise()
 
+        assert.strictEqual(0, actualResult.length)
     })
 
     it('flattens the reservationList', async function () {
@@ -26,53 +29,54 @@ describe('extractInstanceIdsFromReservations', function () {
             {
                 Instances: [
                     {
-                        InstanceId: "id1"
+                        InstanceId: 'id1',
                     },
                     {
-                        InstanceId: "id2"
-                    }
-                ]
-            }, 
+                        InstanceId: 'id2',
+                    },
+                ],
+            },
             {
                 Instances: [
                     {
-                        InstanceId: "id3"
+                        InstanceId: 'id3',
                     },
                     {
-                        InstanceId: "id4"
-                    }
-                ]
-            }
+                        InstanceId: 'id4',
+                    },
+                ],
+            },
         ]
-        const actualResult = await client.extractInstanceIdsFromReservations(intoCollection([testReservationsList])).promise()
+        const actualResult = await client
+            .extractInstanceIdsFromReservations(intoCollection([testReservationsList]))
+            .promise()
         assert.deepStrictEqual(['id1', 'id2', 'id3', 'id4'], actualResult)
-    }), 
-    // Unsure if this test case is needed, but the return type in the SDK makes it possible these are unknown/not returned. 
-    it('handles undefined and missing pieces in the ReservationList.', async function () {
-        const testReservationsList: EC2.ReservationList = [
-            {
-                Instances: [
-                    {
-                        InstanceId: "id1"
-                    },
-                    {
-                        InstanceId: undefined
-                    }
-                ]
-            }, 
-            {
-                Instances: [
-                    {
-                        InstanceId: "id3"
-                    },
-                    {
-                    }
-                ]
-            }, 
-            
-        ]
-        const actualResult = await client.extractInstanceIdsFromReservations(intoCollection([testReservationsList])).promise()
-        assert.deepStrictEqual(['id1', 'id3'], actualResult)
-    })
-
+    }),
+        // Unsure if this test case is needed, but the return type in the SDK makes it possible these are unknown/not returned.
+        it('handles undefined and missing pieces in the ReservationList.', async function () {
+            const testReservationsList: EC2.ReservationList = [
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'id1',
+                        },
+                        {
+                            InstanceId: undefined,
+                        },
+                    ],
+                },
+                {
+                    Instances: [
+                        {
+                            InstanceId: 'id3',
+                        },
+                        {},
+                    ],
+                },
+            ]
+            const actualResult = await client
+                .extractInstanceIdsFromReservations(intoCollection([testReservationsList]))
+                .promise()
+            assert.deepStrictEqual(['id1', 'id3'], actualResult)
+        })
 })
