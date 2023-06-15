@@ -10,7 +10,6 @@ import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
 import {
     ssoAccountAccessScopes,
@@ -84,7 +83,6 @@ export class AuthUtil {
             } else {
                 this.usingEnterpriseSSO = false
             }
-            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -99,6 +97,10 @@ export class AuthUtil {
     // current active cwspr connection
     public get conn() {
         return this.secondaryAuth.activeConnection
+    }
+
+    public get startUrl(): string | undefined {
+        return isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
     }
 
     public get isUsingSavedConnection() {

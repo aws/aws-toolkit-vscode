@@ -14,6 +14,8 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+import { getSelectedCustomization } from "../util/customizationUtil";
+import { codeWhispererClient as client } from "../client/codewhisperer";
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -128,6 +130,19 @@ export class CodeWhispererCodeCoverageTracker {
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
+        const selectedCustomization = getSelectedCustomization()
+        client.putTelemetryEvent({
+            telemetryEvent: {
+                codeCoverageEvent: {
+                    customizationArn: selectedCustomization.arn,
+                    programmingLanguage: {
+                        languageName: this._language
+                    },
+                    acceptedCharacterCount: acceptedTokens,
+                    totalCharacterCount: totalTokens
+                }
+            }
+        }).then()
     }
 
     private tryStartTimer() {

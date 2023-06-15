@@ -6,18 +6,18 @@ import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
-import { ListAvailableCustomizationsResponse } from './codewhispereruserclient'
+import { ListAvailableCustomizationsResponse, PutTelemetryEventRequest } from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
+import { CodeWhispererStates } from '../util/codewhispererStates'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -105,9 +105,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-        TelemetryHelper.instance.setFetchCredentialStartTime()
+        CodeWhispererStates.instance.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
-        TelemetryHelper.instance.setSdkApiCallStartTime()
+        CodeWhispererStates.instance.setSdkApiCallStart()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
@@ -196,6 +196,14 @@ export class DefaultCodeWhispererClient {
     public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
         const requester = async () => (await this.createUserSdkClient()).listAvailableCustomizations().promise()
         return pageableToCollection(requester, { nextToken: '' }, 'nextToken').promise()
+    }
+
+    public async putTelemetryEvent(request: PutTelemetryEventRequest) {
+        // TODO: Confirm that invoking this API does not honor the telemetry opt-in option
+        if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.isCustomizationFeatureEnabled) {
+            return
+        }
+        ;(await this.createUserSdkClient()).putTelemetryEvent(request)
     }
 }
 

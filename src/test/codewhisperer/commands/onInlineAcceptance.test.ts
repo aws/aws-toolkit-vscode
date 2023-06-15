@@ -17,6 +17,7 @@ import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('onInlineAcceptance', function () {
     describe('onInlineAcceptance', function () {
@@ -58,7 +59,7 @@ describe('onInlineAcceptance', function () {
             })
 
             const testStartUrl = 'testStartUrl'
-            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
+            sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
             RecommendationHandler.instance.requestId = 'test'
             RecommendationHandler.instance.sessionId = 'test'

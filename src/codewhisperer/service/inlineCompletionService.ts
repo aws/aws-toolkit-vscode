@@ -499,7 +499,7 @@ export class InlineCompletionService {
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,
-                credentialStartUrl: TelemetryHelper.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
