@@ -36,7 +36,7 @@ export class Ec2ConnectClient {
 
     protected createEc2SdkClient(): DefaultEc2Client {
         return new DefaultEc2Client(this.regionCode)
-    } 
+    }
 
     protected async showError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): Promise<string> {
         switch (errorName) {
@@ -100,7 +100,7 @@ export class Ec2ConnectClient {
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
         await this.ssmClient.startSession(selection.instanceId, async (err, data) => {
             if (err) {
-                // SSM SDK throws general error here, so no need to pass onward. 
+                // SSM SDK throws general error here, so no need to pass onward.
                 await this.handleStartSessionError(selection)
             } else {
                 this.openSessionInTerminal(data, selection)
