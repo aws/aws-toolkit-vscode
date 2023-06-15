@@ -29,7 +29,7 @@ export async function initialize(
     // for: '"command": "aws.auth.showConnectionsPage"' in package.json
     registerCommandsWithVSCode(
         extensionContext,
-        new AuthCommandDeclarations(),
+        AuthCommandDeclarations.instance,
         new AuthCommandBackend(extensionContext)
     )
 }

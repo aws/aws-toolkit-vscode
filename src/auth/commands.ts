@@ -21,6 +21,14 @@ export class AuthCommandBackend {
  * Declared commands related to Authentication in the toolkit.
  */
 export class AuthCommandDeclarations implements CommandDeclarations<AuthCommandBackend> {
+    static #instance: AuthCommandDeclarations
+
+    static get instance(): AuthCommandDeclarations {
+        return (this.#instance ??= new AuthCommandDeclarations())
+    }
+
+    private constructor() {}
+
     public readonly declared = {
         showConnectionsPage: Commands.from(AuthCommandBackend).declareShowConnectionsPage({
             id: 'aws.auth.showConnectionsPage',
