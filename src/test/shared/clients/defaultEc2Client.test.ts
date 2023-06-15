@@ -4,16 +4,16 @@
  */
 
 import * as assert from 'assert'
-import { extractInstanceIdsFromReservations } from '../../ec2/utils'
-import { AsyncCollection } from '../../shared/utilities/asyncCollection'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { EC2 } from 'aws-sdk'
-import { toCollection } from '../../shared/utilities/asyncCollection'
-import { intoCollection } from '../../shared/utilities/collectionUtils'
+import { toCollection } from '../../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../../shared/utilities/collectionUtils'
+import { DefaultEc2Client } from '../../../shared/clients/ec2Client'
 
 describe('extractInstanceIdsFromReservations', function () {
+    const client = new DefaultEc2Client('')
     it('returns empty when given empty collection', async function () {
-
-        const actualResult = await extractInstanceIdsFromReservations(
+        const actualResult = await client.extractInstanceIdsFromReservations(
             toCollection(async function* () { yield [] }
         ) as AsyncCollection<EC2.ReservationList>).promise()
         
@@ -44,7 +44,7 @@ describe('extractInstanceIdsFromReservations', function () {
                 ]
             }
         ]
-        const actualResult = await extractInstanceIdsFromReservations(intoCollection([testReservationsList])).promise()
+        const actualResult = await client.extractInstanceIdsFromReservations(intoCollection([testReservationsList])).promise()
         assert.deepStrictEqual(['id1', 'id2', 'id3', 'id4'], actualResult)
     }), 
     // Unsure if this test case is needed, but the return type in the SDK makes it possible these are unknown/not returned. 
@@ -71,7 +71,7 @@ describe('extractInstanceIdsFromReservations', function () {
             }, 
             
         ]
-        const actualResult = await extractInstanceIdsFromReservations(intoCollection([testReservationsList])).promise()
+        const actualResult = await client.extractInstanceIdsFromReservations(intoCollection([testReservationsList])).promise()
         assert.deepStrictEqual(['id1', 'id3'], actualResult)
     })
 

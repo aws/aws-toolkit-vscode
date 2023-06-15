@@ -6,7 +6,6 @@
 import { EC2 } from "aws-sdk"
 import globals from "../extensionGlobals"
 import { AsyncCollection } from "../utilities/asyncCollection"
-import { extractInstanceIdsFromReservations } from "../../ec2/utils"
 import { pageableToCollection } from "../utilities/collectionUtils"
 
 export class DefaultEc2Client {
@@ -19,9 +18,20 @@ export class DefaultEc2Client {
         const client = await this.createSdkClient()
         const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
     
-        const instanceIds = extractInstanceIdsFromReservations(
+        const instanceIds = this.extractInstanceIdsFromReservations(
             pageableToCollection(requester, {}, 'NextToken', 'Reservations')
         )
         return instanceIds
+    }
+
+    public extractInstanceIdsFromReservations(
+        reservations: AsyncCollection<EC2.ReservationList | undefined>
+    ): AsyncCollection<string> {
+        return reservations
+            .flatten()
+            .map(instanceList => instanceList?.Instances)
+            .flatten()
+            .map(instance => instance?.InstanceId)
+            .filter(instanceId => instanceId !== undefined)
     }
 }
