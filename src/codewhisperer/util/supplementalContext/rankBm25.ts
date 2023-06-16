@@ -5,46 +5,126 @@
 
 // Implementation inspired by https://github.com/dorianbrown/rank_bm25/blob/990470ebbe6b28c18216fd1a8b18fe7446237dd6/rank_bm25.py#L52
 
-export interface BMDocument {
-    /** The document is originally scoreed. */
-    index: number
+export interface BM25Document {
+    content: string
     /** The score that the document recieves. */
     score: number
 
-    content: string
+    index: number
 }
 
-export function performBM25Scoring(corpusList: string[], query: string): BMDocument[] {
-    const wordFrequency: WordFrequency = initialize(corpusList)
-    const idf: IDF = calcIdf(wordFrequency)
-    const scoredDocs: BMDocument[] = getScore(wordFrequency, idf, query).map(value => {
-        return {
-            index: value.index,
-            score: value.score,
-            content: corpusList[value.index],
+export abstract class BM25 {
+    protected k1: number
+    protected b: number
+    protected epsilon: number
+
+    protected corpus: string[]
+    protected corpusSize: number
+    protected avgdl: number
+    protected idf: Map<string, number>
+    protected docLen: number[]
+    protected docFreqs: Map<string, number>[]
+    protected nd: Map<string, number>
+
+    constructor(
+        corpus: string[],
+        tokenizer: (str: string) => string[] = tokenize,
+        k1: number,
+        b: number,
+        epsilon: number
+    ) {
+        this.corpus = corpus
+        this.corpusSize = corpus.length
+        this.docLen = []
+        this.idf = new Map()
+        this.docFreqs = []
+        this.nd = new Map()
+        this.k1 = k1
+        this.b = b
+        this.epsilon = epsilon
+
+        let numDoc = 0
+        corpus
+            .map(document => {
+                return tokenizer(document)
+            })
+            .forEach(document => {
+                this.docLen.push(document.length)
+                numDoc += document.length
+
+                const frequencies = new Map<string, number>()
+                document.forEach(word => {
+                    frequencies.set(word, (frequencies.get(word) || 0) + 1)
+                })
+                this.docFreqs.push(frequencies)
+
+                frequencies.forEach((freq, word) => {
+                    this.nd.set(word, (this.nd.get(word) || 0) + 1)
+                })
+            })
+
+        this.avgdl = numDoc / this.corpusSize
+
+        this.calIdf(this.nd)
+    }
+
+    abstract calIdf(nd: Map<string, number>): void
+
+    abstract score(query: string): BM25Document[]
+
+    topN(query: string, n: number): BM25Document[] {
+        const notSorted = this.score(query)
+        const sorted = notSorted.sort((a, b) => b.score - a.score)
+        return sorted.slice(0, Math.min(n, sorted.length))
+    }
+}
+
+export class BM25Okapi extends BM25 {
+    constructor(corpus: string[], tokenizer: (str: string) => string[] = tokenize) {
+        super(corpus, tokenizer, 1.5, 0.75, 0.25)
+    }
+
+    calIdf(nd: Map<string, number>): void {
+        let idfSum = 0
+
+        const negativeIdfs: string[] = []
+        for (const [word, freq] of nd) {
+            const idf = Math.log(this.corpusSize - freq + 0.5) - Math.log(freq + 0.5)
+            this.idf.set(word, idf)
+            idfSum += idf
+
+            if (idf < 0) {
+                negativeIdfs.push(word)
+            }
         }
-    })
-    // Sort the result in descending order of scores.
-    return scoredDocs.sort((a: BMDocument, b: BMDocument) => b.score - a.score)
-}
 
-interface WordFrequency {
-    docLen: number[]
-    docFreqs: Map<string, number>[]
-    corpusSize: number
-    avgDl: number
-    nd: Map<string, number>
-}
+        const averageIdf = idfSum / this.idf.size
+        const eps = this.epsilon * averageIdf
+        for (const word of negativeIdfs) {
+            this.idf.set(word, eps)
+        }
+    }
 
-interface IDF {
-    idf: Map<string, number>
-    averageIdf: number
-}
+    score(query: string): BM25Document[] {
+        const queryWords = tokenize(query)
+        return this.docFreqs.map((docFreq, index) => {
+            let score = 0
+            queryWords.forEach((queryWord, _) => {
+                const queryWordFreqForDocument = docFreq.get(queryWord) || 0
+                const numerator = (this.idf.get(queryWord) || 0.0) * queryWordFreqForDocument * (this.k1 + 1)
+                const denominator =
+                    queryWordFreqForDocument + this.k1 * (1 - this.b + (this.b * this.docLen[index]) / this.avgdl)
 
-const BM25Configs = {
-    epsilon: 0.25,
-    k1: 1.5,
-    b: 0.75,
+                score += numerator / denominator
+            })
+
+            return {
+                content: this.corpus[index],
+                score: score,
+                index: index,
+            }
+        })
+    }
 }
 
 // TODO: This is a very simple tokenizer, we want to replace this by more sophisticated one.
@@ -58,86 +138,6 @@ function tokenize(content: string): string[] {
     }
 
     return result
-}
-
-function initialize(corpus: string[]): WordFrequency {
-    const docLen: number[] = []
-    const docFreqs: Map<string, number>[] = []
-    const nd: Map<string, number> = new Map()
-    let numDoc = 0
-    let corpusSize = 0
-
-    corpus.forEach(document => {
-        //TODO: Replace this simple split by better tokenizer
-        const words = tokenize(document)
-        docLen.push(words.length)
-        numDoc += words.length
-
-        const frequencies: Map<string, number> = new Map()
-        words.forEach(word => {
-            frequencies.set(word, (frequencies.get(word) || 0) + 1)
-        })
-        docFreqs.push(frequencies)
-
-        frequencies.forEach((_, word) => {
-            nd.set(word, (nd.get(word) || 0) + 1)
-        })
-
-        corpusSize += 1
-    })
-
-    const avgDl = numDoc / corpusSize
-    return { docLen, docFreqs, corpusSize, avgDl, nd }
-}
-
-function calcIdf(wordFrequency: WordFrequency): IDF {
-    const idf: Map<string, number> = new Map()
-    let idfSum = 0
-    const negativeIdfs: string[] = []
-    const nd = wordFrequency['nd']
-    const corpusSize = wordFrequency['corpusSize']
-
-    nd.forEach((_, word) => {
-        const freq = nd.get(word) || 0
-        const idfValue = Math.log(corpusSize - freq + 0.5) - Math.log(freq + 0.5)
-        idf.set(word, idfValue)
-        idfSum += idfValue
-
-        if (idfValue < 0) {
-            negativeIdfs.push(word)
-        }
-    })
-
-    const averageIdf = idfSum / idf.size
-    const eps = BM25Configs['epsilon'] * averageIdf
-
-    negativeIdfs.forEach(word => {
-        idf.set(word, eps)
-    })
-
-    return { idf, averageIdf }
-}
-
-function getScore(wordFrequency: WordFrequency, idf: IDF, query: string) {
-    return wordFrequency.docFreqs.map((docFreq, index) => {
-        let score = 0
-        const queryWords = tokenize(query)
-        queryWords.forEach((queryWord, queryIndex) => {
-            const queryWordFreqForDocument = docFreq.get(queryWord) || 0
-            const numerator = (idf.idf.get(queryWord) || 0.0) * queryWordFreqForDocument * (BM25Configs.k1 + 1)
-            const denominator =
-                queryWordFreqForDocument +
-                BM25Configs.k1 *
-                    (1 - BM25Configs.b + (BM25Configs.b * wordFrequency['docLen'][index]) / wordFrequency['avgDl'])
-
-            score += numerator / denominator
-        })
-
-        return {
-            index: index,
-            score: score,
-        }
-    })
 }
 
 function findAll(str: string, re: RegExp): string[] {

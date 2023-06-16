@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
-import { BMDocument, performBM25Scoring } from './rankBm25'
+import { BM25Document, BM25Okapi } from './rankBm25'
 import { isRelevant } from './editorFilesUtil'
 import { ToolkitError } from '../../../shared/errors'
 import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
@@ -74,20 +74,20 @@ export async function fetchSupplementalContextForSrc(
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
     const chunkContentList = chunkReferences.map(chunk => chunk.content)
     //performBM25Scoring returns the output in a sorted order (descending of scores)
-    const output: BMDocument[] = performBM25Scoring(chunkContentList, chunkInput.content) as BMDocument[]
-    const bestChunks: Chunk[] = []
-    //pick Top 3
-    for (let i = 0; i < Math.min(k, output.length); i++) {
-        const chunkIndex = output[i].index
+    // const output: BMDocument[] = performBM25Scoring(chunkContentList, chunkInput.content) as BMDocument[]
+    const top3: BM25Document[] = new BM25Okapi(chunkContentList).topN(chunkInput.content, crossFileContextConfig.topK)
+
+    return top3.map(doc => {
+        // reference to the original metadata since BM25.top3 will sort the result
+        const chunkIndex = doc.index
         const chunkReference = chunkReferences[chunkIndex]
-        bestChunks.push({
+        return {
             content: chunkReference.content,
             fileName: chunkReference.fileName,
             nextContent: chunkReference.nextContent,
-            score: output[i].score,
-        })
-    }
-    return bestChunks
+            score: doc.score,
+        }
+    })
 }
 
 /* This extract 10 lines to the left of the cursor from trigger file.
