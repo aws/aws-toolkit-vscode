@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
+import { IAM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -19,14 +20,17 @@ export interface Ec2ConnectErrorParameters {
     urlItem?: string
 }
 import { openRemoteTerminal } from '../shared/remoteSession'
+import { DefaultIamClient } from '../shared/clients/iamClient'
 
 export class Ec2ConnectClient {
     private ssmClient: DefaultSsmClient
     private ec2Client: DefaultEc2Client
+    private iamClient: DefaultIamClient
 
     public constructor(readonly regionCode: string) {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
+        this.iamClient = this.createIamSdkClient()
     }
 
     protected createSsmSdkClient(): DefaultSsmClient {
@@ -37,7 +41,11 @@ export class Ec2ConnectClient {
         return new DefaultEc2Client(this.regionCode)
     }
 
-    protected async showError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): Promise<string> {
+    protected createIamSdkClient(): DefaultIamClient {
+        return new DefaultIamClient(this.regionCode)
+    }
+
+    protected async showConnectError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): Promise<string> {
         switch (errorName) {
             case 'instanceStatus':
                 return (await vscode.window.showErrorMessage(params.message))!
@@ -46,12 +54,28 @@ export class Ec2ConnectClient {
         }
     }
 
+    private async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType>  {
+        try {
+            const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
+            const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
+            return iamResponse.AttachedPolicies!
+        } catch (err) {
+            return []
+        }
+        
+    }
+
+    private async hasProperPolicies(instanceId: string): Promise<boolean> {
+        const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
+        const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
+        console.log(attachedPolicies, requiredPolicies)
+        return requiredPolicies.every(policy => attachedPolicies.includes(policy))
+    }
+
     public async handleStartSessionError(selection: Ec2Selection): Promise<string> {
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
-
-        const IamRole = await this.ec2Client.getAttachedIamRole(selection.instanceId)
-        console.log(IamRole)
+        const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
         if (isInstanceRunning) {
             const errorParams: Ec2ConnectErrorParameters = {
@@ -61,14 +85,14 @@ export class Ec2ConnectClient {
                 url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
                 urlItem: 'Documentation To Configure IAM role',
             }
-            return await this.showError('permission', errorParams)
+            return await this.showConnectError('permission', errorParams)
         } else {
             const errorParams: Ec2ConnectErrorParameters = {
                 message:
                     generalErrorMessage +
                     'Please ensure the target instance is running and not currently starting, stopping, or stopped.',
             }
-            return await this.showError('instanceStatus', errorParams)
+            return await this.showConnectError('instanceStatus', errorParams)
         }
     }
 
