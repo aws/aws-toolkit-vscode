@@ -4,8 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-
-import { withoutShellIntegration } from '../ecs/commands'
+import { Settings } from '../shared/settings'
 
 export async function openRemoteTerminal(
     options: vscode.TerminalOptions,
@@ -26,5 +25,17 @@ export async function openRemoteTerminal(
         })
     } catch (err) {
         onError(err)
+    }
+}
+
+// VSC is logging args to the PTY host log file if shell integration is enabled :(
+async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
+    const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
+
+    try {
+        await Settings.instance.update('terminal.integrated.shellIntegration.enabled', false)
+        return await cb()
+    } finally {
+        Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
     }
 }
