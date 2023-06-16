@@ -7,7 +7,7 @@ import { Session } from 'aws-sdk/clients/ssm'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, isAwsError } from '../shared/errors'
 import { DefaultSsmClient } from '../shared/clients/ssmClient'
 import { openRemoteTerminal } from '../shared/remoteSession'
 
@@ -44,12 +44,15 @@ export class Ec2ConnectClient {
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
-        const response = await this.ssmClient.startSession(selection.instanceId)
-
-        if (response.$response.error) {
-            await this.handleStartSessionError(response.$response.error)
-        } else {
+        try {
+            const response = await this.ssmClient.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
+        } catch (err) {
+            if (isAwsError(err)) {
+                await this.handleStartSessionError(err)
+            } else {
+                throw err
+            }
         }
     }
 }
