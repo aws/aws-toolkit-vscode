@@ -73,7 +73,7 @@ export default defineComponent({
             this.updateIsAllAuthsLoaded()
 
             const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('CODE_WHISPERER', isConnected)
+            this.emitIsAuthConnected('codewhisperer', isConnected)
         },
     },
 })

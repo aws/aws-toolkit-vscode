@@ -313,9 +313,9 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
  */
 function executeFallbackLogic(serviceToShow?: ServiceItemId) {
     if (!DevSettings.instance.isDevMode()) {
-        if (serviceToShow === 'CODE_WHISPERER') {
+        if (serviceToShow === 'codewhisperer') {
             return showSsoSignIn.execute()
-        } else if (serviceToShow === 'CODE_CATALYST') {
+        } else if (serviceToShow === 'codecatalyst') {
             return getStartedCommand.execute(CodeCatalystAuthenticationProvider.instance!)
         }
         return addConnection.execute()

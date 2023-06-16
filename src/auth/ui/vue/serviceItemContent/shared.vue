@@ -10,10 +10,10 @@ import { ServiceItemId } from '../types'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
-    DOCUMENT_TYPE_SUPPORT: DocumentTypesContent,
-    RESOURCE_EXPLORER: AwsExplorerContent,
-    CODE_CATALYST: CodeCatalystContent,
-    CODE_WHISPERER: CodeWhispererContent,
+    documentTypeSupport: DocumentTypesContent,
+    resourceExplorer: AwsExplorerContent,
+    codecatalyst: CodeCatalystContent,
+    codewhisperer: CodeWhispererContent,
 }
 
 /**
@@ -23,10 +23,10 @@ const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
  * the current service.
  */
 export const serviceItemsAuthStatus: Readonly<Record<ServiceItemId, AuthStatus>> = {
-    DOCUMENT_TYPE_SUPPORT: new UnimplementedAuthStatus(),
-    RESOURCE_EXPLORER: new ResourceExplorerContentState(),
-    CODE_CATALYST: new CodeCatalystContentState(),
-    CODE_WHISPERER: new CodeWhispererContentState(),
+    documentTypeSupport: new UnimplementedAuthStatus(),
+    resourceExplorer: new ResourceExplorerContentState(),
+    codecatalyst: new CodeCatalystContentState(),
+    codewhisperer: new CodeWhispererContentState(),
 } as const
 
 export default serviceItemsContent

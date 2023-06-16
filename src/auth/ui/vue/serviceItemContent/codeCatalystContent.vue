@@ -66,7 +66,7 @@ export default defineComponent({
             this.updateIsAllAuthsLoaded()
 
             const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('CODE_CATALYST', isConnected)
+            this.emitIsAuthConnected('codecatalyst', isConnected)
         },
     },
 })

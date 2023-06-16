@@ -69,7 +69,7 @@ export default defineComponent({
             this.updateIsAllAuthsLoaded()
 
             const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('RESOURCE_EXPLORER', isConnected)
+            this.emitIsAuthConnected('resourceExplorer', isConnected)
         },
     },
 })

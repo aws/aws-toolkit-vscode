@@ -197,14 +197,14 @@ export default defineComponent({
         },
         async updateServiceConnections() {
             return Promise.all([
-                this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
+                this.serviceItemsAuthStatus.resourceExplorer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('resourceExplorer', isConnected)
                 }),
-                this.serviceItemsAuthStatus.CODE_WHISPERER.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('CODE_WHISPERER', isConnected)
+                this.serviceItemsAuthStatus.codewhisperer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('codewhisperer', isConnected)
                 }),
-                this.serviceItemsAuthStatus.CODE_CATALYST.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('CODE_CATALYST', isConnected)
+                this.serviceItemsAuthStatus.codecatalyst.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('codecatalyst', isConnected)
                 }),
             ]).then(() => this.renderItems())
         },
