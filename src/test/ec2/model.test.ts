@@ -52,7 +52,7 @@ describe('Ec2ConnectClient', function () {
         let dummyError: AWSError
 
         class MockEc2ConnectClientForError extends MockEc2ConnectClient {
-            protected override async hasProperPolicies(instanceId: string): Promise<boolean> {
+            public override async hasProperPolicies(instanceId: string): Promise<boolean> {
                 return instanceId.split(':')[1] === 'hasPolicies'
             }
         }
