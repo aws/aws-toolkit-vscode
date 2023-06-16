@@ -53,7 +53,7 @@
                                     :is="getServiceItemContent(item.id)"
                                     :state="serviceItemsAuthStatus[item.id]"
                                     :key="item.id + rerenderContentWindowKey"
-                                    @is-auth-connected="onIsAuthConnected"
+                                    @auth-connection-updated="onAuthConnectionUpdated"
                                 ></component>
                             </template>
                         </ServiceItem>
@@ -65,7 +65,7 @@
                     :is="getServiceItemContent(getSelectedService())"
                     :state="serviceItemsAuthStatus[getSelectedService()]"
                     :key="getSelectedService() + rerenderContentWindowKey"
-                    @is-auth-connected="onIsAuthConnected"
+                    @auth-connection-updated="onAuthConnectionUpdated"
                 ></component>
             </div>
         </div>
@@ -79,6 +79,8 @@ import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemConten
 import { AuthWebview } from './show'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { ServiceItemId } from './types'
+import { AuthFormId } from './authForms/types'
+import { ConnectionUpdateArgs } from './authForms/baseAuth.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 const serviceItemsState = new ServiceItemsState()
@@ -95,6 +97,8 @@ export default defineComponent({
             serviceItemsAuthStatus: serviceItemsAuthStatus,
 
             rerenderContentWindowKey: 0,
+
+            successfulAuthConnection: undefined as AuthFormId | undefined,
         }
     },
     async created() {
@@ -110,7 +114,7 @@ export default defineComponent({
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
             // this forced rerender will display the new state
-            this.rerenderSelectedContentWindow()
+            // this.rerenderSelectedContentWindow()
         })
         client.onDidSelectService((id: ServiceItemId) => {
             this.selectService(id)
@@ -187,8 +191,13 @@ export default defineComponent({
                 serviceItemsState.lock(id)
             }
         },
-        onIsAuthConnected(id: ServiceItemId, isConnected: boolean) {
-            this.updateServiceLock(id, isConnected)
+        onAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
+            if (args.isConnected && args.cause === 'signIn') {
+                this.successfulAuthConnection = args.id
+                this.rerenderSelectedContentWindow()
+            }
+
+            this.updateServiceLock(id, args.isConnected)
             this.renderItems()
             // In some cases, during the connection process for one auth method,
             // an already connected auth can be disconnected. This refreshes all

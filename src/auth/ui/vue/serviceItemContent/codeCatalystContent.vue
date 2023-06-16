@@ -38,6 +38,7 @@ import BuilderIdForm, { CodeCatalystBuilderIdState } from '../authForms/manageBu
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
+import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 
 export default defineComponent({
     name: 'CodeCatalystContent',
@@ -61,12 +62,10 @@ export default defineComponent({
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded
         },
-        async onAuthConnectionUpdated(id: AuthFormId) {
-            this.isLoaded[id] = true
+        async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
+            this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
-
-            const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('codecatalyst', isConnected)
+            this.emitAuthConnectionUpdated('codecatalyst', args)
         },
     },
 })
