@@ -46,14 +46,14 @@ export default defineComponent({
     data() {
         return {
             isLoaded: {
-                BUILDER_ID_CODE_CATALYST: false,
+                builderIdCodeCatalyst: false,
             } as Record<AuthFormId, boolean>,
             isAllAuthsLoaded: false,
         }
     },
     computed: {
         builderIdState(): CodeCatalystBuilderIdState {
-            return authFormsState.BUILDER_ID_CODE_CATALYST
+            return authFormsState.builderIdCodeCatalyst
         },
     },
     methods: {
@@ -66,14 +66,14 @@ export default defineComponent({
             this.updateIsAllAuthsLoaded()
 
             const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('CODE_CATALYST', isConnected)
+            this.emitIsAuthConnected('codecatalyst', isConnected)
         },
     },
 })
 
 export class CodeCatalystContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.BUILDER_ID_CODE_CATALYST.isAuthConnected()
+        return authFormsState.builderIdCodeCatalyst.isAuthConnected()
     }
 }
 </script>
