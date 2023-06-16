@@ -8,6 +8,7 @@ import { Ec2ConnectClient, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from
 import { DefaultSsmClient } from '../../shared/clients/ssmClient'
 import { DefaultEc2Client } from '../../shared/clients/ec2Client'
 import { AWSError } from 'aws-sdk'
+import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends DefaultSsmClient {
@@ -39,10 +40,6 @@ describe('Ec2ConnectClient', function () {
             return new MockEc2Client()
         }
 
-        protected override async hasProperPolicies(instanceId: string): Promise<boolean> {
-            return instanceId.split(':')[1] === 'hasPolicies'
-        }
-
         protected override async showConnectError(
             errorName: Ec2ConnectErrorName,
             params: Ec2ConnectErrorParameters
@@ -51,31 +48,102 @@ describe('Ec2ConnectClient', function () {
         }
     }
     describe('handleStartSessionError', async function () {
+        let client: MockEc2ConnectClientForError
+        let dummyError: AWSError
+
+        class MockEc2ConnectClientForError extends MockEc2ConnectClient {
+            protected override async hasProperPolicies(instanceId: string): Promise<boolean> {
+                return instanceId.split(':')[1] === 'hasPolicies'
+            }
+        }
+        before(function () {
+            client = new MockEc2ConnectClientForError()
+            dummyError = {} as AWSError
+        })
+
         it('determines which error to throw based on if instance is running', async function () {
-            const client = new MockEc2ConnectClient()
-            const mockError: AWSError = {} as AWSError
-
             let result: string
-            result = await client.handleStartSessionError(
-                { instanceId: 'pending:noPolicies', region: 'test-region' },
-                mockError
-            )
+            result = await client.handleStartSessionError(dummyError, {
+                instanceId: 'pending:noPolicies',
+                region: 'test-region',
+            })
             assert.strictEqual('instanceStatus', result)
 
-            result = await client.handleStartSessionError(
-                {
-                    instanceId: 'shutting-down:noPolicies',
-                    region: 'test-region',
-                },
-                mockError
-            )
+            result = await client.handleStartSessionError(dummyError, {
+                instanceId: 'shutting-down:noPolicies',
+                region: 'test-region',
+            })
             assert.strictEqual('instanceStatus', result)
 
-            result = await client.handleStartSessionError(
-                { instanceId: 'running:noPolicies', region: 'test-region' },
-                mockError
-            )
+            result = await client.handleStartSessionError(dummyError, {
+                instanceId: 'running:noPolicies',
+                region: 'test-region',
+            })
             assert.strictEqual('permission', result)
+        })
+    })
+
+    describe('hasProperPolicies', async function () {
+        let client: MockEc2ConnectClientForPolicies
+        class MockEc2ConnectClientForPolicies extends MockEc2ConnectClient {
+            protected override async getAttachedPolicies(instanceId: string): Promise<attachedPoliciesListType> {
+                switch (instanceId) {
+                    case 'firstInstance':
+                        return [
+                            {
+                                PolicyName: 'name',
+                            },
+                            {
+                                PolicyName: 'name2',
+                            },
+                            {
+                                PolicyName: 'name3',
+                            },
+                        ]
+                    case 'secondInstance':
+                        return [
+                            {
+                                PolicyName: 'AmazonSSMManagedInstanceCore',
+                            },
+                            {
+                                PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
+                            },
+                        ]
+                    case 'thirdInstance':
+                        return [
+                            {
+                                PolicyName: 'AmazonSSMManagedInstanceCore',
+                            },
+                        ]
+                    case 'fourthInstance':
+                        return [
+                            {
+                                PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
+                            },
+                        ]
+                    default:
+                        return []
+                }
+            }
+        }
+        before(function () {
+            client = new MockEc2ConnectClientForPolicies()
+        })
+
+        it('correctly determines if proper policies are included', async function () {
+            let result: boolean
+
+            result = await client.hasProperPolicies('firstInstance')
+            assert.strictEqual(false, result)
+
+            result = await client.hasProperPolicies('secondInstance')
+            assert.strictEqual(true, result)
+
+            result = await client.hasProperPolicies('thirdInstance')
+            assert.strictEqual(false, result)
+
+            result = await client.hasProperPolicies('fourthInstance')
+            assert.strictEqual(false, result)
         })
     })
 })

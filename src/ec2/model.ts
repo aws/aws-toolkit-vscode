@@ -57,7 +57,7 @@ export class Ec2ConnectClient {
         }
     }
 
-    private async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
+    protected async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
         try {
             const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
             const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
@@ -67,7 +67,7 @@ export class Ec2ConnectClient {
         }
     }
 
-    protected async hasProperPolicies(instanceId: string): Promise<boolean> {
+    public async hasProperPolicies(instanceId: string): Promise<boolean> {
         const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
         const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
 
