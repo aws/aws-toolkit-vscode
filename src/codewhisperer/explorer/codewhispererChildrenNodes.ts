@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AuthCommandDeclarations } from '../../auth/commands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -11,7 +12,6 @@ import {
     showReferenceLog,
     showSecurityScan,
     showLearnMore,
-    showSsoSignIn,
     showFreeTierLimit,
     reconnect,
     selectCustomization,
@@ -61,7 +61,7 @@ export const createSecurityScanNode = () => {
 }
 
 export const createSsoSignIn = () =>
-    showSsoSignIn.build().asTreeNode({
+    AuthCommandDeclarations.instance.declared.showConnectionsPage.build('codewhisperer').asTreeNode({
         label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
         iconPath: getIcon('vscode-debug-start'),
     })

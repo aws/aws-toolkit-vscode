@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import { ToolkitError } from '../errors'
 
 type ExcludedKeys = 'id' | 'label' | 'collapsibleState'
 
@@ -43,6 +44,11 @@ export interface TreeNode<T = unknown> {
      * Optional method to provide child nodes.
      */
     getChildren?(): Promise<TreeNode[]> | TreeNode[]
+
+    /**
+     * Optional method to provide parent node.
+     */
+    getParent?(): TreeNode | undefined
 }
 
 export function isTreeNode(obj: unknown): obj is TreeNode {
@@ -105,6 +111,15 @@ export class ResourceTreeDataProvider implements vscode.TreeDataProvider<TreeNod
         element && this.children.set(element.id, tracked)
 
         return tracked
+    }
+
+    public getParent(element: TreeNode<unknown>): vscode.ProviderResult<TreeNode> {
+        if (!element.getParent) {
+            throw new ToolkitError(
+                `Node '${element.id}' has not implemented getParent(). This can cause issues with vscode.TreeView.reveal().`
+            )
+        }
+        return element.getParent()
     }
 
     public refresh(node?: TreeNode): void {

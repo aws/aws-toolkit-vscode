@@ -20,6 +20,7 @@ import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
+import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
@@ -99,6 +100,18 @@ export class CodeWhispererNode implements RootNode {
                 ]
             }
         }
+    }
+
+    /**
+     * HACK: Since this is assumed to be an immediate child of the
+     * root, we return undefined.
+     *
+     * TODO: Look to have a base root class to extend so we do not
+     * need to implement this here.
+     * @returns
+     */
+    getParent(): TreeNode<unknown> | undefined {
+        return undefined
     }
 
     public updateShowFreeTierLimitReachedNode(show: boolean) {

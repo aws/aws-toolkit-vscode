@@ -127,19 +127,19 @@ export default defineComponent({
  */
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
-    DOCUMENT_TYPE_SUPPORT: {
+    documentTypeSupport: {
         title: 'Edit CloudFormation Templates',
         description: 'Invalid syntax validation and auto-completion.',
     },
-    RESOURCE_EXPLORER: {
+    resourceExplorer: {
         title: 'View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
     },
-    CODE_WHISPERER: {
+    codewhisperer: {
         title: 'AI-powered code suggestions from CodeWhisperer',
         description: 'Build applications faster with your AI coding companion.',
     },
-    CODE_CATALYST: {
+    codecatalyst: {
         title: 'Launch CodeCatalyst Cloud-based Dev Environments',
         description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
@@ -160,10 +160,10 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set(['DOCUMENT_TYPE_SUPPORT'])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set(['documentTypeSupport'])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = 'DOCUMENT_TYPE_SUPPORT'
+    private currentlySelected?: ServiceItemId = 'documentTypeSupport'
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked
@@ -207,10 +207,8 @@ export class ServiceItemsState {
 
     toggleSelected(id: ServiceItemId) {
         if (this.currentlySelected === id) {
-            console.log(`DESELECTED: ${id}`)
             this.deselect()
         } else {
-            console.log(`SELECTED: ${id}`)
             this.select(id)
         }
     }
