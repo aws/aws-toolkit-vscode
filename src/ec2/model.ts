@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
-import { IAM } from 'aws-sdk'
+import { AWSError, IAM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -45,7 +45,10 @@ export class Ec2ConnectClient {
         return new DefaultIamClient(this.regionCode)
     }
 
-    protected async showConnectError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): Promise<string> {
+    protected async showConnectError(
+        errorName: Ec2ConnectErrorName,
+        params: Ec2ConnectErrorParameters
+    ): Promise<string> {
         switch (errorName) {
             case 'instanceStatus':
                 return (await vscode.window.showErrorMessage(params.message))!
@@ -54,7 +57,7 @@ export class Ec2ConnectClient {
         }
     }
 
-    private async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType>  {
+    private async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
         try {
             const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
             const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
@@ -62,7 +65,6 @@ export class Ec2ConnectClient {
         } catch (err) {
             return []
         }
-        
     }
 
     private async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -72,21 +74,12 @@ export class Ec2ConnectClient {
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async handleStartSessionError(selection: Ec2Selection): Promise<string> {
+    public async handleStartSessionError(selection: Ec2Selection, err: AWSError): Promise<string> {
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
-        if (isInstanceRunning) {
-            const errorParams: Ec2ConnectErrorParameters = {
-                message:
-                    generalErrorMessage +
-                    'Please ensure the IAM role attached to the instance has the proper policies.',
-                url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
-                urlItem: 'Documentation To Configure IAM role',
-            }
-            return await this.showConnectError('permission', errorParams)
-        } else {
+        if (!isInstanceRunning) {
             const errorParams: Ec2ConnectErrorParameters = {
                 message:
                     generalErrorMessage +
@@ -94,6 +87,19 @@ export class Ec2ConnectClient {
             }
             return await this.showConnectError('instanceStatus', errorParams)
         }
+
+        if (!hasProperPolicies) {
+            const errorParams: Ec2ConnectErrorParameters = {
+                message:
+                    generalErrorMessage +
+                    'Please ensure the IAM role attached to the instance has the proper policies.',
+                url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
+                urlItem: 'See Policies needed for SSM',
+            }
+            return await this.showConnectError('permission', errorParams)
+        }
+
+        throw new ToolkitError('Unknown error unencountered when attempting to start session.', err)
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
@@ -114,8 +120,7 @@ export class Ec2ConnectClient {
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
         await this.ssmClient.startSession(selection.instanceId, async (err, data) => {
             if (err) {
-                // SSM SDK throws general error here, so no need to pass onward.
-                await this.handleStartSessionError(selection)
+                await this.handleStartSessionError(selection, err)
             } else {
                 this.openSessionInTerminal(data, selection)
             }
