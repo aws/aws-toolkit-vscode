@@ -20,6 +20,11 @@
         <hr />
 
         <div v-if="isAuthConnected" class="service-item-content-form-section">
+            <ExplorerAggregateForm
+                :identityCenterState="identityCenterFormState"
+                :credentialsState="credentialsFormState"
+            ></ExplorerAggregateForm>
+
             <div v-on:click="toggleShowIdentityCenter" style="cursor: pointer; display: flex; flex-direction: row">
                 <div
                     style="font-weight: bold; font-size: medium"
@@ -85,10 +90,11 @@ import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
+import ExplorerAggregateForm from '../authForms/manageExplorer.vue'
 
 export default defineComponent({
     name: 'AwsExplorerContent',
-    components: { CredentialsForm, IdentityCenterForm },
+    components: { CredentialsForm, IdentityCenterForm, ExplorerAggregateForm },
     extends: BaseServiceItemContent,
     data() {
         return {
