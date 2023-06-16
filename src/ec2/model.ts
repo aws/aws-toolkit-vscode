@@ -50,6 +50,9 @@ export class Ec2ConnectClient {
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
+        const IamRole = await this.ec2Client.getAttachedIamRole(selection.instanceId)
+        console.log(IamRole)
+
         if (isInstanceRunning) {
             const errorParams: Ec2ConnectErrorParameters = {
                 message:
