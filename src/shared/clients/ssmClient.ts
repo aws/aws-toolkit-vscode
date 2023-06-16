@@ -29,11 +29,9 @@ export class DefaultSsmClient {
         return termination
     }
 
-    public async startSession(
-        target: string,
-        callback?: ((err: AWSError, data: SSM.StartSessionResponse) => void) | undefined
-    ): Promise<void> {
+    public async startSession(target: string): Promise<PromiseResult<SSM.StartSessionResponse, AWSError>> {
         const client = await this.createSdkClient()
-        client.startSession({ Target: target }, callback)
+        const response = await client.startSession({ Target: target }).promise()
+        return response
     }
 }
