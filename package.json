@@ -3561,7 +3561,7 @@
     "dependencies": {
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
-        "@aws-sdk/credential-provider-ini": "^3.46.0",
+        "@aws-sdk/credential-provider-ini": "^3.353.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
         "@aws-sdk/credential-provider-sso": "^3.345.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
