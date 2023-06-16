@@ -98,6 +98,7 @@ export default defineComponent({
         }
     },
     async created() {
+        await this.selectInitialService()
         await this.updateServiceConnections()
 
         // This handles the case where non-webview auth setup is used.
@@ -110,6 +111,9 @@ export default defineComponent({
             // event that changes the state of this service (eg: disconnected)
             // this forced rerender will display the new state
             this.rerenderSelectedContentWindow()
+        })
+        client.onDidSelectService((id: ServiceItemId) => {
+            this.selectService(id)
         })
     },
     mounted() {
@@ -157,6 +161,10 @@ export default defineComponent({
             serviceItemsState.toggleSelected(id)
             this.renderItems()
         },
+        selectService(id: ServiceItemId) {
+            serviceItemsState.select(id)
+            this.renderItems()
+        },
         /**
          * Builds a unique key for a service item to optimize re-rendering.
          *
@@ -189,14 +197,14 @@ export default defineComponent({
         },
         async updateServiceConnections() {
             return Promise.all([
-                this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
+                this.serviceItemsAuthStatus.resourceExplorer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('resourceExplorer', isConnected)
                 }),
-                this.serviceItemsAuthStatus.CODE_WHISPERER.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('CODE_WHISPERER', isConnected)
+                this.serviceItemsAuthStatus.codewhisperer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('codewhisperer', isConnected)
                 }),
-                this.serviceItemsAuthStatus.CODE_CATALYST.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('CODE_CATALYST', isConnected)
+                this.serviceItemsAuthStatus.codecatalyst.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('codecatalyst', isConnected)
                 }),
             ]).then(() => this.renderItems())
         },
@@ -206,6 +214,12 @@ export default defineComponent({
         rerenderSelectedContentWindow() {
             // Arbitrarily toggles value between 0 and 1
             this.rerenderContentWindowKey = this.rerenderContentWindowKey === 0 ? 1 : 0
+        },
+        async selectInitialService() {
+            const initialService = await client.getInitialService()
+            if (initialService) {
+                this.selectService(initialService)
+            }
         },
     },
 })

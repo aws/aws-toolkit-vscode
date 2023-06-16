@@ -3,4 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type ServiceItemId = 'DOCUMENT_TYPE_SUPPORT' | 'RESOURCE_EXPLORER' | 'CODE_WHISPERER' | 'CODE_CATALYST'
+export type ServiceItemId = 'documentTypeSupport' | 'resourceExplorer' | 'codewhisperer' | 'codecatalyst'
+
+export function isServiceItemId(value: unknown): value is ServiceItemId {
+    return (
+        typeof value === 'string' &&
+        (value === 'documentTypeSupport' ||
+            value === 'resourceExplorer' ||
+            value === 'codewhisperer' ||
+            value === 'codecatalyst')
+    )
+}
