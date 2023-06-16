@@ -8,10 +8,10 @@ import { AuthFormId } from './types'
  * The state instance of all auth forms
  */
 const authFormsState: Readonly<Record<AuthFormId, any>> = {
-    CREDENTIALS: new CredentialsState() as CredentialsState,
-    BUILDER_ID_CODE_WHISPERER: new CodeWhispererBuilderIdState(),
-    BUILDER_ID_CODE_CATALYST: new CodeCatalystBuilderIdState(),
-    IDENTITY_CENTER_CODE_WHISPERER: new CodeWhispererIdentityCenterState(),
+    credentials: new CredentialsState() as CredentialsState,
+    builderIdCodeWhisperer: new CodeWhispererBuilderIdState(),
+    builderIdCodeCatalyst: new CodeCatalystBuilderIdState(),
+    identityCenterCodeWhisperer: new CodeWhispererIdentityCenterState(),
 } as const
 
 export interface AuthStatus {

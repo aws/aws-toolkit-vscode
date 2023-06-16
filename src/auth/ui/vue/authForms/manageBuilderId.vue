@@ -129,7 +129,7 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
     }
 
     override get id(): AuthFormId {
-        return 'BUILDER_ID_CODE_WHISPERER'
+        return 'builderIdCodeWhisperer'
     }
 
     override isAuthConnected(): Promise<boolean> {
@@ -151,7 +151,7 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
     }
 
     override get id(): AuthFormId {
-        return 'BUILDER_ID_CODE_CATALYST'
+        return 'builderIdCodeCatalyst'
     }
 
     override isAuthConnected(): Promise<boolean> {

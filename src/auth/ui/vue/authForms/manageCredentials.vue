@@ -139,7 +139,7 @@ export default defineComponent({
         async updateConnectedStatus() {
             return this.state.isAuthConnected().then(isConnected => {
                 this.isConnected = isConnected
-                this.emitAuthConnectionUpdated('CREDENTIALS')
+                this.emitAuthConnectionUpdated('credentials')
             })
         },
         async submitData() {

@@ -46,14 +46,14 @@ export default defineComponent({
     data() {
         return {
             isLoaded: {
-                BUILDER_ID_CODE_CATALYST: false,
+                builderIdCodeCatalyst: false,
             } as Record<AuthFormId, boolean>,
             isAllAuthsLoaded: false,
         }
     },
     computed: {
         builderIdState(): CodeCatalystBuilderIdState {
-            return authFormsState.BUILDER_ID_CODE_CATALYST
+            return authFormsState.builderIdCodeCatalyst
         },
     },
     methods: {
@@ -73,7 +73,7 @@ export default defineComponent({
 
 export class CodeCatalystContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.BUILDER_ID_CODE_CATALYST.isAuthConnected()
+        return authFormsState.builderIdCodeCatalyst.isAuthConnected()
     }
 }
 </script>

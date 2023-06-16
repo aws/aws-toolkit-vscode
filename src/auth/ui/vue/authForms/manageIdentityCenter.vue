@@ -209,7 +209,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
 export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     override get id(): AuthFormId {
-        return 'IDENTITY_CENTER_CODE_WHISPERER'
+        return 'identityCenterCodeWhisperer'
     }
 
     override get name(): string {

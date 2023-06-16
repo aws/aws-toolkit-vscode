@@ -50,13 +50,13 @@ export default defineComponent({
         return {
             isAllAuthsLoaded: false,
             isLoaded: {
-                CREDENTIALS: false,
+                credentials: false,
             } as Record<AuthFormId, boolean>,
         }
     },
     computed: {
         credentialsFormState(): CredentialsState {
-            return authFormsState.CREDENTIALS
+            return authFormsState.credentials
         },
     },
     methods: {
@@ -76,7 +76,7 @@ export default defineComponent({
 
 export class ResourceExplorerContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.CREDENTIALS.isAuthConnected()
+        return authFormsState.credentials.isAuthConnected()
     }
 }
 </script>

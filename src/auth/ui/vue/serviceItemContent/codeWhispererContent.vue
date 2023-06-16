@@ -50,17 +50,17 @@ export default defineComponent({
         return {
             isAllAuthsLoaded: false,
             isLoaded: {
-                BUILDER_ID_CODE_WHISPERER: false,
-                IDENTITY_CENTER_CODE_WHISPERER: false,
+                builderIdCodeWhisperer: false,
+                identityCenterCodeWhisperer: false,
             } as Record<AuthFormId, boolean>,
         }
     },
     computed: {
         builderIdState(): CodeWhispererBuilderIdState {
-            return authFormsState.BUILDER_ID_CODE_WHISPERER
+            return authFormsState.builderIdCodeWhisperer
         },
         identityCenterState(): CodeWhispererIdentityCenterState {
-            return authFormsState.IDENTITY_CENTER_CODE_WHISPERER
+            return authFormsState.identityCenterCodeWhisperer
         },
     },
     methods: {
@@ -81,8 +81,8 @@ export default defineComponent({
 export class CodeWhispererContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
         const result = await Promise.all([
-            authFormsState.BUILDER_ID_CODE_WHISPERER.isAuthConnected(),
-            authFormsState.IDENTITY_CENTER_CODE_WHISPERER.isAuthConnected(),
+            authFormsState.builderIdCodeWhisperer.isAuthConnected(),
+            authFormsState.identityCenterCodeWhisperer.isAuthConnected(),
         ])
         return result.filter(isConnected => isConnected).length > 0
     }
