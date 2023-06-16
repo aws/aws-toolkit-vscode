@@ -7,6 +7,7 @@ import * as assert from 'assert'
 import { Ec2ConnectClient, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
 import { DefaultSsmClient } from '../../shared/clients/ssmClient'
 import { DefaultEc2Client } from '../../shared/clients/ec2Client'
+import { AWSError } from 'aws-sdk'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends DefaultSsmClient {
@@ -38,7 +39,11 @@ describe('Ec2ConnectClient', function () {
             return new MockEc2Client()
         }
 
-        protected override async showError(
+        protected override async hasProperPolicies(instanceId: string): Promise<boolean> {
+            return instanceId.split(':')[1] === 'hasPolicies'
+        }
+
+        protected override async showConnectError(
             errorName: Ec2ConnectErrorName,
             params: Ec2ConnectErrorParameters
         ): Promise<string> {
@@ -48,17 +53,28 @@ describe('Ec2ConnectClient', function () {
     describe('handleStartSessionError', async function () {
         it('determines which error to throw based on if instance is running', async function () {
             const client = new MockEc2ConnectClient()
+            const mockError: AWSError = {} as AWSError
+
             let result: string
-            result = await client.handleStartSessionError({ instanceId: 'pending:instance', region: 'test-region' })
+            result = await client.handleStartSessionError(
+                { instanceId: 'pending:noPolicies', region: 'test-region' },
+                mockError
+            )
             assert.strictEqual('instanceStatus', result)
 
-            result = await client.handleStartSessionError({
-                instanceId: 'shutting-down:instance',
-                region: 'test-region',
-            })
+            result = await client.handleStartSessionError(
+                {
+                    instanceId: 'shutting-down:noPolicies',
+                    region: 'test-region',
+                },
+                mockError
+            )
             assert.strictEqual('instanceStatus', result)
 
-            result = await client.handleStartSessionError({ instanceId: 'running:instance', region: 'test-region' })
+            result = await client.handleStartSessionError(
+                { instanceId: 'running:noPolicies', region: 'test-region' },
+                mockError
+            )
             assert.strictEqual('permission', result)
         })
     })

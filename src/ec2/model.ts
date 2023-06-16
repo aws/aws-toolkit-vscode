@@ -67,10 +67,10 @@ export class Ec2ConnectClient {
         }
     }
 
-    private async hasProperPolicies(instanceId: string): Promise<boolean> {
+    protected async hasProperPolicies(instanceId: string): Promise<boolean> {
         const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
         const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
-        console.log(attachedPolicies, requiredPolicies)
+
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
