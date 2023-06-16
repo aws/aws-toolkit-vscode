@@ -6,7 +6,6 @@
 import * as glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import * as codewhispererClient from '../../client/codewhisperer'
 import * as vscode from 'vscode'
 import { getRelevantFilesFromEditor } from './editorFilesUtil'
 import {
