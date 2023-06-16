@@ -192,7 +192,7 @@ function openFilesInWindow(): string[] {
     tabArrays.forEach(tabArray => {
         tabArray.tabs.forEach(tab => {
             try {
-                filesOpenedInEditor.push(tab.input.uri.path)
+                filesOpenedInEditor.push((tab.input as any).uri.path)
             } catch (e) {}
         })
     })
