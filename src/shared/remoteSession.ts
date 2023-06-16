@@ -6,26 +6,18 @@
 import * as vscode from 'vscode'
 import { Settings } from '../shared/settings'
 
-export async function openRemoteTerminal(
-    options: vscode.TerminalOptions,
-    onClose: () => void,
-    onError: (err: unknown) => void
-) {
-    try {
-        await withoutShellIntegration(() => {
-            const terminal = vscode.window.createTerminal(options)
+export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
+    await withoutShellIntegration(() => {
+        const terminal = vscode.window.createTerminal(options)
 
-            const listener = vscode.window.onDidCloseTerminal(t => {
-                if (t.processId === terminal.processId) {
-                    vscode.Disposable.from(listener, { dispose: onClose }).dispose()
-                }
-            })
-
-            terminal.show()
+        const listener = vscode.window.onDidCloseTerminal(t => {
+            if (t.processId === terminal.processId) {
+                vscode.Disposable.from(listener, { dispose: onClose }).dispose()
+            }
         })
-    } catch (err) {
-        onError(err)
-    }
+
+        terminal.show()
+    })
 }
 
 // VSC is logging args to the PTY host log file if shell integration is enabled :(

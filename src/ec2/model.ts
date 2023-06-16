@@ -7,7 +7,7 @@ import { Session } from 'aws-sdk/clients/ssm'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ToolkitError, isAwsError } from '../shared/errors'
+import { ToolkitError } from '../shared/errors'
 import { DefaultSsmClient } from '../shared/clients/ssmClient'
 import { openRemoteTerminal } from '../shared/remoteSession'
 
@@ -38,10 +38,9 @@ export class Ec2ConnectClient {
             shellArgs: shellArgs,
         }
 
-        const onTerminalError = (err: unknown) => {
+        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session)).catch(err => {
             throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
-        }
-        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session), onTerminalError)
+        })
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {

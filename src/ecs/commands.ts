@@ -150,9 +150,9 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
             shellPath: session.path,
             shellArgs: session.args,
         }
-        const onError = (err: unknown) => {
+
+        await openRemoteTerminal(terminalOptions, session.dispose).catch(err => {
             throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
-        }
-        await openRemoteTerminal(terminalOptions, session.dispose, onError)
+        })
     })
 })
