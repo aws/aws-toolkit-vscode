@@ -7,7 +7,6 @@ import { Session } from 'aws-sdk/clients/ssm'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { withoutShellIntegration } from '../ecs/commands'
 import { ToolkitError } from '../shared/errors'
 import { DefaultSsmClient } from '../shared/clients/ssmClient'
 import { showMessageWithUrl } from '../shared/utilities/messages'
@@ -19,6 +18,7 @@ export interface Ec2ConnectErrorParameters {
     url?: string
     urlItem?: string
 }
+import { openRemoteTerminal } from '../shared/remoteSession'
 
 export class Ec2ConnectClient {
     private ssmClient: DefaultSsmClient
@@ -72,28 +72,16 @@ export class Ec2ConnectClient {
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
         const shellArgs = [JSON.stringify(session), selection.region, 'StartSession']
+        const terminalOptions = {
+            name: selection.region + '/' + selection.instanceId,
+            shellPath: ssmPlugin,
+            shellArgs: shellArgs,
+        }
 
-        try {
-            await withoutShellIntegration(() => {
-                const Ec2Terminal = vscode.window.createTerminal({
-                    name: selection.region + '/' + selection.instanceId,
-                    shellPath: ssmPlugin,
-                    shellArgs: shellArgs,
-                })
-
-                const listener = vscode.window.onDidCloseTerminal(terminal => {
-                    if (terminal.processId === Ec2Terminal.processId) {
-                        vscode.Disposable.from(listener, {
-                            dispose: () => this.ssmClient.terminateSession(session),
-                        }).dispose()
-                    }
-                })
-
-                Ec2Terminal.show()
-            })
-        } catch (err) {
+        const onTerminalError = (err: unknown) => {
             throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
         }
+        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session), onTerminalError)
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
