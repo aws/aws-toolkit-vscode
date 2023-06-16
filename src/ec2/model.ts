@@ -74,7 +74,7 @@ export class Ec2ConnectClient {
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async handleStartSessionError(selection: Ec2Selection, err: AWSError): Promise<string> {
+    public async handleStartSessionError(err: AWSError, selection: Ec2Selection): Promise<string> {
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
@@ -111,19 +111,18 @@ export class Ec2ConnectClient {
             shellArgs: shellArgs,
         }
 
-        const onTerminalError = (err: unknown) => {
+        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session)).catch(err => {
             throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
-        }
-        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session), onTerminalError)
+        })
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
-        await this.ssmClient.startSession(selection.instanceId, async (err, data) => {
-            if (err) {
-                await this.handleStartSessionError(selection, err)
-            } else {
-                this.openSessionInTerminal(data, selection)
-            }
-        })
+        const response = await this.ssmClient.startSession(selection.instanceId)
+
+        if (response.$response.error) {
+            await this.handleStartSessionError(response.$response.error, selection)
+        } else {
+            await this.openSessionInTerminal(response, selection)
+        }
     }
 }

@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
-import { PromptSettings, Settings } from '../shared/settings'
+import { PromptSettings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
 import { removeAnsi } from '../shared/utilities/textUtilities'
@@ -137,18 +137,6 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
     })
 })
 
-// VSC is logging args to the PTY host log file if shell integration is enabled :(
-export async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
-    const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
-
-    try {
-        await Settings.instance.update('terminal.integrated.shellIntegration.enabled', false)
-        return await cb()
-    } finally {
-        Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
-    }
-}
-
 export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal', (obj?: unknown) => {
     return telemetry.ecs_runExecuteCommand.run(async span => {
         span.record({ ecsExecuteCommandType: 'shell' })
@@ -162,9 +150,9 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
             shellPath: session.path,
             shellArgs: session.args,
         }
-        const onError = (err: unknown) => {
+
+        await openRemoteTerminal(terminalOptions, session.dispose).catch(err => {
             throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
-        }
-        await openRemoteTerminal(terminalOptions, session.dispose, onError)
+        })
     })
 })
