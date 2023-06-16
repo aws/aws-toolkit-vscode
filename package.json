@@ -1108,7 +1108,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.auth.showConnectionsPage",
+                    "command": "aws.auth.manageConnections",
                     "when": "aws.isDevMode"
                 },
                 {
@@ -1872,7 +1872,7 @@
             ],
             "aws.auth": [
                 {
-                    "command": "aws.auth.showConnectionsPage",
+                    "command": "aws.auth.manageConnections",
                     "group": "0@1"
                 },
                 {
@@ -2020,7 +2020,7 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.auth.showConnectionsPage",
+                "command": "aws.auth.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
                 "category": "%AWS.title%"
             },

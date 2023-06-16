@@ -44,7 +44,7 @@ import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
-export const showConnectionsPageCommand = 'aws.auth.showConnectionsPage'
+export const showConnectionsPageCommand = 'aws.auth.manageConnections'
 
 export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Promise<Connection | void> {
     const resp = await createConnectionPrompter(auth, type).prompt()
