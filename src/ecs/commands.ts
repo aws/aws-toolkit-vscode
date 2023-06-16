@@ -156,6 +156,7 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
         const startCommand = new EcsSettings().get('openTerminalCommand')
         const { container, task, command } = await runCommandWizard(obj, startCommand)
         const session = await container.prepareCommandForTask(command, task)
+
         const terminalOptions = {
             name: `${container.description.name}/${task}`,
             shellPath: session.path,
