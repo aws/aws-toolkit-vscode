@@ -10,6 +10,7 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { withoutShellIntegration } from '../ecs/commands'
 import { ToolkitError } from '../shared/errors'
 import { DefaultSsmClient } from '../shared/clients/ssmClient'
+import { openRemoteTerminal } from '../shared/remoteSession'
 
 export class Ec2ConnectClient {
     // Will need the ec2Client for probing errors,
@@ -33,28 +34,16 @@ export class Ec2ConnectClient {
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
         const shellArgs = [JSON.stringify(session), selection.region, 'StartSession']
+        const terminalOptions = {
+            name: selection.region + '/' + selection.instanceId,
+            shellPath: ssmPlugin,
+            shellArgs: shellArgs,
+        }
 
-        try {
-            await withoutShellIntegration(() => {
-                const Ec2Terminal = vscode.window.createTerminal({
-                    name: selection.region + '/' + selection.instanceId,
-                    shellPath: ssmPlugin,
-                    shellArgs: shellArgs,
-                })
-
-                const listener = vscode.window.onDidCloseTerminal(terminal => {
-                    if (terminal.processId === Ec2Terminal.processId) {
-                        vscode.Disposable.from(listener, {
-                            dispose: () => this.ssmClient.terminateSession(session),
-                        }).dispose()
-                    }
-                })
-
-                Ec2Terminal.show()
-            })
-        } catch (err) {
+        const onTerminalError = (err: unknown) => {
             throw ToolkitError.chain(err, 'Failed to open ec2 instance.')
         }
+        await openRemoteTerminal(terminalOptions, () => this.ssmClient.terminateSession(session), onTerminalError)
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {

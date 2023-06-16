@@ -24,6 +24,7 @@ import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Container, Service } from './model'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { openRemoteTerminal } from '../shared/remoteSession'
 
 async function runCommandWizard(
     param?: unknown,
@@ -154,26 +155,15 @@ export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal'
 
         const startCommand = new EcsSettings().get('openTerminalCommand')
         const { container, task, command } = await runCommandWizard(obj, startCommand)
-
-        try {
-            const session = await container.prepareCommandForTask(command, task)
-            await withoutShellIntegration(() => {
-                const terminal = vscode.window.createTerminal({
-                    name: `${container.description.name}/${task}`,
-                    shellPath: session.path,
-                    shellArgs: session.args,
-                })
-
-                const listener = vscode.window.onDidCloseTerminal(t => {
-                    if (t.processId === terminal.processId) {
-                        vscode.Disposable.from(listener, session).dispose()
-                    }
-                })
-
-                terminal.show()
-            })
-        } catch (err) {
+        const session = await container.prepareCommandForTask(command, task)
+        const terminalOptions = {
+            name: `${container.description.name}/${task}`,
+            shellPath: session.path,
+            shellArgs: session.args,
+        }
+        const onError = (err: unknown) => {
             throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
         }
+        await openRemoteTerminal(terminalOptions, session.dispose, onError)
     })
 })
