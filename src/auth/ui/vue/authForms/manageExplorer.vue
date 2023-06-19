@@ -1,7 +1,7 @@
 <template>
     <div class="auth-form container-background border-common" id="identity-center-form">
         <div>
-            <FormTitle :isConnected="isConnected">Resource Explorer</FormTitle>
+            <FormTitle :isConnected="isConnected">{{ connectionName }}</FormTitle>
             <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
         </div>
 
@@ -18,6 +18,7 @@ import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { ExplorerIdentityCenterState } from './manageIdentityCenter.vue'
 import { CredentialsState } from './manageCredentials.vue'
+import { AuthFormId } from './types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -46,18 +47,36 @@ export default defineComponent({
     data() {
         return {
             isConnected: false,
+            connectionName: '',
         }
     },
 
     async created() {
         this.isConnected =
-            (await this.identityCenterState.isAuthConnected()) || (await this.credentialsState.isAuthConnected())
+            (await this.credentialsState.isAuthConnected()) || (await this.identityCenterState.isAuthConnected())
+        await this.updateConnectionName()
         this.emitAuthConnectionUpdated({ id: 'aggregateExplorer', isConnected: this.isConnected, cause: 'created' })
     },
-    computed: {},
     methods: {
         showExplorer() {
             client.showResourceExplorer()
+        },
+        async updateConnectionName() {
+            const currentConnection = await this.getCurrentConnection()
+            if (currentConnection === undefined) {
+                this.connectionName = ''
+            } else {
+                this.connectionName = currentConnection === 'credentials' ? 'IAM Credentials' : 'IAM Identity Center'
+            }
+        },
+        /**
+         * Gets the current working connection that the explorer can use.
+         */
+        async getCurrentConnection(): Promise<AuthFormId | undefined> {
+            if (!this.isConnected) {
+                return undefined
+            }
+            return (await this.credentialsState.isAuthConnected()) ? 'credentials' : 'identityCenterExplorer'
         },
     },
 })

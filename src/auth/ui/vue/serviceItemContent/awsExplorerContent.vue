@@ -23,6 +23,7 @@
             <ExplorerAggregateForm
                 :identityCenterState="identityCenterFormState"
                 :credentialsState="credentialsFormState"
+                @auth-connection-updated="onAuthConnectionUpdated"
             ></ExplorerAggregateForm>
 
             <div v-on:click="toggleShowIdentityCenter" style="cursor: pointer; display: flex; flex-direction: row">
@@ -102,6 +103,8 @@ export default defineComponent({
             isAllAuthsLoaded: false,
             isLoaded: {
                 credentials: false,
+                identityCenterExplorer: false,
+                aggregateExplorer: false,
             } as Record<AuthFormId, boolean>,
             isCredentialsShown: false,
             isIdentityCenterShown: false,
@@ -110,6 +113,11 @@ export default defineComponent({
     },
     async created() {
         this.isAuthConnected = await this.state.isAuthConnected()
+        if (!this.isAuthConnected) {
+            // This does not get loaded at all when auth is not connected
+            // so we'll mark it as loaded as to not block the overall loading
+            this.isLoaded.aggregateExplorer = true
+        }
     },
     computed: {
         credentialsFormState(): CredentialsState {
