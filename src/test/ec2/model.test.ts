@@ -5,7 +5,7 @@
 
 import * as assert from 'assert'
 import { ServiceException } from '@aws-sdk/smithy-client'
-import { InstanceStateName, } from "@aws-sdk/client-ec2"
+import { InstanceStateName } from '@aws-sdk/client-ec2'
 import { Ec2ConnectClient, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
 import { DefaultSsmClient } from '../../shared/clients/ssmClient'
 import { DefaultEc2Client } from '../../shared/clients/ec2Client'

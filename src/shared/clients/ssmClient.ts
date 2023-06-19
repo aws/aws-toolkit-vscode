@@ -10,20 +10,16 @@ export class DefaultSsmClient {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<SSM> {
-        return new SSM({region: this.regionCode})
+        return new SSM({ region: this.regionCode })
     }
 
-    public async terminateSession(
-        session: Session
-    ): Promise<TerminateSessionResponse> {
+    public async terminateSession(session: Session): Promise<TerminateSessionResponse> {
         const sessionId = session.SessionId!
         const client = await this.createSdkClient()
-        const termination = await client
-            .terminateSession({ SessionId: sessionId })
-            .catch(err => {
-                getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
-            })
-        
+        const termination = await client.terminateSession({ SessionId: sessionId }).catch(err => {
+            getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
+        })
+
         return termination!
     }
 

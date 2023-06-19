@@ -3,7 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EC2, DescribeInstancesRequest, DescribeIamInstanceProfileAssociationsRequest, Filter, Reservation, DescribeInstanceStatusRequest, InstanceStateName } from '@aws-sdk/client-ec2'
+import {
+    EC2,
+    DescribeInstancesRequest,
+    DescribeIamInstanceProfileAssociationsRequest,
+    Filter,
+    Reservation,
+    DescribeInstanceStatusRequest,
+    InstanceStateName,
+} from '@aws-sdk/client-ec2'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
@@ -12,7 +20,7 @@ export class DefaultEc2Client {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2> {
-        return new EC2({region: this.regionCode})
+        return new EC2({ region: this.regionCode })
     }
     public async getInstanceIds(): Promise<AsyncCollection<string>> {
         const client = await this.createSdkClient()
@@ -36,10 +44,9 @@ export class DefaultEc2Client {
 
     public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
         const client = await this.createSdkClient()
-        const requester = async (request: DescribeInstanceStatusRequest) =>
-            client.describeInstanceStatus(request)
+        const requester = async (request: DescribeInstanceStatusRequest) => client.describeInstanceStatus(request)
 
-        // Fix: SDK returns string instead of InstanceStateName so we have to cast it. 
+        // Fix: SDK returns string instead of InstanceStateName so we have to cast it.
         const response: InstanceStateName[] = await pageableToCollection(
             requester,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
