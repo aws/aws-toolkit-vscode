@@ -4,7 +4,8 @@
  */
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
-import { AWSError, IAM } from 'aws-sdk'
+import { IAM } from 'aws-sdk'
+import { ServiceException } from '@aws-sdk/smithy-client'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -74,7 +75,7 @@ export class Ec2ConnectClient {
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async handleStartSessionError(err: AWSError, selection: Ec2Selection): Promise<string> {
+    public async handleStartSessionError(err: ServiceException, selection: Ec2Selection): Promise<string> {
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
@@ -121,7 +122,7 @@ export class Ec2ConnectClient {
             const response = await this.ssmClient.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
         } catch (err) {
-            if (isAwsError(err)) {
+            if (err instanceof ServiceException) {
                 await this.handleStartSessionError(err, selection)
             } else {
                 throw err

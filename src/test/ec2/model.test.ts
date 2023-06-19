@@ -4,10 +4,11 @@
  */
 
 import * as assert from 'assert'
+import { ServiceException } from '@aws-sdk/smithy-client'
+import { InstanceStateName, } from "@aws-sdk/client-ec2"
 import { Ec2ConnectClient, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
 import { DefaultSsmClient } from '../../shared/clients/ssmClient'
 import { DefaultEc2Client } from '../../shared/clients/ec2Client'
-import { AWSError } from 'aws-sdk'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 
 describe('Ec2ConnectClient', function () {
@@ -22,8 +23,8 @@ describe('Ec2ConnectClient', function () {
             super('test-region')
         }
 
-        public override async getInstanceStatus(instanceId: string): Promise<string> {
-            return instanceId.split(':')[0]
+        public override async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
+            return instanceId.split(':')[0] as InstanceStateName
         }
     }
 
@@ -49,7 +50,7 @@ describe('Ec2ConnectClient', function () {
     }
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
-        let dummyError: AWSError
+        const dummyError: ServiceException = {} as ServiceException
 
         class MockEc2ConnectClientForError extends MockEc2ConnectClient {
             public override async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -58,7 +59,6 @@ describe('Ec2ConnectClient', function () {
         }
         before(function () {
             client = new MockEc2ConnectClientForError()
-            dummyError = {} as AWSError
         })
 
         it('determines which error to throw based on if instance is running', async function () {
