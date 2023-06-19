@@ -58,7 +58,7 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { SectionName, StaticProfile } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
@@ -107,7 +107,7 @@ export default defineComponent({
         this.isFormShown = !(await this.state.isAuthConnected())
         await this.updateSubmittableStatus()
 
-        this.updateConnectedStatus()
+        this.updateConnectedStatus('created')
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */
@@ -136,10 +136,10 @@ export default defineComponent({
                 this.canSubmit = errors === undefined
             })
         },
-        async updateConnectedStatus() {
+        async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
                 this.isConnected = isConnected
-                this.emitAuthConnectionUpdated('credentials')
+                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected: this.isConnected, cause })
             })
         },
         async submitData() {
@@ -159,7 +159,7 @@ export default defineComponent({
             this.clearFormData()
             this.isFormShown = false
             this.canSubmit = true // enable submit button
-            await this.updateConnectedStatus()
+            await this.updateConnectedStatus('signIn')
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown

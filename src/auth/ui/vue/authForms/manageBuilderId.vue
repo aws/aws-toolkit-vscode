@@ -1,6 +1,6 @@
 <template>
     <div class="auth-form container-background border-common" id="builder-id-form">
-        <div v-show="canShowAll">
+        <div>
             <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
 
             <div v-if="stage === 'START'">
@@ -38,7 +38,7 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { AuthStatus } from './shared.vue'
 import { AuthWebview } from '../show'
@@ -65,29 +65,26 @@ export default defineComponent({
             stage: 'START' as BuilderIdStage,
             isConnected: false,
             builderIdCode: '',
-            canShowAll: false,
             name: this.state.name,
         }
     },
     async created() {
-        await this.update()
-        this.canShowAll = true
+        await this.update('created')
     },
     methods: {
         async startSignIn() {
             this.stage = 'WAITING_ON_USER'
             await this.state.startBuilderIdSetup()
-            await this.update()
+            await this.update('signIn')
         },
-        async update() {
+        async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
             this.isConnected = await this.state.isAuthConnected()
-            this.emitAuthConnectionUpdated(this.state.id)
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async signout() {
             await this.state.signout()
-
-            this.update()
+            this.update('signOut')
         },
         showNodeInView() {
             this.state.showNodeInView()

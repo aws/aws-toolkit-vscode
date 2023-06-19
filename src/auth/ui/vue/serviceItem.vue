@@ -127,10 +127,6 @@ export default defineComponent({
  */
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
-    documentTypeSupport: {
-        title: 'Edit CloudFormation Templates',
-        description: 'Invalid syntax validation and auto-completion.',
-    },
     resourceExplorer: {
         title: 'View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
@@ -160,10 +156,10 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set(['documentTypeSupport'])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set(['resourceExplorer'])
 
     /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = 'documentTypeSupport'
+    private currentlySelected?: ServiceItemId = 'resourceExplorer'
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked

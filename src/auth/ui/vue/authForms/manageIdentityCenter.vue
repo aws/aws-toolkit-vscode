@@ -52,7 +52,7 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
@@ -98,21 +98,23 @@ export default defineComponent({
         this.data.startUrl = this.state.getValue('startUrl')
         this.data.region = this.state.getValue('region')
 
-        await this.update()
+        await this.update('created')
         this.canShowAll = true
     },
     computed: {},
     methods: {
         async signin(): Promise<void> {
             await this.state.startIdentityCenterSetup()
+            await this.update('signIn')
         },
         async signout(): Promise<void> {
             await this.state.signout()
+            this.update('signOut')
         },
-        async update() {
+        async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
             this.isConnected = await this.state.isAuthConnected()
-            this.emitAuthConnectionUpdated(this.state.id)
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async getRegion() {
             const region = await this.state.getRegion()
