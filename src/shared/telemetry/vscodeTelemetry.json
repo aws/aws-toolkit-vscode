@@ -6,6 +6,11 @@
             "description": "The user group identifier we assign to the customer and it should be unique identifier across different IDE platforms, i.e. Classifier, CrossFile etc."
         },
         {
+            "name": "codewhispererCustomizationArn",
+            "type": "string",
+            "description": "The currently selected customization arn(None if using the base model)"
+        },
+        {
             "name": "documentFormat",
             "type": "string",
             "allowedValues": ["JSON, YAML"],
@@ -315,6 +320,10 @@
                 },
                 {
                     "type": "codewhispererUserGroup"
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
                 }
             ]
         },
@@ -343,6 +352,10 @@
                 },
                 {
                     "type": "successCount"
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
                 }
             ],
             "passive": true
@@ -529,6 +542,10 @@
                 },
                 {
                     "type": "codewhispererUserGroup"
+                },
+                {
+                    "type": "codewhispererCustomizationArn",
+                    "required": false
                 }
             ]
         },

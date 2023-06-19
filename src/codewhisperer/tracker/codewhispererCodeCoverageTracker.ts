@@ -14,8 +14,8 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
-import { getSelectedCustomization } from "../util/customizationUtil";
-import { codeWhispererClient as client } from "../client/codewhisperer";
+import { getSelectedCustomization } from '../util/customizationUtil'
+import { codeWhispererClient as client } from '../client/codewhisperer'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -122,6 +122,7 @@ export class CodeWhispererCodeCoverageTracker {
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
+        const selectedCustomization = getSelectedCustomization()
         telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
             codewhispererLanguage: this._language,
@@ -129,20 +130,22 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererCustomizationArn: selectedCustomization.arn,
         })
-        const selectedCustomization = getSelectedCustomization()
-        client.putTelemetryEvent({
-            telemetryEvent: {
-                codeCoverageEvent: {
-                    customizationArn: selectedCustomization.arn,
-                    programmingLanguage: {
-                        languageName: this._language
+        client
+            .putTelemetryEvent({
+                telemetryEvent: {
+                    codeCoverageEvent: {
+                        customizationArn: selectedCustomization.arn,
+                        programmingLanguage: {
+                            languageName: this._language,
+                        },
+                        acceptedCharacterCount: acceptedTokens,
+                        totalCharacterCount: totalTokens,
                     },
-                    acceptedCharacterCount: acceptedTokens,
-                    totalCharacterCount: totalTokens
-                }
-            }
-        }).then()
+                },
+            })
+            .then()
     }
 
     private tryStartTimer() {

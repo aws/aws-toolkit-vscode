@@ -119,6 +119,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextLatency: supplementalContextMetadata?.latency,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererCustomizationArn: getSelectedCustomization().arn,
         }
         telemetry.codewhisperer_serviceInvocation.emit(event)
         this.sessionInvocations.push(event)
@@ -271,6 +272,7 @@ export class TelemetryHelper {
         const language = this.sessionDecisions[0].codewhispererLanguage
         const aggregatedCompletionType = this.getAggregatedCompletionType(this.sessionDecisions)
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
+        const selectedCustomization = getSelectedCustomization()
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
@@ -304,12 +306,12 @@ export class TelemetryHelper {
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
+            codewhispererCustomizationArn: selectedCustomization.arn,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
 
-        const selectedCustomization = getSelectedCustomization()
         client
             .putTelemetryEvent({
                 telemetryEvent: {
