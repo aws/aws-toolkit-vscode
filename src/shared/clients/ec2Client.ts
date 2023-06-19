@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EC2 } from 'aws-sdk'
-import globals from '../extensionGlobals'
+import { EC2, DescribeInstancesRequest, DescribeIamInstanceProfileAssociationsRequest, Filter, Reservation, DescribeInstanceStatusRequest, InstanceStateName } from '@aws-sdk/client-ec2'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
@@ -13,12 +12,11 @@ export class DefaultEc2Client {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2> {
-        return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
+        return new EC2({region: this.regionCode})
     }
     public async getInstanceIds(): Promise<AsyncCollection<string>> {
         const client = await this.createSdkClient()
-        const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
-
+        const requester = async (request: DescribeInstancesRequest) => client.describeInstances(request)
         const instanceIds = this.extractInstanceIdsFromReservations(
             pageableToCollection(requester, {}, 'NextToken', 'Reservations')
         )
@@ -26,7 +24,7 @@ export class DefaultEc2Client {
     }
 
     public extractInstanceIdsFromReservations(
-        reservations: AsyncCollection<EC2.ReservationList | undefined>
+        reservations: AsyncCollection<Reservation[] | undefined>
     ): AsyncCollection<string> {
         return reservations
             .flatten()
@@ -36,19 +34,20 @@ export class DefaultEc2Client {
             .filter(instanceId => instanceId !== undefined)
     }
 
-    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+    public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
         const client = await this.createSdkClient()
-        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
-            client.describeInstanceStatus(request).promise()
+        const requester = async (request: DescribeInstanceStatusRequest) =>
+            client.describeInstanceStatus(request)
 
-        const response = await pageableToCollection(
+        // Fix: SDK returns string instead of InstanceStateName so we have to cast it. 
+        const response: InstanceStateName[] = await pageableToCollection(
             requester,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
             'NextToken',
             'InstanceStatuses'
         )
             .flatten()
-            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
+            .map(instanceStatus => instanceStatus!.InstanceState!.Name! as InstanceStateName)
             .promise()
 
         return response[0]
@@ -58,7 +57,7 @@ export class DefaultEc2Client {
         return await this.checkInstanceStatus(instanceId, 'running')
     }
 
-    private async checkInstanceStatus(instanceId: string, targetStatus: EC2.InstanceStateName): Promise<boolean> {
+    private async checkInstanceStatus(instanceId: string, targetStatus: InstanceStateName): Promise<boolean> {
         const status = await this.getInstanceStatus(instanceId)
         return status == targetStatus
     }
@@ -70,14 +69,14 @@ export class DefaultEc2Client {
      */
     public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const client = await this.createSdkClient()
-        const instanceFilter: EC2.Filter[] = [
+        const instanceFilter: Filter[] = [
             {
                 Name: 'instance-id',
                 Values: [instanceId],
             },
         ]
-        const requester = async (request: EC2.DescribeIamInstanceProfileAssociationsRequest) =>
-            client.describeIamInstanceProfileAssociations(request).promise()
+        const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
+            client.describeIamInstanceProfileAssociations(request)
         const response = await pageableToCollection(
             requester,
             { Filters: instanceFilter },
