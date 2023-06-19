@@ -41,6 +41,7 @@ import CredentialsForm, { CredentialsState } from '../authForms/manageCredential
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
+import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 
 export default defineComponent({
     name: 'AwsExplorerContent',
@@ -50,13 +51,13 @@ export default defineComponent({
         return {
             isAllAuthsLoaded: false,
             isLoaded: {
-                CREDENTIALS: false,
+                credentials: false,
             } as Record<AuthFormId, boolean>,
         }
     },
     computed: {
         credentialsFormState(): CredentialsState {
-            return authFormsState.CREDENTIALS
+            return authFormsState.credentials
         },
     },
     methods: {
@@ -64,19 +65,17 @@ export default defineComponent({
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded
         },
-        async onAuthConnectionUpdated(id: AuthFormId) {
-            this.isLoaded[id] = true
+        async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
+            this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
-
-            const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('RESOURCE_EXPLORER', isConnected)
+            this.emitAuthConnectionUpdated('resourceExplorer', args)
         },
     },
 })
 
 export class ResourceExplorerContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.CREDENTIALS.isAuthConnected()
+        return authFormsState.credentials.isAuthConnected()
     }
 }
 </script>

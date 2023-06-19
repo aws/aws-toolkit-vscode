@@ -26,10 +26,10 @@ export async function initialize(
     })
 
     // TODO: To enable this in prod we need to remove the 'when' clause
-    // for: '"command": "aws.auth.showConnectionsPage"' in package.json
+    // for: '"command": "aws.auth.manageConnections"' in package.json
     registerCommandsWithVSCode(
         extensionContext,
-        new AuthCommandDeclarations(),
+        AuthCommandDeclarations.instance,
         new AuthCommandBackend(extensionContext)
     )
 }

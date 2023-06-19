@@ -12,11 +12,6 @@ export interface Ec2Selection {
 }
 
 export async function getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<string>> {
-<<<<<<< HEAD
-    const client = new DefaultEc2Client(regionCode)
-    return await client.getInstanceIds()
-=======
     const client = new Ec2Client(regionCode)
-    return client.getInstanceIds()
->>>>>>> hkobew/ec2/connect
+    return await client.getInstanceIds()
 }

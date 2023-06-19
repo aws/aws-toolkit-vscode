@@ -41,6 +41,7 @@ import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authFor
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
+import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 
 export default defineComponent({
     name: 'CodeWhispererContent',
@@ -50,17 +51,17 @@ export default defineComponent({
         return {
             isAllAuthsLoaded: false,
             isLoaded: {
-                BUILDER_ID_CODE_WHISPERER: false,
-                IDENTITY_CENTER_CODE_WHISPERER: false,
+                builderIdCodeWhisperer: false,
+                identityCenterCodeWhisperer: false,
             } as Record<AuthFormId, boolean>,
         }
     },
     computed: {
         builderIdState(): CodeWhispererBuilderIdState {
-            return authFormsState.BUILDER_ID_CODE_WHISPERER
+            return authFormsState.builderIdCodeWhisperer
         },
         identityCenterState(): CodeWhispererIdentityCenterState {
-            return authFormsState.IDENTITY_CENTER_CODE_WHISPERER
+            return authFormsState.identityCenterCodeWhisperer
         },
     },
     methods: {
@@ -68,12 +69,11 @@ export default defineComponent({
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded
         },
-        async onAuthConnectionUpdated(id: AuthFormId) {
-            this.isLoaded[id] = true
+        async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
+            this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
 
-            const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('CODE_WHISPERER', isConnected)
+            this.emitAuthConnectionUpdated('codewhisperer', args)
         },
     },
 })
@@ -81,8 +81,8 @@ export default defineComponent({
 export class CodeWhispererContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
         const result = await Promise.all([
-            authFormsState.BUILDER_ID_CODE_WHISPERER.isAuthConnected(),
-            authFormsState.IDENTITY_CENTER_CODE_WHISPERER.isAuthConnected(),
+            authFormsState.builderIdCodeWhisperer.isAuthConnected(),
+            authFormsState.identityCenterCodeWhisperer.isAuthConnected(),
         ])
         return result.filter(isConnected => isConnected).length > 0
     }
