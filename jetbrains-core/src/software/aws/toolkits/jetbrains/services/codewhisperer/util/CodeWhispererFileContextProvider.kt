@@ -31,6 +31,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextI
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SupplementalContextInfo
 import java.io.DataInput
 import java.io.DataOutput
+import java.util.Collections
 
 private val contentRootPathProvider = CopyContentRootPathProvider()
 
@@ -147,13 +148,12 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
 
     override suspend fun extractCodeChunksFromFiles(psiFile: PsiFile, fileProducers: List<suspend (PsiFile) -> List<VirtualFile>>): List<Chunk> {
         val parseFilesStart = System.currentTimeMillis()
-        val hasUsed = mutableSetOf<VirtualFile>()
+        val hasUsed = Collections.synchronizedSet(mutableSetOf<VirtualFile>())
         val chunks = mutableListOf<Chunk>()
 
         for (fileProducer in fileProducers) {
             yield()
             val files = fileProducer(psiFile)
-
             files.forEach { file ->
                 yield()
                 if (hasUsed.contains(file)) {
@@ -161,6 +161,7 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
                 }
                 val relativePath = runReadAction { contentRootPathProvider.getPathToElement(project, file, null) ?: file.path }
                 chunks.addAll(file.toCodeChunk(relativePath))
+                hasUsed.add(file)
                 if (chunks.size > CHUNK_SIZE) {
                     LOG.debug { "finish fetching 60 chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
                     return chunks.take(CHUNK_SIZE)
@@ -182,7 +183,8 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
     suspend fun extractSupplementalFileContextForSrc(psiFile: PsiFile, targetContext: FileContextInfo): List<Chunk> {
         if (!targetContext.programmingLanguage.isSupplementalContextSupported()) return emptyList()
 
-        val query = targetContext.caretContext.leftFileContext.split("\n").takeLast(10).joinToString("\n")
+        // takeLast(11) will extract 10 lines (exclusing current line) of left context as the query parameter
+        val query = targetContext.caretContext.leftFileContext.split("\n").takeLast(11).joinToString("\n")
 
         // step 1: prepare data
         val first60Chunks: List<Chunk> = try {
