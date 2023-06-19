@@ -1,22 +1,26 @@
 <template>
     <div class="auth-form container-background border-common" id="identity-center-form">
         <div v-if="checkIfConnected">
-            <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
+            <FormTitle :isConnected="isConnected"
+                >IAM Identity Center&nbsp;<a
+                    class="icon icon-lg icon-vscode-info"
+                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                ></a
+            ></FormTitle>
             <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
         </div>
         <div v-else>
             <!-- In this scenario we do not care about the active IC connection -->
-            <FormTitle :isConnected="false">IAM Identity Center</FormTitle>
+            <FormTitle :isConnected="false"
+                >IAM Identity Center&nbsp;<a
+                    class="icon icon-lg icon-vscode-info"
+                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                ></a
+            ></FormTitle>
             <div>Successor to AWS Single Sign-on</div>
         </div>
 
         <div v-if="stage === 'START'">
-            <div class="form-section">
-                <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
-                    >Learn more about IAM Identity Center.</a
-                >
-            </div>
-
             <div class="form-section">
                 <label class="input-title">Start URL</label>
                 <label class="small-description">The Start URL</label>
