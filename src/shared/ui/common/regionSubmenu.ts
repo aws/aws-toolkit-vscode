@@ -27,6 +27,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
         private readonly dataOptions?: ExtendedQuickPickOptions<T>,
         private readonly regionOptions?: ExtendedQuickPickOptions<T>,
+        private readonly separatorLabel: string = "Selections",
         private currentRegion = globals.regionProvider.guessDefaultRegion()
     ) {
         super()
@@ -50,7 +51,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                 description: `current region: ${this.currentRegion}`,
             },
             {
-                label: 'Selections',
+                label: this.separatorLabel,
                 kind: vscode.QuickPickItemKind.Separator,
                 data: undefined,
             },
