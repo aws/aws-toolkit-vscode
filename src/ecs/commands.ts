@@ -11,7 +11,7 @@ import * as vscode from 'vscode'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
-import { PromptSettings, Settings } from '../shared/settings'
+import { PromptSettings } from '../shared/settings'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/messages'
 import { removeAnsi } from '../shared/utilities/textUtilities'
@@ -24,6 +24,7 @@ import { getResourceFromTreeNode } from '../shared/treeview/utils'
 import { Container, Service } from './model'
 import { Instance } from '../shared/utilities/typeConstructors'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { openRemoteTerminal } from '../shared/remoteSession'
 
 async function runCommandWizard(
     param?: unknown,
@@ -136,44 +137,22 @@ export const runCommandInContainer = Commands.register('aws.ecs.runCommandInCont
     })
 })
 
-// VSC is logging args to the PTY host log file if shell integration is enabled :(
-async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> {
-    const userValue = Settings.instance.get('terminal.integrated.shellIntegration.enabled', Boolean)
-
-    try {
-        await Settings.instance.update('terminal.integrated.shellIntegration.enabled', false)
-        return await cb()
-    } finally {
-        Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
-    }
-}
-
 export const openTaskInTerminal = Commands.register('aws.ecs.openTaskInTerminal', (obj?: unknown) => {
     return telemetry.ecs_runExecuteCommand.run(async span => {
         span.record({ ecsExecuteCommandType: 'shell' })
 
         const startCommand = new EcsSettings().get('openTerminalCommand')
         const { container, task, command } = await runCommandWizard(obj, startCommand)
+        const session = await container.prepareCommandForTask(command, task)
 
-        try {
-            const session = await container.prepareCommandForTask(command, task)
-            await withoutShellIntegration(() => {
-                const terminal = vscode.window.createTerminal({
-                    name: `${container.description.name}/${task}`,
-                    shellPath: session.path,
-                    shellArgs: session.args,
-                })
-
-                const listener = vscode.window.onDidCloseTerminal(t => {
-                    if (t.processId === terminal.processId) {
-                        vscode.Disposable.from(listener, session).dispose()
-                    }
-                })
-
-                terminal.show()
-            })
-        } catch (err) {
-            throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
+        const terminalOptions = {
+            name: `${container.description.name}/${task}`,
+            shellPath: session.path,
+            shellArgs: session.args,
         }
+
+        await openRemoteTerminal(terminalOptions, session.dispose).catch(err => {
+            throw ToolkitError.chain(err, localize('AWS.ecs.openTaskInTerminal.error', 'Failed to open terminal.'))
+        })
     })
 })
