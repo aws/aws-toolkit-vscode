@@ -8,7 +8,7 @@ import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 
-export class DefaultEc2Client {
+export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2> {
