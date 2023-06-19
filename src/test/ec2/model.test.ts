@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { Ec2ConnectClient, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
+import { Ec2SsmConnecter, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
 import { DefaultSsmClient } from '../../shared/clients/ssmClient'
 import { DefaultEc2Client } from '../../shared/clients/ec2Client'
 import { AWSError } from 'aws-sdk'
@@ -27,7 +27,7 @@ describe('Ec2ConnectClient', function () {
         }
     }
 
-    class MockEc2ConnectClient extends Ec2ConnectClient {
+    class MockEc2ConnectClient extends Ec2SsmConnecter {
         public constructor() {
             super('test-region')
         }

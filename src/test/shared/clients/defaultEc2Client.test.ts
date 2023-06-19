@@ -8,10 +8,10 @@ import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { EC2 } from 'aws-sdk'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { DefaultEc2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client } from '../../../shared/clients/ec2Client'
 
 describe('extractInstanceIdsFromReservations', function () {
-    const client = new DefaultEc2Client('')
+    const client = new Ec2Client('')
     it('returns empty when given empty collection', async function () {
         const actualResult = await client
             .extractInstanceIdsFromReservations(
