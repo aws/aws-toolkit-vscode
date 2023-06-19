@@ -5,7 +5,7 @@
 
 import { createEc2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
 import { isValidResponse } from '../shared/wizards/wizard'
-import { Ec2ConnectClient } from './model'
+import { Ec2SsmConnecter } from './model'
 
 export async function tryConnect(): Promise<void> {
     const prompter = createEc2ConnectPrompter()
@@ -13,7 +13,7 @@ export async function tryConnect(): Promise<void> {
 
     if (isValidResponse(response)) {
         const selection = handleEc2ConnectPrompterResponse(response)
-        const ec2Client = new Ec2ConnectClient(selection.region)
+        const ec2Client = new Ec2SsmConnecter(selection.region)
         await ec2Client.attemptEc2Connection(selection)
     }
 }

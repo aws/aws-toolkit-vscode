@@ -11,7 +11,7 @@ import { ToolkitError, isAwsError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { openRemoteTerminal } from '../shared/remoteSession'
 
-export class Ec2ConnectClient {
+export class Ec2SsmConnecter {
     // Will need the ec2Client for probing errors,
     private ssmClient: SsmClient
     //private ec2Client: DefaultEc2Client
