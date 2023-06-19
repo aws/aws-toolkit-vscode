@@ -124,8 +124,9 @@ export default defineComponent({
         },
         async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
-            this.isConnected = this.checkIfConnected ? await this.state.isAuthConnected() : false
-            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
+            const actualIsConnected = await this.state.isAuthConnected()
+            this.isConnected = this.checkIfConnected ? actualIsConnected : false
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: actualIsConnected, cause })
         },
         async getRegion() {
             const region = await this.state.getRegion()

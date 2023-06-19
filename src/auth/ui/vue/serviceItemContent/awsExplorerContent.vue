@@ -51,6 +51,7 @@
 
             <CredentialsForm
                 :state="credentialsFormState"
+                :check-if-connected="false"
                 @auth-connection-updated="onAuthConnectionUpdated"
                 v-show="isCredentialsShown"
             ></CredentialsForm>
