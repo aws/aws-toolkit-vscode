@@ -8,16 +8,16 @@ import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError, isAwsError } from '../shared/errors'
-import { DefaultSsmClient } from '../shared/clients/ssmClient'
+import { SsmClient } from '../shared/clients/ssmClient'
 import { openRemoteTerminal } from '../shared/remoteSession'
 
 export class Ec2ConnectClient {
     // Will need the ec2Client for probing errors,
-    private ssmClient: DefaultSsmClient
+    private ssmClient: SsmClient
     //private ec2Client: DefaultEc2Client
 
     public constructor(readonly regionCode: string) {
-        this.ssmClient = new DefaultSsmClient(this.regionCode)
+        this.ssmClient = new SsmClient(this.regionCode)
         //this.ec2Client = new DefaultEc2Client(this.regionCode)
     }
 
