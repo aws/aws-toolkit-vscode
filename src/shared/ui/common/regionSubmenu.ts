@@ -27,7 +27,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
         private readonly itemsProvider: (region: string) => ItemLoadTypes<T>,
         private readonly dataOptions?: ExtendedQuickPickOptions<T>,
         private readonly regionOptions?: ExtendedQuickPickOptions<T>,
-        private readonly separatorLabel: string = "Selections",
+        private readonly separatorLabel: string = "Items",
         private currentRegion = globals.regionProvider.guessDefaultRegion()
     ) {
         super()
