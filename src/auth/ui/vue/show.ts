@@ -35,6 +35,7 @@ import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
 
+const logger = getLogger()
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
@@ -111,12 +112,8 @@ export class AuthWebview extends VueWebview {
         return globals.awsContextCommands.onCommandEditCredentials()
     }
 
-    async startCodeWhispererBuilderIdSetup(): Promise<void> {
-        try {
-            await awsIdSignIn()
-        } catch (e) {
-            return
-        }
+    async startCodeWhispererBuilderIdSetup(): Promise<string> {
+        return this.ssoSetup(() => awsIdSignIn())
     }
 
     async startCodeCatalystBuilderIdSetup(): Promise<void> {
@@ -168,7 +165,7 @@ export class AuthWebview extends VueWebview {
     /**
      * Creates an Identity Center connection but does not 'use' it.
      */
-    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']) {
+    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']): Promise<string> {
         const setupFunc = async () => {
             const ssoProfile = createSsoProfile(startUrl, regionId)
             await Auth.instance.createConnection(ssoProfile)
@@ -188,16 +185,22 @@ export class AuthWebview extends VueWebview {
         return this.ssoSetup(setupFunc)
     }
 
-    private async ssoSetup(setupFunc: () => Promise<any>) {
+    private async ssoSetup(setupFunc: () => Promise<any>): Promise<string> {
         try {
             await setupFunc()
+            return ''
         } catch (e) {
             // This scenario will most likely be due to failing to connect from user error.
             // When the sso login process fails (eg: wrong url) they will come back
             // to the IDE and cancel the 'waiting for browser response'
-            if (CancellationError.isUserCancelled(e)) {
-                return
+            if (
+                CancellationError.isUserCancelled(e) ||
+                (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
+            ) {
+                return 'Setup cancelled.'
             }
+            logger.error('Failed to setup.', e)
+            return 'Failed to setup.'
         }
     }
 
