@@ -21,9 +21,8 @@ import { getCredentialFormatError, getCredentialsErrors } from '../../credential
 import { profileExists } from '../../credentials/sharedCredentials'
 import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
-import { getStartedCommand } from '../../../codecatalyst/utils'
+import { getStartedCommand, setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
 import { Connection, SsoConnection, createSsoProfile, isBuilderIdConnection, isSsoConnection } from '../../connection'
 import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
@@ -34,6 +33,7 @@ import { throttle } from '../../../shared/utilities/functionUtils'
 import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
+import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -116,8 +116,8 @@ export class AuthWebview extends VueWebview {
         return this.ssoSetup(() => awsIdSignIn())
     }
 
-    async startCodeCatalystBuilderIdSetup(): Promise<void> {
-        return getStartedCommand.execute(this.codeCatalystAuth)
+    async startCodeCatalystBuilderIdSetup(): Promise<string> {
+        return this.ssoSetup(() => setupCodeCatalystBuilderId(this.codeCatalystAuth))
     }
 
     isCodeWhispererBuilderIdConnected(): boolean {
