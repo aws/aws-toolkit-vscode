@@ -6,10 +6,11 @@
 import { PropType, defineComponent } from 'vue'
 import { AuthStatus } from '../authForms/shared.vue'
 import { ServiceItemId } from '../types'
+import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 
 export default defineComponent({
     name: 'BaseServiceItemContent',
-    emits: ['is-auth-connected'],
+    emits: ['auth-connection-updated'],
     props: {
         state: {
             type: Object as PropType<AuthStatus>,
@@ -17,8 +18,8 @@ export default defineComponent({
         },
     },
     methods: {
-        emitIsAuthConnected(id: ServiceItemId, isConnected: boolean) {
-            this.$emit('is-auth-connected', id, isConnected)
+        emitAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
+            this.$emit('auth-connection-updated', id, args)
         },
     },
 })
