@@ -8,7 +8,7 @@ import globals from '../extensionGlobals'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { getLogger } from '../logger/logger'
 
-export class DefaultSsmClient {
+export class SsmClient {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<SSM> {
