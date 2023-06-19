@@ -22,7 +22,7 @@ export interface Ec2ConnectErrorParameters {
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 
-export class Ec2SsmConnecter {
+export class Ec2ConnectionManager {
     private ssmClient: SsmClient
     private ec2Client: Ec2Client
     private iamClient: DefaultIamClient
