@@ -4,12 +4,13 @@
  */
 
 import * as assert from 'assert'
-import { Ec2ConnectionManager, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
+import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { AWSError } from 'aws-sdk'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
+import { ToolkitError } from '../../shared/errors'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -40,10 +41,6 @@ describe('Ec2ConnectClient', function () {
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
         }
-
-        protected override throwConnectError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): void {
-            throw Error(errorName)
-        }
     }
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
@@ -60,11 +57,11 @@ describe('Ec2ConnectClient', function () {
         })
 
         it('determines which error to throw based on if instance is running', async function () {
-            async function testThrowsError(testInstance: Ec2Selection, errName: string) {
+            async function testThrowsError(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
                 try {
                     await client.handleStartSessionError(dummyError, testInstance)
                 } catch (err: unknown) {
-                    assert.strictEqual((err as Error).message, errName)
+                    assert.strictEqual((err as ToolkitError).code, errCode)
                 }
             }
 
@@ -73,7 +70,7 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'pending:noPolicies',
                     region: 'test-region',
                 },
-                'instanceStatus'
+                'EC2SSMStatusError'
             )
 
             await testThrowsError(
@@ -81,7 +78,7 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'shutting-down:noPolicies',
                     region: 'test-region',
                 },
-                'instanceStatus'
+                'EC2SSMStatusError'
             )
 
             await testThrowsError(
@@ -89,7 +86,15 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'running:noPolicies',
                     region: 'test-region',
                 },
-                'permission'
+                'EC2SSMPermissionError'
+            )
+
+            await testThrowsError(
+                {
+                    instanceId: 'running:hasPolicies',
+                    region: 'test-region',
+                },
+                'EC2SSMConnectError'
             )
         })
     })

@@ -12,12 +12,8 @@ import { ToolkitError, isAwsError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-export type Ec2ConnectErrorName = 'permission' | 'instanceStatus'
-export interface Ec2ConnectErrorParameters {
-    message: string
-    url?: string
-    urlItem?: string
-}
+export type Ec2ConnectErrorCode = 'EC2SSMStatusError' | 'EC2SSMPermissionError' | 'EC2SSMConnectError'
+
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 
@@ -44,15 +40,6 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    protected throwConnectError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): void {
-        switch (errorName) {
-            case 'instanceStatus':
-                throw new ToolkitError(params.message)
-            case 'permission':
-                throw new ToolkitError(params.message, { documentationUri: vscode.Uri.parse(params.url!) })
-        }
-    }
-
     protected async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
         try {
             const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
@@ -76,26 +63,34 @@ export class Ec2ConnectionManager {
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
         if (!isInstanceRunning) {
-            const errorParams: Ec2ConnectErrorParameters = {
-                message:
-                    generalErrorMessage +
+            throw new ToolkitError(
+                generalErrorMessage +
                     'Ensure the target instance is running and not currently starting, stopping, or stopped.',
-            }
-            this.throwConnectError('instanceStatus', errorParams)
+                { code: 'EC2SSMStatusError' }
+            )
         }
 
         if (!hasProperPolicies) {
-            const errorParams: Ec2ConnectErrorParameters = {
-                message:
-                    generalErrorMessage +
-                    'Ensure the IAM role attached to the instance has the proper policies.',
-                url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
-                urlItem: 'See Policies needed for SSM',
-            }
-            this.throwConnectError('permission', errorParams)
+            throw new ToolkitError(
+                generalErrorMessage + 'Ensure the IAM role attached to the instance has the proper policies.',
+                {
+                    code: 'EC2SSMPermissionError',
+                    documentationUri: vscode.Uri.parse(
+                        'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
+                    ),
+                }
+            )
         }
 
-        throw new ToolkitError('Unknown error unencountered when attempting to start session.', err)
+        throw new ToolkitError(
+            'Ensure SSM is running on target instance. For more information see the documentation.',
+            {
+                code: 'EC2SSMConnectError',
+                documentationUri: vscode.Uri.parse(
+                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
+                ),
+            }
+        )
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
