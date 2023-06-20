@@ -88,7 +88,7 @@ export class Ec2ConnectionManager {
             const errorParams: Ec2ConnectErrorParameters = {
                 message:
                     generalErrorMessage +
-                    'Please ensure the IAM role attached to the instance has the proper policies.',
+                    'Ensure the IAM role attached to the instance has the proper policies.',
                 url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
                 urlItem: 'See Policies needed for SSM',
             }
