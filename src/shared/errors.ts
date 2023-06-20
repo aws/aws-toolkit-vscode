@@ -156,6 +156,13 @@ export class ToolkitError extends Error implements ErrorInformation {
     }
 
     /**
+     * The associated documentation, if it exists. Otherwise undefined.
+     */
+    public get documentationUri(): vscode.Uri | undefined {
+        return this.info.documentationUri
+    }
+
+    /**
      * A formatted string that is analogous to a stack trace. While stack traces enumerate every
      * call site, this trace enumerates every throw site.
      *

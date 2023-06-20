@@ -10,7 +10,6 @@ import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
-import { showMessageWithUrl } from '../shared/utilities/messages'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
 export type Ec2ConnectErrorName = 'permission' | 'instanceStatus'
@@ -45,15 +44,12 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    protected async showConnectError(
-        errorName: Ec2ConnectErrorName,
-        params: Ec2ConnectErrorParameters
-    ): Promise<string> {
+    protected throwConnectError(errorName: Ec2ConnectErrorName, params: Ec2ConnectErrorParameters): void {
         switch (errorName) {
             case 'instanceStatus':
-                return (await vscode.window.showErrorMessage(params.message))!
+                throw new ToolkitError(params.message)
             case 'permission':
-                return (await showMessageWithUrl(params.message, params.url!, params.urlItem!, 'error'))!
+                throw new ToolkitError(params.message, { documentationUri: vscode.Uri.parse(params.url!) })
         }
     }
 
@@ -74,7 +70,7 @@ export class Ec2ConnectionManager {
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async handleStartSessionError(err: AWSError, selection: Ec2Selection): Promise<string> {
+    public async handleStartSessionError(err: AWSError, selection: Ec2Selection): Promise<Error> {
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
@@ -85,7 +81,7 @@ export class Ec2ConnectionManager {
                     generalErrorMessage +
                     'Please ensure the target instance is running and not currently starting, stopping, or stopped.',
             }
-            return await this.showConnectError('instanceStatus', errorParams)
+            this.throwConnectError('instanceStatus', errorParams)
         }
 
         if (!hasProperPolicies) {
@@ -96,7 +92,7 @@ export class Ec2ConnectionManager {
                 url: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html',
                 urlItem: 'See Policies needed for SSM',
             }
-            return await this.showConnectError('permission', errorParams)
+            this.throwConnectError('permission', errorParams)
         }
 
         throw new ToolkitError('Unknown error unencountered when attempting to start session.', err)
