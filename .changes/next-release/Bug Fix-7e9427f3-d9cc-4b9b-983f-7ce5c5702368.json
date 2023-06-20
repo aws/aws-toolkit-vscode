@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "ECS: tasks from unrelated services are shown in the \"Open Terminal...\" command"
+	"description": "ECS: tasks from unrelated task definitions are shown in the \"Open Terminal...\" command"
 }
