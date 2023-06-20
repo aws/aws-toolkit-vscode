@@ -169,9 +169,11 @@ export class AuthWebview extends VueWebview {
      * Creates an Identity Center connection but does not 'use' it.
      */
     async createIdentityCenterConnection(startUrl: string, regionId: Region['id']) {
-        const setupFunc = () => {
+        const setupFunc = async () => {
             const ssoProfile = createSsoProfile(startUrl, regionId)
-            return Auth.instance.createConnection(ssoProfile)
+            await Auth.instance.createConnection(ssoProfile)
+            // Trigger loading of Credentials associated with the SSO connection
+            return Auth.instance.listConnections()
         }
         return this.ssoSetup(setupFunc)
     }
