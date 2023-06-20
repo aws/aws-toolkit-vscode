@@ -29,8 +29,10 @@ const containerData = {
 const getClient = () => stub(DefaultEcsClient, { regionCode: 'us-east-1' })
 
 describe('Container', function () {
+    const serviceName = 'my-service'
+
     it('has a tree item', async function () {
-        const container = new Container(getClient(), containerData)
+        const container = new Container(getClient(), serviceName, containerData)
 
         await assertTreeItem(container, {
             label: containerData.name,
@@ -39,7 +41,7 @@ describe('Container', function () {
     })
 
     it('has a tree item when "enableExecuteCommand" is set', async function () {
-        const container = new Container(getClient(), { ...containerData, enableExecuteCommand: true })
+        const container = new Container(getClient(), serviceName, { ...containerData, enableExecuteCommand: true })
 
         await assertTreeItem(container, {
             label: containerData.name,
