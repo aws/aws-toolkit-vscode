@@ -3,6 +3,10 @@
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
+            <div class="form-section">
+                <button v-if="isConnected" v-on:click="showResourceExplorer">Open Resource Explorer</button>
+            </div>
+
             <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
                 <div :class="collapsibleClass"></div>
                 <div>Add another profile</div>
@@ -54,7 +58,7 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { SectionName, StaticProfile } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
@@ -103,7 +107,7 @@ export default defineComponent({
         this.isFormShown = !(await this.state.isAuthConnected())
         await this.updateSubmittableStatus()
 
-        this.updateConnectedStatus()
+        this.updateConnectedStatus('created')
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */
@@ -132,10 +136,10 @@ export default defineComponent({
                 this.canSubmit = errors === undefined
             })
         },
-        async updateConnectedStatus() {
+        async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
                 this.isConnected = isConnected
-                this.emitAuthConnectionUpdated('CREDENTIALS')
+                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected: this.isConnected, cause })
             })
         },
         async submitData() {
@@ -155,7 +159,7 @@ export default defineComponent({
             this.clearFormData()
             this.isFormShown = false
             this.canSubmit = true // enable submit button
-            await this.updateConnectedStatus()
+            await this.updateConnectedStatus('signIn')
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown
@@ -168,6 +172,9 @@ export default defineComponent({
         },
         editCredentialsFile() {
             client.editCredentialsFile()
+        },
+        showResourceExplorer() {
+            client.showResourceExplorer()
         },
     },
     watch: {

@@ -4,7 +4,7 @@
  */
 
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
-import { DefaultEc2Client } from '../shared/clients/ec2Client'
+import { Ec2Client } from '../shared/clients/ec2Client'
 
 export interface Ec2Selection {
     instanceId: string
@@ -12,6 +12,6 @@ export interface Ec2Selection {
 }
 
 export async function getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<string>> {
-    const client = new DefaultEc2Client(regionCode)
+    const client = new Ec2Client(regionCode)
     return await client.getInstanceIds()
 }

@@ -38,6 +38,7 @@ import BuilderIdForm, { CodeCatalystBuilderIdState } from '../authForms/manageBu
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
+import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 
 export default defineComponent({
     name: 'CodeCatalystContent',
@@ -46,14 +47,14 @@ export default defineComponent({
     data() {
         return {
             isLoaded: {
-                BUILDER_ID_CODE_CATALYST: false,
+                builderIdCodeCatalyst: false,
             } as Record<AuthFormId, boolean>,
             isAllAuthsLoaded: false,
         }
     },
     computed: {
         builderIdState(): CodeCatalystBuilderIdState {
-            return authFormsState.BUILDER_ID_CODE_CATALYST
+            return authFormsState.builderIdCodeCatalyst
         },
     },
     methods: {
@@ -61,19 +62,17 @@ export default defineComponent({
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded
         },
-        async onAuthConnectionUpdated(id: AuthFormId) {
-            this.isLoaded[id] = true
+        async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
+            this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
-
-            const isConnected = await this.state.isAuthConnected()
-            this.emitIsAuthConnected('CODE_CATALYST', isConnected)
+            this.emitAuthConnectionUpdated('codecatalyst', args)
         },
     },
 })
 
 export class CodeCatalystContentState implements AuthStatus {
     async isAuthConnected(): Promise<boolean> {
-        return authFormsState.BUILDER_ID_CODE_CATALYST.isAuthConnected()
+        return authFormsState.builderIdCodeCatalyst.isAuthConnected()
     }
 }
 </script>

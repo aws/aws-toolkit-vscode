@@ -42,13 +42,17 @@
                 <div class="form-section">
                     <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
                 </div>
+
+                <div class="form-section">
+                    <button v-on:click="showView()">Open {{ authName }} in Toolkit</button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
@@ -85,6 +89,7 @@ export default defineComponent({
             stage: 'START' as IdentityCenterStage,
 
             canShowAll: false,
+            authName: this.state.name,
         }
     },
 
@@ -93,21 +98,23 @@ export default defineComponent({
         this.data.startUrl = this.state.getValue('startUrl')
         this.data.region = this.state.getValue('region')
 
-        await this.update()
+        await this.update('created')
         this.canShowAll = true
     },
     computed: {},
     methods: {
         async signin(): Promise<void> {
             await this.state.startIdentityCenterSetup()
+            await this.update('signIn')
         },
         async signout(): Promise<void> {
             await this.state.signout()
+            this.update('signOut')
         },
-        async update() {
+        async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
             this.isConnected = await this.state.isAuthConnected()
-            this.emitAuthConnectionUpdated(this.state.id)
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async getRegion() {
             const region = await this.state.getRegion()
@@ -121,6 +128,9 @@ export default defineComponent({
             }
 
             this.canSubmit = await this.state.canSubmit()
+        },
+        showView() {
+            this.state.showView()
         },
     },
     watch: {
@@ -151,8 +161,10 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     }
 
     abstract get id(): AuthFormId
+    abstract get name(): string
     protected abstract _startIdentityCenterSetup(): Promise<void>
     abstract isAuthConnected(): Promise<boolean>
+    abstract showView(): Promise<void>
 
     setValue(key: IdentityCenterKey, value: string) {
         this._data[key] = value
@@ -199,7 +211,11 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
 export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     override get id(): AuthFormId {
-        return 'IDENTITY_CENTER_CODE_WHISPERER'
+        return 'identityCenterCodeWhisperer'
+    }
+
+    override get name(): string {
+        return 'CodeWhisperer'
     }
 
     protected override async _startIdentityCenterSetup(): Promise<void> {
@@ -209,6 +225,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
 
     override async isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererIdentityCenterConnected()
+    }
+
+    override async showView(): Promise<void> {
+        client.showCodeWhispererNode()
     }
 }
 </script>

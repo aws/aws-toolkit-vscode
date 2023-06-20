@@ -16,7 +16,7 @@ import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 
-export class DefaultEc2Client {
+export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2> {

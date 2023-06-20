@@ -17,21 +17,7 @@ import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection, isBuilderIdConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-
-export const getStartedCommand = Commands.register(
-    'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
-
-        if (authProvider.auth.getConnectionState(conn) === 'invalid') {
-            conn = await authProvider.auth.reauthenticate(conn)
-        }
-
-        if (!(await authProvider.isConnectionOnboarded(conn, true))) {
-            await authProvider.promptOnboarding()
-        }
-    }
-)
+import { AuthCommandDeclarations } from '../auth/commands'
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
@@ -49,7 +35,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
-            getStartedCommand.build(auth).asTreeNode({
+            AuthCommandDeclarations.instance.declared.showConnectionsPage.build('codecatalyst').asTreeNode({
                 label: 'Start',
                 iconPath: getIcon('vscode-debug-start'),
             }),
@@ -131,6 +117,18 @@ export class CodeCatalystRootNode implements RootNode {
         const devfileLocation = await getDevfileLocation(this.devenv.devenvClient)
 
         return getRemoteCommands(this.devenv.summary, devfileLocation)
+    }
+
+    /**
+     * HACK: Since this is assumed to be an immediate child of the
+     * root, we return undefined.
+     *
+     * TODO: Look to have a base root class to extend so we do not
+     * need to implement this here.
+     * @returns
+     */
+    getParent(): TreeNode<unknown> | undefined {
+        return undefined
     }
 
     public async getTreeItem() {

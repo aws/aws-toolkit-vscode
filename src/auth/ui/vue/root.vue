@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '20px' }">
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 25px">
                 <div style="fill: white">
@@ -30,6 +30,36 @@
                 </div>
             </div>
         </div>
+
+        <div
+            v-if="successfulAuthConnection"
+            class="border-common"
+            style="
+                width: fit-content;
+                white-space: nowrap;
+                display: flex;
+                flex-direction: row;
+                background-color: #28632b;
+                color: #ffffff;
+                padding: 10px;
+            "
+        >
+            <div class="icon icon-lg icon-vscode-check"></div>
+            &nbsp; &nbsp;
+            <div style="display: flex; flex-direction: row">
+                You're connected to {{ authFormDisplayName }}! Switch between connections in the&nbsp;<a
+                    v-on:click="showConnectionQuickPick()"
+                    style="cursor: pointer"
+                    >Toolkit panel</a
+                >&nbsp;or add additional connections below.
+            </div>
+            &nbsp;&nbsp;
+            <div
+                v-on:click="closeStatusBar"
+                style="cursor: pointer"
+                class="icon icon-lg icon-vscode-chrome-close"
+            ></div>
+        </div>
         <div class="flex-container">
             <div id="left-column">
                 <div>
@@ -53,7 +83,7 @@
                                     :is="getServiceItemContent(item.id)"
                                     :state="serviceItemsAuthStatus[item.id]"
                                     :key="item.id + rerenderContentWindowKey"
-                                    @is-auth-connected="onIsAuthConnected"
+                                    @auth-connection-updated="onAuthConnectionUpdated"
                                 ></component>
                             </template>
                         </ServiceItem>
@@ -65,7 +95,7 @@
                     :is="getServiceItemContent(getSelectedService())"
                     :state="serviceItemsAuthStatus[getSelectedService()]"
                     :key="getSelectedService() + rerenderContentWindowKey"
-                    @is-auth-connected="onIsAuthConnected"
+                    @auth-connection-updated="onAuthConnectionUpdated"
                 ></component>
             </div>
         </div>
@@ -79,6 +109,8 @@ import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemConten
 import { AuthWebview } from './show'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { ServiceItemId } from './types'
+import { AuthFormDisplayName, AuthFormId } from './authForms/types'
+import { ConnectionUpdateArgs } from './authForms/baseAuth.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 const serviceItemsState = new ServiceItemsState()
@@ -95,9 +127,12 @@ export default defineComponent({
             serviceItemsAuthStatus: serviceItemsAuthStatus,
 
             rerenderContentWindowKey: 0,
+
+            successfulAuthConnection: undefined as AuthFormId | undefined,
         }
     },
     async created() {
+        await this.selectInitialService()
         await this.updateServiceConnections()
 
         // This handles the case where non-webview auth setup is used.
@@ -109,7 +144,10 @@ export default defineComponent({
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
             // this forced rerender will display the new state
-            this.rerenderSelectedContentWindow()
+            // this.rerenderSelectedContentWindow()
+        })
+        client.onDidSelectService((id: ServiceItemId) => {
+            this.selectService(id)
         })
     },
     mounted() {
@@ -127,6 +165,12 @@ export default defineComponent({
                 return { status: 'LOCKED' as ServiceStatus, id }
             })
             return [...unlocked, ...locked]
+        },
+        authFormDisplayName() {
+            if (this.successfulAuthConnection === undefined) {
+                return ''
+            }
+            return AuthFormDisplayName[this.successfulAuthConnection]
         },
     },
     methods: {
@@ -157,6 +201,10 @@ export default defineComponent({
             serviceItemsState.toggleSelected(id)
             this.renderItems()
         },
+        selectService(id: ServiceItemId) {
+            serviceItemsState.select(id)
+            this.renderItems()
+        },
         /**
          * Builds a unique key for a service item to optimize re-rendering.
          *
@@ -179,8 +227,13 @@ export default defineComponent({
                 serviceItemsState.lock(id)
             }
         },
-        onIsAuthConnected(id: ServiceItemId, isConnected: boolean) {
-            this.updateServiceLock(id, isConnected)
+        onAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
+            if (args.isConnected && args.cause === 'signIn') {
+                this.successfulAuthConnection = args.id
+                this.rerenderSelectedContentWindow()
+            }
+
+            this.updateServiceLock(id, args.isConnected)
             this.renderItems()
             // In some cases, during the connection process for one auth method,
             // an already connected auth can be disconnected. This refreshes all
@@ -189,14 +242,14 @@ export default defineComponent({
         },
         async updateServiceConnections() {
             return Promise.all([
-                this.serviceItemsAuthStatus.RESOURCE_EXPLORER.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('RESOURCE_EXPLORER', isConnected)
+                this.serviceItemsAuthStatus.resourceExplorer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('resourceExplorer', isConnected)
                 }),
-                this.serviceItemsAuthStatus.CODE_WHISPERER.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('CODE_WHISPERER', isConnected)
+                this.serviceItemsAuthStatus.codewhisperer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('codewhisperer', isConnected)
                 }),
-                this.serviceItemsAuthStatus.CODE_CATALYST.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('CODE_CATALYST', isConnected)
+                this.serviceItemsAuthStatus.codecatalyst.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('codecatalyst', isConnected)
                 }),
             ]).then(() => this.renderItems())
         },
@@ -206,6 +259,18 @@ export default defineComponent({
         rerenderSelectedContentWindow() {
             // Arbitrarily toggles value between 0 and 1
             this.rerenderContentWindowKey = this.rerenderContentWindowKey === 0 ? 1 : 0
+        },
+        async selectInitialService() {
+            const initialService = await client.getInitialService()
+            if (initialService) {
+                this.selectService(initialService)
+            }
+        },
+        showConnectionQuickPick() {
+            client.showConnectionQuickPick()
+        },
+        closeStatusBar() {
+            this.successfulAuthConnection = undefined
         },
     },
 })
@@ -234,11 +299,5 @@ export default defineComponent({
 .service-item-list li {
     /* Creates an even separation between all list items*/
     margin-top: 10px;
-}
-
-#right-column {
-    /* This can be deleted, for development purposes */
-    height: 800px;
-    margin: 10px;
 }
 </style>

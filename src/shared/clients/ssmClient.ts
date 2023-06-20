@@ -6,7 +6,7 @@
 import { SSM, Session, TerminateSessionResponse, StartSessionResponse } from '@aws-sdk/client-ssm'
 import { getLogger } from '../logger/logger'
 
-export class DefaultSsmClient {
+export class SsmClient {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<SSM> {

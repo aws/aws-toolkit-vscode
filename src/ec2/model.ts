@@ -10,9 +10,9 @@ import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
-import { DefaultSsmClient } from '../shared/clients/ssmClient'
+import { SsmClient } from '../shared/clients/ssmClient'
 import { showMessageWithUrl } from '../shared/utilities/messages'
-import { DefaultEc2Client } from '../shared/clients/ec2Client'
+import { Ec2Client } from '../shared/clients/ec2Client'
 
 export type Ec2ConnectErrorName = 'permission' | 'instanceStatus'
 export interface Ec2ConnectErrorParameters {
@@ -23,9 +23,9 @@ export interface Ec2ConnectErrorParameters {
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 
-export class Ec2ConnectClient {
-    private ssmClient: DefaultSsmClient
-    private ec2Client: DefaultEc2Client
+export class Ec2ConnectionManager {
+    private ssmClient: SsmClient
+    private ec2Client: Ec2Client
     private iamClient: DefaultIamClient
 
     public constructor(readonly regionCode: string) {
@@ -34,12 +34,12 @@ export class Ec2ConnectClient {
         this.iamClient = this.createIamSdkClient()
     }
 
-    protected createSsmSdkClient(): DefaultSsmClient {
-        return new DefaultSsmClient(this.regionCode)
+    protected createSsmSdkClient(): SsmClient {
+        return new SsmClient(this.regionCode)
     }
 
-    protected createEc2SdkClient(): DefaultEc2Client {
-        return new DefaultEc2Client(this.regionCode)
+    protected createEc2SdkClient(): Ec2Client {
+        return new Ec2Client(this.regionCode)
     }
 
     protected createIamSdkClient(): DefaultIamClient {

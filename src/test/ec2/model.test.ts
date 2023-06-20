@@ -6,19 +6,19 @@
 import * as assert from 'assert'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { InstanceStateName } from '@aws-sdk/client-ec2'
-import { Ec2ConnectClient, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
-import { DefaultSsmClient } from '../../shared/clients/ssmClient'
-import { DefaultEc2Client } from '../../shared/clients/ec2Client'
+import { Ec2ConnectionManager, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
+import { SsmClient } from '../../shared/clients/ssmClient'
+import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 
 describe('Ec2ConnectClient', function () {
-    class MockSsmClient extends DefaultSsmClient {
+    class MockSsmClient extends SsmClient {
         public constructor() {
             super('test-region')
         }
     }
 
-    class MockEc2Client extends DefaultEc2Client {
+    class MockEc2Client extends Ec2Client {
         public constructor() {
             super('test-region')
         }
@@ -28,16 +28,16 @@ describe('Ec2ConnectClient', function () {
         }
     }
 
-    class MockEc2ConnectClient extends Ec2ConnectClient {
+    class MockEc2ConnectClient extends Ec2ConnectionManager {
         public constructor() {
             super('test-region')
         }
 
-        protected override createSsmSdkClient(): DefaultSsmClient {
+        protected override createSsmSdkClient(): SsmClient {
             return new MockSsmClient()
         }
 
-        protected override createEc2SdkClient(): DefaultEc2Client {
+        protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
         }
 
