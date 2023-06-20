@@ -132,6 +132,6 @@ export class CodeWhispererContentState implements AuthStatus {
     flex-direction: column;
     gap: 20px;
     justify-content: center;
-    align-items: center;
+    align-items: left;
 }
 </style>
