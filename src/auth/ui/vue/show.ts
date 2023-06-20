@@ -25,7 +25,7 @@ import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { getStartedCommand } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
-import { isBuilderIdConnection } from '../../connection'
+import { Connection, SsoConnection, createSsoProfile, isBuilderIdConnection, isSsoConnection } from '../../connection'
 import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -165,9 +165,32 @@ export class AuthWebview extends VueWebview {
         return showRegionPrompter()
     }
 
-    async startIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
+    /**
+     * Creates an Identity Center connection but does not 'use' it.
+     */
+    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']) {
+        const setupFunc = async () => {
+            const ssoProfile = createSsoProfile(startUrl, regionId)
+            await Auth.instance.createConnection(ssoProfile)
+            // Trigger loading of Credentials associated with the SSO connection
+            return Auth.instance.listConnections()
+        }
+        return this.ssoSetup(setupFunc)
+    }
+
+    /**
+     * Sets up the CW Identity Center connection.
+     */
+    async startCWIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
+        const setupFunc = () => {
+            return CodeWhispererAuth.instance.connectToEnterpriseSso(startUrl, regionId)
+        }
+        return this.ssoSetup(setupFunc)
+    }
+
+    private async ssoSetup(setupFunc: () => Promise<any>) {
         try {
-            await CodeWhispererAuth.instance.connectToEnterpriseSso(startUrl, regionId)
+            await setupFunc()
         } catch (e) {
             // This scenario will most likely be due to failing to connect from user error.
             // When the sso login process fails (eg: wrong url) they will come back
@@ -178,11 +201,22 @@ export class AuthWebview extends VueWebview {
         }
     }
 
+    /**
+     * Checks if a non-BuilderId Identity Center connection exists, it
+     * does not have to be active.
+     */
+    async isIdentityCenterExists(): Promise<boolean> {
+        const nonBuilderIdSsoConns = (await Auth.instance.listConnections()).find(conn =>
+            this.isNonBuilderIdSsoConnection(conn)
+        )
+        return nonBuilderIdSsoConns !== undefined
+    }
+
     isCodeWhispererIdentityCenterConnected(): boolean {
         return CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()
     }
 
-    async signoutIdentityCenter(): Promise<void> {
+    async signoutCWIdentityCenter(): Promise<void> {
         const activeConn = CodeWhispererAuth.instance.isEnterpriseSsoInUse()
             ? CodeWhispererAuth.instance.conn
             : undefined
@@ -190,21 +224,27 @@ export class AuthWebview extends VueWebview {
             // At this point CW is not actively using IAM IC,
             // even if a valid IAM IC profile exists. We only
             // want to sign out if it being actively used.
+            getLogger().warn('authWebview: Attempted to signout of CW identity center when it was not being used')
+            return
+        }
+
+        await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
+        await signout(Auth.instance, activeConn) // deletes active connection
+    }
+
+    async signoutIdentityCenter(): Promise<void> {
+        const conn = Auth.instance.activeConnection
+        const activeConn = this.isNonBuilderIdSsoConnection(conn) ? conn : undefined
+        if (!activeConn) {
             getLogger().warn('authWebview: Attempted to signout of identity center when it was not being used')
             return
         }
 
-        await this.deleteSavedIdentityCenterConns()
-        await signout(Auth.instance, activeConn) // deletes active connection
+        await signout(Auth.instance, activeConn)
     }
 
-    /**
-     * Deletes the saved connection, but it is possible an active one still persists
-     */
-    private async deleteSavedIdentityCenterConns(): Promise<void> {
-        if (CodeWhispererAuth.instance.isEnterpriseSsoInUse()) {
-            await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
-        }
+    private isNonBuilderIdSsoConnection(conn?: Connection): conn is SsoConnection {
+        return isSsoConnection(conn) && !isBuilderIdConnection(conn)
     }
 
     getSsoUrlError(url?: string) {
