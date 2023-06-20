@@ -79,7 +79,7 @@ export class Ec2ConnectionManager {
             const errorParams: Ec2ConnectErrorParameters = {
                 message:
                     generalErrorMessage +
-                    'Please ensure the target instance is running and not currently starting, stopping, or stopped.',
+                    'Ensure the target instance is running and not currently starting, stopping, or stopped.',
             }
             this.throwConnectError('instanceStatus', errorParams)
         }
