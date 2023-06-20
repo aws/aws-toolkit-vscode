@@ -4,7 +4,7 @@
  */
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { Ec2Selection, getInstanceIdsFromRegion } from './utils'
+import { Ec2Selection, getInstancesFromRegion } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import { Ec2Instance } from '../shared/clients/ec2Client'
 
@@ -25,7 +25,7 @@ export function handleEc2ConnectPrompterResponse(response: RegionSubmenuResponse
 
 export function createEc2ConnectPrompter(): RegionSubmenu<string> {
     return new RegionSubmenu(
-        async region => (await getInstanceIdsFromRegion(region)).map(asQuickpickItem).promise(),
+        async region => (await getInstancesFromRegion(region)).map(asQuickpickItem).promise(),
         { title: 'Select EC2 Instance Id' },
         { title: 'Select Region for EC2 Instance' },
         'Instances'

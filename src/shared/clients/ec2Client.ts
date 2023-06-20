@@ -32,7 +32,7 @@ export class Ec2Client {
         const client = await this.createSdkClient()
         const requester = async (request: DescribeInstancesRequest) => client.describeInstances(request)
         const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
-        const instances = this.extractInstanceIdsFromReservations(collection)
+        const instances = this.extractInstancesFromReservations(collection)
         return instances
     }
 
@@ -40,15 +40,18 @@ export class Ec2Client {
         return tags.filter(tag => tag.Key == targetKey)[0].Value
     }
 
-    public extractInstanceIdsFromReservations(
+    public extractInstancesFromReservations(
         reservations: AsyncCollection<Reservation[] | undefined>
     ): AsyncCollection<Ec2Instance> {
         return reservations
             .flatten()
             .map(instanceList => instanceList?.Instances)
             .flatten()
+            .filter(instance => instance!.InstanceId !== undefined)
             .map(instance => {
-                return { instanceId: instance!.InstanceId!, name: this.lookupTagKey(instance!.Tags!, 'Name') }
+                return instance!.Tags
+                    ? { instanceId: instance!.InstanceId!, name: this.lookupTagKey(instance!.Tags!, 'Name') }
+                    : { instanceId: instance!.InstanceId! }
             })
     }
 
