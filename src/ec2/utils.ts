@@ -4,14 +4,14 @@
  */
 
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
-import { Ec2Client } from '../shared/clients/ec2Client'
+import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 
 export interface Ec2Selection {
     instanceId: string
     region: string
 }
 
-export async function getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<string>> {
+export async function getInstanceIdsFromRegion(regionCode: string): Promise<AsyncCollection<Ec2Instance>> {
     const client = new Ec2Client(regionCode)
-    return await client.getInstanceIds()
+    return await client.getInstances()
 }

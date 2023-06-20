@@ -11,10 +11,16 @@ import {
     Reservation,
     DescribeInstanceStatusRequest,
     InstanceStateName,
+    Tag,
 } from '@aws-sdk/client-ec2'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
+
+export interface Ec2Instance {
+    instanceId: string
+    name?: string
+}
 
 export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
@@ -22,24 +28,28 @@ export class Ec2Client {
     private async createSdkClient(): Promise<EC2> {
         return new EC2({ region: this.regionCode })
     }
-    public async getInstanceIds(): Promise<AsyncCollection<string>> {
+    public async getInstances(): Promise<AsyncCollection<Ec2Instance>> {
         const client = await this.createSdkClient()
         const requester = async (request: DescribeInstancesRequest) => client.describeInstances(request)
-        const instanceIds = this.extractInstanceIdsFromReservations(
-            pageableToCollection(requester, {}, 'NextToken', 'Reservations')
-        )
-        return instanceIds
+        const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
+        const instances = this.extractInstanceIdsFromReservations(collection)
+        return instances
+    }
+
+    private lookupTagKey(tags: Tag[], targetKey: string): string | undefined {
+        return tags.filter(tag => tag.Key == targetKey)[0].Value
     }
 
     public extractInstanceIdsFromReservations(
         reservations: AsyncCollection<Reservation[] | undefined>
-    ): AsyncCollection<string> {
+    ): AsyncCollection<Ec2Instance> {
         return reservations
             .flatten()
             .map(instanceList => instanceList?.Instances)
             .flatten()
-            .map(instance => instance?.InstanceId)
-            .filter(instanceId => instanceId !== undefined)
+            .map(instance => {
+                return { instanceId: instance!.InstanceId!, name: this.lookupTagKey(instance!.Tags!, 'Name') }
+            })
     }
 
     public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {

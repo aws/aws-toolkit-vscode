@@ -6,11 +6,13 @@
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
 import { Ec2Selection, getInstanceIdsFromRegion } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
+import { Ec2Instance } from '../shared/clients/ec2Client'
 
-function asQuickpickItem(instanceId: string): DataQuickPickItem<string> {
+function asQuickpickItem(instance: Ec2Instance): DataQuickPickItem<string> {
     return {
-        label: instanceId,
-        data: instanceId,
+        label: '$(terminal) \t' + (instance.name ? instance.name : instance.instanceId),
+        detail: 'instanceId: ' + instance.instanceId,
+        data: instance.instanceId,
     }
 }
 
