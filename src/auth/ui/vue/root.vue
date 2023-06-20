@@ -228,8 +228,15 @@ export default defineComponent({
             }
         },
         onAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
+            if (args.cause === 'created') {
+                // When the auth update is caused by a creation of the auth form
+                // there is nothing to update externally since the state hasn't changed.
+                return
+            }
             if (args.isConnected && args.cause === 'signIn') {
                 this.successfulAuthConnection = args.id
+                // On a successful sign in the state of the current content window
+                // can change. This forces a rerendering of it to have it load the latest state.
                 this.rerenderSelectedContentWindow()
             }
 
