@@ -28,7 +28,7 @@ import { Connection, SsoConnection, createSsoProfile, isBuilderIdConnection, isS
 import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { validateSsoUrl } from '../../sso/validation'
+import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
 import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
@@ -250,9 +250,13 @@ export class AuthWebview extends VueWebview {
         return isSsoConnection(conn) && !isBuilderIdConnection(conn)
     }
 
-    getSsoUrlError(url?: string) {
+    getSsoUrlError(url: string | undefined, canUrlExist: boolean = true) {
         if (!url) {
             return
+        }
+        if (canUrlExist) {
+            // Url is allowed to already exist, so we only check the format
+            return validateSsoUrlFormat(url)
         }
         return validateSsoUrl(Auth.instance, url)
     }

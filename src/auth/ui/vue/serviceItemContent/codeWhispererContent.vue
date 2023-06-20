@@ -47,6 +47,7 @@
 
                 <IdentityCenterForm
                     :state="identityCenterState"
+                    :allow-existing-start-url="true"
                     @auth-connection-updated="onAuthConnectionUpdated"
                     v-show="isIdentityCenterShown"
                 ></IdentityCenterForm>

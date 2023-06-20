@@ -90,6 +90,11 @@ export default defineComponent({
             // but not care about any current identity center auth connections
             // and if they are connected or not.
         },
+        /** If we don't care about the start url already existing locally */
+        allowExistingStartUrl: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -151,10 +156,10 @@ export default defineComponent({
             this.state.setValue(key, value)
 
             if (key === 'startUrl') {
-                this.errors.startUrl = await this.state.getStartUrlError()
+                this.errors.startUrl = await this.state.getStartUrlError(this.allowExistingStartUrl)
             }
 
-            this.canSubmit = await this.state.canSubmit()
+            this.canSubmit = await this.state.canSubmit(this.allowExistingStartUrl)
         },
         showView() {
             this.state.showView()
@@ -222,14 +227,14 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         return client.getIdentityCenterRegion()
     }
 
-    async getStartUrlError() {
-        const error = await client.getSsoUrlError(this._data.startUrl)
+    async getStartUrlError(canUrlExist: boolean) {
+        const error = await client.getSsoUrlError(this._data.startUrl, canUrlExist)
         return error ?? ''
     }
 
-    async canSubmit() {
+    async canSubmit(canUrlExist: boolean) {
         const allFieldsFilled = Object.values(this._data).every(val => !!val)
-        const hasErrors = await this.getStartUrlError()
+        const hasErrors = await this.getStartUrlError(canUrlExist)
         return allFieldsFilled && !hasErrors
     }
 
