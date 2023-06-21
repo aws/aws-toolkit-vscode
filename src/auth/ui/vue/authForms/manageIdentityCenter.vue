@@ -237,7 +237,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
 @import '../shared.css';
 
 #identity-center-form {
-    width: 250px;
+    width: 280px;
     height: fit-content;
 }
 </style>
