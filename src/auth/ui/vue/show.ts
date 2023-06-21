@@ -34,6 +34,7 @@ import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -180,7 +181,7 @@ export class AuthWebview extends VueWebview {
      */
     async startCWIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
         const setupFunc = () => {
-            return CodeWhispererAuth.instance.connectToEnterpriseSso(startUrl, regionId)
+            return connectToEnterpriseSso(startUrl, regionId)
         }
         return this.ssoSetup(setupFunc)
     }
