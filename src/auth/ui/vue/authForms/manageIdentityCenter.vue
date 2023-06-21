@@ -23,14 +23,14 @@
         <div v-if="stage === 'START'">
             <div class="form-section">
                 <label class="input-title">Start URL</label>
-                <label class="small-description">The Start URL</label>
+                <label class="small-description">URL for your organization, provided by an admin or help desk.</label>
                 <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
                 <div class="small-description error-text">{{ errors.startUrl }}</div>
             </div>
 
             <div class="form-section">
                 <label class="input-title">Region</label>
-                <label class="small-description">The Region</label>
+                <label class="small-description">AWS Region that hosts Identity directory</label>
 
                 <select v-on:click="getRegion()">
                     <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
@@ -316,7 +316,7 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
 @import '../shared.css';
 
 #identity-center-form {
-    width: 280px;
+    width: 300px;
     height: fit-content;
 }
 </style>
