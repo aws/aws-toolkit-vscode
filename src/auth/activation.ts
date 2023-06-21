@@ -11,7 +11,6 @@ import { fromString } from './providers/credentials'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
 import { ExtensionUse } from '../shared/utilities/vsCodeUtils'
-import { DevSettings } from '../shared/settings'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { AuthSource } from './ui/vue/show'
 import { isIamConnection } from './connection'
@@ -41,9 +40,7 @@ export async function initialize(
         new AuthCommandBackend(extensionContext)
     )
 
-    if (DevSettings.instance.isDevMode()) {
-        showManageConnectionsOnStartup()
-    }
+    showManageConnectionsOnStartup()
 }
 
 /**

@@ -22,7 +22,7 @@ import { profileExists } from '../../credentials/sharedCredentials'
 import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
-import { getStartedCommand, setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
+import { setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
 import {
     Connection,
@@ -32,13 +32,11 @@ import {
     isIamConnection,
     isSsoConnection,
 } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptAndUseConnection } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter, promptAndUseConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
-import { DevSettings } from '../../../shared/settings'
-import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { AuthError, ServiceItemId, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
@@ -569,11 +567,6 @@ export async function showAuthWebview(
     source: AuthSource,
     serviceToShow?: ServiceItemId
 ): Promise<void> {
-    if (executeFallbackLogic(serviceToShow) !== undefined) {
-        // Fallback logic was executed
-        return
-    }
-
     let wasInitialServiceSet = false
     if (activePanel && serviceToShow) {
         // Webview is already open, so we have to select the service
@@ -609,25 +602,4 @@ export async function showAuthWebview(
             }),
         ]
     }
-}
-
-/**
- * This function falls back to the previous non auth webview
- * logic if we are not in dev mode.
- *
- * TODO: Remove this dev mode check once our auth connections webview is fully implemented.
- * We are currently doing this to fallback to the previous behaviour while still being
- * able to pre-emptively update parts of the code to call the new functionality once
- * things are finalized.
- */
-function executeFallbackLogic(serviceToShow?: ServiceItemId) {
-    if (!DevSettings.instance.isDevMode()) {
-        if (serviceToShow === 'codewhisperer') {
-            return showSsoSignIn.execute()
-        } else if (serviceToShow === 'codecatalyst') {
-            return getStartedCommand.execute(CodeCatalystAuthenticationProvider.instance!)
-        }
-        return addConnection.execute()
-    }
-    return undefined
 }

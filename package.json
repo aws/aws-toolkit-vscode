@@ -1108,8 +1108,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.auth.manageConnections",
-                    "when": "aws.isDevMode"
+                    "command": "aws.auth.manageConnections"
                 },
                 {
                     "command": "aws.ec2.connectToInstance",
