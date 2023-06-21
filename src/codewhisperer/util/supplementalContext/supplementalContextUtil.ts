@@ -17,7 +17,7 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
-    contents: CodeWhispererSupplementalContextItem[]
+    supplementalContextItems: CodeWhispererSupplementalContextItem[]
     contentsLength: number
     latency: number
 }
@@ -56,7 +56,7 @@ export async function fetchSupplementalContext(
                 return {
                     isUtg: isUtg,
                     isProcessTimeout: false,
-                    contents: value,
+                    supplementalContextItems: value,
                     contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
                     latency: performance.now() - timesBeforeFetching,
                 }
@@ -69,7 +69,7 @@ export async function fetchSupplementalContext(
                 return {
                     isUtg: isUtg,
                     isProcessTimeout: true,
-                    contents: [],
+                    supplementalContextItems: [],
                     contentsLength: 0,
                     latency: performance.now() - timesBeforeFetching,
                 }

@@ -14,34 +14,21 @@ export interface BM25Document {
 }
 
 export abstract class BM25 {
-    protected k1: number
-    protected b: number
-    protected epsilon: number
-
-    protected corpus: string[]
-    protected corpusSize: number
-    protected avgdl: number
-    protected idf: Map<string, number>
-    protected docLen: number[]
-    protected docFreqs: Map<string, number>[]
-    protected nd: Map<string, number>
+    protected readonly corpusSize: number
+    protected readonly avgdl: number
+    protected readonly idf: Map<string, number> = new Map()
+    protected readonly docLen: number[] = []
+    protected readonly docFreqs: Map<string, number>[] = []
+    protected readonly nd: Map<string, number> = new Map()
 
     constructor(
-        corpus: string[],
-        tokenizer: (str: string) => string[] = tokenize,
-        k1: number,
-        b: number,
-        epsilon: number
+        protected readonly corpus: string[],
+        protected readonly tokenizer: (str: string) => string[] = defaultTokenizer,
+        protected readonly k1: number,
+        protected readonly b: number,
+        protected readonly epsilon: number
     ) {
-        this.corpus = corpus
         this.corpusSize = corpus.length
-        this.docLen = []
-        this.idf = new Map()
-        this.docFreqs = []
-        this.nd = new Map()
-        this.k1 = k1
-        this.b = b
-        this.epsilon = epsilon
 
         let numDoc = 0
         corpus
@@ -80,7 +67,7 @@ export abstract class BM25 {
 }
 
 export class BM25Okapi extends BM25 {
-    constructor(corpus: string[], tokenizer: (str: string) => string[] = tokenize) {
+    constructor(corpus: string[], tokenizer: (str: string) => string[] = defaultTokenizer) {
         super(corpus, tokenizer, 1.5, 0.75, 0.25)
     }
 
@@ -106,7 +93,7 @@ export class BM25Okapi extends BM25 {
     }
 
     score(query: string): BM25Document[] {
-        const queryWords = tokenize(query)
+        const queryWords = defaultTokenizer(query)
         return this.docFreqs.map((docFreq, index) => {
             let score = 0
             queryWords.forEach((queryWord, _) => {
@@ -128,7 +115,7 @@ export class BM25Okapi extends BM25 {
 }
 
 // TODO: This is a very simple tokenizer, we want to replace this by more sophisticated one.
-function tokenize(content: string): string[] {
+function defaultTokenizer(content: string): string[] {
     const regex = /\w+/g
     const words = content.split(' ')
     const result = []
