@@ -32,7 +32,7 @@ import {
     isIamConnection,
     isSsoConnection,
 } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptAndUseConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
@@ -317,7 +317,7 @@ export class AuthWebview extends VueWebview {
     }
 
     showConnectionQuickPick() {
-        return promptForConnection(Auth.instance)
+        return promptAndUseConnection(Auth.instance)
     }
 }
 
