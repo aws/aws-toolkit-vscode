@@ -215,7 +215,17 @@ abstract class BaseIdentityCenterState implements AuthStatus {
      */
     async startIdentityCenterSetup(): Promise<string> {
         this._stage = 'WAITING_ON_USER'
-        return this._startIdentityCenterSetup()
+        const error = await this._startIdentityCenterSetup()
+
+        // Successful submission, so we can clear
+        // old data.
+        if (!error) {
+            this._data = {
+                startUrl: '',
+                region: '',
+            }
+        }
+        return error
     }
 
     async stage(): Promise<IdentityCenterStage> {
