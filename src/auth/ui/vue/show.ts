@@ -24,7 +24,14 @@ import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authU
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { getStartedCommand, setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
-import { Connection, SsoConnection, createSsoProfile, isBuilderIdConnection, isSsoConnection } from '../../connection'
+import {
+    Connection,
+    SsoConnection,
+    createSsoProfile,
+    isBuilderIdConnection,
+    isIamConnection,
+    isSsoConnection,
+} from '../../connection'
 import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -79,6 +86,13 @@ export class AuthWebview extends VueWebview {
 
     async trySubmitCredentials(profileName: SectionName, data: StaticProfile) {
         return tryAddCredentials(profileName, data, true)
+    }
+
+    /**
+     * Returns true if any credentials are found, even ones associated with an sso
+     */
+    async isCredentialExists(): Promise<boolean> {
+        return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
     }
 
     isCredentialConnected(): boolean {
@@ -170,8 +184,6 @@ export class AuthWebview extends VueWebview {
         const setupFunc = async () => {
             const ssoProfile = createSsoProfile(startUrl, regionId)
             await Auth.instance.createConnection(ssoProfile)
-            // Trigger loading of Credentials associated with the SSO connection
-            return Auth.instance.listConnections()
         }
         return this.ssoSetup(setupFunc)
     }
