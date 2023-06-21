@@ -220,6 +220,10 @@
                         "codeWhispererConnectionExpired": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "manageConnections": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false
