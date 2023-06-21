@@ -11,7 +11,7 @@ import { Ec2Instance } from '../shared/clients/ec2Client'
 function asQuickpickItem(instance: Ec2Instance): DataQuickPickItem<string> {
     return {
         label: '$(terminal) \t' + (instance.name ? instance.name : instance.instanceId),
-        detail: 'instanceId: ' + instance.instanceId,
+        detail: instance.instanceId,
         data: instance.instanceId,
     }
 }
@@ -26,7 +26,7 @@ export function handleEc2ConnectPrompterResponse(response: RegionSubmenuResponse
 export function createEc2ConnectPrompter(): RegionSubmenu<string> {
     return new RegionSubmenu(
         async region => (await getInstancesFromRegion(region)).map(asQuickpickItem).promise(),
-        { title: 'Select EC2 Instance Id' },
+        { title: 'Select EC2 Instance Id', matchOnDetail: true },
         { title: 'Select Region for EC2 Instance' },
         'Instances'
     )
