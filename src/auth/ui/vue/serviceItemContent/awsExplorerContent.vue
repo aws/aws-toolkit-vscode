@@ -48,7 +48,7 @@
             <div v-on:click="toggleShowCredentials" style="cursor: pointer; display: flex; flex-direction: row">
                 <div style="font-weight: bold; font-size: medium" :class="collapsibleClass(isCredentialsShown)"></div>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px">Add another IAM User Credentials</div>
+                    <div style="font-weight: bold; font-size: 14px">Add another IAM User Credential</div>
                 </div>
             </div>
 
