@@ -20,14 +20,35 @@
         <hr />
 
         <div class="service-item-content-form-section">
-            <div class="service-item-content-form-container">
+            <div class="codewhisperer-content-form-container">
                 <BuilderIdForm
                     :state="builderIdState"
                     @auth-connection-updated="onAuthConnectionUpdated"
                 ></BuilderIdForm>
+
+                <div>
+                    <div
+                        v-on:click="toggleIdentityCenterShown"
+                        style="cursor: pointer; display: flex; flex-direction: row"
+                    >
+                        <div style="font-weight: bold; font-size: medium" :class="collapsibleClass"></div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 14px">
+                                Have a
+                                <a href="https://aws.amazon.com/codewhisperer/pricing/">Professional Tier</a>
+                                subscription? Sign in with IAM Identity Center.
+                            </div>
+                            <div>
+                                Professional Tier offers administrative capabilities for organizations of developers.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <IdentityCenterForm
                     :state="identityCenterState"
                     @auth-connection-updated="onAuthConnectionUpdated"
+                    v-show="isIdentityCenterShown"
                 ></IdentityCenterForm>
             </div>
         </div>
@@ -54,6 +75,7 @@ export default defineComponent({
                 builderIdCodeWhisperer: false,
                 identityCenterCodeWhisperer: false,
             } as Record<AuthFormId, boolean>,
+            isIdentityCenterShown: false,
         }
     },
     computed: {
@@ -63,6 +85,10 @@ export default defineComponent({
         identityCenterState(): CodeWhispererIdentityCenterState {
             return authFormsState.identityCenterCodeWhisperer
         },
+        /** The appropriate accordion symbol (collapsed/uncollapsed) */
+        collapsibleClass() {
+            return this.isIdentityCenterShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
+        },
     },
     methods: {
         updateIsAllAuthsLoaded() {
@@ -70,10 +96,18 @@ export default defineComponent({
             this.isAllAuthsLoaded = !hasUnloaded
         },
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
+            if (args.id === 'identityCenterCodeWhisperer') {
+                // Want to show the identity center form if already connected
+                this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
+            }
+
             this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
 
             this.emitAuthConnectionUpdated('codewhisperer', args)
+        },
+        toggleIdentityCenterShown() {
+            this.isIdentityCenterShown = !this.isIdentityCenterShown
         },
     },
 })
@@ -92,4 +126,12 @@ export class CodeWhispererContentState implements AuthStatus {
 <style>
 @import './baseServiceItemContent.css';
 @import '../shared.css';
+
+.codewhisperer-content-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+}
 </style>

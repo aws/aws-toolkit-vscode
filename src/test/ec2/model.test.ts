@@ -6,10 +6,12 @@
 import * as assert from 'assert'
 import { ServiceException } from '@aws-sdk/smithy-client'
 import { InstanceStateName } from '@aws-sdk/client-ec2'
-import { Ec2ConnectionManager, Ec2ConnectErrorName, Ec2ConnectErrorParameters } from '../../ec2/model'
+import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
+import { Ec2Selection } from '../../ec2/utils'
+import { ToolkitError } from '../../shared/errors'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -40,13 +42,6 @@ describe('Ec2ConnectClient', function () {
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
         }
-
-        protected override async showConnectError(
-            errorName: Ec2ConnectErrorName,
-            params: Ec2ConnectErrorParameters
-        ): Promise<string> {
-            return errorName
-        }
     }
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
@@ -62,24 +57,45 @@ describe('Ec2ConnectClient', function () {
         })
 
         it('determines which error to throw based on if instance is running', async function () {
-            let result: string
-            result = await client.handleStartSessionError(dummyError, {
-                instanceId: 'pending:noPolicies',
-                region: 'test-region',
-            })
-            assert.strictEqual('instanceStatus', result)
+            async function testThrowsError(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
+                try {
+                    await client.handleStartSessionError(dummyError, testInstance)
+                } catch (err: unknown) {
+                    assert.strictEqual((err as ToolkitError).code, errCode)
+                }
+            }
 
-            result = await client.handleStartSessionError(dummyError, {
-                instanceId: 'shutting-down:noPolicies',
-                region: 'test-region',
-            })
-            assert.strictEqual('instanceStatus', result)
+            await testThrowsError(
+                {
+                    instanceId: 'pending:noPolicies',
+                    region: 'test-region',
+                },
+                'EC2SSMStatusError'
+            )
 
-            result = await client.handleStartSessionError(dummyError, {
-                instanceId: 'running:noPolicies',
-                region: 'test-region',
-            })
-            assert.strictEqual('permission', result)
+            await testThrowsError(
+                {
+                    instanceId: 'shutting-down:noPolicies',
+                    region: 'test-region',
+                },
+                'EC2SSMStatusError'
+            )
+
+            await testThrowsError(
+                {
+                    instanceId: 'running:noPolicies',
+                    region: 'test-region',
+                },
+                'EC2SSMPermissionError'
+            )
+
+            await testThrowsError(
+                {
+                    instanceId: 'running:hasPolicies',
+                    region: 'test-region',
+                },
+                'EC2SSMConnectError'
+            )
         })
     })
 
