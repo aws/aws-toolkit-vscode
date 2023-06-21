@@ -102,7 +102,7 @@ export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
 
     const inputs: SampleRequest[] = []
 
-    xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error, result: SampleRequestManifest) => {
+    xml2js.parseString(sampleInput, { explicitArray: false }, (err: Error | null, result: SampleRequestManifest) => {
         if (err) {
             return
         }

@@ -7,7 +7,7 @@ on:
     push:
         branches: [master]
     pull_request:
-        branches: [master, feature/*]
+        branches: [master, feature/*, mynah-dev]
 
 jobs:
     macos:

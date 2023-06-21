@@ -1,0 +1,185 @@
+.mynah-icon {
+    font-style: normal;
+    font-weight: normal;
+    display: inline-flex;
+    width: 1em;
+    height: 1em;
+    font-variant: normal;
+    text-transform: none;
+    background-color: currentColor;
+    -webkit-mask-size: 100%;
+    mask-size: 100%;
+    -webkit-mask-position: center center;
+    mask-position: center center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+}
+
+$iconsPath: 'assets/icons';
+$iconsPrefix: 'ic_';
+$iconsExtension: '.svg';
+
+@mixin iconMask($iconName) {
+    -webkit-mask-image: url(#{$iconsPath}/#{$iconsPrefix}#{$iconName}#{$iconsExtension});
+    mask-image: url(#{$iconsPath}/#{$iconsPrefix}#{$iconName}#{$iconsExtension});
+}
+
+.mynah-icon-menu {
+    @include iconMask('menu');
+}
+
+.mynah-icon-minus {
+    @include iconMask('remove');
+}
+
+.mynah-icon-code-block {
+    @include iconMask(('select_all'));
+}
+
+.mynah-icon-search {
+    @include iconMask('search');
+}
+
+.mynah-icon-plus {
+    @include iconMask('add');
+}
+
+.mynah-icon-chat {
+    @include iconMask('sms');
+}
+
+.mynah-icon-link {
+    @include iconMask('hyperlink');
+}
+
+.mynah-icon-external {
+    @include iconMask('external_link');
+}
+
+.mynah-icon-cancel {
+    @include iconMask('cancel');
+}
+
+.mynah-icon-calendar {
+    @include iconMask('calendar');
+}
+
+.mynah-icon-megaphone {
+    @include iconMask('announcer');
+}
+
+.mynah-icon-eye {
+    @include iconMask('redeye');
+}
+
+.mynah-icon-ok {
+    @include iconMask('done');
+}
+
+.mynah-icon-up-open {
+    @include iconMask('caret_up');
+}
+
+.mynah-icon-left-open {
+    @include iconMask('caret_left');
+}
+
+.mynah-icon-right-open {
+    @include iconMask('caret_right');
+}
+
+.mynah-icon-up-circled {
+    @include iconMask('list_check');
+}
+
+.mynah-icon-down-open {
+    @include iconMask('caret_down');
+}
+
+.mynah-icon-resize-full {
+    @include iconMask('maximize');
+}
+
+.mynah-icon-resize-small {
+    @include iconMask('minimize');
+}
+
+.mynah-icon-block {
+    @include iconMask('none');
+}
+
+.mynah-icon-ok-circled {
+    @include iconMask('list_check');
+}
+
+.mynah-icon-thumbs-up {
+    @include iconMask('like');
+}
+
+.mynah-icon-thumbs-down {
+    @include iconMask('dislike');
+}
+
+.mynah-icon-star {
+    @include iconMask('star_on');
+}
+
+.mynah-icon-envelope-send {
+    @include iconMask('send_feedback');
+}
+
+.mynah-icon-light-bulb {
+    @include iconMask('light');
+}
+
+.mynah-icon-warning {
+    @include iconMask('warning');
+}
+
+.mynah-icon-info {
+    @include iconMask('information');
+}
+
+.mynah-icon-error {
+    @include iconMask('error_inline');
+}
+
+.mynah-icon-search-history {
+    @include iconMask('search_history');
+}
+
+.mynah-icon-user {
+    @include iconMask('profile');
+}
+
+.mynah-icon-play {
+    @include iconMask('play');
+}
+
+.mynah-icon-pause {
+    @include iconMask('pause');
+}
+
+.mynah-icon-copy {
+    @include iconMask('copy');
+}
+
+.mynah-icon-text-select {
+    @include iconMask('select_text');
+}
+
+@keyframes spin {
+    0% {
+        -moz-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    100% {
+        -moz-transform: rotate(359deg);
+        -o-transform: rotate(359deg);
+        -webkit-transform: rotate(359deg);
+        transform: rotate(359deg);
+    }
+}

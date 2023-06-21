@@ -34,6 +34,7 @@ import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { AuthNode } from '../auth/utils'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { MynahTreeNode } from '../mynah/triggers/tree-node'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -82,7 +83,7 @@ export async function activate(args: {
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
     const authNode = new AuthNode(Auth.instance)
     const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
-    const nodes = [authNode, ...codecatalystNode, cdkNode, codewhispererNode]
+    const nodes = [authNode, ...codecatalystNode, cdkNode, codewhispererNode, new MynahTreeNode()]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 

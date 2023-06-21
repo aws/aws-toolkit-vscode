@@ -209,6 +209,9 @@ export class SystemUtilities {
         return ok
     }
 
+    // TODO: implement this by checking the file mode
+    // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
+
     /**
      * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
      * absolute) if it works.
