@@ -3,6 +3,10 @@
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
+            <div class="form-section" v-if="isConnected">
+                <button v-on:click="showResourceExplorer">Open Resource Explorer</button>
+            </div>
+
             <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
                 <div :class="collapsibleClass"></div>
                 <div>Add another profile</div>
@@ -54,7 +58,7 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { SectionName, StaticProfile } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
@@ -71,6 +75,13 @@ export default defineComponent({
         state: {
             type: Object as PropType<CredentialsState>,
             required: true,
+        },
+        checkIfConnected: {
+            type: Boolean,
+            default: true,
+            // In some scenarios we want to show the form and allow setup,
+            // but not care about any current identity center auth connections
+            // and if they are connected or not.
         },
     },
     data() {
@@ -100,10 +111,10 @@ export default defineComponent({
         await this.updateDataError('profileName')
         await this.updateDataError('aws_access_key_id')
         await this.updateDataError('aws_secret_access_key')
-        this.isFormShown = !(await this.state.isAuthConnected())
+        this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
         await this.updateSubmittableStatus()
 
-        this.updateConnectedStatus()
+        this.updateConnectedStatus('created')
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */
@@ -132,10 +143,10 @@ export default defineComponent({
                 this.canSubmit = errors === undefined
             })
         },
-        async updateConnectedStatus() {
+        async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
-                this.isConnected = isConnected
-                this.emitAuthConnectionUpdated('CREDENTIALS')
+                this.isConnected = this.checkIfConnected ? isConnected : false
+                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected, cause })
             })
         },
         async submitData() {
@@ -155,7 +166,7 @@ export default defineComponent({
             this.clearFormData()
             this.isFormShown = false
             this.canSubmit = true // enable submit button
-            await this.updateConnectedStatus()
+            await this.updateConnectedStatus('signIn')
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown
@@ -168,6 +179,9 @@ export default defineComponent({
         },
         editCredentialsFile() {
             client.editCredentialsFile()
+        },
+        showResourceExplorer() {
+            client.showResourceExplorer()
         },
     },
     watch: {

@@ -71,7 +71,7 @@ describe('codewhispererNode', function () {
         it('should get correct child nodes if user is not connected', function () {
             const node = codewhispererNode
             const children = node.getChildren()
-            const ssoSignInNode = children.find(c => c.resource.id == 'aws.codeWhisperer.sso')
+            const ssoSignInNode = children.find(c => c.resource.id == 'aws.auth.manageConnections')
             const learnMorenNode = children.find(c => c.resource.id == 'aws.codeWhisperer.learnMore')
 
             assert.strictEqual(children.length, 2)

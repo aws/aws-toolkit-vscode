@@ -4,7 +4,18 @@
  */
 
 export type AuthFormId =
-    | 'CREDENTIALS'
-    | 'BUILDER_ID_CODE_WHISPERER'
-    | 'BUILDER_ID_CODE_CATALYST'
-    | 'IDENTITY_CENTER_CODE_WHISPERER'
+    | 'credentials'
+    | 'builderIdCodeWhisperer'
+    | 'builderIdCodeCatalyst'
+    | 'identityCenterCodeWhisperer'
+    | 'identityCenterExplorer'
+    | 'aggregateExplorer'
+
+export const AuthFormDisplayName: Record<AuthFormId, string> = {
+    credentials: 'IAM Credentials',
+    builderIdCodeCatalyst: 'Builder ID',
+    builderIdCodeWhisperer: 'Builder ID',
+    identityCenterCodeWhisperer: 'IAM Identity Center',
+    identityCenterExplorer: 'IAM Identity Center',
+    aggregateExplorer: ''
+} as const

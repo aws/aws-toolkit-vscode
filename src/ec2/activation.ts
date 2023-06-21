@@ -9,7 +9,6 @@ import { tryConnect } from './commands'
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.connectToInstance', async (param?: unknown) => {
-            console.log('You just ran the aws.ec2.connectToInstance command!')
             tryConnect()
         })
     )

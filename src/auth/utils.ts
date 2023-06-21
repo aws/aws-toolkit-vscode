@@ -43,14 +43,19 @@ import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 
-export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso') {
+// TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
+export const showConnectionsPageCommand = 'aws.auth.manageConnections'
+
+export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Promise<Connection | void> {
     const resp = await createConnectionPrompter(auth, type).prompt()
     if (!isValidResponse(resp)) {
         throw new CancellationError('user')
     }
 
     if (resp === 'addNewConnection') {
-        return addConnection.execute()
+        // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
+        vscode.commands.executeCommand(showConnectionsPageCommand)
+        return undefined
     }
 
     if (resp === 'editCredentials') {
@@ -225,43 +230,48 @@ Commands.register('aws.auth.signout', () => {
     return signout(Auth.instance)
 })
 
-const addConnection = Commands.register({ id: 'aws.auth.addConnection', telemetryThrottleMs: false }, async () => {
-    const c9IamItem = createIamItem()
-    c9IamItem.detail =
-        'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
-    const items = isCloud9() ? [createSsoItem(), c9IamItem] : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+export const addConnection = Commands.register(
+    { id: 'aws.auth.addConnection', telemetryThrottleMs: false },
+    async () => {
+        const c9IamItem = createIamItem()
+        c9IamItem.detail =
+            'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
+        const items = isCloud9()
+            ? [createSsoItem(), c9IamItem]
+            : [createBuilderIdItem(), createSsoItem(), createIamItem()]
 
-    const resp = await showQuickPick(items, {
-        title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
-        placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
-        buttons: createCommonButtons() as vscode.QuickInputButton[],
-    })
-    if (!isValidResponse(resp)) {
-        telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
-        throw new CancellationError('user')
-    }
+        const resp = await showQuickPick(items, {
+            title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
+            placeholder: localize('aws.auth.addConnection.placeholder', 'Select a connection option'),
+            buttons: createCommonButtons() as vscode.QuickInputButton[],
+        })
+        if (!isValidResponse(resp)) {
+            telemetry.ui_click.emit({ elementId: 'connection_optionescapecancel' })
+            throw new CancellationError('user')
+        }
 
-    switch (resp) {
-        case 'iam':
-            return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
-        case 'sso': {
-            const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
-            const startUrl = await startUrlPrompter.prompt()
-            if (!isValidResponse(startUrl)) {
-                throw new CancellationError('user')
+        switch (resp) {
+            case 'iam':
+                return await globals.awsContextCommands.onCommandCreateCredentialsProfile()
+            case 'sso': {
+                const startUrlPrompter = await createStartUrlPrompter('IAM Identity Center')
+                const startUrl = await startUrlPrompter.prompt()
+                if (!isValidResponse(startUrl)) {
+                    throw new CancellationError('user')
+                }
+                telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
+
+                const region = await showRegionPrompter()
+
+                const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
+                return Auth.instance.useConnection(conn)
             }
-            telemetry.ui_click.emit({ elementId: 'connection_startUrl' })
-
-            const region = await showRegionPrompter()
-
-            const conn = await Auth.instance.createConnection(createSsoProfile(startUrl, region.id))
-            return Auth.instance.useConnection(conn)
-        }
-        case 'builderId': {
-            return createBuilderIdConnection(Auth.instance)
+            case 'builderId': {
+                return createBuilderIdConnection(Auth.instance)
+            }
         }
     }
-})
+)
 
 export async function tryAddCredentials(
     profileName: SectionName,
@@ -472,7 +482,7 @@ export const login = Commands.register('aws.login', async () => {
     const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
-        return addConnection.execute()
+        return vscode.commands.executeCommand(showConnectionsPageCommand)
     } else {
         return switchConnections.execute(auth)
     }
@@ -506,7 +516,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            item.command = addConnection.build().asCommand({ title: 'Add Connection' })
+            item.command = { title: 'Add Connection', command: showConnectionsPageCommand }
 
             return item
         }

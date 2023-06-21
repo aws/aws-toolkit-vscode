@@ -1,6 +1,6 @@
 <template>
     <div class="auth-form container-background border-common" id="builder-id-form">
-        <div v-show="canShowAll">
+        <div>
             <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
 
             <div v-if="stage === 'START'">
@@ -28,13 +28,17 @@
                 <div class="form-section">
                     <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
                 </div>
+
+                <div class="form-section">
+                    <button v-on:click="showNodeInView()">Open {{ name }} in Toolkit</button>
+                </div>
             </div>
         </div>
     </div>
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { AuthStatus } from './shared.vue'
 import { AuthWebview } from '../show'
@@ -61,28 +65,29 @@ export default defineComponent({
             stage: 'START' as BuilderIdStage,
             isConnected: false,
             builderIdCode: '',
-            canShowAll: false,
+            name: this.state.name,
         }
     },
     async created() {
-        await this.update()
-        this.canShowAll = true
+        await this.update('created')
     },
     methods: {
         async startSignIn() {
             this.stage = 'WAITING_ON_USER'
             await this.state.startBuilderIdSetup()
-            await this.update()
+            await this.update('signIn')
         },
-        async update() {
+        async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
             this.isConnected = await this.state.isAuthConnected()
-            this.emitAuthConnectionUpdated(this.state.id)
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async signout() {
             await this.state.signout()
-
-            this.update()
+            this.update('signOut')
+        },
+        showNodeInView() {
+            this.state.showNodeInView()
         },
     },
 })
@@ -93,9 +98,11 @@ export default defineComponent({
 abstract class BaseBuilderIdState implements AuthStatus {
     protected _stage: BuilderIdStage = 'START'
 
+    abstract get name(): string
     abstract get id(): AuthFormId
     protected abstract _startBuilderIdSetup(): Promise<void>
     abstract isAuthConnected(): Promise<boolean>
+    abstract showNodeInView(): Promise<void>
 
     async startBuilderIdSetup(): Promise<void> {
         this._stage = 'WAITING_ON_USER'
@@ -114,8 +121,12 @@ abstract class BaseBuilderIdState implements AuthStatus {
 }
 
 export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
+    override get name(): string {
+        return 'CodeWhisperer'
+    }
+
     override get id(): AuthFormId {
-        return 'BUILDER_ID_CODE_WHISPERER'
+        return 'builderIdCodeWhisperer'
     }
 
     override isAuthConnected(): Promise<boolean> {
@@ -125,11 +136,19 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
     protected override _startBuilderIdSetup(): Promise<void> {
         return client.startCodeWhispererBuilderIdSetup()
     }
+
+    override showNodeInView(): Promise<void> {
+        return client.showCodeWhispererNode()
+    }
 }
 
 export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
+    override get name(): string {
+        return 'CodeCatalyst'
+    }
+
     override get id(): AuthFormId {
-        return 'BUILDER_ID_CODE_CATALYST'
+        return 'builderIdCodeCatalyst'
     }
 
     override isAuthConnected(): Promise<boolean> {
@@ -138,6 +157,10 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     protected override _startBuilderIdSetup(): Promise<void> {
         return client.startCodeCatalystBuilderIdSetup()
+    }
+
+    override showNodeInView(): Promise<void> {
+        return client.showCodeCatalystNode()
     }
 }
 </script>

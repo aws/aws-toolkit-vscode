@@ -33,6 +33,7 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { AuthNode } from '../auth/utils'
+import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -79,8 +80,9 @@ export async function activate(args: {
     )
 
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
+    const authNode = new AuthNode(Auth.instance)
     const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
-    const nodes = [new AuthNode(Auth.instance), ...codecatalystNode, cdkNode, codewhispererNode]
+    const nodes = [authNode, ...codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
@@ -96,6 +98,12 @@ export async function activate(args: {
         } else if (e.element.resource instanceof CodeWhispererNode) {
             onDidExpandCodeWhisperer()
         }
+    })
+
+    registerDeveloperToolsCommands(args.context.extensionContext, developerTools, {
+        auth: authNode,
+        codeCatalyst: codecatalystNode ? codecatalystNode[0] : undefined,
+        codeWhisperer: codewhispererNode,
     })
 }
 
@@ -159,4 +167,44 @@ async function registerAwsExplorerCommands(
         }),
         loadMoreChildrenCommand.register(awsExplorer)
     )
+}
+
+async function registerDeveloperToolsCommands(
+    ctx: vscode.ExtensionContext,
+    developerTools: vscode.TreeView<TreeNode>,
+    nodes: {
+        auth: AuthNode
+        codeWhisperer: CodeWhispererNode
+        codeCatalyst: CodeCatalystRootNode | undefined
+    }
+) {
+    /**
+     * Registers a vscode command which shows the
+     * node in the Developer Tools view.
+     *
+     * @param name name to use in the command
+     * @param node node to show
+     */
+    const registerShowDeveloperToolsNode = (name: string, node: TreeNode) => {
+        ctx.subscriptions.push(
+            Commands.register(`aws.developerTools.show${name}`, async () => {
+                if (!developerTools.visible) {
+                    /**
+                     * HACK: In the edge case where the Developer Tools view is
+                     * not yet rendered (openend by user), we will expand the
+                     * menu to trigger loading of the nodes
+                     */
+                    await vscode.commands.executeCommand('aws.developerTools.focus')
+                }
+                return developerTools.reveal(node, { expand: true, select: true, focus: true })
+            })
+        )
+    }
+
+    registerShowDeveloperToolsNode('CodeWhisperer', codewhispererNode)
+
+    const codeCatalystNode = nodes.codeCatalyst
+    if (codeCatalystNode) {
+        registerShowDeveloperToolsNode('CodeCatalyst', codeCatalystNode)
+    }
 }
