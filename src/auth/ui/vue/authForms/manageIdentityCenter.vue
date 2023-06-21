@@ -32,9 +32,10 @@
                 <label class="input-title">Region</label>
                 <label class="small-description">AWS Region that hosts Identity directory</label>
 
-                <select v-on:click="getRegion()">
-                    <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
-                </select>
+                <div style="display: flex; flex-direction: row; gap: 10px">
+                    <div v-on:click="getRegion()" class="icon icon-lg icon-vscode-edit edit-icon"></div>
+                    <div style="width: 100%">{{ data.region ? data.region : 'Not Selected' }}</div>
+                </div>
             </div>
 
             <div class="form-section">
