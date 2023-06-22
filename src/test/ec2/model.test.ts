@@ -57,15 +57,15 @@ describe('Ec2ConnectClient', function () {
         })
 
         it('determines which error to throw based on if instance is running', async function () {
-            async function testThrowsError(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
+            async function assertThrowsErrorCode(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
                 try {
                     await client.handleStartSessionError(dummyError, testInstance)
+                    throw new assert.AssertionError({ message: "Didn't throw any error" })
                 } catch (err: unknown) {
                     assert.strictEqual((err as ToolkitError).code, errCode)
                 }
             }
-
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'pending:noPolicies',
                     region: 'test-region',
@@ -73,7 +73,7 @@ describe('Ec2ConnectClient', function () {
                 'EC2SSMStatusError'
             )
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'shutting-down:noPolicies',
                     region: 'test-region',
@@ -81,7 +81,7 @@ describe('Ec2ConnectClient', function () {
                 'EC2SSMStatusError'
             )
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'running:noPolicies',
                     region: 'test-region',
@@ -89,7 +89,7 @@ describe('Ec2ConnectClient', function () {
                 'EC2SSMPermissionError'
             )
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'running:hasPolicies',
                     region: 'test-region',
