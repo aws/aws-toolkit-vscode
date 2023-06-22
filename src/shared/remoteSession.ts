@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { Settings } from '../shared/settings'
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
-    await withoutShellIntegration(() => {
+    await withoutShellIntegration(async () => {
         const terminal = vscode.window.createTerminal(options)
 
         const listener = vscode.window.onDidCloseTerminal(t => {
@@ -15,8 +15,12 @@ export async function openRemoteTerminal(options: vscode.TerminalOptions, onClos
                 vscode.Disposable.from(listener, { dispose: onClose }).dispose()
             }
         })
-
-        terminal.show()
+        await vscode.window.withProgress(
+            { title: 'AWS: Starting session...', location: vscode.ProgressLocation.Notification },
+            async () => {
+                terminal.show()
+            }
+        )
     })
 }
 
