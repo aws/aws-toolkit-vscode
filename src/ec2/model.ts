@@ -65,7 +65,7 @@ export class Ec2ConnectionManager {
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
         if (!isInstanceRunning) {
-            telemetry.record({ ec2ConnectionType: 'ssm', reason: 'EC2SSMStatusError' })
+            telemetry.record({ result: 'Failed', reason: 'EC2SSMStatusError' })
             throw new ToolkitError(
                 generalErrorMessage +
                     'Ensure the target instance is running and not currently starting, stopping, or stopped.',
@@ -74,7 +74,7 @@ export class Ec2ConnectionManager {
         }
 
         if (!hasProperPolicies) {
-            telemetry.record({ ec2ConnectionType: 'ssm', reason: 'EC2SSMPermissionError' })
+            telemetry.record({ result: 'Failed', reason: 'EC2SSMPermissionError' })
             throw new ToolkitError(
                 generalErrorMessage + 'Ensure the IAM role attached to the instance has the proper policies.',
                 {
@@ -85,7 +85,7 @@ export class Ec2ConnectionManager {
                 }
             )
         }
-        telemetry.record({ ec2ConnectionType: 'ssm', reason: 'EC2SSMConnectError' })
+        telemetry.record({ result: 'Failed', reason: 'EC2SSMConnectError' })
 
         throw new ToolkitError(
             'Ensure SSM is running on target instance. For more information see the documentation.',
@@ -113,16 +113,18 @@ export class Ec2ConnectionManager {
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
-        try {
-            const response = await this.ssmClient.startSession(selection.instanceId)
-            await this.openSessionInTerminal(response, selection)
-            telemetry.record({ ec2ConnectionType: 'ssm' })
-        } catch (err) {
-            if (err instanceof ServiceException) {
-                await this.handleStartSessionError(err, selection)
-            } else {
-                throw err
+        telemetry.ec2_connectToInstance.run(async span => {
+            span.record({ ec2ConnectionType: 'ssm' })
+            try {
+                const response = await this.ssmClient.startSession(selection.instanceId)
+                await this.openSessionInTerminal(response, selection)
+            } catch (err) {
+                if (err instanceof ServiceException) {
+                    await this.handleStartSessionError(err, selection)
+                } else {
+                    throw err
+                }
             }
-        }
+        })
     }
 }
