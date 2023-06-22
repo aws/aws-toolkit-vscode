@@ -3533,7 +3533,7 @@
         "css-loader": "^6.7.3",
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
-        "eslint-config-prettier": "8.3",
+        "eslint-config-prettier": "8.8",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
