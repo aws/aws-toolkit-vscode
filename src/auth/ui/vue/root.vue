@@ -211,7 +211,7 @@ export default defineComponent({
     },
     methods: {
         isLandscape() {
-            return this.currWindowWidth > 1350
+            return this.currWindowWidth > 1200
         },
         isAnyServiceSelected(): boolean {
             return serviceItemsState.selected !== undefined

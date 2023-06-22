@@ -5,7 +5,7 @@
 
             <div v-if="stage === 'START'">
                 <div class="form-section">
-                    <div>
+                    <div style="color: #cccccc">
                         With AWS Builder ID, sign in for free without an AWS account.
                         <a href="https://docs.aws.amazon.com/signin/latest/userguide/sign-in-aws_builder_id.html"
                             >Read more.</a

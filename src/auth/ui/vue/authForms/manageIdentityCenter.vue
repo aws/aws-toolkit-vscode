@@ -7,7 +7,7 @@
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
                 ></a
             ></FormTitle>
-            <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
+            <div v-if="!isConnected" style="color: #cccccc">Successor to AWS Single Sign-on</div>
         </div>
         <div v-else>
             <!-- In this scenario we do not care about the active IC connection -->
@@ -17,7 +17,7 @@
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
                 ></a
             ></FormTitle>
-            <div>Successor to AWS Single Sign-on</div>
+            <div style="color: #cccccc">Successor to AWS Single Sign-on</div>
         </div>
 
         <div v-if="stage === 'START'">
@@ -34,7 +34,7 @@
 
                 <div style="display: flex; flex-direction: row; gap: 10px">
                     <div v-on:click="getRegion()" class="icon icon-lg icon-vscode-edit edit-icon"></div>
-                    <div style="width: 100%">{{ data.region ? data.region : 'Not Selected' }}</div>
+                    <div style="width: 100%; color: #cccccc">{{ data.region ? data.region : 'Not Selected' }}</div>
                 </div>
             </div>
 
