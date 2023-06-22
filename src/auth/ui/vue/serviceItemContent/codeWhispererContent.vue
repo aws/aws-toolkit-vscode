@@ -47,6 +47,7 @@
 
                 <IdentityCenterForm
                     :state="identityCenterState"
+                    :allow-existing-start-url="true"
                     @auth-connection-updated="onAuthConnectionUpdated"
                     v-show="isIdentityCenterShown"
                 ></IdentityCenterForm>
@@ -132,6 +133,6 @@ export class CodeWhispererContentState implements AuthStatus {
     flex-direction: column;
     gap: 20px;
     justify-content: center;
-    align-items: center;
+    align-items: left;
 }
 </style>

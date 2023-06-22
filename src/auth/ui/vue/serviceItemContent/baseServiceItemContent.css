@@ -28,7 +28,7 @@
 .service-item-content-form-section {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: left;
     gap: 20px;
 }
 
@@ -42,5 +42,5 @@
     display: flex;
     flex-direction: row;
     gap: 20px;
-    justify-content: center;
+    justify-content: left;
 }
