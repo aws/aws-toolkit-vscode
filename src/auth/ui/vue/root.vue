@@ -31,6 +31,7 @@
             </div>
         </div>
 
+        <!-- Status Bar -->
         <div
             v-if="successfulAuthConnection"
             class="border-common"
@@ -60,6 +61,38 @@
                 class="icon icon-lg icon-vscode-chrome-close"
             ></div>
         </div>
+
+        <!-- Status Bar -->
+        <div
+            v-if="foundCredentialButNotConnected"
+            class="border-common"
+            style="
+                width: fit-content;
+                white-space: nowrap;
+                display: flex;
+                flex-direction: row;
+                background-color: #28632b;
+                color: #ffffff;
+                padding: 10px;
+            "
+        >
+            <div class="icon icon-lg icon-vscode-check"></div>
+            &nbsp; &nbsp;
+            <div style="display: flex; flex-direction: row">
+                IAM Credential(s) detected, but not selected. Choose one in the&nbsp;<a
+                    v-on:click="showConnectionQuickPick()"
+                    style="cursor: pointer"
+                    >Toolkit panel</a
+                >&nbsp;.
+            </div>
+            &nbsp;&nbsp;
+            <div
+                v-on:click="closeFoundCredentialStatusBar()"
+                style="cursor: pointer"
+                class="icon icon-lg icon-vscode-chrome-close"
+            ></div>
+        </div>
+
         <div class="flex-container">
             <div id="left-column">
                 <div>
@@ -129,17 +162,20 @@ export default defineComponent({
             rerenderContentWindowKey: 0,
 
             successfulAuthConnection: undefined as AuthFormId | undefined,
+
+            foundCredentialButNotConnected: false,
         }
     },
     async created() {
+        this.updateFoundCredentialButNotConnected()
+
         await this.selectInitialService()
         await this.updateServiceConnections()
 
-        // This handles the case where non-webview auth setup is used.
-        // This will detect their resulting changes to auth
-        // and it will have this webview update to get the latest info.
+        // This handles auth changes triggered outside of this webview.
         client.onDidConnectionUpdate(() => {
             this.updateServiceConnections()
+            this.updateFoundCredentialButNotConnected()
             // This handles the edge case where we have selected a service item
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
@@ -278,6 +314,20 @@ export default defineComponent({
         },
         closeStatusBar() {
             this.successfulAuthConnection = undefined
+        },
+        closeFoundCredentialStatusBar() {
+            this.foundCredentialButNotConnected = false
+        },
+        /**
+         * Updates the state of if we detected credentials but the user
+         * has not actively selected one.
+         */
+        async updateFoundCredentialButNotConnected() {
+            if ((await client.isCredentialExists()) && !(await client.isCredentialConnected())) {
+                this.foundCredentialButNotConnected = true
+            } else {
+                this.foundCredentialButNotConnected = false
+            }
         },
     },
 })

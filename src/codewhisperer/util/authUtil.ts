@@ -24,8 +24,8 @@ import {
     isBuilderIdConnection,
 } from '../../auth/connection'
 
-const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
-export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)
+export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
+export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
 
 export const isValidCodeWhispererConnection = (conn: Connection): conn is Connection => {
     if (isCloud9('classic')) {
@@ -130,7 +130,7 @@ export class AuthUtil {
         if (!conn) {
             conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
         } else if (!isValidCodeWhispererConnection(conn)) {
-            conn = await this.secondaryAuth.addScopes(conn, defaultScopes)
+            conn = await this.secondaryAuth.addScopes(conn, defaultCwScopes)
         }
 
         if (this.auth.getConnectionState(conn) === 'invalid') {
@@ -147,12 +147,13 @@ export class AuthUtil {
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultScopes))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultCwScopes))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
         } else if (isSsoConnection(existingConn)) {
-            return this.secondaryAuth.addScopes(existingConn, defaultScopes)
+            const conn = await this.secondaryAuth.addScopes(existingConn, defaultCwScopes)
+            return this.secondaryAuth.useNewConnection(conn)
         }
     }
 
