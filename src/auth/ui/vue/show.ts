@@ -21,20 +21,29 @@ import { getCredentialFormatError, getCredentialsErrors } from '../../credential
 import { profileExists } from '../../credentials/sharedCredentials'
 import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
-import { getStartedCommand } from '../../../codecatalyst/utils'
+import { getStartedCommand, setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
-import { Connection, SsoConnection, createSsoProfile, isBuilderIdConnection, isSsoConnection } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
+import {
+    Connection,
+    SsoConnection,
+    createSsoProfile,
+    isBuilderIdConnection,
+    isIamConnection,
+    isSsoConnection,
+} from '../../connection'
+import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptAndUseConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { validateSsoUrl } from '../../sso/validation'
+import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
 import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
+import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 
+const logger = getLogger()
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
@@ -79,6 +88,13 @@ export class AuthWebview extends VueWebview {
         return tryAddCredentials(profileName, data, true)
     }
 
+    /**
+     * Returns true if any credentials are found, even ones associated with an sso
+     */
+    async isCredentialExists(): Promise<boolean> {
+        return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
+    }
+
     isCredentialConnected(): boolean {
         const conn = Auth.instance.activeConnection
 
@@ -111,16 +127,12 @@ export class AuthWebview extends VueWebview {
         return globals.awsContextCommands.onCommandEditCredentials()
     }
 
-    async startCodeWhispererBuilderIdSetup(): Promise<void> {
-        try {
-            await awsIdSignIn()
-        } catch (e) {
-            return
-        }
+    async startCodeWhispererBuilderIdSetup(): Promise<string> {
+        return this.ssoSetup(() => awsIdSignIn())
     }
 
-    async startCodeCatalystBuilderIdSetup(): Promise<void> {
-        return getStartedCommand.execute(this.codeCatalystAuth)
+    async startCodeCatalystBuilderIdSetup(): Promise<string> {
+        return this.ssoSetup(() => setupCodeCatalystBuilderId(this.codeCatalystAuth))
     }
 
     isCodeWhispererBuilderIdConnected(): boolean {
@@ -168,12 +180,10 @@ export class AuthWebview extends VueWebview {
     /**
      * Creates an Identity Center connection but does not 'use' it.
      */
-    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']) {
+    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']): Promise<string> {
         const setupFunc = async () => {
             const ssoProfile = createSsoProfile(startUrl, regionId)
             await Auth.instance.createConnection(ssoProfile)
-            // Trigger loading of Credentials associated with the SSO connection
-            return Auth.instance.listConnections()
         }
         return this.ssoSetup(setupFunc)
     }
@@ -183,21 +193,27 @@ export class AuthWebview extends VueWebview {
      */
     async startCWIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
         const setupFunc = () => {
-            return CodeWhispererAuth.instance.connectToEnterpriseSso(startUrl, regionId)
+            return connectToEnterpriseSso(startUrl, regionId)
         }
         return this.ssoSetup(setupFunc)
     }
 
-    private async ssoSetup(setupFunc: () => Promise<any>) {
+    private async ssoSetup(setupFunc: () => Promise<any>): Promise<string> {
         try {
             await setupFunc()
+            return ''
         } catch (e) {
             // This scenario will most likely be due to failing to connect from user error.
             // When the sso login process fails (eg: wrong url) they will come back
             // to the IDE and cancel the 'waiting for browser response'
-            if (CancellationError.isUserCancelled(e)) {
-                return
+            if (
+                CancellationError.isUserCancelled(e) ||
+                (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
+            ) {
+                return 'Setup cancelled.'
             }
+            logger.error('Failed to setup.', e)
+            return 'Failed to setup.'
         }
     }
 
@@ -247,9 +263,13 @@ export class AuthWebview extends VueWebview {
         return isSsoConnection(conn) && !isBuilderIdConnection(conn)
     }
 
-    getSsoUrlError(url?: string) {
+    getSsoUrlError(url: string | undefined, canUrlExist: boolean = true) {
         if (!url) {
             return
+        }
+        if (canUrlExist) {
+            // Url is allowed to already exist, so we only check the format
+            return validateSsoUrlFormat(url)
         }
         return validateSsoUrl(Auth.instance, url)
     }
@@ -297,7 +317,7 @@ export class AuthWebview extends VueWebview {
     }
 
     showConnectionQuickPick() {
-        return promptForConnection(Auth.instance)
+        return promptAndUseConnection(Auth.instance)
     }
 }
 
