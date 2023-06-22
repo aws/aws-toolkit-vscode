@@ -264,6 +264,9 @@ class CodeWhispererService {
                         } else {
                             message("codewhisperer.trigger.error.client_side")
                         }
+                    if (statusCode < 500) {
+                        LOG.debug(e) { "Error invoking CodeWhisperer service" }
+                    }
                 }
                 val exceptionType = e::class.simpleName
                 val responseContext = ResponseContext(sessionId, CodewhispererCompletionType.Unknown)
