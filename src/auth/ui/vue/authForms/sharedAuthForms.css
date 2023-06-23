@@ -47,6 +47,7 @@
 
 .error-text {
     color: #f14c4c;
+    font-size: 12px;
 }
 
 input[data-invalid='true'] {
