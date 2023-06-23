@@ -186,16 +186,21 @@ object CodeWhispererUtil {
     // This will be called only when there's a CW connection, but it has expired(either accessToken or refreshToken)
     // 1. If connection is expired, try to refresh
     // 2. If not able to refresh, requesting re-login by showing a notification
-    // 3. The notification will be shown at most once per IDE session
+    // 3. The notification will be shown
+    //   3.1 At most once per IDE restarts.
+    //   3.2 At most once after IDE restarts,
+    //   for example, when user performs security scan or fetch code completion for the first time
     // Return true if need to re-auth, false otherwise
-    fun promptReAuth(project: Project): Boolean {
+    fun promptReAuth(project: Project, isPluginStarting: Boolean = false): Boolean {
         if (CodeWhispererService.hasReAuthPromptBeenShown()) return false
         if (!isCodeWhispererExpired(project)) return false
         val tokenProvider = tokenProvider(project) ?: return false
         return maybeReauthProviderIfNeeded(project, tokenProvider) {
             runInEdt {
                 notifyConnectionExpiredRequestReauth(project)
-                CodeWhispererService.markReAuthPromptShown()
+                if (!isPluginStarting) {
+                    CodeWhispererService.markReAuthPromptShown()
+                }
             }
         }
     }
