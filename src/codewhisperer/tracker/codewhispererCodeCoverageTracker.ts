@@ -130,13 +130,13 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
-            codewhispererCustomizationArn: selectedCustomization.arn,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         })
         client
-            .putTelemetryEvent({
+            .sendTelemetryEvent({
                 telemetryEvent: {
                     codeCoverageEvent: {
-                        customizationArn: selectedCustomization.arn,
+                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
                             languageName: this._language,
                         },

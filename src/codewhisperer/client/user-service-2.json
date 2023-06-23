@@ -106,14 +106,14 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
-        "PutTelemetryEvent": {
-            "name": "PutTelemetryEvent",
+        "SendTelemetryEvent": {
+            "name": "SendTelemetryEvent",
             "http": {
                 "method": "POST",
                 "requestUri": "/"
             },
-            "input": { "shape": "PutTelemetryEventRequest" },
-            "output": { "shape": "PutTelemetryEventResponse" },
+            "input": { "shape": "SendTelemetryEventRequest" },
+            "output": { "shape": "SendTelemetryEventResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "InternalServerException" },
@@ -242,6 +242,7 @@
         },
         "Customization": {
             "type": "structure",
+            "required": ["arn"],
             "members": {
                 "arn": { "shape": "ResourceArn" },
                 "name": { "shape": "CustomizationName" },
@@ -293,38 +294,6 @@
             "max": 10240,
             "min": 0,
             "sensitive": true
-        },
-        "SupplementalContext": {
-            "type": "structure",
-            "required": ["filePath", "content"],
-            "members": {
-                "filePath": {
-                    "shape": "SupplementalContextFilePathString"
-                },
-                "content": {
-                    "shape": "SupplementalContextContentString"
-                }
-            }
-        },
-        "SupplementalContextFilePathString": {
-            "type": "string",
-            "max": 1024,
-            "min": 1,
-            "sensitive": true
-        },
-        "SupplementalContextContentString": {
-            "type": "string",
-            "max": 5120,
-            "min": 0,
-            "sensitive": true
-        },
-        "SupplementalContextList": {
-            "type": "list",
-            "member": {
-                "shape": "SupplementalContext"
-            },
-            "max": 10,
-            "min": 0
         },
         "GenerateCompletionsRequest": {
             "type": "structure",
@@ -481,20 +450,6 @@
             "min": 1,
             "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
         },
-        "PutTelemetryEventRequest": {
-            "type": "structure",
-            "members": {
-                "clientToken": {
-                    "shape": "IdempotencyToken",
-                    "idempotencyToken": true
-                },
-                "telemetryEvent": { "shape": "TelemetryEvent" }
-            }
-        },
-        "PutTelemetryEventResponse": {
-            "type": "structure",
-            "members": {}
-        },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
             "enum": ["BLOCK", "ALLOW"]
@@ -548,6 +503,20 @@
                 "message": { "shape": "String" }
             },
             "exception": true
+        },
+        "SendTelemetryEventRequest": {
+            "type": "structure",
+            "members": {
+                "clientToken": {
+                    "shape": "IdempotencyToken",
+                    "idempotencyToken": true
+                },
+                "telemetryEvent": { "shape": "TelemetryEvent" }
+            }
+        },
+        "SendTelemetryEventResponse": {
+            "type": "structure",
+            "members": {}
         },
         "Span": {
             "type": "structure",

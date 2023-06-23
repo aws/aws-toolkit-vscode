@@ -86,7 +86,7 @@ export const isSelectedCustomizationAvailable = (available: Customization[], sel
 }
 
 export const baseCustomization = {
-    arn: undefined,
+    arn: '',
     name: localize('AWS.codewhisperer.customization.base.label', 'CodeWhisperer foundation'),
     description: localize(
         'AWS.codewhisperer.customization.base.detail',

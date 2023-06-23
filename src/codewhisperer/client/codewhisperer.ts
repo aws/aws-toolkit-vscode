@@ -6,7 +6,7 @@ import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
-import { ListAvailableCustomizationsResponse, PutTelemetryEventRequest } from './codewhispereruserclient'
+import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -198,12 +198,12 @@ export class DefaultCodeWhispererClient {
         return pageableToCollection(requester, { nextToken: '' }, 'nextToken').promise()
     }
 
-    public async putTelemetryEvent(request: PutTelemetryEventRequest) {
+    public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
         // TODO: Confirm that invoking this API does not honor the telemetry opt-in option
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.isCustomizationFeatureEnabled) {
             return
         }
-        ;(await this.createUserSdkClient()).putTelemetryEvent(request)
+        ;(await this.createUserSdkClient()).sendTelemetryEvent(request)
     }
 }
 

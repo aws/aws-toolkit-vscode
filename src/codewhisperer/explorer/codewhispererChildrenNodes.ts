@@ -97,6 +97,6 @@ export const createSelectCustomizationNode = () => {
     return selectCustomization.build().asTreeNode({
         label: localize('AWS.explorerNode.selectCustomization.label', 'Select Customization'),
         iconPath: getIcon('vscode-extensions'),
-        description: `${newText}${!selectedCustomization.arn ? '' : selectedCustomization.name}`,
+        description: `${newText}${selectedCustomization.arn === '' ? '' : selectedCustomization.name}`,
     })
 }

@@ -517,7 +517,7 @@ export class InlineCompletionService {
         this._isPaginationRunning = false
         const selectedCustomization = getSelectedCustomization()
         this.statusBar.text = codicon`${getIcon('vscode-check')} CodeWhisperer${
-            !selectedCustomization.arn ? '' : ` | ${selectedCustomization.name}`
+            selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
         }`
         this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined

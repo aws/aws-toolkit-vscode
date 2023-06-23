@@ -306,19 +306,19 @@ export class TelemetryHelper {
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
             codewhispererSupplementalContextIsUtg: supplementalContextMetadata?.isUtg,
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
-            codewhispererCustomizationArn: selectedCustomization.arn,
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
 
         client
-            .putTelemetryEvent({
+            .sendTelemetryEvent({
                 telemetryEvent: {
                     userTriggerDecisionEvent: {
                         sessionId: sessionId,
                         requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
-                        customizationArn: selectedCustomization.arn,
+                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
                             languageName: this.sessionDecisions[0].codewhispererLanguage,
                         },
