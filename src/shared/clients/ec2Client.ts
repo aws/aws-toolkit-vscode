@@ -12,16 +12,11 @@ import {
     DescribeInstanceStatusRequest,
     InstanceStateName,
     Tag,
+    Instance,
 } from '@aws-sdk/client-ec2'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
-
-export interface Ec2Instance {
-    instanceId: string
-    name?: string
-    launchTime?: Date
-}
 
 export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
@@ -29,7 +24,7 @@ export class Ec2Client {
     private async createSdkClient(): Promise<EC2> {
         return new EC2({ region: this.regionCode })
     }
-    public async getInstances(): Promise<AsyncCollection<Ec2Instance>> {
+    public async getInstances(): Promise<AsyncCollection<Instance>> {
         const client = await this.createSdkClient()
         const requester = async (request: DescribeInstancesRequest) => client.describeInstances(request)
         const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
@@ -37,25 +32,14 @@ export class Ec2Client {
         return instances
     }
 
-    private lookupTagKey(tags: Tag[], targetKey: string): string | undefined {
-        return tags.filter(tag => tag.Key == targetKey)[0].Value
-    }
-
     public extractInstancesFromReservations(
         reservations: AsyncCollection<Reservation[] | undefined>
-    ): AsyncCollection<Ec2Instance> {
+    ): AsyncCollection<Instance> {
         return reservations
             .flatten()
             .map(instanceList => instanceList?.Instances)
             .flatten()
             .filter(instance => instance!.InstanceId !== undefined)
-            .map(instance => {
-                return {
-                    instanceId: instance!.InstanceId!,
-                    name: this.lookupTagKey(instance!.Tags!, 'Name'),
-                    launchTime: instance!.LaunchTime!,
-                }
-            })
     }
 
     public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
@@ -85,7 +69,7 @@ export class Ec2Client {
         return status == targetStatus
     }
 
-    private getSingleInstanceFilter(instanceId: string): Filter[] {
+    public getSingleInstanceFilter(instanceId: string): Filter[] {
         return [
             {
                 Name: 'instance-id',
@@ -116,4 +100,12 @@ export class Ec2Client {
 
         return response && response.length ? response[0] : undefined
     }
+}
+
+export function getNameOfInstance(instance: Instance): string | undefined {
+    return instance.Tags ? lookupTagKey(instance.Tags, 'Name') : undefined
+}
+
+function lookupTagKey(tags: Tag[], targetKey: string) {
+    return tags.filter(tag => tag.Key == targetKey)[0].Value
 }
