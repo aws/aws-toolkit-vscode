@@ -98,8 +98,7 @@ export class DefaultCodeWhispererClient {
                     },
                 ],
             } as ServiceOptions,
-            undefined,
-            false
+            undefined
         )) as CodeWhispererClient
     }
 
@@ -128,8 +127,7 @@ export class DefaultCodeWhispererClient {
                     },
                 ],
             } as ServiceOptions,
-            undefined,
-            false
+            undefined
         )) as CodeWhispererUserClient
     }
 
