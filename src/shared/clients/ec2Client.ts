@@ -20,6 +20,7 @@ import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 export interface Ec2Instance {
     instanceId: string
     name?: string
+    launchTime?: Date
 }
 
 export class Ec2Client {
@@ -49,9 +50,11 @@ export class Ec2Client {
             .flatten()
             .filter(instance => instance!.InstanceId !== undefined)
             .map(instance => {
-                return instance!.Tags
-                    ? { instanceId: instance!.InstanceId!, name: this.lookupTagKey(instance!.Tags!, 'Name') }
-                    : { instanceId: instance!.InstanceId! }
+                return {
+                    instanceId: instance!.InstanceId!,
+                    name: this.lookupTagKey(instance!.Tags!, 'Name'),
+                    launchTime: instance!.LaunchTime!,
+                }
             })
     }
 
@@ -82,6 +85,15 @@ export class Ec2Client {
         return status == targetStatus
     }
 
+    private getSingleInstanceFilter(instanceId: string): Filter[] {
+        return [
+            {
+                Name: 'instance-id',
+                Values: [instanceId],
+            },
+        ]
+    }
+
     /**
      * Retrieve IAM role attached to given EC2 instance.
      * @param instanceId target EC2 instance ID
@@ -89,12 +101,7 @@ export class Ec2Client {
      */
     public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const client = await this.createSdkClient()
-        const instanceFilter: Filter[] = [
-            {
-                Name: 'instance-id',
-                Values: [instanceId],
-            },
-        ]
+        const instanceFilter = this.getSingleInstanceFilter(instanceId)
         const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
             client.describeIamInstanceProfileAssociations(request)
         const response = await pageableToCollection(
