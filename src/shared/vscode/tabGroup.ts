@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+// Sourced from https://github.com/microsoft/vscode/blob/main/src/vscode-dts/vscode.d.ts
+// This API was added in 1.67.0. Not supported in Cloud9.
 declare module 'vscode' {
     namespace window {
         export const tabGroups: TabGroups
