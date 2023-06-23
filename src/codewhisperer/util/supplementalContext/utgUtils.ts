@@ -20,6 +20,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { utgConfig } from '../../models/constants'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -75,7 +76,6 @@ function generateSupplementalContextFromFocalFile(
     cancellationToken: vscode.CancellationToken
 ): CodeWhispererSupplementalContextItem[] {
     const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')
-    const segmentSize = 10200
 
     // TODO (Metrics) Publish fileContent.lenth to record the length of focal files observed.
     // We prepend the content with 'UTG' to inform the server side.
@@ -83,7 +83,7 @@ function generateSupplementalContextFromFocalFile(
     return [
         {
             filePath: filePath,
-            content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, segmentSize)),
+            content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
         },
     ]
 }

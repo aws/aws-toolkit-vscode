@@ -273,3 +273,7 @@ export const crossFileContextConfig = {
     topK: 3,
     numberOfLinesEachChunk: 10,
 }
+
+export const utgConfig = {
+    maxSegmentSize: 10200,
+}

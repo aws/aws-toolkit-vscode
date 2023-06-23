@@ -73,8 +73,8 @@ export async function fetchSupplementalContextForSrc(
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
     const chunkContentList = chunkReferences.map(chunk => chunk.content)
+
     //performBM25Scoring returns the output in a sorted order (descending of scores)
-    // const output: BMDocument[] = performBM25Scoring(chunkContentList, chunkInput.content) as BMDocument[]
     const top3: BM25Document[] = new BM25Okapi(chunkContentList).topN(chunkInput.content, crossFileContextConfig.topK)
 
     return top3.map(doc => {
@@ -172,22 +172,8 @@ async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph:
 }
 
 // Util to move selected files to the front of the input array if it exists
-function moveToFront(files: string[], picked: Set<string>) {
-    if (picked.size === 0) {
-        return [...files]
-    }
-
-    const head: string[] = []
-    const body: string[] = []
-    files.forEach(file => {
-        if (picked.has(file)) {
-            head.push(file)
-        } else {
-            body.push(file)
-        }
-    })
-
-    return [...head, ...body]
+function moveToFront<T>(arr: T[], picked: Set<T>) {
+    return [...arr].sort((a, b) => (picked.has(b) ? 1 : 0) - (picked.has(a) ? 1 : 0))
 }
 
 function openFilesInWindow(): string[] {
