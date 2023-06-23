@@ -35,8 +35,8 @@ object CodeWhispererClassifierConstants {
         CodeWhispererCsharp.INSTANCE to 0.0,
         CodeWhispererPlainText.INSTANCE to 0.0,
         CodeWhispererTypeScript.INSTANCE to -0.3931,
-        CodeWhispererTsx.INSTANCE to 0.0,
-        CodeWhispererJsx.INSTANCE to 0.0
+        CodeWhispererTsx.INSTANCE to -0.393076,
+        CodeWhispererJsx.INSTANCE to -0.361063
     )
 
     // other metadata coefficient
