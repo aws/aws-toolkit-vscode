@@ -24,23 +24,24 @@ const localize = nls.loadMessageBundle()
 
 // Notification Actions
 export interface SamCliValidationNotificationAction {
-    label: string
+    label(): string
     invoke(): Promise<void>
 }
 
 const actionGoToSamCli: SamCliValidationNotificationAction = {
-    label: localize('AWS.samcli.userChoice.visit.install.url', 'Install latest SAM CLI'),
+    label: () => localize('AWS.samcli.userChoice.visit.install.url', 'Install latest SAM CLI'),
     invoke: async () => {
         openUrl(samInstallUrl)
     },
 }
 
 const actionGoToVsCodeMarketplace: SamCliValidationNotificationAction = {
-    label: localize(
-        'AWS.samcli.userChoice.update.awstoolkit.url',
-        'Install latest {0} Toolkit',
-        getIdeProperties().company
-    ),
+    label: () =>
+        localize(
+            'AWS.samcli.userChoice.update.awstoolkit.url',
+            'Install latest {0} Toolkit',
+            getIdeProperties().company
+        ),
     invoke: async () => {
         showExtensionPage(VSCODE_EXTENSION_ID.awstoolkit)
     },
@@ -60,12 +61,12 @@ class DefaultSamCliValidationNotification implements SamCliValidationNotificatio
     public async show(): Promise<void> {
         const userResponse: string | undefined = await vscode.window.showErrorMessage(
             this.message,
-            ...this.actions.map(action => action.label)
+            ...this.actions.map(action => action.label())
         )
 
         if (userResponse) {
             const responseActions: Promise<void>[] = this.actions
-                .filter(action => action.label === userResponse)
+                .filter(action => action.label() === userResponse)
                 .map(async action => action.invoke())
 
             await Promise.all(responseActions)
