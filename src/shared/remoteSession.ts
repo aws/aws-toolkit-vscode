@@ -5,8 +5,13 @@
 
 import * as vscode from 'vscode'
 import { Settings } from '../shared/settings'
+import { showMessageWithCancel } from './utilities/messages'
+import { Timeout } from './utilities/timeoutUtils'
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
+    const timeout = new Timeout(60000)
+
+    await showMessageWithCancel('AWS: Starting session...', timeout, 2000)
     await withoutShellIntegration(async () => {
         const terminal = vscode.window.createTerminal(options)
 
@@ -15,13 +20,11 @@ export async function openRemoteTerminal(options: vscode.TerminalOptions, onClos
                 vscode.Disposable.from(listener, { dispose: onClose }).dispose()
             }
         })
-        await vscode.window.withProgress(
-            { title: 'AWS: Starting session...', location: vscode.ProgressLocation.Notification },
-            async () => {
-                terminal.show()
-            }
-        )
+
+        terminal.show()
     })
+
+    timeout.cancel()
 }
 
 // VSC is logging args to the PTY host log file if shell integration is enabled :(
