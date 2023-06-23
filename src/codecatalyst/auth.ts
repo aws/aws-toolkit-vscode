@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { CodeCatalystClient, createClient } from '../shared/clients/codecatalystClient'
-import { getIdeProperties } from '../shared/extensionUtilities'
 import { Auth } from '../auth/auth'
 import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
@@ -137,15 +136,6 @@ export class CodeCatalystAuthenticationProvider {
             telemetry.record({
                 codecatalyst_connectionFlow: 'Create',
             } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
-
-            const message = `The ${
-                getIdeProperties().company
-            } Toolkit extension requires a connection for CodeCatalyst to begin.\n\n Proceed to the browser to allow access?`
-
-            const resp = await vscode.window.showInformationMessage(message, { modal: true }, continueItem, cancelItem)
-            if (resp !== continueItem) {
-                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
-            }
 
             const newConn = await createBuilderIdConnection(this.auth, defaultScopes)
             if (this.auth.activeConnection?.id !== newConn.id) {
