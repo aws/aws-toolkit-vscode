@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { copyLogResource } from '../../../cloudWatchLogs/commands/copyLogResource'
 
-describe('copyLogResourceName', async function () {
+describe('copyLogResource', async function () {
     beforeEach(async function () {
         await vscode.env.clipboard.writeText('')
     })
