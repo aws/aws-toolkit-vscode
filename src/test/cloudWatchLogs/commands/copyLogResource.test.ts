@@ -8,8 +8,7 @@ import * as vscode from 'vscode'
 import { createURIFromArgs } from '../../../cloudWatchLogs/cloudWatchLogsUtils'
 import { copyLogResource } from '../../../cloudWatchLogs/commands/copyLogResource'
 
-describe('copyLogStreamName', async function () {
-
+describe('copyLogResourceName', async function () {
     beforeEach(async function () {
         await vscode.env.clipboard.writeText('')
     })
@@ -20,21 +19,21 @@ describe('copyLogStreamName', async function () {
 
     it('copies stream names from valid URIs with stream open', async function () {
         const logGroupWithStream = {
-            groupName: 'group', 
-            regionName: 'region', 
-            streamName: 'stream'
+            groupName: 'group',
+            regionName: 'region',
+            streamName: 'stream',
         }
         const uri = createURIFromArgs(logGroupWithStream, {})
 
-        await copyLogResource(uri);
+        await copyLogResource(uri)
 
         assert.strictEqual(await vscode.env.clipboard.readText(), logGroupWithStream.streamName)
     })
 
-    it('copies group names from valid URIs with group open', async function() {
+    it('copies group names from valid URIs with group open', async function () {
         const logGroup = {
             groupName: 'group2',
-            regionName: 'region2'
+            regionName: 'region2',
         }
         const uri = createURIFromArgs(logGroup, {})
 
