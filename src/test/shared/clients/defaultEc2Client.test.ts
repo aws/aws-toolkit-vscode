@@ -119,15 +119,26 @@ describe('getSingleInstanceFilter', function () {
     const client = new Ec2Client('')
 
     it('returns proper filter when given instanceId', function () {
-        const testInstanceId = 'test'
-        const actualFilters = client.getSingleInstanceFilter(testInstanceId)
-        const expectedFilters: Filter[] = [
+        const testInstanceId1 = 'test'
+        const actualFilters1 = client.getInstancesFilter([testInstanceId1])
+        const expectedFilters1: Filter[] = [
             {
                 Name: 'instance-id',
-                Values: ['test'],
+                Values: [testInstanceId1],
             },
         ]
-        // CHANGE
-        assert.deepStrictEqual(expectedFilters, actualFilters)
+
+        assert.deepStrictEqual(expectedFilters1, actualFilters1)
+
+        const testInstanceId2 = 'test2'
+        const actualFilters2 = client.getInstancesFilter([testInstanceId1, testInstanceId2])
+        const expectedFilters2: Filter[] = [
+            {
+                Name: 'instance-id',
+                Values: [testInstanceId1, testInstanceId2],
+            },
+        ]
+
+        assert.deepStrictEqual(expectedFilters2, actualFilters2)
     })
 })

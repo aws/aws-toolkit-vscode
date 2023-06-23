@@ -24,10 +24,14 @@ export class Ec2Client {
     private async createSdkClient(): Promise<EC2> {
         return new EC2({ region: this.regionCode })
     }
-    public async getInstances(): Promise<AsyncCollection<Instance>> {
+
+    public async getInstances(filters?: Filter[]): Promise<AsyncCollection<Instance>> {
         const client = await this.createSdkClient()
+
         const requester = async (request: DescribeInstancesRequest) => client.describeInstances(request)
-        const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
+        const collection = filters
+            ? pageableToCollection(requester, { Filters: filters }, 'NextToken', 'Reservations')
+            : pageableToCollection(requester, {}, 'NextToken', 'Reservations')
         const instances = this.extractInstancesFromReservations(collection)
         return instances
     }
@@ -69,13 +73,23 @@ export class Ec2Client {
         return status == targetStatus
     }
 
-    public getSingleInstanceFilter(instanceId: string): Filter[] {
+    public getInstancesFilter(instanceIds: string[]): Filter[] {
         return [
             {
                 Name: 'instance-id',
-                Values: [instanceId],
+                Values: instanceIds,
             },
         ]
+    }
+
+    public async getInstanceLaunchTime(instanceId: string): Promise<Date | undefined> {
+        const singleInstanceFilter = this.getInstancesFilter([instanceId])
+        try {
+            const instance = (await (await this.getInstances(singleInstanceFilter)).promise())[0]
+            return instance.LaunchTime!
+        } catch (err: unknown) {
+            console.log(err)
+        }
     }
 
     /**
@@ -85,7 +99,7 @@ export class Ec2Client {
      */
     public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const client = await this.createSdkClient()
-        const instanceFilter = this.getSingleInstanceFilter(instanceId)
+        const instanceFilter = this.getInstancesFilter([instanceId])
         const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
             client.describeIamInstanceProfileAssociations(request)
         const response = await pageableToCollection(
