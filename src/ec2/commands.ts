@@ -6,6 +6,7 @@
 import { createEc2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { Ec2ConnectionManager } from './model'
+import { CancellationError } from '../shared/utilities/timeoutUtils'
 
 export async function tryConnect(): Promise<void> {
     const prompter = createEc2ConnectPrompter()
@@ -15,5 +16,7 @@ export async function tryConnect(): Promise<void> {
         const selection = handleEc2ConnectPrompterResponse(response)
         const ec2Client = new Ec2ConnectionManager(selection.region)
         await ec2Client.attemptEc2Connection(selection)
+    } else {
+        throw new CancellationError('user')
     }
 }

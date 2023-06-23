@@ -113,18 +113,15 @@ export class Ec2ConnectionManager {
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
-        telemetry.ec2_connectToInstance.run(async span => {
-            span.record({ ec2ConnectionType: 'ssm' })
-            try {
-                const response = await this.ssmClient.startSession(selection.instanceId)
-                await this.openSessionInTerminal(response, selection)
-            } catch (err) {
-                if (err instanceof ServiceException) {
-                    await this.handleStartSessionError(err, selection)
-                } else {
-                    throw err
-                }
+        try {
+            const response = await this.ssmClient.startSession(selection.instanceId)
+            await this.openSessionInTerminal(response, selection)
+        } catch (err) {
+            if (err instanceof ServiceException) {
+                await this.handleStartSessionError(err, selection)
+            } else {
+                throw err
             }
-        })
+        }
     }
 }
