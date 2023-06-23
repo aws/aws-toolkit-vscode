@@ -32,8 +32,8 @@
                 <label class="input-title">Region</label>
                 <label class="small-description">AWS Region that hosts Identity directory</label>
 
-                <div style="display: flex; flex-direction: row; gap: 10px">
-                    <div v-on:click="getRegion()" class="icon icon-lg icon-vscode-edit edit-icon"></div>
+                <div v-on:click="getRegion()" style="display: flex; flex-direction: row; gap: 10px; cursor: pointer">
+                    <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
                     <div style="width: 100%; color: #cccccc">{{ data.region ? data.region : 'Not Selected' }}</div>
                 </div>
             </div>
@@ -187,10 +187,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     protected _stage: IdentityCenterStage = 'START'
 
     constructor() {
-        this._data = {
-            startUrl: '',
-            region: '',
-        }
+        this._data = BaseIdentityCenterState.initialData()
     }
 
     abstract get id(): AuthFormId
@@ -220,10 +217,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         // Successful submission, so we can clear
         // old data.
         if (!error) {
-            this._data = {
-                startUrl: '',
-                region: '',
-            }
+            this._data = BaseIdentityCenterState.initialData()
         }
         return error
     }
@@ -251,6 +245,13 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
     protected async getSubmittableDataOrThrow(): Promise<IdentityCenterData> {
         return this._data as IdentityCenterData
+    }
+
+    private static initialData(): IdentityCenterData {
+        return {
+            startUrl: '',
+            region: 'us-east-1',
+        }
     }
 }
 
