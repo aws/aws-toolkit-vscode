@@ -82,13 +82,18 @@ export class Ec2Client {
         ]
     }
 
+    /**
+     * Retrieve launch time of given EC2 instance.
+     * @param instanceId target EC2 instance ID
+     * @returns Date object for launch time associated with instance, or undefined if instance doesn't exists or doesn't have one.
+     */
     public async getInstanceLaunchTime(instanceId: string): Promise<Date | undefined> {
         const singleInstanceFilter = this.getInstancesFilter([instanceId])
         try {
             const instance = (await (await this.getInstances(singleInstanceFilter)).promise())[0]
             return instance.LaunchTime!
         } catch (err: unknown) {
-            console.log(err)
+            return undefined
         }
     }
 

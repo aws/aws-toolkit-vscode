@@ -58,10 +58,21 @@ export class Ec2ConnectionManager {
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
+    public async needsRestart(instanceId: string): Promise<boolean> {
+        const instanceLaunchDate = await this.ec2Client.getInstanceLaunchTime(instanceId)
+        const instanceIAMAttachDate = new Date(0)
+
+        return instanceLaunchDate && instanceLaunchDate ? instanceIAMAttachDate < instanceLaunchDate : false
+    }
+
     public async handleStartSessionError(err: ServiceException, selection: Ec2Selection): Promise<string> {
-        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
+
+        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
+        const needsRestart = await this.needsRestart(selection.instanceId)
+
+        console.log(needsRestart)
 
         if (!isInstanceRunning) {
             throw new ToolkitError(
