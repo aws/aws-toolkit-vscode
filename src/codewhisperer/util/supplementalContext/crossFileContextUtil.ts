@@ -153,7 +153,7 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * by referencing open files, imported files and same package files.
  */
 async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
-    const openedFilesInEditor = new Set(openFilesInWindow())
+    const openedFilesInEditor = new Set(getOpenFilesInWindow())
 
     let srcDependencies = await dependencyGraph.getSourceDependencies(editor.document.uri, editor.document.getText())
     srcDependencies = moveToFront(srcDependencies, openedFilesInEditor)
@@ -176,7 +176,7 @@ function moveToFront<T>(arr: T[], picked: Set<T>) {
     return [...arr].sort((a, b) => (picked.has(b) ? 1 : 0) - (picked.has(a) ? 1 : 0))
 }
 
-function openFilesInWindow(): string[] {
+function getOpenFilesInWindow(): string[] {
     const filesOpenedInEditor: string[] = []
 
     try {
