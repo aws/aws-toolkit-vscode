@@ -5,7 +5,6 @@
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
 import { IAM } from 'aws-sdk'
-import { ServiceException } from '@aws-sdk/smithy-client'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -13,7 +12,11 @@ import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-export type Ec2ConnectErrorCode = 'EC2SSMStatusError' | 'EC2SSMPermissionError' | 'EC2SSMConnectError'
+export type Ec2ConnectErrorCode =
+    | 'EC2SSMStatusError'
+    | 'EC2SSMPermissionError'
+    | 'EC2SSMConnectError'
+    | 'EC2SSMNeedsRestart'
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
@@ -55,24 +58,21 @@ export class Ec2ConnectionManager {
         const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
         const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
 
-        return requiredPolicies.every(policy => attachedPolicies.includes(policy))
+        return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async needsRestart(instanceId: string): Promise<boolean> {
-        const instanceLaunchDate = await this.ec2Client.getInstanceLaunchTime(instanceId)
-        const instanceIAMAttachDate = new Date(0)
+    private async isInstanceConnectable(instanceId: string): Promise<boolean> {
+        const isInstanceRunning = await this.ec2Client.isInstanceRunning(instanceId)
+        const hasProperPolicies = await this.hasProperPolicies(instanceId)
 
-        return instanceLaunchDate && instanceLaunchDate ? instanceIAMAttachDate < instanceLaunchDate : false
+        return isInstanceRunning && hasProperPolicies
     }
 
-    public async handleStartSessionError(err: ServiceException, selection: Ec2Selection): Promise<string> {
+    public async handleStartSessionError(err: unknown, selection: Ec2Selection): Promise<string> {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
         const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
-        const needsRestart = await this.needsRestart(selection.instanceId)
-
-        console.log(needsRestart)
 
         if (!isInstanceRunning) {
             throw new ToolkitError(
@@ -122,13 +122,13 @@ export class Ec2ConnectionManager {
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
         try {
             const response = await this.ssmClient.startSession(selection.instanceId)
+            const isConnectable = await this.isInstanceConnectable(selection.instanceId)
+            if (!isConnectable) {
+                throw new Error('Instance is not connectable.')
+            }
             await this.openSessionInTerminal(response, selection)
         } catch (err) {
-            if (err instanceof ServiceException) {
-                await this.handleStartSessionError(err, selection)
-            } else {
-                throw err
-            }
+            await this.handleStartSessionError(err, selection)
         }
     }
 }

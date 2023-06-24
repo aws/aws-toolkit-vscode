@@ -13,6 +13,7 @@ import {
     InstanceStateName,
     Tag,
     Instance,
+    IamInstanceProfileAssociation,
 } from '@aws-sdk/client-ec2'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
@@ -98,11 +99,21 @@ export class Ec2Client {
     }
 
     /**
-     * Retrieve IAM role attached to given EC2 instance.
+     * Retrieve association time for IAM role for a given EC2 instance.
      * @param instanceId target EC2 instance ID
-     * @returns IAM role associated with instance, or undefined if none exists.
+     * @returns Date of most recent IAM associaton with given instance.
      */
-    public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
+    public async getIamAttachDate(instanceId: string): Promise<Date | undefined> {
+        const roleAssociation = await this.getIamInstanceProfileAssociations(instanceId)
+        return roleAssociation ? roleAssociation.Timestamp! : undefined
+    }
+
+    /**
+     * Retrieve IAM Association for a given EC2 instance.
+     * @param instanceId target EC2 instance ID
+     * @returns IAM Association for instance
+     */
+    private async getIamInstanceProfileAssociations(instanceId: string): Promise<IamInstanceProfileAssociation> {
         const client = await this.createSdkClient()
         const instanceFilter = this.getInstancesFilter([instanceId])
         const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
@@ -114,10 +125,20 @@ export class Ec2Client {
             'IamInstanceProfileAssociations'
         )
             .flatten()
-            .map(val => val?.IamInstanceProfile)
+            .filter(association => association !== undefined)
             .promise()
 
-        return response && response.length ? response[0] : undefined
+        return response[0]!
+    }
+
+    /**
+     * Retrieve IAM role attached to given EC2 instance.
+     * @param instanceId target EC2 instance ID
+     * @returns IAM role associated with instance
+     */
+    public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile> {
+        const association = await this.getIamInstanceProfileAssociations(instanceId)
+        return association.IamInstanceProfile!
     }
 }
 
