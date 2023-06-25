@@ -158,11 +158,6 @@ async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph:
     })
 }
 
-// Util to move selected files to the front of the input array if it exists
-function moveToFront<T>(arr: T[], picked: Set<T>) {
-    return [...arr].sort((a, b) => (picked.has(b) ? 1 : 0) - (picked.has(a) ? 1 : 0))
-}
-
 function getOpenFilesInWindow(): string[] {
     const filesOpenedInEditor: string[] = []
 
