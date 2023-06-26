@@ -21,11 +21,12 @@
                 <div class="icon icon-lg icon-vscode-check"></div>
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row">
-                    You're connected to {{ authFormDisplayName }}! Switch between connections in the&nbsp;<a
+                    Connected to&nbsp;<span style="font-weight: bold">{{ authFormDisplayName }}</span
+                    >! Switch between existing connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer"
                         >Toolkit panel</a
-                    >&nbsp;or add additional connections below.
+                    >.
                 </div>
                 &nbsp;&nbsp;
                 <div
@@ -54,7 +55,7 @@
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer"
                         >Toolkit panel</a
-                    >&nbsp;.
+                    >.
                 </div>
                 &nbsp;&nbsp;
                 <div
