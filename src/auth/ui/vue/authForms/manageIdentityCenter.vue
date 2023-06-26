@@ -39,7 +39,7 @@
             </div>
 
             <div class="form-section">
-                <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
+                <button v-on:click="signin()" :disabled="!canSubmit">Sign in</button>
                 <div class="small-description error-text">{{ errors.submit }}</div>
             </div>
         </div>
