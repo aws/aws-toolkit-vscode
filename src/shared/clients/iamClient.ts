@@ -73,7 +73,7 @@ export class DefaultIamClient {
         const tokens = arn.split('/')
         if (tokens.length < 2) {
             throw new Error(
-                `${arn} is an invalid IAM role ARN. Does not follow template arn:aws:iam::{id}/{friendlyName}.`
+                `Invalid IAM role ARN (expected format: arn:aws:iam::{id}/{name}): ${arn}`
             )
         }
         return tokens[tokens.length - 1]
