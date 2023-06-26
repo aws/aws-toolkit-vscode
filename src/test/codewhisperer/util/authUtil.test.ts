@@ -134,4 +134,14 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)
         assert.strictEqual((await auth.listConnections()).filter(isSsoConnection).length, 1)
     })
+
+    it('test reformatStartUrl should remove trailing slash and hash', function () {
+        const expected = 'https://view.awsapps.com/start'
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '/'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(undefined), undefined)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '/#'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '#/'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '/#/'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '####'), expected)
+    })
 })
