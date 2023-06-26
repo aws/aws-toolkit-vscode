@@ -72,7 +72,7 @@ export class Ec2ConnectionManager {
 
         if (!hasProperPolicies) {
             throw new ToolkitError(
-                generalErrorMessage + 'Ensure the IAM role attached to the instance has the proper policies.',
+                generalErrorMessage + 'Ensure the IAM role attached to the instance has the required policies.',
                 {
                     code: 'EC2SSMPermission',
                     documentationUri: vscode.Uri.parse(
