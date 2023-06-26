@@ -129,7 +129,7 @@ describe('recommendationHandler', function () {
             sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
                 isUtg: false,
                 isProcessTimeout: false,
-                contents: [],
+                supplementalContextItems: [],
                 contentsLength: 100,
                 latency: 0,
             })
