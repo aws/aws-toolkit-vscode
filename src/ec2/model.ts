@@ -58,7 +58,7 @@ export class Ec2ConnectionManager {
     }
 
     public async handleStartSessionError(err: AWSError, selection: Ec2Selection): Promise<Error> {
-        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
+        const isInstanceRunning = (await this.ec2Client.getInstanceStatus(selection.instanceId)) == 'running'
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
@@ -82,15 +82,12 @@ export class Ec2ConnectionManager {
             )
         }
 
-        throw new ToolkitError(
-            'Is SSM running on the target instance?',
-            {
-                code: 'EC2SSMConnect',
-                documentationUri: vscode.Uri.parse(
-                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
-                ),
-            }
-        )
+        throw new ToolkitError('Is SSM running on the target instance?', {
+            code: 'EC2SSMConnect',
+            documentationUri: vscode.Uri.parse(
+                'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
+            ),
+        })
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {

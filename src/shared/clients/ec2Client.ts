@@ -54,15 +54,6 @@ export class Ec2Client {
         return response[0]
     }
 
-    public async isInstanceRunning(instanceId: string): Promise<boolean> {
-        return await this.checkInstanceStatus(instanceId, 'running')
-    }
-
-    private async checkInstanceStatus(instanceId: string, targetStatus: EC2.InstanceStateName): Promise<boolean> {
-        const status = await this.getInstanceStatus(instanceId)
-        return status == targetStatus
-    }
-
     /**
      * Retrieve IAM role attached to given EC2 instance.
      * @param instanceId target EC2 instance ID
