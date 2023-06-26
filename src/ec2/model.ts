@@ -83,7 +83,7 @@ export class Ec2ConnectionManager {
         }
 
         throw new ToolkitError(
-            'Ensure SSM is running on target instance. For more information see the documentation.',
+            'Is SSM running on the target instance?',
             {
                 code: 'EC2SSMConnect',
                 documentationUri: vscode.Uri.parse(
