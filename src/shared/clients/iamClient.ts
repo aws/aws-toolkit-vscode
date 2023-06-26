@@ -69,8 +69,11 @@ export class DefaultIamClient {
         return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }
 
-    private getFriendlyName(arn: string): string {
+    public getFriendlyName(arn: string): string {
         const tokens = arn.split('/')
+        if (tokens.length < 2) {
+            throw new Error(`Invalid IAM role ARN (expected format: arn:aws:iam::{id}/{name}): ${arn}`)
+        }
         return tokens[tokens.length - 1]
     }
 

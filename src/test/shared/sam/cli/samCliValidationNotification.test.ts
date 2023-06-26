@@ -34,9 +34,9 @@ describe('getInvalidSamMsg', async function () {
                 assert.ok(message.includes('Cannot find SAM CLI'), `unexpected validation message: ${message}`)
                 assert.strictEqual(actions.length, 1, 'unexpected action count')
                 assert.strictEqual(
-                    actions[0].label,
+                    actions[0].label(),
                     actionLabelUpdateSamCli,
-                    `unexpected action label: ${actions[0].label}`
+                    `unexpected action label: ${actions[0].label()}`
                 )
 
                 return fakeSamCliValidationNotification
@@ -83,9 +83,9 @@ describe('getInvalidSamMsg', async function () {
                     assert.ok(hasMsg && hasVersion, `unexpected validation message: ${message}`)
                     assert.strictEqual(actions.length, 1, 'unexpected action count')
                     assert.strictEqual(
-                        actions[0].label,
+                        actions[0].label(),
                         test.actionLabel,
-                        `unexpected action label: ${actions[0].label}`
+                        `unexpected action label: ${actions[0].label()}`
                     )
 
                     return fakeSamCliValidationNotification

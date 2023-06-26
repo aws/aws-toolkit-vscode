@@ -33,7 +33,15 @@ export class ClassifierTrigger {
 
     private lastInvocationLineNumber: number = 0
 
-    private supportedLanguage: CodewhispererLanguage[] = ['java', 'javascript', 'python', 'typescript', 'csharp']
+    private supportedLanguage: CodewhispererLanguage[] = [
+        'java',
+        'javascript',
+        'python',
+        'typescript',
+        'csharp',
+        'tsx',
+        'jsx',
+    ]
 
     // ML classifier trigger threshold
     private triggerThreshold = 0.4
@@ -57,6 +65,8 @@ export class ClassifierTrigger {
         javascript: -0.361063,
         python: -0.265584,
         typescript: -0.393076,
+        tsx: -0.393076,
+        jsx: -0.361063,
     }
 
     // other metadata coefficient

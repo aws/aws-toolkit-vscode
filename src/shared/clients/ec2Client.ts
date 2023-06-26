@@ -46,8 +46,7 @@ export class Ec2Client {
         const client = await this.createSdkClient()
         const requester = async (request: DescribeInstanceStatusRequest) => client.describeInstanceStatus(request)
 
-        // Fix: SDK returns string instead of InstanceStateName so we have to cast it.
-        const response: InstanceStateName[] = await pageableToCollection(
+        const response = await pageableToCollection(
             requester,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
             'NextToken',
@@ -58,15 +57,6 @@ export class Ec2Client {
             .promise()
 
         return response[0]
-    }
-
-    public async isInstanceRunning(instanceId: string): Promise<boolean> {
-        return await this.checkInstanceStatus(instanceId, 'running')
-    }
-
-    private async checkInstanceStatus(instanceId: string, targetStatus: InstanceStateName): Promise<boolean> {
-        const status = await this.getInstanceStatus(instanceId)
-        return status == targetStatus
     }
 
     /**

@@ -16,7 +16,7 @@
         </div>
 
         <div>
-            <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeCatalyst.</a>
+            <a href="https://aws.amazon.com/codecatalyst/">Learn more about CodeCatalyst.</a>
         </div>
 
         <hr />
