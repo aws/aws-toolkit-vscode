@@ -284,6 +284,7 @@ export class AuthWebview extends VueWebview {
             CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection,
             Auth.instance.onDidChangeActiveConnection,
             Auth.instance.onDidChangeConnectionState,
+            Auth.instance.onDidUpdateConnection,
         ]
 
         // The event handler in the frontend refreshes all connection statuses

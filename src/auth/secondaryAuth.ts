@@ -235,15 +235,30 @@ export class SecondaryAuth<T extends Connection = Connection> {
 
     public async addScopes(conn: T & SsoConnection, extraScopes: string[]) {
         await promptForRescope(conn, this.toolLabel)
-        const scopes = Array.from(new Set([...(conn.scopes ?? []), ...extraScopes]))
-        const updatedConn = await this.auth.updateConnection(conn, {
-            type: 'sso',
-            scopes,
-            startUrl: conn.startUrl,
-            ssoRegion: conn.ssoRegion,
-        })
+        const oldScopes = conn.scopes ?? []
+        const newScopes = Array.from(new Set([...oldScopes, ...extraScopes]))
 
-        return this.auth.reauthenticate(updatedConn)
+        const updateConnectionScopes = (scopes: string[]) => {
+            return this.auth.updateConnection(conn, {
+                type: 'sso',
+                scopes,
+                startUrl: conn.startUrl,
+                ssoRegion: conn.ssoRegion,
+            })
+        }
+
+        const updatedConn = await updateConnectionScopes(newScopes)
+
+        try {
+            return await this.auth.reauthenticate(updatedConn)
+        } catch (e) {
+            if (CancellationError.isUserCancelled(e)) {
+                // We updated the connection scopes, but the user cancelled reauth.
+                // Revert to old connection scopes, otherwise the new scopes persist.
+                await updateConnectionScopes(oldScopes)
+            }
+            throw e
+        }
     }
 
     // Used to lazily restore persisted connections.
