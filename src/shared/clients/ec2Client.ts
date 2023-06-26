@@ -94,7 +94,7 @@ export class Ec2Client {
      * @returns Date of most recent IAM associaton with given instance.
      */
     public async getIamAttachDate(instanceId: string): Promise<Date | undefined> {
-        const roleAssociation = await this.getIamInstanceProfileAssociations(instanceId)
+        const roleAssociation = await this.getIamInstanceProfileAssociation(instanceId)
         return roleAssociation ? roleAssociation.Timestamp! : undefined
     }
 
@@ -103,7 +103,7 @@ export class Ec2Client {
      * @param instanceId target EC2 instance ID
      * @returns IAM Association for instance
      */
-    private async getIamInstanceProfileAssociations(instanceId: string): Promise<IamInstanceProfileAssociation> {
+    private async getIamInstanceProfileAssociation(instanceId: string): Promise<IamInstanceProfileAssociation> {
         const client = await this.createSdkClient()
         const instanceFilter = this.getInstancesFilter([instanceId])
         const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
@@ -127,8 +127,8 @@ export class Ec2Client {
      * @returns IAM role associated with instance or undefined if none exists.
      */
     public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
-        const association = await this.getIamInstanceProfileAssociations(instanceId)
-        return association.IamInstanceProfile
+        const association = await this.getIamInstanceProfileAssociation(instanceId)
+        return association ? association.IamInstanceProfile : undefined
     }
 }
 
