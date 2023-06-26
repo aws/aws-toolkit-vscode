@@ -8,8 +8,6 @@ export type ServiceItemId = 'resourceExplorer' | 'codewhisperer' | 'codecatalyst
 export function isServiceItemId(value: unknown): value is ServiceItemId {
     return (
         typeof value === 'string' &&
-        (value === 'resourceExplorer' ||
-            value === 'codewhisperer' ||
-            value === 'codecatalyst')
+        (value === 'resourceExplorer' || value === 'codewhisperer' || value === 'codecatalyst')
     )
 }

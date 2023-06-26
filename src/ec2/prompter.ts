@@ -25,7 +25,7 @@ export function createEc2ConnectPrompter(): RegionSubmenu<string> {
     return new RegionSubmenu(
         async region => (await getInstanceIdsFromRegion(region)).map(asQuickpickItem).promise(),
         { title: 'Select EC2 Instance Id' },
-        { title: 'Select Region for EC2 Instance' }, 
-        "Instances"
+        { title: 'Select Region for EC2 Instance' },
+        'Instances'
     )
 }
