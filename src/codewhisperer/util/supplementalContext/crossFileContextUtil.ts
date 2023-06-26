@@ -153,27 +153,9 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * by referencing open files, imported files and same package files.
  */
 async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
-    const openedFilesInEditor = new Set(getOpenFilesInWindow())
-
-    let srcDependencies = await dependencyGraph.getSourceDependencies(editor.document.uri, editor.document.getText())
-    srcDependencies = moveToFront(srcDependencies, openedFilesInEditor)
-
-    const samePackageFiles = await dependencyGraph.getSamePackageFiles(
-        editor.document.uri,
-        dependencyGraph.getProjectPath(editor.document.uri)
-    )
-    const samePackageRelevantFiles = samePackageFiles.filter(file => {
+    return getOpenFilesInWindow().filter(file => {
         return isRelevant(editor.document.fileName, file, editor.document.languageId)
     })
-
-    const mergedCrossFileList = [...new Set([...srcDependencies, ...samePackageRelevantFiles])]
-
-    return mergedCrossFileList
-}
-
-// Util to move selected files to the front of the input array if it exists
-function moveToFront<T>(arr: T[], picked: Set<T>) {
-    return [...arr].sort((a, b) => (picked.has(b) ? 1 : 0) - (picked.has(a) ? 1 : 0))
 }
 
 function getOpenFilesInWindow(): string[] {
