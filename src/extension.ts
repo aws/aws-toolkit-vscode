@@ -286,7 +286,7 @@ async function handleError(error: unknown, topic: string, defaultMessage: string
     const message = resolveErrorMessageToDisplay(error, defaultMessage)
 
     if (error instanceof ToolkitError && error.documentationUri) {
-        await showMessageWithUrl(message, error.documentationUri, 'Go to Documentation', 'error')
+        await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
     } else {
         await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
             if (resp === logsItem) {
