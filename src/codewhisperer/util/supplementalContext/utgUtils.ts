@@ -6,7 +6,6 @@
 import * as glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import * as codewhispererClient from '../../client/codewhisperer'
 import * as vscode from 'vscode'
 import { getRelevantFilesFromEditor } from './editorFilesUtil'
 import {
@@ -20,6 +19,8 @@ import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
+import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { utgConfig } from '../../models/constants'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -34,7 +35,7 @@ export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
     dependencyGraph: DependencyGraph,
     cancellationToken: vscode.CancellationToken
-): Promise<codewhispererClient.SupplementalContext[] | undefined> {
+): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     // TODO: Add metrices
     // 1. Total number of calls to fetchSupplementalContextForTest
     // 2. Success count for fetchSourceFileByName (find source file by name)
@@ -73,20 +74,18 @@ export async function fetchSupplementalContextForTest(
 function generateSupplementalContextFromFocalFile(
     filePath: string,
     cancellationToken: vscode.CancellationToken
-): codewhispererClient.SupplementalContext[] {
-    const supplementalContexts: codewhispererClient.SupplementalContext[] = []
+): CodeWhispererSupplementalContextItem[] {
     const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')
-    const segmentSize = 10200
 
     // TODO (Metrics) Publish fileContent.lenth to record the length of focal files observed.
     // We prepend the content with 'UTG' to inform the server side.
-    const context = {
-        filePath: filePath,
-        content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, segmentSize)),
-    } as codewhispererClient.SupplementalContext
-    supplementalContexts.push(context)
 
-    return supplementalContexts
+    return [
+        {
+            filePath: filePath,
+            content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
+        },
+    ]
 }
 
 async function findSourceFileByContent(
