@@ -12,7 +12,7 @@
                 </div>
 
                 <div class="form-section">
-                    <button v-on:click="startSignIn()">Sign up or Sign in</button>
+                    <button v-on:click="startSignIn()">{{ submitButtonText }}</button>
                     <div class="small-description error-text">{{ error }}</div>
                 </div>
             </div>
@@ -67,6 +67,7 @@ export default defineComponent({
             name: this.state.name,
             error: '' as string,
             signUpUrl: '' as string,
+            submitButtonText: '' as string,
         }
     },
     async created() {
@@ -84,6 +85,7 @@ export default defineComponent({
             }
         },
         async update(cause?: ConnectionUpdateCause) {
+            await this.updateSubmitButtonText()
             this.stage = await this.state.stage()
             this.isConnected = await this.state.isAuthConnected()
             this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
@@ -97,6 +99,13 @@ export default defineComponent({
         },
         getSignUpUrl() {
             return this.state.getSignUpUrl()
+        },
+        async updateSubmitButtonText() {
+            if (!(await isBuilderIdConnected())) {
+                this.submitButtonText = 'Sign up or Sign in'
+            } else {
+                this.submitButtonText = `Connect AWS Builder ID with ${this.state.name}`
+            }
         },
     },
 })
@@ -112,6 +121,8 @@ abstract class BaseBuilderIdState implements AuthStatus {
     protected abstract _startBuilderIdSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
+
+    protected constructor() {}
 
     async startBuilderIdSetup(): Promise<string> {
         this._stage = 'WAITING_ON_USER'
@@ -157,6 +168,12 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
     override getSignUpUrl(): string {
         return 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/whisper-setup-indv-devs.html'
     }
+
+    static #instance: CodeWhispererBuilderIdState | undefined
+
+    static get instance(): CodeWhispererBuilderIdState {
+        return (this.#instance ??= new CodeWhispererBuilderIdState())
+    }
 }
 
 export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
@@ -179,6 +196,23 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
     override showNodeInView(): Promise<void> {
         return client.showCodeCatalystNode()
     }
+
+    static #instance: CodeCatalystBuilderIdState | undefined
+
+    static get instance(): CodeCatalystBuilderIdState {
+        return (this.#instance ??= new CodeCatalystBuilderIdState())
+    }
+}
+
+/**
+ * Returns true if any Builder Id is connected
+ */
+export async function isBuilderIdConnected(): Promise<boolean> {
+    const results = await Promise.all([
+        CodeWhispererBuilderIdState.instance.isAuthConnected(),
+        CodeCatalystBuilderIdState.instance.isAuthConnected(),
+    ])
+    return results.some(isConnected => isConnected)
 }
 </script>
 <style>
@@ -186,7 +220,7 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 @import '../shared.css';
 
 #builder-id-form {
-    width: 250px;
+    width: 300px;
     height: fit-content;
 }
 </style>
