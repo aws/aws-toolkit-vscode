@@ -7,6 +7,7 @@ import { EC2 } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
+import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 
 export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
@@ -33,5 +34,51 @@ export class Ec2Client {
             .flatten()
             .map(instance => instance?.InstanceId)
             .filter(instanceId => instanceId !== undefined)
+    }
+
+    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+        const client = await this.createSdkClient()
+        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
+            client.describeInstanceStatus(request).promise()
+
+        const response = await pageableToCollection(
+            requester,
+            { InstanceIds: [instanceId], IncludeAllInstances: true },
+            'NextToken',
+            'InstanceStatuses'
+        )
+            .flatten()
+            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
+            .promise()
+
+        return response[0]
+    }
+
+    /**
+     * Retrieve IAM role attached to given EC2 instance.
+     * @param instanceId target EC2 instance ID
+     * @returns IAM role associated with instance, or undefined if none exists.
+     */
+    public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
+        const client = await this.createSdkClient()
+        const instanceFilter: EC2.Filter[] = [
+            {
+                Name: 'instance-id',
+                Values: [instanceId],
+            },
+        ]
+        const requester = async (request: EC2.DescribeIamInstanceProfileAssociationsRequest) =>
+            client.describeIamInstanceProfileAssociations(request).promise()
+        const response = await pageableToCollection(
+            requester,
+            { Filters: instanceFilter },
+            'NextToken',
+            'IamInstanceProfileAssociations'
+        )
+            .flatten()
+            .map(val => val?.IamInstanceProfile)
+            .promise()
+
+        return response && response.length ? response[0] : undefined
     }
 }
