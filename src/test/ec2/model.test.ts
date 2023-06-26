@@ -70,7 +70,7 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'pending:noPolicies',
                     region: 'test-region',
                 },
-                'EC2SSMStatusError'
+                'EC2SSMStatus'
             )
 
             await assertThrowsErrorCode(
@@ -78,7 +78,7 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'shutting-down:noPolicies',
                     region: 'test-region',
                 },
-                'EC2SSMStatusError'
+                'EC2SSMStatus'
             )
 
             await assertThrowsErrorCode(
@@ -86,7 +86,7 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'running:noPolicies',
                     region: 'test-region',
                 },
-                'EC2SSMPermissionError'
+                'EC2SSMPermission'
             )
 
             await assertThrowsErrorCode(
@@ -94,7 +94,7 @@ describe('Ec2ConnectClient', function () {
                     instanceId: 'running:hasPolicies',
                     region: 'test-region',
                 },
-                'EC2SSMConnectError'
+                'EC2SSMConnect'
             )
         })
     })
