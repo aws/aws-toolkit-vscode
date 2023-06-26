@@ -55,7 +55,7 @@ describe('AuthUtil', async function () {
         const ssoConn = await auth.createInvalidSsoConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: [randomScope] })
         )
-        
+
         // Method under test
         await authUtil.connectToEnterpriseSso(ssoConn.startUrl, 'us-east-1')
 
