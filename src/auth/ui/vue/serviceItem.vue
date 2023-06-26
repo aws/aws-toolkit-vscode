@@ -158,8 +158,7 @@ export class ServiceItemsState {
      */
     private readonly unlockedServices: Set<ServiceItemId> = new Set(['resourceExplorer'])
 
-    /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = 'resourceExplorer'
+    private currentlySelected?: ServiceItemId = undefined
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked

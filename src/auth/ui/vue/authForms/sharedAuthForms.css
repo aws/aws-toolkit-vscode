@@ -2,6 +2,7 @@
     display: flex;
     flex-direction: column;
     text-align: left;
+    color: #ffffff;
 
     padding: 10px;
 }
@@ -16,6 +17,11 @@
 
 /* Consistent margins between the elements of a grouping of elements */
 .auth-form .form-section > * {
+    margin-top: 3px;
+}
+
+/* Consistent margins between the elements of a grouping of elements */
+.auth-form .form-section > button {
     margin-top: 3px;
 }
 
@@ -41,6 +47,7 @@
 
 .error-text {
     color: #f14c4c;
+    font-size: 12px;
 }
 
 input[data-invalid='true'] {

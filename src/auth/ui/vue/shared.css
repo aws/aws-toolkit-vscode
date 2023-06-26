@@ -12,3 +12,9 @@ button,
 .container-background {
     background-color: #292929;
 }
+
+.centered-items {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}

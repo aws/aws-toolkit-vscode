@@ -17,7 +17,7 @@
                     <label class="small-description"
                         >Credentials will be added to the appropriate `~/.aws/` files.</label
                     >
-                    <div v-on:click="editCredentialsFile()" style="cursor: pointer">
+                    <div v-on:click="editCredentialsFile()" style="cursor: pointer; color: #cccccc">
                         <div class="icon icon-vscode-edit edit-icon"></div>
                         Edit file directly
                     </div>
