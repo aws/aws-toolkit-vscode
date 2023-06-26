@@ -5,7 +5,7 @@
         <div class="centered-items">
             <img
                 class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/assets/118216176/7542f78b-f6ce-47c9-aa8c-cab48cd06997"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif"
             />
         </div>
 
