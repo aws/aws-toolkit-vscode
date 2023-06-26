@@ -3,8 +3,8 @@
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
-            <div class="form-section">
-                <button v-if="isConnected" v-on:click="showResourceExplorer">Open Resource Explorer</button>
+            <div class="form-section" v-if="isConnected">
+                <button v-on:click="showResourceExplorer">Open Resource Explorer</button>
             </div>
 
             <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
@@ -76,6 +76,13 @@ export default defineComponent({
             type: Object as PropType<CredentialsState>,
             required: true,
         },
+        checkIfConnected: {
+            type: Boolean,
+            default: true,
+            // In some scenarios we want to show the form and allow setup,
+            // but not care about any current identity center auth connections
+            // and if they are connected or not.
+        },
     },
     data() {
         return {
@@ -104,7 +111,7 @@ export default defineComponent({
         await this.updateDataError('profileName')
         await this.updateDataError('aws_access_key_id')
         await this.updateDataError('aws_secret_access_key')
-        this.isFormShown = !(await this.state.isAuthConnected())
+        this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
         await this.updateSubmittableStatus()
 
         this.updateConnectedStatus('created')
@@ -138,8 +145,8 @@ export default defineComponent({
         },
         async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
-                this.isConnected = isConnected
-                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected: this.isConnected, cause })
+                this.isConnected = this.checkIfConnected ? isConnected : false
+                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected, cause })
             })
         },
         async submitData() {

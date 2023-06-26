@@ -12,11 +12,7 @@ import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-export type Ec2ConnectErrorCode =
-    | 'EC2SSMStatusError'
-    | 'EC2SSMPermissionError'
-    | 'EC2SSMConnectError'
-    | 'EC2SSMNeedsRestart'
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect'
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
@@ -45,13 +41,13 @@ export class Ec2ConnectionManager {
     }
 
     protected async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
-        try {
-            const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
-            const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
-            return iamResponse.AttachedPolicies!
-        } catch (err) {
+        const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
+        if (!IamRole) {
             return []
         }
+        const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
+
+        return iamResponse.AttachedPolicies ?? []
     }
 
     public async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -62,7 +58,7 @@ export class Ec2ConnectionManager {
     }
 
     private async isInstanceConnectable(instanceId: string): Promise<boolean> {
-        const isInstanceRunning = await this.ec2Client.isInstanceRunning(instanceId)
+        const isInstanceRunning = (await this.ec2Client.getInstanceStatus(instanceId)) == 'running'
         const hasProperPolicies = await this.hasProperPolicies(instanceId)
 
         return isInstanceRunning && hasProperPolicies
@@ -71,22 +67,22 @@ export class Ec2ConnectionManager {
     public async handleStartSessionError(err: unknown, selection: Ec2Selection): Promise<string> {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
 
-        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
+        const isInstanceRunning = (await this.ec2Client.getInstanceStatus(selection.instanceId)) == 'running'
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
         if (!isInstanceRunning) {
             throw new ToolkitError(
                 generalErrorMessage +
                     'Ensure the target instance is running and not currently starting, stopping, or stopped.',
-                { code: 'EC2SSMStatusError' }
+                { code: 'EC2SSMStatus' }
             )
         }
 
         if (!hasProperPolicies) {
             throw new ToolkitError(
-                generalErrorMessage + 'Ensure the IAM role attached to the instance has the proper policies.',
+                generalErrorMessage + 'Ensure the IAM role attached to the instance has the required policies.',
                 {
-                    code: 'EC2SSMPermissionError',
+                    code: 'EC2SSMPermission',
                     documentationUri: vscode.Uri.parse(
                         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
                     ),
@@ -94,15 +90,12 @@ export class Ec2ConnectionManager {
             )
         }
 
-        throw new ToolkitError(
-            'Ensure SSM is running on target instance. For more information see the documentation.',
-            {
-                code: 'EC2SSMConnectError',
-                documentationUri: vscode.Uri.parse(
-                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
-                ),
-            }
-        )
+        throw new ToolkitError('Is SSM running on the target instance?', {
+            code: 'EC2SSMConnect',
+            documentationUri: vscode.Uri.parse(
+                'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
+            ),
+        })
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {

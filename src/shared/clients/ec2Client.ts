@@ -51,8 +51,7 @@ export class Ec2Client {
         const client = await this.createSdkClient()
         const requester = async (request: DescribeInstanceStatusRequest) => client.describeInstanceStatus(request)
 
-        // Fix: SDK returns string instead of InstanceStateName so we have to cast it.
-        const response: InstanceStateName[] = await pageableToCollection(
+        const response = await pageableToCollection(
             requester,
             { InstanceIds: [instanceId], IncludeAllInstances: true },
             'NextToken',
@@ -63,15 +62,6 @@ export class Ec2Client {
             .promise()
 
         return response[0]
-    }
-
-    public async isInstanceRunning(instanceId: string): Promise<boolean> {
-        return await this.checkInstanceStatus(instanceId, 'running')
-    }
-
-    private async checkInstanceStatus(instanceId: string, targetStatus: InstanceStateName): Promise<boolean> {
-        const status = await this.getInstanceStatus(instanceId)
-        return status == targetStatus
     }
 
     public getInstancesFilter(instanceIds: string[]): Filter[] {
@@ -134,11 +124,11 @@ export class Ec2Client {
     /**
      * Retrieve IAM role attached to given EC2 instance.
      * @param instanceId target EC2 instance ID
-     * @returns IAM role associated with instance
+     * @returns IAM role associated with instance or undefined if none exists.
      */
-    public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile> {
+    public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const association = await this.getIamInstanceProfileAssociations(instanceId)
-        return association.IamInstanceProfile!
+        return association.IamInstanceProfile
     }
 }
 

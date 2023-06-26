@@ -21,20 +21,29 @@ import { getCredentialFormatError, getCredentialsErrors } from '../../credential
 import { profileExists } from '../../credentials/sharedCredentials'
 import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
-import { getStartedCommand } from '../../../codecatalyst/utils'
+import { getStartedCommand, setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
-import { isBuilderIdConnection } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptForConnection } from '../../utils'
+import {
+    Connection,
+    SsoConnection,
+    createSsoProfile,
+    isBuilderIdConnection,
+    isIamConnection,
+    isSsoConnection,
+} from '../../connection'
+import { tryAddCredentials, signout, showRegionPrompter, addConnection, promptAndUseConnection } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { validateSsoUrl } from '../../sso/validation'
+import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
 import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
+import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 
+const logger = getLogger()
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
@@ -79,6 +88,13 @@ export class AuthWebview extends VueWebview {
         return tryAddCredentials(profileName, data, true)
     }
 
+    /**
+     * Returns true if any credentials are found, even ones associated with an sso
+     */
+    async isCredentialExists(): Promise<boolean> {
+        return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
+    }
+
     isCredentialConnected(): boolean {
         const conn = Auth.instance.activeConnection
 
@@ -111,16 +127,12 @@ export class AuthWebview extends VueWebview {
         return globals.awsContextCommands.onCommandEditCredentials()
     }
 
-    async startCodeWhispererBuilderIdSetup(): Promise<void> {
-        try {
-            await awsIdSignIn()
-        } catch (e) {
-            return
-        }
+    async startCodeWhispererBuilderIdSetup(): Promise<string> {
+        return this.ssoSetup(() => awsIdSignIn())
     }
 
-    async startCodeCatalystBuilderIdSetup(): Promise<void> {
-        return getStartedCommand.execute(this.codeCatalystAuth)
+    async startCodeCatalystBuilderIdSetup(): Promise<string> {
+        return this.ssoSetup(() => setupCodeCatalystBuilderId(this.codeCatalystAuth))
     }
 
     isCodeWhispererBuilderIdConnected(): boolean {
@@ -165,24 +177,62 @@ export class AuthWebview extends VueWebview {
         return showRegionPrompter()
     }
 
-    async startIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
+    /**
+     * Creates an Identity Center connection but does not 'use' it.
+     */
+    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']): Promise<string> {
+        const setupFunc = async () => {
+            const ssoProfile = createSsoProfile(startUrl, regionId)
+            await Auth.instance.createConnection(ssoProfile)
+        }
+        return this.ssoSetup(setupFunc)
+    }
+
+    /**
+     * Sets up the CW Identity Center connection.
+     */
+    async startCWIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
+        const setupFunc = () => {
+            return connectToEnterpriseSso(startUrl, regionId)
+        }
+        return this.ssoSetup(setupFunc)
+    }
+
+    private async ssoSetup(setupFunc: () => Promise<any>): Promise<string> {
         try {
-            await CodeWhispererAuth.instance.connectToEnterpriseSso(startUrl, regionId)
+            await setupFunc()
+            return ''
         } catch (e) {
             // This scenario will most likely be due to failing to connect from user error.
             // When the sso login process fails (eg: wrong url) they will come back
             // to the IDE and cancel the 'waiting for browser response'
-            if (CancellationError.isUserCancelled(e)) {
-                return
+            if (
+                CancellationError.isUserCancelled(e) ||
+                (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
+            ) {
+                return 'Setup cancelled.'
             }
+            logger.error('Failed to setup.', e)
+            return 'Failed to setup.'
         }
+    }
+
+    /**
+     * Checks if a non-BuilderId Identity Center connection exists, it
+     * does not have to be active.
+     */
+    async isIdentityCenterExists(): Promise<boolean> {
+        const nonBuilderIdSsoConns = (await Auth.instance.listConnections()).find(conn =>
+            this.isNonBuilderIdSsoConnection(conn)
+        )
+        return nonBuilderIdSsoConns !== undefined
     }
 
     isCodeWhispererIdentityCenterConnected(): boolean {
         return CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()
     }
 
-    async signoutIdentityCenter(): Promise<void> {
+    async signoutCWIdentityCenter(): Promise<void> {
         const activeConn = CodeWhispererAuth.instance.isEnterpriseSsoInUse()
             ? CodeWhispererAuth.instance.conn
             : undefined
@@ -190,26 +240,36 @@ export class AuthWebview extends VueWebview {
             // At this point CW is not actively using IAM IC,
             // even if a valid IAM IC profile exists. We only
             // want to sign out if it being actively used.
+            getLogger().warn('authWebview: Attempted to signout of CW identity center when it was not being used')
+            return
+        }
+
+        await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
+        await signout(Auth.instance, activeConn) // deletes active connection
+    }
+
+    async signoutIdentityCenter(): Promise<void> {
+        const conn = Auth.instance.activeConnection
+        const activeConn = this.isNonBuilderIdSsoConnection(conn) ? conn : undefined
+        if (!activeConn) {
             getLogger().warn('authWebview: Attempted to signout of identity center when it was not being used')
             return
         }
 
-        await this.deleteSavedIdentityCenterConns()
-        await signout(Auth.instance, activeConn) // deletes active connection
+        await signout(Auth.instance, activeConn)
     }
 
-    /**
-     * Deletes the saved connection, but it is possible an active one still persists
-     */
-    private async deleteSavedIdentityCenterConns(): Promise<void> {
-        if (CodeWhispererAuth.instance.isEnterpriseSsoInUse()) {
-            await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
-        }
+    private isNonBuilderIdSsoConnection(conn?: Connection): conn is SsoConnection {
+        return isSsoConnection(conn) && !isBuilderIdConnection(conn)
     }
 
-    getSsoUrlError(url?: string) {
+    getSsoUrlError(url: string | undefined, canUrlExist: boolean = true) {
         if (!url) {
             return
+        }
+        if (canUrlExist) {
+            // Url is allowed to already exist, so we only check the format
+            return validateSsoUrlFormat(url)
         }
         return validateSsoUrl(Auth.instance, url)
     }
@@ -257,7 +317,7 @@ export class AuthWebview extends VueWebview {
     }
 
     showConnectionQuickPick() {
-        return promptForConnection(Auth.instance)
+        return promptAndUseConnection(Auth.instance)
     }
 }
 
