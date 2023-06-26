@@ -71,6 +71,11 @@ export class DefaultIamClient {
 
     private getFriendlyName(arn: string): string {
         const tokens = arn.split('/')
+        if (tokens.length < 2) {
+            throw new Error(
+                `${arn} is an invalid IAM role ARN. Does not follow template arn:aws:iam::{id}/{friendlyName}.`
+            )
+        }
         return tokens[tokens.length - 1]
     }
 
