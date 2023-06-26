@@ -1,40 +1,46 @@
 <template>
     <div class="auth-form container-background border-common" id="identity-center-form">
         <div v-if="checkIfConnected">
-            <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
+            <FormTitle :isConnected="isConnected"
+                >IAM Identity Center&nbsp;<a
+                    class="icon icon-lg icon-vscode-info"
+                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                ></a
+            ></FormTitle>
             <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
         </div>
         <div v-else>
             <!-- In this scenario we do not care about the active IC connection -->
-            <FormTitle :isConnected="false">IAM Identity Center</FormTitle>
+            <FormTitle :isConnected="false"
+                >IAM Identity Center&nbsp;<a
+                    class="icon icon-lg icon-vscode-info"
+                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                ></a
+            ></FormTitle>
             <div>Successor to AWS Single Sign-on</div>
         </div>
 
         <div v-if="stage === 'START'">
             <div class="form-section">
-                <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
-                    >Learn more about IAM Identity Center.</a
-                >
-            </div>
-
-            <div class="form-section">
                 <label class="input-title">Start URL</label>
-                <label class="small-description">The Start URL</label>
+                <label class="small-description">URL for your organization, provided by an admin or help desk.</label>
                 <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
                 <div class="small-description error-text">{{ errors.startUrl }}</div>
             </div>
 
             <div class="form-section">
                 <label class="input-title">Region</label>
-                <label class="small-description">The Region</label>
+                <label class="small-description">AWS Region that hosts Identity directory</label>
 
-                <select v-on:click="getRegion()">
-                    <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
-                </select>
+                <div style="display: flex; flex-direction: row; gap: 10px">
+                    <div v-on:click="getRegion()" class="icon icon-lg icon-vscode-edit edit-icon"></div>
+                    <div style="width: 100%">{{ data.region ? data.region : 'Not Selected' }}</div>
+                </div>
             </div>
 
             <div class="form-section">
                 <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
+                <div class="small-description error-text">{{ errors.submit }}</div>
             </div>
         </div>
 
@@ -85,6 +91,11 @@ export default defineComponent({
             // but not care about any current identity center auth connections
             // and if they are connected or not.
         },
+        /** If we don't care about the start url already existing locally */
+        allowExistingStartUrl: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -94,6 +105,7 @@ export default defineComponent({
             },
             errors: {
                 startUrl: '',
+                submit: '',
             },
             canSubmit: false,
             isConnected: false,
@@ -115,8 +127,16 @@ export default defineComponent({
     methods: {
         async signin(): Promise<void> {
             this.stage = 'WAITING_ON_USER'
-            await this.state.startIdentityCenterSetup()
-            await this.update('signIn')
+            this.errors.submit = await this.state.startIdentityCenterSetup()
+
+            if (this.errors.submit) {
+                // We do not run update() when there is a submission error
+                // so we do not trigger a full re-render, instead
+                // only updating this form
+                this.stage = await this.state.stage()
+            } else {
+                await this.update('signIn')
+            }
         },
         async signout(): Promise<void> {
             await this.state.signout()
@@ -133,13 +153,14 @@ export default defineComponent({
             this.data.region = region.id
         },
         async updateData(key: IdentityCenterKey, value: string) {
+            this.errors.submit = '' // If previous submission error, we clear it when user starts typing
             this.state.setValue(key, value)
 
             if (key === 'startUrl') {
-                this.errors.startUrl = await this.state.getStartUrlError()
+                this.errors.startUrl = await this.state.getStartUrlError(this.allowExistingStartUrl)
             }
 
-            this.canSubmit = await this.state.canSubmit()
+            this.canSubmit = await this.state.canSubmit(this.allowExistingStartUrl)
         },
         showView() {
             this.state.showView()
@@ -174,7 +195,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
     abstract get id(): AuthFormId
     abstract get name(): string
-    protected abstract _startIdentityCenterSetup(): Promise<void>
+    protected abstract _startIdentityCenterSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
     abstract signout(): Promise<void>
@@ -187,9 +208,24 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         return this._data[key]
     }
 
-    async startIdentityCenterSetup(): Promise<void> {
+    /**
+     * Runs the Identity Center setup.
+     *
+     * @returns An error message if it exist, otherwise empty string if no error.
+     */
+    async startIdentityCenterSetup(): Promise<string> {
         this._stage = 'WAITING_ON_USER'
-        return this._startIdentityCenterSetup()
+        const error = await this._startIdentityCenterSetup()
+
+        // Successful submission, so we can clear
+        // old data.
+        if (!error) {
+            this._data = {
+                startUrl: '',
+                region: '',
+            }
+        }
+        return error
     }
 
     async stage(): Promise<IdentityCenterStage> {
@@ -202,14 +238,14 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         return client.getIdentityCenterRegion()
     }
 
-    async getStartUrlError() {
-        const error = await client.getSsoUrlError(this._data.startUrl)
+    async getStartUrlError(canUrlExist: boolean) {
+        const error = await client.getSsoUrlError(this._data.startUrl, canUrlExist)
         return error ?? ''
     }
 
-    async canSubmit() {
+    async canSubmit(canUrlExist: boolean) {
         const allFieldsFilled = Object.values(this._data).every(val => !!val)
-        const hasErrors = await this.getStartUrlError()
+        const hasErrors = await this.getStartUrlError(canUrlExist)
         return allFieldsFilled && !hasErrors
     }
 
@@ -227,7 +263,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'CodeWhisperer'
     }
 
-    protected override async _startIdentityCenterSetup(): Promise<void> {
+    protected override async _startIdentityCenterSetup(): Promise<string> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startCWIdentityCenterSetup(data.startUrl, data.region)
     }
@@ -268,7 +304,7 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
         return 'START'
     }
 
-    protected override async _startIdentityCenterSetup(): Promise<void> {
+    protected override async _startIdentityCenterSetup(): Promise<string> {
         const data = await this.getSubmittableDataOrThrow()
         return client.createIdentityCenterConnection(data.startUrl, data.region)
     }
@@ -291,7 +327,7 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
 @import '../shared.css';
 
 #identity-center-form {
-    width: 280px;
+    width: 300px;
     height: fit-content;
 }
 </style>

@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { AuthUtil, defaultCwScopes } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
@@ -44,6 +44,25 @@ describe('AuthUtil', async function () {
         const conn = authUtil.conn
         assert.strictEqual(conn?.type, 'sso')
         assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
+    })
+
+    it('should add scopes + connect to existing IAM Identity Center connection', async function () {
+        getTestWindow().onDidShowMessage(async message => {
+            assert.ok(message.modal)
+            message.selectItem('Proceed')
+        })
+        const randomScope = 'my:random:scope'
+        const ssoConn = await auth.createInvalidSsoConnection(
+            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: [randomScope] })
+        )
+
+        // Method under test
+        await authUtil.connectToEnterpriseSso(ssoConn.startUrl, 'us-east-1')
+
+        const cwConn = authUtil.conn
+        assert.strictEqual(cwConn?.type, 'sso')
+        assert.strictEqual(cwConn.label, 'IAM Identity Center (enterprise)')
+        assert.deepStrictEqual(cwConn.scopes, [randomScope, ...defaultCwScopes])
     })
 
     it('should show reauthenticate prompt', async function () {

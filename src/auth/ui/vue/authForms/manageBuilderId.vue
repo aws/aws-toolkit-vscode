@@ -15,6 +15,7 @@
 
                 <div class="form-section">
                     <button v-on:click="startSignIn()">Sign up or Sign in</button>
+                    <div class="small-description error-text">{{ error }}</div>
                 </div>
             </div>
 
@@ -66,6 +67,7 @@ export default defineComponent({
             isConnected: false,
             builderIdCode: '',
             name: this.state.name,
+            error: '' as string,
         }
     },
     async created() {
@@ -74,8 +76,12 @@ export default defineComponent({
     methods: {
         async startSignIn() {
             this.stage = 'WAITING_ON_USER'
-            await this.state.startBuilderIdSetup()
-            await this.update('signIn')
+            this.error = await this.state.startBuilderIdSetup()
+            if (this.error) {
+                this.stage = await this.state.stage()
+            } else {
+                await this.update('signIn')
+            }
         },
         async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
@@ -100,11 +106,11 @@ abstract class BaseBuilderIdState implements AuthStatus {
 
     abstract get name(): string
     abstract get id(): AuthFormId
-    protected abstract _startBuilderIdSetup(): Promise<void>
+    protected abstract _startBuilderIdSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
 
-    async startBuilderIdSetup(): Promise<void> {
+    async startBuilderIdSetup(): Promise<string> {
         this._stage = 'WAITING_ON_USER'
         return this._startBuilderIdSetup()
     }
@@ -133,7 +139,7 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return client.isCodeWhispererBuilderIdConnected()
     }
 
-    protected override _startBuilderIdSetup(): Promise<void> {
+    protected override _startBuilderIdSetup(): Promise<string> {
         return client.startCodeWhispererBuilderIdSetup()
     }
 
@@ -155,7 +161,7 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
         return client.isCodeCatalystBuilderIdConnected()
     }
 
-    protected override _startBuilderIdSetup(): Promise<void> {
+    protected override _startBuilderIdSetup(): Promise<string> {
         return client.startCodeCatalystBuilderIdSetup()
     }
 
