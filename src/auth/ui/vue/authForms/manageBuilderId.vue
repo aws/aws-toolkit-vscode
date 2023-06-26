@@ -5,11 +5,9 @@
 
             <div v-if="stage === 'START'">
                 <div class="form-section">
-                    <div>
+                    <div style="color: #cccccc">
                         With AWS Builder ID, sign in for free without an AWS account.
-                        <a href="https://docs.aws.amazon.com/signin/latest/userguide/sign-in-aws_builder_id.html"
-                            >Read more.</a
-                        >
+                        <a :href="signUpUrl">Read more.</a>
                     </div>
                 </div>
 
@@ -68,9 +66,11 @@ export default defineComponent({
             builderIdCode: '',
             name: this.state.name,
             error: '' as string,
+            signUpUrl: '' as string,
         }
     },
     async created() {
+        this.signUpUrl = this.getSignUpUrl()
         await this.update('created')
     },
     methods: {
@@ -94,6 +94,9 @@ export default defineComponent({
         },
         showNodeInView() {
             this.state.showNodeInView()
+        },
+        getSignUpUrl() {
+            return this.state.getSignUpUrl()
         },
     },
 })
@@ -124,6 +127,10 @@ abstract class BaseBuilderIdState implements AuthStatus {
     async signout(): Promise<void> {
         await client.signoutBuilderId()
     }
+
+    getSignUpUrl(): string {
+        return 'https://docs.aws.amazon.com/signin/latest/userguide/sign-in-aws_builder_id.html'
+    }
 }
 
 export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
@@ -145,6 +152,10 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
 
     override showNodeInView(): Promise<void> {
         return client.showCodeWhispererNode()
+    }
+
+    override getSignUpUrl(): string {
+        return 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/whisper-setup-indv-devs.html'
     }
 }
 
