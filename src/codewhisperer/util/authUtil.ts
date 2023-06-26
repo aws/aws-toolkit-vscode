@@ -66,7 +66,11 @@ export class AuthUtil {
             } else {
                 this.usingEnterpriseSSO = false
             }
-            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
+            // Reformat the url to remove any trailing '/' and `#`
+            // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn)
+                ? this.reformatStartUrl(this.conn?.startUrl)
+                : undefined
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -76,6 +80,10 @@ export class AuthUtil {
 
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
+    }
+
+    public reformatStartUrl(startUrl: string | undefined) {
+        return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
     }
 
     // current active cwspr connection
