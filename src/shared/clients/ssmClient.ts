@@ -3,8 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM, Session, TerminateSessionResponse, StartSessionResponse } from '@aws-sdk/client-ssm'
+import {
+    SSM,
+    InstanceInformation,
+    Session,
+    TerminateSessionResponse,
+    StartSessionResponse,
+    DescribeInstanceInformationRequest,
+} from '@aws-sdk/client-ssm'
 import { getLogger } from '../logger/logger'
+import { pageableToCollection } from '../utilities/collectionUtils'
 
 export class SsmClient {
     public constructor(public readonly regionCode: string) {}
@@ -27,5 +35,30 @@ export class SsmClient {
         const client = await this.createSdkClient()
         const response = await client.startSession({ Target: target })
         return response
+    }
+
+    public async describeInstanceInformation(target: string): Promise<InstanceInformation> {
+        const client = await this.createSdkClient()
+        const requester = async (req: DescribeInstanceInformationRequest) => client.describeInstanceInformation(req)
+        const request: DescribeInstanceInformationRequest = {
+            InstanceInformationFilterList: [
+                {
+                    key: 'InstanceIds',
+                    valueSet: [target],
+                },
+            ],
+        }
+
+        const response = await pageableToCollection(requester, request, 'NextToken', 'InstanceInformationList')
+            .flatten()
+            .flatten()
+            .promise()
+
+        return response[0]!
+    }
+
+    public async getInstancePingStatus(target: string): Promise<string> {
+        const instanceInformation = await this.describeInstanceInformation(target)
+        return instanceInformation ? instanceInformation.PingStatus! : 'Inactive'
     }
 }

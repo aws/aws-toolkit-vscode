@@ -12,7 +12,7 @@ import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect'
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
@@ -60,8 +60,9 @@ export class Ec2ConnectionManager {
     private async isInstanceConnectable(instanceId: string): Promise<boolean> {
         const isInstanceRunning = (await this.ec2Client.getInstanceStatus(instanceId)) == 'running'
         const hasProperPolicies = await this.hasProperPolicies(instanceId)
+        const isSsmAgentRunning = (await this.ssmClient.getInstancePingStatus(instanceId)) == 'Online'
 
-        return isInstanceRunning && hasProperPolicies
+        return isInstanceRunning && hasProperPolicies && isSsmAgentRunning
     }
 
     public async handleStartSessionError(err: unknown, selection: Ec2Selection): Promise<string> {
@@ -69,6 +70,7 @@ export class Ec2ConnectionManager {
 
         const isInstanceRunning = (await this.ec2Client.getInstanceStatus(selection.instanceId)) == 'running'
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
+        const isSsmAgentRunning = (await this.ssmClient.getInstancePingStatus(selection.instanceId)) == 'Online'
 
         if (!isInstanceRunning) {
             throw new ToolkitError(
@@ -90,11 +92,17 @@ export class Ec2ConnectionManager {
             )
         }
 
-        throw new ToolkitError('Is SSM running on the target instance?', {
+        if (!isSsmAgentRunning) {
+            throw new ToolkitError('Is SSM running on the target instance?', {
+                code: 'EC2SSMAgentStatus',
+                documentationUri: vscode.Uri.parse(
+                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
+                ),
+            })
+        }
+
+        throw new ToolkitError('Unable to connect to target instance.  ', {
             code: 'EC2SSMConnect',
-            documentationUri: vscode.Uri.parse(
-                'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
-            ),
         })
     }
 
