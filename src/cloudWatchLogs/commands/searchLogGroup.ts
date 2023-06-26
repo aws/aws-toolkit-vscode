@@ -242,7 +242,7 @@ export function createRegionSubmenu() {
         getLogGroupsFromRegion,
         { title: localize('AWS.cwl.searchLogGroup.logGroupPromptTitle', 'Select Log Group') },
         { title: localize('AWS.cwl.searchLogGroup.regionPromptTitle', 'Select Region for Log Group') },
-        "Log Groups"
+        'Log Groups'
     )
 }
 
