@@ -39,7 +39,7 @@
             </div>
 
             <div class="form-section">
-                <button v-on:click="signin()" :disabled="!canSubmit">Sign in</button>
+                <button v-on:click="signin()">Sign in</button>
                 <div class="small-description error-text">{{ errors.submit }}</div>
             </div>
         </div>
@@ -126,6 +126,12 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
+            console.log(this.data.startUrl)
+            if (!this.data.startUrl) {
+                this.errors.startUrl = 'Cannot be empty.'
+                return
+            }
+
             this.stage = 'WAITING_ON_USER'
             this.errors.submit = await this.state.startIdentityCenterSetup()
 
