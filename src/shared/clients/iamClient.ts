@@ -69,7 +69,7 @@ export class DefaultIamClient {
         return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }
 
-    private getFriendlyName(arn: string): string {
+    public getFriendlyName(arn: string): string {
         const tokens = arn.split('/')
         if (tokens.length < 2) {
             throw new Error(
