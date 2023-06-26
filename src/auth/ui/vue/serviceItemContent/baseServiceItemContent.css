@@ -7,7 +7,7 @@
 
     border-color: #0097fb;
 
-    width: 700px;
+    width: 550px;
 
     padding: 30px;
 }
@@ -16,6 +16,10 @@
     display: inline;
     font-size: large;
     font-weight: bold;
+}
+
+.service-item-content-image {
+    height: 280px;
 }
 
 .service-item-content-container hr {
