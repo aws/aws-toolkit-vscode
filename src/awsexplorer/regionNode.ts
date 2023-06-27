@@ -58,7 +58,6 @@ const serviceCandidates = [
         serviceId: 'ecs',
         createFn: (regionCode: string) => new TreeShim(getEcsRootNode(regionCode)),
     },
-
     {
         serviceId: 'iot',
         createFn: (regionCode: string) => new IotNode(new DefaultIotClient(regionCode)),
