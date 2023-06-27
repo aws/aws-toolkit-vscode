@@ -158,6 +158,9 @@ export default defineComponent({
         },
         toggleShowCredentials() {
             this.isCredentialsShown = !this.isCredentialsShown
+            if (this.isCredentialsShown) {
+                client.emitUiClick('auth_explorer_expandIAMCredentials')
+            }
         },
         toggleShowIdentityCenter() {
             this.isIdentityCenterShown = !this.isIdentityCenterShown
