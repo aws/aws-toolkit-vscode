@@ -68,6 +68,10 @@ import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
+import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthWebview } from '../show'
+
+const client = WebviewClientFactory.create<AuthWebview>()
 
 export default defineComponent({
     name: 'CodeWhispererContent',
@@ -113,6 +117,9 @@ export default defineComponent({
         },
         toggleIdentityCenterShown() {
             this.isIdentityCenterShown = !this.isIdentityCenterShown
+            if (this.isIdentityCenterShown) {
+                client.emitUiClick('auth_codewhisperer_expandIAMIdentityCenter')
+            }
         },
     },
 })
