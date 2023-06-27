@@ -79,10 +79,10 @@ async function cloneJsSdk(dir: string): Promise<void> {
 // These need to be removed for the build to succeed
 const conflictingShapes = ['aws.auth#sigv4']
 function removeConflicts(model: { shapes: Record<string, any> }) {
-    const res = { ...model }
-    for (const [k, v] of Object.entries(model.shapes)) {
-        if (!conflictingShapes.includes(k)) {
-            res.shapes[k] = v
+    const res = { ...model, shapes: { ...model.shapes } }
+    for (const k of Object.keys(model.shapes)) {
+        if (conflictingShapes.includes(k)) {
+            delete res.shapes[k]
         }
     }
 
@@ -142,7 +142,7 @@ async function installGeneratedPackages(repoPath: string, serviceNames: string[]
         serviceNames.map(async name => {
             const packageLocation = path.join('node_modules', '@aws-sdk', `client-${name.split('.').shift()!}`)
             await runNpmInPackage(packageLocation, ['run', 'build:cjs'])
-            // 'i', '--only=dev'
+            await runNpmInPackage(packageLocation, ['run', 'build:types'])
         })
     )
 }

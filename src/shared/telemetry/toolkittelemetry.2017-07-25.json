@@ -417,7 +417,7 @@
                 "aws.auth#sigv4": {
                     "name": "execute-api"
                 },
-                "aws.protocols#awsJson1_0": {},
+                "aws.protocols#restJson1": {},
                 "smithy.api#title": "AWS Toolkit Telemetry"
             }
         },

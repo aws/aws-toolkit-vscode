@@ -30,7 +30,7 @@ export function getCompletionItem(
 ) {
     const start = RecommendationHandler.instance.startPos
     const range = new vscode.Range(start, start)
-    const recommendation = recommendationDetail.content
+    const recommendation = recommendationDetail.content!
     const completionItem = new vscode.CompletionItem(recommendation)
     completionItem.insertText = new vscode.SnippetString(recommendation)
     completionItem.documentation = new vscode.MarkdownString().appendCodeblock(recommendation, document.languageId)

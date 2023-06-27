@@ -2,34 +2,42 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AWSError, Service } from 'aws-sdk'
-import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from '@aws-sdk/client-codewhisperer'
 import * as CodeWhispererUserClient from '@aws-sdk/client-codewhispererruntime'
 import * as CodeWhispererConstants from '../models/constants'
-import { ServiceOptions } from '../../shared/awsClientBuilder'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { createAwsService2 } from '../../shared/awsClientBuilder'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
-import { PromiseResult } from 'aws-sdk/lib/request'
-import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { isSsoConnection } from '../../auth/connection'
+import { HttpRequest } from '@aws-sdk/protocol-http'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
 >
-export type FileContext = Readonly<CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext>
-export type ListRecommendationsRequest = Readonly<
+type _FileContext = Readonly<CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext>
+export type FileContext = { [P in keyof _FileContext]-?: NonNullable<_FileContext[P]> }
+
+type _ListRecommendationsRequest = Readonly<
     CodeWhispererClient.GenerateRecommendationsRequest | CodeWhispererUserClient.GenerateCompletionsRequest
 >
-export type GenerateRecommendationsRequest = Readonly<CodeWhispererClient.GenerateRecommendationsRequest>
-export type RecommendationsList = CodeWhispererClient.Recommendation[] | CodeWhispererUserClient.Completion[]
+
+export type ListRecommendationsRequest = Omit<_ListRecommendationsRequest, 'fileContext'> & {
+    fileContext: FileContext
+}
+type _GenerateRecommendationsRequest = Readonly<CodeWhispererClient.GenerateRecommendationsRequest>
+export type GenerateRecommendationsRequest = Omit<_GenerateRecommendationsRequest, 'fileContext'> & {
+    fileContext: FileContext
+}
+
+export type RecommendationsList = Recommendation[] | Recommendation[]
 export type ListRecommendationsResponse =
     | CodeWhispererClient.GenerateRecommendationsRequest
     | CodeWhispererUserClient.GenerateCompletionsResponse
 export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
-export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion
+export type Recommendation = (CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion) & {
+    content: string
+}
 export type Completion = CodeWhispererUserClient.Completion
 export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
 export type References = CodeWhispererClient.Reference[] | CodeWhispererUserClient.Reference[]
@@ -48,70 +56,67 @@ export type CreateCodeScanResponse = CodeWhispererUserClient.StartCodeAnalysisRe
 export type Import = CodeWhispererUserClient.Import
 export type Imports = CodeWhispererUserClient.Import[]
 export class DefaultCodeWhispererClient {
-    private async createSdkClient(): Promise<CodeWhispererClient> {
+    private async createSdkClient(): Promise<CodeWhispererClient.CodeWhisperer> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
 
-        return (await globals.sdkClientBuilder.createAwsService(
-            Service,
-            {
-                apiConfig: apiConfig,
-                region: CodeWhispererConstants.region,
-                credentials: await AuthUtil.instance.getCredentials(),
-                endpoint: CodeWhispererConstants.endpoint,
-                onRequestSetup: [
-                    req => {
-                        if (req.operation === 'listRecommendations') {
-                            req.on('build', () => {
-                                req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
-                            })
+        return createAwsService2(CodeWhispererClient.CodeWhisperer, {
+            region: CodeWhispererConstants.region,
+            credentials: () => AuthUtil.instance.getCredentials(),
+            endpoint: CodeWhispererConstants.endpoint,
+            middleware: [
+                [
+                    (next, context) => args => {
+                        const op = (context as { commandName?: string }).commandName
+                        if (op === 'ListRecommendationsCommand' && HttpRequest.isInstance(args.request)) {
+                            args.request.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
                         }
+
                         // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
-                        if (isCloud9()) {
-                            req.on('retry', resp => {
-                                if (
-                                    resp.error?.code === 'AccessDeniedException' &&
-                                    resp.error.message.match(/expired/i)
-                                ) {
-                                    AuthUtil.instance.reauthenticate()
-                                    resp.error.retryable = true
-                                }
-                            })
-                        }
+                        // if (isCloud9()) {
+                        //     req.on('retry', resp => {
+                        //         if (
+                        //             resp.error?.code === 'AccessDeniedException' &&
+                        //             resp.error.message.match(/expired/i)
+                        //         ) {
+                        //             AuthUtil.instance.reauthenticate()
+                        //             resp.error.retryable = true
+                        //         }
+                        //     })
+                        // }
+
+                        return next(args)
                     },
+                    { step: 'build' },
                 ],
-            } as ServiceOptions,
-            undefined
-        )) as CodeWhispererClient
+            ],
+        })
     }
 
-    async createUserSdkClient(): Promise<CodeWhispererUserClient> {
+    async createUserSdkClient(): Promise<CodeWhispererUserClient.CodeWhispererRuntime> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
         TelemetryHelper.instance.setFetchCredentialStartTime()
-        const bearerToken = await AuthUtil.instance.getBearerToken()
         TelemetryHelper.instance.setSdkApiCallStartTime()
-        return (await globals.sdkClientBuilder.createAwsService(
-            Service,
-            {
-                apiConfig: userApiConfig,
-                region: CodeWhispererConstants.region,
-                endpoint: CodeWhispererConstants.endpoint,
-                credentials: new Credentials({ accessKeyId: 'xxx', secretAccessKey: 'xxx' }),
-                onRequestSetup: [
-                    req => {
-                        req.on('build', ({ httpRequest }) => {
-                            httpRequest.headers['Authorization'] = `Bearer ${bearerToken}`
-                        })
-                        if (req.operation === 'generateCompletions') {
-                            req.on('build', () => {
-                                req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
-                            })
+        return createAwsService2(CodeWhispererUserClient.CodeWhispererRuntime, {
+            region: CodeWhispererConstants.region,
+            endpoint: CodeWhispererConstants.endpoint,
+            token: async () => ({
+                token: await AuthUtil.instance.getBearerToken(),
+            }),
+            middleware: [
+                [
+                    (next, context) => args => {
+                        const op = (context as { commandName?: string }).commandName
+                        if (op === 'GenerateCompletionsCommand' && HttpRequest.isInstance(args.request)) {
+                            args.request.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
                         }
+
+                        return next(args)
                     },
+                    { step: 'build' },
                 ],
-            } as ServiceOptions,
-            undefined
-        )) as CodeWhispererUserClient
+            ],
+        })
     }
 
     private isBearerTokenAuth(): boolean {
@@ -121,57 +126,53 @@ export class DefaultCodeWhispererClient {
     public async generateRecommendations(
         request: GenerateRecommendationsRequest
     ): Promise<GenerateRecommendationsResponse> {
-        return (await this.createSdkClient()).generateRecommendations(request).promise()
+        return (await this.createSdkClient()).generateRecommendations(request)
     }
 
     public async listRecommendations(request: ListRecommendationsRequest): Promise<ListRecommendationsResponse> {
         if (this.isBearerTokenAuth()) {
-            return await (await this.createUserSdkClient()).generateCompletions(request).promise()
+            return await (await this.createUserSdkClient()).generateCompletions(request)
         }
-        return (await this.createSdkClient()).listRecommendations(request).promise()
+        return (await this.createSdkClient()).generateRecommendations(request)
     }
 
-    public async createUploadUrl(
-        request: CreateUploadUrlRequest
-    ): Promise<PromiseResult<CreateUploadUrlResponse, AWSError>> {
+    public async createUploadUrl(request: CreateUploadUrlRequest): Promise<CreateUploadUrlResponse> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).createUploadUrl(request).promise()
+            return (await this.createUserSdkClient()).createUploadUrl(request)
         }
-        return (await this.createSdkClient()).createCodeScanUploadUrl(request).promise()
+
+        throw new Error('Operation not supported')
     }
 
-    public async createCodeScan(
-        request: CreateCodeScanRequest
-    ): Promise<PromiseResult<CreateCodeScanResponse, AWSError>> {
+    public async createCodeScan(request: CreateCodeScanRequest): Promise<CreateCodeScanResponse> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).startCodeAnalysis(request).promise()
+            return (await this.createUserSdkClient()).startCodeAnalysis(request)
         }
-        return (await this.createSdkClient()).createCodeScan(request).promise()
+
+        throw new Error('Operation not supported')
     }
 
     public async getCodeScan(
         request: GetCodeScanRequest
-    ): Promise<PromiseResult<CodeWhispererClient.GetCodeScanResponse, AWSError>> {
+    ): Promise<CodeWhispererUserClient.GetCodeAnalysisCommandOutput> {
         if (this.isBearerTokenAuth()) {
-            return (await this.createUserSdkClient()).getCodeAnalysis(request).promise()
+            return (await this.createUserSdkClient()).getCodeAnalysis(request)
         }
-        return (await this.createSdkClient()).getCodeScan(request).promise()
+
+        throw new Error('Operation not supported')
     }
 
-    public async listCodeScanFindings(
-        request: ListCodeScanFindingsRequest
-    ): Promise<PromiseResult<ListCodeScanFindingsResponse, AWSError>> {
+    public async listCodeScanFindings(request: ListCodeScanFindingsRequest): Promise<ListCodeScanFindingsResponse> {
         if (this.isBearerTokenAuth()) {
             const req = {
                 jobId: request.jobId,
                 nextToken: request.nextToken,
                 codeAnalysisFindingsSchema: 'codeanalysis/findings/1.0',
             } as CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
-            return (await this.createUserSdkClient()).listCodeAnalysisFindings(req).promise()
+            return (await this.createUserSdkClient()).listCodeAnalysisFindings(req)
         }
-        return (await this.createSdkClient())
-            .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
-            .promise()
+
+        throw new Error('Operation not supported')
     }
 }
 

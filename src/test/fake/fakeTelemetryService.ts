@@ -5,7 +5,7 @@
 
 import { TelemetryPublisher } from '../../shared/telemetry/telemetryPublisher'
 import { TelemetryFeedback } from '../../shared/telemetry/telemetryClient'
-import { MetricDatum } from '../../shared/telemetry/clienttelemetry'
+import { MetricDatum } from '@aws-sdk/client-toolkittelemetry'
 
 export class FakeTelemetryPublisher implements TelemetryPublisher {
     private readonly _eventQueue: MetricDatum[] = []

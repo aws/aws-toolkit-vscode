@@ -8,6 +8,7 @@ coverage/
 *.bk
 **/.DS_Store
 .idea
+.gradle
 telemetryCache
 quickStart*.html
 README.quickstart.cloud9.md

@@ -108,7 +108,7 @@ export class RuntimeLanguageContext {
         T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
     >(request: T): T {
         const fileContext = request.fileContext
-        const childLanguage = request.fileContext.programmingLanguage
+        const childLanguage = request.fileContext!.programmingLanguage!
         let parentLanguage: codewhispererClient.ProgrammingLanguage
         switch (childLanguage.languageName) {
             case 'tsx':

@@ -10,7 +10,7 @@ import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { ProgrammingLanguage } from '../client/codewhispereruserclient'
+import { ProgrammingLanguage } from '@aws-sdk/client-codewhisperer'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 interface normalizedCoefficients {
@@ -377,14 +377,14 @@ export class ClassifierTrigger {
         const lineNum = editor.selection.active.line
         const offSet = editor.selection.active.character
         const classifierResult = this.getClassifierResult(
-            fileContext.leftFileContent,
-            fileContext.rightFileContent,
+            fileContext.leftFileContent!,
+            fileContext.rightFileContent!,
             osPlatform,
             autoTriggerType,
             char,
             lineNum,
             offSet,
-            fileContext.programmingLanguage
+            fileContext.programmingLanguage!
         )
 
         const threshold = this.getThreshold()
@@ -421,7 +421,7 @@ export class ClassifierTrigger {
         const keyWordCoefficient: number = this.charCoefficient[keyword] ?? 0
 
         const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
-        const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? 0
+        const languageCoefficient = this.languageCoefficientMap[language.languageName!] ?? 0
 
         let previousDecisionCoefficient = 0
         if (previousDecision === 'Accept') {

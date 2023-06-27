@@ -12,7 +12,6 @@ import { extensionVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
 import * as ClientTelemetry from '@aws-sdk/client-toolkittelemetry'
 import { MetricDatum } from '@aws-sdk/client-toolkittelemetry'
-import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { createAwsService2 } from '../awsClientBuilder'
@@ -138,7 +137,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
                 region: region,
                 credentials: credentials,
                 endpoint: DefaultTelemetryClient.config.endpoint,
-                // FIXME: userAgent: false
+                customUserAgent: false,
             })
         )
     }

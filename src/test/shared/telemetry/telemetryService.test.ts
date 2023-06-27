@@ -17,7 +17,7 @@ import {
     makeFakeAwsContextWithPlaceholderIds,
 } from '../../utilities/fakeAwsContext'
 import { FakeTelemetryPublisher } from '../../fake/fakeTelemetryService'
-import ClientTelemetry = require('../../../shared/telemetry/clienttelemetry')
+import * as ClientTelemetry from '@aws-sdk/client-toolkittelemetry'
 import { installFakeClock } from '../../testUtil'
 import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
@@ -81,7 +81,7 @@ describe('DefaultTelemetryService', function () {
 
     it('posts feedback', async function () {
         service.telemetryEnabled = false
-        const feedback = { comment: '', sentiment: '' }
+        const feedback = { comment: '', sentiment: 'Positive' as const }
         await service.postFeedback(feedback)
 
         assert.strictEqual(mockPublisher.feedback, feedback)
