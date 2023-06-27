@@ -349,11 +349,18 @@ export class AuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             source: this.getSource() ?? '',
             result: 'Cancelled',
-            reason: 'Close button clicked',
         })
         this.setSource(undefined)
     }
+
+    emitUiClick(id: AuthUiClick) {
+        telemetry.ui_click.emit({
+            elementId: id,
+        })
+    }
 }
+
+export type AuthUiClick = 'auth_signUpForFree' | 'auth_infoIAMIdentityCenter' | 'auth_learnMoreAWSResources'
 
 type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
