@@ -26,6 +26,7 @@ import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
+import { Ec2Node } from '../ec2/explorer/ec2Node'
 
 const serviceCandidates = [
     {
@@ -51,6 +52,10 @@ const serviceCandidates = [
     {
         serviceId: 'ecs',
         createFn: (regionCode: string) => new TreeShim(getEcsRootNode(regionCode)),
+    },
+    {
+        serviceId: 'ec2',
+        createFn: (regionCode: string) => new Ec2Node(regionCode),
     },
     {
         serviceId: 'iot',
