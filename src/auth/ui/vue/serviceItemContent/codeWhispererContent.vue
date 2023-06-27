@@ -16,7 +16,9 @@
         </div>
 
         <div>
-            <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeWhisperer.</a>
+            <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
+                >Learn more about CodeWhisperer.</a
+            >
         </div>
 
         <hr />

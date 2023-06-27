@@ -360,7 +360,11 @@ export class AuthWebview extends VueWebview {
     }
 }
 
-export type AuthUiClick = 'auth_signUpForFree' | 'auth_infoIAMIdentityCenter' | 'auth_learnMoreAWSResources'
+export type AuthUiClick =
+    | 'auth_signUpForFree'
+    | 'auth_infoIAMIdentityCenter'
+    | 'auth_learnMoreAWSResources'
+    | 'auth_learnMoreCodeWhisperer'
 
 type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
