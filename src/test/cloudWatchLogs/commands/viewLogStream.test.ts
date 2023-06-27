@@ -12,24 +12,25 @@ import {
     SelectLogStreamWizardContext,
     SelectLogStreamWizard,
     convertDescribeLogToQuickPickItems,
+    LogSearchChoice,
 } from '../../../cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 import globals from '../../../shared/extensionGlobals'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
-    public constructor(private readonly pickLogStreamResponses: (string | undefined)[] = []) {
+    public constructor(private readonly pickLogStreamResponses: LogSearchChoice[] = []) {
         this.pickLogStreamResponses = pickLogStreamResponses.reverse()
     }
 
-    public async pickLogStream(): Promise<string | undefined> {
+    public async pickLogStream(): Promise<LogSearchChoice> {
         if (this.pickLogStreamResponses.length <= 0) {
             throw new Error('pickLogStream was called more times than expected')
         }
 
         const response = this.pickLogStreamResponses.pop()
         if (!response) {
-            return undefined
+            return { kind: 'cancelled' }
         }
 
         return response
@@ -40,11 +41,11 @@ describe('viewLogStreamWizard', async function () {
     it('exits when cancelled', async function () {
         const wizard = new SelectLogStreamWizard(
             new LogGroupNode('region', {}),
-            new MockSelectLogStreamWizardContext([undefined])
+            new MockSelectLogStreamWizardContext([{ kind: 'cancelled' }])
         )
         const result = await wizard.run()
 
-        assert.ok(!result)
+        assert.strictEqual(result?.kind, 'cancelled')
     })
 
     it('returns the selected log stream name', async function () {
@@ -53,14 +54,20 @@ describe('viewLogStreamWizard', async function () {
         const groupName = 'grouper'
         const wizard = new SelectLogStreamWizard(
             new LogGroupNode(region, { logGroupName: groupName }),
-            new MockSelectLogStreamWizardContext([streamName])
+            new MockSelectLogStreamWizardContext([
+                { kind: 'selectedLogStream', region: region, logGroupName: groupName, logStreamName: streamName },
+            ])
         )
         const result = await wizard.run()
 
         assert.ok(result)
-        assert.strictEqual(result?.logGroupName, groupName)
-        assert.strictEqual(result?.logStreamName, streamName)
-        assert.strictEqual(result?.region, region)
+        // HACK: using '===' since following this assertion the exact
+        // type of 'result' is narrowed down to 'selectedLogStream'.
+        // Otherwise we get TS2339 error.
+        assert.ok(result.kind === 'selectedLogStream')
+        assert.strictEqual(result.logGroupName, groupName)
+        assert.strictEqual(result.logStreamName, streamName)
+        assert.strictEqual(result.region, region)
     })
 })
 
@@ -82,7 +89,7 @@ describe('convertDescribeLogToQuickPickItems', function () {
         assert.strictEqual(results.length, 2)
         assert.deepStrictEqual(results[0], {
             label: 'streamWithoutTimestamp',
-            detail: localize('AWS.cloudWatchLogs.viewLogStream.workflow.noStreams', '[No Log Events found]'),
+            detail: localize('AWS.cwl.viewLogStream.workflow.noStreams', '[No Log Events found]'),
         })
         assert.deepStrictEqual(results[1], {
             label: 'streamWithTimestamp',

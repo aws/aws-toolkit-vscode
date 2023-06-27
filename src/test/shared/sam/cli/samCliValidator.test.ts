@@ -35,92 +35,81 @@ describe('DefaultSamCliValidator', async function () {
         }
     }
 
-    const samCliVersionTestScenarios = [
+    const scenarios = [
         {
-            situation: 'SAM CLI Version is valid',
+            situation: 'valid version string',
             version: minSamCliVersion,
-            expectedVersionValidation: SamCliVersionValidation.Valid,
+            expected: SamCliVersionValidation.Valid,
         },
         {
-            situation: 'SAM CLI Version is too low',
+            situation: '"nightly" version',
+            version: '1.86.1-dev202306120901',
+            expected: SamCliVersionValidation.Valid,
+        },
+        {
+            situation: 'version too low',
             version: '0.1.0',
-            expectedVersionValidation: SamCliVersionValidation.VersionTooLow,
+            expected: SamCliVersionValidation.VersionTooLow,
         },
         {
-            situation: 'SAM CLI Version is too high',
+            situation: 'version too high',
             version: maxSamCliVersionExclusive,
-            expectedVersionValidation: SamCliVersionValidation.VersionTooHigh,
+            expected: SamCliVersionValidation.VersionTooHigh,
         },
         {
-            situation: 'SAM CLI Version is unparsable - empty string',
+            situation: 'version unparsable (empty string)',
             version: '',
-            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
+            expected: SamCliVersionValidation.VersionNotParseable,
         },
         {
-            situation: 'SAM CLI Version is unparsable - random text',
+            situation: 'version unparsable (random text)',
             version: 'what.in.tarnation',
-            expectedVersionValidation: SamCliVersionValidation.VersionNotParseable,
+            expected: SamCliVersionValidation.VersionNotParseable,
         },
-    ]
+    ] as const
 
     describe('detectValidSamCli', async function () {
-        samCliVersionTestScenarios.forEach(test => {
-            it(`handles case where SAM CLI exists and ${test.situation}`, async () => {
+        scenarios.forEach(test => {
+            it(`found SAM CLI, ${test.situation}`, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
                 validatorContext.mockSamLocation = 'somesamclipath'
                 const samCliValidator = new DefaultSamCliValidator(validatorContext)
+                const actual = await samCliValidator.detectValidSamCli()
 
-                const validatorResult = await samCliValidator.detectValidSamCli()
-
-                assert.ok(validatorResult)
-                assert.strictEqual(validatorResult.samCliFound, true, 'Expected to find sam cli')
-                assert.ok(validatorResult.versionValidation)
-                assert.strictEqual(validatorResult.versionValidation!.version, test.version, 'sam cli version mismatch')
-                assert.strictEqual(
-                    validatorResult.versionValidation!.validation,
-                    test.expectedVersionValidation,
-                    'sam cli version validation mismatch'
-                )
+                assert.strictEqual(actual.samCliFound, true, 'Expected to find sam cli')
+                assert.strictEqual(actual.versionValidation?.version, test.version)
+                assert.strictEqual(actual.versionValidation?.validation, test.expected)
             })
         })
 
-        it('handles case where SAM CLI is not found', async function () {
+        it('SAM CLI not found', async function () {
             const validatorContext = new TestSamCliValidatorContext('')
             validatorContext.mockSamLocation = ''
             const samCliValidator = new DefaultSamCliValidator(validatorContext)
+            const actual = await samCliValidator.detectValidSamCli()
 
-            const validatorResult = await samCliValidator.detectValidSamCli()
-
-            assert.ok(validatorResult)
-            assert.strictEqual(validatorResult.samCliFound, false, 'Expected sam cli to be not found')
+            assert.strictEqual(actual.samCliFound, false, 'Expected sam cli NOT found')
         })
     })
 
     describe('getVersionValidatorResult', async function () {
-        samCliVersionTestScenarios.forEach(test => {
-            it(`Validates SAM CLI binary for the case: ${test.situation}`, async () => {
+        scenarios.forEach(test => {
+            it(test.situation, async () => {
                 const validatorContext = new TestSamCliValidatorContext(test.version)
                 const samCliValidator = new DefaultSamCliValidator(validatorContext)
+                const actual = await samCliValidator.getVersionValidatorResult()
 
-                const validatorResult = await samCliValidator.getVersionValidatorResult()
-
-                assert.ok(validatorResult)
-                assert.strictEqual(validatorResult.version, test.version, 'sam cli version mismatch')
-                assert.strictEqual(
-                    validatorResult.validation,
-                    test.expectedVersionValidation,
-                    'sam cli version validation mismatch'
-                )
+                assert.strictEqual(actual.version, test.version)
+                assert.strictEqual(actual.validation, test.expected)
             })
         })
     })
 
     describe('validateSamCliVersion', async function () {
-        samCliVersionTestScenarios.forEach(test => {
-            it(`validates when ${test.situation}`, async () => {
-                const validation: SamCliVersionValidation = DefaultSamCliValidator.validateSamCliVersion(test.version)
-
-                assert.strictEqual(validation, test.expectedVersionValidation, 'Unexpected version validation')
+        scenarios.forEach(test => {
+            it(test.situation, async () => {
+                const validation = DefaultSamCliValidator.validateSamCliVersion(test.version)
+                assert.strictEqual(validation, test.expected)
             })
         })
     })

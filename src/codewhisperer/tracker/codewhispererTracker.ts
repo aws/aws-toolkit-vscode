@@ -10,6 +10,7 @@ import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -103,6 +104,7 @@ export class CodeWhispererTracker {
                 codewhispererCompletionType: suggestion.completionType,
                 codewhispererLanguage: suggestion.language,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
+                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
     }

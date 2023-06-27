@@ -8,18 +8,15 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { Result } from '../../shared/telemetry/telemetry'
-import { parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { LogStreamRegistry } from '../registry/logStreamRegistry'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import { LogDataRegistry } from '../registry/logDataRegistry'
+import { telemetry, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
+import { generateTextFromLogEvents } from '../document/textContent'
 
-export async function saveCurrentLogStreamContent(
-    uri: vscode.Uri | undefined,
-    registry: LogStreamRegistry
-): Promise<void> {
+export async function saveCurrentLogDataContent(uri: vscode.Uri | undefined, registry: LogDataRegistry): Promise<void> {
     let result: Result = 'Succeeded'
+    let resourceType: CloudWatchResourceType = 'logStream' // Default to stream if it fails to find URI
 
     try {
         if (!uri) {
@@ -30,15 +27,21 @@ export async function saveCurrentLogStreamContent(
                 throw new Error()
             }
         }
-        const content = registry.getLogContent(uri, { timestamps: true })
+        resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
+        const cachedLogEvents = registry.fetchCachedLogEvents(uri)
+        const content: string = generateTextFromLogEvents(cachedLogEvents, { timestamps: true }).text
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
             : vscode.Uri.file(SystemUtilities.getHomeDirectory())
         const uriComponents = parseCloudWatchLogsUri(uri)
+        const logGroupInfo = uriComponents.logGroupInfo
 
-        const localizedLogFile = localize('AWS.command.saveCurrentLogStreamContent.logfile', 'Log File')
+        const localizedLogFile = localize('AWS.command.saveCurrentLogDataContent.logfile', 'Log File')
         const selectedUri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.parse(path.join(workspaceDir.toString(), uriComponents.streamName)),
+            defaultUri: vscode.Uri.joinPath(
+                workspaceDir,
+                logGroupInfo.streamName ? logGroupInfo.streamName : logGroupInfo.groupName
+            ),
             filters: {
                 [localizedLogFile]: ['log'],
             },
@@ -53,7 +56,7 @@ export async function saveCurrentLogStreamContent(
                 const err = e as Error
                 vscode.window.showErrorMessage(
                     localize(
-                        'AWS.command.saveCurrentLogStreamContent.error',
+                        'AWS.command.saveCurrentLogDataContent.error',
                         'Error saving current log to {0}: {1}',
                         selectedUri.fsPath,
                         err.message
@@ -67,14 +70,15 @@ export async function saveCurrentLogStreamContent(
         result = 'Failed'
         vscode.window.showErrorMessage(
             localize(
-                'AWS.cloudWatchLogs.invalidEditor',
-                'Not a Cloudwatch Log stream: {0}',
+                'AWS.cwl.invalidEditor',
+                'Not a Cloudwatch Log data source: {0}',
                 vscode.window.activeTextEditor?.document.fileName
             )
         )
     }
 
-    telemetry.cloudwatchlogs_downloadStreamToFile.emit({
+    telemetry.cloudwatchlogs_download.emit({
         result: result,
+        cloudWatchResourceType: resourceType,
     })
 }

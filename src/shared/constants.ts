@@ -120,7 +120,7 @@ export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ' // eslint-di
 /**
  * URI scheme for CloudWatch Logs Virtual Documents
  */
-export const CLOUDWATCH_LOGS_SCHEME = 'awsCloudWatchLogs' // eslint-disable-line @typescript-eslint/naming-convention
+export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl' // eslint-disable-line @typescript-eslint/naming-convention
 export const AWS_SCHEME = 'aws' // eslint-disable-line @typescript-eslint/naming-convention
 
 export const lambdaPackageTypeImage = 'Image'

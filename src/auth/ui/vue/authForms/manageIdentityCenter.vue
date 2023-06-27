@@ -1,59 +1,68 @@
 <template>
     <div class="auth-form container-background border-common" id="identity-center-form">
-        <div v-show="canShowAll">
+        <div v-if="checkIfConnected">
             <FormTitle :isConnected="isConnected">IAM Identity Center</FormTitle>
             <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
+        </div>
+        <div v-else>
+            <!-- In this scenario we do not care about the active IC connection -->
+            <FormTitle :isConnected="false">IAM Identity Center</FormTitle>
+            <div>Successor to AWS Single Sign-on</div>
+        </div>
 
-            <div v-if="stage === 'START'">
-                <div class="form-section">
-                    If your organization has provided you a CodeWhisperer license, sign in with your Identity Center
-                    access portal login page.
-                    <a>Read more.</a>
-                </div>
-
-                <div class="form-section">
-                    <label class="input-title">Start URL</label>
-                    <label class="small-description">The Start URL</label>
-                    <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
-                    <div class="small-description error-text">{{ errors.startUrl }}</div>
-                </div>
-
-                <div class="form-section">
-                    <label class="input-title">Region</label>
-                    <label class="small-description">The Region</label>
-
-                    <select v-on:click="getRegion()">
-                        <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
-                    </select>
-                </div>
-
-                <div class="form-section">
-                    <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
-                </div>
+        <div v-if="stage === 'START'">
+            <div class="form-section">
+                <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                    >Learn more about IAM Identity Center.</a
+                >
             </div>
 
-            <div v-if="stage === 'WAITING_ON_USER'">
-                <div class="form-section">
-                    <div>Follow instructions...</div>
-                </div>
+            <div class="form-section">
+                <label class="input-title">Start URL</label>
+                <label class="small-description">The Start URL</label>
+                <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
+                <div class="small-description error-text">{{ errors.startUrl }}</div>
             </div>
 
-            <div v-if="stage === 'CONNECTED'">
-                <div class="form-section">
-                    <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
-                </div>
+            <div class="form-section">
+                <label class="input-title">Region</label>
+                <label class="small-description">The Region</label>
+
+                <select v-on:click="getRegion()">
+                    <option v-if="!!data.region" :selected="true">{{ data.region }}</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
+            </div>
+        </div>
+
+        <div v-if="stage === 'WAITING_ON_USER'">
+            <div class="form-section">
+                <div>Follow instructions...</div>
+            </div>
+        </div>
+
+        <div v-if="stage === 'CONNECTED'">
+            <div class="form-section">
+                <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
+            </div>
+
+            <div class="form-section">
+                <button v-on:click="showView()">Open {{ authName }} in Toolkit</button>
             </div>
         </div>
     </div>
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
-import { AuthFormId, authForms } from './types.vue'
+import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -68,6 +77,13 @@ export default defineComponent({
         state: {
             type: Object as PropType<BaseIdentityCenterState>,
             required: true,
+        },
+        checkIfConnected: {
+            type: Boolean,
+            default: true,
+            // In some scenarios we want to show the form and allow setup,
+            // but not care about any current identity center auth connections
+            // and if they are connected or not.
         },
     },
     data() {
@@ -84,7 +100,7 @@ export default defineComponent({
 
             stage: 'START' as IdentityCenterStage,
 
-            canShowAll: false,
+            authName: this.state.name,
         }
     },
 
@@ -93,21 +109,24 @@ export default defineComponent({
         this.data.startUrl = this.state.getValue('startUrl')
         this.data.region = this.state.getValue('region')
 
-        await this.update()
-        this.canShowAll = true
+        await this.update('created')
     },
     computed: {},
     methods: {
         async signin(): Promise<void> {
+            this.stage = 'WAITING_ON_USER'
             await this.state.startIdentityCenterSetup()
+            await this.update('signIn')
         },
         async signout(): Promise<void> {
             await this.state.signout()
+            this.update('signOut')
         },
-        async update() {
+        async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
-            this.isConnected = await this.state.isAuthConnected()
-            this.emitAuthConnectionUpdated(this.state.id)
+            const actualIsConnected = await this.state.isAuthConnected()
+            this.isConnected = this.checkIfConnected ? actualIsConnected : false
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: actualIsConnected, cause })
         },
         async getRegion() {
             const region = await this.state.getRegion()
@@ -121,6 +140,9 @@ export default defineComponent({
             }
 
             this.canSubmit = await this.state.canSubmit()
+        },
+        showView() {
+            this.state.showView()
         },
     },
     watch: {
@@ -151,8 +173,11 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     }
 
     abstract get id(): AuthFormId
+    abstract get name(): string
     protected abstract _startIdentityCenterSetup(): Promise<void>
     abstract isAuthConnected(): Promise<boolean>
+    abstract showView(): Promise<void>
+    abstract signout(): Promise<void>
 
     setValue(key: IdentityCenterKey, value: string) {
         this._data[key] = value
@@ -171,10 +196,6 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         const isAuthConnected = await this.isAuthConnected()
         this._stage = isAuthConnected ? 'CONNECTED' : 'START'
         return this._stage
-    }
-
-    async signout(): Promise<void> {
-        return client.signoutIdentityCenter()
     }
 
     async getRegion(): Promise<Region> {
@@ -199,16 +220,69 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
 export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     override get id(): AuthFormId {
-        return authForms.IDENTITY_CENTER_CODE_WHISPERER
+        return 'identityCenterCodeWhisperer'
+    }
+
+    override get name(): string {
+        return 'CodeWhisperer'
     }
 
     protected override async _startIdentityCenterSetup(): Promise<void> {
         const data = await this.getSubmittableDataOrThrow()
-        return client.startIdentityCenterSetup(data.startUrl, data.region)
+        return client.startCWIdentityCenterSetup(data.startUrl, data.region)
     }
 
     override async isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererIdentityCenterConnected()
+    }
+
+    override async showView(): Promise<void> {
+        client.showCodeWhispererNode()
+    }
+
+    override signout(): Promise<void> {
+        return client.signoutCWIdentityCenter()
+    }
+}
+
+/**
+ * In the context of the Explorer, an Identity Center connection
+ * is not required to be active. This is due to us only needing
+ * the connection to exist so we can grab Credentials from it.
+ *
+ * With this in mind, certain methods in this class don't follow
+ * the typical connection flow.
+ */
+export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
+    override get id(): AuthFormId {
+        return 'identityCenterExplorer'
+    }
+
+    override get name(): string {
+        return 'Resource Explorer'
+    }
+
+    override async stage(): Promise<IdentityCenterStage> {
+        // We always want to allow the user to add a new connection
+        // for this context, so we always keep it as the start
+        return 'START'
+    }
+
+    protected override async _startIdentityCenterSetup(): Promise<void> {
+        const data = await this.getSubmittableDataOrThrow()
+        return client.createIdentityCenterConnection(data.startUrl, data.region)
+    }
+
+    override async isAuthConnected(): Promise<boolean> {
+        return client.isIdentityCenterExists()
+    }
+
+    override async showView(): Promise<void> {
+        client.showResourceExplorer()
+    }
+
+    override signout(): Promise<void> {
+        throw new Error('Explorer Identity Center should not use "signout functionality')
     }
 }
 </script>
@@ -217,7 +291,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
 @import '../shared.css';
 
 #identity-center-form {
-    width: 250px;
+    width: 280px;
     height: fit-content;
 }
 </style>

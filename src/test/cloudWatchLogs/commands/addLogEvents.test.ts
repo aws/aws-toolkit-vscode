@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudWatchLogs } from 'aws-sdk'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { addLogEvents } from '../../../cloudWatchLogs/commands/addLogEvents'
-import { LogStreamRegistry } from '../../../cloudWatchLogs/registry/logStreamRegistry'
+import { CloudWatchLogsEvent, LogDataRegistry } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { installFakeClock } from '../../testUtil'
 
@@ -34,9 +33,9 @@ describe('addLogEvents', async function () {
     })
 
     it('runs updateLog and sets busy status correctly', async function () {
-        const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
+        const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:region:stream`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
-        const updateLog = sandbox.stub<
+        const fetchNextLogEvents = sandbox.stub<
             [
                 vscode.Uri,
                 ('head' | 'tail' | undefined)?,
@@ -48,7 +47,7 @@ describe('addLogEvents', async function () {
                               regionName: string
                           },
                           nextToken?: string | undefined
-                      ) => Promise<CloudWatchLogs.GetLogEventsResponse>)
+                      ) => Promise<CloudWatchLogsEvent[]>)
                     | undefined
                 )?
             ]
@@ -58,10 +57,10 @@ describe('addLogEvents', async function () {
             uri: uri,
         } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = {
+        const fakeRegistry: LogDataRegistry = {
             setBusyStatus: setBusyStatus,
-            updateLog: updateLog,
-        } as any as LogStreamRegistry
+            fetchNextLogEvents: fetchNextLogEvents,
+        } as any as LogDataRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -73,14 +72,14 @@ describe('addLogEvents', async function () {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         sandbox.assert.calledTwice(fakeEvent.fire)
         sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
-        sandbox.assert.calledOnce(updateLog)
-        sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
+        sandbox.assert.calledOnce(fetchNextLogEvents)
+        sandbox.assert.calledWith(fetchNextLogEvents.firstCall, uri, 'head')
     })
 
     it('async-locks to prevent more than one execution at a time', async function () {
         const uri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:group:stream:region`)
         const setBusyStatus = sandbox.stub<[vscode.Uri, boolean], void>()
-        const updateLog = sandbox.stub<
+        const fetchNextLogEvents = sandbox.stub<
             [
                 vscode.Uri,
                 ('head' | 'tail' | undefined)?,
@@ -92,22 +91,22 @@ describe('addLogEvents', async function () {
                               regionName: string
                           },
                           nextToken?: string | undefined
-                      ) => Promise<CloudWatchLogs.GetLogEventsResponse>)
+                      ) => Promise<CloudWatchLogsEvent[]>)
                     | undefined
                 )?
             ]
         >()
 
         // simulates a long network call. Doesn't need to do anything otherwise
-        updateLog.onFirstCall().callsFake(async () => {
+        fetchNextLogEvents.onFirstCall().callsFake(async () => {
             clock.setTimeout(() => {}, 5000)
         })
         // simulates another network call. Shorter so that way this one triggers before the initial lock is over
-        updateLog.onThirdCall().callsFake(async () => {
+        fetchNextLogEvents.onThirdCall().callsFake(async () => {
             clock.setTimeout(() => {}, 500)
         })
         // simulates another network call. Shorter so that way this one triggers  before the initial lock is over
-        updateLog.onSecondCall().callsFake(async () => {
+        fetchNextLogEvents.onSecondCall().callsFake(async () => {
             clock.setTimeout(() => {}, 100)
         })
 
@@ -115,10 +114,10 @@ describe('addLogEvents', async function () {
             uri: uri,
         } as any as vscode.TextDocument
 
-        const fakeRegistry: LogStreamRegistry = {
+        const fakeRegistry: LogDataRegistry = {
             setBusyStatus: setBusyStatus,
-            updateLog: updateLog,
-        } as any as LogStreamRegistry
+            fetchNextLogEvents: fetchNextLogEvents,
+        } as any as LogDataRegistry
 
         const fakeEvent = sandbox.createStubInstance(vscode.EventEmitter)
 
@@ -136,8 +135,8 @@ describe('addLogEvents', async function () {
                 // eslint-disable-next-line @typescript-eslint/unbound-method
                 sandbox.assert.calledTwice(fakeEvent.fire)
                 sandbox.assert.calledWith(setBusyStatus.secondCall, uri, false)
-                sandbox.assert.calledOnce(updateLog)
-                sandbox.assert.calledWith(updateLog.firstCall, uri, 'head')
+                sandbox.assert.calledOnce(fetchNextLogEvents)
+                sandbox.assert.calledWith(fetchNextLogEvents.firstCall, uri, 'head')
                 resolve()
             }, 10000)
         })

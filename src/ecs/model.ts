@@ -33,10 +33,17 @@ interface ContainerDescription extends ECS.ContainerDefinition {
 export class Container {
     public readonly id = this.description.name!
 
-    public constructor(private readonly client: DefaultEcsClient, public readonly description: ContainerDescription) {}
+    public constructor(
+        private readonly client: DefaultEcsClient,
+        public readonly serviceName: string,
+        public readonly description: ContainerDescription
+    ) {}
 
     public async listTasks() {
-        const resp = await this.client.listTasks({ cluster: this.description.clusterArn })
+        const resp = await this.client.listTasks({
+            cluster: this.description.clusterArn,
+            serviceName: this.serviceName,
+        })
         const tasks = await this.client.describeTasks(this.description.clusterArn, resp)
 
         return tasks.filter(createValidTaskFilter(this.description.name!))
@@ -81,7 +88,7 @@ export class Service {
 
         return containers.map(
             c =>
-                new Container(this.client, {
+                new Container(this.client, this.description.serviceName!, {
                     ...c,
                     enableExecuteCommand: this.description.enableExecuteCommand,
                     taskRoleArn: definition.taskRoleArn!,

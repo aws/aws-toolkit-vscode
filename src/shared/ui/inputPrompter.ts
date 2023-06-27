@@ -17,7 +17,12 @@ export type ExtendedInputBoxOptions = Omit<vscode.InputBoxOptions, 'validateInpu
     placeholder?: string
     totalSteps?: number
     buttons?: PrompterButtons<string>
-    validateInput?(value: string): string | undefined
+    /**
+     * XXX: Thenable/promises won't be awaited by vscode (currently)?
+     * - https://github.com/microsoft/vscode/blob/78947444843f4ebb094e5ab4288360010a293463/extensions/git-base/src/remoteSource.ts#L13
+     * - https://github.com/microsoft/vscode/blob/78947444843f4ebb094e5ab4288360010a293463/src/vs/base/browser/ui/inputbox/inputBox.ts#L511
+     */
+    validateInput?(value: string, isFinalInput?: boolean): string | undefined
 }
 
 export type InputBox = Omit<vscode.InputBox, 'buttons'> & { buttons: PrompterButtons<string> }
@@ -40,7 +45,7 @@ export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPromp
     const prompter = new InputBoxPrompter(inputBox)
 
     if (options?.validateInput !== undefined) {
-        prompter.setValidation(input => options.validateInput!(input))
+        prompter.setValidation((input, isFinalInput) => options.validateInput!(input, isFinalInput))
     }
 
     return prompter
@@ -52,6 +57,19 @@ export async function showInputBox(options?: ExtendedInputBoxOptions): Promise<s
 
     return isValidResponse(response) ? response : undefined
 }
+
+/**
+ * @param value User input
+ * @param isFinalInput true if the value was the final input (onDidAccept),
+ *        false if this input is being typed by the user. For expensive validation
+ *        (e.g. performs a service/SDK call) the validator can use this to skip
+ *        validation until the input is confirmed (user hit "Enter").
+ */
+type ValidateFn = (value: string, isFinalInput: boolean) => string | undefined
+// XXX: Thenable/promises won't be awaited by vscode (currently)?
+// - https://github.com/microsoft/vscode/blob/78947444843f4ebb094e5ab4288360010a293463/extensions/git-base/src/remoteSource.ts#L13
+// - https://github.com/microsoft/vscode/blob/78947444843f4ebb094e5ab4288360010a293463/src/vs/base/browser/ui/inputbox/inputBox.ts#L511
+// type ValidateFn = (value: string, isFinalInput: boolean) => string | undefined | Thenable<string | undefined>
 
 /**
  * UI element that accepts user-inputted text. Wraps around {@link vscode.InputBox InputBox}.
@@ -84,19 +102,19 @@ export class InputBoxPrompter extends Prompter<string> {
      * Sets a validation hook into the InputBox, checking whenever the input changes or when the user
      * attempts to submit their response.
      *
-     * @param validate Validator function
+     * @param validate Validator function.
      */
-    public setValidation(validate: (value: string) => string | undefined): void {
+    public setValidation(validate: ValidateFn): void {
         this.validateEvents.forEach(d => d.dispose())
         this.validateEvents = []
 
         this.inputBox.onDidChangeValue(
-            value => (this.inputBox.validationMessage = validate(value)),
+            value => (this.inputBox.validationMessage = validate(value, false)),
             undefined,
             this.validateEvents
         )
         this.inputBox.onDidAccept(
-            () => (this.inputBox.validationMessage = validate(this.inputBox.value)),
+            () => (this.inputBox.validationMessage = validate(this.inputBox.value, true)),
             undefined,
             this.validateEvents
         )

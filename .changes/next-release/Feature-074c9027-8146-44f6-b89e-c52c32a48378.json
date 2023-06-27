@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Use the `Search Log Group` command to search all log streams in a CloudWatch Log Group"
+}

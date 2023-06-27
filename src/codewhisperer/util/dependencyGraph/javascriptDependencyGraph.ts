@@ -199,4 +199,19 @@ export class JavascriptDependencyGraph extends DependencyGraph {
             throw new Error(`${this._languageId} context processing failed.`)
         }
     }
+
+    async isTestFile(content: string) {
+        // TODO: Implement this
+        return false
+    }
+
+    async getSourceDependencies(uri: vscode.Uri, content: string) {
+        // TODO: Implement this
+        return []
+    }
+
+    async getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]> {
+        // TODO: Implement this
+        return []
+    }
 }

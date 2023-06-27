@@ -62,9 +62,8 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
-    } else {
-        determineUserGroup()
     }
+
     /**
      * CodeWhisperer security panel
      */
@@ -199,6 +198,10 @@ export async function activate(context: ExtContext): Promise<void> {
 
     await auth.restore()
 
+    if (auth.isConnectionExpired()) {
+        auth.showReauthenticatePrompt()
+    }
+
     function activateSecurityScan() {
         context.extensionContext.subscriptions.push(
             vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
@@ -213,23 +216,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             })
         )
-    }
-
-    function determineUserGroup() {
-        const userGroup = context.extensionContext.globalState.get<CodeWhispererConstants.UserGroup | undefined>(
-            CodeWhispererConstants.userGroupKey
-        )
-        if (userGroup === undefined) {
-            const randomNum = Math.random()
-            const result =
-                randomNum <= 1 / 3
-                    ? CodeWhispererConstants.UserGroup.Control
-                    : randomNum <= 2 / 3
-                    ? CodeWhispererConstants.UserGroup.CrossFile
-                    : CodeWhispererConstants.UserGroup.Classifier
-
-            context.extensionContext.globalState.update(CodeWhispererConstants.userGroupKey, result)
-        }
     }
 
     function getAutoTriggerStatus(): boolean {

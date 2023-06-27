@@ -1,9 +1,9 @@
 <template>
     <div class="auth-form container-background border-common" id="builder-id-form">
-        <div v-show="canShowAll">
+        <div>
             <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
 
-            <div v-if="stage === stages.START">
+            <div v-if="stage === 'START'">
                 <div class="form-section">
                     <div>
                         With AWS Builder ID, sign in for free without an AWS account.
@@ -18,15 +18,19 @@
                 </div>
             </div>
 
-            <div v-if="stage === stages.WAITING_ON_USER">
+            <div v-if="stage === 'WAITING_ON_USER'">
                 <div class="form-section">
                     <div>Follow instructions...</div>
                 </div>
             </div>
 
-            <div v-if="stage === stages.CONNECTED">
+            <div v-if="stage === 'CONNECTED'">
                 <div class="form-section">
                     <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
+                </div>
+
+                <div class="form-section">
+                    <button v-on:click="showNodeInView()">Open {{ name }} in Toolkit</button>
                 </div>
             </div>
         </div>
@@ -34,22 +38,17 @@
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { AuthStatus } from './shared.vue'
 import { AuthWebview } from '../show'
-import authForms, { AuthFormId } from './types.vue'
+import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
-export const stages = {
-    START: 'START',
-    WAITING_ON_USER: 'WAITING_ON_USER',
-    CONNECTED: 'CONNECTED',
-} as const
-type BuilderIdStage = (typeof stages)[keyof typeof stages]
+type BuilderIdStage = 'START' | 'WAITING_ON_USER' | 'CONNECTED'
 
 export default defineComponent({
     name: 'CredentialsForm',
@@ -60,38 +59,35 @@ export default defineComponent({
             type: Object as PropType<BaseBuilderIdState>,
             required: true,
         },
-        stages: {
-            type: Object as PropType<typeof stages>,
-            default: stages,
-        },
     },
     data() {
         return {
-            stage: stages.START as BuilderIdStage,
+            stage: 'START' as BuilderIdStage,
             isConnected: false,
             builderIdCode: '',
-            canShowAll: false,
+            name: this.state.name,
         }
     },
     async created() {
-        await this.update()
-        this.canShowAll = true
+        await this.update('created')
     },
     methods: {
         async startSignIn() {
-            this.stage = this.stages.WAITING_ON_USER
+            this.stage = 'WAITING_ON_USER'
             await this.state.startBuilderIdSetup()
-            await this.update()
+            await this.update('signIn')
         },
-        async update() {
+        async update(cause?: ConnectionUpdateCause) {
             this.stage = await this.state.stage()
             this.isConnected = await this.state.isAuthConnected()
-            this.emitAuthConnectionUpdated(this.state.id)
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: this.isConnected, cause })
         },
         async signout() {
             await this.state.signout()
-
-            this.update()
+            this.update('signOut')
+        },
+        showNodeInView() {
+            this.state.showNodeInView()
         },
     },
 })
@@ -100,20 +96,22 @@ export default defineComponent({
  * Manages the state of Builder ID.
  */
 abstract class BaseBuilderIdState implements AuthStatus {
-    protected _stage: BuilderIdStage = stages.START
+    protected _stage: BuilderIdStage = 'START'
 
+    abstract get name(): string
     abstract get id(): AuthFormId
     protected abstract _startBuilderIdSetup(): Promise<void>
     abstract isAuthConnected(): Promise<boolean>
+    abstract showNodeInView(): Promise<void>
 
     async startBuilderIdSetup(): Promise<void> {
-        this._stage = stages.WAITING_ON_USER
+        this._stage = 'WAITING_ON_USER'
         return this._startBuilderIdSetup()
     }
 
     async stage(): Promise<BuilderIdStage> {
         const isAuthConnected = await this.isAuthConnected()
-        this._stage = isAuthConnected ? stages.CONNECTED : stages.START
+        this._stage = isAuthConnected ? 'CONNECTED' : 'START'
         return this._stage
     }
 
@@ -123,8 +121,12 @@ abstract class BaseBuilderIdState implements AuthStatus {
 }
 
 export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
+    override get name(): string {
+        return 'CodeWhisperer'
+    }
+
     override get id(): AuthFormId {
-        return authForms.BUILDER_ID_CODE_WHISPERER
+        return 'builderIdCodeWhisperer'
     }
 
     override isAuthConnected(): Promise<boolean> {
@@ -134,11 +136,19 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
     protected override _startBuilderIdSetup(): Promise<void> {
         return client.startCodeWhispererBuilderIdSetup()
     }
+
+    override showNodeInView(): Promise<void> {
+        return client.showCodeWhispererNode()
+    }
 }
 
 export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
+    override get name(): string {
+        return 'CodeCatalyst'
+    }
+
     override get id(): AuthFormId {
-        return authForms.BUILDER_ID_CODE_CATALYST
+        return 'builderIdCodeCatalyst'
     }
 
     override isAuthConnected(): Promise<boolean> {
@@ -147,6 +157,10 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     protected override _startBuilderIdSetup(): Promise<void> {
         return client.startCodeCatalystBuilderIdSetup()
+    }
+
+    override showNodeInView(): Promise<void> {
+        return client.showCodeCatalystNode()
     }
 }
 </script>

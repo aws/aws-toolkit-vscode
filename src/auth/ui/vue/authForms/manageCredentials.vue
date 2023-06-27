@@ -1,56 +1,64 @@
 <template>
-    <div class="auth-form container-background border-common" id="credentials-form" v-show="canShowAll">
-        <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
+    <div class="auth-form container-background border-common" id="credentials-form">
+        <div>
+            <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
-        <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
-            <div :class="collapsibleClass"></div>
-            <div>Add another profile</div>
-        </div>
+            <div class="form-section" v-if="isConnected">
+                <button v-on:click="showResourceExplorer">Open Resource Explorer</button>
+            </div>
 
-        <div v-if="isFormShown">
-            <div class="form-section">
-                <label class="small-description">Credentials will be added to the appropriate `~/.aws/` files.</label>
-                <div>
-                    <div class="icon icon-vscode-edit edit-icon"></div>
-                    Edit file directly
+            <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
+                <div :class="collapsibleClass"></div>
+                <div>Add another profile</div>
+            </div>
+
+            <div v-if="isFormShown">
+                <div class="form-section">
+                    <label class="small-description"
+                        >Credentials will be added to the appropriate `~/.aws/` files.</label
+                    >
+                    <div v-on:click="editCredentialsFile()" style="cursor: pointer">
+                        <div class="icon icon-vscode-edit edit-icon"></div>
+                        Edit file directly
+                    </div>
                 </div>
-            </div>
 
-            <div class="form-section">
-                <label class="input-title">Profile Name</label>
-                <label class="small-description">The identifier for these credentials</label>
-                <input v-model="data.profileName" type="text" :data-invalid="!!errors.profileName" />
-                <div class="small-description error-text">{{ errors.profileName }}</div>
-            </div>
+                <div class="form-section">
+                    <label class="input-title">Profile Name</label>
+                    <label class="small-description">The identifier for these credentials</label>
+                    <input v-model="data.profileName" type="text" :data-invalid="!!errors.profileName" />
+                    <div class="small-description error-text">{{ errors.profileName }}</div>
+                </div>
 
-            <div class="form-section">
-                <label class="input-title">Access Key</label>
-                <label class="small-description">The access key</label>
-                <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
-                <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
-            </div>
+                <div class="form-section">
+                    <label class="input-title">Access Key</label>
+                    <label class="small-description">The access key</label>
+                    <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
+                    <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
+                </div>
 
-            <div class="form-section">
-                <label class="input-title">Secret Key</label>
-                <label class="small-description">The secret key</label>
-                <input
-                    v-model="data.aws_secret_access_key"
-                    type="password"
-                    :data-invalid="!!errors.aws_secret_access_key"
-                />
-                <div class="small-description error-text">{{ errors.aws_secret_access_key }}</div>
-            </div>
+                <div class="form-section">
+                    <label class="input-title">Secret Key</label>
+                    <label class="small-description">The secret key</label>
+                    <input
+                        v-model="data.aws_secret_access_key"
+                        type="password"
+                        :data-invalid="!!errors.aws_secret_access_key"
+                    />
+                    <div class="small-description error-text">{{ errors.aws_secret_access_key }}</div>
+                </div>
 
-            <div class="form-section">
-                <button :disabled="!canSubmit" v-on:click="submitData()">Add Profile</button>
-                <div class="small-description error-text">{{ errors.submit }}</div>
+                <div class="form-section">
+                    <button :disabled="!canSubmit" v-on:click="submitData()">Add Profile</button>
+                    <div class="small-description error-text">{{ errors.submit }}</div>
+                </div>
             </div>
         </div>
     </div>
 </template>
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import BaseAuthForm from './baseAuth.vue'
+import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { SectionName, StaticProfile } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
@@ -67,6 +75,13 @@ export default defineComponent({
         state: {
             type: Object as PropType<CredentialsState>,
             required: true,
+        },
+        checkIfConnected: {
+            type: Boolean,
+            default: true,
+            // In some scenarios we want to show the form and allow setup,
+            // but not care about any current identity center auth connections
+            // and if they are connected or not.
         },
     },
     data() {
@@ -90,26 +105,16 @@ export default defineComponent({
              * need to know if we should show the form
              */
             isFormShown: false,
-
-            /**
-             * This exists since setup is run async and there is a visual
-             * stutter when this form is first shown. This will not allow
-             * anything to be shown until this is set to true
-             */
-            canShowAll: false,
         }
     },
-
     async created() {
         await this.updateDataError('profileName')
         await this.updateDataError('aws_access_key_id')
         await this.updateDataError('aws_secret_access_key')
+        this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
+        await this.updateSubmittableStatus()
 
-        await Promise.all([this.updateConnectedStatus(), this.updateSubmittableStatus()])
-
-        this.isFormShown = !this.isConnected
-
-        this.canShowAll = true // make sure this is last
+        this.updateConnectedStatus('created')
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */
@@ -138,10 +143,10 @@ export default defineComponent({
                 this.canSubmit = errors === undefined
             })
         },
-        async updateConnectedStatus() {
+        async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
-                this.isConnected = isConnected
-                this.emitAuthConnectionUpdated('CREDENTIALS')
+                this.isConnected = this.checkIfConnected ? isConnected : false
+                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected, cause })
             })
         },
         async submitData() {
@@ -161,7 +166,7 @@ export default defineComponent({
             this.clearFormData()
             this.isFormShown = false
             this.canSubmit = true // enable submit button
-            await this.updateConnectedStatus()
+            await this.updateConnectedStatus('signIn')
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown
@@ -171,6 +176,12 @@ export default defineComponent({
             this.data.profileName = ''
             this.data.aws_access_key_id = ''
             this.data.aws_secret_access_key = ''
+        },
+        editCredentialsFile() {
+            client.editCredentialsFile()
+        },
+        showResourceExplorer() {
+            client.showResourceExplorer()
         },
     },
     watch: {

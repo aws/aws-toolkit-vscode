@@ -16,6 +16,11 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import { stub } from '../../utilities/stubber'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import { FakeMemento } from '../../fakeExtensionContext'
+import * as supplementalContextUtil from '../../../codewhisperer/util/supplementalContext/supplementalContextUtil'
+import globals from '../../../shared/extensionGlobals'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import { extensionVersion } from '../../../shared/vscode/env'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -46,6 +51,7 @@ describe('recommendationHandler', function () {
 
         afterEach(function () {
             sinon.restore()
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('should assign correct recommendations given input', async function () {
@@ -102,6 +108,11 @@ describe('recommendationHandler', function () {
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.CrossFile,
+                version: extensionVersion,
+            })
+
             const mockServerResult = {
                 recommendations: [{ content: "print('Hello World!')" }, { content: '' }],
                 $response: {
@@ -115,6 +126,13 @@ describe('recommendationHandler', function () {
             }
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
+            sinon.stub(supplementalContextUtil, 'fetchSupplementalContext').resolves({
+                isUtg: false,
+                isProcessTimeout: false,
+                contents: [],
+                contentsLength: 100,
+                latency: 0,
+            })
             sinon.stub(performance, 'now').returns(0.0)
             handler.startPos = new vscode.Position(1, 0)
             TelemetryHelper.instance.cursorOffset = 2
@@ -133,10 +151,20 @@ describe('recommendationHandler', function () {
                 codewhispererCursorOffset: 38,
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
+                codewhispererSupplementalContextIsUtg: false,
+                codewhispererSupplementalContextTimeout: false,
+                codewhispererSupplementalContextLatency: 0,
+                codewhispererSupplementalContextLength: 100,
+                codewhispererUserGroup: 'CrossFile',
             })
         })
 
         it('should call telemetry function that records a Empty userDecision event', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.CrossFile,
+                version: extensionVersion,
+            })
+
             const mockServerResult = {
                 recommendations: [],
                 nextToken: '',
@@ -167,6 +195,7 @@ describe('recommendationHandler', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
+                codewhispererUserGroup: 'CrossFile',
             })
         })
     })

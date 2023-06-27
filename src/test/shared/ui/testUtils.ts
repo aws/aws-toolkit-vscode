@@ -70,6 +70,7 @@ export function createQuickPickPrompterTester<T>(
         throw new Error('Expected prompter to contain a TestQuickPick')
     }
     const resolvedOptions = { ...testDefaults, ...options }
+    let running = false
 
     function throwErrorWithTrace(trace: AssertionParams, message: string, actual?: any, expected?: any) {
         errors.push(new AssertionError({ ...trace, message, actual, expected }))
@@ -99,6 +100,11 @@ export function createQuickPickPrompterTester<T>(
     }
 
     async function start(): Promise<void> {
+        if (running) {
+            return
+        }
+        running = true
+
         while (actions.length > 0) {
             const trace = traces.shift()!
             const timeout = setTimeout(() => throwErrorWithTrace(trace, 'Timed out'), resolvedOptions.timeout)
@@ -109,6 +115,7 @@ export function createQuickPickPrompterTester<T>(
     }
 
     async function result(expected?: PromptResult<T>): Promise<PromptResult<T>> {
+        start()
         const result = await prompter.prompt()
         if (errors.length > 0) {
             // TODO: combine errors into a single one
@@ -127,7 +134,6 @@ export function createQuickPickPrompterTester<T>(
         }
     }
 
-    // initialize prompter
     prompter.onDidShow(start)
 
     return new Proxy(prompter, {
