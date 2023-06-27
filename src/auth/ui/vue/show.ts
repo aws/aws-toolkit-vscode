@@ -366,6 +366,7 @@ export type AuthUiClick =
     | 'auth_learnMoreAWSResources'
     | 'auth_learnMoreCodeWhisperer'
     | 'auth_learnMoreCodeCatalyst'
+    | 'auth_explorer_expandIAMIdentityCenter'
 
 type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 

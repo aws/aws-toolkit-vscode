@@ -108,6 +108,10 @@ import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import ExplorerAggregateForm from '../authForms/manageExplorer.vue'
+import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthWebview } from '../show'
+
+const client = WebviewClientFactory.create<AuthWebview>()
 
 export default defineComponent({
     name: 'AwsExplorerContent',
@@ -157,6 +161,9 @@ export default defineComponent({
         },
         toggleShowIdentityCenter() {
             this.isIdentityCenterShown = !this.isIdentityCenterShown
+            if (this.isIdentityCenterShown) {
+                client.emitUiClick('auth_explorer_expandIAMIdentityCenter')
+            }
         },
         collapsibleClass(isShown: boolean): string {
             return isShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
