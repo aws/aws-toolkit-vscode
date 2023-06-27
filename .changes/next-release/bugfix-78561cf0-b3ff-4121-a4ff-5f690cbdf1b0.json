@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Show re-authenticate prompt when invoking CodeWhisperer APIs while connection expired"
-}

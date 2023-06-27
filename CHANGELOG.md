@@ -1,3 +1,13 @@
+# _1.69_ (2023-06-13)
+- **(Feature)** CodeWhisperer improves auto-suggestions for python csharp typescript and javascript
+- **(Feature)** Removed 10 secs delay when connecting to Dev environments of Small Instance Size
+- **(Feature)** CodeWhisperer: Improve file context fetching logic
+- **(Bug Fix)** Inlay not supported exception in injected editor
+- **(Bug Fix)** fix right context merging not accounting userinput, which result in cases CodeWhisperer still show recommendation where user already type the content of recommendation out thus no character is being inserted by CodeWhisperer
+- **(Bug Fix)** Add error notification to upgrade SAM CLI v1.85-1.86.1 if on windows
+- **(Bug Fix)** Always use AWS smile logo to reduce confusion if users are on the 'New UI' ([#3636](https://github.com/aws/aws-toolkit-jetbrains/issues/3636))
+- **(Removal)** Remove support for Gateway 2022.2 and 2022.3.
+
 # _1.68_ (2023-05-30)
 - **(Feature)** CodeWhisperer supports application wide connections
 - **(Feature)** CodeWhisperer improves auto-suggestions for java
