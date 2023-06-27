@@ -18,7 +18,9 @@
         </div>
 
         <div>
-            <a href="https://aws.amazon.com/codecatalyst/">Learn more about CodeCatalyst.</a>
+            <a href="https://aws.amazon.com/codecatalyst/" v-on:click="emitUiClick('auth_learnMoreCodeCatalyst')"
+                >Learn more about CodeCatalyst.</a
+            >
         </div>
 
         <hr />
