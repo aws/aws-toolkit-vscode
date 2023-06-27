@@ -26,7 +26,7 @@ export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
 export class DefaultTelemetryService {
     public static readonly telemetryCognitoIdKey = 'telemetryId'
-    public static readonly defaultFlushPeriodMillis = 5 // 5 minutes in milliseconds
+    public static readonly defaultFlushPeriodMillis = 1000 * 60 * 5 // 5 minutes in milliseconds
 
     public startTime: Date
     public readonly persistFilePath: string
