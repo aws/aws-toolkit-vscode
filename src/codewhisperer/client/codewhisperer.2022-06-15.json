@@ -1,0 +1,2853 @@
+{
+    "smithy": "2.0",
+    "shapes": {
+        "aws.api#ArnNamespace": {
+            "type": "string",
+            "traits": {
+                "smithy.api#documentation": "A string representing a service's ARN namespace.",
+                "smithy.api#pattern": "^[a-z0-9.\\-]{1,63}$",
+                "smithy.api#private": {}
+            }
+        },
+        "aws.api#CloudFormationName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#documentation": "A string representing a CloudFormation service name.",
+                "smithy.api#pattern": "^[A-Z][A-Za-z0-9]+$",
+                "smithy.api#private": {}
+            }
+        },
+        "aws.api#service": {
+            "type": "structure",
+            "members": {
+                "sdkId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "The `sdkId` property is a required string value that specifies the AWS\nSDK service ID (e.g., \"API Gateway\"). This value is used for generating\nclient names in SDKs and for linking between services.",
+                        "smithy.api#required": {}
+                    }
+                },
+                "arnNamespace": {
+                    "target": "aws.api#ArnNamespace",
+                    "traits": {
+                        "smithy.api#documentation": "The `arnNamespace` property is a string value that defines the ARN service\nnamespace of the service (e.g., \"apigateway\"). This value is used in\nARNs assigned to resources in the service. If not set, this value\ndefaults to the lowercase name of the service shape."
+                    }
+                },
+                "cloudFormationName": {
+                    "target": "aws.api#CloudFormationName",
+                    "traits": {
+                        "smithy.api#documentation": "The `cloudFormationName` property is a string value that specifies the\nAWS CloudFormation service name (e.g., `ApiGateway`). When not set,\nthis value defaults to the name of the service shape. This value is\npart of the CloudFormation resource type name that is automatically\nassigned to resources in the service (e.g., `AWS::<NAME>::resourceName`)."
+                    }
+                },
+                "cloudTrailEventSource": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "The `cloudTrailEventSource` property is a string value that defines the\nAWS customer-facing eventSource property contained in CloudTrail event\nrecords emitted by the service. If not specified, this value defaults\nto the `arnNamespace` plus `.amazonaws.com`."
+                    }
+                },
+                "endpointPrefix": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "The `endpointPrefix` property is a string value that identifies which\nendpoint in a given region should be used to connect to the service.\nFor example, most services in the AWS standard partition have endpoints\nwhich follow the format: `{endpointPrefix}.{region}.amazonaws.com`. A\nservice with the endpoint prefix example in the region us-west-2 might\nhave the endpoint example.us-west-2.amazonaws.com.\n\nThis value is not unique across services and is subject to change.\nTherefore, it MUST NOT be used for client naming or for any other\npurpose that requires a static, unique identifier. sdkId should be used\nfor those purposes. Additionally, this value can be used to attempt to\nresolve endpoints."
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "An AWS service is defined using the `aws.api#service` trait. This trait\nprovides information about the service like the name used to generate AWS\nSDK client classes and the namespace used in ARNs.",
+                "smithy.api#trait": {
+                    "selector": "service"
+                }
+            }
+        },
+        "aws.auth#sigv4": {
+            "type": "structure",
+            "members": {
+                "name": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#documentation": "The signature version 4 service signing name to use in the credential\nscope when signing requests. This value SHOULD match the `arnNamespace`\nproperty of the `aws.api#service-trait`.",
+                        "smithy.api#externalDocumentation": {
+                            "Reference": "https://docs.aws.amazon.com/general/latest/gr/sigv4-create-string-to-sign.html"
+                        },
+                        "smithy.api#length": {
+                            "min": 1
+                        },
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#authDefinition": {},
+                "smithy.api#documentation": "Signature Version 4 is the process to add authentication information to\nAWS requests sent by HTTP. For security, most requests to AWS must be\nsigned with an access key, which consists of an access key ID and secret\naccess key. These two keys are commonly referred to as your security\ncredentials.",
+                "smithy.api#externalDocumentation": {
+                    "Reference": "https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html"
+                },
+                "smithy.api#trait": {
+                    "selector": "service"
+                }
+            }
+        },
+        "aws.protocols#HttpConfiguration": {
+            "type": "structure",
+            "members": {
+                "http": {
+                    "target": "aws.protocols#StringList",
+                    "traits": {
+                        "smithy.api#documentation": "The priority ordered list of supported HTTP protocol versions."
+                    }
+                },
+                "eventStreamHttp": {
+                    "target": "aws.protocols#StringList",
+                    "traits": {
+                        "smithy.api#documentation": "The priority ordered list of supported HTTP protocol versions that\nare required when using event streams with the service. If not set,\nthis value defaults to the value of the `http` member. Any entry in\n`eventStreamHttp` MUST also appear in `http`."
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "Contains HTTP protocol configuration for HTTP-based protocols.",
+                "smithy.api#mixin": {
+                    "localTraits": ["smithy.api#private"]
+                },
+                "smithy.api#private": {}
+            }
+        },
+        "aws.protocols#StringList": {
+            "type": "list",
+            "member": {
+                "target": "smithy.api#String"
+            },
+            "traits": {
+                "smithy.api#private": {}
+            }
+        },
+        "aws.protocols#awsJson1_0": {
+            "type": "structure",
+            "mixins": [
+                {
+                    "target": "aws.protocols#HttpConfiguration"
+                }
+            ],
+            "members": {},
+            "traits": {
+                "smithy.api#documentation": "An RPC-based protocol that sends JSON payloads. This protocol does not use\nHTTP binding traits.",
+                "smithy.api#protocolDefinition": {
+                    "traits": [
+                        "smithy.api#timestampFormat",
+                        "smithy.api#cors",
+                        "smithy.api#endpoint",
+                        "smithy.api#hostLabel"
+                    ]
+                },
+                "smithy.api#trait": {
+                    "selector": "service"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#AWSCodeWhispererService": {
+            "type": "service",
+            "version": "2022-06-15",
+            "resources": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationAPIs"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ProfileAPIs"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#RecommendationAPIs"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#SLRAPIs"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#TagAPIs"
+                }
+            ],
+            "traits": {
+                "aws.api#service": {
+                    "sdkId": "CodeWhisperer"
+                },
+                "aws.auth#sigv4": {
+                    "name": "codewhisperer"
+                },
+                "aws.protocols#awsJson1_0": {},
+                "smithy.api#title": "AWS CodeWhisperer"
+            }
+        },
+        "com.amazon.aws.codewhisperer#AccessDeniedException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "This exception is thrown when the user does not have sufficient access to perform this action.\n",
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 403
+            }
+        },
+        "com.amazon.aws.codewhisperer#ArtifactMap": {
+            "type": "map",
+            "key": {
+                "target": "com.amazon.aws.codewhisperer#ArtifactType"
+            },
+            "value": {
+                "target": "com.amazon.aws.codewhisperer#UploadId"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 64
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ArtifactType": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "name": "SOURCE_CODE",
+                        "value": "SourceCode"
+                    },
+                    {
+                        "name": "BUILT_JARS",
+                        "value": "BuiltJars"
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#AssociateCustomizationPermission": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#AssociateCustomizationPermissionRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#AssociateCustomizationPermissionResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Add permission for an Identity Center User/Group to use the Customization.",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/AssociateCustomizationPermission"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#AssociateCustomizationPermissionRequest": {
+            "type": "structure",
+            "members": {
+                "identifier": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationIdentifier",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "permission": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationPermission",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#AssociateCustomizationPermissionResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 2048
+                },
+                "smithy.api#pattern": "^(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?$"
+            }
+        },
+        "com.amazon.aws.codewhisperer#BoxedInteger": {
+            "type": "integer"
+        },
+        "com.amazon.aws.codewhisperer#CodeAnalysisFindingsSchema": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "name": "CODEANALYSIS_FINDINGS_V1_0",
+                        "value": "codeanalysis/findings/1.0"
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#CodeAnalysisStatus": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "name": "COMPLETED",
+                        "value": "Completed"
+                    },
+                    {
+                        "name": "PENDING",
+                        "value": "Pending"
+                    },
+                    {
+                        "name": "FAILED",
+                        "value": "Failed"
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#CodeCoverageEvent": {
+            "type": "structure",
+            "members": {
+                "customizationArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                },
+                "programmingLanguage": {
+                    "target": "com.amazon.aws.codewhisperer#ProgrammingLanguage",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "acceptedCharacterCount": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "totalCharacterCount": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CodeStarReference": {
+            "type": "structure",
+            "members": {
+                "connectionArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#Completion": {
+            "type": "structure",
+            "members": {
+                "content": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 5120
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "references": {
+                    "target": "com.amazon.aws.codewhisperer#References"
+                },
+                "mostRelevantMissingImports": {
+                    "target": "com.amazon.aws.codewhisperer#Imports"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CompletionType": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "BLOCK",
+                        "name": "Block"
+                    },
+                    {
+                        "value": "LINE",
+                        "name": "Line"
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#Completions": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#Completion"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 10
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ConflictException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.\n",
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 409
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateCustomization": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#CreateCustomizationRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#CreateCustomizationResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/CreateCustomization"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateCustomizationRequest": {
+            "type": "structure",
+            "members": {
+                "dataReference": {
+                    "target": "com.amazon.aws.codewhisperer#DataReference",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "customizationName": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#CustomizationName",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "description": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Description"
+                },
+                "profileArn": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "tags": {
+                    "target": "com.amazon.aws.codewhisperer#TagList"
+                },
+                "clientToken": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#IdempotencyToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateCustomizationResponse": {
+            "type": "structure",
+            "members": {
+                "customizationArn": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateProfile": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#CreateProfileRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#CreateProfileResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Creates a CodeWhisperer profile which can then be associated to users/groups of an identity source\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/CreateProfile"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateProfileRequest": {
+            "type": "structure",
+            "members": {
+                "identitySource": {
+                    "target": "com.amazon.aws.codewhisperer#IdentitySource",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "profileName": {
+                    "target": "com.amazon.aws.codewhisperer#ProfileName",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "referenceTrackerConfiguration": {
+                    "target": "com.amazon.aws.codewhisperer#ReferenceTrackerConfiguration",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "clientToken": {
+                    "target": "com.amazon.aws.codewhisperer#IdempotencyToken",
+                    "traits": {
+                        "smithy.api#idempotencyToken": {}
+                    }
+                },
+                "kmsKeyArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                },
+                "tags": {
+                    "target": "com.amazon.aws.codewhisperer#TagList"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateProfileResponse": {
+            "type": "structure",
+            "members": {
+                "profileArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateUploadUrlRequest": {
+            "type": "structure",
+            "members": {
+                "contentMd5": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 128
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "artifactType": {
+                    "target": "com.amazon.aws.codewhisperer#ArtifactType"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CreateUploadUrlResponse": {
+            "type": "structure",
+            "members": {
+                "uploadId": {
+                    "target": "com.amazon.aws.codewhisperer#UploadId",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "uploadUrl": {
+                    "target": "com.amazon.aws.codewhisperer#PreSignedUrl",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "kmsKeyArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CustomizationAPIs": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AssociateCustomizationPermission"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#CreateCustomization"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#DisassociateCustomizationPermission"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#GetCustomization"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ListCustomizationPermissions"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ListCustomizations"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#UpdateCustomization"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer#CustomizationIdentifier": {
+            "type": "string"
+        },
+        "com.amazon.aws.codewhisperer#CustomizationPermission": {
+            "type": "union",
+            "members": {
+                "user": {
+                    "target": "com.amazon.aws.codewhisperer#IdentityCenterIdentifier"
+                },
+                "group": {
+                    "target": "com.amazon.aws.codewhisperer#IdentityCenterIdentifier"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CustomizationStatus": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "CREATED",
+                        "name": "CREATED",
+                        "documentation": "Upon successful creation or deactivation, or failed activation, a customization has a status of CREATED."
+                    },
+                    {
+                        "value": "CREATING",
+                        "name": "CREATING",
+                        "documentation": "After a creation request is received, a customization has a status of CREATING."
+                    },
+                    {
+                        "value": "ACTIVATING",
+                        "name": "ACTIVATING",
+                        "documentation": "After an activation request is received, a customization has a status of ACTIVATING."
+                    },
+                    {
+                        "value": "DEACTIVATING",
+                        "name": "DEACTIVATING",
+                        "documentation": "After a deactivation request is received, a customization has a status of DEACTIVATING."
+                    },
+                    {
+                        "value": "ACTIVATED",
+                        "name": "ACTIVATED",
+                        "documentation": "After a successful activation, a customization has a status of ACTIVATED."
+                    },
+                    {
+                        "value": "CREATION_FAILED",
+                        "name": "CREATION_FAILED",
+                        "documentation": "In the event of a failure during a creation operation, a customization will be assigned a status of CREATION_FAILED."
+                    },
+                    {
+                        "value": "DEACTIVATION_FAILED",
+                        "name": "DEACTIVATION_FAILED",
+                        "documentation": "In the event of a failure during a deactivation operation, a customization will be assigned a status of DEACTIVATION_FAILED."
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#CustomizationSummary": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "version": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Version"
+                },
+                "customizationName": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#CustomizationName",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "description": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Description"
+                },
+                "status": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationStatus",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "updatedAt": {
+                    "target": "smithy.api#Timestamp",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#CustomizationSummaryList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#CustomizationSummary"
+            }
+        },
+        "com.amazon.aws.codewhisperer#DataReference": {
+            "type": "union",
+            "members": {
+                "codeStarReference": {
+                    "target": "com.amazon.aws.codewhisperer#CodeStarReference"
+                },
+                "s3Reference": {
+                    "target": "com.amazon.aws.codewhisperer#S3Reference"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#DeleteProfile": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#DeleteProfileRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#DeleteProfileResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Deletes CodeWhisperer profile and associated resources\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/DeleteProfile"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#DeleteProfileRequest": {
+            "type": "structure",
+            "members": {
+                "profileArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#DeleteProfileResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#DisassociateCustomizationPermission": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#DisassociateCustomizationPermissionRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#DisassociateCustomizationPermissionResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Disassociate the permission for a Customization from an Identity Center User/Group.",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/DisassociateCustomizationPermission"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#DisassociateCustomizationPermissionRequest": {
+            "type": "structure",
+            "members": {
+                "identifier": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationIdentifier",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "permission": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationPermission",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#DisassociateCustomizationPermissionResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#FileContext": {
+            "type": "structure",
+            "members": {
+                "leftFileContent": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 0,
+                            "max": 10240
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "rightFileContent": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 0,
+                            "max": 10240
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "filename": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 1024
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "programmingLanguage": {
+                    "target": "com.amazon.aws.codewhisperer#ProgrammingLanguage",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GenerateCompletionsRequest": {
+            "type": "structure",
+            "members": {
+                "fileContext": {
+                    "target": "com.amazon.aws.codewhisperer#FileContext",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "maxResults": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 10
+                        }
+                    }
+                },
+                "nextToken": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 0,
+                            "max": 2048
+                        },
+                        "smithy.api#pattern": "^(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?$"
+                    }
+                },
+                "referenceTrackerConfiguration": {
+                    "target": "com.amazon.aws.codewhisperer#ReferenceTrackerConfiguration"
+                },
+                "supplementalContexts": {
+                    "target": "com.amazon.aws.codewhisperer#SupplementalContextList"
+                },
+                "customizationArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GenerateCompletionsResponse": {
+            "type": "structure",
+            "members": {
+                "completions": {
+                    "target": "com.amazon.aws.codewhisperer#Completions"
+                },
+                "nextToken": {
+                    "target": "smithy.api#String"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GenerateRecommendations": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#GenerateRecommendationsRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#GenerateRecommendationsResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Generates recommendations based on the provided file context.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/GenerateRecommendations"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GenerateRecommendationsRequest": {
+            "type": "structure",
+            "members": {
+                "fileContext": {
+                    "target": "com.amazon.aws.codewhisperer#FileContext",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "maxResults": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 10
+                        }
+                    }
+                },
+                "nextToken": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 0,
+                            "max": 2048
+                        },
+                        "smithy.api#pattern": "^(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?$"
+                    }
+                },
+                "referenceTrackerConfiguration": {
+                    "target": "com.amazon.aws.codewhisperer#ReferenceTrackerConfiguration"
+                },
+                "supplementalContexts": {
+                    "target": "com.amazon.aws.codewhisperer#SupplementalContextList"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GenerateRecommendationsResponse": {
+            "type": "structure",
+            "members": {
+                "recommendations": {
+                    "target": "com.amazon.aws.codewhisperer#RecommendationsList"
+                },
+                "nextToken": {
+                    "target": "smithy.api#String"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GetCodeAnalysisRequest": {
+            "type": "structure",
+            "members": {
+                "jobId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#httpLabel": {},
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 256
+                        },
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GetCodeAnalysisResponse": {
+            "type": "structure",
+            "members": {
+                "status": {
+                    "target": "com.amazon.aws.codewhisperer#CodeAnalysisStatus",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "errorMessage": {
+                    "target": "smithy.api#String"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GetCustomization": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#GetCustomizationRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#GetCustomizationResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/GetCustomization"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GetCustomizationRequest": {
+            "type": "structure",
+            "members": {
+                "identifier": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationIdentifier",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#GetCustomizationResponse": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "version": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Version"
+                },
+                "status": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationStatus",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "errorDetails": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#ErrorDetails"
+                },
+                "dataReference": {
+                    "target": "com.amazon.aws.codewhisperer#DataReference",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "customizationName": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#CustomizationName",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "description": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Description"
+                },
+                "profileArn": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "updatedAt": {
+                    "target": "smithy.api#Timestamp",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#IdempotencyToken": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 256
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#IdentityCenterIdentifier": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 64
+                },
+                "smithy.api#pattern": "^([0-9a-f]{10}-|)[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$"
+            }
+        },
+        "com.amazon.aws.codewhisperer#IdentityCenterPermissions": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#CustomizationPermission"
+            }
+        },
+        "com.amazon.aws.codewhisperer#IdentityDetails": {
+            "type": "union",
+            "members": {
+                "ssoIdentityDetails": {
+                    "target": "com.amazon.aws.codewhisperer#SSOIdentityDetails"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#IdentitySource": {
+            "type": "union",
+            "members": {
+                "ssoIdentitySource": {
+                    "target": "com.amazon.aws.codewhisperer#SSOIdentitySource"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#Import": {
+            "type": "structure",
+            "members": {
+                "statement": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 1024
+                        }
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#Imports": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#Import"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 10
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#InternalServerException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "This exception is thrown when an unexpected error occurred during the processing of a request.\n",
+                "smithy.api#error": "server",
+                "smithy.api#httpError": 500,
+                "smithy.api#retryable": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCodeAnalysisFindingsRequest": {
+            "type": "structure",
+            "members": {
+                "jobId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#httpLabel": {},
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 256
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#PaginationToken",
+                    "traits": {
+                        "smithy.api#httpQuery": "nextToken"
+                    }
+                },
+                "codeAnalysisFindingsSchema": {
+                    "target": "com.amazon.aws.codewhisperer#CodeAnalysisFindingsSchema",
+                    "traits": {
+                        "smithy.api#httpQuery": "schema",
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCodeAnalysisFindingsResponse": {
+            "type": "structure",
+            "members": {
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#PaginationToken"
+                },
+                "codeAnalysisFindings": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCustomizationPermissions": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#ListCustomizationPermissionsRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#ListCustomizationPermissionsResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "List User(s)/Group(s) who have permissions to use a Customization.",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/ListCustomizationPermissions"
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken",
+                    "pageSize": "maxResults",
+                    "items": "permissions"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCustomizationPermissionsRequest": {
+            "type": "structure",
+            "members": {
+                "identifier": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationIdentifier",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "maxResults": {
+                    "target": "com.amazon.aws.codewhisperer#BoxedInteger",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCustomizationPermissionsResponse": {
+            "type": "structure",
+            "members": {
+                "permissions": {
+                    "target": "com.amazon.aws.codewhisperer#IdentityCenterPermissions",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCustomizations": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#ListCustomizationsRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#ListCustomizationsResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/ListCustomizations"
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken",
+                    "pageSize": "maxResults",
+                    "items": "customizations"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCustomizationsRequest": {
+            "type": "structure",
+            "members": {
+                "maxResults": {
+                    "target": "com.amazon.aws.codewhisperer#BoxedInteger",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListCustomizationsResponse": {
+            "type": "structure",
+            "members": {
+                "customizations": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationSummaryList",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListProfiles": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#ListProfilesRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#ListProfilesResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Lists one or more CodeWhisperer profiles that you have created.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/ListProfiles"
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken",
+                    "pageSize": "maxResults",
+                    "items": "profiles"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListProfilesRequest": {
+            "type": "structure",
+            "members": {
+                "maxResults": {
+                    "target": "com.amazon.aws.codewhisperer#BoxedInteger",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListProfilesResponse": {
+            "type": "structure",
+            "members": {
+                "profiles": {
+                    "target": "com.amazon.aws.codewhisperer#ProfileList",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.codewhisperer#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListTagsForResource": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#ListTagsForResourceRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#ListTagsForResourceResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "List tags of an existing CodeWhisperer profile.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/ListTagsForResource"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListTagsForResourceRequest": {
+            "type": "structure",
+            "members": {
+                "resourceArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ListTagsForResourceResponse": {
+            "type": "structure",
+            "members": {
+                "tags": {
+                    "target": "com.amazon.aws.codewhisperer#TagList"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#PaginationToken": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 2048
+                },
+                "smithy.api#pattern": "^\\S+$"
+            }
+        },
+        "com.amazon.aws.codewhisperer#PreSignedUrl": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 2048
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#Profile": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "identityDetails": {
+                    "target": "com.amazon.aws.codewhisperer#IdentityDetails",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "profileName": {
+                    "target": "com.amazon.aws.codewhisperer#ProfileName",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "referenceTrackerConfiguration": {
+                    "target": "com.amazon.aws.codewhisperer#ReferenceTrackerConfiguration",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "kmsKeyArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ProfileAPIs": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#CreateProfile"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#DeleteProfile"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ListProfiles"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#UpdateProfile"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer#ProfileList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#Profile"
+            }
+        },
+        "com.amazon.aws.codewhisperer#ProfileName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 100
+                },
+                "smithy.api#pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
+            }
+        },
+        "com.amazon.aws.codewhisperer#ProgrammingLanguage": {
+            "type": "structure",
+            "members": {
+                "languageName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 128
+                        },
+                        "smithy.api#pattern": "^(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)$",
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#Recommendation": {
+            "type": "structure",
+            "members": {
+                "content": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 5120
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "references": {
+                    "target": "com.amazon.aws.codewhisperer#References"
+                },
+                "mostRelevantMissingImports": {
+                    "target": "com.amazon.aws.codewhisperer#Imports"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#RecommendationAPIs": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#GenerateRecommendations"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer#RecommendationsList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#Recommendation"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 10
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#RecommendationsWithReferencesPreference": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "BLOCK",
+                        "name": "BLOCK",
+                        "documentation": "This preference will block recommendations with references from being returned by CodeWhisperer"
+                    },
+                    {
+                        "value": "ALLOW",
+                        "name": "ALLOW",
+                        "documentation": "This preference will allow recommendations with references to be returned by CodeWhisperer"
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#Reference": {
+            "type": "structure",
+            "members": {
+                "licenseName": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 1024
+                        }
+                    }
+                },
+                "repository": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 1024
+                        }
+                    }
+                },
+                "url": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 1024
+                        }
+                    }
+                },
+                "recommendationContentSpan": {
+                    "target": "com.amazon.aws.codewhisperer#Span"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ReferenceTrackerConfiguration": {
+            "type": "structure",
+            "members": {
+                "recommendationsWithReferences": {
+                    "target": "com.amazon.aws.codewhisperer#RecommendationsWithReferencesPreference",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#References": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#Reference"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 10
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ResourceArn": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 1224
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ResourceNotFoundException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "This exception is thrown when describing a resource that does not exist.\n",
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 404
+            }
+        },
+        "com.amazon.aws.codewhisperer#S3Reference": {
+            "type": "structure",
+            "members": {
+                "uri": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#S3Uri",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#SLRAPIs": {
+            "type": "resource"
+        },
+        "com.amazon.aws.codewhisperer#SSOIdentityDetails": {
+            "type": "structure",
+            "members": {
+                "instanceArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "oidcClientId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#SSOIdentitySource": {
+            "type": "structure",
+            "members": {
+                "instanceArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#SendTelemetryEventRequest": {
+            "type": "structure",
+            "members": {
+                "clientToken": {
+                    "target": "com.amazon.aws.codewhisperer#IdempotencyToken",
+                    "traits": {
+                        "smithy.api#idempotencyToken": {}
+                    }
+                },
+                "telemetryEvent": {
+                    "target": "com.amazon.aws.codewhisperer#TelemetryEvent"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#SendTelemetryEventResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#SensitiveString": {
+            "type": "string",
+            "traits": {
+                "smithy.api#sensitive": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer#Span": {
+            "type": "structure",
+            "members": {
+                "start": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 0
+                        }
+                    }
+                },
+                "end": {
+                    "target": "smithy.api#Integer",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 0
+                        }
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#StartCodeAnalysisRequest": {
+            "type": "structure",
+            "members": {
+                "artifacts": {
+                    "target": "com.amazon.aws.codewhisperer#ArtifactMap",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "programmingLanguage": {
+                    "target": "com.amazon.aws.codewhisperer#ProgrammingLanguage",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "clientToken": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#idempotencyToken": {},
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 256
+                        }
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#StartCodeAnalysisResponse": {
+            "type": "structure",
+            "members": {
+                "jobId": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 256
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "status": {
+                    "target": "com.amazon.aws.codewhisperer#CodeAnalysisStatus",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "errorMessage": {
+                    "target": "smithy.api#String"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#SuggestionState": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "ACCEPT",
+                        "name": "Accept"
+                    },
+                    {
+                        "value": "REJECT",
+                        "name": "Reject"
+                    },
+                    {
+                        "value": "DISCARD",
+                        "name": "Discard"
+                    },
+                    {
+                        "value": "EMPTY",
+                        "name": "Empty"
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#SupplementalContext": {
+            "type": "structure",
+            "members": {
+                "filePath": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 1024
+                        },
+                        "smithy.api#required": {}
+                    }
+                },
+                "content": {
+                    "target": "com.amazon.aws.codewhisperer#SensitiveString",
+                    "traits": {
+                        "smithy.api#length": {
+                            "min": 1,
+                            "max": 10240
+                        },
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#SupplementalContextList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#SupplementalContext"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 5
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#Tag": {
+            "type": "structure",
+            "members": {
+                "key": {
+                    "target": "com.amazon.aws.codewhisperer#TagKey",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "value": {
+                    "target": "com.amazon.aws.codewhisperer#TagValue",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TagAPIs": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#ListTagsForResource"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#TagResource"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#UntagResource"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer#TagKey": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 128
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TagKeyList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#TagKey"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 50
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TagList": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer#Tag"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 50
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TagResource": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#TagResourceRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#TagResourceResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Add tags to an existing CodeWhisperer profile.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/TagResource"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TagResourceRequest": {
+            "type": "structure",
+            "members": {
+                "resourceArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "tags": {
+                    "target": "com.amazon.aws.codewhisperer#TagList",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TagResourceResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#TagValue": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 256
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#TelemetryEvent": {
+            "type": "union",
+            "members": {
+                "userTriggerDecisionEvent": {
+                    "target": "com.amazon.aws.codewhisperer#UserTriggerDecisionEvent"
+                },
+                "codeCoverageEvent": {
+                    "target": "com.amazon.aws.codewhisperer#CodeCoverageEvent"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ThrottlingException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "This exception is thrown when request was denied due to request throttling.\n",
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 429,
+                "smithy.api#retryable": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer#UUID": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 36,
+                    "max": 36
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UntagResource": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#UntagResourceRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#UntagResourceResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Remove tags from an existing CodeWhisperer profile.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/UntagResource"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UntagResourceRequest": {
+            "type": "structure",
+            "members": {
+                "resourceArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "tagKeys": {
+                    "target": "com.amazon.aws.codewhisperer#TagKeyList",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UntagResourceResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#UpdateCustomization": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#UpdateCustomizationRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#UpdateCustomizationResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/UpdateCustomization"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UpdateCustomizationRequest": {
+            "type": "structure",
+            "members": {
+                "identifier": {
+                    "target": "com.amazon.aws.codewhisperer#CustomizationIdentifier",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "operation": {
+                    "target": "com.amazon.aws.codewhisperer#UpdateOperation",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "clientToken": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#IdempotencyToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UpdateCustomizationResponse": {
+            "type": "structure",
+            "members": {}
+        },
+        "com.amazon.aws.codewhisperer#UpdateOperation": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "ACTIVATE",
+                        "name": "ACTIVATE",
+                        "documentation": "Transition a customization with a status of CREATED to ACTIVATED."
+                    },
+                    {
+                        "value": "DEACTIVATE",
+                        "name": "DEACTIVATE",
+                        "documentation": "Transition a customization with a status of ACTIVATED to CREATED."
+                    }
+                ]
+            }
+        },
+        "com.amazon.aws.codewhisperer#UpdateProfile": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#UpdateProfileRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#UpdateProfileResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Updates an existing CodeWhisperer profile.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/UpdateProfile"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UpdateProfileRequest": {
+            "type": "structure",
+            "members": {
+                "profileArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "profileName": {
+                    "target": "com.amazon.aws.codewhisperer#ProfileName"
+                },
+                "referenceTrackerConfiguration": {
+                    "target": "com.amazon.aws.codewhisperer#ReferenceTrackerConfiguration"
+                },
+                "kmsKeyArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UpdateProfileResponse": {
+            "type": "structure",
+            "members": {
+                "profileArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UploadId": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 128
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#UserTriggerDecisionEvent": {
+            "type": "structure",
+            "members": {
+                "sessionId": {
+                    "target": "com.amazon.aws.codewhisperer#UUID",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "requestId": {
+                    "target": "com.amazon.aws.codewhisperer#UUID",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "customizationArn": {
+                    "target": "com.amazon.aws.codewhisperer#ResourceArn"
+                },
+                "programmingLanguage": {
+                    "target": "com.amazon.aws.codewhisperer#ProgrammingLanguage",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "completionType": {
+                    "target": "com.amazon.aws.codewhisperer#CompletionType",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "suggestionState": {
+                    "target": "com.amazon.aws.codewhisperer#SuggestionState",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "recommendationLatencyMilliseconds": {
+                    "target": "smithy.api#Double",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer#ValidationException": {
+            "type": "structure",
+            "members": {
+                "message": {
+                    "target": "smithy.api#String",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            },
+            "traits": {
+                "smithy.api#documentation": "This exception is thrown when the input fails to satisfy the constraints specified by the service.\n",
+                "smithy.api#error": "client",
+                "smithy.api#httpError": 400
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#CodeAnalysisOperations": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#CreateArtifactUploadUrl"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#CreateUploadUrl"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#GetCodeAnalysis"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#ListCodeAnalysisFindings"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#StartCodeAnalysis"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer.runtime#CompletionOperations": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#GenerateCompletions"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer.runtime#CreateArtifactUploadUrl": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#CreateUploadUrlRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#CreateUploadUrlResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Creates a pre-signed, S3 write URL for uploading a repository zip archive.",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/createartifactuploadurl",
+                    "code": 200
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#CreateUploadUrl": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#CreateUploadUrlRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#CreateUploadUrlResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Creates a pre-signed, S3 write URL for uploading a repository zip archive.",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/createuploadurl",
+                    "code": 200
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#Customization": {
+            "type": "structure",
+            "members": {
+                "arn": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#ResourceArn",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "name": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#CustomizationName"
+                },
+                "description": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Description"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#CustomizationOperations": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#ListAvailableCustomizations"
+                }
+            ]
+        },
+        "com.amazon.aws.codewhisperer.runtime#Customizations": {
+            "type": "list",
+            "member": {
+                "target": "com.amazon.aws.codewhisperer.runtime#Customization"
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#GenerateCompletions": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#GenerateCompletionsRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#GenerateCompletionsResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Generate completions based on the provided file context in a paginated response.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/generatecompletions"
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#GetCodeAnalysis": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#GetCodeAnalysisRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#GetCodeAnalysisResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Gets the metadata of a code analysis job.",
+                "smithy.api#http": {
+                    "method": "GET",
+                    "uri": "/getcodeanalysis/{jobId+}"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#ListAvailableCustomizations": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer.runtime#ListAvailableCustomizationsRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer.runtime#ListAvailableCustomizationsResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/ListAvailableCustomizations"
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken",
+                    "pageSize": "maxResults",
+                    "items": "customizations"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#ListAvailableCustomizationsRequest": {
+            "type": "structure",
+            "members": {
+                "maxResults": {
+                    "target": "com.amazon.aws.codewhisperer#BoxedInteger",
+                    "traits": {
+                        "smithy.api#range": {
+                            "min": 1,
+                            "max": 100
+                        }
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#ListAvailableCustomizationsResponse": {
+            "type": "structure",
+            "members": {
+                "customizations": {
+                    "target": "com.amazon.aws.codewhisperer.runtime#Customizations",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "nextToken": {
+                    "target": "com.amazon.aws.vector.consolas.controlplane.common#Base64EncodedPaginationToken"
+                }
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#ListCodeAnalysisFindings": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#ListCodeAnalysisFindingsRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#ListCodeAnalysisFindingsResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Lists the findings from a particular code analysis job.",
+                "smithy.api#http": {
+                    "method": "GET",
+                    "uri": "/listcodeanalysisfindings/{jobId}",
+                    "code": 200
+                },
+                "smithy.api#paginated": {
+                    "inputToken": "nextToken",
+                    "outputToken": "nextToken"
+                },
+                "smithy.api#readonly": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#SendTelemetryEvent": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#SendTelemetryEventRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#SendTelemetryEventResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "API to record telemetry events.\n",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/SendTelemetryEvent",
+                    "code": 200
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#StartCodeAnalysis": {
+            "type": "operation",
+            "input": {
+                "target": "com.amazon.aws.codewhisperer#StartCodeAnalysisRequest"
+            },
+            "output": {
+                "target": "com.amazon.aws.codewhisperer#StartCodeAnalysisResponse"
+            },
+            "errors": [
+                {
+                    "target": "com.amazon.aws.codewhisperer#AccessDeniedException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ConflictException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#InternalServerException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ResourceNotFoundException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ThrottlingException"
+                },
+                {
+                    "target": "com.amazon.aws.codewhisperer#ValidationException"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "Starts a code analysis job",
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/startcodeanalysis",
+                    "code": 200
+                },
+                "smithy.api#idempotent": {}
+            }
+        },
+        "com.amazon.aws.codewhisperer.runtime#TelemetryOperations": {
+            "type": "resource",
+            "operations": [
+                {
+                    "target": "com.amazon.aws.codewhisperer.runtime#SendTelemetryEvent"
+                }
+            ]
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#Base64EncodedPaginationToken": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 2048
+                },
+                "smithy.api#pattern": "^(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?$"
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#CustomizationName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 100
+                },
+                "smithy.api#pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#Description": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 256
+                }
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#ErrorDetails": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 2048
+                }
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#IdempotencyToken": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 256
+                }
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#ResourceArn": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 1224
+                }
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#S3Uri": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 1024
+                },
+                "smithy.api#pattern": "^s3://((?!xn--)[a-z0-9](?![^/]*[.]{2})[a-z0-9-.]{1,61}[a-z0-9](?<!-s3alias)(?<!--ol-s3)(?<!([0-9]{1,3}\\.)([0-9]{1,3}\\.)([0-9]{1,3}\\.)([0-9]{1,3})))/(.{1,1024})$"
+            }
+        },
+        "com.amazon.aws.vector.consolas.controlplane.common#Version": {
+            "type": "long"
+        }
+    }
+}

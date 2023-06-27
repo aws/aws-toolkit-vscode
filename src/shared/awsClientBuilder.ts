@@ -10,6 +10,21 @@ import { AwsContext } from './awsContext'
 import { DevSettings } from './settings'
 import { getUserAgent } from './telemetry/util'
 import { telemetry } from './telemetry/telemetry'
+import { Client, SmithyConfiguration, SmithyResolvedConfiguration } from '@aws-sdk/smithy-client'
+import {
+    EndpointsInputConfig,
+    EndpointsResolvedConfig,
+    RegionInputConfig,
+    RegionResolvedConfig,
+} from '@aws-sdk/config-resolver'
+import { HostHeaderInputConfig, HostHeaderResolvedConfig } from '@aws-sdk/middleware-host-header'
+import { RetryInputConfig, RetryResolvedConfig } from '@aws-sdk/middleware-retry'
+import { AwsAuthInputConfig, AwsAuthResolvedConfig } from '@aws-sdk/middleware-signing'
+import { UserAgentInputConfig, UserAgentResolvedConfig } from '@aws-sdk/middleware-user-agent'
+import { HttpHandlerOptions } from '@aws-sdk/types'
+import { HttpRequest, HttpResponse } from '@aws-sdk/protocol-http'
+import globals from './extensionGlobals'
+import { getLogger } from './logger'
 
 // These are not on the public API but are very useful for logging purposes.
 // Tests guard against the possibility that these values change unexpectedly.
@@ -170,4 +185,146 @@ export class DefaultAWSClientBuilder implements AWSClientBuilder {
 
         return service
     }
+}
+
+type InputConfig = Partial<
+    SmithyConfiguration<HttpHandlerOptions> &
+        RegionInputConfig &
+        EndpointsInputConfig &
+        RetryInputConfig &
+        HostHeaderInputConfig &
+        AwsAuthInputConfig &
+        UserAgentInputConfig
+>
+type ResolvedConfig = SmithyResolvedConfiguration<HttpHandlerOptions> &
+    RegionResolvedConfig &
+    EndpointsResolvedConfig &
+    RetryResolvedConfig &
+    HostHeaderResolvedConfig &
+    AwsAuthResolvedConfig &
+    UserAgentResolvedConfig
+
+export function createAwsService2<
+    T extends Client<HttpHandlerOptions, any, any, ResolvedConfig>,
+    U extends InputConfig
+>(ctor: new (config: U) => T, config: U): T {
+    if (!config.credentials) {
+        const shim = globals.awsContext.credentialsShim
+        if (!shim) {
+            throw new Error('Toolkit is not logged-in.')
+        }
+
+        config.credentials = async () => {
+            const creds = await shim.get()
+            if (creds.expiration && creds.expiration.getTime() < Date.now()) {
+                return shim.refresh()
+            }
+
+            return creds
+        }
+    }
+
+    // config.customUserAgent ??= await getUserAgent({ includePlatform: true, includeClientId: true })
+
+    // const apiConfig = (opt as { apiConfig?: { metadata?: Record<string, string> } } | undefined)?.apiConfig
+    // const serviceName =
+    //     apiConfig?.metadata?.serviceId?.toLowerCase() ??
+    //     (type as unknown as { serviceIdentifier?: string }).serviceIdentifier
+
+    // if (serviceName) {
+    //     opt.endpoint = settings.get('endpoints', {})[serviceName] ?? opt.endpoint
+    // }
+
+    const client = new ctor(config)
+    addLoggingMiddleware(client)
+
+    return client
+}
+
+function omitIfPresent<T extends Record<string, unknown>>(obj: T, ...keys: string[]): T {
+    const objCopy = { ...obj }
+    for (const key of keys) {
+        if (key in objCopy) {
+            ;(objCopy as any)[key] = '[omitted]'
+        }
+    }
+    return objCopy
+}
+
+// Record request IDs to the current context, potentially overriding the field if
+// multiple API calls are made in the same context. We only do failures as successes
+// are generally uninteresting and noisy.
+// function recordErrorTelemetry(err: Error) {
+//     // TODO: update codegen so `record` enumerates all fields as a flat object instead of
+//     // intersecting all of the definitions
+//     interface RequestData {
+//         requestId?: string
+//         requestServiceType?: string
+//     }
+
+//     telemetry.record({
+//         requestId: err.requestId,
+//         requestServiceType: serviceName,
+//     } satisfies RequestData as any)
+// }
+
+interface C {
+    clientName?: 'ToolkitTelemetryClient'
+    commandName?: 'PostMetricsCommand'
+    inputFilterSensitiveLog: () => any
+    outputFilterSensitiveLog: () => any
+}
+
+interface LoggingOptions {
+    readonly sensitiveFields?: string[]
+    readonly ignoredErrors?: (string | typeof Error)[]
+}
+
+function addLoggingMiddleware(client: Client<HttpHandlerOptions, any, any, any>, opt: LoggingOptions = {}) {
+    function isExcludedError(e: Error) {
+        return (
+            opt.ignoredErrors?.find(x => e.name === x) ||
+            ('code' in e && opt.ignoredErrors?.find(x => e.code === x)) ||
+            opt.ignoredErrors?.find(x => typeof x !== 'string' && e instanceof x)
+        )
+    }
+
+    client.middlewareStack.add(
+        (next, context) => args => {
+            if (HttpRequest.isInstance(args.request)) {
+                const { hostname, path } = args.request
+                const input = omitIfPresent(args.input, ...(opt.sensitiveFields ?? []))
+                getLogger().debug('API request (%s %s): %O', hostname, path, input)
+            }
+            return next(args)
+        },
+        { step: 'finalizeRequest' }
+    )
+
+    client.middlewareStack.add(
+        (next, context) => async args => {
+            if (!HttpRequest.isInstance(args.request)) {
+                return next(args)
+            }
+
+            const { hostname, path } = args.request
+            const result = await next(args).catch(e => {
+                if (e instanceof Error && !isExcludedError(e)) {
+                    const err = { ...e }
+                    delete err['stack']
+                    getLogger().error('API response (%s %s): %O', hostname, path, err)
+                }
+                throw e
+            })
+            if (HttpResponse.isInstance(result.response)) {
+                const output = omitIfPresent(result.output, ...(opt.sensitiveFields ?? []))
+                getLogger().debug('API response (%s %s): %O', hostname, path, output)
+            }
+
+            return result
+        },
+        { step: 'deserialize' }
+    )
+
+    return client
 }

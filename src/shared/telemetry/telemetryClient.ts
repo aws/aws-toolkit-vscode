@@ -5,18 +5,17 @@
  * Toolkit-local logic for telemetry.
  */
 
-import { Credentials, Service } from 'aws-sdk'
+import { Credentials } from 'aws-sdk'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import { extensionVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
-import * as ClientTelemetry from './clienttelemetry'
-import { MetricDatum } from './clienttelemetry'
-import apiConfig = require('./service-2.json')
-import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
+import * as ClientTelemetry from '@aws-sdk/client-toolkittelemetry'
+import { MetricDatum } from '@aws-sdk/client-toolkittelemetry'
 import globals from '../extensionGlobals'
 import { DevSettings } from '../settings'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { createAwsService2 } from '../awsClientBuilder'
 
 export const accountMetadataKey = 'awsAccount'
 export const regionKey = 'awsRegion'
@@ -47,7 +46,7 @@ interface TelemetryConfiguration {
 
 export interface TelemetryFeedback {
     sentiment: ClientTelemetry.Sentiment
-    comment: ClientTelemetry.Comment
+    comment: string
 }
 
 export type TelemetryClient = ClassToInterfaceType<DefaultTelemetryClient>
@@ -70,7 +69,7 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     private readonly logger = getLogger()
 
-    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry) {}
+    private constructor(private readonly clientId: string, private readonly client: ClientTelemetry.ToolkitTelemetry) {}
 
     /**
      * Returns failed events
@@ -84,18 +83,16 @@ export class DefaultTelemetryClient implements TelemetryClient {
             }
 
             if (!isAutomation()) {
-                await this.client
-                    .postMetrics({
-                        AWSProduct: DefaultTelemetryClient.productName,
-                        AWSProductVersion: extensionVersion,
-                        ClientID: this.clientId,
-                        OS: os.platform(),
-                        OSVersion: os.release(),
-                        ParentProduct: vscode.env.appName,
-                        ParentProductVersion: vscode.version,
-                        MetricData: batch,
-                    })
-                    .promise()
+                await this.client.postMetrics({
+                    AWSProduct: DefaultTelemetryClient.productName,
+                    AWSProductVersion: extensionVersion,
+                    ClientID: this.clientId,
+                    OS: os.platform(),
+                    OSVersion: os.release(),
+                    ParentProduct: vscode.env.appName,
+                    ParentProductVersion: vscode.version,
+                    MetricData: batch,
+                })
                 this.logger.info(`telemetry: sent batch (size=${batch.length})`)
             } else {
                 this.logger.info(`telemetry: (test mode) dropped batch (size=${batch.length})`)
@@ -111,18 +108,16 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
     public async postFeedback(feedback: TelemetryFeedback): Promise<void> {
         try {
-            await this.client
-                .postFeedback({
-                    AWSProduct: DefaultTelemetryClient.productName,
-                    AWSProductVersion: extensionVersion,
-                    OS: os.platform(),
-                    OSVersion: os.release(),
-                    ParentProduct: vscode.env.appName,
-                    ParentProductVersion: vscode.version,
-                    Comment: feedback.comment,
-                    Sentiment: feedback.sentiment,
-                })
-                .promise()
+            await this.client.postFeedback({
+                AWSProduct: DefaultTelemetryClient.productName,
+                AWSProductVersion: extensionVersion,
+                OS: os.platform(),
+                OSVersion: os.release(),
+                ParentProduct: vscode.env.appName,
+                ParentProductVersion: vscode.version,
+                Comment: feedback.comment,
+                Sentiment: feedback.sentiment,
+            })
             this.logger.info('Successfully posted feedback')
         } catch (err) {
             this.logger.error(`Failed to post feedback: ${err}`)
@@ -139,19 +134,12 @@ export class DefaultTelemetryClient implements TelemetryClient {
 
         return new DefaultTelemetryClient(
             clientId,
-            (await globals.sdkClientBuilder.createAwsService(
-                Service,
-                {
-                    // apiConfig is internal and not in the TS declaration file
-                    apiConfig: apiConfig,
-                    region: region,
-                    credentials: credentials,
-                    correctClockSkew: true,
-                    endpoint: DefaultTelemetryClient.config.endpoint,
-                } as ServiceConfigurationOptions,
-                undefined,
-                false
-            )) as ClientTelemetry
+            createAwsService2(ClientTelemetry.ToolkitTelemetry, {
+                region: region,
+                credentials: credentials,
+                endpoint: DefaultTelemetryClient.config.endpoint,
+                // FIXME: userAgent: false
+            })
         )
     }
 }

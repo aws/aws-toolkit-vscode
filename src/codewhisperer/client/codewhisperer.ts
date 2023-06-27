@@ -3,11 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { AWSError, Service } from 'aws-sdk'
-import apiConfig = require('./service-2.json')
-import userApiConfig = require('./user-service-2.json')
 import globals from '../../shared/extensionGlobals'
-import * as CodeWhispererClient from './codewhispererclient'
-import * as CodeWhispererUserClient from './codewhispereruserclient'
+import * as CodeWhispererClient from '@aws-sdk/client-codewhisperer'
+import * as CodeWhispererUserClient from '@aws-sdk/client-codewhispererruntime'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -23,46 +21,32 @@ export type ProgrammingLanguage = Readonly<
 >
 export type FileContext = Readonly<CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext>
 export type ListRecommendationsRequest = Readonly<
-    CodeWhispererClient.ListRecommendationsRequest | CodeWhispererUserClient.GenerateCompletionsRequest
+    CodeWhispererClient.GenerateRecommendationsRequest | CodeWhispererUserClient.GenerateCompletionsRequest
 >
 export type GenerateRecommendationsRequest = Readonly<CodeWhispererClient.GenerateRecommendationsRequest>
-export type RecommendationsList = CodeWhispererClient.RecommendationsList | CodeWhispererUserClient.Completions
+export type RecommendationsList = CodeWhispererClient.Recommendation[] | CodeWhispererUserClient.Completion[]
 export type ListRecommendationsResponse =
-    | CodeWhispererClient.ListRecommendationsResponse
+    | CodeWhispererClient.GenerateRecommendationsRequest
     | CodeWhispererUserClient.GenerateCompletionsResponse
 export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
 export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion
 export type Completion = CodeWhispererUserClient.Completion
 export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
-export type References = CodeWhispererClient.References | CodeWhispererUserClient.References
-export type CreateUploadUrlRequest = Readonly<
-    CodeWhispererClient.CreateUploadUrlRequest | CodeWhispererUserClient.CreateUploadUrlRequest
->
-export type CreateCodeScanRequest = Readonly<
-    CodeWhispererClient.CreateCodeScanRequest | CodeWhispererUserClient.StartCodeAnalysisRequest
->
-export type GetCodeScanRequest = Readonly<
-    CodeWhispererClient.GetCodeScanRequest | CodeWhispererUserClient.GetCodeAnalysisRequest
->
-export type ListCodeScanFindingsRequest = Readonly<
-    CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
->
+export type References = CodeWhispererClient.Reference[] | CodeWhispererUserClient.Reference[]
+export type CreateUploadUrlRequest = Readonly<CodeWhispererUserClient.CreateUploadUrlRequest> // NOT SUPPORTED VIA SIGV4
+export type CreateCodeScanRequest = Readonly<CodeWhispererUserClient.StartCodeAnalysisRequest> // NOT SUPPORTED VIA SIGV4
+export type GetCodeScanRequest = Readonly<CodeWhispererUserClient.GetCodeAnalysisRequest> // NOT SUPPORTED VIA SIGV4
+export type ListCodeScanFindingsRequest = Readonly<CodeWhispererUserClient.ListCodeAnalysisFindingsRequest> // NOT SUPPORTED VIA SIGV4
 export type SupplementalContext = Readonly<
     CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
 >
-export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
-export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
-export type ListCodeScanFindingsResponse =
-    | CodeWhispererClient.ListCodeScanFindingsResponse
-    | CodeWhispererUserClient.ListCodeAnalysisFindingsResponse
-export type CreateUploadUrlResponse =
-    | CodeWhispererClient.CreateUploadUrlResponse
-    | CodeWhispererUserClient.CreateUploadUrlResponse
-export type CreateCodeScanResponse =
-    | CodeWhispererClient.CreateCodeScanResponse
-    | CodeWhispererUserClient.StartCodeAnalysisResponse
+export type ArtifactType = Readonly<CodeWhispererUserClient.ArtifactType>
+export type ArtifactMap = Readonly<Record<string, CodeWhispererUserClient.ArtifactType>>
+export type ListCodeScanFindingsResponse = CodeWhispererUserClient.ListCodeAnalysisFindingsResponse // NOT SUPPORTED VIA SIGV4
+export type CreateUploadUrlResponse = CodeWhispererUserClient.CreateUploadUrlResponse // NOT SUPPORTED VIA SIGV4
+export type CreateCodeScanResponse = CodeWhispererUserClient.StartCodeAnalysisResponse // NOT SUPPORTED VIA SIGV4
 export type Import = CodeWhispererUserClient.Import
-export type Imports = CodeWhispererUserClient.Imports
+export type Imports = CodeWhispererUserClient.Import[]
 export class DefaultCodeWhispererClient {
     private async createSdkClient(): Promise<CodeWhispererClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()

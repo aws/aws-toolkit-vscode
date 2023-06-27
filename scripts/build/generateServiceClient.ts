@@ -4,45 +4,41 @@
  */
 
 import * as child_process from 'child_process'
-import * as fs from 'fs-extra'
+import * as fs from 'fs/promises'
 import * as path from 'path'
 
-const repoRoot = process.cwd()
 /**
  * This script uses the AWS JS SDK to generate service clients where the client definition is contained within
- * this repo. Client definitions are added at the bottom of this script.
+ * this repo.
  */
 
-interface ServiceClientDefinition {
-    serviceName: string
-    serviceJsonPath: string
-}
-
-async function generateServiceClients(serviceClientDefinitions: ServiceClientDefinition[]): Promise<void> {
-    const tempJsSdkPath = path.join(repoRoot, 'node_modules', '.zzz-awssdk2')
+async function generateServiceClients(): Promise<void> {
+    const tempJsSdkPath = path.resolve(process.cwd(), 'node_modules', '.zzz-awssdk3')
     console.log(`Temp JS SDK Repo location: ${tempJsSdkPath}`)
-    console.log('Service Clients to Generate: ', serviceClientDefinitions.map(x => x.serviceName).join(', '))
 
     await cloneJsSdk(tempJsSdkPath)
-    await insertServiceClientsIntoJsSdk(tempJsSdkPath, serviceClientDefinitions)
+    await replaceModels(tempJsSdkPath, smithyModelPaths)
     await runTypingsGenerator(tempJsSdkPath)
-    await integrateServiceClients(tempJsSdkPath, serviceClientDefinitions)
+    await installGeneratedPackages(
+        tempJsSdkPath,
+        smithyModelPaths.map(p => path.basename(p).replace(path.extname(p), ''))
+    )
 
     console.log('Done generating service client(s)')
 }
 
 /** When cloning aws-sdk-js, we want to pull the version actually used in package-lock.json. */
-function getJsSdkVersion(): string {
-    const json = fs.readFileSync(path.resolve(repoRoot, 'package-lock.json')).toString()
-    const packageLock = JSON.parse(json)
+async function getJsSdkVersion(): Promise<string> {
+    const json = await fs.readFile(path.resolve(process.cwd(), 'package.json'), 'utf-8')
+    const packageJson = JSON.parse(json)
 
-    return packageLock['dependencies']['aws-sdk']['version']
+    return packageJson['sdk-codegen-version']
 }
 
 async function cloneJsSdk(dir: string): Promise<void> {
     // Output stderr while it clones so it doesn't look frozen
-    return new Promise<void>((resolve, reject) => {
-        const tag = `v${getJsSdkVersion()}`
+    return new Promise<void>(async (resolve, reject) => {
+        const tag = `v${await getJsSdkVersion()}`
 
         const gitHead = child_process.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
 
@@ -58,7 +54,7 @@ async function cloneJsSdk(dir: string): Promise<void> {
               //      git fetch origin tag v2.950.0 --no-tags
               ['-C', dir, 'fetch', 'origin', 'tag', tag, '--no-tags']
             : // Local repo does not exist: clone it.
-              ['clone', '-b', tag, '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', dir]
+              ['clone', '-b', tag, '--depth', '1', 'https://github.com/aws/aws-sdk-js-v3', dir]
 
         const gitCmd = child_process.execFile('git', gitArgs, { encoding: 'utf8' })
 
@@ -79,145 +75,86 @@ async function cloneJsSdk(dir: string): Promise<void> {
     })
 }
 
-async function insertServiceClientsIntoJsSdk(
-    jsSdkPath: string,
-    serviceClientDefinitions: ServiceClientDefinition[]
-): Promise<void> {
-    serviceClientDefinitions.forEach(serviceClientDefinition => {
-        const apiVersion = getApiVersion(serviceClientDefinition.serviceJsonPath)
-
-        // Copy the Service Json into the JS SDK for generation
-        const jsSdkServiceJsonPath = path.join(
-            jsSdkPath,
-            'apis',
-            `${serviceClientDefinition.serviceName.toLowerCase()}-${apiVersion}.normal.json`
-        )
-        fs.copyFileSync(serviceClientDefinition.serviceJsonPath, jsSdkServiceJsonPath)
-    })
-
-    const apiMetadataPath = path.join(jsSdkPath, 'apis', 'metadata.json')
-    await patchServicesIntoApiMetadata(
-        apiMetadataPath,
-        serviceClientDefinitions.map(x => x.serviceName)
-    )
-}
-
-interface ServiceJsonSchema {
-    metadata: {
-        apiVersion: string
+// Emitted models can contain duplicate shape definitions that are already defined
+// These need to be removed for the build to succeed
+const conflictingShapes = ['aws.auth#sigv4']
+function removeConflicts(model: { shapes: Record<string, any> }) {
+    const res = { ...model }
+    for (const [k, v] of Object.entries(model.shapes)) {
+        if (!conflictingShapes.includes(k)) {
+            res.shapes[k] = v
+        }
     }
+
+    return res
 }
 
-function getApiVersion(serviceJsonPath: string): string {
-    const json = fs.readFileSync(serviceJsonPath).toString()
-    const serviceJson = JSON.parse(json) as ServiceJsonSchema
+async function replaceModels(repoPath: string, modelPaths: string[]) {
+    const modelsDir = path.resolve(repoPath, 'codegen', 'sdk-codegen', 'aws-models')
+    const existingModels = await fs.readdir(modelsDir)
+    await Promise.all(existingModels.map(f => fs.rm(path.resolve(modelsDir, f))))
+    await Promise.all(
+        modelPaths.map(async m => {
+            const src = path.resolve(process.cwd(), m)
+            const dest = path.resolve(modelsDir, path.basename(src))
+            const model = removeConflicts(JSON.parse(await fs.readFile(src, 'utf-8')))
 
-    return serviceJson.metadata.apiVersion
-}
-
-interface ApiMetadata {
-    [key: string]: { name: string }
-}
-
-/**
- * Updates the JS SDK's api metadata to contain the provided services
- */
-async function patchServicesIntoApiMetadata(apiMetadataPath: string, serviceNames: string[]): Promise<void> {
-    console.log(`Patching services (${serviceNames.join(', ')}) into API Metadata...`)
-
-    const apiMetadataJson = fs.readFileSync(apiMetadataPath).toString()
-    const apiMetadata = JSON.parse(apiMetadataJson) as ApiMetadata
-
-    serviceNames.forEach(serviceName => {
-        apiMetadata[serviceName.toLowerCase()] = { name: serviceName }
-    })
-
-    fs.writeFileSync(apiMetadataPath, JSON.stringify(apiMetadata, undefined, 4))
+            return fs.writeFile(dest, JSON.stringify(model), 'utf-8')
+        })
+    )
 }
 
 /**
  * Generates service clients
  */
 async function runTypingsGenerator(repoPath: string): Promise<void> {
-    console.log('Generating service client typings...')
+    console.log('Generating service clients...')
+    const cwd = path.join(repoPath, 'codegen')
+    const gradleWrapperPath = path.resolve(cwd, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
 
-    const stdout = child_process.execFileSync('node', ['scripts/typings-generator.js'], {
-        encoding: 'utf8',
-        cwd: repoPath,
-    })
-    console.log(stdout)
+    child_process.execFileSync(gradleWrapperPath, [':sdk-codegen:build'], { cwd, stdio: 'inherit' })
 }
 
-/**
- * Copies the generated service clients into the repo
- */
-async function integrateServiceClients(
-    repoPath: string,
-    serviceClientDefinitions: ServiceClientDefinition[]
-): Promise<void> {
-    for (const serviceClientDefinition of serviceClientDefinitions) {
-        await integrateServiceClient(
-            repoPath,
-            serviceClientDefinition.serviceJsonPath,
-            serviceClientDefinition.serviceName
-        )
+async function installGeneratedPackages(repoPath: string, serviceNames: string[]) {
+    console.log('Installing packages...')
+    const buildPath = path.join(repoPath, 'codegen', 'sdk-codegen', 'build', 'smithyprojections', 'sdk-codegen')
+    const packages = serviceNames.map(name => `file://${path.resolve(buildPath, name, 'typescript-codegen')}`)
+
+    // This symlinks the generated packages into `node_modules`
+    //
+    // We save them as 'optional' because they're generated packages and should not
+    // block the normal installation process.
+    child_process.execFileSync('npm', ['i', '-O', ...packages], { stdio: 'inherit' })
+
+    function runNpmInPackage(location: string, args: string[]) {
+        return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+            child_process.execFile('npm', ['--prefix', location, ...args], (e, stdout, stderr) => {
+                if (e) {
+                    return reject(e)
+                }
+
+                resolve({ stdout, stderr })
+            })
+        })
     }
+
+    await Promise.all(
+        serviceNames.map(async name => {
+            const packageLocation = path.join('node_modules', '@aws-sdk', `client-${name.split('.').shift()!}`)
+            await runNpmInPackage(packageLocation, ['run', 'build:cjs'])
+            // 'i', '--only=dev'
+        })
+    )
 }
 
-/**
- * Copies the generated service client into the repo
- */
-async function integrateServiceClient(repoPath: string, serviceJsonPath: string, serviceName: string): Promise<void> {
-    const typingsFilename = `${serviceName.toLowerCase()}.d.ts`
-    const sourceClientPath = path.join(repoPath, 'clients', typingsFilename)
-    const destinationClientPath = path.join(path.dirname(serviceJsonPath), typingsFilename)
-
-    console.log(`Integrating ${typingsFilename} ...`)
-
-    fs.copyFileSync(sourceClientPath, destinationClientPath)
-
-    await sanitizeServiceClient(destinationClientPath)
-}
-
-/**
- * Patches the type file imports to be relative to the SDK module
- */
-async function sanitizeServiceClient(generatedClientPath: string): Promise<void> {
-    console.log('Altering Service Client to fit the codebase...')
-
-    let fileContents = fs.readFileSync(generatedClientPath).toString()
-
-    // Add a header stating the file is autogenerated
-    fileContents = `
-/**
- * THIS FILE IS AUTOGENERATED BY 'generateServiceClient.ts'.
- * DO NOT EDIT BY HAND.
- */
-
-${fileContents}
-    `
-
-    fileContents = fileContents.replace(/(import .* from.*)\.\.(.*)/g, '$1aws-sdk$2')
-
-    fs.writeFileSync(generatedClientPath, fileContents)
-}
+;(async () => {
+    await generateServiceClients()
+})()
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-;(async () => {
-    const serviceClientDefinitions: ServiceClientDefinition[] = [
-        {
-            serviceJsonPath: 'src/shared/telemetry/service-2.json',
-            serviceName: 'ClientTelemetry',
-        },
-        {
-            serviceJsonPath: 'src/codewhisperer/client/service-2.json',
-            serviceName: 'CodeWhispererClient',
-        },
-        {
-            serviceJsonPath: 'src/codewhisperer/client/user-service-2.json',
-            serviceName: 'CodeWhispererUserClient',
-        },
-    ]
-    await generateServiceClients(serviceClientDefinitions)
-})()
+const smithyModelPaths = [
+    'src/shared/telemetry/toolkittelemetry.2017-07-25.json',
+    'src/codewhisperer/client/codewhisperer.2022-06-15.json',
+    'src/codewhisperer/client/codewhispererruntime.2022-11-11.json',
+]
