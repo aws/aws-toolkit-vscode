@@ -6,6 +6,7 @@
 import * as child_process from 'child_process'
 import * as fs from 'fs/promises'
 import * as path from 'path'
+import { constants } from 'fs'
 
 /**
  * This script uses the AWS JS SDK to generate service clients where the client definition is contained within
@@ -41,8 +42,11 @@ async function cloneJsSdk(dir: string): Promise<void> {
         const tag = `v${await getJsSdkVersion()}`
 
         const gitHead = child_process.spawnSync('git', ['-C', dir, 'rev-parse', 'HEAD'])
-
-        const alreadyCloned = gitHead.status !== undefined && gitHead.status === 0
+        const exists = await fs.access(dir, constants.F_OK).then(
+            () => true,
+            () => false
+        )
+        const alreadyCloned = exists && gitHead.status !== undefined && gitHead.status === 0
         const msg = `${alreadyCloned ? 'Updating' : 'Cloning'} AWS JS SDK...
     tag: ${tag}
     git: status=${gitHead.status} output=${gitHead.output.toString()}`
