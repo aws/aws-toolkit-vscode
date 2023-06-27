@@ -54,7 +54,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
 
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
-        vscode.commands.executeCommand(showConnectionsPageCommand)
+        vscode.commands.executeCommand(showConnectionsPageCommand, 'addConnectionQuickPick')
         return undefined
     }
 

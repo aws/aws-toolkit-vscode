@@ -44,6 +44,7 @@ import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -332,13 +333,50 @@ export class AuthWebview extends VueWebview {
     isExtensionFirstUse(): boolean {
         return ExtensionUse.instance.isFirstUse()
     }
+    
+    #authSource?: AuthSource
+
+    // ----- Telemetry Stuff ------
+    setSource(source: AuthSource | undefined) {
+        this.#authSource = source
+    }
+
+    getSource(): AuthSource | undefined {
+        return this.#authSource
+    }
+
+    emitClosed() {
+        telemetry.auth_addConnection.emit({
+            source: this.getSource() ?? '',
+            result: 'Cancelled',
+            reason: 'Close button clicked',
+        })
+        this.setSource(undefined)
+    }
+}
+
+type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
+
+export function buildAuthAreas(...areas: AuthAreas[]): string {
+    return areas.join(',')
 }
 
 const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
-export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToShow?: ServiceItemId): Promise<void> {
+export type AuthSource =
+    | 'addConnectionQuickPick'
+    | 'firstStartup'
+    | 'codecatalystDeveloperTools'
+    | 'codewhispererDeveloperTools'
+    | 'unknown'
+
+export async function showAuthWebview(
+    ctx: vscode.ExtensionContext,
+    source: AuthSource,
+    serviceToShow?: ServiceItemId
+): Promise<void> {
     if (executeFallbackLogic(serviceToShow) !== undefined) {
         // Fallback logic was executed
         return
@@ -360,6 +398,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
         activePanel.server.setInitialService(serviceToShow)
     }
 
+    activePanel.server.setSource(source)
     activePanel.server.setupConnectionChangeEmitter()
 
     const webview = await activePanel!.show({
@@ -371,6 +410,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
     if (!subscriptions) {
         subscriptions = [
             webview.onDidDispose(() => {
+                activePanel?.server.emitClosed()
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
                 subscriptions = undefined

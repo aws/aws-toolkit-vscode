@@ -51,5 +51,5 @@ async function showManageConnectionsOnStartup() {
         return
     }
 
-    AuthCommandDeclarations.instance.declared.showConnectionsPage.execute()
+    AuthCommandDeclarations.instance.declared.showConnectionsPage.execute('firstStartup')
 }
