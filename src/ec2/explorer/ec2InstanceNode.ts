@@ -5,7 +5,7 @@
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { contextValueEc2 } from './ec2Node'
+import { contextValueEc2 } from './ec2ParentNode'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(public override readonly regionCode: string) {

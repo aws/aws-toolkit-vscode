@@ -26,7 +26,8 @@ import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
-import { Ec2ParentNode } from '../ec2/explorer/ec2Node'
+import { Ec2ParentNode } from '../ec2/explorer/ec2ParentNode'
+import { DevSettings } from '../shared/settings'
 
 const serviceCandidates = [
     {
@@ -46,6 +47,10 @@ const serviceCandidates = [
         createFn: (regionCode: string) => new CloudWatchLogsNode(regionCode),
     },
     {
+        serviceId: 'ec2',
+        createFn: (regionCode: string) => new Ec2ParentNode(regionCode),
+    },
+    {
         serviceId: 'ecr',
         createFn: (regionCode: string) => new EcrNode(new DefaultEcrClient(regionCode)),
     },
@@ -53,10 +58,7 @@ const serviceCandidates = [
         serviceId: 'ecs',
         createFn: (regionCode: string) => new TreeShim(getEcsRootNode(regionCode)),
     },
-    {
-        serviceId: 'ec2',
-        createFn: (regionCode: string) => new Ec2ParentNode(regionCode),
-    },
+
     {
         serviceId: 'iot',
         createFn: (regionCode: string) => new IotNode(new DefaultIotClient(regionCode)),
@@ -112,6 +114,9 @@ export class RegionNode extends AWSTreeNodeBase {
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
         for (const { serviceId, createFn } of serviceCandidates) {
+            if (serviceId === 'ec2' && !DevSettings.instance.isDevMode()) {
+                continue
+            }
             if (this.regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
                 const node = createFn(this.regionCode, partitionId)
                 if (node !== undefined) {
