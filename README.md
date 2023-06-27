@@ -4,7 +4,8 @@
 
 The AWS Toolkit for Visual Studio Code is an extension for connecting your IDE to your AWS resources:
 
--   Connect with IAM credentials, [IAM Identity Center (SSO)](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html),
+-   Connect with [IAM credentials](https://docs.aws.amazon.com/sdkref/latest/guide/access-users.html),
+    [IAM Identity Center (SSO)](https://docs.aws.amazon.com/singlesignon/latest/userguide/what-is.html),
     or [AWS Builder ID](https://docs.aws.amazon.com/signin/latest/userguide/differences-aws_builder_id.html)
 -   Use [CodeWhisperer](https://aws.amazon.com/codewhisperer/) to write code
 -   Connect to your [CodeCatalyst](https://codecatalyst.aws/) Dev Environments
