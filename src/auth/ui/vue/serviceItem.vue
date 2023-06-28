@@ -128,7 +128,7 @@ export default defineComponent({
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
     resourceExplorer: {
-        title: 'Explorer: View, modify, and deploy AWS Resources',
+        title: 'AWS Explorer: View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
     },
     codewhisperer: {

@@ -1,6 +1,6 @@
 <template>
     <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">Resource Explorer</div>
+        <div class="service-item-content-container-title">AWS Explorer</div>
 
         <div class="centered-items">
             <img
@@ -17,7 +17,7 @@
 
         <div>
             <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
-                >Learn more about the Resource Explorer.</a
+                >Learn more about the AWS Explorer.</a
             >
         </div>
 
