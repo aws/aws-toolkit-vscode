@@ -103,8 +103,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3>AWS Toolkit for VS Code</h3>
-                            <h1>Welcome & Getting Started</h1>
+                            <h3 style="margin-bottom: 0">AWS Toolkit for VS Code</h3>
+                            <h1 style="margin-top: 0">Welcome & Getting Started</h1>
                         </div>
                     </div>
                 </div>
