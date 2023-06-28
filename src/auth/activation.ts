@@ -10,10 +10,8 @@ import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
-import { dontShow } from '../shared/localizedText'
-import { DevSettings, PromptSettings } from '../shared/settings'
-import { waitUntil } from '../shared/utilities/timeoutUtils'
-import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
+import { DevSettings } from '../shared/settings'
+import { ExtensionUse } from '../shared/utilities/vsCodeUtils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -49,20 +47,9 @@ export async function initialize(
  * again on next startup.
  */
 async function showManageConnectionsOnStartup() {
-    await waitUntil(() => Promise.resolve(CodeCatalystAuthenticationProvider.instance), {
-        interval: 500,
-        timeout: 10000,
-    })
-    const settings = PromptSettings.instance
-
-    if (!(await settings.isPromptEnabled('manageConnections'))) {
+    if (!ExtensionUse.instance.isFirstUse()) {
         return
     }
 
     AuthCommandDeclarations.instance.declared.showConnectionsPage.execute()
-    vscode.window.showInformationMessage("Don't show Add Connections page on startup?", dontShow).then(selection => {
-        if (selection === dontShow) {
-            settings.disablePrompt('manageConnections')
-        }
-    })
 }

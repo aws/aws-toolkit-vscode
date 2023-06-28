@@ -128,15 +128,15 @@ export default defineComponent({
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
     resourceExplorer: {
-        title: 'View, modify, and deploy AWS Resources',
+        title: 'Explorer: View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
     },
     codewhisperer: {
-        title: 'AI-powered code suggestions from CodeWhisperer',
+        title: 'CodeWhisperer: AI-powered code suggestions',
         description: 'Build applications faster with your AI coding companion.',
     },
     codecatalyst: {
-        title: 'Launch CodeCatalyst Cloud-based Dev Environments',
+        title: 'CodeCatalytst: Launch Cloud-based Dev Environments',
         description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
 }
