@@ -344,7 +344,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
     activePanel.server.setupConnectionChangeEmitter()
 
     const webview = await activePanel!.show({
-        title: `Add Connection to ${getIdeProperties().company}`,
+        title: `${getIdeProperties().company} Toolkit: Welcome & Getting Started`,
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
         retainContextWhenHidden: true,
     })
