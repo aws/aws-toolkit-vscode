@@ -32,14 +32,12 @@
 
                 <div class="form-section">
                     <label class="input-title">Access Key</label>
-                    <label class="small-description">The access key</label>
                     <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
                     <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
                 </div>
 
                 <div class="form-section">
                     <label class="input-title">Secret Key</label>
-                    <label class="small-description">The secret key</label>
                     <input
                         v-model="data.aws_secret_access_key"
                         type="password"
