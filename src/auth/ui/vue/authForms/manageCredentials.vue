@@ -58,7 +58,7 @@
 import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
-import { SectionName, StaticProfile } from '../../../credentials/types'
+import { SectionName, StaticProfile, StaticProfileKeyErrorMessage } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
@@ -155,9 +155,9 @@ export default defineComponent({
             // pre submission
             this.canSubmit = false // disable submit button
 
-            this.errors.submit = '' // Makes UI flicker if same message as before (shows something changed)
-            this.errors.submit = await this.state.getAuthenticationError()
-            if (this.errors.submit) {
+            const error = await this.state.getAuthenticationError()
+            if (error) {
+                this.errors.submit = error.error
                 return // Do not allow submission since data fails authentication
             }
 
@@ -268,12 +268,8 @@ export class CredentialsState implements AuthStatus {
         }
     }
 
-    async getAuthenticationError(): Promise<string> {
-        const error = await client.getAuthenticatedCredentialsError(this._data)
-        if (!error) {
-            return ''
-        }
-        return error.error
+    async getAuthenticationError(): Promise<StaticProfileKeyErrorMessage | undefined> {
+        return client.getAuthenticatedCredentialsError(this._data)
     }
 
     async submitData(): Promise<boolean> {
