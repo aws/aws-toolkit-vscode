@@ -5,7 +5,7 @@
 
             <div v-if="stage === 'START'">
                 <div class="form-section">
-                    <div style="color: #cccccc">
+                    <div class="sub-text-color">
                         With AWS Builder ID, sign in for free without an AWS account.
                         <a :href="signUpUrl">Read more.</a>
                     </div>
@@ -25,7 +25,7 @@
 
             <div v-if="stage === 'CONNECTED'">
                 <div class="form-section">
-                    <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
+                    <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
                 </div>
 
                 <div class="form-section">

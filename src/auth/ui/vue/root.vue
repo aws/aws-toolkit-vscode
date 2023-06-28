@@ -24,24 +24,23 @@
                     display: flex;
                     flex-direction: row;
                     background-color: #28632b;
-                    color: #ffffff;
                     padding: 10px;
                 "
             >
-                <div class="icon icon-lg icon-vscode-check"></div>
+                <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
-                <div style="display: flex; flex-direction: row">
-                    Connected to&nbsp;<span style="font-weight: bold">{{ authFormDisplayName }}</span
+                <div style="display: flex; flex-direction: row; color: #ffffff">
+                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName }}</span
                     >! Switch between existing connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
-                        style="cursor: pointer"
+                        style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
                     >.
                 </div>
                 &nbsp;&nbsp;
                 <div
                     v-on:click="closeStatusBar"
-                    style="cursor: pointer"
+                    style="cursor: pointer; color: #ffffff"
                     class="icon icon-lg icon-vscode-chrome-close"
                 ></div>
             </div>
@@ -54,23 +53,22 @@
                     display: flex;
                     flex-direction: row;
                     background-color: #28632b;
-                    color: #ffffff;
                     padding: 10px;
                 "
             >
-                <div class="icon icon-lg icon-vscode-check"></div>
+                <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
-                <div style="display: flex; flex-direction: row">
+                <div style="display: flex; flex-direction: row; color: #ffffff">
                     IAM Credential(s) detected, but not selected. Choose one in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
-                        style="cursor: pointer"
+                        style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
                     >.
                 </div>
                 &nbsp;&nbsp;
                 <div
                     v-on:click="closeFoundCredentialStatusBar()"
-                    style="cursor: pointer"
+                    style="cursor: pointer; color: #ffffff"
                     class="icon icon-lg icon-vscode-chrome-close"
                 ></div>
             </div>
@@ -80,7 +78,7 @@
                 <!-- Logo + Title -->
                 <div>
                     <div style="display: flex; justify-content: left; align-items: center; gap: 25px">
-                        <div style="fill: white">
+                        <div id="logo">
                             <svg
                                 id="Layer_1"
                                 data-name="Layer 1"
