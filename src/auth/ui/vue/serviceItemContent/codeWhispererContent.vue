@@ -6,6 +6,7 @@
             <img
                 class="service-item-content-image"
                 src="https://docs.aws.amazon.com/images/codewhisperer/latest/userguide/images/cw-c9-function-from-comment.gif"
+                alt="CodeWhisperer example GIF"
             />
         </div>
 

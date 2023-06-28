@@ -6,6 +6,7 @@
             <img
                 class="service-item-content-image"
                 src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif"
+                alt="AWS Explorer example GIF"
             />
         </div>
 
