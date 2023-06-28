@@ -336,7 +336,7 @@ export class AuthWebview extends VueWebview {
     
     #authSource?: AuthSource
 
-    // ----- Telemetry Stuff ------
+    // -------------------- Telemetry Stuff --------------------
     setSource(source: AuthSource | undefined) {
         this.#authSource = source
     }
@@ -369,6 +369,9 @@ export type AuthUiClick =
     | 'auth_explorer_expandIAMIdentityCenter'
     | 'auth_explorer_expandIAMCredentials'
     | 'auth_codewhisperer_expandIAMIdentityCenter'
+    | 'auth_openAWSExplorer'
+    | 'auth_openCodeWhisperer'
+    | 'auth_openCodeCatalyst'
 
 type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 

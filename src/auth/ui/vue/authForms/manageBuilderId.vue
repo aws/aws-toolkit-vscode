@@ -40,7 +40,7 @@ import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { AuthStatus } from './shared.vue'
-import { AuthWebview } from '../show'
+import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 
@@ -96,6 +96,7 @@ export default defineComponent({
         },
         showNodeInView() {
             this.state.showNodeInView()
+            client.emitUiClick(this.state.uiClickOpenId)
         },
         getSignUpUrl() {
             return this.state.getSignUpUrl()
@@ -121,6 +122,7 @@ abstract class BaseBuilderIdState implements AuthStatus {
 
     abstract get name(): string
     abstract get id(): AuthFormId
+    abstract get uiClickOpenId(): AuthUiClick
     protected abstract _startBuilderIdSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
@@ -160,6 +162,10 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return 'builderIdCodeWhisperer'
     }
 
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeWhisperer'
+    }
+
     override isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererBuilderIdConnected()
     }
@@ -190,6 +196,10 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     override get id(): AuthFormId {
         return 'builderIdCodeCatalyst'
+    }
+
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeCatalyst'
     }
 
     override isAuthConnected(): Promise<boolean> {

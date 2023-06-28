@@ -67,7 +67,7 @@ import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
-import { AuthWebview } from '../show'
+import { AuthUiClick, AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
 import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
@@ -171,6 +171,7 @@ export default defineComponent({
         },
         showView() {
             this.state.showView()
+            client.emitUiClick(this.state.uiClickOpenId)
         },
     },
     watch: {
@@ -199,6 +200,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
 
     abstract get id(): AuthFormId
     abstract get name(): string
+    abstract get uiClickOpenId(): AuthUiClick
     protected abstract _startIdentityCenterSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
@@ -271,6 +273,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'CodeWhisperer'
     }
 
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeWhisperer'
+    }
+
     protected override async _startIdentityCenterSetup(): Promise<string> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startCWIdentityCenterSetup(data.startUrl, data.region)
@@ -304,6 +310,10 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
 
     override get name(): string {
         return 'Resource Explorer'
+    }
+
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openAWSExplorer'
     }
 
     override async stage(): Promise<IdentityCenterStage> {
