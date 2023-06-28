@@ -43,6 +43,7 @@ import { ServiceItemId } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
+import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -326,6 +327,10 @@ export class AuthWebview extends VueWebview {
 
     showConnectionQuickPick() {
         return promptAndUseConnection(Auth.instance)
+    }
+
+    isExtensionFirstUse(): boolean {
+        return ExtensionUse.instance.isFirstUse()
     }
 }
 

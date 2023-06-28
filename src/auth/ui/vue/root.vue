@@ -59,7 +59,7 @@
                 <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
-                    IAM Credential(s) detected, but not selected. Choose one in the&nbsp;<a
+                    IAM Credential(s) detected. Select one in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
@@ -195,7 +195,6 @@ export default defineComponent({
         // This handles auth changes triggered outside of this webview.
         client.onDidConnectionUpdate(() => {
             this.updateServiceConnections()
-            this.updateFoundCredentialButNotConnected()
             // This handles the edge case where we have selected a service item
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
@@ -343,7 +342,12 @@ export default defineComponent({
          * has not actively selected one.
          */
         async updateFoundCredentialButNotConnected() {
-            if ((await client.isCredentialExists()) && !(await client.isCredentialConnected())) {
+            const isFirstUse = await client.isExtensionFirstUse()
+            // Order these are called matters since isCredentialExists() pulls in local credentials
+            const isCredentialConnected = await client.isCredentialConnected()
+            const isCredentialExists = await client.isCredentialExists()
+
+            if (isFirstUse && (isCredentialConnected || isCredentialExists)) {
                 this.foundCredentialButNotConnected = true
             } else {
                 this.foundCredentialButNotConnected = false
