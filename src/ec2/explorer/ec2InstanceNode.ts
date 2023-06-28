@@ -7,6 +7,7 @@ import { getNameOfInstance } from '../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Instance } from '@aws-sdk/client-ec2'
+import { Ec2Selection } from '../utils'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -26,6 +27,13 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public setInstance(newInstance: Instance) {
         this.instance = newInstance
+    }
+
+    public toSelection(): Ec2Selection {
+        return {
+            region: this.regionCode,
+            instanceId: this.instanceId,
+        }
     }
 
     public get name(): string {
