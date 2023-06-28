@@ -378,7 +378,7 @@ export class AuthWebview extends VueWebview {
             (this.featureType !== featureType && this.authType !== authType)
         ) {
             // At this point a user WAS previously interacting with a different auth form
-            // and started interacting with a new one (hence credentialSourceId having a value).
+            // and started interacting with a new one (hence the new feature + auth type).
             // We can now indicate that the previous one was cancelled and clear out any state values
             this.emitAuthAttempt({
                 authType: this.authType,

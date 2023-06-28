@@ -71,9 +71,11 @@ import { AuthUiClick, AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
 import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
-import { AuthError } from '../types'
+import { AuthError, userCancelled } from '../types'
+import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
 
 const client = WebviewClientFactory.create<AuthWebview>()
+const startUrlId = 'startUrl'
 
 export type IdentityCenterStage = 'START' | 'WAITING_ON_USER' | 'CONNECTED'
 
@@ -128,22 +130,41 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
-            console.log(this.data.startUrl)
+            if (this.errors.startUrl || !this.data.startUrl) {
+                client.setInvalidInputFields([startUrlId])
+            }
+
             if (!this.data.startUrl) {
                 this.errors.startUrl = 'Cannot be empty.'
                 return
             }
+
+            await client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
 
             this.stage = 'WAITING_ON_USER'
             const authError = await this.state.startIdentityCenterSetup()
 
             if (authError) {
                 this.errors.submit = authError.text
+
+                const result: Result = authError.id === userCancelled ? 'Cancelled' : 'Failed'
+                client.emitAuthAttempt({
+                    featureType: this.state.featureType,
+                    authType: 'iamIdentityCenter',
+                    result,
+                    reason: authError.id,
+                })
+
                 // We do not run update() when there is a submission error
                 // so we do not trigger a full re-render, instead
                 // only updating this form
                 this.stage = await this.state.stage()
             } else {
+                client.emitAuthAttempt({
+                    featureType: this.state.featureType,
+                    authType: 'iamIdentityCenter',
+                    result: 'Succeeded',
+                })
                 await this.update('signIn')
             }
         },
@@ -205,6 +226,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     abstract get name(): string
     abstract get uiClickOpenId(): AuthUiClick
     abstract get uiClickSignout(): AuthUiClick
+    abstract get featureType(): AuthUiElement
     protected abstract _startIdentityCenterSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
@@ -285,6 +307,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'auth_codewhisperer_signoutIdentityCenter'
     }
 
+    override get featureType(): AuthUiElement {
+        return 'codewhisperer'
+    }
+
     protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startCWIdentityCenterSetup(data.startUrl, data.region)
@@ -326,6 +352,10 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
 
     override get uiClickSignout(): AuthUiClick {
         return 'auth_explorer_signoutIdentityCenter'
+    }
+
+    override get featureType(): AuthUiElement {
+        return 'awsResource'
     }
 
     override async stage(): Promise<IdentityCenterStage> {
