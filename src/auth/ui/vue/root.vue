@@ -103,7 +103,7 @@
                             </svg>
                         </div>
                         <div>
-                            <h3>AWS Toolkit for VSCode</h3>
+                            <h3>AWS Toolkit for VS Code</h3>
                             <h1>Welcome & Getting Started</h1>
                         </div>
                     </div>
@@ -113,7 +113,7 @@
                 <div class="flex-container">
                     <div id="left-column">
                         <div>
-                            <h1>Select a feature to begin</h1>
+                            <h2>Select a feature to begin</h2>
                             <ul class="service-item-list" v-for="item in serviceItems">
                                 <ServiceItem
                                     :title="getServiceItemProps(item.id).title"
