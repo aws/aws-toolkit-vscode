@@ -43,7 +43,8 @@ import { AuthStatus } from './shared.vue'
 import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
-import { AuthError } from '../types'
+import { AuthError, userCancelled } from '../types'
+import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -78,12 +79,26 @@ export default defineComponent({
     methods: {
         async startSignIn() {
             this.stage = 'WAITING_ON_USER'
+            client.startAuthFormInteraction(this.state.featureType, 'awsId')
             const authError = await this.state.startBuilderIdSetup()
 
             if (authError) {
                 this.error = authError.text
+
+                const result: Result = authError.id === userCancelled ? 'Cancelled' : 'Failed'
+                client.emitAuthAttempt({
+                    featureType: this.state.featureType,
+                    authType: 'awsId',
+                    result,
+                    reason: authError.id,
+                })
                 this.stage = await this.state.stage()
             } else {
+                client.emitAuthAttempt({
+                    featureType: this.state.featureType,
+                    authType: 'awsId',
+                    result: 'Succeeded',
+                })
                 await this.update('signIn')
             }
         },
@@ -128,6 +143,7 @@ abstract class BaseBuilderIdState implements AuthStatus {
     abstract get id(): AuthFormId
     abstract get uiClickOpenId(): AuthUiClick
     abstract get uiClickSignout(): AuthUiClick
+    abstract get featureType(): AuthUiElement
     protected abstract _startBuilderIdSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
@@ -175,6 +191,10 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return 'auth_codewhisperer_signoutBuilderId'
     }
 
+    override get featureType(): AuthUiElement {
+        return 'codewhisperer'
+    }
+
     override isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererBuilderIdConnected()
     }
@@ -213,6 +233,10 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     override get uiClickSignout(): AuthUiClick {
         return 'auth_codecatalyst_signoutBuilderId'
+    }
+
+    override get featureType(): AuthUiElement {
+        return 'codecatalyst'
     }
 
     override isAuthConnected(): Promise<boolean> {

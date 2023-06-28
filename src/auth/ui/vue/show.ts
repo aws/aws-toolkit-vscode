@@ -39,12 +39,12 @@ import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
 import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
-import { AuthError, ServiceItemId } from './types'
+import { AuthError, ServiceItemId, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
-import { telemetry } from '../../../shared/telemetry/telemetry'
+import { AuthUiElement, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -203,7 +203,7 @@ export class AuthWebview extends VueWebview {
                 CancellationError.isUserCancelled(e) ||
                 (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
             ) {
-                return { id: 'userCancelled', text: 'Setup cancelled.' }
+                return { id: userCancelled, text: 'Setup cancelled.' }
             }
 
             if (
@@ -340,12 +340,63 @@ export class AuthWebview extends VueWebview {
     #authSource?: AuthSource
 
     // -------------------- Telemetry Stuff --------------------
+
+    async getConnectionCount(): Promise<number> {
+        return (await Auth.instance.listConnections()).length
+    }
+
     setSource(source: AuthSource | undefined) {
         this.#authSource = source
     }
 
     getSource(): AuthSource | undefined {
         return this.#authSource
+    }
+
+    private unlockedFeatures: ServiceItemId[] = []
+
+    setUnlockedFeatures(unlocked: ServiceItemId[]) {
+        this.unlockedFeatures = unlocked
+    }
+
+    getUnlockedFeatures() {
+        return this.unlockedFeatures
+    }
+
+    private invalidFields: string[] | undefined
+    setInvalidInputFields(fields: string[]) {
+        this.invalidFields = fields
+    }
+
+    private authType: CredentialSourceId | undefined
+    private featureType: AuthUiElement | undefined
+
+    startAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
+        // Check if a previous auth interaction existed and that the new one is not the same as it
+        if (
+            (this.featureType !== undefined && this.authType !== undefined) &&
+            (this.featureType !== featureType && this.authType !== authType)
+        ) {
+            // At this point a user WAS previously interacting with a different auth form
+            // and started interacting with a new one (hence credentialSourceId having a value).
+            // We can now indicate that the previous one was cancelled and clear out any state values
+            this.emitAuthAttempt({
+                authType: this.authType,
+                featureType: this.featureType,
+                result: 'Cancelled',
+                invalidFields: this.invalidFields,
+            })
+
+            this.invalidFields = undefined
+        }
+
+        this.authType = authType
+        this.featureType = featureType
+    }
+
+    endAuthFormInteraction() {
+        this.authType = undefined
+        this.featureType = undefined
     }
 
     emitClosed() {
@@ -360,6 +411,34 @@ export class AuthWebview extends VueWebview {
         telemetry.ui_click.emit({
             elementId: id,
         })
+    }
+
+    async emitAuthAttempt(args: {
+        authType: CredentialSourceId
+        featureType: AuthUiElement
+        result: Result
+        reason?: string
+        invalidFields?: string[]
+    }) {
+        // The inclusion of 'credentialSourceId' + 'authUiElement' implies a form completion was attempted
+        // Depending on the 'result' field, it will indicate the success
+        // The 'reason' will provide more specific details for the result
+
+        telemetry.auth_addConnection.emit({
+            source: this.#authSource ?? '',
+            credentialSourceId: args.authType,
+            authUiElement: args.featureType,
+            result: args.result,
+            authConnectionsCount: await this.getConnectionCount(),
+            reason: args.reason,
+            invalidInputFields: args.invalidFields ? builderCommaDelimitedString(args.invalidFields) : undefined,
+        })
+
+        if (args.result === 'Succeeded') {
+            // Do this so subsequent forms do not assume that this was Cancelled,
+            // meaning the user started the auth process but then gave up.
+            this.endAuthFormInteraction()
+        }
     }
 }
 
@@ -381,10 +460,11 @@ export type AuthUiClick =
     | 'auth_codecatalyst_signoutBuilderId'
     | 'auth_explorer_signoutIdentityCenter'
 
-type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
+// type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-export function buildAuthAreas(...areas: AuthAreas[]): string {
-    return areas.join(',')
+export function builderCommaDelimitedString(strings: string[]): string {
+    const sorted = Array.from(new Set(strings)).sort((a, b) => a.localeCompare(b))
+    return sorted.join(',')
 }
 
 const Panel = VueWebview.compilePanel(AuthWebview)

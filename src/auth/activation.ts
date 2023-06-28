@@ -99,11 +99,11 @@ async function emitFirstStartupMetrics() {
         reason: 'firstStartup',
     })
 
-    const allConnections = await Auth.instance.listConnections()
-    const credentialsConnections = allConnections.filter(isIamConnection)
-
     // Metrics that are emitted if existing connections are detected
+    const allConnections = await Auth.instance.listConnections()
     const reason = 'alreadyHadAuth'
+
+    const credentialsConnections = allConnections.filter(isIamConnection)
     if (credentialsConnections.length > 0) {
         telemetry.auth_addConnection.emit({
             source: 'firstStartup' as AuthSource,

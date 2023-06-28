@@ -216,6 +216,7 @@ export default defineComponent({
             const unlocked = this.unlockedItemIds.map(id => {
                 return { status: 'UNLOCKED' as ServiceStatus, id }
             })
+            client.setUnlockedFeatures(unlocked.map(id => id.id))
             const locked = this.lockedItemIds.map(id => {
                 return { status: 'LOCKED' as ServiceStatus, id }
             })
