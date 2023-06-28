@@ -6,14 +6,16 @@
 import { getNameOfInstance } from '../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { contextValueEc2 } from './ec2ParentNode'
 import { Instance } from '@aws-sdk/client-ec2'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(public override readonly regionCode: string, private instance: Instance) {
+    public constructor(
+        public override readonly regionCode: string,
+        private instance: Instance,
+        public override readonly contextValue: string
+    ) {
         super('')
         this.update(instance)
-        this.contextValue = contextValueEc2
     }
 
     public update(newInstance: Instance) {
