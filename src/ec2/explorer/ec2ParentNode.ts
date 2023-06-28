@@ -40,7 +40,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         updateInPlace(
             this.ec2InstanceNodes,
             ec2Instances.keys(),
-            key => this.ec2InstanceNodes.get(key)!.setInstance(ec2Instances.get(key)!),
+            key => this.ec2InstanceNodes.get(key)!.update(ec2Instances.get(key)!),
             key => new Ec2InstanceNode(this.regionCode, ec2Instances.get(key)!)
         )
     }
