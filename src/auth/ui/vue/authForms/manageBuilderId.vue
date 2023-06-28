@@ -6,8 +6,8 @@
             <div v-if="stage === 'START'">
                 <div class="form-section">
                     <div class="sub-text-color">
-                        With AWS Builder ID, sign in for free without an AWS account.
-                        <a :href="signUpUrl">Read more.</a>
+                        {{ getDescription() }}
+                        <a :href="signUpUrl">Learn more.</a>
                     </div>
                 </div>
 
@@ -100,6 +100,9 @@ export default defineComponent({
         getSignUpUrl() {
             return this.state.getSignUpUrl()
         },
+        getDescription() {
+            return this.state.getDescription()
+        },
         async updateSubmitButtonText() {
             if (!(await isBuilderIdConnected())) {
                 this.submitButtonText = 'Sign up or Sign in'
@@ -141,6 +144,10 @@ abstract class BaseBuilderIdState implements AuthStatus {
 
     getSignUpUrl(): string {
         return 'https://docs.aws.amazon.com/signin/latest/userguide/sign-in-aws_builder_id.html'
+    }
+
+    getDescription(): string {
+        return 'With AWS Builder ID, sign in for free without an AWS account.'
     }
 }
 
@@ -201,6 +208,14 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     static get instance(): CodeCatalystBuilderIdState {
         return (this.#instance ??= new CodeCatalystBuilderIdState())
+    }
+
+    override getDescription(): string {
+        return 'You must have an existing CodeCatalyst Space connected to your AWS Builder ID.'
+    }
+
+    override getSignUpUrl(): string {
+        return 'https://aws.amazon.com/codecatalyst/'
     }
 }
 
