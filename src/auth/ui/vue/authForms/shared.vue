@@ -8,10 +8,10 @@ import { CodeWhispererIdentityCenterState, ExplorerIdentityCenterState } from '.
  */
 const authFormsState = {
     credentials: new CredentialsState() as CredentialsState,
-    builderIdCodeWhisperer: new CodeWhispererBuilderIdState(),
-    builderIdCodeCatalyst: new CodeCatalystBuilderIdState(),
+    builderIdCodeWhisperer: CodeWhispererBuilderIdState.instance,
+    builderIdCodeCatalyst: CodeCatalystBuilderIdState.instance,
     identityCenterCodeWhisperer: new CodeWhispererIdentityCenterState(),
-    identityCenterExplorer: new ExplorerIdentityCenterState()
+    identityCenterExplorer: new ExplorerIdentityCenterState(),
 } as const
 
 export interface AuthStatus {
