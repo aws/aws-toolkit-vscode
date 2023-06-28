@@ -8,7 +8,7 @@ import { ServiceItemId } from '../types'
 
 /** Maps a service item id to its respective component */
 const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
-    resourceExplorer: AwsExplorerContent,
+    awsExplorer: AwsExplorerContent,
     codecatalyst: CodeCatalystContent,
     codewhisperer: CodeWhispererContent,
 }
@@ -20,7 +20,7 @@ const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
  * the current service.
  */
 export const serviceItemsAuthStatus: Readonly<Record<ServiceItemId, AuthStatus>> = {
-    resourceExplorer: new ResourceExplorerContentState(),
+    awsExplorer: new ResourceExplorerContentState(),
     codecatalyst: new CodeCatalystContentState(),
     codewhisperer: new CodeWhispererContentState(),
 } as const

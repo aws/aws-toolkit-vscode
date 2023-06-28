@@ -148,9 +148,10 @@ export default defineComponent({
             })
         },
         async submitData() {
-            if (this.setCannotBeEmptyErrors()) {
+            if (this.setCannotBeEmptyErrors() || (await this.state.getSubmissionErrors())) {
                 return
             }
+
             // pre submission
             this.canSubmit = false // disable submit button
 
@@ -277,7 +278,9 @@ export class CredentialsState implements AuthStatus {
 
     async submitData(): Promise<boolean> {
         const data = await this.getSubmittableDataOrThrow()
-        return client.trySubmitCredentials(data.profileName, data)
+        const submit = client.trySubmitCredentials(data.profileName, data)
+        this.clearData()
+        return submit
     }
 
     private async getSubmittableDataOrThrow(): Promise<CredentialsProfile> {
@@ -287,6 +290,14 @@ export class CredentialsState implements AuthStatus {
             throw new Error(`authWebview: data should be valid at this point, but is invalid: ${errors}`)
         }
         return this._data as CredentialsProfile
+    }
+
+    private clearData() {
+        this._data = {
+            profileName: '',
+            aws_access_key_id: '',
+            aws_secret_access_key: '',
+        }
     }
 }
 </script>

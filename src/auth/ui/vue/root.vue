@@ -304,8 +304,8 @@ export default defineComponent({
         },
         async updateServiceConnections() {
             return Promise.all([
-                this.serviceItemsAuthStatus.resourceExplorer.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('resourceExplorer', isConnected)
+                this.serviceItemsAuthStatus.awsExplorer.isAuthConnected().then(isConnected => {
+                    this.updateServiceLock('awsExplorer', isConnected)
                 }),
                 this.serviceItemsAuthStatus.codewhisperer.isAuthConnected().then(isConnected => {
                     this.updateServiceLock('codewhisperer', isConnected)

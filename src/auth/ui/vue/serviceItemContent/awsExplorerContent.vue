@@ -16,8 +16,9 @@
         </div>
 
         <div>
-            <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
-               v-on:click="emitUiClick('auth_learnMoreAWSResources')"
+            <a
+                href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
+                v-on:click="emitUiClick('auth_learnMoreAWSResources')"
                 >Learn more about the AWS Explorer.</a
             >
         </div>
@@ -154,7 +155,7 @@ export default defineComponent({
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
             this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
-            this.emitAuthConnectionUpdated('resourceExplorer', args)
+            this.emitAuthConnectionUpdated('awsExplorer', args)
         },
         toggleShowCredentials() {
             this.isCredentialsShown = !this.isCredentialsShown
