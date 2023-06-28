@@ -42,6 +42,7 @@ import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
+import { trustedDomainCancellation } from '../../sso/model'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -196,15 +197,28 @@ export class AuthWebview extends VueWebview {
             await setupFunc()
             return ''
         } catch (e) {
-            // This scenario will most likely be due to failing to connect from user error.
-            // When the sso login process fails (eg: wrong url) they will come back
-            // to the IDE and cancel the 'waiting for browser response'
             if (
                 CancellationError.isUserCancelled(e) ||
                 (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
             ) {
                 return 'Setup cancelled.'
             }
+
+            if (
+                e instanceof ToolkitError &&
+                (e.code === trustedDomainCancellation || e.cause?.name === trustedDomainCancellation)
+            ) {
+                return `Must 'Open' or 'Configure Trusted Domains', unless you cancelled.`
+            }
+
+            const invalidRequestException = 'InvalidRequestException'
+            if (
+                (e instanceof Error && e.name === invalidRequestException) ||
+                (e instanceof ToolkitError && e.cause?.name === invalidRequestException)
+            ) {
+                return `Failed, maybe verify your Start URL?`
+            }
+
             logger.error('Failed to setup.', e)
             return 'Failed to setup.'
         }
