@@ -192,6 +192,7 @@ export default defineComponent({
         },
         editCredentialsFile() {
             client.editCredentialsFile()
+            client.emitUiClick('auth_editCredentials')
         },
         showResourceExplorer() {
             client.showResourceExplorer()

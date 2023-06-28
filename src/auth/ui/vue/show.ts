@@ -372,6 +372,7 @@ export type AuthUiClick =
     | 'auth_openAWSExplorer'
     | 'auth_openCodeWhisperer'
     | 'auth_openCodeCatalyst'
+    | 'auth_editCredentials'
 
 type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
