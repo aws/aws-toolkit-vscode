@@ -182,7 +182,8 @@
                 "customizationArn": { "shape": "ResourceArn" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "acceptedCharacterCount": { "shape": "Integer" },
-                "totalCharacterCount": { "shape": "Integer" }
+                "totalCharacterCount": { "shape": "Integer" },
+                "timestamp": { "shape": "Timestamp" }
             }
         },
         "Completion": {
@@ -614,6 +615,7 @@
             "exception": true,
             "retryable": { "throttling": false }
         },
+        "Timestamp": { "type": "timestamp" },
         "UUID": {
             "type": "string",
             "max": 36,
@@ -641,7 +643,8 @@
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "completionType": { "shape": "CompletionType" },
                 "suggestionState": { "shape": "SuggestionState" },
-                "recommendationLatencyMilliseconds": { "shape": "Double" }
+                "recommendationLatencyMilliseconds": { "shape": "Double" },
+                "timestamp": { "shape": "Timestamp" }
             }
         },
         "ValidationException": {

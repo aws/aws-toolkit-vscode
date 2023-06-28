@@ -77,7 +77,7 @@ export class AuthUtil {
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
-                if (!this.isConnectionExpired()) {
+                if (!this.isConnectionExpired() && this.usingEnterpriseSSO) {
                     vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
                 }
             } else {

@@ -142,6 +142,7 @@ export class CodeWhispererCodeCoverageTracker {
                         },
                         acceptedCharacterCount: acceptedTokens,
                         totalCharacterCount: totalTokens,
+                        timestamp: new Date(Date.now()),
                     },
                 },
             })

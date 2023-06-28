@@ -326,6 +326,7 @@ export class TelemetryHelper {
                         suggestionState: aggregatedSuggestionState,
                         recommendationLatencyMilliseconds:
                             this.firstSuggestionShowTime - CodeWhispererStates.instance.invokeSuggestionStartTime,
+                        timestamp: new Date(Date.now()),
                     },
                 },
             })
