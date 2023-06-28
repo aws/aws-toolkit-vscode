@@ -147,6 +147,7 @@ export default defineComponent({
         },
         async signout(): Promise<void> {
             await this.state.signout()
+            client.emitUiClick(this.state.uiClickSignout)
             this.update('signOut')
         },
         async update(cause?: ConnectionUpdateCause) {
@@ -201,6 +202,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     abstract get id(): AuthFormId
     abstract get name(): string
     abstract get uiClickOpenId(): AuthUiClick
+    abstract get uiClickSignout(): AuthUiClick
     protected abstract _startIdentityCenterSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
@@ -277,6 +279,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'auth_openCodeWhisperer'
     }
 
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codewhisperer_signoutIdentityCenter'
+    }
+
     protected override async _startIdentityCenterSetup(): Promise<string> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startCWIdentityCenterSetup(data.startUrl, data.region)
@@ -314,6 +320,10 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
 
     override get uiClickOpenId(): AuthUiClick {
         return 'auth_openAWSExplorer'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_explorer_signoutIdentityCenter'
     }
 
     override async stage(): Promise<IdentityCenterStage> {

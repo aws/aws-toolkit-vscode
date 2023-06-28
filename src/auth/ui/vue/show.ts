@@ -373,6 +373,10 @@ export type AuthUiClick =
     | 'auth_openCodeWhisperer'
     | 'auth_openCodeCatalyst'
     | 'auth_editCredentials'
+    | 'auth_codewhisperer_signoutBuilderId'
+    | 'auth_codewhisperer_signoutIdentityCenter'
+    | 'auth_codecatalyst_signoutBuilderId'
+    | 'auth_explorer_signoutIdentityCenter'
 
 type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 

@@ -92,6 +92,7 @@ export default defineComponent({
         },
         async signout() {
             await this.state.signout()
+            client.emitUiClick(this.state.uiClickSignout)
             this.update('signOut')
         },
         showNodeInView() {
@@ -123,6 +124,7 @@ abstract class BaseBuilderIdState implements AuthStatus {
     abstract get name(): string
     abstract get id(): AuthFormId
     abstract get uiClickOpenId(): AuthUiClick
+    abstract get uiClickSignout(): AuthUiClick
     protected abstract _startBuilderIdSetup(): Promise<string>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
@@ -166,6 +168,10 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return 'auth_openCodeWhisperer'
     }
 
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codewhisperer_signoutBuilderId'
+    }
+
     override isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererBuilderIdConnected()
     }
@@ -200,6 +206,10 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     override get uiClickOpenId(): AuthUiClick {
         return 'auth_openCodeCatalyst'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codecatalyst_signoutBuilderId'
     }
 
     override isAuthConnected(): Promise<boolean> {
