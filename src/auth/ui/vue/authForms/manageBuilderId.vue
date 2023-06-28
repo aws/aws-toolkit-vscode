@@ -43,6 +43,7 @@ import { AuthStatus } from './shared.vue'
 import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthError } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -77,8 +78,10 @@ export default defineComponent({
     methods: {
         async startSignIn() {
             this.stage = 'WAITING_ON_USER'
-            this.error = await this.state.startBuilderIdSetup()
-            if (this.error) {
+            const authError = await this.state.startBuilderIdSetup()
+
+            if (authError) {
+                this.error = authError.text
                 this.stage = await this.state.stage()
             } else {
                 await this.update('signIn')
@@ -125,13 +128,13 @@ abstract class BaseBuilderIdState implements AuthStatus {
     abstract get id(): AuthFormId
     abstract get uiClickOpenId(): AuthUiClick
     abstract get uiClickSignout(): AuthUiClick
-    protected abstract _startBuilderIdSetup(): Promise<string>
+    protected abstract _startBuilderIdSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
 
     protected constructor() {}
 
-    async startBuilderIdSetup(): Promise<string> {
+    async startBuilderIdSetup(): Promise<AuthError | undefined> {
         this._stage = 'WAITING_ON_USER'
         return this._startBuilderIdSetup()
     }
@@ -176,7 +179,7 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return client.isCodeWhispererBuilderIdConnected()
     }
 
-    protected override _startBuilderIdSetup(): Promise<string> {
+    protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeWhispererBuilderIdSetup()
     }
 
@@ -216,7 +219,7 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
         return client.isCodeCatalystBuilderIdConnected()
     }
 
-    protected override _startBuilderIdSetup(): Promise<string> {
+    protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeCatalystBuilderIdSetup()
     }
 

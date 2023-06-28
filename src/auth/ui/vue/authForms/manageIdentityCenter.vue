@@ -71,6 +71,7 @@ import { AuthUiClick, AuthWebview } from '../show'
 import { AuthStatus } from './shared.vue'
 import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
+import { AuthError } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -134,9 +135,10 @@ export default defineComponent({
             }
 
             this.stage = 'WAITING_ON_USER'
-            this.errors.submit = await this.state.startIdentityCenterSetup()
+            const authError = await this.state.startIdentityCenterSetup()
 
-            if (this.errors.submit) {
+            if (authError) {
+                this.errors.submit = authError.text
                 // We do not run update() when there is a submission error
                 // so we do not trigger a full re-render, instead
                 // only updating this form
@@ -203,7 +205,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     abstract get name(): string
     abstract get uiClickOpenId(): AuthUiClick
     abstract get uiClickSignout(): AuthUiClick
-    protected abstract _startIdentityCenterSetup(): Promise<string>
+    protected abstract _startIdentityCenterSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
     abstract signout(): Promise<void>
@@ -221,7 +223,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
      *
      * @returns An error message if it exist, otherwise empty string if no error.
      */
-    async startIdentityCenterSetup(): Promise<string> {
+    async startIdentityCenterSetup(): Promise<AuthError | undefined> {
         this._stage = 'WAITING_ON_USER'
         const error = await this._startIdentityCenterSetup()
 
@@ -283,7 +285,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'auth_codewhisperer_signoutIdentityCenter'
     }
 
-    protected override async _startIdentityCenterSetup(): Promise<string> {
+    protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startCWIdentityCenterSetup(data.startUrl, data.region)
     }
@@ -332,7 +334,7 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
         return 'START'
     }
 
-    protected override async _startIdentityCenterSetup(): Promise<string> {
+    protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
         const data = await this.getSubmittableDataOrThrow()
         return client.createIdentityCenterConnection(data.startUrl, data.region)
     }

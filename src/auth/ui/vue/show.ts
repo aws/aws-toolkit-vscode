@@ -39,7 +39,7 @@ import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
 import { DevSettings } from '../../../shared/settings'
 import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
-import { ServiceItemId } from './types'
+import { AuthError, ServiceItemId } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
@@ -123,11 +123,11 @@ export class AuthWebview extends VueWebview {
         return globals.awsContextCommands.onCommandEditCredentials()
     }
 
-    async startCodeWhispererBuilderIdSetup(): Promise<string> {
+    async startCodeWhispererBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup(() => awsIdSignIn())
     }
 
-    async startCodeCatalystBuilderIdSetup(): Promise<string> {
+    async startCodeCatalystBuilderIdSetup(): Promise<AuthError | undefined> {
         return this.ssoSetup(() => setupCodeCatalystBuilderId(this.codeCatalystAuth))
     }
 
@@ -176,7 +176,7 @@ export class AuthWebview extends VueWebview {
     /**
      * Creates an Identity Center connection but does not 'use' it.
      */
-    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']): Promise<string> {
+    async createIdentityCenterConnection(startUrl: string, regionId: Region['id']): Promise<AuthError | undefined> {
         const setupFunc = async () => {
             const ssoProfile = createSsoProfile(startUrl, regionId)
             await Auth.instance.createConnection(ssoProfile)
@@ -194,23 +194,26 @@ export class AuthWebview extends VueWebview {
         return this.ssoSetup(setupFunc)
     }
 
-    private async ssoSetup(setupFunc: () => Promise<any>): Promise<string> {
+    private async ssoSetup(setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
         try {
             await setupFunc()
-            return ''
+            return
         } catch (e) {
             if (
                 CancellationError.isUserCancelled(e) ||
                 (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
             ) {
-                return 'Setup cancelled.'
+                return { id: 'userCancelled', text: 'Setup cancelled.' }
             }
 
             if (
                 e instanceof ToolkitError &&
                 (e.code === trustedDomainCancellation || e.cause?.name === trustedDomainCancellation)
             ) {
-                return `Must 'Open' or 'Configure Trusted Domains', unless you cancelled.`
+                return {
+                    id: 'trustedDomainCancellation',
+                    text: `Must 'Open' or 'Configure Trusted Domains', unless you cancelled.`,
+                }
             }
 
             const invalidRequestException = 'InvalidRequestException'
@@ -218,11 +221,11 @@ export class AuthWebview extends VueWebview {
                 (e instanceof Error && e.name === invalidRequestException) ||
                 (e instanceof ToolkitError && e.cause?.name === invalidRequestException)
             ) {
-                return `Failed, maybe verify your Start URL?`
+                return { id: 'badStartUrl', text: `Failed, maybe verify your Start URL?` }
             }
 
             logger.error('Failed to setup.', e)
-            return 'Failed to setup.'
+            return { id: 'defaultFailure', text: 'Failed to setup.' }
         }
     }
 
@@ -333,7 +336,7 @@ export class AuthWebview extends VueWebview {
     isExtensionFirstUse(): boolean {
         return ExtensionUse.instance.isFirstUse()
     }
-    
+
     #authSource?: AuthSource
 
     // -------------------- Telemetry Stuff --------------------
