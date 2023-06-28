@@ -51,15 +51,8 @@ export class AuthWebview extends VueWebview {
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
-    private codeCatalystAuth: CodeCatalystAuthenticationProvider
-
-    constructor() {
+    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
         super()
-        const ccAuth = CodeCatalystAuthenticationProvider.instance
-        if (ccAuth === undefined) {
-            throw new ToolkitError('Code Catalyst auth instance singleton was not created externally yet.')
-        }
-        this.codeCatalystAuth = ccAuth
     }
 
     async getProfileNameError(profileName?: SectionName, required = true): Promise<string | undefined> {
@@ -284,6 +277,7 @@ export class AuthWebview extends VueWebview {
             CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection,
             Auth.instance.onDidChangeActiveConnection,
             Auth.instance.onDidChangeConnectionState,
+            Auth.instance.onDidUpdateConnection,
         ]
 
         // The event handler in the frontend refreshes all connection statuses
@@ -339,7 +333,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
         wasInitialServiceSet = true
     }
 
-    activePanel ??= new Panel(ctx)
+    activePanel ??= new Panel(ctx, CodeCatalystAuthenticationProvider.fromContext(ctx))
 
     if (!wasInitialServiceSet && serviceToShow) {
         // Webview does not exist yet, preemptively set
