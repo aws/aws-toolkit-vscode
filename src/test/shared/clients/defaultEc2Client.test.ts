@@ -56,10 +56,10 @@ describe('extractInstancesFromReservations', function () {
             .promise()
         assert.deepStrictEqual(
             [
-                { instanceId: 'id1', name: 'name1' },
-                { instanceId: 'id2', name: 'name2' },
-                { instanceId: 'id3', name: 'name3' },
-                { instanceId: 'id4', name: 'name4' },
+                { InstanceId: 'id1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+                { InstanceId: 'id2', name: 'name2', Tags: [{ Key: 'Name', Value: 'name2' }] },
+                { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+                { InstanceId: 'id4', name: 'name4', Tags: [{ Key: 'Name', Value: 'name4' }] },
             ],
             actualResult
         )
@@ -90,6 +90,9 @@ describe('extractInstancesFromReservations', function () {
             const actualResult = await client
                 .extractInstancesFromReservations(intoCollection([testReservationsList]))
                 .promise()
-            assert.deepStrictEqual([{ instanceId: 'id1' }, { instanceId: 'id3', name: 'name3' }], actualResult)
+            assert.deepStrictEqual(
+                [{ InstanceId: 'id1' }, { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] }],
+                actualResult
+            )
         })
 })

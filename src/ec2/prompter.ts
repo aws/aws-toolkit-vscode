@@ -11,8 +11,8 @@ import { Ec2Instance } from '../shared/clients/ec2Client'
 function asQuickpickItem(instance: Ec2Instance): DataQuickPickItem<string> {
     return {
         label: '$(terminal) \t' + (instance.name ?? '(no name)'),
-        detail: instance.instanceId,
-        data: instance.instanceId,
+        detail: instance.InstanceId,
+        data: instance.InstanceId,
     }
 }
 

@@ -9,8 +9,7 @@ import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
 
-export interface Ec2Instance {
-    instanceId: string
+export interface Ec2Instance extends EC2.Instance {
     name?: string
 }
 
@@ -41,9 +40,7 @@ export class Ec2Client {
             .flatten()
             .filter(instance => instance!.InstanceId !== undefined)
             .map(instance => {
-                return instance!.Tags
-                    ? { instanceId: instance!.InstanceId!, name: this.lookupTagKey(instance!.Tags!, 'Name') }
-                    : { instanceId: instance!.InstanceId! }
+                return instance!.Tags ? { ...instance, name: this.lookupTagKey(instance!.Tags!, 'Name') } : instance!
             })
     }
 
