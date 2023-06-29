@@ -4,16 +4,15 @@
  */
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
-import { IAM } from 'aws-sdk'
-import { ServiceException } from '@aws-sdk/smithy-client'
+import { AWSError, IAM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, isAwsError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-export type Ec2ConnectErrorCode = 'EC2SSMStatusError' | 'EC2SSMPermissionError' | 'EC2SSMConnectError'
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect'
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
@@ -59,13 +58,13 @@ export class Ec2ConnectionManager {
         return requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async handleStartSessionError(err: ServiceException, selection: Ec2Selection): Promise<string> {
-        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
+    public async handleStartSessionError(err: AWSError, selection: Ec2Selection): Promise<Error> {
+        const isInstanceRunning = (await this.ec2Client.getInstanceStatus(selection.instanceId)) == 'running'
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
         if (!isInstanceRunning) {
-            telemetry.record({ result: 'Failed', reason: 'EC2SSMStatusError' })
+            telemetry.record({ result: 'Failed', reason: 'EC2SSMStatus' })
             throw new ToolkitError(
                 generalErrorMessage +
                     'Ensure the target instance is running and not currently starting, stopping, or stopped.',
@@ -74,11 +73,11 @@ export class Ec2ConnectionManager {
         }
 
         if (!hasProperPolicies) {
-            telemetry.record({ result: 'Failed', reason: 'EC2SSMPermissionError' })
+            telemetry.record({ result: 'Failed', reason: 'EC2SSMPermission' })
             throw new ToolkitError(
                 generalErrorMessage + 'Ensure the IAM role attached to the instance has the proper policies.',
                 {
-                    code: 'EC2SSMPermissionError',
+                    code: 'EC2SSMPermission',
                     documentationUri: vscode.Uri.parse(
                         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
                     ),
@@ -117,7 +116,7 @@ export class Ec2ConnectionManager {
             const response = await this.ssmClient.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
         } catch (err) {
-            if (err instanceof ServiceException) {
+            if (isAwsError(err)) {
                 await this.handleStartSessionError(err, selection)
             } else {
                 throw err
