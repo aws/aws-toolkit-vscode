@@ -109,7 +109,7 @@
                         </div>
                         <div>
                             <h3 style="margin-bottom: 0">AWS Toolkit for VS Code</h3>
-                            <h1 style="margin-top: 0">Welcome & Getting Started</h1>
+                            <h1 style="margin-top: 0">Add Connection to AWS</h1>
                         </div>
                     </div>
                 </div>
@@ -118,7 +118,7 @@
                 <div class="flex-container">
                     <div id="left-column">
                         <div>
-                            <h2>Select a feature to begin</h2>
+                            <h2>Select a feature to add a connection:</h2>
                             <ul class="service-item-list" v-for="item in serviceItems">
                                 <ServiceItem
                                     :title="getServiceItemProps(item.id).title"

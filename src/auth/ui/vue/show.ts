@@ -603,7 +603,7 @@ export async function showAuthWebview(
     activePanel.server.setupConnectionChangeEmitter()
 
     const webview = await activePanel!.show({
-        title: `${getIdeProperties().company} Toolkit: Welcome & Getting Started`,
+        title: `${getIdeProperties().company} Toolkit: Add Connection to AWS`,
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
         retainContextWhenHidden: true,
     })
