@@ -37,7 +37,7 @@
                 <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
-                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName }}</span
+                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName() }}</span
                     >! Switch between existing connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
@@ -231,12 +231,6 @@ export default defineComponent({
             })
             return [...unlocked, ...locked]
         },
-        authFormDisplayName() {
-            if (this.successfulAuthConnection === undefined) {
-                return ''
-            }
-            return AuthFormDisplayName[this.successfulAuthConnection]
-        },
     },
     methods: {
         isLandscape() {
@@ -362,6 +356,12 @@ export default defineComponent({
             } else {
                 this.foundCredentialButNotConnected = false
             }
+        },
+        authFormDisplayName() {
+            if (this.successfulAuthConnection === undefined) {
+                return ''
+            }
+            return AuthFormDisplayName[this.successfulAuthConnection]
         },
     },
 })
