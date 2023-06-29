@@ -6,12 +6,13 @@
 import { AWSError, SSM } from 'aws-sdk'
 import { getLogger } from '../logger/logger'
 import { PromiseResult } from 'aws-sdk/lib/request'
+import globals from '../extensionGlobals'
 
 export class SsmClient {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<SSM> {
-        return new SSM({ region: this.regionCode })
+        return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
     public async terminateSession(

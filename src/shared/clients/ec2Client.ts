@@ -47,7 +47,7 @@ export class Ec2Client {
             'InstanceStatuses'
         )
             .flatten()
-            .map(instanceStatus => instanceStatus!.InstanceState!.Name! as EC2.InstanceStateName)
+            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
             .promise()
 
         return response[0]
