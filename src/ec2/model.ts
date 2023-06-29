@@ -68,7 +68,7 @@ export class Ec2ConnectionManager {
             throw new ToolkitError(
                 generalErrorMessage +
                     'Ensure the target instance is running and not currently starting, stopping, or stopped.',
-                { code: 'EC2SSMStatusError' }
+                { code: 'EC2SSMStatus' }
             )
         }
 
@@ -84,7 +84,7 @@ export class Ec2ConnectionManager {
                 }
             )
         }
-        telemetry.record({ result: 'Failed', reason: 'EC2SSMConnectError' })
+        telemetry.record({ result: 'Failed', reason: 'EC2SSMConnect' })
 
         throw new ToolkitError(
             'Ensure SSM is running on target instance. For more information see the documentation.',
