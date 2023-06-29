@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.78.0-SNAPSHOT",
+    "version": "1.79.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -218,10 +218,6 @@
                             "default": false
                         },
                         "codeWhispererConnectionExpired": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "manageConnections": {
                             "type": "boolean",
                             "default": false
                         }
@@ -3527,7 +3523,7 @@
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.3.2",
+        "@vscode/test-electron": "^2.3.3",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
@@ -3562,8 +3558,6 @@
         "webpack-dev-server": "^4.13.3"
     },
     "dependencies": {
-        "@aws-sdk/client-ec2": "^3.354.0",
-        "@aws-sdk/client-ssm": "^3.354.0",
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
@@ -3588,7 +3582,7 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
         "portfinder": "^1.0.32",
-        "semver": "^7.5.1",
+        "semver": "^7.5.2",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^5.0.4",
