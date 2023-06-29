@@ -7,7 +7,7 @@
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
                 ></a
             ></FormTitle>
-            <div v-if="!isConnected" style="color: #cccccc">Successor to AWS Single Sign-on</div>
+            <div v-if="!isConnected" class="sub-text-color">Successor to AWS Single Sign-on</div>
         </div>
         <div v-else>
             <!-- In this scenario we do not care about the active IC connection -->
@@ -17,7 +17,7 @@
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
                 ></a
             ></FormTitle>
-            <div style="color: #cccccc">Successor to AWS Single Sign-on</div>
+            <div style="color: var(--vscode-descriptionForeground)">Successor to AWS Single Sign-on</div>
         </div>
 
         <div v-if="stage === 'START'">
@@ -34,12 +34,12 @@
 
                 <div v-on:click="getRegion()" style="display: flex; flex-direction: row; gap: 10px; cursor: pointer">
                     <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
-                    <div style="width: 100%; color: #cccccc">{{ data.region ? data.region : 'Not Selected' }}</div>
+                    <div style="width: 100%; font-weight: 700">{{ data.region ? data.region : 'Not Selected' }}</div>
                 </div>
             </div>
 
             <div class="form-section">
-                <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
+                <button v-on:click="signin()">Sign in</button>
                 <div class="small-description error-text">{{ errors.submit }}</div>
             </div>
         </div>
@@ -52,7 +52,7 @@
 
         <div v-if="stage === 'CONNECTED'">
             <div class="form-section">
-                <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
+                <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
             </div>
 
             <div class="form-section">
@@ -126,6 +126,12 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
+            console.log(this.data.startUrl)
+            if (!this.data.startUrl) {
+                this.errors.startUrl = 'Cannot be empty.'
+                return
+            }
+
             this.stage = 'WAITING_ON_USER'
             this.errors.submit = await this.state.startIdentityCenterSetup()
 
