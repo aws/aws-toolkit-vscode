@@ -3,19 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import {
-    EC2,
-    DescribeInstancesRequest,
-    DescribeIamInstanceProfileAssociationsRequest,
-    Filter,
-    Reservation,
-    DescribeInstanceStatusRequest,
-    InstanceStateName,
-    Tag,
-} from '@aws-sdk/client-ec2'
+import { EC2 } from 'aws-sdk'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
+import globals from '../extensionGlobals'
 
 export interface Ec2Instance {
     instanceId: string
@@ -26,22 +18,22 @@ export class Ec2Client {
     public constructor(public readonly regionCode: string) {}
 
     private async createSdkClient(): Promise<EC2> {
-        return new EC2({ region: this.regionCode })
+        return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
     }
     public async getInstances(): Promise<AsyncCollection<Ec2Instance>> {
         const client = await this.createSdkClient()
-        const requester = async (request: DescribeInstancesRequest) => client.describeInstances(request)
+        const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
         const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
         const instances = this.extractInstancesFromReservations(collection)
         return instances
     }
 
-    private lookupTagKey(tags: Tag[], targetKey: string): string | undefined {
+    private lookupTagKey(tags: EC2.Tag[], targetKey: string): string | undefined {
         return tags.filter(tag => tag.Key == targetKey)[0].Value
     }
 
     public extractInstancesFromReservations(
-        reservations: AsyncCollection<Reservation[] | undefined>
+        reservations: AsyncCollection<EC2.ReservationList | undefined>
     ): AsyncCollection<Ec2Instance> {
         return reservations
             .flatten()
@@ -55,9 +47,10 @@ export class Ec2Client {
             })
     }
 
-    public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
+    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
         const client = await this.createSdkClient()
-        const requester = async (request: DescribeInstanceStatusRequest) => client.describeInstanceStatus(request)
+        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
+            client.describeInstanceStatus(request).promise()
 
         const response = await pageableToCollection(
             requester,
@@ -66,7 +59,7 @@ export class Ec2Client {
             'InstanceStatuses'
         )
             .flatten()
-            .map(instanceStatus => instanceStatus!.InstanceState!.Name! as InstanceStateName)
+            .map(instanceStatus => instanceStatus!.InstanceState!.Name!)
             .promise()
 
         return response[0]
@@ -79,14 +72,14 @@ export class Ec2Client {
      */
     public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const client = await this.createSdkClient()
-        const instanceFilter: Filter[] = [
+        const instanceFilter: EC2.Filter[] = [
             {
                 Name: 'instance-id',
                 Values: [instanceId],
             },
         ]
-        const requester = async (request: DescribeIamInstanceProfileAssociationsRequest) =>
-            client.describeIamInstanceProfileAssociations(request)
+        const requester = async (request: EC2.DescribeIamInstanceProfileAssociationsRequest) =>
+            client.describeIamInstanceProfileAssociations(request).promise()
         const response = await pageableToCollection(
             requester,
             { Filters: instanceFilter },

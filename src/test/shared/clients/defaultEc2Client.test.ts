@@ -8,7 +8,7 @@ import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
-import { Reservation } from '@aws-sdk/client-ec2'
+import { EC2 } from 'aws-sdk'
 
 describe('extractInstancesFromReservations', function () {
     const client = new Ec2Client('')
@@ -17,7 +17,7 @@ describe('extractInstancesFromReservations', function () {
             .extractInstancesFromReservations(
                 toCollection(async function* () {
                     yield []
-                }) as AsyncCollection<Reservation[]>
+                }) as AsyncCollection<EC2.ReservationList>
             )
             .promise()
 
@@ -25,7 +25,7 @@ describe('extractInstancesFromReservations', function () {
     })
 
     it('flattens the reservationList', async function () {
-        const testReservationsList: Reservation[] = [
+        const testReservationsList: EC2.ReservationList = [
             {
                 Instances: [
                     {
@@ -66,7 +66,7 @@ describe('extractInstancesFromReservations', function () {
     }),
         // Unsure if this test case is needed, but the return type in the SDK makes it possible these are unknown/not returned.
         it('handles undefined and missing pieces in the ReservationList.', async function () {
-            const testReservationsList: Reservation[] = [
+            const testReservationsList: EC2.ReservationList = [
                 {
                     Instances: [
                         {
