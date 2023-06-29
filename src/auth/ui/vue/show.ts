@@ -542,6 +542,7 @@ export type AuthUiClick =
     | 'auth_explorer_expandIAMIdentityCenter'
     | 'auth_explorer_expandIAMCredentials'
     | 'auth_codewhisperer_expandIAMIdentityCenter'
+    | 'auth_openConnectionSelector'
     | 'auth_openAWSExplorer'
     | 'auth_openCodeWhisperer'
     | 'auth_openCodeCatalyst'

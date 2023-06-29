@@ -334,6 +334,7 @@ export default defineComponent({
         },
         showConnectionQuickPick() {
             client.showConnectionQuickPick()
+            client.emitUiClick('auth_openConnectionSelector')
         },
         closeStatusBar() {
             this.successfulAuthConnection = undefined
