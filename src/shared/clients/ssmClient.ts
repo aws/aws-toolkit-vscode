@@ -4,9 +4,9 @@
  */
 
 import { AWSError, SSM } from 'aws-sdk'
-import globals from '../extensionGlobals'
-import { PromiseResult } from 'aws-sdk/lib/request'
 import { getLogger } from '../logger/logger'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import globals from '../extensionGlobals'
 
 export class SsmClient {
     public constructor(public readonly regionCode: string) {}
@@ -26,7 +26,8 @@ export class SsmClient {
             .catch(err => {
                 getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
             })
-        return termination
+
+        return termination!
     }
 
     public async startSession(target: string): Promise<PromiseResult<SSM.StartSessionResponse, AWSError>> {
