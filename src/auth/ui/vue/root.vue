@@ -24,24 +24,23 @@
                     display: flex;
                     flex-direction: row;
                     background-color: #28632b;
-                    color: #ffffff;
                     padding: 10px;
                 "
             >
-                <div class="icon icon-lg icon-vscode-check"></div>
+                <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
-                <div style="display: flex; flex-direction: row">
-                    Connected to&nbsp;<span style="font-weight: bold">{{ authFormDisplayName }}</span
+                <div style="display: flex; flex-direction: row; color: #ffffff">
+                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName }}</span
                     >! Switch between existing connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
-                        style="cursor: pointer"
+                        style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
                     >.
                 </div>
                 &nbsp;&nbsp;
                 <div
                     v-on:click="closeStatusBar"
-                    style="cursor: pointer"
+                    style="cursor: pointer; color: #ffffff"
                     class="icon icon-lg icon-vscode-chrome-close"
                 ></div>
             </div>
@@ -54,23 +53,22 @@
                     display: flex;
                     flex-direction: row;
                     background-color: #28632b;
-                    color: #ffffff;
                     padding: 10px;
                 "
             >
-                <div class="icon icon-lg icon-vscode-check"></div>
+                <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
-                <div style="display: flex; flex-direction: row">
-                    IAM Credential(s) detected, but not selected. Choose one in the&nbsp;<a
+                <div style="display: flex; flex-direction: row; color: #ffffff">
+                    IAM Credential(s) detected. Select one in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
-                        style="cursor: pointer"
+                        style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
                     >.
                 </div>
                 &nbsp;&nbsp;
                 <div
                     v-on:click="closeFoundCredentialStatusBar()"
-                    style="cursor: pointer"
+                    style="cursor: pointer; color: #ffffff"
                     class="icon icon-lg icon-vscode-chrome-close"
                 ></div>
             </div>
@@ -80,7 +78,7 @@
                 <!-- Logo + Title -->
                 <div>
                     <div style="display: flex; justify-content: left; align-items: center; gap: 25px">
-                        <div style="fill: white">
+                        <div id="logo">
                             <svg
                                 id="Layer_1"
                                 data-name="Layer 1"
@@ -103,8 +101,8 @@
                             </svg>
                         </div>
                         <div>
-                            <h3>AWS Toolkit for VSCode</h3>
-                            <h1>Welcome & Getting Started</h1>
+                            <h3 style="margin-bottom: 0">AWS Toolkit for VS Code</h3>
+                            <h1 style="margin-top: 0">Welcome & Getting Started</h1>
                         </div>
                     </div>
                 </div>
@@ -113,7 +111,7 @@
                 <div class="flex-container">
                     <div id="left-column">
                         <div>
-                            <h1>Select a feature to begin</h1>
+                            <h2>Select a feature to begin</h2>
                             <ul class="service-item-list" v-for="item in serviceItems">
                                 <ServiceItem
                                     :title="getServiceItemProps(item.id).title"
@@ -197,7 +195,6 @@ export default defineComponent({
         // This handles auth changes triggered outside of this webview.
         client.onDidConnectionUpdate(() => {
             this.updateServiceConnections()
-            this.updateFoundCredentialButNotConnected()
             // This handles the edge case where we have selected a service item
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
@@ -345,7 +342,12 @@ export default defineComponent({
          * has not actively selected one.
          */
         async updateFoundCredentialButNotConnected() {
-            if ((await client.isCredentialExists()) && !(await client.isCredentialConnected())) {
+            const isFirstUse = await client.isExtensionFirstUse()
+            // Order these are called matters since isCredentialExists() pulls in local credentials
+            const isCredentialConnected = await client.isCredentialConnected()
+            const isCredentialExists = await client.isCredentialExists()
+
+            if (isFirstUse && (isCredentialConnected || isCredentialExists)) {
                 this.foundCredentialButNotConnected = true
             } else {
                 this.foundCredentialButNotConnected = false
