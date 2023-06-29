@@ -70,7 +70,6 @@ import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { showMessageWithUrl } from './shared/utilities/messages'
 import { openUrl } from './shared/utilities/vsCodeUtils'
-import { showMessageWithUrl } from './shared/utilities/messages'
 
 let localize: nls.LocalizeFunc
 
