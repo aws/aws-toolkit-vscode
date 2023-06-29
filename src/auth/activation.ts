@@ -17,6 +17,7 @@ import { AuthSource } from './ui/vue/show'
 import { isIamConnection } from './connection'
 import { getLogger } from '../shared/logger'
 import { isInDevEnv } from '../codecatalyst/utils'
+import { waitUntil } from '../shared/utilities/timeoutUtils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -69,8 +70,7 @@ async function showManageConnectionsOnStartup() {
     }
 
     AuthCommandDeclarations.instance.declared.showConnectionsPage.execute('firstStartup')
-
-    return emitFirstStartupMetrics()
+    emitFirstStartupMetrics()
 }
 
 /**
@@ -93,6 +93,12 @@ function hasExistingConnections(): boolean {
 }
 
 async function emitFirstStartupMetrics() {
+    // HACK: Telemetry client may not be initialized yet, wait until it exists
+    await waitUntil(async () => telemetry, {
+        interval: 500,
+        timeout: 30000,
+    })
+
     // Metric that is emitted for ALL new users
     telemetry.auth_addConnection.emit({
         source: 'firstStartup' as AuthSource,
@@ -100,7 +106,7 @@ async function emitFirstStartupMetrics() {
     })
 
     // Metrics that are emitted if existing connections are detected
-    const allConnections = await Auth.instance.listConnections()
+    const allConnections = await Auth.instance.listConnections() // implicitly loads user credentials
     const reason = 'alreadyHadAuth'
 
     const credentialsConnections = allConnections.filter(isIamConnection)
