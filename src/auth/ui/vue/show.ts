@@ -495,8 +495,6 @@ export class AuthWebview extends VueWebview {
             authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
             result: 'Cancelled',
         })
-
-        this.setSource(undefined)
     }
 
     /**

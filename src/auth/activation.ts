@@ -44,10 +44,7 @@ export async function initialize(
 }
 
 /**
- * Show the Manage Connections page when the extension starts up.
- *
- * Additionally, we provide an information message with a button for users to not show it
- * again on next startup.
+ * Show the Manage Connections page when the extension starts up, if it should be shown.
  */
 async function showManageConnectionsOnStartup() {
     if (!ExtensionUse.instance.isFirstUse()) {
@@ -76,7 +73,7 @@ async function showManageConnectionsOnStartup() {
 
 /**
  * Return true if the user has existing connections that
- * the extension is aware of.
+ * the extension has previously known about.
  */
 function hasExistingConnections(): boolean {
     /**
@@ -107,8 +104,8 @@ async function emitFirstStartupMetrics() {
         result: 'Cancelled',
     })
 
-    // Metrics that are emitted if existing connections are detected
-    const allConnections = await Auth.instance.listConnections() // implicitly loads user credentials
+    // Metrics that are emitted if certain auths created by the user are found by us
+    const allConnections = await Auth.instance.listConnections() // implicitly loads user's credentials
     const reason = 'alreadyHadAuth'
 
     const credentialsConnections = allConnections.filter(isIamConnection)
