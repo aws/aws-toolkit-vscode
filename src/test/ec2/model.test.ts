@@ -7,10 +7,10 @@ import * as assert from 'assert'
 import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
-import { AWSError } from 'aws-sdk'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
+import { AWSError, EC2 } from 'aws-sdk'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -24,8 +24,8 @@ describe('Ec2ConnectClient', function () {
             super('test-region')
         }
 
-        public override async getInstanceStatus(instanceId: string): Promise<string> {
-            return instanceId.split(':')[0]
+        public override async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+            return instanceId.split(':')[0] as EC2.InstanceStateName
         }
     }
 
@@ -44,7 +44,7 @@ describe('Ec2ConnectClient', function () {
     }
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
-        let dummyError: AWSError
+        const dummyError: AWSError = { name: 'testName', message: 'testMessage', code: 'testCode', time: new Date() }
 
         class MockEc2ConnectClientForError extends MockEc2ConnectClient {
             public override async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -53,18 +53,17 @@ describe('Ec2ConnectClient', function () {
         }
         before(function () {
             client = new MockEc2ConnectClientForError()
-            dummyError = {} as AWSError
         })
 
         it('determines which error to throw based on if instance is running', async function () {
             async function assertThrowsErrorCode(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
                 try {
                     await client.handleStartSessionError(dummyError, testInstance)
-                    throw new assert.AssertionError({ message: "Didn't throw any error" })
                 } catch (err: unknown) {
                     assert.strictEqual((err as ToolkitError).code, errCode)
                 }
             }
+
             await assertThrowsErrorCode(
                 {
                     instanceId: 'pending:noPolicies',
