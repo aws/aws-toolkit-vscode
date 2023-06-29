@@ -35,7 +35,9 @@
                 <label class="small-description">AWS Region that hosts Identity directory</label>
                 <div v-on:click="getRegion()" style="display: flex; flex-direction: row; gap: 10px; cursor: pointer">
                     <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
-                    <div style="width: 100%; font-weight: 700">{{ data.region ? data.region : 'Not Selected' }}</div>
+                    <div class="text-link-color" style="width: 100%">
+                        {{ data.region ? data.region : 'Select a region...' }}
+                    </div>
                 </div>
                 <div class="small-description error-text">{{ errors.region }}</div>
             </div>
