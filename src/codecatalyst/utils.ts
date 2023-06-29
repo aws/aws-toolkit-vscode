@@ -58,17 +58,16 @@ export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
 }
 
-export const getStartedCommand = Commands.register(
-    'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+export const getStartedCommand = Commands.register('aws.codecatalyst.getStarted', setupCodeCatalystBuilderId)
 
-        if (authProvider.auth.getConnectionState(conn) === 'invalid') {
-            conn = await authProvider.auth.reauthenticate(conn)
-        }
+export async function setupCodeCatalystBuilderId(authProvider: CodeCatalystAuthenticationProvider) {
+    let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
 
-        if (!(await authProvider.isConnectionOnboarded(conn, true))) {
-            await authProvider.promptOnboarding()
-        }
+    if (authProvider.auth.getConnectionState(conn) === 'invalid') {
+        conn = await authProvider.auth.reauthenticate(conn)
     }
-)
+
+    if (!(await authProvider.isConnectionOnboarded(conn, true))) {
+        await authProvider.promptOnboarding()
+    }
+}

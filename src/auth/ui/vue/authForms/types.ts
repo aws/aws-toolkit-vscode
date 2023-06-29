@@ -8,10 +8,14 @@ export type AuthFormId =
     | 'builderIdCodeWhisperer'
     | 'builderIdCodeCatalyst'
     | 'identityCenterCodeWhisperer'
+    | 'identityCenterExplorer'
+    | 'aggregateExplorer'
 
 export const AuthFormDisplayName: Record<AuthFormId, string> = {
     credentials: 'IAM Credentials',
-    builderIdCodeCatalyst: 'Builder ID',
-    builderIdCodeWhisperer: 'Builder ID',
-    identityCenterCodeWhisperer: 'IAM Identity Center',
+    builderIdCodeCatalyst: 'CodeCatalyst with AWS Builder ID',
+    builderIdCodeWhisperer: 'CodeWhisperer with AWS Builder ID',
+    identityCenterCodeWhisperer: 'CodeWhisperer with IAM Identity Center',
+    identityCenterExplorer: 'AWS Explorer with IAM Identity Center',
+    aggregateExplorer: '',
 } as const

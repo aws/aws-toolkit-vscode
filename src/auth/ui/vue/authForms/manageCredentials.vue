@@ -3,8 +3,8 @@
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
-            <div class="form-section">
-                <button v-if="isConnected" v-on:click="showResourceExplorer">Open Resource Explorer</button>
+            <div class="form-section" v-if="isConnected">
+                <button v-on:click="showResourceExplorer">Open Resource Explorer</button>
             </div>
 
             <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
@@ -17,7 +17,7 @@
                     <label class="small-description"
                         >Credentials will be added to the appropriate `~/.aws/` files.</label
                     >
-                    <div v-on:click="editCredentialsFile()" style="cursor: pointer">
+                    <div v-on:click="editCredentialsFile()" class="sub-text-color" style="cursor: pointer">
                         <div class="icon icon-vscode-edit edit-icon"></div>
                         Edit file directly
                     </div>
@@ -32,14 +32,12 @@
 
                 <div class="form-section">
                     <label class="input-title">Access Key</label>
-                    <label class="small-description">The access key</label>
                     <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
                     <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
                 </div>
 
                 <div class="form-section">
                     <label class="input-title">Secret Key</label>
-                    <label class="small-description">The secret key</label>
                     <input
                         v-model="data.aws_secret_access_key"
                         type="password"
@@ -49,7 +47,7 @@
                 </div>
 
                 <div class="form-section">
-                    <button :disabled="!canSubmit" v-on:click="submitData()">Add Profile</button>
+                    <button v-on:click="submitData()">Add Profile</button>
                     <div class="small-description error-text">{{ errors.submit }}</div>
                 </div>
             </div>
@@ -75,6 +73,13 @@ export default defineComponent({
         state: {
             type: Object as PropType<CredentialsState>,
             required: true,
+        },
+        checkIfConnected: {
+            type: Boolean,
+            default: true,
+            // In some scenarios we want to show the form and allow setup,
+            // but not care about any current identity center auth connections
+            // and if they are connected or not.
         },
     },
     data() {
@@ -104,7 +109,7 @@ export default defineComponent({
         await this.updateDataError('profileName')
         await this.updateDataError('aws_access_key_id')
         await this.updateDataError('aws_secret_access_key')
-        this.isFormShown = !(await this.state.isAuthConnected())
+        this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
         await this.updateSubmittableStatus()
 
         this.updateConnectedStatus('created')
@@ -138,11 +143,14 @@ export default defineComponent({
         },
         async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
-                this.isConnected = isConnected
-                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected: this.isConnected, cause })
+                this.isConnected = this.checkIfConnected ? isConnected : false
+                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected, cause })
             })
         },
         async submitData() {
+            if (this.setCannotBeEmptyErrors()) {
+                return
+            }
             // pre submission
             this.canSubmit = false // disable submit button
 
@@ -160,6 +168,18 @@ export default defineComponent({
             this.isFormShown = false
             this.canSubmit = true // enable submit button
             await this.updateConnectedStatus('signIn')
+        },
+        /**
+         * Sets the 'cannot be empty' error for each empty field
+         *
+         * @returns true if there was an empty field, otherwise false
+         */
+        setCannotBeEmptyErrors() {
+            const emptyFields = Object.keys(this.data).filter(key => !this.data[key as keyof typeof this.data])
+            emptyFields.forEach(fieldName => {
+                this.errors[fieldName as keyof typeof this.data] = 'Cannot be empty.'
+            })
+            return emptyFields.length > 0
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown

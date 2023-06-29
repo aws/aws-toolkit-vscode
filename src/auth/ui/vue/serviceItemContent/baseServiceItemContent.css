@@ -7,7 +7,7 @@
 
     border-color: #0097fb;
 
-    width: 700px;
+    width: 550px;
 
     padding: 30px;
 }
@@ -18,17 +18,21 @@
     font-weight: bold;
 }
 
+.service-item-content-image {
+    height: 280px;
+}
+
 .service-item-content-container hr {
     border: none;
     height: 1px;
-    background-color: #4d4d4d;
+    background-color: var(--vscode-descriptionForeground);
     width: 100%;
 }
 
 .service-item-content-form-section {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: left;
     gap: 20px;
 }
 
@@ -42,5 +46,5 @@
     display: flex;
     flex-direction: row;
     gap: 20px;
-    justify-content: center;
+    justify-content: left;
 }
