@@ -5,7 +5,7 @@
 
 import { getLogger } from '../logger'
 import { isReleaseVersion } from '../vscode/env'
-import { MetricDatum, MetadataEntry } from './clienttelemetry'
+import { MetricDatum, MetadataEntry } from '@aws-sdk/client-toolkittelemetry'
 
 export interface MetricQuery {
     /**

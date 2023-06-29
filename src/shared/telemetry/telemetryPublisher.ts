@@ -4,7 +4,7 @@
  */
 
 import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
-import { MetricDatum } from './clienttelemetry'
+import { MetricDatum } from '@aws-sdk/client-toolkittelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { TelemetryClient, TelemetryFeedback } from './telemetryClient'
 import { ClassToInterfaceType } from '../utilities/tsUtils'

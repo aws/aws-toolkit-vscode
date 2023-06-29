@@ -79,7 +79,7 @@ export class RecommendationHandler {
         return (
             this.recommendations !== undefined &&
             this.recommendations.length > 0 &&
-            this.recommendations.filter(option => option.content.length > 0).length > 0
+            this.recommendations.filter(option => option.content!.length > 0).length > 0
         )
     }
 
@@ -204,7 +204,7 @@ export class RecommendationHandler {
                     autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
                 if (
                     recommendation.length > 0 &&
-                    recommendation[0].content.search(CodeWhispererConstants.lineBreak) !== -1
+                    recommendation[0].content!.search(CodeWhispererConstants.lineBreak) !== -1
                 ) {
                     completionType = 'Block'
                 }
@@ -225,8 +225,10 @@ export class RecommendationHandler {
                 getLogger().info('Invalid Request : ', JSON.stringify(req, undefined, EditorContext.getTabSize()))
                 getLogger().verbose(`Invalid Request : ${JSON.stringify(req, undefined, EditorContext.getTabSize())}`)
                 errorCode = `Invalid Request`
-                if (!runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)) {
-                    this.errorMessagePrompt = `${req.fileContext.programmingLanguage.languageName} is currently not supported by CodeWhisperer`
+                if (!runtimeLanguageContext.isLanguageSupported(req.fileContext!.programmingLanguage!.languageName!)) {
+                    this.errorMessagePrompt = `${
+                        req.fileContext!.programmingLanguage!.languageName
+                    } is currently not supported by CodeWhisperer`
                 }
             }
         } catch (error) {
@@ -301,7 +303,7 @@ export class RecommendationHandler {
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendation.forEach((r, i) => {
                 if (
-                    (!r.content.startsWith(typedPrefix) &&
+                    (!r.content!.startsWith(typedPrefix) &&
                         this.getSuggestionState(i + this.recommendations.length) === undefined) ||
                     this.cancellationToken.token.isCancellationRequested
                 ) {
@@ -418,7 +420,7 @@ export class RecommendationHandler {
                 editor.selection.active.character
             )
         )
-        if (!this.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
+        if (!this.recommendations[0].content!.startsWith(typedPrefix.trimStart())) {
             this.recommendations.forEach((r, i) => {
                 this.setSuggestionState(i, 'Discard')
             })

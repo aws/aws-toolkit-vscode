@@ -3557,6 +3557,7 @@
         "webpack-cli": "^4.9.1",
         "webpack-dev-server": "^4.13.3"
     },
+    "sdk-codegen-version": "3.345.0",
     "dependencies": {
         "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
@@ -3607,5 +3608,10 @@
         "bracketSpacing": true,
         "arrowParens": "avoid",
         "endOfLine": "lf"
+    },
+    "optionalDependencies": {
+        "@aws-sdk/client-codewhisperer": "file:node_modules/.zzz-awssdk3/codegen/sdk-codegen/build/smithyprojections/sdk-codegen/codewhisperer.2022-06-15/typescript-codegen",
+        "@aws-sdk/client-codewhispererruntime": "file:node_modules/.zzz-awssdk3/codegen/sdk-codegen/build/smithyprojections/sdk-codegen/codewhispererruntime.2022-11-11/typescript-codegen",
+        "@aws-sdk/client-toolkittelemetry": "file:node_modules/.zzz-awssdk3/codegen/sdk-codegen/build/smithyprojections/sdk-codegen/toolkittelemetry.2017-07-25/typescript-codegen"
     }
 }

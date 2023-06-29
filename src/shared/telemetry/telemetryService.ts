@@ -10,7 +10,7 @@ import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
 import { isReleaseVersion, isAutomation } from '../vscode/env'
 import { getLogger } from '../logger'
-import { MetricDatum } from './clienttelemetry'
+import { MetricDatum } from '@aws-sdk/client-toolkittelemetry'
 import { DefaultTelemetryClient, regionKey } from './telemetryClient'
 import { DefaultTelemetryPublisher } from './telemetryPublisher'
 import { TelemetryFeedback } from './telemetryClient'
@@ -291,7 +291,7 @@ export class DefaultTelemetryService {
                 // Skip cached metrics.
                 continue
             }
-            if (metric.Passive || (didReload && maybeActiveOnReload.includes(metric.MetricName))) {
+            if (metric.Passive || (didReload && maybeActiveOnReload.includes(metric.MetricName!))) {
                 continue
             }
             const msg = `non-passive metric emitted at startup: ${metric.MetricName}`

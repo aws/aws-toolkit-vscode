@@ -4,7 +4,7 @@
  */
 
 import * as AWS from '@aws-sdk/types'
-import { AssumeRoleParams, fromIni } from '@aws-sdk/credential-provider-ini'
+import { fromIni } from '@aws-sdk/credential-provider-ini'
 import { fromProcess } from '@aws-sdk/credential-provider-process'
 import { ParsedIniData, SharedConfigFiles } from '@aws-sdk/shared-ini-file-loader'
 import { chain } from '@aws-sdk/property-provider'
@@ -32,6 +32,7 @@ import {
 import { builderIdStartUrl } from '../sso/model'
 import { SectionName, SharedCredentialsKeys } from '../credentials/types'
 import { SsoProfile, hasScopes } from '../connection'
+import { AssumeRoleRequest } from 'aws-sdk/clients/sts'
 
 const credentialSources = {
     ECS_CONTAINER: 'EcsContainer',
@@ -375,7 +376,7 @@ export class SharedCredentialsProvider implements CredentialsProvider {
     }
 
     private makeSharedIniFileCredentialsProvider(loadedCreds?: ParsedIniData): AWS.CredentialProvider {
-        const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleParams) => {
+        const assumeRole = async (credentials: AWS.Credentials, params: AssumeRoleRequest) => {
             const region = this.getDefaultRegion() ?? 'us-east-1'
             const stsClient = new DefaultStsClient(region, credentials)
             const response = await stsClient.assumeRole(params)
@@ -396,15 +397,17 @@ export class SharedCredentialsProvider implements CredentialsProvider {
             k => this.getProfile(k)
         )
 
+        // XXX: this is BROKEN
+        // `loadedConfig` has been removed. There's no way to
         return fromIni({
             profile: this.profileName,
-            mfaCodeProvider: async mfaSerial => await getMfaTokenFromUser(mfaSerial, this.profileName),
+            mfaCodeProvider: async (mfaSerial: string) => await getMfaTokenFromUser(mfaSerial, this.profileName),
             roleAssumer: assumeRole,
             loadedConfig: Promise.resolve({
                 credentialsFile: loadedCreds ?? profiles,
                 configFile: {},
             } as SharedConfigFiles),
-        })
+        } as any)
     }
 
     private makeSourcedCredentialsProvider(): AWS.CredentialProvider {

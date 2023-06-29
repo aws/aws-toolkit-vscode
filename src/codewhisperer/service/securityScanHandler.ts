@@ -15,31 +15,31 @@ import got from 'got'
 import * as crypto from 'crypto'
 import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
-import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
+import { CreateUploadUrlRequest, CreateUploadUrlResponse } from '@aws-sdk/client-codewhispererruntime'
 import { Truncation } from '../util/dependencyGraph/dependencyGraph'
+
+type ArtifactMap = { SourceCode: string }
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
     jobId: string,
-    codeScanFindingsSchema: string,
+    codeAnalysisFindingsSchema: string,
     projectPath: string
 ) {
     const codeScanIssueMap: Map<string, RawCodeScanIssue[]> = new Map()
     const aggregatedCodeScanIssueList: AggregatedCodeScanIssue[] = []
     const requester = (request: codewhispererClient.ListCodeScanFindingsRequest) => client.listCodeScanFindings(request)
-    const collection = pageableToCollection(requester, { jobId, codeScanFindingsSchema }, 'nextToken')
+    const collection = pageableToCollection(requester, { jobId, codeAnalysisFindingsSchema }, 'nextToken')
     const issues = await collection
         .flatten()
         .map(resp => {
-            getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-            if ('codeScanFindings' in resp) {
-                return resp.codeScanFindings
-            }
             return resp.codeAnalysisFindings
         })
         .promise()
     issues.forEach(issue => {
-        mapToAggregatedList(codeScanIssueMap, aggregatedCodeScanIssueList, issue, projectPath)
+        if (issue !== undefined) {
+            mapToAggregatedList(codeScanIssueMap, aggregatedCodeScanIssueList, issue, projectPath)
+        }
     })
     return aggregatedCodeScanIssueList
 }
@@ -98,9 +98,8 @@ export async function pollScanJobStatus(client: DefaultCodeWhispererClient, jobI
             jobId: jobId,
         }
         const resp = await client.getCodeScan(req)
-        getLogger().verbose(`Request id: ${resp.$response.requestId}`)
         if (resp.status !== 'Pending') {
-            status = resp.status
+            status = resp.status!
             getLogger().verbose(`Scan job status: ${status}`)
             getLogger().verbose(`Complete Polling scan job status.`)
             break
@@ -130,7 +129,6 @@ export async function createScanJob(
         },
     }
     const resp = await client.createCodeScan(req)
-    getLogger().verbose(`Request id: ${resp.$response.requestId}`)
     return resp
 }
 
@@ -144,13 +142,12 @@ export async function getPresignedUrlAndUpload(client: DefaultCodeWhispererClien
     }
     getLogger().verbose(`Prepare for uploading src context...`)
     const srcResp = await client.createUploadUrl(srcReq)
-    getLogger().verbose(`Request id: ${srcResp.$response.requestId}`)
     getLogger().verbose(`Complete Getting presigned Url for uploading src context.`)
     getLogger().verbose(`Uploading src context...`)
     await uploadArtifactToS3(truncation.zipFilePath, srcResp)
     getLogger().verbose(`Complete uploading src context.`)
     const artifactMap: ArtifactMap = {
-        SourceCode: srcResp.uploadId,
+        SourceCode: srcResp.uploadId!,
     }
     return artifactMap
 }
@@ -184,7 +181,7 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
                   'Content-Type': 'application/zip',
                   'x-amz-server-side-encryption-context': Buffer.from(encryptionContext, 'utf8').toString('base64'),
               }
-    const response = await got(resp.uploadUrl, {
+    const response = await got(resp.uploadUrl!, {
         method: 'PUT',
         body: readFileSync(fileName),
         headers: headersObj,

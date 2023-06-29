@@ -1,0 +1,481 @@
+{
+    "smithy": "1.0",
+    "shapes": {
+        "software.amazon.toolkittelemetry#AWSProduct": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "canary",
+                        "name": "canary"
+                    },
+                    {
+                        "value": "AWS Toolkit For JetBrains",
+                        "name": "toolkitJetBrains"
+                    },
+                    {
+                        "value": "AWS Toolkit For Eclipse",
+                        "name": "toolkitEclipse"
+                    },
+                    {
+                        "value": "AWS Toolkit For VisualStudio",
+                        "name": "toolkitVisualStudio"
+                    },
+                    {
+                        "value": "AWS Toolkit For VS Code",
+                        "name": "toolkitVSCode"
+                    }
+                ]
+            }
+        },
+        "software.amazon.toolkittelemetry#AWSProductVersion": {
+            "type": "string",
+            "traits": {
+                "smithy.api#pattern": "^[\\w+-.]{1,512}$"
+            }
+        },
+        "software.amazon.toolkittelemetry#ClientID": {
+            "type": "string",
+            "traits": {
+                "smithy.api#documentation": "A valid Version 4 UUID is expected, and this should be unique per-client and reused across API calls.",
+                "smithy.api#pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-4[0-9A-Fa-f]{3}-[89ABab][0-9A-Fa-f]{3}-[0-9A-Fa-f]{12}$"
+            }
+        },
+        "aws.api#CloudFormationName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#pattern": "^[A-Z][A-Za-z0-9]+$",
+                "smithy.api#private": {}
+            }
+        },
+        "software.amazon.toolkittelemetry#Command": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 2000
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Comment": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 2000
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Datapoint": {
+            "type": "double",
+            "traits": {
+                "smithy.api#range": {
+                    "min": 0
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Email": {
+            "type": "string",
+            "traits": {
+                "smithy.api#pattern": "^[a-zA-Z0-9.!#$%&amp;'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"
+            }
+        },
+        "software.amazon.toolkittelemetry#EpochTimestamp": {
+            "type": "long",
+            "traits": {
+                "smithy.api#range": {
+                    "min": 0
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#ErrorDetails": {
+            "type": "structure",
+            "members": {
+                "Command": {
+                    "target": "software.amazon.toolkittelemetry#Command",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "EpochTimestamp": {
+                    "target": "software.amazon.toolkittelemetry#EpochTimestamp",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Type": {
+                    "target": "software.amazon.toolkittelemetry#Type",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Message": {
+                    "target": "software.amazon.toolkittelemetry#Message"
+                },
+                "StackTrace": {
+                    "target": "software.amazon.toolkittelemetry#StackTrace",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Key": {
+            "type": "string",
+            "traits": {
+                "smithy.api#pattern": "^\\w[\\w\\.]{0,149}$"
+            }
+        },
+        "software.amazon.toolkittelemetry#Message": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 2048
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Metadata": {
+            "type": "list",
+            "member": {
+                "target": "software.amazon.toolkittelemetry#MetadataEntry"
+            }
+        },
+        "software.amazon.toolkittelemetry#MetadataEntry": {
+            "type": "structure",
+            "members": {
+                "Key": {
+                    "target": "software.amazon.toolkittelemetry#Key"
+                },
+                "Value": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#MetricData": {
+            "type": "list",
+            "member": {
+                "target": "software.amazon.toolkittelemetry#MetricDatum"
+            },
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 20
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#MetricDatum": {
+            "type": "structure",
+            "members": {
+                "MetricName": {
+                    "target": "software.amazon.toolkittelemetry#MetricName",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "EpochTimestamp": {
+                    "target": "software.amazon.toolkittelemetry#EpochTimestamp",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Unit": {
+                    "target": "software.amazon.toolkittelemetry#Unit",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Value": {
+                    "target": "software.amazon.toolkittelemetry#Datapoint",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Metadata": {
+                    "target": "software.amazon.toolkittelemetry#Metadata"
+                },
+                "Passive": {
+                    "target": "software.amazon.toolkittelemetry#Passive"
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#MetricName": {
+            "type": "string",
+            "traits": {
+                "smithy.api#pattern": "^[\\w+-.:]{1,255}$"
+            }
+        },
+        "software.amazon.toolkittelemetry#Passive": {
+            "type": "boolean"
+        },
+        "software.amazon.toolkittelemetry#PostErrorReport": {
+            "type": "operation",
+            "input": {
+                "target": "software.amazon.toolkittelemetry#PostErrorReportRequest"
+            },
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/errorReport",
+                    "code": 200
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#PostErrorReportRequest": {
+            "type": "structure",
+            "members": {
+                "AWSProduct": {
+                    "target": "software.amazon.toolkittelemetry#AWSProduct",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "AWSProductVersion": {
+                    "target": "software.amazon.toolkittelemetry#AWSProductVersion",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Metadata": {
+                    "target": "software.amazon.toolkittelemetry#Metadata"
+                },
+                "Userdata": {
+                    "target": "software.amazon.toolkittelemetry#Userdata"
+                },
+                "ErrorDetails": {
+                    "target": "software.amazon.toolkittelemetry#ErrorDetails",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#PostFeedback": {
+            "type": "operation",
+            "input": {
+                "target": "software.amazon.toolkittelemetry#PostFeedbackRequest"
+            },
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/feedback",
+                    "code": 200
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#PostFeedbackRequest": {
+            "type": "structure",
+            "members": {
+                "AWSProduct": {
+                    "target": "software.amazon.toolkittelemetry#AWSProduct",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "AWSProductVersion": {
+                    "target": "software.amazon.toolkittelemetry#AWSProductVersion",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "OS": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                },
+                "OSVersion": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                },
+                "ParentProduct": {
+                    "target": "software.amazon.toolkittelemetry#Value",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "ParentProductVersion": {
+                    "target": "software.amazon.toolkittelemetry#Value",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Metadata": {
+                    "target": "software.amazon.toolkittelemetry#Metadata"
+                },
+                "Sentiment": {
+                    "target": "software.amazon.toolkittelemetry#Sentiment",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "Comment": {
+                    "target": "software.amazon.toolkittelemetry#Comment",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#PostMetrics": {
+            "type": "operation",
+            "input": {
+                "target": "software.amazon.toolkittelemetry#PostMetricsRequest"
+            },
+            "traits": {
+                "smithy.api#http": {
+                    "method": "POST",
+                    "uri": "/metrics",
+                    "code": 200
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#PostMetricsRequest": {
+            "type": "structure",
+            "members": {
+                "AWSProduct": {
+                    "target": "software.amazon.toolkittelemetry#AWSProduct",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "AWSProductVersion": {
+                    "target": "software.amazon.toolkittelemetry#AWSProductVersion",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "ClientID": {
+                    "target": "software.amazon.toolkittelemetry#ClientID",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                },
+                "OS": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                },
+                "OSVersion": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                },
+                "ParentProduct": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                },
+                "ParentProductVersion": {
+                    "target": "software.amazon.toolkittelemetry#Value"
+                },
+                "MetricData": {
+                    "target": "software.amazon.toolkittelemetry#MetricData",
+                    "traits": {
+                        "smithy.api#required": {}
+                    }
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Sentiment": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "Positive",
+                        "name": "Positive"
+                    },
+                    {
+                        "value": "Negative",
+                        "name": "Negative"
+                    }
+                ]
+            }
+        },
+        "software.amazon.toolkittelemetry#StackTrace": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 16384
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#ToolkitTelemetry": {
+            "type": "service",
+            "version": "2017-07-25",
+            "operations": [
+                {
+                    "target": "software.amazon.toolkittelemetry#PostErrorReport"
+                },
+                {
+                    "target": "software.amazon.toolkittelemetry#PostFeedback"
+                },
+                {
+                    "target": "software.amazon.toolkittelemetry#PostMetrics"
+                }
+            ],
+            "traits": {
+                "smithy.api#documentation": "The entry-point for the Toolkits Telemetry system, events will be distributed from here.",
+                "aws.api#service": {
+                    "sdkId": "ToolkitTelemetry",
+                    "arnNamespace": "toolkit-telemetry",
+                    "cloudFormationName": "ToolkitTelemetry",
+                    "cloudTrailEventSource": "toolkit-telemetry.amazonaws.com",
+                    "endpointPrefix": "client-telemetry"
+                },
+                "aws.auth#sigv4": {
+                    "name": "execute-api"
+                },
+                "aws.protocols#restJson1": {},
+                "smithy.api#title": "AWS Toolkit Telemetry"
+            }
+        },
+        "software.amazon.toolkittelemetry#Type": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 0,
+                    "max": 1024
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Unit": {
+            "type": "string",
+            "traits": {
+                "smithy.api#enum": [
+                    {
+                        "value": "Milliseconds",
+                        "name": "Milliseconds"
+                    },
+                    {
+                        "value": "Bytes",
+                        "name": "Bytes"
+                    },
+                    {
+                        "value": "Percent",
+                        "name": "Percent"
+                    },
+                    {
+                        "value": "Count",
+                        "name": "Count"
+                    },
+                    {
+                        "value": "None",
+                        "name": "None"
+                    }
+                ]
+            }
+        },
+        "software.amazon.toolkittelemetry#Userdata": {
+            "type": "structure",
+            "members": {
+                "Email": {
+                    "target": "software.amazon.toolkittelemetry#Email"
+                },
+                "Comment": {
+                    "target": "software.amazon.toolkittelemetry#Comment"
+                }
+            }
+        },
+        "software.amazon.toolkittelemetry#Value": {
+            "type": "string",
+            "traits": {
+                "smithy.api#length": {
+                    "min": 1,
+                    "max": 200
+                }
+            }
+        }
+    }
+}

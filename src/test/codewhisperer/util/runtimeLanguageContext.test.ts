@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { runtimeLanguageContext, RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
-import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'
+import * as codewhispererClient from '@aws-sdk/client-codewhisperer'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
@@ -159,7 +159,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [originalLanguage, mappedLanguage] of cases) {
             it(`convert ListRecommendationRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
-                const originalRequest: codewhispererClient.ListRecommendationsRequest = {
+                const originalRequest = {
                     fileContext: {
                         leftFileContent: leftFileContent,
                         rightFileContent: rightFileContent,
@@ -169,11 +169,13 @@ describe('runtimeLanguageContext', function () {
                     maxResults: 1,
                     nextToken: 'token',
                 }
-                const actual = languageContext.mapToRuntimeLanguage(originalRequest)
-                const expected: codewhispererClient.ListRecommendationsRequest = {
+                const actual = languageContext.mapToRuntimeLanguage(
+                    originalRequest satisfies codewhispererClient.GenerateRecommendationsRequest
+                )
+                const expected: codewhispererClient.GenerateRecommendationsRequest = {
                     ...originalRequest,
                     fileContext: {
-                        ...originalRequest.fileContext,
+                        ...originalRequest.fileContext!,
                         programmingLanguage: { languageName: mappedLanguage },
                     },
                 }
@@ -181,7 +183,7 @@ describe('runtimeLanguageContext', function () {
             })
 
             it(`convert GenerateRecommendationsRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
-                const originalRequest: codewhispererClient.GenerateRecommendationsRequest = {
+                const originalRequest = {
                     fileContext: {
                         leftFileContent: leftFileContent,
                         rightFileContent: rightFileContent,
@@ -190,11 +192,13 @@ describe('runtimeLanguageContext', function () {
                     },
                     maxResults: 1,
                 }
-                const actual = languageContext.mapToRuntimeLanguage(originalRequest)
+                const actual = languageContext.mapToRuntimeLanguage(
+                    originalRequest satisfies codewhispererClient.GenerateRecommendationsRequest
+                )
                 const expected: codewhispererClient.GenerateRecommendationsRequest = {
                     ...originalRequest,
                     fileContext: {
-                        ...originalRequest.fileContext,
+                        ...originalRequest.fileContext!,
                         programmingLanguage: { languageName: mappedLanguage },
                     },
                 }
