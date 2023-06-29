@@ -93,10 +93,10 @@ export class Ec2ConnectionManager {
         }
 
         if (!isSsmAgentRunning) {
-            throw new ToolkitError('Is SSM running on the target instance?', {
+            throw new ToolkitError('Is SSM Agent running on the target instance?', {
                 code: 'EC2SSMAgentStatus',
                 documentationUri: vscode.Uri.parse(
-                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
+                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html'
                 ),
             })
         }

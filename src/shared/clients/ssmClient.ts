@@ -34,7 +34,7 @@ export class SsmClient {
         return response
     }
 
-    public async describeInstanceInformation(target: string): Promise<SSM.InstanceInformation> {
+    public async describeInstance(target: string): Promise<SSM.InstanceInformation> {
         const client = await this.createSdkClient()
         const requester = async (req: SSM.DescribeInstanceInformationRequest) =>
             client.describeInstanceInformation(req).promise()
@@ -56,7 +56,7 @@ export class SsmClient {
     }
 
     public async getInstancePingStatus(target: string): Promise<string> {
-        const instanceInformation = await this.describeInstanceInformation(target)
+        const instanceInformation = await this.describeInstance(target)
         return instanceInformation ? instanceInformation.PingStatus! : 'Inactive'
     }
 }
