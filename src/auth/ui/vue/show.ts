@@ -243,7 +243,7 @@ export class AuthWebview extends VueWebview {
                 (e instanceof Error && e.name === invalidRequestException) ||
                 (e instanceof ToolkitError && e.cause?.name === invalidRequestException)
             ) {
-                return { id: 'badStartUrl', text: `Failed, maybe verify your Start URL?` }
+                return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
             }
 
             logger.error('Failed to setup.', e)
