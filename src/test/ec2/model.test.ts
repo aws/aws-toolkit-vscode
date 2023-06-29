@@ -10,8 +10,7 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { InstanceStateName } from 'aws-sdk/clients/ec2'
-import { AWSError } from 'aws-sdk'
+import { AWSError, EC2 } from 'aws-sdk'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -25,8 +24,8 @@ describe('Ec2ConnectClient', function () {
             super('test-region')
         }
 
-        public override async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
-            return instanceId.split(':')[0] as InstanceStateName
+        public override async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+            return instanceId.split(':')[0] as EC2.InstanceStateName
         }
     }
 
