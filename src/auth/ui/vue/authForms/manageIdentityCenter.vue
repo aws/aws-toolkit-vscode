@@ -32,11 +32,11 @@
             <div class="form-section">
                 <label class="input-title">Region</label>
                 <label class="small-description">AWS Region that hosts Identity directory</label>
-
                 <div v-on:click="getRegion()" style="display: flex; flex-direction: row; gap: 10px; cursor: pointer">
                     <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
                     <div style="width: 100%; font-weight: 700">{{ data.region ? data.region : 'Not Selected' }}</div>
                 </div>
+                <div class="small-description error-text">{{ errors.region }}</div>
             </div>
 
             <div class="form-section">
@@ -75,7 +75,6 @@ import { AuthError, userCancelled } from '../types'
 import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
 
 const client = WebviewClientFactory.create<AuthWebview>()
-const startUrlId = 'startUrl'
 
 export type IdentityCenterStage = 'START' | 'WAITING_ON_USER' | 'CONNECTED'
 
@@ -109,9 +108,9 @@ export default defineComponent({
             },
             errors: {
                 startUrl: '',
+                region: '',
                 submit: '',
             },
-            canSubmit: false,
             isConnected: false,
 
             stage: 'START' as IdentityCenterStage,
@@ -130,12 +129,10 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
-            if (this.errors.startUrl || !this.data.startUrl) {
-                client.setInvalidInputFields([startUrlId])
-            }
-
-            if (!this.data.startUrl) {
-                this.errors.startUrl = 'Cannot be empty.'
+            // Error checks
+            this.updateEmptyFieldErrors()
+            const fieldsWithError = this.processFieldsWithError()
+            if (fieldsWithError.length > 0) {
                 return
             }
 
@@ -146,6 +143,7 @@ export default defineComponent({
 
             if (authError) {
                 this.errors.submit = authError.text
+                this.processFieldsWithError()
 
                 const result: Result = authError.id === userCancelled ? 'Cancelled' : 'Failed'
                 client.emitAuthAttempt({
@@ -182,20 +180,37 @@ export default defineComponent({
         async getRegion() {
             client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
             const region = await this.state.getRegion()
+            if (!region) {
+                return
+            }
+            this.errors.region = ''
             this.data.region = region.id
         },
         async updateData(key: IdentityCenterKey, value: string) {
             this.errors.submit = '' // If previous submission error, we clear it when user starts typing
             this.state.setValue(key, value)
-
+            await this.updateError(key)
+        },
+        async updateError(key: IdentityCenterKey) {
             if (key === 'startUrl') {
                 this.errors.startUrl = await this.state.getStartUrlError(this.allowExistingStartUrl)
-                if (this.errors.startUrl) {
-                    client.setInvalidInputFields([key])
-                }
             }
-
-            this.canSubmit = await this.state.canSubmit(this.allowExistingStartUrl)
+            this.processFieldsWithError()
+        },
+        updateEmptyFieldErrors() {
+            const cannotBeEmpty = 'Cannot be empty.'
+            if (!this.data.startUrl) {
+                this.errors.startUrl = cannotBeEmpty
+            }
+            if (!this.data.region) {
+                this.errors.region = 'Select a region.'
+            }
+        },
+        /** This is run whenever errors have updated, it keeps the backend up to date about the latest errors */
+        processFieldsWithError(): string[] {
+            const fieldsWithError = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
+            client.setInvalidInputFields(fieldsWithError)
+            return fieldsWithError
         },
         showView() {
             this.state.showView()
@@ -270,19 +285,13 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         return this._stage
     }
 
-    async getRegion(): Promise<Region> {
+    async getRegion(): Promise<Region | undefined> {
         return client.getIdentityCenterRegion()
     }
 
     async getStartUrlError(canUrlExist: boolean) {
         const error = await client.getSsoUrlError(this._data.startUrl, canUrlExist)
         return error ?? ''
-    }
-
-    async canSubmit(canUrlExist: boolean) {
-        const allFieldsFilled = Object.values(this._data).every(val => !!val)
-        const hasErrors = await this.getStartUrlError(canUrlExist)
-        return allFieldsFilled && !hasErrors
     }
 
     protected async getSubmittableDataOrThrow(): Promise<IdentityCenterData> {
@@ -292,7 +301,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
     private static initialData(): IdentityCenterData {
         return {
             startUrl: '',
-            region: 'us-east-1',
+            region: '',
         }
     }
 }

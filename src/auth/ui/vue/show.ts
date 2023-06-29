@@ -184,8 +184,15 @@ export class AuthWebview extends VueWebview {
         vscode.commands.executeCommand('aws.developerTools.showCodeCatalyst')
     }
 
-    async getIdentityCenterRegion(): Promise<Region> {
-        return showRegionPrompter()
+    async getIdentityCenterRegion(): Promise<Region | undefined> {
+        try {
+            return await showRegionPrompter()
+        } catch (e) {
+            if (CancellationError.isUserCancelled(e)) {
+                return undefined
+            }
+            throw e
+        }
     }
 
     /**
