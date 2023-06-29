@@ -16,6 +16,6 @@ export const AuthFormDisplayName: Record<AuthFormId, string> = {
     builderIdCodeCatalyst: 'CodeCatalyst with AWS Builder ID',
     builderIdCodeWhisperer: 'CodeWhisperer with AWS Builder ID',
     identityCenterCodeWhisperer: 'CodeWhisperer with IAM Identity Center',
-    identityCenterExplorer: 'Explorer with IAM Identity Center',
+    identityCenterExplorer: 'AWS Explorer with IAM Identity Center',
     aggregateExplorer: '',
 } as const
