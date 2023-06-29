@@ -5,7 +5,7 @@
         <div class="centered-items">
             <img
                 class="service-item-content-image"
-                src="https://docs.aws.amazon.com/images/codewhisperer/latest/userguide/images/cw-c9-function-from-comment.gif"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
                 alt="CodeWhisperer example GIF"
             />
         </div>

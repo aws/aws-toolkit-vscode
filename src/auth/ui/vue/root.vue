@@ -7,7 +7,14 @@
         v-show="false"
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
     />
-    <link v-show="false" src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif" />
+    <img
+        v-show="false"
+        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/awsExplorer.gif"
+    />
+    <img
+        v-show="false"
+        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
+    />
 
     <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 5px">
         <!-- Status Bars -->
