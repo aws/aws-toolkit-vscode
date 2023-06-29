@@ -4,14 +4,13 @@
  */
 
 import * as assert from 'assert'
-import { ServiceException } from '@aws-sdk/smithy-client'
-import { InstanceStateName } from '@aws-sdk/client-ec2'
 import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
+import { AWSError, EC2 } from 'aws-sdk'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -25,8 +24,8 @@ describe('Ec2ConnectClient', function () {
             super('test-region')
         }
 
-        public override async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
-            return instanceId.split(':')[0] as InstanceStateName
+        public override async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+            return instanceId.split(':')[0] as EC2.InstanceStateName
         }
     }
 
@@ -45,7 +44,7 @@ describe('Ec2ConnectClient', function () {
     }
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
-        const dummyError: ServiceException = {} as ServiceException
+        const dummyError: AWSError = { name: 'testName', message: 'testMessage', code: 'testCode', time: new Date() }
 
         class MockEc2ConnectClientForError extends MockEc2ConnectClient {
             public override async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -57,7 +56,7 @@ describe('Ec2ConnectClient', function () {
         })
 
         it('determines which error to throw based on if instance is running', async function () {
-            async function testThrowsError(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
+            async function assertThrowsErrorCode(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
                 try {
                     await client.handleStartSessionError(dummyError, testInstance)
                 } catch (err: unknown) {
@@ -65,7 +64,7 @@ describe('Ec2ConnectClient', function () {
                 }
             }
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'pending:noPolicies',
                     region: 'test-region',
@@ -73,7 +72,7 @@ describe('Ec2ConnectClient', function () {
                 'EC2SSMStatus'
             )
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'shutting-down:noPolicies',
                     region: 'test-region',
@@ -81,7 +80,7 @@ describe('Ec2ConnectClient', function () {
                 'EC2SSMStatus'
             )
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'running:noPolicies',
                     region: 'test-region',
@@ -89,7 +88,7 @@ describe('Ec2ConnectClient', function () {
                 'EC2SSMPermission'
             )
 
-            await testThrowsError(
+            await assertThrowsErrorCode(
                 {
                     instanceId: 'running:hasPolicies',
                     region: 'test-region',

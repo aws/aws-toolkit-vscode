@@ -42,6 +42,8 @@ import { showSsoSignIn } from '../../../codewhisperer/commands/basicCommands'
 import { ServiceItemId } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
+import { trustedDomainCancellation } from '../../sso/model'
+import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -51,15 +53,8 @@ export class AuthWebview extends VueWebview {
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
-    private codeCatalystAuth: CodeCatalystAuthenticationProvider
-
-    constructor() {
+    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
         super()
-        const ccAuth = CodeCatalystAuthenticationProvider.instance
-        if (ccAuth === undefined) {
-            throw new ToolkitError('Code Catalyst auth instance singleton was not created externally yet.')
-        }
-        this.codeCatalystAuth = ccAuth
     }
 
     async getProfileNameError(profileName?: SectionName, required = true): Promise<string | undefined> {
@@ -203,15 +198,28 @@ export class AuthWebview extends VueWebview {
             await setupFunc()
             return ''
         } catch (e) {
-            // This scenario will most likely be due to failing to connect from user error.
-            // When the sso login process fails (eg: wrong url) they will come back
-            // to the IDE and cancel the 'waiting for browser response'
             if (
                 CancellationError.isUserCancelled(e) ||
                 (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
             ) {
                 return 'Setup cancelled.'
             }
+
+            if (
+                e instanceof ToolkitError &&
+                (e.code === trustedDomainCancellation || e.cause?.name === trustedDomainCancellation)
+            ) {
+                return `Must 'Open' or 'Configure Trusted Domains', unless you cancelled.`
+            }
+
+            const invalidRequestException = 'InvalidRequestException'
+            if (
+                (e instanceof Error && e.name === invalidRequestException) ||
+                (e instanceof ToolkitError && e.cause?.name === invalidRequestException)
+            ) {
+                return `Failed, maybe verify your Start URL?`
+            }
+
             logger.error('Failed to setup.', e)
             return 'Failed to setup.'
         }
@@ -284,6 +292,7 @@ export class AuthWebview extends VueWebview {
             CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection,
             Auth.instance.onDidChangeActiveConnection,
             Auth.instance.onDidChangeConnectionState,
+            Auth.instance.onDidUpdateConnection,
         ]
 
         // The event handler in the frontend refreshes all connection statuses
@@ -319,6 +328,10 @@ export class AuthWebview extends VueWebview {
     showConnectionQuickPick() {
         return promptAndUseConnection(Auth.instance)
     }
+
+    isExtensionFirstUse(): boolean {
+        return ExtensionUse.instance.isFirstUse()
+    }
 }
 
 const Panel = VueWebview.compilePanel(AuthWebview)
@@ -339,7 +352,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
         wasInitialServiceSet = true
     }
 
-    activePanel ??= new Panel(ctx)
+    activePanel ??= new Panel(ctx, CodeCatalystAuthenticationProvider.fromContext(ctx))
 
     if (!wasInitialServiceSet && serviceToShow) {
         // Webview does not exist yet, preemptively set
@@ -350,7 +363,7 @@ export async function showAuthWebview(ctx: vscode.ExtensionContext, serviceToSho
     activePanel.server.setupConnectionChangeEmitter()
 
     const webview = await activePanel!.show({
-        title: `Add Connection to ${getIdeProperties().company}`,
+        title: `${getIdeProperties().company} Toolkit: Welcome & Getting Started`,
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
         retainContextWhenHidden: true,
     })

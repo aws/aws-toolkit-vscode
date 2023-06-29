@@ -2,9 +2,11 @@
     <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
         <div class="service-item-content-container-title">Amazon CodeWhisperer</div>
 
-        <div>
+        <div class="centered-items">
             <img
+                class="service-item-content-image"
                 src="https://docs.aws.amazon.com/images/codewhisperer/latest/userguide/images/cw-c9-function-from-comment.gif"
+                alt="CodeWhisperer example GIF"
             />
         </div>
 
