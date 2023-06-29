@@ -9,7 +9,7 @@
     />
     <link v-show="false" src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif" />
 
-    <div style="display: flex; flex-direction: column; gap: 20px; padding-top: 20px">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 5px">
         <!-- Status Bars -->
         <div
             v-if="successfulAuthConnection || foundCredentialButNotConnected"
@@ -59,11 +59,11 @@
                 <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
-                    IAM Credential(s) detected. Select one in the&nbsp;<a
+                    IAM Credentials detected, select one in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
-                    >.
+                    >&nbsp;to enable the AWS Explorer.
                 </div>
                 &nbsp;&nbsp;
                 <div
@@ -73,11 +73,11 @@
                 ></div>
             </div>
         </div>
-        <div style="display: flex; flex-direction: row; gap: 20px">
-            <div :style="{ display: 'flex', flexDirection: 'column', gap: '20px' }">
+        <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 10px">
+            <div id="left-side" :style="{ display: 'flex', flexDirection: 'column', gap: '10px' }">
                 <!-- Logo + Title -->
                 <div>
-                    <div style="display: flex; justify-content: left; align-items: center; gap: 25px">
+                    <div style="display: flex; justify-content: left; align-items: center; gap: 10px">
                         <div id="logo">
                             <svg
                                 id="Layer_1"
@@ -372,6 +372,7 @@ export default defineComponent({
     min-width: 500px;
     max-width: 500px;
     box-sizing: border-box;
+    margin-top: 10px;
 }
 
 .service-item-list {
@@ -383,5 +384,11 @@ export default defineComponent({
 .service-item-list li {
     /* Creates an even separation between all list items*/
     margin-top: 10px;
+}
+
+#left-side h1,
+#left-side h2,
+#left-side h3 {
+    margin: 0 0 0 0;
 }
 </style>
