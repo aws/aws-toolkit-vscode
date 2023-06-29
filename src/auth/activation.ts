@@ -51,18 +51,22 @@ export async function initialize(
  */
 async function showManageConnectionsOnStartup() {
     if (!ExtensionUse.instance.isFirstUse()) {
-        getLogger().debug('This is not the users first use of the extension, skipping showing Add Connections page.')
+        getLogger().debug(
+            'firstStartup: This is not the users first use of the extension, skipping showing Add Connections page.'
+        )
         return
     }
 
     if (hasExistingConnections()) {
         // Just in case isFirstUse() is incorrect, but they have connections, they probably aren't new
-        getLogger().debug('The user has existing connections, skipping showing Add Connections page.')
+        getLogger().debug('firstStartup: The user has existing connections, skipping showing Add Connections page.')
         return
     }
 
     if (isInDevEnv()) {
-        getLogger().debug('Detected we are in Dev Env, skipping showing Add Connections page.')
+        // A dev env will have an existing connection so this scenario is redundant. But keeping
+        // for reference.
+        getLogger().debug('firstStartup: Detected we are in Dev Env, skipping showing Add Connections page.')
         return
     }
 
