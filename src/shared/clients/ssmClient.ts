@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM, Session, TerminateSessionResponse, StartSessionResponse } from '@aws-sdk/client-ssm'
+import { AWSError, SSM } from 'aws-sdk'
 import { getLogger } from '../logger/logger'
+import { PromiseResult } from 'aws-sdk/lib/request'
 
 export class SsmClient {
     public constructor(public readonly regionCode: string) {}
@@ -13,19 +14,24 @@ export class SsmClient {
         return new SSM({ region: this.regionCode })
     }
 
-    public async terminateSession(session: Session): Promise<TerminateSessionResponse> {
+    public async terminateSession(
+        session: SSM.Session
+    ): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>> {
         const sessionId = session.SessionId!
         const client = await this.createSdkClient()
-        const termination = await client.terminateSession({ SessionId: sessionId }).catch(err => {
-            getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
-        })
+        const termination = await client
+            .terminateSession({ SessionId: sessionId })
+            .promise()
+            .catch(err => {
+                getLogger().warn(`ssm: failed to terminate session "${sessionId}": %s`, err)
+            })
 
         return termination!
     }
 
-    public async startSession(target: string): Promise<StartSessionResponse> {
+    public async startSession(target: string): Promise<PromiseResult<SSM.StartSessionResponse, AWSError>> {
         const client = await this.createSdkClient()
-        const response = await client.startSession({ Target: target })
+        const response = await client.startSession({ Target: target }).promise()
         return response
     }
 }
