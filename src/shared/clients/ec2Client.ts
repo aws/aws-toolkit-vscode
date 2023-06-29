@@ -32,7 +32,7 @@ export class Ec2Client {
         return tags.filter(tag => tag.Key == targetKey)[0].Value
     }
 
-    public extractInstancesFromReservations(
+    public getInstancesFromReservations(
         reservations: AsyncCollection<EC2.ReservationList | undefined>
     ): AsyncCollection<Ec2Instance> {
         return reservations
