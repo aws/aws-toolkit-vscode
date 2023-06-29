@@ -422,7 +422,16 @@ export class AuthWebview extends VueWebview {
         this.previousFeatureType = undefined
     }
 
-    emitClosed() {
+    async emitOpened() {
+        telemetry.auth_addConnection.emit({
+            source: this.getSource() ?? '',
+            reason: 'opened',
+            authConnectionsCount: await this.getConnectionCount(),
+            authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
+        })
+    }
+
+    async emitClosed() {
         if (this.previousFeatureType && this.previousAuthType) {
             // We are closing the webview, emit a final cancellation if they were
             // interacting with a form but failed to complete it.
@@ -431,8 +440,9 @@ export class AuthWebview extends VueWebview {
 
         telemetry.auth_addConnection.emit({
             source: this.getSource() ?? '',
-            result: 'Cancelled',
             reason: 'closed',
+            authConnectionsCount: await this.getConnectionCount(),
+            authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
         })
         this.setSource(undefined)
     }

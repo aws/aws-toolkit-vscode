@@ -204,6 +204,8 @@ export default defineComponent({
         client.onDidSelectService((id: ServiceItemId) => {
             this.selectService(id)
         })
+
+        client.emitOpened()
     },
     mounted() {
         window.addEventListener('resize', this.updateWindowWidth)
