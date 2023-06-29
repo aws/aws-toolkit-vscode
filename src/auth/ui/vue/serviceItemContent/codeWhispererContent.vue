@@ -38,13 +38,12 @@
                         <div style="font-weight: bold; font-size: medium" :class="collapsibleClass"></div>
                         <div>
                             <div style="font-weight: bold; font-size: 14px">
-                                Have a
-                                <a href="https://aws.amazon.com/codewhisperer/pricing/">Professional Tier</a>
-                                subscription? Sign in with IAM Identity Center.
+                                Have a Professional Tier subscription? Sign in with IAM Identity Center.
                             </div>
                             <div>
                                 Professional Tier offers administrative capabilities for organizations of developers.
                             </div>
+                            <a href="https://aws.amazon.com/codewhisperer/pricing/">Learn more.</a>
                         </div>
                     </div>
                 </div>
