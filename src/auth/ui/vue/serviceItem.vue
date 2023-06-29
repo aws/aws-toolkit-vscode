@@ -16,7 +16,7 @@
             <div class="service-item-title">
                 {{ title }}
             </div>
-            <div class="service-item-description">
+            <div class="service-item-description sub-text-color">
                 {{ description }}
             </div>
         </div>
@@ -128,15 +128,15 @@ export default defineComponent({
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
     resourceExplorer: {
-        title: 'View, modify, and deploy AWS Resources',
+        title: 'AWS Explorer: View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
     },
     codewhisperer: {
-        title: 'AI-powered code suggestions from CodeWhisperer',
+        title: 'CodeWhisperer: AI-powered code suggestions',
         description: 'Build applications faster with your AI coding companion.',
     },
     codecatalyst: {
-        title: 'Launch CodeCatalyst Cloud-based Dev Environments',
+        title: 'CodeCatalyst: Launch cloud-based Dev Environments',
         description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
     },
 }
@@ -158,8 +158,7 @@ export class ServiceItemsState {
      */
     private readonly unlockedServices: Set<ServiceItemId> = new Set(['resourceExplorer'])
 
-    /** Note a service item is pre-selected by default */
-    private currentlySelected?: ServiceItemId = 'resourceExplorer'
+    private currentlySelected?: ServiceItemId = undefined
 
     /**
      * The Ids of the service items, separated by the ones that are locked vs. unlocked
@@ -227,7 +226,7 @@ export class ServiceItemsState {
 /* ******** Container ******** */
 
 .service-item-container {
-    background-color: #292929;
+    background-color: var(--vscode-sideBar-background);
     display: flex;
     margin-top: 10px;
     padding: 20px 15px 20px 15px;
@@ -242,8 +241,8 @@ export class ServiceItemsState {
 
 /* When a service item was clicked */
 .service-item-container-selected {
-    background-color: #3c3c3c;
-    border-color: #0097fb;
+    background-color: var(--vscode-sideBar-border);
+    border-color: var(--vscode-button-background);
 }
 
 /* ******** Icon ******** */
@@ -254,18 +253,17 @@ export class ServiceItemsState {
 
 /* The checkmark symbol */
 .unlocked {
-    color: #73c991;
+    color: var(--vscode-charts-green);
 }
 
 /* The lock symbol but the user has clicked it */
 .locked-selected {
-    color: #0097fb;
+    color: var(--vscode-button-background);
 }
 
 /* ******** Text ******** */
 
 .service-item-title {
-    color: #ffffff;
     font-size: 13px;
     font-weight: 800;
     font-family: 'Verdana';
@@ -275,7 +273,6 @@ export class ServiceItemsState {
 }
 
 .service-item-description {
-    color: #cccccc;
     font-size: 12px;
     font-weight: 500;
     font-family: 'Verdana';

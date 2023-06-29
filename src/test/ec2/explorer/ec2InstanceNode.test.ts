@@ -5,13 +5,12 @@
 
 import * as assert from 'assert'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
-import { Instance } from '@aws-sdk/client-ec2'
-import { getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { Ec2Instance, getNameOfInstance } from '../../../shared/clients/ec2Client'
 import { contextValueEc2 } from '../../../ec2/explorer/ec2ParentNode'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
-    let testInstance: Instance
+    let testInstance: Ec2Instance
 
     before(function () {
         testInstance = {

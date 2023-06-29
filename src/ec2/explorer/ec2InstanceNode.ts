@@ -6,45 +6,47 @@
 import { getNameOfInstance } from '../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { Instance } from '@aws-sdk/client-ec2'
+import { Ec2Instance } from '../../shared/clients/ec2Client'
+import globals from '../../shared/extensionGlobals'
 import { Ec2Selection } from '../utils'
-
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public override readonly regionCode: string,
-        private instance: Instance,
+        private instance: Ec2Instance,
         public override readonly contextValue: string
     ) {
         super('')
         this.update(instance)
     }
 
-    public update(newInstance: Instance) {
+    public update(newInstance: Ec2Instance) {
         this.setInstance(newInstance)
         this.label = this.name
-        this.tooltip = this.instanceId
+        this.tooltip = this.InstanceId
     }
 
-    public setInstance(newInstance: Instance) {
+    public setInstance(newInstance: Ec2Instance) {
         this.instance = newInstance
     }
 
     public toSelection(): Ec2Selection {
         return {
             region: this.regionCode,
-            instanceId: this.instanceId,
+            instanceId: this.InstanceId,
         }
     }
 
     public get name(): string {
-        return getNameOfInstance(this.instance) ?? 'Unnamed instance'
+        return getNameOfInstance(this.instance) ?? '(no name)'
     }
 
-    public get instanceId(): string {
+    public get InstanceId(): string {
         return this.instance.InstanceId!
     }
 
     public get arn(): string {
-        return 'testArn'
+        return `arn:aws:ec2:${this.regionCode}:${globals.awsContext.getCredentialAccountId()}:instance/${
+            this.InstanceId
+        }`
     }
 }
