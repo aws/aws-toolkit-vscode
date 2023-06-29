@@ -134,9 +134,12 @@ export default defineComponent({
         },
         /** Updates the error using the current data */
         async updateDataError(key: CredentialsDataKey): Promise<void> {
-            return this.state.getFormatError(key).then(error => {
+            await this.state.getFormatError(key).then(error => {
                 this.errors[key] = error ?? ''
             })
+
+            const fieldsWithError = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
+            client.setInvalidInputFields(fieldsWithError)
         },
         async updateSubmittableStatus() {
             return this.state.getSubmissionErrors().then(errors => {
@@ -153,7 +156,9 @@ export default defineComponent({
             client.startAuthFormInteraction('awsResource', 'sharedCredentials')
 
             if (this.setCannotBeEmptyErrors() || (await this.state.getSubmissionErrors())) {
-                const fieldsWithErrors = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
+                const fieldsWithErrors = Object.keys(this.errors).filter(
+                    key => this.errors[key as keyof typeof this.errors]
+                )
 
                 client.emitAuthAttempt({
                     featureType: 'awsResource',

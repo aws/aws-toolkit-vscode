@@ -190,6 +190,9 @@ export default defineComponent({
 
             if (key === 'startUrl') {
                 this.errors.startUrl = await this.state.getStartUrlError(this.allowExistingStartUrl)
+                if (this.errors.startUrl) {
+                    client.setInvalidInputFields([key])
+                }
             }
 
             this.canSubmit = await this.state.canSubmit(this.allowExistingStartUrl)
