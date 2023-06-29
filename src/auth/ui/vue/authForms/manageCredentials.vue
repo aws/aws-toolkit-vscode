@@ -122,6 +122,8 @@ export default defineComponent({
     },
     methods: {
         setNewValue(key: CredentialsDataKey, newVal: string) {
+            client.startAuthFormInteraction('awsResource', 'sharedCredentials')
+
             // If there is an error under the submit button
             // we can clear it since there is new data
             this.errors.submit = ''
@@ -148,7 +150,17 @@ export default defineComponent({
             })
         },
         async submitData() {
+            client.startAuthFormInteraction('awsResource', 'sharedCredentials')
+
             if (this.setCannotBeEmptyErrors() || (await this.state.getSubmissionErrors())) {
+                const fieldsWithErrors = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
+
+                client.emitAuthAttempt({
+                    featureType: 'awsResource',
+                    authType: 'sharedCredentials',
+                    result: 'Failed',
+                    invalidFields: fieldsWithErrors,
+                })
                 return
             }
 
@@ -157,12 +169,26 @@ export default defineComponent({
 
             const error = await this.state.getAuthenticationError()
             if (error) {
+                client.emitAuthAttempt({
+                    featureType: 'awsResource',
+                    authType: 'sharedCredentials',
+                    result: 'Failed',
+                    reason: error.key,
+                })
                 this.errors.submit = error.error
                 return // Do not allow submission since data fails authentication
             }
 
             // submission
-            await this.state.submitData()
+            const successful = await this.state.submitData()
+
+            if (successful) {
+                client.emitAuthAttempt({
+                    featureType: 'awsResource',
+                    authType: 'awsId',
+                    result: 'Succeeded',
+                })
+            }
 
             // post submission (successfully connected)
             this.clearFormData()
@@ -274,7 +300,7 @@ export class CredentialsState implements AuthStatus {
 
     async submitData(): Promise<boolean> {
         const data = await this.getSubmittableDataOrThrow()
-        const submit = client.trySubmitCredentials(data.profileName, data)
+        const submit = await client.trySubmitCredentials(data.profileName, data)
         this.clearData()
         return submit
     }

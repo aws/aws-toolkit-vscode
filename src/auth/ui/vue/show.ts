@@ -80,8 +80,25 @@ export class AuthWebview extends VueWebview {
         return getCredentialsErrors(data)
     }
 
-    async trySubmitCredentials(profileName: SectionName, data: StaticProfile) {
-        return tryAddCredentials(profileName, data, true)
+    /**
+     * @returns true if successfully added credentials
+     */
+    async trySubmitCredentials(profileName: SectionName, data: StaticProfile): Promise<boolean> {
+        try {
+            await tryAddCredentials(profileName, data, true)
+            return true
+        } catch (e) {
+            if (!(e instanceof Error)) {
+                return false
+            }
+            telemetry.auth_addConnection.emit({
+                source: this.getSource() || '',
+                credentialSourceId: 'sharedCredentials',
+                result: 'Failed',
+                reason: e.message,
+            })
+            return false
+        }
     }
 
     /**
@@ -380,18 +397,23 @@ export class AuthWebview extends VueWebview {
             // At this point a user WAS previously interacting with a different auth form
             // and started interacting with a new one (hence the new feature + auth type).
             // We can now indicate that the previous one was cancelled and clear out any state values
-            this.emitAuthAttempt({
-                authType: this.authType,
-                featureType: this.featureType,
-                result: 'Cancelled',
-                invalidFields: this.invalidFields,
-            })
-
-            this.invalidFields = undefined
+            this.endExistingAuthFormInteraction(featureType, authType)
         }
 
         this.authType = authType
         this.featureType = featureType
+    }
+
+    private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
+        this.emitAuthAttempt({
+            authType,
+            featureType,
+            result: 'Cancelled',
+            invalidFields: this.invalidFields,
+            reason: 'switchedAuthForm',
+        })
+
+        this.invalidFields = undefined
     }
 
     endAuthFormInteraction() {
@@ -400,9 +422,16 @@ export class AuthWebview extends VueWebview {
     }
 
     emitClosed() {
+        if (this.featureType && this.authType) {
+            // We are closing the webview, emit a final cancellation if they were
+            // interacting with a form but failed to complete it.
+            this.endExistingAuthFormInteraction(this.featureType, this.authType)
+        }
+
         telemetry.auth_addConnection.emit({
             source: this.getSource() ?? '',
             result: 'Cancelled',
+            reason: 'closed',
         })
         this.setSource(undefined)
     }
