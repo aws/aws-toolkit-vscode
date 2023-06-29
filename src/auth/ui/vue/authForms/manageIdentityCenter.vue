@@ -180,6 +180,7 @@ export default defineComponent({
             this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: actualIsConnected, cause })
         },
         async getRegion() {
+            client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
             const region = await this.state.getRegion()
             this.data.region = region.id
         },
@@ -200,6 +201,9 @@ export default defineComponent({
     },
     watch: {
         'data.startUrl'(value: string) {
+            if (value) {
+                client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
+            }
             this.updateData('startUrl', value)
         },
         'data.region'(value: string) {

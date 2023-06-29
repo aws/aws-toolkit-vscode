@@ -385,47 +385,48 @@ export class AuthWebview extends VueWebview {
         this.invalidFields = fields
     }
 
-    private authType: CredentialSourceId | undefined
-    private featureType: AuthUiElement | undefined
+    private previousAuthType: CredentialSourceId | undefined
+    private previousFeatureType: AuthUiElement | undefined
 
     startAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
         // Check if a previous auth interaction existed and that the new one is not the same as it
         if (
-            (this.featureType !== undefined && this.authType !== undefined) &&
-            (this.featureType !== featureType && this.authType !== authType)
+            this.previousFeatureType !== undefined &&
+            this.previousAuthType !== undefined &&
+            (this.previousFeatureType !== featureType || this.previousAuthType !== authType)
         ) {
             // At this point a user WAS previously interacting with a different auth form
             // and started interacting with a new one (hence the new feature + auth type).
             // We can now indicate that the previous one was cancelled and clear out any state values
-            this.endExistingAuthFormInteraction(featureType, authType)
+            this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
         }
 
-        this.authType = authType
-        this.featureType = featureType
+        this.previousAuthType = authType
+        this.previousFeatureType = featureType
     }
 
-    private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
+    private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId, closed = false) {
         this.emitAuthAttempt({
             authType,
             featureType,
             result: 'Cancelled',
             invalidFields: this.invalidFields,
-            reason: 'switchedAuthForm',
+            reason: closed ? 'closedWindow' : 'switchedAuthForm',
         })
 
         this.invalidFields = undefined
     }
 
     endAuthFormInteraction() {
-        this.authType = undefined
-        this.featureType = undefined
+        this.previousAuthType = undefined
+        this.previousFeatureType = undefined
     }
 
     emitClosed() {
-        if (this.featureType && this.authType) {
+        if (this.previousFeatureType && this.previousAuthType) {
             // We are closing the webview, emit a final cancellation if they were
             // interacting with a form but failed to complete it.
-            this.endExistingAuthFormInteraction(this.featureType, this.authType)
+            this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType, true)
         }
 
         telemetry.auth_addConnection.emit({
