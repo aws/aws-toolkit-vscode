@@ -23,7 +23,7 @@ export class Ec2Client {
         const client = await this.createSdkClient()
         const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
         const collection = pageableToCollection(requester, {}, 'NextToken', 'Reservations')
-        const instances = this.extractInstancesFromReservations(collection)
+        const instances = this.getInstancesFromReservations(collection)
         return instances
     }
 

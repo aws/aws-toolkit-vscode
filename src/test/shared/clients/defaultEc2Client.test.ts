@@ -14,7 +14,7 @@ describe('extractInstancesFromReservations', function () {
     const client = new Ec2Client('')
     it('returns empty when given empty collection', async function () {
         const actualResult = await client
-            .extractInstancesFromReservations(
+            .getInstancesFromReservations(
                 toCollection(async function* () {
                     yield []
                 }) as AsyncCollection<EC2.ReservationList>
@@ -51,9 +51,7 @@ describe('extractInstancesFromReservations', function () {
                 ],
             },
         ]
-        const actualResult = await client
-            .extractInstancesFromReservations(intoCollection([testReservationsList]))
-            .promise()
+        const actualResult = await client.getInstancesFromReservations(intoCollection([testReservationsList])).promise()
         assert.deepStrictEqual(
             [
                 { InstanceId: 'id1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
@@ -88,7 +86,7 @@ describe('extractInstancesFromReservations', function () {
                 },
             ]
             const actualResult = await client
-                .extractInstancesFromReservations(intoCollection([testReservationsList]))
+                .getInstancesFromReservations(intoCollection([testReservationsList]))
                 .promise()
             assert.deepStrictEqual(
                 [{ InstanceId: 'id1' }, { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] }],
