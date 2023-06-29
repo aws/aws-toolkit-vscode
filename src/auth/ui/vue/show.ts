@@ -354,13 +354,14 @@ export class AuthWebview extends VueWebview {
         return ExtensionUse.instance.isFirstUse()
     }
 
-    #authSource?: AuthSource
-
     // -------------------- Telemetry Stuff --------------------
 
     async getConnectionCount(): Promise<number> {
         return (await Auth.instance.listConnections()).length
     }
+
+    /** This represents the cause for the webview to open, wether a certain button was clicked or it opened automatically */
+    #authSource?: AuthSource
 
     setSource(source: AuthSource | undefined) {
         this.#authSource = source
@@ -370,24 +371,44 @@ export class AuthWebview extends VueWebview {
         return this.#authSource
     }
 
+    /**
+     * Represents the 'unlocked' tabs/auth areas in the UI
+     *
+     * We use this to get a high level view of what features are enabled/unlocked
+     */
     private unlockedFeatures: ServiceItemId[] = []
-
     setUnlockedFeatures(unlocked: ServiceItemId[]) {
         this.unlockedFeatures = unlocked
     }
-
     getUnlockedFeatures() {
         return this.unlockedFeatures
     }
 
+    /**
+     * This keeps track of the current auth form fields that have invalid values.
+     *
+     * We use this to hold on to this information since we may need it at a later time.
+     */
     private invalidFields: string[] | undefined
     setInvalidInputFields(fields: string[]) {
         this.invalidFields = fields
     }
 
+    /**
+     * These properties represent the last auth form that we interacted with.
+     *
+     * Eg: Builder ID for CodeWhisperer, Credentials for AWS Explorer
+     */
     private previousAuthType: CredentialSourceId | undefined
     private previousFeatureType: AuthUiElement | undefined
 
+    /**
+     * This function is called whenever some sort of interaction with an auth form happens in
+     * the webview. This helps keeps track of the auth form that was last interacted with.
+     *
+     * If a user starts interacting with a subsequent form this will emit a metric
+     * related to an **unsuccessful** connection attempt to the previous auth form.
+     */
     startAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
         // Check if a previous auth interaction existed and that the new one is not the same as it
         if (
@@ -405,6 +426,10 @@ export class AuthWebview extends VueWebview {
         this.previousFeatureType = featureType
     }
 
+    /**
+     * The metric for when an auth form that was unsuccessfully interacted with is
+     * done being interacted with
+     */
     private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId, closed = false) {
         this.emitAuthAttempt({
             authType,
@@ -417,11 +442,23 @@ export class AuthWebview extends VueWebview {
         this.invalidFields = undefined
     }
 
-    endAuthFormInteraction() {
+    /**
+     * This is run when an auth form interaction was successful.
+     *
+     * We do this so subsequent auth form interaction checks don't
+     * assume that this was cancelled, since we look back at the following
+     * properties to see if an auth form was not successfully completed.
+     */
+    private successfulAuthFormInteraction() {
         this.previousAuthType = undefined
         this.previousFeatureType = undefined
     }
 
+    /**
+     * The metric when the webview is opened.
+     *
+     * Think of this as a snapshot of the state at the start.
+     */
     async emitOpened() {
         telemetry.auth_addConnection.emit({
             source: this.getSource() ?? '',
@@ -431,6 +468,9 @@ export class AuthWebview extends VueWebview {
         })
     }
 
+    /**
+     * The metric emitted when the webview is closed by the user.
+     */
     async emitClosed() {
         if (this.previousFeatureType && this.previousAuthType) {
             // We are closing the webview, emit a final cancellation if they were
@@ -447,12 +487,24 @@ export class AuthWebview extends VueWebview {
         this.setSource(undefined)
     }
 
+    /**
+     * The metric when certain elements in the webview are clicked
+     */
     emitUiClick(id: AuthUiClick) {
         telemetry.ui_click.emit({
             elementId: id,
         })
     }
 
+    /**
+     * This metric is emitted when an attempt to signin/connect/submit auth regardless
+     * of success.
+     *
+     * Details:
+     * - The inclusion of the fields 'credentialSourceId' + 'authUiElement' in this metric
+     *   is the implicit indicator of what this metric resembles.
+     * - The 'reason' field for failures will have the details as to why
+     */
     async emitAuthAttempt(args: {
         authType: CredentialSourceId
         featureType: AuthUiElement
@@ -460,10 +512,6 @@ export class AuthWebview extends VueWebview {
         reason?: string
         invalidFields?: string[]
     }) {
-        // The inclusion of 'credentialSourceId' + 'authUiElement' implies a form completion was attempted
-        // Depending on the 'result' field, it will indicate the success
-        // The 'reason' will provide more specific details for the result
-
         telemetry.auth_addConnection.emit({
             source: this.#authSource ?? '',
             credentialSourceId: args.authType,
@@ -475,9 +523,7 @@ export class AuthWebview extends VueWebview {
         })
 
         if (args.result === 'Succeeded') {
-            // Do this so subsequent forms do not assume that this was Cancelled,
-            // meaning the user started the auth process but then gave up.
-            this.endAuthFormInteraction()
+            this.successfulAuthFormInteraction()
         }
     }
 }
