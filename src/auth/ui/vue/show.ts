@@ -428,13 +428,13 @@ export class AuthWebview extends VueWebview {
      * The metric for when an auth form that was unsuccessfully interacted with is
      * done being interacted with
      */
-    private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId, closed = false) {
+    private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
         this.emitAuthAttempt({
             authType,
             featureType,
             result: 'Cancelled',
             invalidFields: this.invalidFields,
-            reason: closed ? 'closedWindow' : 'switchedAuthForm',
+            reason: 'incompleteAuthForm',
         })
 
         this.invalidFields = undefined
@@ -473,8 +473,9 @@ export class AuthWebview extends VueWebview {
         if (this.previousFeatureType && this.previousAuthType) {
             // We are closing the webview, emit a final cancellation if they were
             // interacting with a form but failed to complete it.
-            this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType, true)
+            this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
         }
+        this.setSource(undefined)
 
         telemetry.auth_addConnection.emit({
             source: this.getSource() ?? '',
@@ -482,7 +483,6 @@ export class AuthWebview extends VueWebview {
             authConnectionsCount: await this.getConnectionCount(),
             authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
         })
-        this.setSource(undefined)
     }
 
     /**
