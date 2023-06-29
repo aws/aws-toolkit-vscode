@@ -1,10 +1,12 @@
 <template>
     <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">Resource Explorer</div>
+        <div class="service-item-content-container-title">AWS Explorer</div>
 
-        <div>
+        <div class="centered-items">
             <img
-                src="https://github.com/aws/aws-toolkit-vscode/assets/118216176/7542f78b-f6ce-47c9-aa8c-cab48cd06997"
+                class="service-item-content-image"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif"
+                alt="AWS Explorer example GIF"
             />
         </div>
 
@@ -14,7 +16,9 @@
         </div>
 
         <div>
-            <a>Learn more about the Resource Explorer.</a>
+            <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
+                >Learn more about the AWS Explorer.</a
+            >
         </div>
 
         <hr />
@@ -46,7 +50,7 @@
             <div v-on:click="toggleShowCredentials" style="cursor: pointer; display: flex; flex-direction: row">
                 <div style="font-weight: bold; font-size: medium" :class="collapsibleClass(isCredentialsShown)"></div>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px">Add another IAM User Credentials</div>
+                    <div style="font-weight: bold; font-size: 14px">Add another IAM User Credential</div>
                 </div>
             </div>
 
@@ -57,7 +61,7 @@
                 v-show="isCredentialsShown"
             ></CredentialsForm>
 
-            <div>Don't have an AWS account? <a>Sign up for free.</a></div>
+            <div>Don't have an AWS account? <a href="https://aws.amazon.com/free/">Sign up for free.</a></div>
         </div>
         <div v-else class="service-item-content-form-section">
             <IdentityCenterForm
@@ -79,7 +83,7 @@
                 v-show="isCredentialsShown"
             ></CredentialsForm>
 
-            <div>Don't have an AWS account? <a>Sign up for free.</a></div>
+            <div>Don't have an AWS account? <a href="https://aws.amazon.com/free/">Sign up for free.</a></div>
         </div>
     </div>
 </template>

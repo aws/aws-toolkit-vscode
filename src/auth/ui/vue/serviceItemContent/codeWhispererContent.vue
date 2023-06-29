@@ -2,9 +2,11 @@
     <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
         <div class="service-item-content-container-title">Amazon CodeWhisperer</div>
 
-        <div>
+        <div class="centered-items">
             <img
+                class="service-item-content-image"
                 src="https://docs.aws.amazon.com/images/codewhisperer/latest/userguide/images/cw-c9-function-from-comment.gif"
+                alt="CodeWhisperer example GIF"
             />
         </div>
 
@@ -47,6 +49,7 @@
 
                 <IdentityCenterForm
                     :state="identityCenterState"
+                    :allow-existing-start-url="true"
                     @auth-connection-updated="onAuthConnectionUpdated"
                     v-show="isIdentityCenterShown"
                 ></IdentityCenterForm>
@@ -132,6 +135,6 @@ export class CodeWhispererContentState implements AuthStatus {
     flex-direction: column;
     gap: 20px;
     justify-content: center;
-    align-items: center;
+    align-items: left;
 }
 </style>

@@ -5,16 +5,16 @@
 
 import * as assert from 'assert'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
-import { EC2 } from 'aws-sdk'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { EC2 } from 'aws-sdk'
 
-describe('extractInstanceIdsFromReservations', function () {
+describe('extractInstancesFromReservations', function () {
     const client = new Ec2Client('')
     it('returns empty when given empty collection', async function () {
         const actualResult = await client
-            .extractInstanceIdsFromReservations(
+            .getInstancesFromReservations(
                 toCollection(async function* () {
                     yield []
                 }) as AsyncCollection<EC2.ReservationList>
@@ -30,9 +30,11 @@ describe('extractInstanceIdsFromReservations', function () {
                 Instances: [
                     {
                         InstanceId: 'id1',
+                        Tags: [{ Key: 'Name', Value: 'name1' }],
                     },
                     {
                         InstanceId: 'id2',
+                        Tags: [{ Key: 'Name', Value: 'name2' }],
                     },
                 ],
             },
@@ -40,17 +42,25 @@ describe('extractInstanceIdsFromReservations', function () {
                 Instances: [
                     {
                         InstanceId: 'id3',
+                        Tags: [{ Key: 'Name', Value: 'name3' }],
                     },
                     {
                         InstanceId: 'id4',
+                        Tags: [{ Key: 'Name', Value: 'name4' }],
                     },
                 ],
             },
         ]
-        const actualResult = await client
-            .extractInstanceIdsFromReservations(intoCollection([testReservationsList]))
-            .promise()
-        assert.deepStrictEqual(['id1', 'id2', 'id3', 'id4'], actualResult)
+        const actualResult = await client.getInstancesFromReservations(intoCollection([testReservationsList])).promise()
+        assert.deepStrictEqual(
+            [
+                { InstanceId: 'id1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+                { InstanceId: 'id2', name: 'name2', Tags: [{ Key: 'Name', Value: 'name2' }] },
+                { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+                { InstanceId: 'id4', name: 'name4', Tags: [{ Key: 'Name', Value: 'name4' }] },
+            ],
+            actualResult
+        )
     }),
         // Unsure if this test case is needed, but the return type in the SDK makes it possible these are unknown/not returned.
         it('handles undefined and missing pieces in the ReservationList.', async function () {
@@ -69,14 +79,18 @@ describe('extractInstanceIdsFromReservations', function () {
                     Instances: [
                         {
                             InstanceId: 'id3',
+                            Tags: [{ Key: 'Name', Value: 'name3' }],
                         },
                         {},
                     ],
                 },
             ]
             const actualResult = await client
-                .extractInstanceIdsFromReservations(intoCollection([testReservationsList]))
+                .getInstancesFromReservations(intoCollection([testReservationsList]))
                 .promise()
-            assert.deepStrictEqual(['id1', 'id3'], actualResult)
+            assert.deepStrictEqual(
+                [{ InstanceId: 'id1' }, { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] }],
+                actualResult
+            )
         })
 })

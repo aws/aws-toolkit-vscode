@@ -64,11 +64,12 @@ import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
-import { isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
+import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
 import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
+import { showMessageWithUrl } from './shared/utilities/messages'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 
 let localize: nls.LocalizeFunc
@@ -283,16 +284,19 @@ async function handleError(error: unknown, topic: string, defaultMessage: string
         getLogger().verbose(`${topic}: user cancelled`)
         return
     }
-
     const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
     const logId = getLogger().error(`${topic}: %s`, error)
     const message = resolveErrorMessageToDisplay(error, defaultMessage)
 
-    await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
-        if (resp === logsItem) {
-            await Logging.declared.viewLogsAtMessage.execute(logId)
-        }
-    })
+    if (error instanceof ToolkitError && error.documentationUri) {
+        await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
+    } else {
+        await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
+            if (resp === logsItem) {
+                await Logging.declared.viewLogsAtMessage.execute(logId)
+            }
+        })
+    }
 }
 
 export async function deactivate() {

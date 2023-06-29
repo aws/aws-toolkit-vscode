@@ -10,6 +10,8 @@ import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
+import { DevSettings } from '../shared/settings'
+import { ExtensionUse } from '../shared/utilities/vsCodeUtils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -32,4 +34,22 @@ export async function initialize(
         AuthCommandDeclarations.instance,
         new AuthCommandBackend(extensionContext)
     )
+
+    if (DevSettings.instance.isDevMode()) {
+        showManageConnectionsOnStartup()
+    }
+}
+
+/**
+ * Show the Manage Connections page when the extension starts up.
+ *
+ * Additionally, we provide an information message with a button for users to not show it
+ * again on next startup.
+ */
+async function showManageConnectionsOnStartup() {
+    if (!ExtensionUse.instance.isFirstUse()) {
+        return
+    }
+
+    AuthCommandDeclarations.instance.declared.showConnectionsPage.execute()
 }
