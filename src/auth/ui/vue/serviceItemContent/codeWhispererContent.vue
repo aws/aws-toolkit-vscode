@@ -43,7 +43,11 @@
                             <div>
                                 Professional Tier offers administrative capabilities for organizations of developers.
                             </div>
-                            <a href="https://aws.amazon.com/codewhisperer/pricing/">Learn more.</a>
+                            <a
+                                href="https://aws.amazon.com/codewhisperer/pricing/"
+                                v-on:click="uiClick('auth_learnMoreProfessionalTierCodeWhisperer')"
+                                >Learn more.</a
+                            >
                         </div>
                     </div>
                 </div>
@@ -68,7 +72,7 @@ import authFormsState, { AuthStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
-import { AuthWebview } from '../show'
+import { AuthUiClick, AuthWebview } from '../show'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -119,6 +123,9 @@ export default defineComponent({
             if (this.isIdentityCenterShown) {
                 client.emitUiClick('auth_codewhisperer_expandIAMIdentityCenter')
             }
+        },
+        uiClick(id: AuthUiClick) {
+            client.emitUiClick(id)
         },
     },
 })

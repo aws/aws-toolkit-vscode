@@ -547,6 +547,7 @@ export type AuthUiClick =
     | 'auth_learnMoreCodeWhisperer'
     | 'auth_learnMoreCodeCatalyst'
     | 'auth_learnMoreBuilderId'
+    | 'auth_learnMoreProfessionalTierCodeWhisperer'
     | 'auth_explorer_expandIAMIdentityCenter'
     | 'auth_explorer_expandIAMCredentials'
     | 'auth_codewhisperer_expandIAMIdentityCenter'
