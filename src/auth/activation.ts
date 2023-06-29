@@ -104,6 +104,7 @@ async function emitFirstStartupMetrics() {
     telemetry.auth_addConnection.emit({
         source: 'firstStartup' as AuthSource,
         reason: 'firstStartup',
+        result: 'Cancelled',
     })
 
     // Metrics that are emitted if existing connections are detected
@@ -117,6 +118,7 @@ async function emitFirstStartupMetrics() {
             reason,
             credentialSourceId: 'sharedCredentials',
             authConnectionsCount: credentialsConnections.length,
+            result: 'Succeeded',
         })
     }
 }

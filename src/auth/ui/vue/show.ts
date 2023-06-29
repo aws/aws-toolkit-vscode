@@ -37,7 +37,7 @@ import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
-import { AuthError, ServiceItemId, userCancelled } from './types'
+import { AuthError, ServiceItemId, authSucceeded, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
@@ -470,6 +470,7 @@ export class AuthWebview extends VueWebview {
             reason: 'opened',
             authConnectionsCount: await this.getConnectionCount(),
             authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
+            result: 'Cancelled',
         })
     }
 
@@ -477,19 +478,25 @@ export class AuthWebview extends VueWebview {
      * The metric emitted when the webview is closed by the user.
      */
     async emitClosed() {
+        const previousAuthType = this.previousAuthType
+        const previousFeatureType = this.previousFeatureType
         if (this.previousFeatureType && this.previousAuthType) {
             // We are closing the webview, emit a final cancellation if they were
             // interacting with a form but failed to complete it.
             this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
         }
-        this.setSource(undefined)
 
         telemetry.auth_addConnection.emit({
             source: this.getSource() ?? '',
+            authUiElement: previousFeatureType,
+            credentialSourceId: previousAuthType,
             reason: 'closed',
             authConnectionsCount: await this.getConnectionCount(),
             authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
+            result: 'Cancelled',
         })
+
+        this.setSource(undefined)
     }
 
     /**
@@ -523,7 +530,7 @@ export class AuthWebview extends VueWebview {
             authUiElement: args.featureType,
             result: args.result,
             authConnectionsCount: await this.getConnectionCount(),
-            reason: args.reason,
+            reason: args.result === 'Succeeded' ? authSucceeded : args.reason,
             invalidInputFields: args.invalidFields ? builderCommaDelimitedString(args.invalidFields) : undefined,
         })
 
@@ -539,6 +546,7 @@ export type AuthUiClick =
     | 'auth_learnMoreAWSResources'
     | 'auth_learnMoreCodeWhisperer'
     | 'auth_learnMoreCodeCatalyst'
+    | 'auth_learnMoreBuilderId'
     | 'auth_explorer_expandIAMIdentityCenter'
     | 'auth_explorer_expandIAMCredentials'
     | 'auth_codewhisperer_expandIAMIdentityCenter'

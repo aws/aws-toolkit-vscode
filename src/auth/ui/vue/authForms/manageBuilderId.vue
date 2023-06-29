@@ -7,7 +7,7 @@
                 <div class="form-section">
                     <div class="sub-text-color">
                         {{ getDescription() }}
-                        <a :href="signUpUrl">Learn more.</a>
+                        <a :href="signUpUrl" v-on:click="uiClick('auth_learnMoreBuilderId')">Learn more.</a>
                     </div>
                 </div>
 
@@ -116,6 +116,9 @@ export default defineComponent({
         showNodeInView() {
             this.state.showNodeInView()
             client.emitUiClick(this.state.uiClickOpenId)
+        },
+        uiClick(id: AuthUiClick) {
+            client.emitUiClick(id)
         },
         getSignUpUrl() {
             return this.state.getSignUpUrl()

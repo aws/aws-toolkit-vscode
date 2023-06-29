@@ -5,6 +5,7 @@
                 >IAM Identity Center&nbsp;<a
                     class="icon icon-lg icon-vscode-info"
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                    v-on:click="emitUiClick('auth_infoIAMIdentityCenter')"
                 ></a
             ></FormTitle>
             <div v-if="!isConnected" class="sub-text-color">Successor to AWS Single Sign-on</div>
