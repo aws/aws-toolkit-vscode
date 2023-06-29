@@ -366,14 +366,14 @@ describe('SsoAccessTokenProvider', function () {
 
             it('stops the flow if user does not click the link', async function () {
                 stubOpen(false)
-                await assert.rejects(sut.createToken(), CancellationError)
+                await assert.rejects(sut.createToken(), ToolkitError)
             })
 
             it('saves the client registration even when cancelled', async function () {
                 stubOpen(false)
                 const registration = createRegistration(hourInMs)
                 await cache.registration.save({ region }, registration)
-                await assert.rejects(sut.createToken(), CancellationError)
+                await assert.rejects(sut.createToken(), ToolkitError)
                 const cached = await cache.registration.load({ region })
                 assert.deepStrictEqual(cached, registration)
             })

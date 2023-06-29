@@ -5,14 +5,12 @@
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
 import { Ec2Selection, getInstancesFromRegion } from './utils'
-import { Instance } from '@aws-sdk/client-ec2'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
-import { getNameOfInstance } from '../shared/clients/ec2Client'
+import { Ec2Instance } from '../shared/clients/ec2Client'
 
-function asQuickpickItem(instance: Instance): DataQuickPickItem<string> {
-    const instanceName = getNameOfInstance(instance)
+function asQuickpickItem(instance: Ec2Instance): DataQuickPickItem<string> {
     return {
-        label: '$(terminal) \t' + (instanceName ? instanceName : instance.InstanceId),
+        label: '$(terminal) \t' + (instance.name ?? '(no name)'),
         detail: instance.InstanceId,
         data: instance.InstanceId,
     }

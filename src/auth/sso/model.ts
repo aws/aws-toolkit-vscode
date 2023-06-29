@@ -15,6 +15,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { ssoAuthHelpUrl } from '../../shared/constants'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { ToolkitError } from '../../shared/errors'
 
 export interface SsoToken {
     /**
@@ -76,6 +77,7 @@ export interface SsoProfile {
 }
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
+export const trustedDomainCancellation = 'TrustedDomainCancellation'
 
 const tryOpenHelpUrl = (url: vscode.Uri) =>
     openUrl(url).catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))
@@ -89,7 +91,14 @@ export async function openSsoPortalLink(
             getLogger().warn(`auth: failed to copy user code "${authorization.userCode}" to clipboard: %s`, err)
         })
 
-        return vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUri))
+        const didOpen = await vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUri))
+        if (!didOpen) {
+            throw new ToolkitError(`User clicked 'Copy' or 'Cancel' during the Trusted Domain popup`, {
+                code: trustedDomainCancellation,
+                name: trustedDomainCancellation,
+            })
+        }
+        return didOpen
     }
 
     async function showLoginNotification() {
