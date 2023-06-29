@@ -55,7 +55,7 @@ export class SsmClient {
         return response[0]!
     }
 
-    public async getInstancePingStatus(target: string): Promise<string> {
+    public async getInstanceAgentPingStatus(target: string): Promise<string> {
         const instanceInformation = await this.describeInstance(target)
         return instanceInformation ? instanceInformation.PingStatus! : 'Inactive'
     }
