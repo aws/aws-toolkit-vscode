@@ -241,6 +241,7 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
  * Shows a message with a link to the quickstart page.
  */
 async function promptQuickstart(): Promise<void> {
+    return // We want to skip this to reduce clutter, but will look back at improving this
     const view = localize('AWS.command.quickStart', 'View Quick Start')
     const prompt = await vscode.window.showInformationMessage(
         localize(
@@ -286,8 +287,7 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         if (isDifferentVersion(context)) {
             setMostRecentVersion(context)
             if (!isCloud9()) {
-                // TODO: Skip showing quickstart to reduce clutter, but look on how to improve this.
-                // promptQuickstart()
+                promptQuickstart()
             }
         }
     } catch (err) {
