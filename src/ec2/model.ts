@@ -16,6 +16,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
+import { ErrorInformation } from '../shared/errors'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -62,17 +63,9 @@ export class Ec2ConnectionManager {
         return instanceStatus == 'running'
     }
 
-    private throwConnectionError(
-        message: string,
-        code: Ec2ConnectErrorCode,
-        selection: Ec2Selection,
-        documentationUri?: vscode.Uri
-    ) {
+    private throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
-        throw new ToolkitError(
-            generalErrorMessage + message,
-            documentationUri ? { code: code, documentationUri: documentationUri } : { code: code }
-        )
+        throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
@@ -81,7 +74,7 @@ export class Ec2ConnectionManager {
 
         if (!isInstanceRunning) {
             const message = 'Ensure the target instance is running and not currently starting, stopping, or stopped.'
-            this.throwConnectionError(message, 'EC2SSMStatus', selection)
+            this.throwConnectionError(message, selection, { code: 'EC2SSMStatus' })
         }
 
         if (!hasProperPolicies) {
@@ -89,7 +82,10 @@ export class Ec2ConnectionManager {
             const documentationUri = vscode.Uri.parse(
                 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
             )
-            this.throwConnectionError(message, 'EC2SSMPermission', selection, documentationUri)
+            this.throwConnectionError(message, selection, {
+                code: 'EC2SSMPermission',
+                documentationUri: documentationUri,
+            })
         }
     }
 
@@ -112,13 +108,12 @@ export class Ec2ConnectionManager {
         try {
             const response = await this.ssmClient.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
-        } catch (err) {
+        } catch (err: unknown) {
             // Default error if pre-check fails.
-            this.throwConnectionError(
-                'Check that the SSM Agent is running on target instance',
-                'EC2SSMConnect',
-                selection
-            )
+            this.throwConnectionError('Check that the SSM Agent is running on target instance', selection, {
+                code: 'EC2SSMConnect',
+                cause: err as Error,
+            })
         }
     }
 }
