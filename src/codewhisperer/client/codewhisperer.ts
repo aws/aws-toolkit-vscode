@@ -197,7 +197,6 @@ export class DefaultCodeWhispererClient {
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
-        // TODO: Confirm that invoking this API does not honor the telemetry opt-in option
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.isCustomizationFeatureEnabled) {
             return
         }

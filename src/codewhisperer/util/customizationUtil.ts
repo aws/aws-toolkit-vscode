@@ -9,6 +9,7 @@ import {
     newCustomizationAvailableKey,
     newCustomizationMessageMultiple,
     newCustomizationMessageSingle,
+    noAccessToCustomizationsMessage,
     persistedCustomizationsKey,
     selectedCustomizationKey,
 } from '../models/constants'
@@ -35,13 +36,17 @@ export async function notifyNewCustomizations() {
         availableCustomizations = await getAvailableCustomizationsList()
         AuthUtil.instance.isCustomizationFeatureEnabled = true
     } catch (error) {
-        // TODO: figure out the contract that service has
-        if (isAwsError(error) && error.code === 'AccessDeniedException') {
-            // TODO: fix the log to make it not revealing the details
-            getLogger().debug(`User does not have access to the customization feature`)
+        if (
+            isAwsError(error) &&
+            error.code === 'AccessDeniedException' &&
+            error.message == noAccessToCustomizationsMessage
+        ) {
+            getLogger().debug(`User does not have access to customizations`)
             AuthUtil.instance.isCustomizationFeatureEnabled = false
             await setSelectedCustomization(baseCustomization)
             return
+        } else {
+            getLogger().error(`Failed to fetch customizations: %O`, error)
         }
     }
 
@@ -110,6 +115,7 @@ export const setSelectedCustomization = async (customization: Customization) => 
     const selectedCustomizationObj =
         globals.context.globalState.get<{ [id: string]: Customization }>(selectedCustomizationKey) || {}
     selectedCustomizationObj[AuthUtil.instance.conn.id] = customization
+    getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.id}`)
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
     vscode.commands.executeCommand('aws.codeWhisperer.refresh')

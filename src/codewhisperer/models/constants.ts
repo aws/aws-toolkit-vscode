@@ -245,6 +245,8 @@ export const connectionChangeMessage = `Keep using CodeWhisperer with `
 // TODO: align this text with service side
 export const invalidCustomizationMessage = `You are not authorized to access`
 
+export const noAccessToCustomizationsMessage = `Your account is not authorized to use CodeWhisperer Enterprise.`
+
 export const failedToConnectAwsBuilderId = `Failed to connect to AWS Builder ID`
 
 export const failedToConnectIamIdentityCenter = `Failed to connect to IAM Identity Center`
