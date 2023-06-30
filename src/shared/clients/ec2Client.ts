@@ -24,7 +24,12 @@ export class Ec2Client {
         const client = await this.createSdkClient()
 
         const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
-        const collection =pageableToCollection(requester, filters ? { Filters: filters } : {}, 'NextToken', 'Reservations')
+        const collection = pageableToCollection(
+            requester,
+            filters ? { Filters: filters } : {},
+            'NextToken',
+            'Reservations'
+        )
         const instances = this.getInstancesFromReservations(collection)
         return instances
     }
@@ -67,31 +72,6 @@ export class Ec2Client {
                 Values: instanceIds,
             },
         ]
-    }
-
-    /**
-     * Retrieve launch time of given EC2 instance.
-     * @param instanceId target EC2 instance ID
-     * @returns Date object for launch time associated with instance, or undefined if instance doesn't exists or doesn't have one.
-     */
-    public async getInstanceLaunchTime(instanceId: string): Promise<Date | undefined> {
-        const singleInstanceFilter = this.getInstancesFilter([instanceId])
-        try {
-            const instance = (await (await this.getInstances(singleInstanceFilter)).promise())[0]
-            return instance.LaunchTime!
-        } catch (err: unknown) {
-            return undefined
-        }
-    }
-
-    /**
-     * Retrieve association time for IAM role for a given EC2 instance.
-     * @param instanceId target EC2 instance ID
-     * @returns Date of most recent IAM associaton with given instance.
-     */
-    public async getIamAttachDate(instanceId: string): Promise<Date | undefined> {
-        const roleAssociation = await this.getIamInstanceProfileAssociation(instanceId)
-        return roleAssociation ? roleAssociation.Timestamp! : undefined
     }
 
     /**
