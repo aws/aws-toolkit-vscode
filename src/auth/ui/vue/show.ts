@@ -43,6 +43,7 @@ import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
 import { AuthUiElement, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
+import { AuthFormId } from './authForms/types'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -365,6 +366,14 @@ export class AuthWebview extends VueWebview {
         return (await Auth.instance.listConnections()).length
     }
 
+    /** The number of auth connections when the webview first starts. We will diff this to see if new connections were added. */
+    private initialNumConnections: number | undefined
+
+    async setInitialNumConnections() {
+        this.initialNumConnections = await this.getConnectionCount()
+        console.log(this.initialNumConnections)
+    }
+
     /** This represents the cause for the webview to open, wether a certain button was clicked or it opened automatically */
     #authSource?: AuthSource
 
@@ -387,6 +396,15 @@ export class AuthWebview extends VueWebview {
     }
     getUnlockedFeatures() {
         return this.unlockedFeatures
+    }
+
+    private successfulAuthForms: Set<AuthFormId> | undefined
+    authFormSuccess(id: AuthFormId | undefined) {
+        if (!id) {
+            return
+        }
+        this.successfulAuthForms ??= new Set()
+        this.successfulAuthForms.add(id)
     }
 
     /**
@@ -590,7 +608,13 @@ export async function showAuthWebview(
         wasInitialServiceSet = true
     }
 
+    const wasWebviewAlreadyOpen = !!activePanel
+
     activePanel ??= new Panel(ctx, CodeCatalystAuthenticationProvider.fromContext(ctx))
+
+    if (!wasWebviewAlreadyOpen) {
+        await activePanel.server.setInitialNumConnections()
+    }
 
     if (!wasInitialServiceSet && serviceToShow) {
         // Webview does not exist yet, preemptively set

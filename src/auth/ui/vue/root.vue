@@ -294,6 +294,7 @@ export default defineComponent({
             }
             if (args.isConnected && args.cause === 'signIn') {
                 this.successfulAuthConnection = args.id
+                client.authFormSuccess(args.id)
                 // On a successful sign in the state of the current content window
                 // can change. This forces a rerendering of it to have it load the latest state.
                 this.rerenderSelectedContentWindow()
@@ -309,12 +310,15 @@ export default defineComponent({
         async updateServiceConnections() {
             return Promise.all([
                 this.serviceItemsAuthStatus.awsExplorer.getConnectedAuth().then(connectedAuth => {
+                    client.authFormSuccess(connectedAuth)
                     this.updateServiceLock('awsExplorer', !!connectedAuth)
                 }),
                 this.serviceItemsAuthStatus.codewhisperer.getConnectedAuth().then(connectedAuth => {
+                    client.authFormSuccess(connectedAuth)
                     this.updateServiceLock('codewhisperer', !!connectedAuth)
                 }),
                 this.serviceItemsAuthStatus.codecatalyst.getConnectedAuth().then(connectedAuth => {
+                    client.authFormSuccess(connectedAuth)
                     this.updateServiceLock('codecatalyst', !!connectedAuth)
                 }),
             ]).then(() => this.renderItems())
