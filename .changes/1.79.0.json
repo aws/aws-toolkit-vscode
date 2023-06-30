@@ -1,0 +1,10 @@
+{
+	"date": "2023-06-30",
+	"version": "1.79.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "New Add Connection workflow"
+		}
+	]
+}
