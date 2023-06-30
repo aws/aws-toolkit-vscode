@@ -10,7 +10,7 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { AWSError, EC2 } from 'aws-sdk'
+import { EC2 } from 'aws-sdk'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -44,7 +44,6 @@ describe('Ec2ConnectClient', function () {
     }
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
-        const dummyError: AWSError = { name: 'testName', message: 'testMessage', code: 'testCode', time: new Date() }
 
         class MockEc2ConnectClientForError extends MockEc2ConnectClient {
             public override async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -58,7 +57,7 @@ describe('Ec2ConnectClient', function () {
         it('determines which error to throw based on if instance is running', async function () {
             async function assertThrowsErrorCode(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
                 try {
-                    await client.handleStartSessionError(dummyError, testInstance)
+                    await client.checkForStartSessionError(testInstance)
                 } catch (err: unknown) {
                     assert.strictEqual((err as ToolkitError).code, errCode)
                 }
