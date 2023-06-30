@@ -105,7 +105,7 @@ import { defineComponent } from 'vue'
 import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
 import IdentityCenterForm, { ExplorerIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
-import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import ExplorerAggregateForm from '../authForms/manageExplorer.vue'
@@ -132,7 +132,7 @@ export default defineComponent({
         }
     },
     async created() {
-        this.isAuthConnected = await this.state.isAuthConnected()
+        this.isAuthConnected = await this.state.hasConnectedAuth()
         if (!this.isAuthConnected) {
             // This does not get loaded at all when auth is not connected
             // so we'll mark it as loaded as to not block the overall loading
@@ -175,12 +175,9 @@ export default defineComponent({
     },
 })
 
-export class ResourceExplorerContentState implements AuthStatus {
-    async isAuthConnected(): Promise<boolean> {
-        return (
-            (await authFormsState.credentials.isAuthConnected()) ||
-            (await authFormsState.identityCenterExplorer.isAuthConnected())
-        )
+export class ResourceExplorerContentState extends FeatureStatus {
+    getAuthForms(): AuthForm[] {
+        return [authFormsState.credentials, authFormsState.identityCenterExplorer]
     }
 }
 </script>

@@ -71,11 +71,11 @@ import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthUiClick, AuthWebview } from '../show'
-import { AuthStatus } from './shared.vue'
 import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
 import { AuthError, userCancelled } from '../types'
 import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
+import { AuthForm } from './shared.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -239,7 +239,7 @@ type IdentityCenterKey = keyof IdentityCenterData
 /**
  * Manages the state of Builder ID.
  */
-abstract class BaseIdentityCenterState implements AuthStatus {
+abstract class BaseIdentityCenterState implements AuthForm {
     protected _data: IdentityCenterData
     protected _stage: IdentityCenterStage = 'START'
 

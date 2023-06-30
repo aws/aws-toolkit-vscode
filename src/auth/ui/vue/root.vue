@@ -308,14 +308,14 @@ export default defineComponent({
         },
         async updateServiceConnections() {
             return Promise.all([
-                this.serviceItemsAuthStatus.awsExplorer.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('awsExplorer', isConnected)
+                this.serviceItemsAuthStatus.awsExplorer.getConnectedAuth().then(connectedAuth => {
+                    this.updateServiceLock('awsExplorer', !!connectedAuth)
                 }),
-                this.serviceItemsAuthStatus.codewhisperer.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('codewhisperer', isConnected)
+                this.serviceItemsAuthStatus.codewhisperer.getConnectedAuth().then(connectedAuth => {
+                    this.updateServiceLock('codewhisperer', !!connectedAuth)
                 }),
-                this.serviceItemsAuthStatus.codecatalyst.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('codecatalyst', isConnected)
+                this.serviceItemsAuthStatus.codecatalyst.getConnectedAuth().then(connectedAuth => {
+                    this.updateServiceLock('codecatalyst', !!connectedAuth)
                 }),
             ]).then(() => this.renderItems())
         },

@@ -61,7 +61,8 @@ import FormTitle from './formTitle.vue'
 import { SectionName, StaticProfile, StaticProfileKeyErrorMessage } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
-import { AuthStatus } from './shared.vue'
+import { AuthForm } from './shared.vue'
+import { AuthFormId } from './types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -251,7 +252,7 @@ type CredentialsDataKey = keyof CredentialsProfile
 /**
  * Manages the state of credentials data.
  */
-export class CredentialsState implements AuthStatus {
+export class CredentialsState implements AuthForm {
     private _data: CredentialsProfile
 
     constructor(data?: CredentialsProfile) {
@@ -273,6 +274,10 @@ export class CredentialsState implements AuthStatus {
 
     async isAuthConnected(): Promise<boolean> {
         return await client.isCredentialConnected()
+    }
+
+    get id(): AuthFormId {
+        return 'credentials'
     }
 
     async getFormatError(key: CredentialsDataKey): Promise<string | undefined> {

@@ -40,7 +40,7 @@
 import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeCatalystBuilderIdState } from '../authForms/manageBuilderId.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
-import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 
@@ -74,9 +74,9 @@ export default defineComponent({
     },
 })
 
-export class CodeCatalystContentState implements AuthStatus {
-    async isAuthConnected(): Promise<boolean> {
-        return authFormsState.builderIdCodeCatalyst.isAuthConnected()
+export class CodeCatalystContentState extends FeatureStatus {
+    override getAuthForms(): AuthForm[] {
+        return [authFormsState.builderIdCodeCatalyst]
     }
 }
 </script>

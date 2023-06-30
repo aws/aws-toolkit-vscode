@@ -68,7 +68,7 @@ import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageBuilderId.vue'
 import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
-import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
@@ -130,13 +130,9 @@ export default defineComponent({
     },
 })
 
-export class CodeWhispererContentState implements AuthStatus {
-    async isAuthConnected(): Promise<boolean> {
-        const result = await Promise.all([
-            authFormsState.builderIdCodeWhisperer.isAuthConnected(),
-            authFormsState.identityCenterCodeWhisperer.isAuthConnected(),
-        ])
-        return result.filter(isConnected => isConnected).length > 0
+export class CodeWhispererContentState extends FeatureStatus {
+    override getAuthForms(): AuthForm[] {
+        return [authFormsState.builderIdCodeWhisperer, authFormsState.identityCenterCodeWhisperer]
     }
 }
 </script>

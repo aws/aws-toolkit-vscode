@@ -39,12 +39,12 @@
 import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
-import { AuthStatus } from './shared.vue'
 import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthError, userCancelled } from '../types'
 import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
+import { AuthForm } from './shared.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -136,7 +136,7 @@ export default defineComponent({
 /**
  * Manages the state of Builder ID.
  */
-abstract class BaseBuilderIdState implements AuthStatus {
+abstract class BaseBuilderIdState implements AuthForm {
     protected _stage: BuilderIdStage = 'START'
 
     abstract get name(): string

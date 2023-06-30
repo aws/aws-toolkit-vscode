@@ -1,6 +1,6 @@
 <script lang="ts">
 import AwsExplorerContent, { ResourceExplorerContentState } from './awsExplorerContent.vue'
-import { AuthStatus } from '../authForms/shared.vue'
+import { FeatureStatus } from '../authForms/shared.vue'
 import CodeWhispererContent, { CodeWhispererContentState } from './codeWhispererContent.vue'
 import CodeCatalystContent, { CodeCatalystContentState } from './codeCatalystContent.vue'
 import { DefinedComponent } from '../../../../webviews/types'
@@ -19,7 +19,7 @@ const serviceItemsContent: Readonly<Record<ServiceItemId, DefinedComponent>> = {
  * This knows about the overall connection status for
  * the current service.
  */
-export const serviceItemsAuthStatus: Readonly<Record<ServiceItemId, AuthStatus>> = {
+export const serviceItemsAuthStatus: Readonly<Record<ServiceItemId, FeatureStatus>> = {
     awsExplorer: new ResourceExplorerContentState(),
     codecatalyst: new CodeCatalystContentState(),
     codewhisperer: new CodeWhispererContentState(),
