@@ -1,5 +1,5 @@
 <template>
-    <div class="auth-form container-background border-common" id="identity-center-form">
+    <div class="auth-form container-background border-common" id="explorer-form">
         <div>
             <FormTitle :isConnected="isConnected">{{ connectionName }}</FormTitle>
             <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
@@ -85,7 +85,7 @@ export default defineComponent({
 @import './sharedAuthForms.css';
 @import '../shared.css';
 
-#identity-center-form {
+#explorer-form {
     width: 280px;
     height: fit-content;
 }

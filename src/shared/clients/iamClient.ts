@@ -68,4 +68,20 @@ export class DefaultIamClient {
     private async createSdkClient(): Promise<IAM> {
         return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
     }
+
+    public getFriendlyName(arn: string): string {
+        const tokens = arn.split('/')
+        if (tokens.length < 2) {
+            throw new Error(`Invalid IAM role ARN (expected format: arn:aws:iam::{id}/{name}): ${arn}`)
+        }
+        return tokens[tokens.length - 1]
+    }
+
+    public async listAttachedRolePolicies(arn: string): Promise<IAM.ListAttachedRolePoliciesResponse> {
+        const client = await this.createSdkClient()
+        const roleName = this.getFriendlyName(arn)
+        const response = await client.listAttachedRolePolicies({ RoleName: roleName }).promise()
+
+        return response
+    }
 }

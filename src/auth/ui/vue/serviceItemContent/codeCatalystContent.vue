@@ -2,9 +2,11 @@
     <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
         <div class="service-item-content-container-title">Amazon CodeCatalyst</div>
 
-        <div>
+        <div class="centered-items">
             <img
-                src="https://github.com/aws/aws-toolkit-vscode/assets/118216176/37e373c5-25f1-4098-95a8-9204daf8dde8"
+                class="service-item-content-image"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
+                alt="CodeCatalyst example GIF"
             />
         </div>
 
@@ -16,7 +18,7 @@
         </div>
 
         <div>
-            <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeCatalyst.</a>
+            <a href="https://aws.amazon.com/codecatalyst/">Learn more about CodeCatalyst.</a>
         </div>
 
         <hr />
