@@ -73,8 +73,8 @@ import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
-import { AuthError, userCancelled } from '../types'
-import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
+import { AuthError } from '../types'
+import { FeatureId } from '../../../../shared/telemetry/telemetry.gen'
 import { AuthForm } from './shared.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -132,39 +132,42 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
+            await client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
+
             // Error checks
             this.updateEmptyFieldErrors()
             const fieldsWithError = this.processFieldsWithError()
             if (fieldsWithError.length > 0) {
+                client.failedAuthAttempt({
+                    authType: 'iamIdentityCenter',
+                    featureType: this.state.featureType,
+                    reason: 'fieldHasError',
+                    invalidInputFields: fieldsWithError,
+                })
                 return
             }
-
-            await client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
 
             this.stage = 'WAITING_ON_USER'
             const authError = await this.state.startIdentityCenterSetup()
 
             if (authError) {
                 this.errors.submit = authError.text
-                this.processFieldsWithError()
-
-                const result: Result = authError.id === userCancelled ? 'Cancelled' : 'Failed'
-                client.emitAuthAttempt({
-                    featureType: this.state.featureType,
-                    authType: 'iamIdentityCenter',
-                    result,
-                    reason: authError.id,
-                })
-
+                const fieldsWithError = this.processFieldsWithError()
                 // We do not run update() when there is a submission error
                 // so we do not trigger a full re-render, instead
                 // only updating this form
                 this.stage = await this.state.stage()
+
+                client.failedAuthAttempt({
+                    authType: 'iamIdentityCenter',
+                    featureType: this.state.featureType,
+                    reason: authError.id,
+                    invalidInputFields: fieldsWithError,
+                })
             } else {
-                client.emitAuthAttempt({
+                client.successfulAuthAttempt({
                     featureType: this.state.featureType,
                     authType: 'iamIdentityCenter',
-                    result: 'Succeeded',
                 })
                 await this.update('signIn')
             }
@@ -210,10 +213,10 @@ export default defineComponent({
             }
         },
         /** This is run whenever errors have updated, it keeps the backend up to date about the latest errors */
-        processFieldsWithError(): string[] {
+        processFieldsWithError(): (keyof typeof this.errors)[] {
             const fieldsWithError = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
             client.setInvalidInputFields(fieldsWithError)
-            return fieldsWithError
+            return fieldsWithError as (keyof typeof this.errors)[]
         },
         showView() {
             this.state.showView()
@@ -223,6 +226,11 @@ export default defineComponent({
     watch: {
         'data.startUrl'(value: string) {
             if (value) {
+                // Edge Case:
+                // Since we CAN allow subsequent identity centers to be added,
+                // we will automatically wipe the form values after success.
+                // That triggers this function, but we only want to
+                // indicate a new form interaction if the user adds text themselves.
                 client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
             }
             this.updateData('startUrl', value)
@@ -251,7 +259,7 @@ abstract class BaseIdentityCenterState implements AuthForm {
     abstract get name(): string
     abstract get uiClickOpenId(): AuthUiClick
     abstract get uiClickSignout(): AuthUiClick
-    abstract get featureType(): AuthUiElement
+    abstract get featureType(): FeatureId
     protected abstract _startIdentityCenterSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
@@ -326,7 +334,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'auth_codewhisperer_signoutIdentityCenter'
     }
 
-    override get featureType(): AuthUiElement {
+    override get featureType(): FeatureId {
         return 'codewhisperer'
     }
 
@@ -373,8 +381,8 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
         return 'auth_explorer_signoutIdentityCenter'
     }
 
-    override get featureType(): AuthUiElement {
-        return 'awsResource'
+    override get featureType(): FeatureId {
+        return 'awsExplorer'
     }
 
     override async stage(): Promise<IdentityCenterStage> {

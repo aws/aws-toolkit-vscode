@@ -194,14 +194,15 @@ export default defineComponent({
         }
     },
     async created() {
+        await this.getAllConnectedAuths().then(connectedAuths => client.setInitialConnectedAuths(connectedAuths))
         this.updateFoundCredentialButNotConnected()
 
         await this.selectInitialService()
-        await this.updateServiceConnections()
+        await this.updateFeatureConnectionStatus()
 
         // This handles auth changes triggered outside of this webview.
         client.onDidConnectionUpdate(() => {
-            this.updateServiceConnections()
+            this.updateFeatureConnectionStatus()
             // This handles the edge case where we have selected a service item
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
@@ -211,8 +212,6 @@ export default defineComponent({
         client.onDidSelectService((id: ServiceItemId) => {
             this.selectService(id)
         })
-
-        client.emitOpened()
     },
     mounted() {
         window.addEventListener('resize', this.updateWindowWidth)
@@ -225,7 +224,6 @@ export default defineComponent({
             const unlocked = this.unlockedItemIds.map(id => {
                 return { status: 'UNLOCKED' as ServiceStatus, id }
             })
-            client.setUnlockedFeatures(unlocked.map(id => id.id))
             const locked = this.lockedItemIds.map(id => {
                 return { status: 'LOCKED' as ServiceStatus, id }
             })
@@ -305,23 +303,33 @@ export default defineComponent({
             // In some cases, during the connection process for one auth method,
             // an already connected auth can be disconnected. This refreshes all
             // auths to show the user the latest state of everything.
-            this.updateServiceConnections()
+            this.updateFeatureConnectionStatus()
         },
-        async updateServiceConnections() {
-            return Promise.all([
-                this.serviceItemsAuthStatus.awsExplorer.getConnectedAuth().then(connectedAuth => {
+        async updateFeatureConnectionStatus() {
+            const allFeatureUpdates = Object.keys(this.serviceItemsAuthStatus).map(key => {
+                const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
+
+                return this.serviceItemsAuthStatus[id].getConnectedAuth().then(connectedAuth => {
                     client.authFormSuccess(connectedAuth)
-                    this.updateServiceLock('awsExplorer', !!connectedAuth)
-                }),
-                this.serviceItemsAuthStatus.codewhisperer.getConnectedAuth().then(connectedAuth => {
-                    client.authFormSuccess(connectedAuth)
-                    this.updateServiceLock('codewhisperer', !!connectedAuth)
-                }),
-                this.serviceItemsAuthStatus.codecatalyst.getConnectedAuth().then(connectedAuth => {
-                    client.authFormSuccess(connectedAuth)
-                    this.updateServiceLock('codecatalyst', !!connectedAuth)
-                }),
-            ]).then(() => this.renderItems())
+                    this.updateServiceLock(id, !!connectedAuth)
+                })
+            })
+            return Promise.all(allFeatureUpdates).then(() => this.renderItems())
+        },
+        async getAllConnectedAuths(): Promise<AuthFormId[]> {
+            const allFeatureStates = Object.keys(this.serviceItemsAuthStatus).map(key => {
+                const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
+                return this.serviceItemsAuthStatus[id]
+            })
+            const connectedAuths: AuthFormId[] = []
+            for (const featureState of allFeatureStates) {
+                for (const authForm of featureState.getAuthForms()) {
+                    if (await authForm.isAuthConnected()) {
+                        connectedAuths.push(authForm.id)
+                    }
+                }
+            }
+            return connectedAuths
         },
         /**
          * This will trigger a re-rendering of the currently shown content window.

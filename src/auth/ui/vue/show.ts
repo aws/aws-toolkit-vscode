@@ -37,13 +37,13 @@ import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { throttle } from '../../../shared/utilities/functionUtils'
-import { AuthError, ServiceItemId, authSucceeded, userCancelled } from './types'
+import { AuthError, ServiceItemId, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
-import { AuthUiElement, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
-import { AuthFormId } from './authForms/types'
+import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
+import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 
 const logger = getLogger()
 export class AuthWebview extends VueWebview {
@@ -87,15 +87,7 @@ export class AuthWebview extends VueWebview {
             await tryAddCredentials(profileName, data, true)
             return true
         } catch (e) {
-            if (!(e instanceof Error)) {
-                return false
-            }
-            telemetry.auth_addConnection.emit({
-                source: this.getSource() || '',
-                credentialSourceId: 'sharedCredentials',
-                result: 'Failed',
-                reason: e.message,
-            })
+            getLogger().error('Failed submitting credentials', e)
             return false
         }
     }
@@ -224,7 +216,7 @@ export class AuthWebview extends VueWebview {
         } catch (e) {
             if (
                 CancellationError.isUserCancelled(e) ||
-                (e instanceof ToolkitError && CancellationError.isUserCancelled(e.cause))
+                (e instanceof ToolkitError && (CancellationError.isUserCancelled(e.cause) || e.cancelled === true))
             ) {
                 return { id: userCancelled, text: 'Setup cancelled.' }
             }
@@ -371,13 +363,15 @@ export class AuthWebview extends VueWebview {
 
     async setInitialNumConnections() {
         this.initialNumConnections = await this.getConnectionCount()
-        console.log(this.initialNumConnections)
     }
 
     /** This represents the cause for the webview to open, wether a certain button was clicked or it opened automatically */
     #authSource?: AuthSource
 
     setSource(source: AuthSource | undefined) {
+        if (this.#authSource) {
+            return
+        }
         this.#authSource = source
     }
 
@@ -390,21 +384,21 @@ export class AuthWebview extends VueWebview {
      *
      * We use this to get a high level view of what features are enabled/unlocked
      */
-    private unlockedFeatures: ServiceItemId[] = []
-    setUnlockedFeatures(unlocked: ServiceItemId[]) {
-        this.unlockedFeatures = unlocked
-    }
-    getUnlockedFeatures() {
-        return this.unlockedFeatures
+    private initialConnectedAuths: Set<AuthFormId> = new Set()
+    setInitialConnectedAuths(auths: AuthFormId[]) {
+        this.initialConnectedAuths = new Set(auths)
     }
 
-    private successfulAuthForms: Set<AuthFormId> | undefined
+    #allConnectedAuths: Set<AuthFormId> | undefined
     authFormSuccess(id: AuthFormId | undefined) {
         if (!id) {
             return
         }
-        this.successfulAuthForms ??= new Set()
-        this.successfulAuthForms.add(id)
+        this.#allConnectedAuths ??= new Set(this.initialConnectedAuths)
+        this.#allConnectedAuths.add(id)
+    }
+    getAllConnectedAuths(): Set<AuthFormId> {
+        return (this.#allConnectedAuths ??= new Set())
     }
 
     /**
@@ -412,37 +406,38 @@ export class AuthWebview extends VueWebview {
      *
      * We use this to hold on to this information since we may need it at a later time.
      */
-    private invalidFields: string[] | undefined
+    private previousInvalidFields: string[] | undefined
     setInvalidInputFields(fields: string[]) {
-        this.invalidFields = fields
+        this.previousInvalidFields = fields
     }
 
     /**
-     * These properties represent the last auth form that we interacted with.
+     * These properties represent the last auth form that we interacted with
+     * that was not successfully completed.
      *
      * Eg: Builder ID for CodeWhisperer, Credentials for AWS Explorer
      */
     private previousAuthType: CredentialSourceId | undefined
-    private previousFeatureType: AuthUiElement | undefined
+    private previousFeatureType: FeatureId | undefined
 
     /**
-     * This function is called whenever some sort of interaction with an auth form happens in
+     * This function is called whenever some sort of user interaction with an auth form happens in
      * the webview. This helps keeps track of the auth form that was last interacted with.
      *
-     * If a user starts interacting with a subsequent form this will emit a metric
-     * related to an **unsuccessful** connection attempt to the previous auth form.
+     * If a user starts interacting with a new form without successfully completing the
+     * 'previous' one, this this will emit a metric related to an **unsuccessful** connection
+     * attempt related to the previous auth form.
      */
-    startAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
-        // Check if a previous auth interaction existed and that the new one is not the same as it
+    async startAuthFormInteraction(featureType: FeatureId, authType: CredentialSourceId) {
         if (
             this.previousFeatureType !== undefined &&
             this.previousAuthType !== undefined &&
             (this.previousFeatureType !== featureType || this.previousAuthType !== authType)
         ) {
             // At this point a user WAS previously interacting with a different auth form
-            // and started interacting with a new one (hence the new feature + auth type).
-            // We can now indicate that the previous one was cancelled and clear out any state values
-            this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
+            // and started interacting with a new one (hence the different feature + auth type).
+            // We can now emit the result of the previous auth form.
+            await this.stopAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
         }
 
         this.previousAuthType = authType
@@ -453,66 +448,229 @@ export class AuthWebview extends VueWebview {
      * The metric for when an auth form that was unsuccessfully interacted with is
      * done being interacted with
      */
-    private endExistingAuthFormInteraction(featureType: AuthUiElement, authType: CredentialSourceId) {
-        this.emitAuthAttempt({
-            authType,
-            featureType,
-            result: 'Cancelled',
-            invalidFields: this.invalidFields,
-            reason: 'incompleteAuthForm',
-        })
+    private async stopAuthFormInteraction(featureType: FeatureId, authType: CredentialSourceId) {
+        if (
+            this.#previousFailedAuth &&
+            this.#previousFailedAuth.featureType === featureType &&
+            this.#previousFailedAuth.authType === authType
+        ) {
+            // The form we are ending interaction with had failed connection attempts. We will count this as a failure.
+            await this.emitAuthAttempt({
+                authType,
+                featureType,
+                result: 'Failed',
+                reason: this.#previousFailedAuth.reason,
+                invalidFields: this.#previousFailedAuth.invalidInputFields,
+                attempts: this.getPreviousAuthAttempts(featureType, authType),
+            })
+        } else {
+            await this.emitAuthAttempt({
+                authType,
+                featureType,
+                result: 'Cancelled',
+                invalidFields: this.previousInvalidFields,
+                attempts: this.getPreviousAuthAttempts(featureType, authType),
+            })
+        }
 
-        this.invalidFields = undefined
+        this.#previousFailedAuth = undefined
+        this.previousInvalidFields = undefined
     }
 
-    /**
-     * This is run when an auth form interaction was successful.
-     *
-     * We do this so subsequent auth form interaction checks don't
-     * assume that this was cancelled, since we look back at the following
-     * properties to see if an auth form was not successfully completed.
-     */
-    private successfulAuthFormInteraction() {
-        this.previousAuthType = undefined
-        this.previousFeatureType = undefined
-    }
+    #previousFailedAuth:
+        | {
+              authType: CredentialSourceId
+              featureType: FeatureId
+              reason: string
+              invalidInputFields: string[] | undefined
+              attempts: number
+          }
+        | undefined
 
-    /**
-     * The metric when the webview is opened.
-     *
-     * Think of this as a snapshot of the state at the start.
-     */
-    async emitOpened() {
+    async failedAuthAttempt(args: {
+        authType: CredentialSourceId
+        featureType: FeatureId
+        reason: string
+        invalidInputFields?: string[]
+    }) {
+        // Send metric about specific individual failure regardless
         telemetry.auth_addConnection.emit({
-            source: this.getSource() ?? '',
-            reason: 'opened',
-            authConnectionsCount: await this.getConnectionCount(),
-            authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
-            result: 'Cancelled',
+            source: this.#authSource ?? '',
+            credentialSourceId: args.authType,
+            featureId: args.featureType,
+            result: args.reason === userCancelled ? 'Cancelled' : 'Failed',
+            reason: args.reason,
+            invalidInputFields: args.invalidInputFields
+                ? builderCommaDelimitedString(args.invalidInputFields)
+                : undefined,
+            isAggregated: false,
         })
+
+        if (
+            this.#previousFailedAuth &&
+            this.#previousFailedAuth.authType === args.authType &&
+            this.#previousFailedAuth.featureType === args.featureType
+        ) {
+            // Another failed attempt on same auth + feature. Update with newest failure info.
+            this.#previousFailedAuth = {
+                ...this.#previousFailedAuth,
+                ...args,
+                attempts: this.#previousFailedAuth.attempts + 1,
+            }
+        } else {
+            // A new failed attempt on a new auth + feature
+            this.#previousFailedAuth = {
+                invalidInputFields: undefined, // args may not have this field, so we set the default
+                ...args,
+                attempts: 1,
+            }
+        }
+    }
+
+    /** Returns the number of failed attempts for the given auth form */
+    getPreviousAuthAttempts(featureType: FeatureId, authType: CredentialSourceId) {
+        if (
+            this.#previousFailedAuth &&
+            this.#previousFailedAuth.featureType === featureType &&
+            this.#previousFailedAuth.authType === authType
+        ) {
+            return this.#previousFailedAuth.attempts
+        }
+        return 0
+    }
+
+    async successfulAuthAttempt(args: { authType: CredentialSourceId; featureType: FeatureId }) {
+        // All previous failed attempts + 1 successful attempt
+        const authAttempts = this.getPreviousAuthAttempts(args.featureType, args.authType) + 1
+        this.emitAuthAttempt({
+            authType: args.authType,
+            featureType: args.featureType,
+            result: 'Succeeded',
+            attempts: authAttempts,
+        })
+    }
+
+    #totalAuthAttempts: number = 0
+
+    /**
+     * This metric is emitted on an attempt to signin/connect/submit auth regardless
+     * of success.
+     */
+    private async emitAuthAttempt(args: {
+        authType: CredentialSourceId
+        featureType: FeatureId
+        result: Result
+        reason?: string
+        invalidFields?: string[]
+        attempts: number
+    }) {
+        telemetry.auth_addConnection.emit({
+            source: this.#authSource ?? '',
+            credentialSourceId: args.authType,
+            featureId: args.featureType,
+            result: args.result,
+            reason: args.reason,
+            invalidInputFields: args.invalidFields ? builderCommaDelimitedString(args.invalidFields) : undefined,
+            attempts: args.attempts,
+            isAggregated: true,
+        })
+
+        this.#totalAuthAttempts += args.attempts
+
+        if (args.result === 'Succeeded') {
+            // Clear the variables that track the previous uncompleted auth form
+            // since this was successfully completed.
+            this.previousAuthType = undefined
+            this.previousFeatureType = undefined
+            this.#previousFailedAuth = undefined
+        }
     }
 
     /**
      * The metric emitted when the webview is closed by the user.
      */
-    async emitClosed() {
-        const previousAuthType = this.previousAuthType
-        const previousFeatureType = this.previousFeatureType
+    async emitWebviewClosed() {
         if (this.previousFeatureType && this.previousAuthType) {
-            // We are closing the webview, emit a final cancellation if they were
-            // interacting with a form but failed to complete it.
-            this.endExistingAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
+            // We are closing the webview, and have an auth form if they were
+            // interacting but did not complete it.
+            await this.stopAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
         }
 
-        telemetry.auth_addConnection.emit({
+        const allConnectedAuths = this.getAllConnectedAuths()
+        const newConnectedAuths = new Set(
+            [...allConnectedAuths].filter(value => !this.initialConnectedAuths.has(value))
+        )
+        const uncountedBuilderIds = this.getUncountedBuilderIds(allConnectedAuths, newConnectedAuths)
+
+        let numAuthConnections = (await this.getConnectionCount()) + uncountedBuilderIds
+        let numNewAuthConnections = numAuthConnections - this.initialNumConnections! + uncountedBuilderIds
+
+        if (numNewAuthConnections < 0) {
+            // Edge Case:
+            // numAuthConnections gets the latest number of connections, and it is
+            // possible that the user signed out or removed connections they initially had.
+            // If this is the case, we will set the total connections to what it initially was
+            // since we don't consider removing connections as not having existed.
+            numAuthConnections = this.initialNumConnections!
+            numNewAuthConnections = newConnectedAuths.size // best effort guess but can be wrong
+        }
+
+        let result: Result
+
+        if (numNewAuthConnections > 0) {
+            result = 'Succeeded'
+        } else if (this.#totalAuthAttempts > 0) {
+            // There were no new auth connections added, but attempts were made
+            result = 'Failed'
+        } else {
+            // No new auth connections added, but no attempts were made
+            result = 'Cancelled'
+        }
+
+        if (this.getSource() === 'firstStartup' && numNewAuthConnections === 0) {
+            if (this.initialNumConnections! > 0) {
+                // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
+                // system which we discovered. We consider this a success even though they added no new connections.
+                result = 'Succeeded'
+            } else {
+                // A brand new user with no new auth connections did not add any
+                // connections
+                result = 'Failed'
+            }
+        }
+
+        telemetry.auth_addedConnections.emit({
             source: this.getSource() ?? '',
-            authUiElement: previousFeatureType,
-            credentialSourceId: previousAuthType,
-            reason: 'closed',
-            authConnectionsCount: await this.getConnectionCount(),
-            authEnabledAreas: builderCommaDelimitedString(this.getUnlockedFeatures()),
-            result: 'Cancelled',
+            result,
+            attempts: this.#totalAuthAttempts,
+            reason: 'closedWebview',
+            authConnectionsCount: numAuthConnections,
+            newAuthConnectionsCount: numNewAuthConnections,
+            enabledAuthConnections: builderCommaDelimitedString(allConnectedAuths),
+            newEnabledAuthConnections: builderCommaDelimitedString(newConnectedAuths),
         })
+    }
+
+    /**
+     * Additional Builder IDs don't count toward the total connection count,
+     * since they are seen as 1 connection.
+     *
+     * This does some work to find the missing ones that were not considered.
+     */
+    private getUncountedBuilderIds(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
+        const newBuilderIds = [...newAuths].filter(isBuilderIdAuth).length
+        if (this.hadBuilderIdBefore(allAuths, newAuths)) {
+            // Had a builder id so all new builder ids didn't get added.
+            return newBuilderIds
+        }
+        // Didn't have builder id before, so only the first was added, but not the rest (hence -1)
+        return newBuilderIds > 0 ? newBuilderIds - 1 : 0
+    }
+
+    private hadBuilderIdBefore(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
+        const initialAuths = [...allAuths].filter(auth => !newAuths.has(auth))
+        const initialBuilderIds = initialAuths.filter(isBuilderIdAuth)
+        return initialBuilderIds.length > 0
     }
 
     /**
@@ -522,37 +680,6 @@ export class AuthWebview extends VueWebview {
         telemetry.ui_click.emit({
             elementId: id,
         })
-    }
-
-    /**
-     * This metric is emitted when an attempt to signin/connect/submit auth regardless
-     * of success.
-     *
-     * Details:
-     * - The inclusion of the fields 'credentialSourceId' + 'authUiElement' in this metric
-     *   is the implicit indicator of what this metric resembles.
-     * - The 'reason' field for failures will have the details as to why
-     */
-    async emitAuthAttempt(args: {
-        authType: CredentialSourceId
-        featureType: AuthUiElement
-        result: Result
-        reason?: string
-        invalidFields?: string[]
-    }) {
-        telemetry.auth_addConnection.emit({
-            source: this.#authSource ?? '',
-            credentialSourceId: args.authType,
-            authUiElement: args.featureType,
-            result: args.result,
-            authConnectionsCount: await this.getConnectionCount(),
-            reason: args.result === 'Succeeded' ? authSucceeded : args.reason,
-            invalidInputFields: args.invalidFields ? builderCommaDelimitedString(args.invalidFields) : undefined,
-        })
-
-        if (args.result === 'Succeeded') {
-            this.successfulAuthFormInteraction()
-        }
     }
 }
 
@@ -579,7 +706,7 @@ export type AuthUiClick =
 
 // type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-export function builderCommaDelimitedString(strings: string[]): string {
+export function builderCommaDelimitedString(strings: Iterable<string>): string {
     const sorted = Array.from(new Set(strings)).sort((a, b) => a.localeCompare(b))
     return sorted.join(',')
 }
@@ -634,7 +761,7 @@ export async function showAuthWebview(
     if (!subscriptions) {
         subscriptions = [
             webview.onDidDispose(() => {
-                activePanel?.server.emitClosed()
+                activePanel?.server.emitWebviewClosed()
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
                 subscriptions = undefined

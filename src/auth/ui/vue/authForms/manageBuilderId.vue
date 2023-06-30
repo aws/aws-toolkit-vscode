@@ -42,8 +42,8 @@ import FormTitle from './formTitle.vue'
 import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
-import { AuthError, userCancelled } from '../types'
-import { AuthUiElement, Result } from '../../../../shared/telemetry/telemetry.gen'
+import { AuthError } from '../types'
+import { FeatureId } from '../../../../shared/telemetry/telemetry.gen'
 import { AuthForm } from './shared.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
@@ -84,20 +84,17 @@ export default defineComponent({
 
             if (authError) {
                 this.error = authError.text
+                this.stage = await this.state.stage()
 
-                const result: Result = authError.id === userCancelled ? 'Cancelled' : 'Failed'
-                client.emitAuthAttempt({
-                    featureType: this.state.featureType,
+                client.failedAuthAttempt({
                     authType: 'awsId',
-                    result,
+                    featureType: this.state.featureType,
                     reason: authError.id,
                 })
-                this.stage = await this.state.stage()
             } else {
-                client.emitAuthAttempt({
+                client.successfulAuthAttempt({
                     featureType: this.state.featureType,
                     authType: 'awsId',
-                    result: 'Succeeded',
                 })
                 await this.update('signIn')
             }
@@ -143,7 +140,7 @@ abstract class BaseBuilderIdState implements AuthForm {
     abstract get id(): AuthFormId
     abstract get uiClickOpenId(): AuthUiClick
     abstract get uiClickSignout(): AuthUiClick
-    abstract get featureType(): AuthUiElement
+    abstract get featureType(): FeatureId
     protected abstract _startBuilderIdSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
@@ -191,7 +188,7 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return 'auth_codewhisperer_signoutBuilderId'
     }
 
-    override get featureType(): AuthUiElement {
+    override get featureType(): FeatureId {
         return 'codewhisperer'
     }
 
@@ -235,7 +232,7 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
         return 'auth_codecatalyst_signoutBuilderId'
     }
 
-    override get featureType(): AuthUiElement {
+    override get featureType(): FeatureId {
         return 'codecatalyst'
     }
 

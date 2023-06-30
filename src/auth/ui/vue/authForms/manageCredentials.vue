@@ -123,7 +123,14 @@ export default defineComponent({
     },
     methods: {
         setNewValue(key: CredentialsDataKey, newVal: string) {
-            client.startAuthFormInteraction('awsResource', 'sharedCredentials')
+            if (newVal) {
+                // Edge Case:
+                // Since we allow subsequent credentials to be added,
+                // we will automatically wipe the form values after success.
+                // That triggers this function, but we only want to
+                // indicate a new form interaction if the user adds text themselves.
+                client.startAuthFormInteraction('awsExplorer', 'sharedCredentials')
+            }
 
             // If there is an error under the submit button
             // we can clear it since there is new data
@@ -139,8 +146,7 @@ export default defineComponent({
                 this.errors[key] = error ?? ''
             })
 
-            const fieldsWithError = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
-            client.setInvalidInputFields(fieldsWithError)
+            client.setInvalidInputFields(this.getFieldsWithErrors())
         },
         async updateSubmittableStatus() {
             return this.state.getSubmissionErrors().then(errors => {
@@ -154,18 +160,16 @@ export default defineComponent({
             })
         },
         async submitData() {
-            client.startAuthFormInteraction('awsResource', 'sharedCredentials')
+            client.startAuthFormInteraction('awsExplorer', 'sharedCredentials')
 
-            if (this.setCannotBeEmptyErrors() || (await this.state.getSubmissionErrors())) {
-                const fieldsWithErrors = Object.keys(this.errors).filter(
-                    key => this.errors[key as keyof typeof this.errors]
-                )
-
-                client.emitAuthAttempt({
-                    featureType: 'awsResource',
+            const hasEmptyFields = this.setCannotBeEmptyErrors()
+            const fieldsWithErrors = this.getFieldsWithErrors()
+            if (fieldsWithErrors.length > 0) {
+                client.failedAuthAttempt({
+                    featureType: 'awsExplorer',
                     authType: 'sharedCredentials',
-                    result: 'Failed',
-                    invalidFields: fieldsWithErrors,
+                    reason: hasEmptyFields ? 'emptyFields' : 'fieldHasError',
+                    invalidInputFields: this.getFieldsWithErrors(),
                 })
                 return
             }
@@ -175,13 +179,13 @@ export default defineComponent({
 
             const error = await this.state.getAuthenticationError()
             if (error) {
-                client.emitAuthAttempt({
-                    featureType: 'awsResource',
-                    authType: 'sharedCredentials',
-                    result: 'Failed',
-                    reason: error.key,
-                })
                 this.errors.submit = error.error
+                client.failedAuthAttempt({
+                    featureType: 'awsExplorer',
+                    authType: 'sharedCredentials',
+                    reason: error.key,
+                    invalidInputFields: this.getFieldsWithErrors(),
+                })
                 return // Do not allow submission since data fails authentication
             }
 
@@ -189,10 +193,9 @@ export default defineComponent({
             const successful = await this.state.submitData()
 
             if (successful) {
-                client.emitAuthAttempt({
-                    featureType: 'awsResource',
-                    authType: 'awsId',
-                    result: 'Succeeded',
+                client.successfulAuthAttempt({
+                    featureType: 'awsExplorer',
+                    authType: 'sharedCredentials',
                 })
             }
 
@@ -229,6 +232,12 @@ export default defineComponent({
         },
         showResourceExplorer() {
             client.showResourceExplorer()
+        },
+        /** Names of fields that have an error */
+        getFieldsWithErrors(): (keyof typeof this.errors)[] {
+            return Object.keys(this.errors).filter(
+                key => this.errors[key as keyof typeof this.errors]
+            ) as (keyof typeof this.errors)[]
         },
     },
     watch: {
@@ -309,19 +318,9 @@ export class CredentialsState implements AuthForm {
     }
 
     async submitData(): Promise<boolean> {
-        const data = await this.getSubmittableDataOrThrow()
-        const submit = await client.trySubmitCredentials(data.profileName, data)
+        const submit = await client.trySubmitCredentials(this._data.profileName, this._data)
         this.clearData()
         return submit
-    }
-
-    private async getSubmittableDataOrThrow(): Promise<CredentialsProfile> {
-        const errors = await this.getSubmissionErrors()
-        const hasError = errors !== undefined
-        if (hasError) {
-            throw new Error(`authWebview: data should be valid at this point, but is invalid: ${errors}`)
-        }
-        return this._data as CredentialsProfile
     }
 
     private clearData() {
