@@ -57,8 +57,9 @@ export class Ec2ConnectionManager {
         return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    private async isInstanceRunning(instanceId: string): Promise<boolean> {
-        return (await this.ec2Client.getInstanceStatus(instanceId)) == 'running'
+    public async isInstanceRunning(instanceId: string): Promise<boolean> {
+        const instanceStatus = await this.ec2Client.getInstanceStatus(instanceId)
+        return instanceStatus == 'running'
     }
 
     private throwConnectionError(
