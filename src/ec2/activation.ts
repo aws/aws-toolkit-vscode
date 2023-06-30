@@ -10,7 +10,7 @@ import { telemetry } from '../shared/telemetry/telemetry'
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.connectToInstance', async (param?: unknown) => {
-            telemetry.ec2_connectToInstance.run(async span => {
+            await telemetry.ec2_connectToInstance.run(async span => {
                 span.record({ ec2ConnectionType: 'ssm' })
                 await tryConnect()
             })

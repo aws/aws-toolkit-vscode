@@ -16,7 +16,6 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
-import { telemetry } from '../shared/telemetry/telemetry'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -64,7 +63,6 @@ export class Ec2ConnectionManager {
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
 
         if (!isInstanceRunning) {
-            telemetry.record({ result: 'Failed', reason: 'EC2SSMStatus' })
             throw new ToolkitError(
                 generalErrorMessage +
                     'Ensure the target instance is running and not currently starting, stopping, or stopped.',
@@ -73,7 +71,6 @@ export class Ec2ConnectionManager {
         }
 
         if (!hasProperPolicies) {
-            telemetry.record({ result: 'Failed', reason: 'EC2SSMPermission' })
             throw new ToolkitError(
                 generalErrorMessage + 'Ensure the IAM role attached to the instance has the required policies.',
                 {
@@ -84,7 +81,6 @@ export class Ec2ConnectionManager {
                 }
             )
         }
-        telemetry.record({ result: 'Failed', reason: 'EC2SSMConnect' })
 
         throw new ToolkitError(
             'Ensure SSM is running on target instance. For more information see the documentation.',
