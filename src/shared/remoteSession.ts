@@ -22,9 +22,7 @@ export async function openRemoteTerminal(options: vscode.TerminalOptions, onClos
         })
 
         terminal.show()
-    })
-
-    timeout.cancel()
+    }).finally(() => timeout.cancel())
 }
 
 // VSC is logging args to the PTY host log file if shell integration is enabled :(
