@@ -110,7 +110,7 @@ export const getBracketsToRemove = (
         }
 
         // char is the last character in leftContext, aiming to capture case where IDE add the closing parenthesis (), [], {}
-        const char = findFirstNonSpaceChar(leftContext, true)
+        const char = findFirstNonClosedOpneingParen(leftContext, true)
 
         if (char) {
             const originalOffset = editor.document.offsetAt(position2) - recommendation.length + 1
@@ -139,27 +139,6 @@ export const getBracketsToRemove = (
             } else if (hasSameIndentation) {
                 toBeRemoved.push(idx2)
             }
-
-            // v2
-            // if (isSameLine) {
-            //     // remove the closing paren if and only if we can't find an unmatching opening paren within 1000 characters
-            //     const partialLeftContextStart = editor.document.positionAt(
-            //         Math.max(editor.document.offsetAt(start) - 500, 0)
-            //     )
-            //     const partialLeftContext = editor.document.getText(new vscode.Range(partialLeftContextStart, start))
-            //     const reversedPartialLeftContext = [...partialLeftContext].reverse().join('')
-            //     const res = findFirstUnmatchingOpeningParenthesis(reversedPartialLeftContext)
-
-            //     const res2 = findFirstUnmatchingClosingParenthesis(recommendation)
-            //     if (res && isPairedParenthesis(char2, char) && res2 && char2 === res2.char) {
-            //         // only this case we remove the closing parenthesis
-            //         if (indent2.length !== 0) {
-            //             toBeRemoved.push(idx2)
-            //         }
-            //     }
-            // } else if (hasSameIndentation) {
-            //     toBeRemoved.push(idx2)
-            // }
         }
 
         i++
@@ -237,61 +216,6 @@ export async function handleExtraBrackets(
     }
 }
 
-// TODO: refactor the following 2 to be only one, duplicate code
-function findFirstUnmatchingOpeningParenthesis(str: string): { char: string; index: number } | undefined {
-    const parenStack: string[] = []
-    for (let i = 0; i < str.length; i++) {
-        const char = str[i]
-        if (char in closing) {
-            parenStack.push(char)
-        } else if (char in openning) {
-            if (parenStack.length === 0) {
-                return {
-                    char: char,
-                    index: i,
-                }
-            } else {
-                const top = parenStack[parenStack.length - 1]
-                if (top === openning[char as keyof bracketMapType]) {
-                    parenStack.pop()
-                } else {
-                    // syntax error exists
-                    return undefined
-                }
-            }
-        }
-    }
-
-    return undefined
-}
-
-function findFirstUnmatchingClosingParenthesis(str: string): { char: string; index: number } | undefined {
-    const parenStack: string[] = []
-    for (let i = 0; i < str.length; i++) {
-        const char = str[i]
-        if (char in openning) {
-            parenStack.push(char)
-        } else if (char in closing) {
-            if (parenStack.length === 0) {
-                return {
-                    char: char,
-                    index: i,
-                }
-            } else {
-                const top = parenStack[parenStack.length - 1]
-                if (top === closing[char as keyof bracketMapType]) {
-                    parenStack.pop()
-                } else {
-                    // syntax error exists
-                    return undefined
-                }
-            }
-        }
-    }
-
-    return undefined
-}
-
 function isPairedParenthesis(char1: string, char2: string) {
     if (char1.length !== 1 || char2.length !== 1) {
         return false
@@ -307,12 +231,12 @@ function isPairedParenthesis(char1: string, char2: string) {
     return condition1 || condition2
 }
 
-function findFirstNonSpaceChar(str: string, reverseSearch: boolean): string | undefined {
+function findFirstNonClosedOpneingParen(str: string, reverseSearch: boolean): string | undefined {
     if (reverseSearch) {
         str = [...str].reverse().join('')
     }
     for (const char of str) {
-        if (char.trim().length > 0) {
+        if (char in openning) {
             return char
         }
     }
