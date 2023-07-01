@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -25,6 +25,9 @@ import { createCommonButtons } from '../shared/ui/buttons'
 
 type LazyProgress<T> = vscode.Progress<T> & vscode.Disposable & { getToken(): Timeout }
 
+/**
+ * Progress dialog that does not show until `report()` is called.
+ */
 function lazyProgress<T extends Record<string, any>>(timeout: Timeout): LazyProgress<T> {
     let dispose!: () => void
     let progress: vscode.Progress<T>

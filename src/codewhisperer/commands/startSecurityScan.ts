@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -31,6 +31,7 @@ import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { isAwsError } from '../../shared/errors'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -284,7 +285,7 @@ export function showScanCompletedNotification(total: number, scannedFiles: Set<s
             if (value === CodeWhispererConstants.showScannedFilesMessage) {
                 vscode.commands.executeCommand(CodeWhispererConstants.codeScanLogsOutputChannelId)
             } else if (value === learnMore) {
-                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
+                openUrl(vscode.Uri.parse(CodeWhispererConstants.securityScanLearnMoreUri))
             }
         })
 }

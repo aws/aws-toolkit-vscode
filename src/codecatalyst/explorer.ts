@@ -1,11 +1,10 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
 import { RootNode } from '../awsexplorer/localExplorer'
-import { Connection, isBuilderIdConnection } from '../credentials/auth'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
@@ -16,19 +15,12 @@ import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
-
-export const getStartedCommand = Commands.register(
-    'aws.codecatalyst.getStarted',
-    async (authProvider: CodeCatalystAuthenticationProvider) => {
-        const conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
-        if (!(await authProvider.isConnectionOnboarded(conn, true))) {
-            await authProvider.promptOnboarding()
-        }
-    }
-)
+import { Connection, isBuilderIdConnection } from '../auth/connection'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { AuthCommandDeclarations } from '../auth/commands'
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
-    return vscode.env.openExternal(docsUrl)
+    return openUrl(docsUrl)
 })
 
 // Only used in rare cases on C9
@@ -43,10 +35,12 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
-            getStartedCommand.build(auth).asTreeNode({
-                label: 'Start',
-                iconPath: getIcon('vscode-debug-start'),
-            }),
+            AuthCommandDeclarations.instance.declared.showConnectionsPage
+                .build('codecatalystDeveloperTools', 'codecatalyst')
+                .asTreeNode({
+                    label: 'Start',
+                    iconPath: getIcon('vscode-debug-start'),
+                }),
             learnMoreCommand.build(docsUrl).asTreeNode({
                 label: 'Learn More about CodeCatalyst',
                 iconPath: getIcon('vscode-question'),
@@ -125,6 +119,18 @@ export class CodeCatalystRootNode implements RootNode {
         const devfileLocation = await getDevfileLocation(this.devenv.devenvClient)
 
         return getRemoteCommands(this.devenv.summary, devfileLocation)
+    }
+
+    /**
+     * HACK: Since this is assumed to be an immediate child of the
+     * root, we return undefined.
+     *
+     * TODO: Look to have a base root class to extend so we do not
+     * need to implement this here.
+     * @returns
+     */
+    getParent(): TreeNode<unknown> | undefined {
+        return undefined
     }
 
     public async getTreeItem() {

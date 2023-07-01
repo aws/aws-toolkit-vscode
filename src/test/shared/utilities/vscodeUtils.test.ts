@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,6 +7,8 @@ import * as assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 import * as vscodeUtil from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
+import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
 
 describe('vscodeUtils', async function () {
     it('activateExtension(), isExtensionActive()', async function () {
@@ -97,5 +99,26 @@ describe('buildMissingExtensionMessage()', function () {
             message,
             `${feat} requires the ${extName} extension (\'${extId}\') to be installed and enabled.`
         )
+    })
+})
+
+describe('ExtensionUse.isFirstUse()', function () {
+    let fakeState: vscode.Memento
+    let instance: ExtensionUse
+
+    beforeEach(async function () {
+        fakeState = (await FakeExtensionContext.create()).globalState
+        instance = new ExtensionUse()
+    })
+
+    it('is true only on first startup', function () {
+        assert.strictEqual(instance.isFirstUse(fakeState), true, 'Failed on first call.')
+        assert.strictEqual(instance.isFirstUse(fakeState), true, 'Failed on second call.')
+
+        // Mimic new extension startup, since a new instance
+        // is created on each load of the extension.
+        const secondInstance = new ExtensionUse()
+
+        assert.strictEqual(secondInstance.isFirstUse(fakeState), false, 'Failed on new startup.')
     })
 })

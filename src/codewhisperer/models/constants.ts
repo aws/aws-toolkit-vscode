@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -50,6 +50,8 @@ export const space = ' '
 export const lineBreak = '\n'
 
 export const lineBreakWin = '\r\n'
+
+export const supplementalContextTimeoutInMs = 50
 
 /**
  * Ux of recommendations
@@ -260,4 +262,18 @@ export enum UserGroup {
     Classifier = 'Classifier',
     CrossFile = 'CrossFile',
     Control = 'Control',
+}
+
+export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
+
+export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+
+export const crossFileContextConfig = {
+    numberOfChunkToFetch: 60,
+    topK: 3,
+    numberOfLinesEachChunk: 10,
+}
+
+export const utgConfig = {
+    maxSegmentSize: 10200,
 }

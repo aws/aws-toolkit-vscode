@@ -1,0 +1,43 @@
+/* Shared */
+
+button,
+.border-common {
+    border-style: solid;
+    border-width: 2px;
+    border-radius: 4px;
+    border-color: transparent;
+}
+
+/*  */
+.container-background {
+    background-color: var(--vscode-sideBar-background);
+}
+
+.centered-items {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#logo {
+    fill: var(--vscode-foreground);
+}
+
+.main-text-color {
+    color: var(--vscode-foreground);
+}
+
+.sub-text-color {
+    color: var(--vscode-descriptionForeground);
+}
+
+.text-link-color {
+    color: var(--vscode-textLink-foreground);
+}
+
+body div,
+body h1,
+body h2,
+body h3 {
+    color: var(--vscode-foreground);
+}

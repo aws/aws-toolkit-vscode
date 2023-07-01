@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -182,7 +182,7 @@ export class IteratingQuickPickController<TResponse> {
     }
     // eslint-disable-next-line @typescript-eslint/naming-convention
     public static readonly ERROR_ITEM: vscode.QuickPickItem = {
-        label: localize('AWS.picker.dynamic.errorNode.label', 'There was an error retrieving more items.'),
+        label: localize('AWS.picker.dynamic.errorNode.label', 'Failed to load more items.'),
         alwaysShow: true,
     }
 

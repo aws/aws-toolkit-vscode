@@ -1,11 +1,11 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
-import { BaseCredentialsProviderFactory } from '../../../credentials/providers/credentialsProviderFactory'
-import { CredentialsProvider, CredentialsProviderType, CredentialsId } from '../../../credentials/providers/credentials'
+import { BaseCredentialsProviderFactory } from '../../../auth/providers/credentialsProviderFactory'
+import { CredentialsProvider, CredentialsProviderType, CredentialsId } from '../../../auth/providers/credentials'
 
 describe('BaseCredentialsProviderFactory', async function () {
     /**

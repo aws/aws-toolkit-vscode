@@ -1,5 +1,8 @@
 version: 0.2
 
+# Run unprivileged for most phases (except those marked "run-as: root").
+run-as: codebuild-user
+
 env:
     variables:
         AWS_TOOLKIT_TEST_USER_DIR: '/tmp/'
@@ -8,11 +11,21 @@ env:
 
 phases:
     install:
+        run-as: root
         runtime-versions:
             nodejs: 16
+        commands:
+            # Prepare env for unprivileged user.
+            - |
+                mkdir -p ~codebuild-user
+                chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
+                chmod +x ~codebuild-user
+                ls -ld ~codebuild-user
 
     pre_build:
         commands:
+            # CodeBuild ignores env.variables.HOME, so do it manually here :(
+            - export HOME=/home/codebuild-user
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
             # Should only affect tests run through IDEs team-hosted CodeBuild.
             - |
@@ -23,11 +36,12 @@ phases:
                         echo "CodeArtifact connection failed. Falling back to npm"
                     fi
                 fi
-            # --unsafe-perm is needed because CodeBuild/CodePipeline runs as root
-            - npm ci --unsafe-perm
+            - npm ci
 
     build:
         commands:
+            # CodeBuild ignores env.variables.HOME, so do it manually here :(
+            - export HOME=/home/codebuild-user
             # Generate CHANGELOG.md
             - npm run createRelease
             - npm run generateNonCodeFiles

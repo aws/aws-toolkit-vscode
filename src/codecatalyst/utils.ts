@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,6 +7,9 @@ import { Ides } from 'aws-sdk/clients/codecatalyst'
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
+import { CodeCatalystAuthenticationProvider } from './auth'
+import { Commands } from '../shared/vscode/commands2'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 
 /**
  * Builds a web URL from the given CodeCatalyst object.
@@ -54,4 +57,25 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
 /** Returns true if the dev env has a "vscode" IDE runtime. */
 export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
+}
+
+/**
+ * Returns true if we are in a dev env
+ */
+export function isInDevEnv(): boolean {
+    return !!getCodeCatalystDevEnvId()
+}
+
+export const getStartedCommand = Commands.register('aws.codecatalyst.getStarted', setupCodeCatalystBuilderId)
+
+export async function setupCodeCatalystBuilderId(authProvider: CodeCatalystAuthenticationProvider) {
+    let conn = authProvider.activeConnection ?? (await authProvider.promptNotConnected())
+
+    if (authProvider.auth.getConnectionState(conn) === 'invalid') {
+        conn = await authProvider.auth.reauthenticate(conn)
+    }
+
+    if (!(await authProvider.isConnectionOnboarded(conn, true))) {
+        await authProvider.promptOnboarding()
+    }
 }

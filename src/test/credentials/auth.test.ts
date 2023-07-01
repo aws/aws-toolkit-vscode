@@ -1,18 +1,10 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import {
-    AuthNode,
-    Connection,
-    isIamConnection,
-    isSsoConnection,
-    promptForConnection,
-    ssoAccountAccessScopes,
-} from '../../credentials/auth'
 import { ToolkitError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
@@ -22,9 +14,11 @@ import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
-import { SharedCredentialsProviderFactory } from '../../credentials/providers/sharedCredentialsProviderFactory'
+import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
-import { getCredentialsFilename } from '../../credentials/sharedCredentialsFile'
+import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
+import { Connection, isIamConnection, isSsoConnection, ssoAccountAccessScopes } from '../../auth/connection'
+import { AuthNode, promptForConnection } from '../../auth/utils'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })

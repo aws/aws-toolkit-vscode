@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -47,7 +47,7 @@ describe('codewhisperer children nodes', function () {
     it('should build showSsoSignIn command node', function () {
         const node = createSsoSignIn()
 
-        assert.strictEqual(node.resource.id, 'aws.codeWhisperer.sso')
+        assert.strictEqual(node.resource.id, 'aws.auth.manageConnections')
     })
 
     it('should build showLearnMore command node', function () {

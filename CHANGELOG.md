@@ -1,3 +1,19 @@
+## 1.79.0 2023-06-30
+
+- **Feature** New Add Connection workflow
+
+## 1.78.0 2023-06-27
+
+- **Bug Fix** ECS: tasks from unrelated task definitions are shown in the "Open Terminal..." command
+- **Bug Fix** Show re-authentication prompt if connection expires at extension restart.
+- **Feature** Use the `Search Log Group` command to search all log streams in a CloudWatch Log Group
+- **Feature** CodeWhisperer improves auto-suggestions for tsx and jsx
+
+## 1.77.0 2023-06-12
+
+- **Bug Fix** SAM CLI 1.85-1.86 fails on Windows
+- **Feature** CodeWhisperer: Improve file context fetching logic
+
 ## 1.76.0 2023-06-02
 
 - **Bug Fix** Fix CodeWhisperer not found error when it is disabled by users issue #3490

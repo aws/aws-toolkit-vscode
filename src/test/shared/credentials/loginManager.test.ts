@@ -1,16 +1,16 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as AWS from '@aws-sdk/types'
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { LoginManager } from '../../../credentials/loginManager'
-import { CredentialsProvider, CredentialsId } from '../../../credentials/providers/credentials'
-import { CredentialsProviderManager } from '../../../credentials/providers/credentialsProviderManager'
+import { LoginManager } from '../../../auth/deprecated/loginManager'
+import { CredentialsProvider, CredentialsId } from '../../../auth/providers/credentials'
+import { CredentialsProviderManager } from '../../../auth/providers/credentialsProviderManager'
 import { AwsContext } from '../../../shared/awsContext'
-import { CredentialsStore } from '../../../credentials/credentialsStore'
+import { CredentialsStore } from '../../../auth/credentials/store'
 import { assertTelemetryCurried } from '../../testUtil'
 import { DefaultStsClient } from '../../../shared/clients/stsClient'
 

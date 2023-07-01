@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,6 +13,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { PrompterButtons } from '../../shared/ui/buttons'
 import { createQuickPick, DataQuickPickItem, QuickPickPrompter } from '../../shared/ui/pickerPrompter'
 import { supportedLambdaRuntimesUrl } from '../../shared/constants'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export enum RuntimeFamily {
     Unknown,
@@ -155,7 +156,7 @@ function handleDeprecatedRuntime(runtime: Runtime) {
         )
         .then(button => {
             if (button === moreInfo) {
-                vscode.env.openExternal(vscode.Uri.parse(supportedLambdaRuntimesUrl))
+                openUrl(vscode.Uri.parse(supportedLambdaRuntimesUrl))
             }
         })
     throw new Error(`Runtime ${runtime} is deprecated, see: ${supportedLambdaRuntimesUrl}`)

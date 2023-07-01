@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -48,6 +48,7 @@ import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCov
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -61,9 +62,8 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
-    } else {
-        determineUserGroup()
     }
+
     /**
      * CodeWhisperer security panel
      */
@@ -96,7 +96,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }
@@ -111,7 +111,7 @@ export async function activate(context: ExtContext): Promise<void> {
                         )
                         .then(async resp => {
                             if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                vscode.env.openExternal(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
                 }
@@ -198,6 +198,10 @@ export async function activate(context: ExtContext): Promise<void> {
 
     await auth.restore()
 
+    if (auth.isConnectionExpired()) {
+        auth.showReauthenticatePrompt()
+    }
+
     function activateSecurityScan() {
         context.extensionContext.subscriptions.push(
             vscode.window.registerWebviewViewProvider(SecurityPanelViewProvider.viewType, securityPanelViewProvider)
@@ -212,23 +216,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 }
             })
         )
-    }
-
-    function determineUserGroup() {
-        const userGroup = context.extensionContext.globalState.get<CodeWhispererConstants.UserGroup | undefined>(
-            CodeWhispererConstants.userGroupKey
-        )
-        if (userGroup === undefined) {
-            const randomNum = Math.random()
-            const result =
-                randomNum <= 1 / 3
-                    ? CodeWhispererConstants.UserGroup.Control
-                    : randomNum <= 2 / 3
-                    ? CodeWhispererConstants.UserGroup.CrossFile
-                    : CodeWhispererConstants.UserGroup.Classifier
-
-            context.extensionContext.globalState.update(CodeWhispererConstants.userGroupKey, result)
-        }
     }
 
     function getAutoTriggerStatus(): boolean {

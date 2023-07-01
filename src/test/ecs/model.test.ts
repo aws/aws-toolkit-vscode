@@ -1,12 +1,12 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { Cluster, Container, Service } from '../../ecs/model'
 import { DefaultEcsClient } from '../../shared/clients/ecsClient'
 import { assertChildren, assertTreeItem } from '../shared/treeview/testUtil'
-import { createCollectionFromPages } from '../utilities/collectionUtils'
+import { createCollectionFromPages } from '../../shared/utilities/collectionUtils'
 import { stub } from '../utilities/stubber'
 
 const clusterData = {
@@ -29,8 +29,10 @@ const containerData = {
 const getClient = () => stub(DefaultEcsClient, { regionCode: 'us-east-1' })
 
 describe('Container', function () {
+    const serviceName = 'my-service'
+
     it('has a tree item', async function () {
-        const container = new Container(getClient(), containerData)
+        const container = new Container(getClient(), serviceName, containerData)
 
         await assertTreeItem(container, {
             label: containerData.name,
@@ -39,7 +41,7 @@ describe('Container', function () {
     })
 
     it('has a tree item when "enableExecuteCommand" is set', async function () {
-        const container = new Container(getClient(), { ...containerData, enableExecuteCommand: true })
+        const container = new Container(getClient(), serviceName, { ...containerData, enableExecuteCommand: true })
 
         await assertTreeItem(container, {
             label: containerData.name,

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,11 +12,7 @@ import { DefaultSamCliValidator, SamCliValidatorContext, SamCliVersionValidation
 import { SystemUtilities } from '../../systemUtilities'
 import { PerfLog } from '../../logger/logger'
 
-export interface SamCliLocationProvider {
-    getLocation(forceSearch?: boolean): Promise<{ path: string; version: string } | undefined>
-}
-
-export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
+export class SamCliLocationProvider {
     private static samCliLocator: BaseSamCliLocator | undefined
     protected static cachedSamLocation: { path: string; version: string } | undefined
 
@@ -29,38 +25,37 @@ export class DefaultSamCliLocationProvider implements SamCliLocationProvider {
      * Gets the last-found `sam` location, or searches the system if a working
      * `sam` wasn't previously found and cached.
      */
-    public async getLocation(forceSearch?: boolean) {
+    public async getLocation(forceSearch?: boolean): Promise<{ path: string; version: string } | undefined> {
         const perflog = new PerfLog('samCliLocator: getLocation')
-        const cachedLoc = forceSearch ? undefined : DefaultSamCliLocationProvider.cachedSamLocation
+        const cachedLoc = forceSearch ? undefined : SamCliLocationProvider.cachedSamLocation
 
         // Avoid searching the system for `sam` (especially slow on Windows).
-        if (cachedLoc && (await DefaultSamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
+        if (cachedLoc && (await SamCliLocationProvider.isValidSamLocation(cachedLoc.path))) {
             perflog.done()
             return cachedLoc
         }
 
-        DefaultSamCliLocationProvider.cachedSamLocation =
-            await DefaultSamCliLocationProvider.getSamCliLocator().getLocation()
+        SamCliLocationProvider.cachedSamLocation = await SamCliLocationProvider.getSamCliLocator().getLocation()
         perflog.done()
-        return DefaultSamCliLocationProvider.cachedSamLocation
+        return SamCliLocationProvider.cachedSamLocation
     }
 
     public static getSamCliLocator(): SamCliLocationProvider {
-        if (!DefaultSamCliLocationProvider.samCliLocator) {
+        if (!SamCliLocationProvider.samCliLocator) {
             if (process.platform === 'win32') {
-                DefaultSamCliLocationProvider.samCliLocator = new WindowsSamCliLocator()
+                SamCliLocationProvider.samCliLocator = new WindowsSamCliLocator()
             } else {
-                DefaultSamCliLocationProvider.samCliLocator = new UnixSamCliLocator()
+                SamCliLocationProvider.samCliLocator = new UnixSamCliLocator()
             }
         }
 
-        return DefaultSamCliLocationProvider.samCliLocator
+        return SamCliLocationProvider.samCliLocator
     }
 }
 
 abstract class BaseSamCliLocator {
     /** Indicates that findFileInFolders() returned at least once. */
-    static didFind = false
+    static didSearch = false
     protected readonly logger: Logger = getLogger()
 
     public constructor() {
@@ -70,7 +65,7 @@ abstract class BaseSamCliLocator {
     public async getLocation() {
         let location = await this.findFileInFolders(this.getExecutableFilenames(), this.getExecutableFolders())
 
-        if (!location) {
+        if (!location?.version) {
             location = await this.getSystemPathLocation()
         }
 
@@ -81,7 +76,16 @@ abstract class BaseSamCliLocator {
     protected abstract getExecutableFilenames(): string[]
     protected abstract getExecutableFolders(): string[]
 
+    /**
+     * Searches for `sam` in various places and the $PATH.
+     *
+     * If only a broken `sam` is found it is returned with an empty `version`.
+     */
     protected async findFileInFolders(files: string[], folders: string[]) {
+        // Keep the first found "sam" even if it is broken.
+        // This allows us to give a better message than "not found".
+        let brokenSam: string | undefined
+
         const fullPaths: string[] = files
             .map(file => folders.filter(folder => !!folder).map(folder => path.join(folder, file)))
             .reduce((accumulator, paths) => {
@@ -91,7 +95,7 @@ abstract class BaseSamCliLocator {
             })
 
         for (const fullPath of fullPaths) {
-            if (!BaseSamCliLocator.didFind) {
+            if (!BaseSamCliLocator.didSearch) {
                 this.logger.verbose(`samCliLocator: searching in: ${fullPath}`)
             }
             const context: SamCliValidatorContext = {
@@ -103,12 +107,13 @@ abstract class BaseSamCliLocator {
                 try {
                     const validationResult = await validator.getVersionValidatorResult()
                     if (validationResult.validation === SamCliVersionValidation.Valid) {
-                        BaseSamCliLocator.didFind = true
+                        BaseSamCliLocator.didSearch = true
                         return { path: fullPath, version: validationResult.version }
                     }
                     this.logger.warn(
                         `samCliLocator: found invalid SAM CLI (${validationResult.validation}): ${fullPath}`
                     )
+                    brokenSam = brokenSam ?? fullPath
                 } catch (e) {
                     const err = e as Error
                     this.logger.error('samCliLocator failed: %s', err.message)
@@ -116,8 +121,8 @@ abstract class BaseSamCliLocator {
             }
         }
 
-        BaseSamCliLocator.didFind = true
-        return undefined
+        BaseSamCliLocator.didSearch = true
+        return brokenSam ? { path: brokenSam, version: '' } : undefined
     }
 
     /**
@@ -180,7 +185,7 @@ class WindowsSamCliLocator extends BaseSamCliLocator {
 
 class UnixSamCliLocator extends BaseSamCliLocator {
     private static readonly locationPaths: string[] = [
-        '/opt/homebrew/bin/sam',
+        '/opt/homebrew/bin',
         '/usr/local/bin',
         '/usr/bin',
         // WEIRD BUT TRUE: brew installs to /home/linuxbrew/.linuxbrew if

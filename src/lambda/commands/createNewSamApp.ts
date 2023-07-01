@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -48,6 +48,7 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
@@ -309,7 +310,7 @@ export async function createNewSamApplication(
                 )
                 .then(async buttonText => {
                     if (buttonText === helpText) {
-                        vscode.env.openExternal(vscode.Uri.parse(launchConfigDocUrl))
+                        openUrl(vscode.Uri.parse(launchConfigDocUrl))
                     }
                 })
         }
@@ -435,7 +436,7 @@ async function showCompletionNotification(appName: string, configs: string): Pro
     if (action === openJson) {
         await openLaunchJsonFile()
     } else if (action === learnMore) {
-        vscode.env.openExternal(vscode.Uri.parse(debugNewSamAppUrl))
+        openUrl(vscode.Uri.parse(debugNewSamAppUrl))
     }
 }
 

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import { existsSync, statSync, readdirSync, readlinkSync } from 'fs'
@@ -400,6 +400,44 @@ export class JavaDependencyGraph extends DependencyGraph {
             getLogger().error(`${this._languageId} dependency graph error caused by:`, error)
             throw new JavaDependencyGraphError(`${this._languageId} context processing failed.`)
         }
+    }
+
+    async isTestFile(content: string) {
+        const imports = await this.readImports(content)
+        const filteredImport = imports.filter(importStr => {
+            return (
+                importStr.includes('org.junit') ||
+                importStr.includes('org.mockito') ||
+                importStr.includes('org.testng') ||
+                importStr.includes('org.hamcrest')
+            )
+        })
+        return filteredImport.length > 0
+    }
+
+    async getSourceDependencies(uri: vscode.Uri, content: string) {
+        const imports = await this.readImports(content)
+        const dependencies = this.getDependencies(uri, imports)
+        return dependencies
+    }
+
+    /* New function added to fetch package path for a given file. 
+    /* It is used for fetching cross-file context. 
+    */
+    async getSamePackageFiles(uri: vscode.Uri, projectPath: string): Promise<string[]> {
+        const fileList: string[] = []
+        const packagePath = path.dirname(uri.fsPath)
+        readdirSync(packagePath, { withFileTypes: true }).forEach(file => {
+            // TODO: Add filters to avoid . files and non .java files
+            fileList.push(path.join(packagePath, file.name))
+        })
+        return fileList
+    }
+
+    private async readImports(content: string) {
+        this._totalLines += content.split(DependencyGraphConstants.newlineRegex).length
+        const regExp = new RegExp(importRegex)
+        return content.match(regExp) ?? []
     }
 }
 

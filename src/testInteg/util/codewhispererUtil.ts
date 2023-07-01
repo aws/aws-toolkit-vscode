@@ -1,10 +1,10 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { isValidCodeWhispererConnection } from '../../codewhisperer/util/authUtil'
-import { Auth } from '../../credentials/auth'
+import { Auth } from '../../auth/auth'
 
 /*
 In order to run codewhisperer integration tests user must:

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -19,7 +19,7 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         this.iconPath = getIcon('aws-cloudwatch-log-group')
         this.contextValue = contextValueCloudwatchLog
         this.command = {
-            command: 'aws.cloudWatchLogs.viewLogStream',
+            command: 'aws.cwl.viewLogStream',
             title: localize('AWS.command.cloudWatchLogs.viewLogStream', 'View Log Stream'),
             arguments: [this],
         }

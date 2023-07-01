@@ -18,6 +18,7 @@
         "noImplicitOverride": true,
         "lib": ["dom", "es6", "esnext.asynciterable"],
         "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
         "jsx": "preserve"
     },
     "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]

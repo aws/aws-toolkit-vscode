@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -153,6 +153,13 @@ export class ToolkitError extends Error implements ErrorInformation {
      */
     public get cancelled(): boolean {
         return this.info.cancelled ?? isUserCancelledError(this.cause)
+    }
+
+    /**
+     * The associated documentation, if it exists. Otherwise undefined.
+     */
+    public get documentationUri(): vscode.Uri | undefined {
+        return this.info.documentationUri
     }
 
     /**

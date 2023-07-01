@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -16,8 +16,8 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 import globals from '../shared/extensionGlobals'
 import { isDevenvVscode } from './utils'
-import { SsoConnection } from '../credentials/auth'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { SsoConnection } from '../auth/connection'
 
 const localize = nls.loadMessageBundle()
 

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,6 +13,6 @@ describe('eslint', function () {
         const result = runCmd(['./node_modules/.bin/eslint', '-c', '.eslintrc.js', '--ext', '.ts', '.'], {
             throws: false,
         })
-        assert.strictEqual(result.status, 0, result.error)
+        assert.strictEqual(result.status, 0, result.stdout.toString())
     })
 })

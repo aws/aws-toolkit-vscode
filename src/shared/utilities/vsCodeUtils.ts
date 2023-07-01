@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -12,6 +12,7 @@ import { CancellationError, Timeout, waitTimeout, waitUntil } from './timeoutUti
 import { telemetry } from '../telemetry/telemetry'
 import * as semver from 'semver'
 import { isNonNullable } from './tsUtils'
+import globals from '../extensionGlobals'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -44,6 +45,36 @@ export async function closeAllEditors() {
                 vscode.window.activeTextEditor!.document.fileName
             }" was still open after executing "closeAllEditors"`
         )
+    }
+}
+
+/**
+ * Class to get info about the extension being first used
+ */
+export class ExtensionUse {
+    private readonly isExtensionFirstUseKey = 'isExtensionFirstUse'
+
+    // The result of if is first use for the remainder of the extension session.
+    // This will reset on next startup.
+    private isFirstUseCurrentSession: boolean | undefined
+
+    isFirstUse(state: vscode.Memento = globals.context.globalState): boolean {
+        if (this.isFirstUseCurrentSession !== undefined) {
+            return this.isFirstUseCurrentSession
+        }
+
+        this.isFirstUseCurrentSession = state.get(this.isExtensionFirstUseKey, true)
+
+        // Update state, so next time it is not first use
+        state.update(this.isExtensionFirstUseKey, false)
+
+        return this.isFirstUseCurrentSession
+    }
+
+    static #instance: ExtensionUse
+
+    static get instance(): ExtensionUse {
+        return (this.#instance ??= new ExtensionUse())
     }
 }
 
@@ -82,6 +113,21 @@ export function isExtensionInstalled(
     return semver.gte(extSemver, minSemver)
 }
 
+export async function showExtensionPage(extId: string) {
+    try {
+        // Available commands:
+        //  - extension.open: opens extension page in VS Code extension marketplace view
+        //  - workbench.extensions.installExtension: autoinstalls plugin with no additional feedback
+        //  - workspace.extension.search: preloads and executes a search in the extension sidebar with the given term
+        await vscode.commands.executeCommand('extension.open', extId)
+    } catch (e) {
+        const err = e as Error
+        getLogger().error('extension.open command failed: %s', err.message)
+        const uri = vscode.Uri.parse(`https://marketplace.visualstudio.com/items?itemName=${extId}`)
+        openUrl(uri)
+    }
+}
+
 /**
  * Checks if an extension is installed, and shows a message if not.
  */
@@ -103,7 +149,7 @@ export function showInstallExtensionMsg(
     const p = vscode.window.showErrorMessage(msg, ...items)
     p.then<string | undefined>(selection => {
         if (selection === installBtn) {
-            vscode.commands.executeCommand('extension.open', extId)
+            showExtensionPage(extId)
         }
         return selection
     })

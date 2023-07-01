@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -23,7 +23,8 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
-import { Auth, SsoConnection } from '../credentials/auth'
+import { Auth } from '../auth/auth'
+import { SsoConnection } from '../auth/connection'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {

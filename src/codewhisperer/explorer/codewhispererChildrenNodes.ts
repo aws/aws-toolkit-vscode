@@ -1,8 +1,9 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AuthCommandDeclarations } from '../../auth/commands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -11,7 +12,6 @@ import {
     showReferenceLog,
     showSecurityScan,
     showLearnMore,
-    showSsoSignIn,
     showFreeTierLimit,
     reconnect,
 } from '../commands/basicCommands'
@@ -59,10 +59,12 @@ export const createSecurityScanNode = () => {
 }
 
 export const createSsoSignIn = () =>
-    showSsoSignIn.build().asTreeNode({
-        label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
-        iconPath: getIcon('vscode-debug-start'),
-    })
+    AuthCommandDeclarations.instance.declared.showConnectionsPage
+        .build('codewhispererDeveloperTools', 'codewhisperer')
+        .asTreeNode({
+            label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
+            iconPath: getIcon('vscode-debug-start'),
+        })
 
 export const createReconnectNode = () =>
     reconnect.build().asTreeNode({

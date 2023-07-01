@@ -1,0 +1,103 @@
+# This job performs the following:
+# - Publish prerelease (not release) artifacts for feature/x branches and "nightly" mainline.
+
+name: Prerelease
+on:
+    # schedule:
+    #     - cron: '5 5 * * *'
+    workflow_dispatch:
+        inputs:
+            tag_name:
+                description: 'Tag name for release'
+                required: false
+                default: prerelease
+    push:
+        branches: [master, feature/*]
+        # tags:
+        #   - v[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+    package:
+        runs-on: ubuntu-latest
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        outputs:
+            feature: ${{ steps.build.outputs.feature }}
+            tagname: ${{ steps.build.outputs.tagname }}
+            version: ${{ steps.build.outputs.version }}
+            changes: ${{ steps.build.outputs.changes }}
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+            # - if: github.event_name == 'schedule'
+            #   run: echo 'TAG_NAME=prerelease' >> $GITHUB_ENV
+            - if: github.event_name == 'workflow_dispatch'
+              run: echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
+            - if: github.ref_name != 'master'
+              run: |
+                  TAG_NAME=${{ github.ref_name }}
+                  FEAT_NAME=$(echo $TAG_NAME | sed 's/feature\///')
+                  echo "FEAT_NAME=$FEAT_NAME" >> $GITHUB_ENV
+                  echo "TAG_NAME=pre-$FEAT_NAME" >> $GITHUB_ENV
+            - if: github.ref_name == 'master'
+              run: |
+                  echo "FEAT_NAME=" >> $GITHUB_ENV
+                  echo "TAG_NAME=prerelease" >> $GITHUB_ENV
+            - run: npm ci
+            - name: vsix
+              run: |
+                  npm run createRelease  # Generate CHANGELOG.md
+                  npm run generateNonCodeFiles
+                  cp ./README.quickstart.vscode.md ./README.md
+                  npm run package -- --feature "$FEAT_NAME"
+            - uses: actions/upload-artifact@v3
+              with:
+                  name: artifacts
+                  path: '*.vsix'
+                  retention-days: 10
+            - name: Export outputs
+              id: build
+              run: |
+                  echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
+                  echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
+                  echo "version=$(grep -m 1 version package.json | grep -o '[0-9][^\"]\+' | sed 's/-SNAPSHOT//')" >> $GITHUB_OUTPUT
+                  echo 'changes<<EOF' >> $GITHUB_OUTPUT
+                  head -14 CHANGELOG.md >> $GITHUB_OUTPUT
+                  echo 'EOF' >> $GITHUB_OUTPUT
+
+    publish:
+        needs: [package]
+        runs-on: ubuntu-latest
+        env:
+            # For `gh`.
+            GH_REPO: ${{ github.repository }}
+            # For `gh`.
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            FEAT_NAME: ${{ needs.package.outputs.feature }}
+            TAG_NAME: ${{ needs.package.outputs.tagname }}
+            AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.version }}
+            AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.changes }}
+        permissions:
+            contents: write
+        steps:
+            # Must perform checkout first, it deletes the target directory
+            # before running, thus would delete the downloaded artifacts.
+            - uses: actions/checkout@v3
+            - uses: actions/download-artifact@v3
+            - name: Delete existing prerelease
+              # "prerelease" (main branch) or "pre-<feature>"
+              if: "env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-')"
+              run: |
+                  echo "SUBJECT=AWS Toolkit ${AWS_TOOLKIT_VERSION}: ${FEAT_NAME:-${TAG_NAME}}" >> $GITHUB_ENV
+                  gh release delete "$TAG_NAME" --cleanup-tag --yes || true
+                  # git push origin :"$TAG_NAME" || true
+            - name: Publish Prerelease
+              run: |
+                  # AWS_TOOLKIT_CHANGES="$(head -14 CHANGELOG.md)"
+                  envsubst < "$GITHUB_WORKSPACE/.github/workflows/release_notes.md" > "$RUNNER_TEMP/release_notes.md"
+                  gh release create $TAG_NAME --prerelease --notes-file "$RUNNER_TEMP/release_notes.md" --title "$SUBJECT" --target $GITHUB_SHA artifacts/*

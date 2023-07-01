@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  * MIT licensed source: https://github.com/microsoft/vscode-python/blob/main/src/test/mocks/mockDocument.ts
  */

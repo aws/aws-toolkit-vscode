@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 import { AWSError, Service } from 'aws-sdk'
@@ -16,7 +16,7 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { isSsoConnection } from '../../credentials/auth'
+import { isSsoConnection } from '../../auth/connection'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -46,6 +46,9 @@ export type GetCodeScanRequest = Readonly<
 >
 export type ListCodeScanFindingsRequest = Readonly<
     CodeWhispererClient.ListCodeScanFindingsRequest | CodeWhispererUserClient.ListCodeAnalysisFindingsRequest
+>
+export type SupplementalContext = Readonly<
+    CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext
 >
 export type ArtifactType = Readonly<CodeWhispererClient.ArtifactType | CodeWhispererUserClient.ArtifactType>
 export type ArtifactMap = Readonly<CodeWhispererClient.ArtifactMap | CodeWhispererUserClient.ArtifactMap>
@@ -94,8 +97,7 @@ export class DefaultCodeWhispererClient {
                     },
                 ],
             } as ServiceOptions,
-            undefined,
-            false
+            undefined
         )) as CodeWhispererClient
     }
 
@@ -124,8 +126,7 @@ export class DefaultCodeWhispererClient {
                     },
                 ],
             } as ServiceOptions,
-            undefined,
-            false
+            undefined
         )) as CodeWhispererUserClient
     }
 

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -17,7 +17,7 @@ import { InlineCompletionService } from './inlineCompletionService'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
-import { isIamConnection } from '../../credentials/auth'
+import { isIamConnection } from '../../auth/connection'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -67,7 +67,7 @@ export class KeyStrokeHandler {
             }
 
             try {
-                this.invokeAutomatedTrigger('IdleTime', editor, client, config)
+                this.invokeAutomatedTrigger('IdleTime', editor, client, config, event)
             } finally {
                 if (this.idleTriggerTimer) {
                     clearInterval(this.idleTriggerTimer)
@@ -142,13 +142,7 @@ export class KeyStrokeHandler {
             }
 
             if (triggerType) {
-                if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
-                    ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(event, editor, triggerType)
-                }
-                if (changedSource === DocumentChangedSource.SpecialCharsKey) {
-                    TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(event.contentChanges[0].text)
-                }
-                this.invokeAutomatedTrigger(triggerType, editor, client, config)
+                this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
             }
         } catch (error) {
             getLogger().error('Automated Trigger Exception : ', error)
@@ -160,7 +154,8 @@ export class KeyStrokeHandler {
         autoTriggerType: CodewhispererAutomatedTriggerType,
         editor: vscode.TextEditor,
         client: DefaultCodeWhispererClient,
-        config: ConfigurationEntry
+        config: ConfigurationEntry,
+        event: vscode.TextDocumentChangeEvent
     ): Promise<void> {
         if (editor) {
             ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
@@ -210,7 +205,8 @@ export class KeyStrokeHandler {
                     editor,
                     'AutoTrigger',
                     config,
-                    autoTriggerType
+                    autoTriggerType,
+                    event
                 )
             }
         }

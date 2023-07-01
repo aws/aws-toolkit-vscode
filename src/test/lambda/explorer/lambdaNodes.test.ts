@@ -1,12 +1,12 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,

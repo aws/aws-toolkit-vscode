@@ -11,7 +11,7 @@ on:
 
 jobs:
     macos:
-        name: macOS nodejs
+        name: test macOS
         runs-on: macos-latest
         strategy:
             matrix:
@@ -27,7 +27,6 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - run: npm run vscode:prepublish
             - name: Tests
               uses: coactions/setup-xvfb@v1
               with:
@@ -54,7 +53,7 @@ jobs:
                   flags: codewhisperer
 
     windows:
-        name: Windows nodejs
+        name: test Windows
         runs-on: windows-2019
         strategy:
             matrix:
@@ -70,7 +69,6 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
-            - run: npm run vscode:prepublish
             - name: Tests
               run: npm test
             - name: Code coverage
@@ -85,7 +83,7 @@ jobs:
                   flags: windows-unittests
 
     lint:
-        name: Ubuntu nodejs Lint
+        name: Lint
         runs-on: ubuntu-latest
         strategy:
             matrix:

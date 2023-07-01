@@ -1,10 +1,10 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
-import { SsoWizard, SsoWizardState } from '../../../credentials/wizards/sso'
+import { SsoWizard, SsoWizardState } from '../../../auth/wizards/sso'
 
 describe('SSO Wizard', function () {
     let tester: WizardTester<SsoWizardState>

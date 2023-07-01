@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,9 +7,9 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import { Uri, Range } from 'vscode'
-import { isEqual } from '../../../credentials/providers/credentials'
-import { SharedCredentialsProviderFactory } from '../../../credentials/providers/sharedCredentialsProviderFactory'
-import * as sharedCredentials from '../../../credentials/sharedCredentials'
+import { isEqual } from '../../../auth/providers/credentials'
+import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'
+import * as sharedCredentials from '../../../auth/credentials/sharedCredentials'
 
 describe('SharedCredentialsProviderFactory', async function () {
     let sandbox: sinon.SinonSandbox

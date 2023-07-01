@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,6 +13,10 @@ import { assertTelemetryCurried } from '../../testUtil'
 import { FakeMemento } from '../../fakeExtensionContext'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import globals from '../../../shared/extensionGlobals'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
+import { extensionVersion } from '../../../shared/vscode/env'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 
 describe('onInlineAcceptance', function () {
     describe('onInlineAcceptance', function () {
@@ -22,6 +26,7 @@ describe('onInlineAcceptance', function () {
 
         afterEach(function () {
             sinon.restore()
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Should dispose inline completion provider', async function () {
@@ -47,6 +52,11 @@ describe('onInlineAcceptance', function () {
         })
 
         it('Should report telemetry that records this user decision event', async function () {
+            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
+                group: CodeWhispererConstants.UserGroup.Classifier,
+                version: extensionVersion,
+            })
+
             const testStartUrl = 'testStartUrl'
             sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
@@ -86,6 +96,7 @@ describe('onInlineAcceptance', function () {
                 codewhispererCompletionType: 'Line',
                 codewhispererLanguage: 'python',
                 credentialStartUrl: testStartUrl,
+                codewhispererUserGroup: 'Classifier',
             })
         })
     })

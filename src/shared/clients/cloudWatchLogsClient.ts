@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -38,6 +38,14 @@ export class DefaultCloudWatchLogsClient {
         const sdkClient = await this.createSdkClient()
 
         return sdkClient.getLogEvents(request).promise()
+    }
+
+    public async filterLogEvents(
+        request: CloudWatchLogs.FilterLogEventsRequest
+    ): Promise<CloudWatchLogs.FilterLogEventsResponse> {
+        const sdkClient = await this.createSdkClient()
+
+        return sdkClient.filterLogEvents(request).promise()
     }
 
     protected async invokeDescribeLogGroups(

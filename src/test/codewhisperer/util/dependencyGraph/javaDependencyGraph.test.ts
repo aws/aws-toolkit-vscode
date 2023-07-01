@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -74,6 +74,32 @@ describe('javaDependencyGraph', function () {
             assert.ok(truncation.srcPayloadSizeInBytes > 0)
             assert.ok(truncation.scannedFiles.size > 0)
             assert.ok(truncation.zipFilePath.includes(CodeWhispererConstants.codeScanTruncDirPrefix))
+        })
+    })
+
+    describe('isTestFile', () => {
+        it('should return true if the file contains relevant test imports', async () => {
+            const content = `
+                \nimport org.junit.Test;\n
+                \nimport org.mockito.Mock;\n
+                \nimport org.testng.annotations.Test;\n
+                \nimport org.hamcrest.Matcher;\n
+
+                // your test code goes here`
+
+            const javaDependencyGraph = new JavaDependencyGraph(languageId)
+            const isTestFile = await javaDependencyGraph.isTestFile(content)
+            assert.strictEqual(isTestFile, true)
+        })
+
+        it('should return false if the file does not contain any relevant test imports', async () => {
+            const content = `
+                \nimport some.package.Class;\n
+                // your non-test code goes here`
+
+            const javaDependencyGraph = new JavaDependencyGraph(languageId)
+            const isTestFile = await javaDependencyGraph.isTestFile(content)
+            assert.strictEqual(isTestFile, false)
         })
     })
 })

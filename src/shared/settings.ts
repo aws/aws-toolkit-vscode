@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -424,7 +424,7 @@ type Sections = { [P in keyof SettingsProps as Join<Pop<Split<P, '.'>>, '.'>]: S
  * ### Examples
  * #### Pass-through:
  * ```
- * export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cloudWatchLogs', { limit: Number }) {}
+ * export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}
  *
  * const settings = new CloudWatchLogsSettings()
  * const limit = settings.get('limit', 1000)
@@ -632,6 +632,20 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return this.trappedSettings
     }
 
+    public isDevMode(): boolean {
+        // This setting takes precedence over everything.
+        // It must be removed completely from the settings to not be considered.
+        const forceDevMode: boolean | undefined = this.isSet('forceDevMode')
+            ? this.get('forceDevMode', false)
+            : undefined
+        if (forceDevMode !== undefined) {
+            return forceDevMode
+        }
+
+        // forceDevMode was not defined, so check other dev settings
+        return Object.keys(this.activeSettings).length > 0
+    }
+
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
         if (!this.isSet(key)) {
             this.unset(key)
@@ -664,7 +678,6 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     public static get instance() {
         if (this.#instance === undefined) {
             this.#instance = new this()
-            this.#instance.get('forceDevMode', false)
         }
 
         return this.#instance

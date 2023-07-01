@@ -1,4 +1,4 @@
-/*! * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
+/*! * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <script src="./samInvokeFrontend" lang="ts"></script>
 <style scoped src="./samInvoke.css"></style>

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -30,7 +30,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
         this.logGroupNodes = new Map<string, LogGroupNode>()
     }
 
-    protected abstract getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>>
+    protected abstract getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>>
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
         return await makeChildrenNodes({
@@ -45,7 +45,7 @@ export abstract class CloudWatchLogsBase extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const logGroups = await this.getLogGroups()
+        const logGroups = await this.getLogGroups(this.cloudwatchClient)
 
         updateInPlace(
             this.logGroupNodes,
@@ -60,12 +60,10 @@ export class CloudWatchLogsNode extends CloudWatchLogsBase {
 
     public constructor(regionCode: string, client = new DefaultCloudWatchLogsClient(regionCode)) {
         super('CloudWatch Logs', regionCode, client)
+        this.contextValue = 'awsCloudWatchLogParentNode'
     }
 
-    protected async getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>> {
-        return toMap(
-            await toArrayAsync(this.cloudwatchClient.describeLogGroups()),
-            configuration => configuration.logGroupName
-        )
+    protected async getLogGroups(client: DefaultCloudWatchLogsClient): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+        return toMap(await toArrayAsync(client.describeLogGroups()), configuration => configuration.logGroupName)
     }
 }

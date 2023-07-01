@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.77.0-SNAPSHOT",
+    "version": "1.80.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -152,10 +152,10 @@
                     "default": 5000,
                     "description": "%AWS.ssmDocument.ssm.maxItemsComputed.desc%"
                 },
-                "aws.cloudWatchLogs.limit": {
+                "aws.cwl.limit": {
                     "type": "number",
                     "default": 10000,
-                    "description": "%AWS.cloudWatchLogs.limit.desc%",
+                    "description": "%AWS.cwl.limit.desc%",
                     "maximum": 10000
                 },
                 "aws.samcli.manuallySelectedBuckets": {
@@ -844,19 +844,27 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "command": "aws.copyLogResource",
+                    "when": "resourceScheme == aws-cwl"
                 },
                 {
-                    "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs"
+                    "command": "aws.saveCurrentLogDataContent",
+                    "when": "resourceScheme == aws-cwl"
                 },
                 {
                     "command": "aws.s3.editFile",
                     "when": "resourceScheme == s3-readonly"
                 },
                 {
-                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "command": "aws.cwl.viewLogStream",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cwl.changeFilterPattern",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.cwl.changeTimeFilter",
                     "when": "false"
                 },
                 {
@@ -1100,7 +1108,10 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.auth.showConnectionsPage",
+                    "command": "aws.auth.manageConnections"
+                },
+                {
+                    "command": "aws.ec2.connectToInstance",
                     "when": "aws.isDevMode"
                 },
                 {
@@ -1115,8 +1126,18 @@
                     "group": "navigation"
                 },
                 {
-                    "command": "aws.saveCurrentLogStreamContent",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "command": "aws.saveCurrentLogDataContent",
+                    "when": "resourceScheme == aws-cwl",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.cwl.changeFilterPattern",
+                    "when": "resourceScheme == aws-cwl",
+                    "group": "navigation"
+                },
+                {
+                    "command": "aws.cwl.changeTimeFilter",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "navigation"
                 },
                 {
@@ -1147,8 +1168,8 @@
             ],
             "editor/title/context": [
                 {
-                    "command": "aws.copyLogStreamName",
-                    "when": "resourceScheme == awsCloudWatchLogs",
+                    "command": "aws.copyLogResource",
+                    "when": "resourceScheme == aws-cwl",
                     "group": "1_cutcopypaste@1"
                 }
             ],
@@ -1573,6 +1594,16 @@
                     "group": "2@2"
                 },
                 {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "0@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
+                    "command": "aws.cwl.searchLogGroup",
+                    "group": "inline@1",
+                    "when": "view == aws.explorer && viewItem =~ /^awsCloudWatchLogNode|awsCloudWatchLogParentNode$/"
+                },
+                {
                     "command": "aws.apig.copyUrl",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "2@0"
@@ -1633,7 +1664,7 @@
                     "group": "1@1"
                 },
                 {
-                    "command": "aws.cloudWatchLogs.viewLogStream",
+                    "command": "aws.cwl.viewLogStream",
                     "group": "0@1",
                     "when": "view == aws.explorer && viewItem == awsCloudWatchLogNode"
                 },
@@ -1840,7 +1871,7 @@
             ],
             "aws.auth": [
                 {
-                    "command": "aws.auth.addConnection",
+                    "command": "aws.auth.manageConnections",
                     "group": "0@1"
                 },
                 {
@@ -1988,10 +2019,9 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.auth.showConnectionsPage",
+                "command": "aws.auth.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
-                "category": "%AWS.title%",
-                "enablement": "aws.isDevMode"
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.auth.switchConnections",
@@ -2013,6 +2043,16 @@
             {
                 "command": "aws.createIssueOnGitHub",
                 "title": "%AWS.command.createIssueOnGitHub%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.connectToInstance",
+                "title": "%AWS.command.ec2.connectToInstance%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2667,7 +2707,7 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.cloudWatchLogs.viewLogStream",
+                "command": "aws.cwl.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
                 "category": "%AWS.title%",
                 "cloud9": {
@@ -2749,8 +2789,8 @@
                 }
             },
             {
-                "command": "aws.copyLogStreamName",
-                "title": "%AWS.command.copyLogStreamName%",
+                "command": "aws.copyLogResource",
+                "title": "%AWS.command.copyLogResource%",
                 "category": "%AWS.title%",
                 "icon": "$(files)",
                 "cloud9": {
@@ -2760,10 +2800,43 @@
                 }
             },
             {
-                "command": "aws.saveCurrentLogStreamContent",
-                "title": "%AWS.command.saveCurrentLogStreamContent%",
+                "command": "aws.cwl.searchLogGroup",
+                "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
-                "icon": "$(save-as)",
+                "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.saveCurrentLogDataContent",
+                "title": "%AWS.command.saveCurrentLogDataContent%",
+                "category": "%AWS.title%",
+                "icon": "$(save)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.changeFilterPattern",
+                "title": "%AWS.command.cwl.changeFilterPattern%",
+                "category": "%AWS.title%",
+                "icon": "$(search-view-icon)",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.cwl.changeTimeFilter",
+                "title": "%AWS.command.cwl.changeTimeFilter%",
+                "category": "%AWS.title%",
+                "icon": "$(calendar)",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3200,10 +3273,10 @@
         ],
         "resourceLabelFormatters": [
             {
-                "scheme": "awsCloudWatchLogs",
+                "scheme": "aws-cwl",
                 "formatting": {
                     "label": "${path}",
-                    "separator": "\\"
+                    "separator": "/"
                 }
             },
             {
@@ -3214,48 +3287,7 @@
                 }
             }
         ],
-        "walkthroughs": [
-            {
-                "id": "getStarted",
-                "title": "%AWS.walkthrough.gettingStarted.title%",
-                "description": "%AWS.walkthrough.gettingStarted.description%",
-                "cloud9": {
-                    "cn": {
-                        "description": "%AWS.walkthrough.gettingStarted.description.cn%"
-                    }
-                },
-                "steps": [
-                    {
-                        "id": "connect",
-                        "title": "%AWS.walkthrough.gettingStarted.connect%",
-                        "media": {
-                            "markdown": "resources/walkthrough/setup-connect.md"
-                        },
-                        "completionEvents": [
-                            "onCommand:aws.login",
-                            "onCommand:aws.credentials.profile.create"
-                        ]
-                    },
-                    {
-                        "id": "changeRegions",
-                        "title": "%AWS.walkthrough.gettingStarted.changeRegions%",
-                        "media": {
-                            "markdown": "resources/walkthrough/setup-region.md"
-                        },
-                        "completionEvents": [
-                            "onCommand:aws.showRegion"
-                        ]
-                    },
-                    {
-                        "id": "setupToolchain",
-                        "title": "%AWS.walkthrough.gettingStarted.setupToolchain%",
-                        "media": {
-                            "markdown": "resources/walkthrough/setup-toolchain.md"
-                        }
-                    }
-                ]
-            }
-        ],
+        "walkthroughs": [],
         "icons": {
             "aws-apprunner-service": {
                 "description": "AWS Contributed Icon",
@@ -3422,7 +3454,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.129",
+        "@aws-toolkits/telemetry": "^1.0.136",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -3433,7 +3465,7 @@
         "@types/glob": "^7.1.1",
         "@types/js-yaml": "^4.0.5",
         "@types/lodash": "^4.14.180",
-        "@types/marked": "^4.3.0",
+        "@types/marked": "^5.0.0",
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.5",
@@ -3449,21 +3481,21 @@
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.2.3",
+        "@vscode/test-electron": "^2.3.3",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
-        "eslint-config-prettier": "8.3",
+        "eslint-config-prettier": "8.8",
         "eslint-plugin-header": "^3.1.1",
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
         "json-schema-to-typescript": "^12.0.0",
-        "marked": "^5.0.2",
+        "marked": "^5.0.4",
         "mocha": "^10.1.0",
-        "mocha-junit-reporter": "^2.0.0",
+        "mocha-junit-reporter": "^2.2.0",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
         "prettier": "^2.8.8",
@@ -3476,7 +3508,7 @@
         "umd-compat-loader": "^2.1.2",
         "vsce": "^2.6.3",
         "vscode-nls-dev": "^4.0.4",
-        "vue-loader": "^17.1.1",
+        "vue-loader": "^17.2.2",
         "vue-style-loader": "^4.1.3",
         "webfont": "^11.2.26",
         "webpack": "^5.83.0",
@@ -3488,7 +3520,7 @@
         "@aws-sdk/client-sso-oidc": "^3.181.0",
         "@aws-sdk/credential-provider-ini": "^3.46.0",
         "@aws-sdk/credential-provider-process": "^3.15.0",
-        "@aws-sdk/credential-provider-sso": "^3.38.0",
+        "@aws-sdk/credential-provider-sso": "^3.345.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@iarna/toml": "^2.2.5",
         "adm-zip": "^0.5.10",
@@ -3508,7 +3540,7 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
         "portfinder": "^1.0.32",
-        "semver": "^7.5.1",
+        "semver": "^7.5.2",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^5.0.4",
@@ -3517,10 +3549,10 @@
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-textdocument": "^1.0.8",
         "vscode-nls": "^5.2.0",
-        "vue": "^3.2.31",
+        "vue": "^3.3.4",
         "winston": "^3.7.1",
         "winston-transport": "^4.5.0",
-        "xml2js": "^0.5.0",
+        "xml2js": "^0.6.0",
         "yaml": "^1.9.2",
         "yaml-cfn": "^0.3.2"
     },

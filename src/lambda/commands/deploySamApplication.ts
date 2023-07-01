@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 
-import { asEnvironmentVariables } from '../../credentials/credentialsUtilities'
+import { asEnvironmentVariables } from '../../auth/credentials/utils'
 import { AwsContext } from '../../shared/awsContext'
 import globals from '../../shared/extensionGlobals'
 

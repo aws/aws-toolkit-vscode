@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -46,7 +46,7 @@ export function createRegionPrompter(
     const defaultRegionItem = items.find(item => item.detail === defaultRegion)
 
     if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = localize('AWS.generic.defaultRegion', '(default region)')
+        defaultRegionItem.description = localize('AWS.generic.recentlyUsed', '(recently used)')
     }
 
     const prompter = createQuickPick(items, {

@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -60,11 +60,28 @@ export class DefaultIamClient {
 
         // Ignore deny from Organization SCP.  These can result in false negatives.
         // See https://github.com/aws/aws-sdk/issues/102
-        return permissionResponse.EvaluationResults.filter(r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false)
-
+        return permissionResponse.EvaluationResults.filter(
+            r => r.EvalDecision !== 'allowed' && r.OrganizationsDecisionDetail?.AllowedByOrganizations !== false
+        )
     }
 
     private async createSdkClient(): Promise<IAM> {
         return await globals.sdkClientBuilder.createAwsService(IAM, undefined, this.regionCode)
+    }
+
+    public getFriendlyName(arn: string): string {
+        const tokens = arn.split('/')
+        if (tokens.length < 2) {
+            throw new Error(`Invalid IAM role ARN (expected format: arn:aws:iam::{id}/{name}): ${arn}`)
+        }
+        return tokens[tokens.length - 1]
+    }
+
+    public async listAttachedRolePolicies(arn: string): Promise<IAM.ListAttachedRolePoliciesResponse> {
+        const client = await this.createSdkClient()
+        const roleName = this.getFriendlyName(arn)
+        const response = await client.listAttachedRolePolicies({ RoleName: roleName }).promise()
+
+        return response
     }
 }

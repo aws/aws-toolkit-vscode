@@ -1,5 +1,5 @@
 /*!
- * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -13,7 +13,7 @@ describe('CreateServiceWizard', function () {
     let tester: WizardTester<CommandWizardState>
 
     const createContainer = () =>
-        new Container(stub(DefaultEcsClient, { regionCode: '' }), { clusterArn: '', taskRoleArn: '' })
+        new Container(stub(DefaultEcsClient, { regionCode: '' }), '', { clusterArn: '', taskRoleArn: '' })
 
     beforeEach(function () {
         tester = createWizardTester(new CommandWizard(createContainer(), false))

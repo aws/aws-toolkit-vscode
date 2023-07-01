@@ -1,5 +1,5 @@
 /*!
- * Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -11,21 +11,23 @@ import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'
 
 /**
- * Truncates string `s` if it exceeds `len` chars.
+ * Truncates string `s` if it exceeds `n` chars.
+ *
+ * If `n` is negative, truncates at start instead of end.
  *
  * @param s String to truncate
- * @param len Truncate top-level string properties exceeding this length
+ * @param n Truncate top-level string properties exceeding this length
  * @param suffix String appended to truncated value (default: "…")
  */
-export function truncate(s: string, len: number, suffix?: string): string {
+export function truncate(s: string, n: number, suffix?: string): string {
     suffix = suffix ?? '…'
-    if (len <= 0) {
-        throw Error(`invalid len: ${len}`)
-    }
-    if (s === undefined || s.length <= len) {
+    if (s.length <= Math.abs(n)) {
         return s
     }
-    return `${s.substring(0, len)}${suffix}`
+    const start = n < 0 ? s.length - Math.abs(n) : 0
+    const end = n < 0 ? s.length : n
+    const truncated = s.substring(start, end)
+    return n < 0 ? suffix + truncated : truncated + suffix
 }
 
 /**

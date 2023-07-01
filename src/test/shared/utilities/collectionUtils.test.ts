@@ -1,5 +1,5 @@
 /*!
- * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -31,7 +31,7 @@ import {
     joinAll,
 } from '../../../shared/utilities/collectionUtils'
 
-import { asyncGenerator } from '../../utilities/collectionUtils'
+import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 
 describe('CollectionUtils', async function () {
     let sandbox: sinon.SinonSandbox

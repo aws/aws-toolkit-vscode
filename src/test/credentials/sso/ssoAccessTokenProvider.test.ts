@@ -1,24 +1,19 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { SsoAccessTokenProvider } from '../../../credentials/sso/ssoAccessTokenProvider'
+import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { installFakeClock } from '../../testUtil'
-import {
-    getCache,
-    getTokenCacheFile,
-    isDirSafeToDeleteFrom,
-    getRegistrationCacheFile,
-} from '../../../credentials/sso/cache'
+import { getCache, getTokenCacheFile, isDirSafeToDeleteFrom, getRegistrationCacheFile } from '../../../auth/sso/cache'
 
 import { instance, mock, when, anything, reset } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ClientRegistration, SsoToken } from '../../../credentials/sso/model'
-import { OidcClient } from '../../../credentials/sso/clients'
+import { ClientRegistration, SsoToken } from '../../../auth/sso/model'
+import { OidcClient } from '../../../auth/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
     AuthorizationPendingException,
@@ -371,14 +366,14 @@ describe('SsoAccessTokenProvider', function () {
 
             it('stops the flow if user does not click the link', async function () {
                 stubOpen(false)
-                await assert.rejects(sut.createToken(), CancellationError)
+                await assert.rejects(sut.createToken(), ToolkitError)
             })
 
             it('saves the client registration even when cancelled', async function () {
                 stubOpen(false)
                 const registration = createRegistration(hourInMs)
                 await cache.registration.save({ region }, registration)
-                await assert.rejects(sut.createToken(), CancellationError)
+                await assert.rejects(sut.createToken(), ToolkitError)
                 const cached = await cache.registration.load({ region })
                 assert.deepStrictEqual(cached, registration)
             })

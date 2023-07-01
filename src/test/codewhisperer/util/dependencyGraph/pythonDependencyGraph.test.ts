@@ -1,5 +1,5 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -66,6 +66,32 @@ describe('pythonDependencyGraph', function () {
             assert.ok(truncation.lines > 0)
             assert.ok(truncation.srcPayloadSizeInBytes > 0)
             assert.ok(truncation.scannedFiles.size > 0)
+        })
+    })
+
+    describe('isTestFile', () => {
+        it('should return true if the file contains relevant test imports', async () => {
+            const content = `
+                \nimport unittest\n
+                \nfrom mock import patch\n
+                \nimport pytest\n
+                \nimport behave\n
+
+                # your test code goes here`
+            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
+            const isTestFile = await pythonDependencyGraph.isTestFile(content)
+            assert.strictEqual(isTestFile, true)
+        })
+
+        it('should return false if the file does not contain any relevant test imports', async () => {
+            const content = `
+                \nimport requests\n
+
+                # your non-test code goes here`
+
+            const pythonDependencyGraph = new PythonDependencyGraph(languageId)
+            const isTestFile = await pythonDependencyGraph.isTestFile(content)
+            assert.strictEqual(isTestFile, false)
         })
     })
 })

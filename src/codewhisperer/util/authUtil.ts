@@ -1,31 +1,32 @@
 /*!
- * Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
-import {
-    Auth,
-    createBuilderIdProfile,
-    codewhispererScopes,
-    isBuilderIdConnection,
-    createSsoProfile,
-    isSsoConnection,
-    hasScopes,
-    ssoAccountAccessScopes,
-    isIamConnection,
-} from '../../credentials/auth'
-import { Connection, SsoConnection } from '../../credentials/auth'
+import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
-import { getSecondaryAuth } from '../../credentials/secondaryAuth'
+import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
+import {
+    ssoAccountAccessScopes,
+    codewhispererScopes,
+    createBuilderIdProfile,
+    hasScopes,
+    SsoConnection,
+    createSsoProfile,
+    Connection,
+    isIamConnection,
+    isSsoConnection,
+    isBuilderIdConnection,
+} from '../../auth/connection'
 
-const defaultScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
-export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultScopes)
+export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
+export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
 
 export const isValidCodeWhispererConnection = (conn: Connection): conn is Connection => {
     if (isCloud9('classic')) {
@@ -65,7 +66,11 @@ export class AuthUtil {
             } else {
                 this.usingEnterpriseSSO = false
             }
-            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
+            // Reformat the url to remove any trailing '/' and `#`
+            // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn)
+                ? this.reformatStartUrl(this.conn?.startUrl)
+                : undefined
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -75,6 +80,10 @@ export class AuthUtil {
 
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
+    }
+
+    public reformatStartUrl(startUrl: string | undefined) {
+        return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
     }
 
     // current active cwspr connection
@@ -104,7 +113,7 @@ export class AuthUtil {
         if (!conn) {
             conn = await this.auth.createConnection(awsBuilderIdSsoProfile)
         } else if (!isValidCodeWhispererConnection(conn)) {
-            conn = await this.secondaryAuth.addScopes(conn, defaultScopes)
+            conn = await this.secondaryAuth.addScopes(conn, defaultCwScopes)
         }
 
         if (this.auth.getConnectionState(conn) === 'invalid') {
@@ -121,12 +130,13 @@ export class AuthUtil {
         )
 
         if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultScopes))
+            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultCwScopes))
             return this.secondaryAuth.useNewConnection(conn)
         } else if (isValidCodeWhispererConnection(existingConn)) {
             return this.secondaryAuth.useNewConnection(existingConn)
         } else if (isSsoConnection(existingConn)) {
-            return this.secondaryAuth.addScopes(existingConn, defaultScopes)
+            const conn = await this.secondaryAuth.addScopes(existingConn, defaultCwScopes)
+            return this.secondaryAuth.useNewConnection(conn)
         }
     }
 

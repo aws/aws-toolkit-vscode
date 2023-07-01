@@ -1,11 +1,11 @@
 /*!
- * Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import { openSsoPortalLink } from '../../../credentials/sso/model'
+import { openSsoPortalLink } from '../../../auth/sso/model'
 import { assertTelemetry } from '../../testUtil'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getOpenExternalStub } from '../../globalSetup.test'
