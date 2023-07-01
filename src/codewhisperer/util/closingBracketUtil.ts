@@ -36,7 +36,7 @@ export const calculateBracketsLevel = (
         ['[', 0],
         ['{', 0],
     ])
-    const bracketsIndexLevel = []
+    const bracketsIndexLevel: { char: string; count: number; idx: number; position: vscode.Position }[] = []
     let position: vscode.Position
     for (let i = 0; i < code.length; i++) {
         const char = code[i]
@@ -99,7 +99,7 @@ export const getBracketsToRemove = (
     const rightContextBrackets = calculateBracketsLevel(editor, rightContext, true, end, start)
     let i = 0
     let j = 0
-    const toBeRemoved = []
+    const toBeRemoved: number[] = []
 
     while (i < recommendationBrackets.length && j < rightContextBrackets.length) {
         const { char: char1, count: level1, idx: idx1, position: position1 } = recommendationBrackets[i]
@@ -181,6 +181,12 @@ export const removeBracketsFromRightContext = async (
     }
 }
 
+/**
+ * Denote '|' as the trigger point
+ * leftContext|rightContext
+ * @param endPosition
+ * @param startPosition
+ */
 export async function handleExtraBrackets(
     editor: vscode.TextEditor,
     recommendation: string,
