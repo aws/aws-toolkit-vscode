@@ -8,7 +8,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../shared/clients/ec2Client'
-import { getNameOfInstance } from '../../shared/clients/ec2Client'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 
 export const contextValueEc2 = 'awsEc2Node'
@@ -35,9 +34,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const ec2Instances = await (
-            await this.ec2Client.getInstances()
-        ).toMap(instance => getNameOfInstance(instance) ?? instance.InstanceId)
+        const ec2Instances = await (await this.ec2Client.getInstances()).toMap(instance => instance.InstanceId)
         updateInPlace(
             this.ec2InstanceNodes,
             ec2Instances.keys(),
