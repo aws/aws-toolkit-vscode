@@ -40,7 +40,9 @@ export class Ec2Client {
             .flatten()
             .filter(instance => instance!.InstanceId !== undefined)
             .map(instance => {
-                return instance!.Tags ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') } : instance!
+                return instanceHasName(instance!)
+                    ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
+                    : instance!
             })
     }
 
