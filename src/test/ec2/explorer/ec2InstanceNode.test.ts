@@ -23,7 +23,7 @@ describe('ec2InstanceNode', function () {
             ],
         }
 
-        testNode = new Ec2InstanceNode('testRegion', testInstance, contextValueEc2)
+        testNode = new Ec2InstanceNode('testRegion', 'testPartition', testInstance, contextValueEc2)
     })
 
     it('instantiates without issue', async function () {
