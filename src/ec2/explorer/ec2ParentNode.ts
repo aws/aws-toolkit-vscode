@@ -17,7 +17,11 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected readonly ec2InstanceNodes: Map<string, Ec2InstanceNode>
 
-    public constructor(public override readonly regionCode: string, protected readonly ec2Client: Ec2Client) {
+    public constructor(
+        public override readonly regionCode: string,
+        private readonly partitionId: string,
+        protected readonly ec2Client: Ec2Client
+    ) {
         super('EC2', vscode.TreeItemCollapsibleState.Collapsed)
         this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()
     }
@@ -41,7 +45,7 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             this.ec2InstanceNodes,
             ec2Instances.keys(),
             key => this.ec2InstanceNodes.get(key)!.update(ec2Instances.get(key)!),
-            key => new Ec2InstanceNode(this.regionCode, ec2Instances.get(key)!, contextValueEc2)
+            key => new Ec2InstanceNode(this.regionCode, this.partitionId, ec2Instances.get(key)!, contextValueEc2)
         )
     }
 }

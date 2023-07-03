@@ -49,7 +49,8 @@ const serviceCandidates = [
     },
     {
         serviceId: 'ec2',
-        createFn: (regionCode: string) => new Ec2ParentNode(regionCode, new Ec2Client(regionCode)),
+        createFn: (regionCode: string, partitionId: string) =>
+            new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
     },
     {
         serviceId: 'ecr',
