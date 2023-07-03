@@ -7,7 +7,7 @@ import * as assert from 'assert'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2Client'
 import { EC2 } from 'aws-sdk'
 
 describe('extractInstancesFromReservations', function () {
@@ -160,5 +160,28 @@ describe('getSingleInstanceFilter', function () {
         ]
 
         assert.deepStrictEqual(expectedFilters2, actualFilters2)
+    })
+})
+
+describe('instanceHasName', function () {
+    it('correctly returns whether or not there is name attached to instance.', function () {
+        const instances = [
+            { InstanceId: 'id1', Tags: [] },
+            { InstanceId: 'id2', name: 'name2', Tags: [{ Key: 'Name', Value: 'name2' }] },
+            { InstanceId: 'id3', Tags: [{ Key: 'NotName', Value: 'notAName' }] },
+            {
+                InstanceId: 'id4',
+                name: 'name4',
+                Tags: [
+                    { Key: 'Name', Value: 'name4' },
+                    { Key: 'anotherKey', Value: 'Another Key' },
+                ],
+            },
+        ]
+
+        assert.deepStrictEqual(false, instanceHasName(instances[0]))
+        assert.deepStrictEqual(true, instanceHasName(instances[1]))
+        assert.deepStrictEqual(false, instanceHasName(instances[2]))
+        assert.deepStrictEqual(true, instanceHasName(instances[3]))
     })
 })
