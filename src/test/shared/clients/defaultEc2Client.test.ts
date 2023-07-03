@@ -164,7 +164,7 @@ describe('getInstancesFilter', function () {
 })
 
 describe('instanceHasName', function () {
-    it('correctly returns whether or not there is name attached to instance.', function () {
+    it('returns whether or not there is name attached to instance', function () {
         const instances = [
             { InstanceId: 'id1', Tags: [] },
             { InstanceId: 'id2', name: 'name2', Tags: [{ Key: 'Name', Value: 'name2' }] },
