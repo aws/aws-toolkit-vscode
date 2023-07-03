@@ -115,14 +115,6 @@ describe('Ec2ConnectClient', function () {
                 },
                 'EC2SSMAgentStatus'
             )
-
-            await assertThrowsErrorCode(
-                {
-                    instanceId: 'running:hasPolicies:Offline',
-                    region: 'test-region',
-                },
-                'EC2SSMAgentStatus'
-            )
         })
 
         it('does not throw an error if all checks pass', async function () {

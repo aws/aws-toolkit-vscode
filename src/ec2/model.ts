@@ -117,10 +117,6 @@ export class Ec2ConnectionManager {
         await this.checkForStartSessionError(selection)
         try {
             const response = await this.ssmClient.startSession(selection.instanceId)
-            const isConnectable = await this.isInstanceConnectable(selection.instanceId)
-            if (!isConnectable) {
-                throw new Error('Instance is not connectable.')
-            }
             await this.openSessionInTerminal(response, selection)
         } catch (err: unknown) {
             // Default error if pre-check fails.
