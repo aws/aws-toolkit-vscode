@@ -12,7 +12,7 @@ import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect'
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
@@ -71,6 +71,7 @@ export class Ec2ConnectionManager {
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
         const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
+        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
 
         if (!isInstanceRunning) {
             const message = 'Ensure the target instance is running and not currently starting, stopping, or stopped.'
@@ -85,6 +86,15 @@ export class Ec2ConnectionManager {
             this.throwConnectionError(message, selection, {
                 code: 'EC2SSMPermission',
                 documentationUri: documentationUri,
+            })
+        }
+
+        if (!isSsmAgentRunning) {
+            this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
+                code: 'EC2SSMAgentStatus',
+                documentationUri: vscode.Uri.parse(
+                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html'
+                ),
             })
         }
     }
@@ -110,8 +120,8 @@ export class Ec2ConnectionManager {
             await this.openSessionInTerminal(response, selection)
         } catch (err: unknown) {
             // Default error if pre-check fails.
-            this.throwConnectionError('Check that the SSM Agent is running on target instance', selection, {
-                code: 'EC2SSMConnect',
+            this.throwConnectionError('Unable to connect to target instance. ', selection, {
+                code: 'EC2SSMAgentStatus',
                 cause: err as Error,
             })
         }
