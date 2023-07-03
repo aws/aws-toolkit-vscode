@@ -7,9 +7,16 @@
         v-show="false"
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
     />
-    <link v-show="false" src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif" />
+    <img
+        v-show="false"
+        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/awsExplorer.gif"
+    />
+    <img
+        v-show="false"
+        src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
+    />
 
-    <div style="display: flex; flex-direction: column; gap: 20px; padding-top: 20px">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 5px">
         <!-- Status Bars -->
         <div
             v-if="successfulAuthConnection || foundCredentialButNotConnected"
@@ -30,7 +37,7 @@
                 <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
-                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName }}</span
+                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName() }}</span
                     >! Switch between existing connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
@@ -59,11 +66,11 @@
                 <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
-                    IAM Credential(s) detected. Select one in the&nbsp;<a
+                    IAM Credentials detected, select one in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
-                    >.
+                    >&nbsp;to enable the AWS Explorer.
                 </div>
                 &nbsp;&nbsp;
                 <div
@@ -73,11 +80,11 @@
                 ></div>
             </div>
         </div>
-        <div style="display: flex; flex-direction: row; gap: 20px">
-            <div :style="{ display: 'flex', flexDirection: 'column', gap: '20px' }">
+        <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 10px">
+            <div id="left-side" :style="{ display: 'flex', flexDirection: 'column', gap: '10px' }">
                 <!-- Logo + Title -->
                 <div>
-                    <div style="display: flex; justify-content: left; align-items: center; gap: 25px">
+                    <div style="display: flex; justify-content: left; align-items: center; gap: 10px">
                         <div id="logo">
                             <svg
                                 id="Layer_1"
@@ -102,7 +109,7 @@
                         </div>
                         <div>
                             <h3 style="margin-bottom: 0">AWS Toolkit for VS Code</h3>
-                            <h1 style="margin-top: 0">Welcome & Getting Started</h1>
+                            <h1 style="margin-top: 0">Add Connection to AWS</h1>
                         </div>
                     </div>
                 </div>
@@ -111,7 +118,7 @@
                 <div class="flex-container">
                     <div id="left-column">
                         <div>
-                            <h2>Select a feature to begin</h2>
+                            <h2>Select a feature to add a connection:</h2>
                             <ul class="service-item-list" v-for="item in serviceItems">
                                 <ServiceItem
                                     :title="getServiceItemProps(item.id).title"
@@ -187,14 +194,15 @@ export default defineComponent({
         }
     },
     async created() {
+        await this.getAllConnectedAuths().then(connectedAuths => client.setInitialConnectedAuths(connectedAuths))
         this.updateFoundCredentialButNotConnected()
 
         await this.selectInitialService()
-        await this.updateServiceConnections()
+        await this.updateFeatureConnectionStatus()
 
         // This handles auth changes triggered outside of this webview.
         client.onDidConnectionUpdate(() => {
-            this.updateServiceConnections()
+            this.updateFeatureConnectionStatus()
             // This handles the edge case where we have selected a service item
             // and its content window is being shown. If there is an external
             // event that changes the state of this service (eg: disconnected)
@@ -221,16 +229,10 @@ export default defineComponent({
             })
             return [...unlocked, ...locked]
         },
-        authFormDisplayName() {
-            if (this.successfulAuthConnection === undefined) {
-                return ''
-            }
-            return AuthFormDisplayName[this.successfulAuthConnection]
-        },
     },
     methods: {
         isLandscape() {
-            return this.currWindowWidth > 1200
+            return this.currWindowWidth > 1120
         },
         isAnyServiceSelected(): boolean {
             return serviceItemsState.selected !== undefined
@@ -290,6 +292,7 @@ export default defineComponent({
             }
             if (args.isConnected && args.cause === 'signIn') {
                 this.successfulAuthConnection = args.id
+                client.authFormSuccess(args.id)
                 // On a successful sign in the state of the current content window
                 // can change. This forces a rerendering of it to have it load the latest state.
                 this.rerenderSelectedContentWindow()
@@ -300,20 +303,33 @@ export default defineComponent({
             // In some cases, during the connection process for one auth method,
             // an already connected auth can be disconnected. This refreshes all
             // auths to show the user the latest state of everything.
-            this.updateServiceConnections()
+            this.updateFeatureConnectionStatus()
         },
-        async updateServiceConnections() {
-            return Promise.all([
-                this.serviceItemsAuthStatus.resourceExplorer.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('resourceExplorer', isConnected)
-                }),
-                this.serviceItemsAuthStatus.codewhisperer.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('codewhisperer', isConnected)
-                }),
-                this.serviceItemsAuthStatus.codecatalyst.isAuthConnected().then(isConnected => {
-                    this.updateServiceLock('codecatalyst', isConnected)
-                }),
-            ]).then(() => this.renderItems())
+        async updateFeatureConnectionStatus() {
+            const allFeatureUpdates = Object.keys(this.serviceItemsAuthStatus).map(key => {
+                const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
+
+                return this.serviceItemsAuthStatus[id].getConnectedAuth().then(connectedAuth => {
+                    client.authFormSuccess(connectedAuth)
+                    this.updateServiceLock(id, !!connectedAuth)
+                })
+            })
+            return Promise.all(allFeatureUpdates).then(() => this.renderItems())
+        },
+        async getAllConnectedAuths(): Promise<AuthFormId[]> {
+            const allFeatureStates = Object.keys(this.serviceItemsAuthStatus).map(key => {
+                const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
+                return this.serviceItemsAuthStatus[id]
+            })
+            const connectedAuths: AuthFormId[] = []
+            for (const featureState of allFeatureStates) {
+                for (const authForm of featureState.getAuthForms()) {
+                    if (await authForm.isAuthConnected()) {
+                        connectedAuths.push(authForm.id)
+                    }
+                }
+            }
+            return connectedAuths
         },
         /**
          * This will trigger a re-rendering of the currently shown content window.
@@ -330,6 +346,7 @@ export default defineComponent({
         },
         showConnectionQuickPick() {
             client.showConnectionQuickPick()
+            client.emitUiClick('auth_openConnectionSelector')
         },
         closeStatusBar() {
             this.successfulAuthConnection = undefined
@@ -353,6 +370,12 @@ export default defineComponent({
                 this.foundCredentialButNotConnected = false
             }
         },
+        authFormDisplayName() {
+            if (this.successfulAuthConnection === undefined) {
+                return ''
+            }
+            return AuthFormDisplayName[this.successfulAuthConnection]
+        },
     },
 })
 </script>
@@ -369,6 +392,7 @@ export default defineComponent({
     min-width: 500px;
     max-width: 500px;
     box-sizing: border-box;
+    margin-top: 10px;
 }
 
 .service-item-list {
@@ -380,5 +404,11 @@ export default defineComponent({
 .service-item-list li {
     /* Creates an even separation between all list items*/
     margin-top: 10px;
+}
+
+#left-side h1,
+#left-side h2,
+#left-side h3 {
+    margin: 0 0 0 0;
 }
 </style>

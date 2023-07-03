@@ -4,16 +4,18 @@
 
 <script lang="ts">
 import { PropType, defineComponent } from 'vue'
-import { AuthStatus } from '../authForms/shared.vue'
+import { FeatureStatus } from '../authForms/shared.vue'
 import { ServiceItemId } from '../types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
+import TelemetryClient from '../telemetry.vue'
 
 export default defineComponent({
     name: 'BaseServiceItemContent',
+    extends: TelemetryClient,
     emits: ['auth-connection-updated'],
     props: {
         state: {
-            type: Object as PropType<AuthStatus>,
+            type: Object as PropType<FeatureStatus>,
             required: true,
         },
     },

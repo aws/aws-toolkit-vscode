@@ -9,6 +9,7 @@ import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/c
 import { pushIf } from '../shared/utilities/collectionUtils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands } from '../shared/vscode/commands2'
+import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
 
 /**
  * Builds a web URL from the given CodeCatalyst object.
@@ -56,6 +57,13 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
 /** Returns true if the dev env has a "vscode" IDE runtime. */
 export function isDevenvVscode(ides: Ides | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
+}
+
+/**
+ * Returns true if we are in a dev env
+ */
+export function isInDevEnv(): boolean {
+    return !!getCodeCatalystDevEnvId()
 }
 
 export const getStartedCommand = Commands.register('aws.codecatalyst.getStarted', setupCodeCatalystBuilderId)
