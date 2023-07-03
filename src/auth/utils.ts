@@ -42,6 +42,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { AuthSource } from './ui/vue/show'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -54,7 +55,8 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
 
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
-        vscode.commands.executeCommand(showConnectionsPageCommand)
+        const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
+        vscode.commands.executeCommand(showConnectionsPageCommand, source)
         return undefined
     }
 
