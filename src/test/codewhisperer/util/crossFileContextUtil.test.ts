@@ -19,31 +19,31 @@ describe('crossfileUtil', function () {
         const targetFile = 'service/microService/CodeWhispererFileContextProvider.java'
         let candidateFile: string
 
-        it('test1', function () {
+        it('distance 3', function () {
             candidateFile = 'service/CodewhispererRecommendationService.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 3)
         })
 
-        it('test2', function () {
+        it('distance 5', function () {
             candidateFile = 'util/CodeWhispererConstants.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 5)
         })
 
-        it('test3', function () {
+        it('distance 6', function () {
             candidateFile = 'ui/popup/CodeWhispererPopupManager.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 6)
         })
 
-        it('test4', function () {
+        it('distance 7', function () {
             candidateFile = 'ui/popup/components/CodeWhispererPopup.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 7)
         })
 
-        it('test5', function () {
+        it('distance 8', function () {
             candidateFile = 'ui/popup/components/actions/AcceptRecommendationAction.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 8)
@@ -52,11 +52,9 @@ describe('crossfileUtil', function () {
 
     describe('getRelevantFiles', function () {
         let tempFolder: string
-        let folderUri: vscode.Uri
 
         beforeEach(async function () {
             tempFolder = await makeTemporaryToolkitFolder()
-            folderUri = vscode.Uri.file(tempFolder)
         })
 
         afterEach(async function () {
