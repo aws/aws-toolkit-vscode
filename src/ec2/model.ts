@@ -90,15 +90,13 @@ export class Ec2ConnectionManager {
         }
 
         if (!isSsmAgentRunning) {
-            throw new ToolkitError('Is SSM Agent running on the target instance?', {
+            this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
                 code: 'EC2SSMAgentStatus',
                 documentationUri: vscode.Uri.parse(
                     'https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html'
                 ),
             })
         }
-
-        this.throwConnectionError('Unable to connect to target instance. ', selection, { code: 'EC2SSMAgentStatus' })
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {

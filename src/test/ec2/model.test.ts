@@ -110,19 +110,19 @@ describe('Ec2ConnectClient', function () {
 
             await assertThrowsErrorCode(
                 {
-                    instanceId: 'running:hasPolicies:Online',
-                    region: 'test-region',
-                },
-                'EC2SSMConnect'
-            )
-
-            await assertThrowsErrorCode(
-                {
                     instanceId: 'running:hasPolicies:Offline',
                     region: 'test-region',
                 },
                 'EC2SSMAgentStatus'
             )
+        })
+
+        it('does not throw an error if all checks pass', async function () {
+            const passingInstance = {
+                instanceId: 'running:hasPolicies:Online',
+                region: 'test-region',
+            }
+            assert.doesNotThrow(async () => await client.checkForStartSessionError(passingInstance))
         })
     })
 
