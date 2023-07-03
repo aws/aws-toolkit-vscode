@@ -133,7 +133,7 @@ export class Ec2Client {
 }
 
 export function getNameOfInstance(instance: EC2.Instance): string | undefined {
-    return instance.Tags ? lookupTagKey(instance.Tags, 'Name') : undefined
+    return instanceHasName(instance) ? lookupTagKey(instance.Tags!, 'Name')! : undefined
 }
 
 export function instanceHasName(instance: EC2.Instance): boolean {
