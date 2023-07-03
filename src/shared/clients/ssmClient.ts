@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, SSM } from 'aws-sdk'
+import { SSM } from 'aws-sdk'
 import { getLogger } from '../logger/logger'
-import { PromiseResult } from 'aws-sdk/lib/request'
 import globals from '../extensionGlobals'
 
 export class SsmClient {
@@ -15,9 +14,7 @@ export class SsmClient {
         return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
-    public async terminateSession(
-        session: SSM.Session
-    ): Promise<void | PromiseResult<SSM.TerminateSessionResponse, AWSError>> {
+    public async terminateSession(session: SSM.Session): Promise<SSM.TerminateSessionResponse> {
         const sessionId = session.SessionId!
         const client = await this.createSdkClient()
         const termination = await client
@@ -30,7 +27,7 @@ export class SsmClient {
         return termination!
     }
 
-    public async startSession(target: string): Promise<PromiseResult<SSM.StartSessionResponse, AWSError>> {
+    public async startSession(target: string): Promise<SSM.StartSessionResponse> {
         const client = await this.createSdkClient()
         const response = await client.startSession({ Target: target }).promise()
         return response
