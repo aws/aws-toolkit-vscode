@@ -127,7 +127,7 @@ export default defineComponent({
  */
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
-    resourceExplorer: {
+    awsExplorer: {
         title: 'AWS Explorer: View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
     },
@@ -156,7 +156,7 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set(['resourceExplorer'])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set([])
 
     private currentlySelected?: ServiceItemId = undefined
 

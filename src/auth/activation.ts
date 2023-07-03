@@ -10,8 +10,9 @@ import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
-import { DevSettings } from '../shared/settings'
 import { ExtensionUse } from '../shared/utilities/vsCodeUtils'
+import { getLogger } from '../shared/logger'
+import { isInDevEnv } from '../codecatalyst/utils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -35,21 +36,26 @@ export async function initialize(
         new AuthCommandBackend(extensionContext)
     )
 
-    if (DevSettings.instance.isDevMode()) {
-        showManageConnectionsOnStartup()
-    }
+    showManageConnectionsOnStartup()
 }
 
 /**
- * Show the Manage Connections page when the extension starts up.
- *
- * Additionally, we provide an information message with a button for users to not show it
- * again on next startup.
+ * Show the Manage Connections page when the extension starts up, if it should be shown.
  */
 async function showManageConnectionsOnStartup() {
     if (!ExtensionUse.instance.isFirstUse()) {
+        getLogger().debug(
+            'firstStartup: This is not the users first use of the extension, skipping showing Add Connections page.'
+        )
         return
     }
 
-    AuthCommandDeclarations.instance.declared.showConnectionsPage.execute()
+    if (isInDevEnv()) {
+        // A dev env will have an existing connection so this scenario is redundant. But keeping
+        // for reference.
+        getLogger().debug('firstStartup: Detected we are in Dev Env, skipping showing Add Connections page.')
+        return
+    }
+
+    AuthCommandDeclarations.instance.declared.showConnectionsPage.execute('firstStartup')
 }
