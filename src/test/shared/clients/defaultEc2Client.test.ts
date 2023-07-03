@@ -185,3 +185,31 @@ describe('instanceHasName', function () {
         assert.deepStrictEqual(true, instanceHasName(instances[3]))
     })
 })
+
+describe('getSingleInstanceFilter', function () {
+    const client = new Ec2Client('')
+
+    it('returns proper filter when given instanceId', function () {
+        const testInstanceId1 = 'test'
+        const actualFilters1 = client.getInstancesFilter([testInstanceId1])
+        const expectedFilters1: EC2.Filter[] = [
+            {
+                Name: 'instance-id',
+                Values: [testInstanceId1],
+            },
+        ]
+
+        assert.deepStrictEqual(expectedFilters1, actualFilters1)
+
+        const testInstanceId2 = 'test2'
+        const actualFilters2 = client.getInstancesFilter([testInstanceId1, testInstanceId2])
+        const expectedFilters2: EC2.Filter[] = [
+            {
+                Name: 'instance-id',
+                Values: [testInstanceId1, testInstanceId2],
+            },
+        ]
+
+        assert.deepStrictEqual(expectedFilters2, actualFilters2)
+    })
+})

@@ -10,7 +10,7 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { AWSError, EC2 } from 'aws-sdk'
+import { EC2 } from 'aws-sdk'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -46,9 +46,25 @@ describe('Ec2ConnectClient', function () {
             return new MockEc2Client()
         }
     }
+
+    describe('isInstanceRunning', async function () {
+        let client: MockEc2ConnectClient
+
+        before(function () {
+            client = new MockEc2ConnectClient()
+        })
+
+        it('only returns true with the instance is running', async function () {
+            const actualFirstResult = await client.isInstanceRunning('running:noPolicies')
+            const actualSecondResult = await client.isInstanceRunning('stopped:noPolicies')
+
+            assert.strictEqual(true, actualFirstResult)
+            assert.strictEqual(false, actualSecondResult)
+        })
+    })
+
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
-        const dummyError: AWSError = { name: 'testName', message: 'testMessage', code: 'testCode', time: new Date() }
 
         class MockEc2ConnectClientForError extends MockEc2ConnectClient {
             public override async hasProperPolicies(instanceId: string): Promise<boolean> {
@@ -62,7 +78,7 @@ describe('Ec2ConnectClient', function () {
         it('determines which error to throw based on if instance is running', async function () {
             async function assertThrowsErrorCode(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
                 try {
-                    await client.handleStartSessionError(dummyError, testInstance)
+                    await client.checkForStartSessionError(testInstance)
                 } catch (err: unknown) {
                     assert.strictEqual((err as ToolkitError).code, errCode)
                 }
@@ -94,10 +110,10 @@ describe('Ec2ConnectClient', function () {
 
             await assertThrowsErrorCode(
                 {
-                    instanceId: 'running:hasPolicies:Online',
+                    instanceId: 'running:hasPolicies:Offline',
                     region: 'test-region',
                 },
-                'EC2SSMConnect'
+                'EC2SSMAgentStatus'
             )
 
             await assertThrowsErrorCode(
@@ -107,6 +123,14 @@ describe('Ec2ConnectClient', function () {
                 },
                 'EC2SSMAgentStatus'
             )
+        })
+
+        it('does not throw an error if all checks pass', async function () {
+            const passingInstance = {
+                instanceId: 'running:hasPolicies:Online',
+                region: 'test-region',
+            }
+            assert.doesNotThrow(async () => await client.checkForStartSessionError(passingInstance))
         })
     })
 
