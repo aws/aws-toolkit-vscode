@@ -17,6 +17,10 @@ describe('Ec2ConnectClient', function () {
         public constructor() {
             super('test-region')
         }
+
+        public override async getInstanceAgentPingStatus(target: string): Promise<string> {
+            return target.split(':')[2]
+        }
     }
 
     class MockEc2Client extends Ec2Client {
@@ -82,7 +86,7 @@ describe('Ec2ConnectClient', function () {
 
             await assertThrowsErrorCode(
                 {
-                    instanceId: 'pending:noPolicies',
+                    instanceId: 'pending:noPolicies:Online',
                     region: 'test-region',
                 },
                 'EC2SSMStatus'
@@ -90,7 +94,7 @@ describe('Ec2ConnectClient', function () {
 
             await assertThrowsErrorCode(
                 {
-                    instanceId: 'shutting-down:noPolicies',
+                    instanceId: 'shutting-down:noPolicies:Online',
                     region: 'test-region',
                 },
                 'EC2SSMStatus'
@@ -98,7 +102,7 @@ describe('Ec2ConnectClient', function () {
 
             await assertThrowsErrorCode(
                 {
-                    instanceId: 'running:noPolicies',
+                    instanceId: 'running:noPolicies:Online',
                     region: 'test-region',
                 },
                 'EC2SSMPermission'
@@ -106,11 +110,19 @@ describe('Ec2ConnectClient', function () {
 
             await assertThrowsErrorCode(
                 {
-                    instanceId: 'running:hasPolicies',
+                    instanceId: 'running:hasPolicies:Offline',
                     region: 'test-region',
                 },
-                'EC2SSMConnect'
+                'EC2SSMAgentStatus'
             )
+        })
+
+        it('does not throw an error if all checks pass', async function () {
+            const passingInstance = {
+                instanceId: 'running:hasPolicies:Online',
+                region: 'test-region',
+            }
+            assert.doesNotThrow(async () => await client.checkForStartSessionError(passingInstance))
         })
     })
 
