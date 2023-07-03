@@ -82,12 +82,15 @@ export class Ec2ConnectionManager {
             )
         }
 
-        throw new ToolkitError('Is SSM running on the target instance?', {
-            code: 'EC2SSMConnect',
-            documentationUri: vscode.Uri.parse(
-                'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
-            ),
-        })
+        throw new ToolkitError(
+            'Ensure SSM is running on target instance. For more information see the documentation.',
+            {
+                code: 'EC2SSMConnect',
+                documentationUri: vscode.Uri.parse(
+                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started.html'
+                ),
+            }
+        )
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
