@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
+import * as path from 'path'
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { isRelevant } from './editorFilesUtil'
@@ -31,7 +32,7 @@ export async function fetchSupplementalContextForSrc(
     }
 
     // Step 1: Get relevant cross files to refer
-    const relevantCrossFilePaths = await getRelevantCrossFiles(editor, dependencyGraph)
+    const relevantCrossFilePaths = await getRelevantCrossFiles(editor)
     throwIfCancelled(cancellationToken)
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
@@ -152,9 +153,28 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * This function will return relevant cross files for the given editor file
  * by referencing open files, imported files and same package files.
  */
-async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
-    return getOpenFilesInWindow().filter(file => {
+export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<string[]> {
+    // TODO: make sure this will work across OSs?
+    const fileSeperator = path.sep
+    const targetFile = editor.document.uri.path
+
+    const relevantFiles = getOpenFilesInWindow().filter(file => {
         return isRelevant(editor.document.fileName, file, editor.document.languageId)
+    })
+
+    const fileToFileDistanceList = relevantFiles
+        .map(file => {
+            return {
+                file: file,
+                fileDistance: getFileDistance(targetFile, file, fileSeperator),
+            }
+        })
+        .sort((obj1, obj2) => {
+            return obj1.fileDistance - obj2.fileDistance
+        })
+
+    return fileToFileDistanceList.map(pair => {
+        return pair.file
     })
 }
 
@@ -173,6 +193,25 @@ function getOpenFilesInWindow(): string[] {
     }
 
     return filesOpenedInEditor
+}
+
+export function getFileDistance(targetFile: string, candidateFile: string, seperator: string): number {
+    const targetFilePaths = targetFile.split(seperator)
+    const candidateFilePaths = candidateFile.split(seperator)
+
+    let i = 0
+    while (i < Math.min(targetFilePaths.length, candidateFilePaths.length)) {
+        const dir1 = targetFilePaths[i]
+        const dir2 = candidateFilePaths[i]
+
+        if (dir1 !== dir2) {
+            break
+        }
+
+        i++
+    }
+
+    return targetFilePaths.slice(i).length + candidateFilePaths.slice(i).length
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {
