@@ -92,4 +92,15 @@ describe('ec2ParentNode', function () {
         const node = new Ec2ParentNode(testRegion, client)
         assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
+
+    it('is able to handle children with duplicate names', async function () {
+        instances = [
+            { name: 'firstOne', InstanceId: '0' },
+            { name: 'secondOne', InstanceId: '1' },
+            { name: 'firstOne', InstanceId: '2' },
+        ]
+
+        const childNodes = await testNode.getChildren()
+        assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
+    })
 })
