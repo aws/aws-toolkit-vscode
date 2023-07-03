@@ -94,7 +94,7 @@ describe('extractInstancesFromReservations', function () {
             )
         })
 
-    it('is able to process results without complete Tag field.', async function () {
+    it('can process results without complete Tag field.', async function () {
         const testReservationsList: EC2.ReservationList = [
             {
                 Instances: [
