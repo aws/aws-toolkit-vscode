@@ -11,6 +11,10 @@ export type AuthFormId =
     | 'identityCenterExplorer'
     | 'aggregateExplorer'
 
+export function isBuilderIdAuth(id: AuthFormId): boolean {
+    return id.startsWith('builderId')
+}
+
 export const AuthFormDisplayName: Record<AuthFormId, string> = {
     credentials: 'IAM Credentials',
     builderIdCodeCatalyst: 'CodeCatalyst with AWS Builder ID',
