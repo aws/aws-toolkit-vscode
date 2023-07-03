@@ -37,7 +37,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public get name(): string {
-        return getNameOfInstance(this.instance) ?? this.InstanceId
+        return getNameOfInstance(this.instance) ?? `${this.InstanceId} (no name)`
     }
 
     public get InstanceId(): string {
