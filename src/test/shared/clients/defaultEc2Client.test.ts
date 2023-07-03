@@ -93,6 +93,46 @@ describe('extractInstancesFromReservations', function () {
                 actualResult
             )
         })
+
+    it('is able to process results without complete Tag field.', async function () {
+        const testReservationsList: EC2.ReservationList = [
+            {
+                Instances: [
+                    {
+                        InstanceId: 'id1',
+                        Tags: [{ Key: 'Name', Value: 'name1' }],
+                    },
+                    {
+                        InstanceId: 'id2',
+                    },
+                ],
+            },
+            {
+                Instances: [
+                    {
+                        InstanceId: 'id3',
+                        Tags: [{ Key: 'Name', Value: 'name3' }],
+                    },
+                    {
+                        InstanceId: 'id4',
+                        Tags: [],
+                    },
+                ],
+            },
+        ]
+
+        const actualResult = await client.getInstancesFromReservations(intoCollection([testReservationsList])).promise()
+
+        assert.deepStrictEqual(
+            [
+                { InstanceId: 'id1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+                { InstanceId: 'id2' },
+                { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+                { InstanceId: 'id4', Tags: [] },
+            ],
+            actualResult
+        )
+    })
 })
 
 describe('getSingleInstanceFilter', function () {
