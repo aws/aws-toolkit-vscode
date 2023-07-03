@@ -16,6 +16,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
+import { ErrorInformation } from '../shared/errors'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -57,39 +58,35 @@ export class Ec2ConnectionManager {
         return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    private async isInstanceConnectable(instanceId: string): Promise<boolean> {
-        const isInstanceRunning = (await this.ec2Client.getInstanceStatus(instanceId)) == 'running'
-        const hasProperPolicies = await this.hasProperPolicies(instanceId)
-        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(instanceId)) == 'Online'
-
-        return isInstanceRunning && hasProperPolicies && isSsmAgentRunning
+    public async isInstanceRunning(instanceId: string): Promise<boolean> {
+        const instanceStatus = await this.ec2Client.getInstanceStatus(instanceId)
+        return instanceStatus == 'running'
     }
 
-    public async handleStartSessionError(err: unknown, selection: Ec2Selection): Promise<string> {
+    private throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
+        throw new ToolkitError(generalErrorMessage + message, errorInfo)
+    }
 
-        const isInstanceRunning = (await this.ec2Client.getInstanceStatus(selection.instanceId)) == 'running'
+    public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
+        const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
         const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
 
         if (!isInstanceRunning) {
-            throw new ToolkitError(
-                generalErrorMessage +
-                    'Ensure the target instance is running and not currently starting, stopping, or stopped.',
-                { code: 'EC2SSMStatus' }
-            )
+            const message = 'Ensure the target instance is running and not currently starting, stopping, or stopped.'
+            this.throwConnectionError(message, selection, { code: 'EC2SSMStatus' })
         }
 
         if (!hasProperPolicies) {
-            throw new ToolkitError(
-                generalErrorMessage + 'Ensure the IAM role attached to the instance has the required policies.',
-                {
-                    code: 'EC2SSMPermission',
-                    documentationUri: vscode.Uri.parse(
-                        'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
-                    ),
-                }
+            const message = 'Ensure the IAM role attached to the instance has the required policies.'
+            const documentationUri = vscode.Uri.parse(
+                'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
             )
+            this.throwConnectionError(message, selection, {
+                code: 'EC2SSMPermission',
+                documentationUri: documentationUri,
+            })
         }
 
         if (!isSsmAgentRunning) {
@@ -101,9 +98,7 @@ export class Ec2ConnectionManager {
             })
         }
 
-        throw new ToolkitError('Unable to connect to target instance. ', {
-            code: 'EC2SSMConnect',
-        })
+        this.throwConnectionError('Unable to connect to target instance. ', selection, { code: 'EC2SSMAgentStatus' })
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
@@ -121,15 +116,16 @@ export class Ec2ConnectionManager {
     }
 
     public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
+        await this.checkForStartSessionError(selection)
         try {
             const response = await this.ssmClient.startSession(selection.instanceId)
-            const isConnectable = await this.isInstanceConnectable(selection.instanceId)
-            if (!isConnectable) {
-                throw new Error('Instance is not connectable.')
-            }
             await this.openSessionInTerminal(response, selection)
-        } catch (err) {
-            await this.handleStartSessionError(err, selection)
+        } catch (err: unknown) {
+            // Default error if pre-check fails.
+            this.throwConnectionError('Unable to connect to target instance. ', selection, {
+                code: 'EC2SSMAgentStatus',
+                cause: err as Error,
+            })
         }
     }
 }

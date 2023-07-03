@@ -5,7 +5,7 @@
         <div class="centered-items">
             <img
                 class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/S3.gif"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/awsExplorer.gif"
                 alt="AWS Explorer example GIF"
             />
         </div>
@@ -16,7 +16,9 @@
         </div>
 
         <div>
-            <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
+            <a
+                href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
+                v-on:click="emitUiClick('auth_learnMoreAWSResources')"
                 >Learn more about the AWS Explorer.</a
             >
         </div>
@@ -61,7 +63,12 @@
                 v-show="isCredentialsShown"
             ></CredentialsForm>
 
-            <div>Don't have an AWS account? <a href="https://aws.amazon.com/free/">Sign up for free.</a></div>
+            <div>
+                Don't have an AWS account?
+                <a href="https://aws.amazon.com/free/" v-on:click="emitUiClick('auth_signUpForFree')"
+                    >Sign up for free.</a
+                >
+            </div>
         </div>
         <div v-else class="service-item-content-form-section">
             <IdentityCenterForm
@@ -83,7 +90,12 @@
                 v-show="isCredentialsShown"
             ></CredentialsForm>
 
-            <div>Don't have an AWS account? <a href="https://aws.amazon.com/free/">Sign up for free.</a></div>
+            <div>
+                Don't have an AWS account?
+                <a href="https://aws.amazon.com/free/" v-on:click="emitUiClick('auth_signUpForFree')"
+                    >Sign up for free.</a
+                >
+            </div>
         </div>
     </div>
 </template>
@@ -93,10 +105,14 @@ import { defineComponent } from 'vue'
 import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
 import IdentityCenterForm, { ExplorerIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
-import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import ExplorerAggregateForm from '../authForms/manageExplorer.vue'
+import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthWebview } from '../show'
+
+const client = WebviewClientFactory.create<AuthWebview>()
 
 export default defineComponent({
     name: 'AwsExplorerContent',
@@ -116,7 +132,7 @@ export default defineComponent({
         }
     },
     async created() {
-        this.isAuthConnected = await this.state.isAuthConnected()
+        this.isAuthConnected = await this.state.hasConnectedAuth()
         if (!this.isAuthConnected) {
             // This does not get loaded at all when auth is not connected
             // so we'll mark it as loaded as to not block the overall loading
@@ -139,13 +155,19 @@ export default defineComponent({
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
             this.isLoaded[args.id] = true
             this.updateIsAllAuthsLoaded()
-            this.emitAuthConnectionUpdated('resourceExplorer', args)
+            this.emitAuthConnectionUpdated('awsExplorer', args)
         },
         toggleShowCredentials() {
             this.isCredentialsShown = !this.isCredentialsShown
+            if (this.isCredentialsShown) {
+                client.emitUiClick('auth_explorer_expandIAMCredentials')
+            }
         },
         toggleShowIdentityCenter() {
             this.isIdentityCenterShown = !this.isIdentityCenterShown
+            if (this.isIdentityCenterShown) {
+                client.emitUiClick('auth_explorer_expandIAMIdentityCenter')
+            }
         },
         collapsibleClass(isShown: boolean): string {
             return isShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
@@ -153,12 +175,9 @@ export default defineComponent({
     },
 })
 
-export class ResourceExplorerContentState implements AuthStatus {
-    async isAuthConnected(): Promise<boolean> {
-        return (
-            (await authFormsState.credentials.isAuthConnected()) ||
-            (await authFormsState.identityCenterExplorer.isAuthConnected())
-        )
+export class ResourceExplorerContentState extends FeatureStatus {
+    getAuthForms(): AuthForm[] {
+        return [authFormsState.credentials, authFormsState.identityCenterExplorer]
     }
 }
 </script>

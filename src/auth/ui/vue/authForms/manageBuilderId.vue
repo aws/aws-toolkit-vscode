@@ -7,7 +7,7 @@
                 <div class="form-section">
                     <div class="sub-text-color">
                         {{ getDescription() }}
-                        <a :href="signUpUrl">Learn more.</a>
+                        <a :href="signUpUrl" v-on:click="emitUiClick('auth_learnMoreBuilderId')">Learn more.</a>
                     </div>
                 </div>
 
@@ -39,10 +39,12 @@
 import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
-import { AuthStatus } from './shared.vue'
-import { AuthWebview } from '../show'
+import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthError } from '../types'
+import { FeatureId } from '../../../../shared/telemetry/telemetry.gen'
+import { AuthForm } from './shared.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -77,10 +79,23 @@ export default defineComponent({
     methods: {
         async startSignIn() {
             this.stage = 'WAITING_ON_USER'
-            this.error = await this.state.startBuilderIdSetup()
-            if (this.error) {
+            client.startAuthFormInteraction(this.state.featureType, 'awsId')
+            const authError = await this.state.startBuilderIdSetup()
+
+            if (authError) {
+                this.error = authError.text
                 this.stage = await this.state.stage()
+
+                client.failedAuthAttempt({
+                    authType: 'awsId',
+                    featureType: this.state.featureType,
+                    reason: authError.id,
+                })
             } else {
+                client.successfulAuthAttempt({
+                    featureType: this.state.featureType,
+                    authType: 'awsId',
+                })
                 await this.update('signIn')
             }
         },
@@ -92,10 +107,12 @@ export default defineComponent({
         },
         async signout() {
             await this.state.signout()
+            client.emitUiClick(this.state.uiClickSignout)
             this.update('signOut')
         },
         showNodeInView() {
             this.state.showNodeInView()
+            client.emitUiClick(this.state.uiClickOpenId)
         },
         getSignUpUrl() {
             return this.state.getSignUpUrl()
@@ -116,18 +133,21 @@ export default defineComponent({
 /**
  * Manages the state of Builder ID.
  */
-abstract class BaseBuilderIdState implements AuthStatus {
+abstract class BaseBuilderIdState implements AuthForm {
     protected _stage: BuilderIdStage = 'START'
 
     abstract get name(): string
     abstract get id(): AuthFormId
-    protected abstract _startBuilderIdSetup(): Promise<string>
+    abstract get uiClickOpenId(): AuthUiClick
+    abstract get uiClickSignout(): AuthUiClick
+    abstract get featureType(): FeatureId
+    protected abstract _startBuilderIdSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
 
     protected constructor() {}
 
-    async startBuilderIdSetup(): Promise<string> {
+    async startBuilderIdSetup(): Promise<AuthError | undefined> {
         this._stage = 'WAITING_ON_USER'
         return this._startBuilderIdSetup()
     }
@@ -160,11 +180,23 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return 'builderIdCodeWhisperer'
     }
 
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeWhisperer'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codewhisperer_signoutBuilderId'
+    }
+
+    override get featureType(): FeatureId {
+        return 'codewhisperer'
+    }
+
     override isAuthConnected(): Promise<boolean> {
         return client.isCodeWhispererBuilderIdConnected()
     }
 
-    protected override _startBuilderIdSetup(): Promise<string> {
+    protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeWhispererBuilderIdSetup()
     }
 
@@ -192,11 +224,23 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
         return 'builderIdCodeCatalyst'
     }
 
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeCatalyst'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codecatalyst_signoutBuilderId'
+    }
+
+    override get featureType(): FeatureId {
+        return 'codecatalyst'
+    }
+
     override isAuthConnected(): Promise<boolean> {
         return client.isCodeCatalystBuilderIdConnected()
     }
 
-    protected override _startBuilderIdSetup(): Promise<string> {
+    protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeCatalystBuilderIdSetup()
     }
 

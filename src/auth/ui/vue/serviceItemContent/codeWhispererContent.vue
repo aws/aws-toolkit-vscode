@@ -5,7 +5,7 @@
         <div class="centered-items">
             <img
                 class="service-item-content-image"
-                src="https://docs.aws.amazon.com/images/codewhisperer/latest/userguide/images/cw-c9-function-from-comment.gif"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
                 alt="CodeWhisperer example GIF"
             />
         </div>
@@ -16,7 +16,9 @@
         </div>
 
         <div>
-            <a href="https://aws.amazon.com/codewhisperer/">Learn more about CodeWhisperer.</a>
+            <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
+                >Learn more about CodeWhisperer.</a
+            >
         </div>
 
         <hr />
@@ -36,13 +38,16 @@
                         <div style="font-weight: bold; font-size: medium" :class="collapsibleClass"></div>
                         <div>
                             <div style="font-weight: bold; font-size: 14px">
-                                Have a
-                                <a href="https://aws.amazon.com/codewhisperer/pricing/">Professional Tier</a>
-                                subscription? Sign in with IAM Identity Center.
+                                Have a Professional Tier subscription? Sign in with IAM Identity Center.
                             </div>
                             <div>
                                 Professional Tier offers administrative capabilities for organizations of developers.
                             </div>
+                            <a
+                                href="https://aws.amazon.com/codewhisperer/pricing/"
+                                v-on:click="uiClick('auth_learnMoreProfessionalTierCodeWhisperer')"
+                                >Learn more.</a
+                            >
                         </div>
                     </div>
                 </div>
@@ -63,9 +68,13 @@ import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageBuilderId.vue'
 import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
-import authFormsState, { AuthStatus } from '../authForms/shared.vue'
+import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
+import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthUiClick, AuthWebview } from '../show'
+
+const client = WebviewClientFactory.create<AuthWebview>()
 
 export default defineComponent({
     name: 'CodeWhispererContent',
@@ -111,17 +120,19 @@ export default defineComponent({
         },
         toggleIdentityCenterShown() {
             this.isIdentityCenterShown = !this.isIdentityCenterShown
+            if (this.isIdentityCenterShown) {
+                client.emitUiClick('auth_codewhisperer_expandIAMIdentityCenter')
+            }
+        },
+        uiClick(id: AuthUiClick) {
+            client.emitUiClick(id)
         },
     },
 })
 
-export class CodeWhispererContentState implements AuthStatus {
-    async isAuthConnected(): Promise<boolean> {
-        const result = await Promise.all([
-            authFormsState.builderIdCodeWhisperer.isAuthConnected(),
-            authFormsState.identityCenterCodeWhisperer.isAuthConnected(),
-        ])
-        return result.filter(isConnected => isConnected).length > 0
+export class CodeWhispererContentState extends FeatureStatus {
+    override getAuthForms(): AuthForm[] {
+        return [authFormsState.builderIdCodeWhisperer, authFormsState.identityCenterCodeWhisperer]
     }
 }
 </script>
