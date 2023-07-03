@@ -135,7 +135,7 @@ describe('extractInstancesFromReservations', function () {
     })
 })
 
-describe('getSingleInstanceFilter', function () {
+describe('getInstancesFilter', function () {
     const client = new Ec2Client('')
 
     it('returns proper filter when given instanceId', function () {
