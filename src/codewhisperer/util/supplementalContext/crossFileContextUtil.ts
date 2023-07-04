@@ -195,9 +195,19 @@ function getOpenFilesInWindow(): string[] {
     return filesOpenedInEditor
 }
 
+/**
+ *
+ * @returns file distance between targetFile and candidateFile
+ * For example:
+ * The file distance between A/B/C.java and A/B/D.java is 0
+ * The file distance between A/B/C.java and A/D.java is 1
+ */
 export function getFileDistance(targetFile: string, candidateFile: string, seperator: string): number {
-    const targetFilePaths = targetFile.split(seperator)
-    const candidateFilePaths = candidateFile.split(seperator)
+    let targetFilePaths = targetFile.split(seperator)
+    targetFilePaths = targetFilePaths.slice(0, targetFilePaths.length - 1)
+
+    let candidateFilePaths = candidateFile.split(seperator)
+    candidateFilePaths = candidateFilePaths.slice(0, candidateFilePaths.length - 1)
 
     let i = 0
     while (i < Math.min(targetFilePaths.length, candidateFilePaths.length)) {

@@ -19,34 +19,40 @@ describe('crossfileUtil', function () {
         const targetFile = 'service/microService/CodeWhispererFileContextProvider.java'
         let candidateFile: string
 
-        it('distance 3', function () {
+        it('distance 0', function () {
+            candidateFile = 'service/microService/CodeWhispererFileCrawler.java'
+            const actual = getFileDistance(targetFile, candidateFile, '/')
+            assert.strictEqual(actual, 0)
+        })
+
+        it('distance 1', function () {
             candidateFile = 'service/CodewhispererRecommendationService.java'
+            const actual = getFileDistance(targetFile, candidateFile, '/')
+            assert.strictEqual(actual, 1)
+        })
+
+        it('distance 3', function () {
+            candidateFile = 'util/CodeWhispererConstants.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 3)
         })
 
+        it('distance 4', function () {
+            candidateFile = 'ui/popup/CodeWhispererPopupManager.java'
+            const actual = getFileDistance(targetFile, candidateFile, '/')
+            assert.strictEqual(actual, 4)
+        })
+
         it('distance 5', function () {
-            candidateFile = 'util/CodeWhispererConstants.java'
+            candidateFile = 'ui/popup/components/CodeWhispererPopup.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
             assert.strictEqual(actual, 5)
         })
 
         it('distance 6', function () {
-            candidateFile = 'ui/popup/CodeWhispererPopupManager.java'
-            const actual = getFileDistance(targetFile, candidateFile, '/')
-            assert.strictEqual(actual, 6)
-        })
-
-        it('distance 7', function () {
-            candidateFile = 'ui/popup/components/CodeWhispererPopup.java'
-            const actual = getFileDistance(targetFile, candidateFile, '/')
-            assert.strictEqual(actual, 7)
-        })
-
-        it('distance 8', function () {
             candidateFile = 'ui/popup/components/actions/AcceptRecommendationAction.java'
             const actual = getFileDistance(targetFile, candidateFile, '/')
-            assert.strictEqual(actual, 8)
+            assert.strictEqual(actual, 6)
         })
     })
 
