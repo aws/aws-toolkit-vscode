@@ -136,8 +136,8 @@ const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; de
         description: 'Build applications faster with your AI coding companion.',
     },
     codecatalyst: {
-        title: 'CodeCatalyst: Launch cloud-based Dev Environments',
-        description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
+        title: 'CodeCatalyst: Launch CodeCatalyst Dev Environments',
+        description: 'Spend more time coding and less time managing development environments.',
     },
 }
 
