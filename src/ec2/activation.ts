@@ -4,7 +4,7 @@
  */
 import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
-import { tryConnect } from './commands'
+import { copyInstanceId, tryConnect } from './commands'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 
@@ -15,6 +15,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 span.record({ ec2ConnectionType: 'ssm' })
                 await (node ? tryConnect(node.toSelection()) : tryConnect())
             })
+        }),
+
+        Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
+            await copyInstanceId(node.InstanceId)
         })
     )
 }

@@ -10,6 +10,8 @@ import { Ec2Selection } from './utils'
 import { RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
 import { PromptResult } from '../shared/ui/prompter'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { ToolkitError } from '../shared/errors'
+import { copyToClipboard } from '../shared/utilities/messages'
 
 function getSelectionFromResponse(response: PromptResult<RegionSubmenuResponse<string>>): Ec2Selection {
     if (isValidResponse(response)) {
@@ -29,4 +31,16 @@ export async function tryConnect(selection?: Ec2Selection): Promise<void> {
 
     const ec2Client = new Ec2ConnectionManager(selection.region)
     await ec2Client.attemptEc2Connection(selection)
+}
+
+export async function copyInstanceId(instanceId: string): Promise<void> {
+    console.log('copied it!')
+    try {
+        if (!instanceId) {
+            throw new ToolkitError(`Attempting to copy undefined instanceId.`)
+        }
+        await copyToClipboard(instanceId)
+    } catch (e) {
+        throw new ToolkitError('Failed to copy instanceId', { cause: e as Error })
+    }
 }
