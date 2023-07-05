@@ -9,6 +9,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import { build } from '@aws-sdk/util-arn-parser'
 import globals from '../../shared/extensionGlobals'
+
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public override readonly regionCode: string,
