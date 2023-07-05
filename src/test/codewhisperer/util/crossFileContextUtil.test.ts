@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as semver from 'semver'
