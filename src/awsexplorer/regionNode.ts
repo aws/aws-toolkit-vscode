@@ -33,18 +33,22 @@ import { Ec2Client } from '../shared/clients/ec2Client'
 const serviceCandidates = [
     {
         serviceId: 'apigateway',
+        when: () => true,
         createFn: (regionCode: string, partitionId: string) => new ApiGatewayNode(partitionId, regionCode),
     },
     {
         serviceId: 'apprunner',
+        when: () => true,
         createFn: (regionCode: string) => new AppRunnerNode(regionCode, new DefaultAppRunnerClient(regionCode)),
     },
     {
         serviceId: 'cloudformation',
+        when: () => true,
         createFn: (regionCode: string) => new CloudFormationNode(regionCode),
     },
     {
         serviceId: 'logs',
+        when: () => true,
         createFn: (regionCode: string) => new CloudWatchLogsNode(regionCode),
     },
     {
@@ -55,34 +59,42 @@ const serviceCandidates = [
     },
     {
         serviceId: 'ecr',
+        when: () => true,
         createFn: (regionCode: string) => new EcrNode(new DefaultEcrClient(regionCode)),
     },
     {
         serviceId: 'ecs',
+        when: () => true,
         createFn: (regionCode: string) => new TreeShim(getEcsRootNode(regionCode)),
     },
     {
         serviceId: 'iot',
+        when: () => true,
         createFn: (regionCode: string) => new IotNode(new DefaultIotClient(regionCode)),
     },
     {
         serviceId: 'lambda',
+        when: () => true,
         createFn: (regionCode: string) => new LambdaNode(regionCode),
     },
     {
         serviceId: 's3',
+        when: () => true,
         createFn: (regionCode: string) => new S3Node(new DefaultS3Client(regionCode)),
     },
     {
         serviceId: 'schemas',
+        when: () => true,
         createFn: (regionCode: string) => new SchemasNode(new DefaultSchemaClient(regionCode)),
     },
     {
         serviceId: 'states',
+        when: () => true,
         createFn: (regionCode: string) => new StepFunctionsNode(regionCode),
     },
     {
         serviceId: 'ssm',
+        when: () => true,
         createFn: (regionCode: string) => new SsmDocumentNode(regionCode),
     },
 ]
@@ -116,7 +128,7 @@ export class RegionNode extends AWSTreeNodeBase {
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
         for (const service of serviceCandidates) {
-            if (service.when !== undefined && !service.when()) {
+            if (service.when === undefined || !service.when()) {
                 continue
             }
             if (this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
