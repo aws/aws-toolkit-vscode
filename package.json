@@ -1404,6 +1404,11 @@
                     "group": "1@2"
                 },
                 {
+                    "command": "aws.ec2.copyInstanceId",
+                    "when": "view == aws.explorer && viewItem == awsEc2Node",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.ecr.copyTagUri",
                     "when": "view == aws.explorer && viewItem == awsEcrTagNode",
                     "group": "2@1"
@@ -2059,6 +2064,16 @@
                 "command": "aws.ec2.connectToInstance",
                 "title": "%AWS.command.ec2.connectToInstance%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.copyInstanceId",
+                "title": "%AWS.command.ec2.copyInstanceId%",
+                "category": "%AWS.title",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

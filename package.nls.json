@@ -109,6 +109,7 @@
     "AWS.command.refreshCdkExplorer": "Refresh CDK Explorer",
     "AWS.command.cdk.help": "View CDK Documentation",
     "AWS.command.ec2.connectToInstance": "Connect to EC2 Instance...",
+    "AWS.command.ec2.copyInstanceId": "Copy Instance Id",
     "AWS.command.ecr.copyTagUri": "Copy Tag URI",
     "AWS.command.ecr.copyRepositoryUri": "Copy Repository URI",
     "AWS.command.ecr.createRepository": "Create Repository...",
