@@ -58,12 +58,12 @@ describe('crossfileUtil', function () {
 
             for (const file of shuffledFilePaths) {
                 await openATextEditor(file)
-                assertTextEditorContains('')
+                await assertTextEditorContains('')
             }
 
             // to make the target file editor active
             const editor = await openATextEditor(targetFile)
-            assertTextEditorContains('')
+            await assertTextEditorContains('')
 
             const actual = await getRelevantCrossFiles(editor)
             assert.deepStrictEqual(actual, [
