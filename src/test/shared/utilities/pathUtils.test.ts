@@ -41,7 +41,7 @@ describe('pathUtils', async function () {
         assert.ok(!areEqual(workspaceFolderPath, '/my/workspace/foo/', './foo/bar/'))
         if (os.platform() === 'win32') {
             const driveletter = getDriveLetter('.')
-            assert.ok(areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'c:\\my\\WORKSPACE\\FOO'))
+            assert.ok(areEqual(workspaceFolderPath, '/C:/my/workspace/foo', 'c:\\my\\WORKSPACE\\FOO'))
             assert.ok(areEqual(workspaceFolderPath, `${driveletter}:/my/workspace/foo`, '.\\FOO'))
             assert.ok(!areEqual(workspaceFolderPath, `${driveletter}:/my/workspace/foo`, '..\\..\\FOO'))
             assert.ok(!areEqual(workspaceFolderPath, 'C:/my/workspace/foo', 'C:/my/workspac/e/foo'))

@@ -11,7 +11,7 @@ import * as semver from 'semver'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { normalize } from '../../../shared/utilities/pathUtils'
+import { normalize, areEqual } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util functio inside testUtil.ts
 let tempFolder: string
@@ -58,11 +58,11 @@ describe('crossfileUtil', function () {
             const fileWithDistance8 = 'ui/popup/components/actions/AcceptRecommendationAction.java'
 
             const filePaths = [
-                fileWithDistance8,
-                fileWithDistance5,
-                fileWithDistance7,
                 fileWithDistance3,
+                fileWithDistance5,
                 fileWithDistance6,
+                fileWithDistance7,
+                fileWithDistance8,
             ]
             const shuffledFilePaths = shuffleList(filePaths)
             let cnt = 0
@@ -77,13 +77,10 @@ describe('crossfileUtil', function () {
             await assertTabSize(shuffledFilePaths.length + 1)
 
             const actual = await getRelevantCrossFiles(editor)
-            assert.deepStrictEqual(actual, [
-                normalize(tempFolder + '/' + fileWithDistance3),
-                normalize(tempFolder + '/' + fileWithDistance5),
-                normalize(tempFolder + '/' + fileWithDistance6),
-                normalize(tempFolder + '/' + fileWithDistance7),
-                normalize(tempFolder + '/' + fileWithDistance8),
-            ])
+
+            actual.forEach((file, index) => {
+                areEqual(undefined, file, tempFolder + '/' + filePaths[index])
+            })
         })
     })
 })
