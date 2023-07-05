@@ -21,8 +21,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public update(newInstance: Ec2Instance) {
         this.setInstance(newInstance)
-        this.label = this.name
-        this.tooltip = this.InstanceId
+        this.label = this.name + ` (${this.InstanceId})`
+        this.tooltip = this.name + '\n' + this.InstanceId + '\n' + this.arn
     }
 
     public setInstance(newInstance: Ec2Instance) {
