@@ -34,13 +34,12 @@ export async function tryConnect(selection?: Ec2Selection): Promise<void> {
 }
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
-    console.log('copied it!')
     try {
         if (!instanceId) {
             throw new ToolkitError(`Attempting to copy undefined instanceId.`)
         }
         await copyToClipboard(instanceId)
     } catch (e) {
-        throw new ToolkitError('Failed to copy instanceId', { cause: e as Error })
+        throw new ToolkitError('Failed to copy instanceId', { code: 'InvalidResource', cause: e as Error })
     }
 }
