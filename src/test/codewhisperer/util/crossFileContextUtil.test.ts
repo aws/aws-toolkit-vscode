@@ -10,6 +10,7 @@ import * as path from 'path'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, toFile, assertTextEditorContains } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util functio inside testUtil.ts
 async function openATextEditor(completeFilePath: string): Promise<vscode.TextEditor> {
@@ -61,11 +62,11 @@ describe('crossfileUtil', function () {
 
             const actual = await getRelevantCrossFiles(editor)
             assert.deepStrictEqual(actual, [
-                fileWithDistance3,
-                fileWithDistance5,
-                fileWithDistance6,
-                fileWithDistance7,
-                fileWithDistance8,
+                normalize(fileWithDistance3),
+                normalize(fileWithDistance5),
+                normalize(fileWithDistance6),
+                normalize(fileWithDistance7),
+                normalize(fileWithDistance8),
             ])
         })
     })
