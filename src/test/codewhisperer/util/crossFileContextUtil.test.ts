@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
-import { shuffleList, assertTextEditorContains, closeAllEditors } from '../../testUtil'
+import { shuffleList, assertTextEditorContains, closeAllEditors, toFile } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
@@ -17,7 +17,7 @@ let tempFolder: string
 
 async function openATextEditorWithText(fileText: string, fileName: string): Promise<vscode.TextEditor> {
     const completeFilePath = path.join(tempFolder, fileName)
-    await fs.writeFile(completeFilePath, fileText)
+    toFile(fileText, completeFilePath)
 
     const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
 
