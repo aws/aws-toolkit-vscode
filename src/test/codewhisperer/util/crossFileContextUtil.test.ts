@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
-import { shuffleList, assertTextEditorContains, closeAllEditors, toFile } from '../../testUtil'
+import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
@@ -61,12 +61,13 @@ describe('crossfileUtil', function () {
 
             for (const file of shuffledFilePaths) {
                 await openATextEditorWithText(file, file)
-                await assertTextEditorContains(file)
             }
+
+            await assertTabSize(shuffledFilePaths.length)
 
             // to make the target file editor active
             const editor = await openATextEditorWithText(targetFile, targetFile)
-            await assertTextEditorContains(targetFile)
+            await assertTabSize(shuffledFilePaths.length + 1)
 
             const actual = await getRelevantCrossFiles(editor)
             assert.deepStrictEqual(actual, [
