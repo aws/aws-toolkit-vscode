@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { isRelevant } from './editorFilesUtil'
@@ -13,6 +12,7 @@ import { ToolkitError } from '../../../shared/errors'
 import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { getFileDistance } from '../../../shared/filesystemUtilities'
 
 const crossFileLanguageConfigs = ['java']
 interface Chunk {
@@ -154,8 +154,6 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * by referencing open files, imported files and same package files.
  */
 export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<string[]> {
-    // TODO: make sure this will work across OSs?
-    const fileSeperator = path.sep
     const targetFile = editor.document.uri.path
 
     const relevantFiles = getOpenFilesInWindow().filter(file => {
@@ -166,7 +164,7 @@ export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<
         .map(file => {
             return {
                 file: file,
-                fileDistance: getFileDistance(targetFile, file, fileSeperator),
+                fileDistance: getFileDistance(targetFile, file),
             }
         })
         .sort((obj1, obj2) => {
@@ -193,35 +191,6 @@ function getOpenFilesInWindow(): string[] {
     }
 
     return filesOpenedInEditor
-}
-
-/**
- *
- * @returns file distance between targetFile and candidateFile
- * For example:
- * The file distance between A/B/C.java and A/B/D.java is 0
- * The file distance between A/B/C.java and A/D.java is 1
- */
-export function getFileDistance(targetFile: string, candidateFile: string, seperator: string): number {
-    let targetFilePaths = targetFile.split(seperator)
-    targetFilePaths = targetFilePaths.slice(0, targetFilePaths.length - 1)
-
-    let candidateFilePaths = candidateFile.split(seperator)
-    candidateFilePaths = candidateFilePaths.slice(0, candidateFilePaths.length - 1)
-
-    let i = 0
-    while (i < Math.min(targetFilePaths.length, candidateFilePaths.length)) {
-        const dir1 = targetFilePaths[i]
-        const dir2 = candidateFilePaths[i]
-
-        if (dir1 !== dir2) {
-            break
-        }
-
-        i++
-    }
-
-    return targetFilePaths.slice(i).length + candidateFilePaths.slice(i).length
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {

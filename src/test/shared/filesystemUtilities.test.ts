@@ -9,6 +9,7 @@ import { writeFile, remove } from 'fs-extra'
 import * as path from 'path'
 import {
     fileExists,
+    getFileDistance,
     getNonexistentFilename,
     isInDirectory,
     makeTemporaryToolkitFolder,
@@ -118,5 +119,73 @@ describe('filesystemUtilities', function () {
         } else {
             assert.ok(!isInDirectory('/foo/bar/baz/', '/FOO/BAR/BAZ/A.TXT'))
         }
+    })
+
+    describe('getFileDistance', function () {
+        let fileA: string
+        let fileB: string
+
+        it('distance 0', function () {
+            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
+            fileB = 'service/microService/CodeWhispererFileCrawler.java'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 0)
+        })
+
+        it('root distance 0', function () {
+            fileA = 'A.txt'
+            fileB = 'B.txt'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 0)
+        })
+
+        it('distance 1', function () {
+            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
+            fileB = 'service/CodewhispererRecommendationService.java'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 1)
+        })
+
+        it('distance 3', function () {
+            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
+            fileB = 'util/CodeWhispererConstants.java'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 3)
+        })
+
+        it('distance 4', function () {
+            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
+            fileB = 'ui/popup/CodeWhispererPopupManager.java'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 4)
+        })
+
+        it('distance 5', function () {
+            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
+            fileB = 'ui/popup/components/CodeWhispererPopup.java'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 5)
+        })
+
+        it('distance 6', function () {
+            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
+            fileB = 'ui/popup/components/actions/AcceptRecommendationAction.java'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 6)
+        })
+
+        it('backslash distance 1', function () {
+            fileA = 'C:\\FOO\\BAR\\BAZ\\A.TXT'
+            fileB = 'C:\\FOO\\BAR\\B.TXT'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 1)
+        })
+
+        it('backslash distnace 3', function () {
+            fileA = 'C:\\FOO\\BAR\\BAZ\\LOO\\WOW\\A.txt'
+            fileB = 'C:\\FOO\\BAR\\B.txt'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 3)
+        })
     })
 })
