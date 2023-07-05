@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
+import * as semver from 'semver'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
@@ -43,6 +44,12 @@ describe('crossfileUtil', function () {
         })
 
         it('should return opened files in the current window and sorted ascendingly by file distance', async function () {
+            const shouldRunTheTest = semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0')
+
+            if (!shouldRunTheTest) {
+                this.skip()
+            }
+
             const targetFile = 'service/microService/CodeWhispererFileContextProvider.java'
             const fileWithDistance3 = 'service/CodewhispererRecommendationService.java'
             const fileWithDistance5 = 'util/CodeWhispererConstants.java'
