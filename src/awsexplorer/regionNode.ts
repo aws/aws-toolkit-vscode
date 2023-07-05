@@ -114,7 +114,10 @@ export class RegionNode extends AWSTreeNodeBase {
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
-        for (const { serviceId, createFn } of serviceCandidates) {
+        for (const service of serviceCandidates) {
+            if (service.when === undefined || !service.when()) {
+                continue
+            }
             if (serviceId === 'ec2' && !DevSettings.instance.isDevMode()) {
                 continue
             }
