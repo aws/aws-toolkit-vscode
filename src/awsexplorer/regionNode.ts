@@ -49,6 +49,7 @@ const serviceCandidates = [
     },
     {
         serviceId: 'ec2',
+        when: () => DevSettings.instance.isDevMode(),
         createFn: (regionCode: string, partitionId: string) =>
             new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
     },
@@ -115,14 +116,11 @@ export class RegionNode extends AWSTreeNodeBase {
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
         for (const service of serviceCandidates) {
-            if (service.when === undefined || !service.when()) {
+            if (service.when !== undefined && !service.when()) {
                 continue
             }
-            if (serviceId === 'ec2' && !DevSettings.instance.isDevMode()) {
-                continue
-            }
-            if (this.regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
-                const node = createFn(this.regionCode, partitionId)
+            if (this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
+                const node = service.createFn(this.regionCode, partitionId)
                 if (node !== undefined) {
                     childNodes.push(node)
                 }
