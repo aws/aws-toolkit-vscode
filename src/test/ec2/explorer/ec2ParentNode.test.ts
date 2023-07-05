@@ -18,7 +18,7 @@ describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let instanceNames: string[]
     const testRegion = 'testRegion'
-    const testPartition = ''
+    const testPartition = 'testPartition'
 
     function createClient() {
         const client = stub(Ec2Client, { regionCode: testRegion })
