@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix inproper request format when sending empty supplemental context"
+}
