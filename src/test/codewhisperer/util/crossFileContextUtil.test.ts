@@ -14,7 +14,7 @@ import { normalize } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util functio inside testUtil.ts
 async function openATextEditor(completeFilePath: string): Promise<vscode.TextEditor> {
-    toFile('', completeFilePath)
+    toFile(completeFilePath, completeFilePath)
     const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
     return await vscode.window.showTextDocument(textDocument, { preview: false })
 }
@@ -58,12 +58,12 @@ describe('crossfileUtil', function () {
 
             for (const file of shuffledFilePaths) {
                 await openATextEditor(file)
-                await assertTextEditorContains('')
+                await assertTextEditorContains(file)
             }
 
             // to make the target file editor active
             const editor = await openATextEditor(targetFile)
-            await assertTextEditorContains('')
+            await assertTextEditorContains(targetFile)
 
             const actual = await getRelevantCrossFiles(editor)
             assert.deepStrictEqual(actual, [
