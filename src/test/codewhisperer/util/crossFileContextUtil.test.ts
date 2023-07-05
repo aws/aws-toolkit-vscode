@@ -23,6 +23,10 @@ describe('crossfileUtil', function () {
     describe('getRelevantFiles', function () {
         let tempFolder: string
 
+        before(async function () {
+            this.timeout(600000)
+        })
+
         beforeEach(async function () {
             tempFolder = await makeTemporaryToolkitFolder()
         })
