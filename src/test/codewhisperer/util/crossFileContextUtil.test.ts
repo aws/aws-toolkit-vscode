@@ -21,7 +21,7 @@ async function openATextEditorWithText(fileText: string, fileName: string): Prom
 
     const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
 
-    return await vscode.window.showTextDocument(textDocument)
+    return await vscode.window.showTextDocument(textDocument, { preview: false })
 }
 
 describe('crossfileUtil', function () {
@@ -58,12 +58,12 @@ describe('crossfileUtil', function () {
                 fileWithDistance6,
             ]
             const shuffledFilePaths = shuffleList(filePaths)
-
+            let cnt = 0
             for (const file of shuffledFilePaths) {
                 await openATextEditorWithText(file, file)
+                cnt++
+                await assertTabSize(cnt)
             }
-
-            await assertTabSize(shuffledFilePaths.length)
 
             // to make the target file editor active
             const editor = await openATextEditorWithText(targetFile, targetFile)
@@ -71,11 +71,11 @@ describe('crossfileUtil', function () {
 
             const actual = await getRelevantCrossFiles(editor)
             assert.deepStrictEqual(actual, [
-                normalize(fileWithDistance3),
-                normalize(fileWithDistance5),
-                normalize(fileWithDistance6),
-                normalize(fileWithDistance7),
-                normalize(fileWithDistance8),
+                normalize(tempFolder + '/' + fileWithDistance3),
+                normalize(tempFolder + '/' + fileWithDistance5),
+                normalize(tempFolder + '/' + fileWithDistance6),
+                normalize(tempFolder + '/' + fileWithDistance7),
+                normalize(tempFolder + '/' + fileWithDistance8),
             ])
         })
     })
