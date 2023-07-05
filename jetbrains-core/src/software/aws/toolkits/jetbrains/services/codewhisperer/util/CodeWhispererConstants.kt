@@ -75,4 +75,13 @@ object CodeWhispererConstants {
         val Sigv4ClientRegion = Region.US_EAST_1
         val BearerClientRegion = Region.US_EAST_1
     }
+
+    object CrossFile {
+        const val CHUNK_SIZE = 3000
+    }
+
+    object Utg {
+        const val UTG_SEGMENT_SIZE = 10200
+        const val UTG_PREFIX = "UTG\n"
+    }
 }

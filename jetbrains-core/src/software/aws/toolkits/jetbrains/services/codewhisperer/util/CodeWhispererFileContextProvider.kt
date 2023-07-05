@@ -162,15 +162,15 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
                 val relativePath = runReadAction { contentRootPathProvider.getPathToElement(project, file, null) ?: file.path }
                 chunks.addAll(file.toCodeChunk(relativePath))
                 hasUsed.add(file)
-                if (chunks.size > CHUNK_SIZE) {
+                if (chunks.size > CodeWhispererConstants.CrossFile.CHUNK_SIZE) {
                     LOG.debug { "finish fetching 60 chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
-                    return chunks.take(CHUNK_SIZE)
+                    return chunks.take(CodeWhispererConstants.CrossFile.CHUNK_SIZE)
                 }
             }
         }
 
         LOG.debug { "finish fetching 60 chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
-        return chunks.take(CHUNK_SIZE)
+        return chunks.take(CodeWhispererConstants.CrossFile.CHUNK_SIZE)
     }
 
     override fun isTestFile(psiFile: PsiFile) = when (psiFile.programmingLanguage()) {
@@ -232,7 +232,12 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
             val relativePath = contentRootPathProvider.getPathToElement(project, file, null) ?: file.path
             listOf(
                 Chunk(
-                    content = UTG_PREFIX + file.content().let { it.substring(0, minOf(it.length, UTG_SEGMENT_SIZE)) },
+                    content = CodeWhispererConstants.Utg.UTG_PREFIX + file.content().let {
+                        it.substring(
+                            0,
+                            minOf(it.length, CodeWhispererConstants.Utg.UTG_SEGMENT_SIZE)
+                        )
+                    },
                     path = relativePath
                 )
             )
@@ -241,8 +246,5 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
 
     companion object {
         private val LOG = getLogger<DefaultCodeWhispererFileContextProvider>()
-        private const val CHUNK_SIZE = 60
-        private const val UTG_SEGMENT_SIZE = 10200
-        private const val UTG_PREFIX = "UTG\n"
     }
 }
