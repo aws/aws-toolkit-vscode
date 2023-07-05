@@ -13,16 +13,19 @@ import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util functio inside testUtil.ts
-async function openATextEditor(completeFilePath: string): Promise<vscode.TextEditor> {
-    toFile(completeFilePath, completeFilePath)
+let tempFolder: string
+
+async function openATextEditorWithText(fileText: string, fileName: string): Promise<vscode.TextEditor> {
+    const completeFilePath = path.join(tempFolder, fileName)
+    await fs.writeFile(completeFilePath, fileText)
+
     const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
-    return await vscode.window.showTextDocument(textDocument, { preview: false })
+
+    return await vscode.window.showTextDocument(textDocument)
 }
 
 describe('crossfileUtil', function () {
     describe('getRelevantFiles', function () {
-        let tempFolder: string
-
         before(async function () {
             this.timeout(600000)
         })
@@ -33,19 +36,19 @@ describe('crossfileUtil', function () {
 
         afterEach(async function () {
             await fs.remove(tempFolder)
+        })
+
+        after(async function () {
             await closeAllEditors()
         })
 
         it('should return opened files in the current window and sorted ascendingly by file distance', async function () {
-            const targetFile = path.join(tempFolder, 'service/microService/CodeWhispererFileContextProvider.java')
-            const fileWithDistance3 = path.join(tempFolder, 'service/CodewhispererRecommendationService.java')
-            const fileWithDistance5 = path.join(tempFolder, 'util/CodeWhispererConstants.java')
-            const fileWithDistance6 = path.join(tempFolder, 'ui/popup/CodeWhispererPopupManager.java')
-            const fileWithDistance7 = path.join(tempFolder, 'ui/popup/components/CodeWhispererPopup.java')
-            const fileWithDistance8 = path.join(
-                tempFolder,
-                'ui/popup/components/actions/AcceptRecommendationAction.java'
-            )
+            const targetFile = 'service/microService/CodeWhispererFileContextProvider.java'
+            const fileWithDistance3 = 'service/CodewhispererRecommendationService.java'
+            const fileWithDistance5 = 'util/CodeWhispererConstants.java'
+            const fileWithDistance6 = 'ui/popup/CodeWhispererPopupManager.java'
+            const fileWithDistance7 = 'ui/popup/components/CodeWhispererPopup.java'
+            const fileWithDistance8 = 'ui/popup/components/actions/AcceptRecommendationAction.java'
 
             const filePaths = [
                 fileWithDistance8,
@@ -57,12 +60,12 @@ describe('crossfileUtil', function () {
             const shuffledFilePaths = shuffleList(filePaths)
 
             for (const file of shuffledFilePaths) {
-                await openATextEditor(file)
+                await openATextEditorWithText(file, file)
                 await assertTextEditorContains(file)
             }
 
             // to make the target file editor active
-            const editor = await openATextEditor(targetFile)
+            const editor = await openATextEditorWithText(targetFile, targetFile)
             await assertTextEditorContains(targetFile)
 
             const actual = await getRelevantCrossFiles(editor)
