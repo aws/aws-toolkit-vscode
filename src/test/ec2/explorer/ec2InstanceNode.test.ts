@@ -35,7 +35,7 @@ describe('ec2InstanceNode', function () {
     })
 
     it('initializes the label', async function () {
-        assert.strictEqual(testNode.label, getNameOfInstance(testInstance))
+        assert.strictEqual(testNode.label, getNameOfInstance(testInstance)! + ` (${testInstance.InstanceId})`)
     })
 
     it('initializes the functionName', async function () {
@@ -43,7 +43,7 @@ describe('ec2InstanceNode', function () {
     })
 
     it('initializes the tooltip', async function () {
-        assert.strictEqual(testNode.tooltip, testInstance.InstanceId)
+        assert.strictEqual(testNode.tooltip, testNode.name + '\n' + testInstance.InstanceId! + '\n' + testNode.arn)
     })
 
     it('has no children', async function () {

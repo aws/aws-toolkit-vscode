@@ -81,7 +81,7 @@ describe('ec2ParentNode', function () {
 
         const childNodes = await testNode.getChildren()
 
-        const actualChildOrder = childNodes.map(node => node.label)
+        const actualChildOrder = childNodes.map(node => (node instanceof Ec2InstanceNode ? node.name : undefined))
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
