@@ -18,7 +18,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { NotificationMetadata, TriggerInteractionType } from '../telemetry/telemetry-metadata'
 
 interface FullyQualifiedNames {
-    readonly usedFullyQualifiedNames: Set<FullyQualifiedName>
+    readonly usedFullyQualifiedNames: FullyQualifiedName[]
     readonly namesWereTruncated: boolean
 }
 
@@ -400,20 +400,22 @@ export class ManualInputSearch extends SearchInput {
     }
 
     private prepareFqns(names: any): FullyQualifiedNames {
-        const usedFullyQualifiedNames: Set<FullyQualifiedName> = new Set(
-            names.fullyQualified.usedSymbols.map((name: any) => ({ source: name.source, symbol: name.symbol }))
+        const dedupedUsedFullyQualifiedNames: Map<string, FullyQualifiedName> = new Map(
+            names.fullyQualified.usedSymbols.map((name: any) => [
+                JSON.stringify([name.source, name.symbol]),
+                { source: name.source, symbol: name.symbol },
+            ])
         )
+        const usedFullyQualifiedNames = Array.from(dedupedUsedFullyQualifiedNames.values())
 
         const maxUsedFullyQualifiedNamesLength = 25
 
-        if (usedFullyQualifiedNames.size > maxUsedFullyQualifiedNamesLength) {
-            const usedFullyQualifiedNamesSorted = Array.from(usedFullyQualifiedNames).sort(
+        if (usedFullyQualifiedNames.length > maxUsedFullyQualifiedNamesLength) {
+            const usedFullyQualifiedNamesSorted = usedFullyQualifiedNames.sort(
                 (name, other) => name.source.length + name.symbol.length - (other.source.length + other.symbol.length)
             )
             return {
-                usedFullyQualifiedNames: new Set<FullyQualifiedName>(
-                    usedFullyQualifiedNamesSorted.slice(0, maxUsedFullyQualifiedNamesLength)
-                ),
+                usedFullyQualifiedNames: usedFullyQualifiedNamesSorted.slice(0, maxUsedFullyQualifiedNamesLength),
                 namesWereTruncated: true,
             }
         }
@@ -470,7 +472,7 @@ export class ManualInputSearch extends SearchInput {
         return {
             simpleNames,
             fullyQualifiedNames: {
-                used: Array.from(usedFullyQualifiedNames),
+                used: usedFullyQualifiedNames,
             },
         }
     }
