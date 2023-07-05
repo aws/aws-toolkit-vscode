@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
-import { shuffleList, toFile, assertTextEditorContains, closeAllEditors } from '../../testUtil'
+import { shuffleList, assertTextEditorContains, closeAllEditors } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
