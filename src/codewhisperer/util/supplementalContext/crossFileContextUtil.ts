@@ -13,6 +13,7 @@ import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '..
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 const crossFileLanguageConfigs = ['java']
 interface Chunk {
@@ -163,7 +164,7 @@ export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<
     const fileToFileDistanceList = relevantFiles
         .map(file => {
             return {
-                file: file,
+                file: normalize(file),
                 fileDistance: getFileDistance(targetFile, file),
             }
         })

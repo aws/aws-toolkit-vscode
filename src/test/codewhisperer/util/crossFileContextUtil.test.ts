@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
-import { shuffleList, toFile, assertTextEditorContains } from '../../testUtil'
+import { shuffleList, toFile, assertTextEditorContains, closeAllEditors } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
@@ -29,6 +29,7 @@ describe('crossfileUtil', function () {
 
         afterEach(async function () {
             await fs.remove(tempFolder)
+            await closeAllEditors()
         })
 
         it('should return opened files in the current window and sorted ascendingly by file distance', async function () {
