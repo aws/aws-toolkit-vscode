@@ -1,0 +1,8 @@
+{
+  "date" : "2023-07-06",
+  "version" : "1.71",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix inproper request format when sending empty supplemental context"
+  } ]
+}

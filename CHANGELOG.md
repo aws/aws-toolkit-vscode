@@ -1,3 +1,7 @@
+# _1.70_ (2023-06-27)
+- **(Feature)** CodeWhisperer improves auto-suggestions for tsx and jsx
+- **(Bug Fix)** Show re-authenticate prompt when invoking CodeWhisperer APIs while connection expired
+
 # _1.69_ (2023-06-13)
 - **(Feature)** CodeWhisperer improves auto-suggestions for python csharp typescript and javascript
 - **(Feature)** Removed 10 secs delay when connecting to Dev environments of Small Instance Size
