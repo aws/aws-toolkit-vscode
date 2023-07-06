@@ -232,7 +232,7 @@ export default defineComponent({
     },
     methods: {
         isLandscape() {
-            return this.currWindowWidth > 1120
+            return this.currWindowWidth > 1170
         },
         isAnyServiceSelected(): boolean {
             return serviceItemsState.selected !== undefined
@@ -389,8 +389,7 @@ export default defineComponent({
 }
 
 #left-column {
-    min-width: 500px;
-    max-width: 500px;
+    width: 550px;
     box-sizing: border-box;
     margin-top: 10px;
 }

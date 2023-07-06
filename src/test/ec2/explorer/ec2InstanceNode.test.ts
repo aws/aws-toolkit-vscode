@@ -23,7 +23,7 @@ describe('ec2InstanceNode', function () {
             ],
         }
 
-        testNode = new Ec2InstanceNode('testRegion', testInstance, contextValueEc2)
+        testNode = new Ec2InstanceNode('testRegion', 'testPartition', testInstance, contextValueEc2)
     })
 
     it('instantiates without issue', async function () {
@@ -35,7 +35,7 @@ describe('ec2InstanceNode', function () {
     })
 
     it('initializes the label', async function () {
-        assert.strictEqual(testNode.label, getNameOfInstance(testInstance)! + ` (${testInstance.InstanceId})`)
+        assert.strictEqual(testNode.label, getNameOfInstance(testInstance))
     })
 
     it('initializes the functionName', async function () {
@@ -43,7 +43,7 @@ describe('ec2InstanceNode', function () {
     })
 
     it('initializes the tooltip', async function () {
-        assert.strictEqual(testNode.tooltip, testNode.name + '\n' + testInstance.InstanceId! + '\n' + testNode.arn)
+        assert.strictEqual(testNode.tooltip, `${testNode.name}\n${testNode.InstanceId}\n${testNode.arn}`)
     })
 
     it('has no children', async function () {
