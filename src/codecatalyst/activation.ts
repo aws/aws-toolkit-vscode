@@ -38,6 +38,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
     )
 
+    Commands.register('aws.codecatalyst.removeConnection', () => {
+        authProvider.removeSavedConnection()
+    })
+
     if (!isCloud9()) {
         GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
             ctx.extensionContext.subscriptions.push(disposable)
@@ -56,11 +60,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
         watchRestartingDevEnvs(ctx, authProvider)
     }
 
-    ctx.extensionContext.subscriptions.push(DevEnvClient.instance)
-    if (DevEnvClient.instance.id) {
-        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
-    }
-
     const thisDevenv = (await getThisDevEnv(authProvider))?.unwrapOrElse(err => {
         getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
         return undefined
@@ -69,6 +68,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (!thisDevenv) {
         getLogger().verbose('codecatalyst: not a devenv, getThisDevEnv() returned empty')
     } else {
+        ctx.extensionContext.subscriptions.push(DevEnvClient.instance)
+        if (DevEnvClient.instance.id) {
+            ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
+        }
+
         getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
         if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
@@ -96,10 +100,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         }
     }
-
-    Commands.register('aws.codecatalyst.removeConnection', () => {
-        authProvider.removeSavedConnection()
-    })
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {
