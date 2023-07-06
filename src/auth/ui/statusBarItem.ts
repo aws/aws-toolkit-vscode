@@ -13,7 +13,7 @@ import { DevSettings } from '../../shared/settings'
 import { Auth } from '../auth'
 import { getAllConnectionsInUse, onDidChangeConnections } from '../secondaryAuth'
 import { codicon, getIcon } from '../../shared/icons'
-import { throttle } from '../../shared/utilities/functionUtils'
+import { debounce } from '../../shared/utilities/functionUtils'
 import { login } from '../utils'
 
 const statusbarPriority = 1
@@ -27,7 +27,7 @@ export async function initializeAwsCredentialsStatusBarItem(
     statusBarItem.command = login.build().asCommand({ title: 'Login' })
     statusBarItem.show()
 
-    const update = throttle(() => updateItem(statusBarItem, devSettings))
+    const update = debounce(() => updateItem(statusBarItem, devSettings))
 
     update()
     context.subscriptions.push(

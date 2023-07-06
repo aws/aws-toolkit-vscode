@@ -49,7 +49,9 @@ const serviceCandidates = [
     },
     {
         serviceId: 'ec2',
-        createFn: (regionCode: string) => new Ec2ParentNode(regionCode, new Ec2Client(regionCode)),
+        when: () => DevSettings.instance.isDevMode(),
+        createFn: (regionCode: string, partitionId: string) =>
+            new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
     },
     {
         serviceId: 'ecr',
@@ -113,12 +115,12 @@ export class RegionNode extends AWSTreeNodeBase {
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
-        for (const { serviceId, createFn } of serviceCandidates) {
-            if (serviceId === 'ec2' && !DevSettings.instance.isDevMode()) {
+        for (const service of serviceCandidates) {
+            if (service.when !== undefined && !service.when()) {
                 continue
             }
-            if (this.regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
-                const node = createFn(this.regionCode, partitionId)
+            if (this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
+                const node = service.createFn(this.regionCode, partitionId)
                 if (node !== undefined) {
                     childNodes.push(node)
                 }

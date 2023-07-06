@@ -32,16 +32,15 @@ import {
     isIamConnection,
     isSsoConnection,
 } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, promptAndUseConnection } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter, promptAndUseConnection, ExtensionUse } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
-import { throttle } from '../../../shared/utilities/functionUtils'
+import { debounce } from '../../../shared/utilities/functionUtils'
 import { AuthError, ServiceItemId, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
-import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 
@@ -315,12 +314,12 @@ export class AuthWebview extends VueWebview {
         ]
 
         // The event handler in the frontend refreshes all connection statuses
-        // when triggered, and multiple events can fire at the same time so we throttle.
-        const throttledFire = throttle(() => this.onDidConnectionUpdate.fire(undefined), 500)
+        // when triggered, and multiple events can fire at the same time so we debounce.
+        const debouncedFire = debounce(() => this.onDidConnectionUpdate.fire(undefined), 500)
 
         events.forEach(event =>
             event(() => {
-                throttledFire()
+                debouncedFire()
             })
         )
     }

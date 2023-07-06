@@ -18,6 +18,7 @@ describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let instances: Ec2Instance[]
     const testRegion = 'testRegion'
+    const testPartition = 'testPartition'
 
     function createClient() {
         const client = stub(Ec2Client, { regionCode: testRegion })
@@ -39,7 +40,7 @@ describe('ec2ParentNode', function () {
             { name: 'secondOne', InstanceId: '1' },
         ]
 
-        testNode = new Ec2ParentNode(testRegion, createClient())
+        testNode = new Ec2ParentNode(testRegion, testPartition, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -89,7 +90,7 @@ describe('ec2ParentNode', function () {
         const client = createClient()
         client.getInstances.throws(new Error())
 
-        const node = new Ec2ParentNode(testRegion, client)
+        const node = new Ec2ParentNode(testRegion, testPartition, client)
         assertNodeListOnlyHasErrorNode(await node.getChildren())
     })
 
