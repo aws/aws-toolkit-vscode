@@ -4,9 +4,10 @@
  */
 import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
-import { copyInstanceId, tryConnect } from './commands'
+import { tryConnect } from './commands'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { copyTextCommand } from '../awsexplorer/commands/copyText'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -18,7 +19,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
-            await copyInstanceId(node.InstanceId)
+            await copyTextCommand(node, 'id')
         })
     )
 }
