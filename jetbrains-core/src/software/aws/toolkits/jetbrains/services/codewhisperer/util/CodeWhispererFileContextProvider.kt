@@ -114,7 +114,7 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
         } else if (!isTst && targetContext.programmingLanguage.isSupplementalContextSupported()) {
             extractSupplementalFileContextForSrc(psiFile, targetContext)
         } else {
-            LOG.debug { "${ if (isTst) "UTG" else "CrossFile" } not supported for ${targetContext.programmingLanguage.languageId}" }
+            LOG.debug { "${if (isTst) "UTG" else "CrossFile"} not supported for ${targetContext.programmingLanguage.languageId}" }
             null
         }
 
@@ -217,7 +217,11 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
         // we use nextChunk as supplemental context
         return top3Chunks.mapNotNull { bm25Result ->
             contentToChunk[bm25Result.docString]?.let {
-                Chunk(content = it.nextChunk, path = it.path, score = bm25Result.score)
+                if (it.nextChunk.isNotBlank()) {
+                    Chunk(content = it.nextChunk, path = it.path, score = bm25Result.score)
+                } else {
+                    null
+                }
             }
         }
     }
@@ -230,17 +234,23 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
 
         return focalFile?.let { file ->
             val relativePath = contentRootPathProvider.getPathToElement(project, file, null) ?: file.path
-            listOf(
-                Chunk(
-                    content = CodeWhispererConstants.Utg.UTG_PREFIX + file.content().let {
-                        it.substring(
-                            0,
-                            minOf(it.length, CodeWhispererConstants.Utg.UTG_SEGMENT_SIZE)
-                        )
-                    },
-                    path = relativePath
+            val content = file.content()
+
+            if (content.isBlank()) {
+                emptyList()
+            } else {
+                listOf(
+                    Chunk(
+                        content = CodeWhispererConstants.Utg.UTG_PREFIX + file.content().let {
+                            it.substring(
+                                0,
+                                minOf(it.length, CodeWhispererConstants.Utg.UTG_SEGMENT_SIZE)
+                            )
+                        },
+                        path = relativePath
+                    )
                 )
-            )
+            }
         }.orEmpty()
     }
 
