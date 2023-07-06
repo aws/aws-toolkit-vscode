@@ -50,12 +50,18 @@ describe('crossfileUtil', function () {
                 this.skip()
             }
 
-            const targetFile = 'service/microService/CodeWhispererFileContextProvider.java'
-            const fileWithDistance3 = 'service/CodewhispererRecommendationService.java'
-            const fileWithDistance5 = 'util/CodeWhispererConstants.java'
-            const fileWithDistance6 = 'ui/popup/CodeWhispererPopupManager.java'
-            const fileWithDistance7 = 'ui/popup/components/CodeWhispererPopup.java'
-            const fileWithDistance8 = 'ui/popup/components/actions/AcceptRecommendationAction.java'
+            const targetFile = path.join('service', 'microService', 'CodeWhispererFileContextProvider.java')
+            const fileWithDistance3 = path.join('service', 'CodewhispererRecommendationService.java')
+            const fileWithDistance5 = path.join('util', 'CodeWhispererConstants.java')
+            const fileWithDistance6 = path.join('ui', 'popup', 'CodeWhispererPopupManager.java')
+            const fileWithDistance7 = path.join('ui', 'popup', 'components', 'CodeWhispererPopup.java')
+            const fileWithDistance8 = path.join(
+                'ui',
+                'popup',
+                'components',
+                'actions',
+                'AcceptRecommendationAction.java'
+            )
 
             const filePaths = [
                 fileWithDistance3,
@@ -65,6 +71,7 @@ describe('crossfileUtil', function () {
                 fileWithDistance8,
             ]
             const shuffledFilePaths = shuffleList(filePaths)
+
             let cnt = 0
             for (const file of shuffledFilePaths) {
                 await openATextEditorWithText(file, file)
