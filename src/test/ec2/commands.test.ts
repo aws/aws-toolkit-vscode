@@ -5,7 +5,6 @@
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 import { copyInstanceId } from '../../ec2/commands'
-import { ToolkitError } from '../../shared/errors'
 
 describe('copyInstanceId', async function () {
     beforeEach(async function () {
@@ -18,14 +17,5 @@ describe('copyInstanceId', async function () {
         await copyInstanceId(testInstanceId)
 
         assert.strictEqual(await vscode.env.clipboard.readText(), testInstanceId)
-    })
-
-    it('throws error if not provided with an instanceId', async function () {
-        try {
-            await copyInstanceId(undefined!)
-            assert.ok(undefined)
-        } catch (e) {
-            assert.strictEqual((e as ToolkitError).code, 'InvalidResource')
-        }
     })
 })

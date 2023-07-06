@@ -10,7 +10,6 @@ import { Ec2Selection } from './utils'
 import { RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
 import { PromptResult } from '../shared/ui/prompter'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
-import { ToolkitError } from '../shared/errors'
 import { copyToClipboard } from '../shared/utilities/messages'
 
 function getSelectionFromResponse(response: PromptResult<RegionSubmenuResponse<string>>): Ec2Selection {
@@ -34,12 +33,5 @@ export async function tryConnect(selection?: Ec2Selection): Promise<void> {
 }
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
-    try {
-        if (!instanceId) {
-            throw new ToolkitError(`Attempting to copy undefined instanceId.`)
-        }
-        await copyToClipboard(instanceId, 'Id')
-    } catch (e) {
-        throw new ToolkitError('Failed to copy instanceId', { code: 'InvalidResource', cause: e as Error })
-    }
+    await copyToClipboard(instanceId, 'Id')
 }
