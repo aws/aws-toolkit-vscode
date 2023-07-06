@@ -7,7 +7,6 @@ import { getNameOfInstance } from '../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
-import { build } from '@aws-sdk/util-arn-parser'
 import globals from '../../shared/extensionGlobals'
 import { Ec2Selection } from '../utils'
 
@@ -48,12 +47,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public get arn(): string {
-        return build({
-            partition: this.partitionId,
-            service: 'ec2',
-            region: this.regionCode,
-            accountId: globals.awsContext.getCredentialAccountId()!,
-            resource: 'instance',
-        })
+        return `arn:${this.partitionId}:ec2:${
+            this.regionCode
+        }:${globals.awsContext.getCredentialAccountId()}:instance/${this.InstanceId}`
     }
 }
