@@ -7,11 +7,13 @@ import { getNameOfInstance } from '../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
+import { build } from '@aws-sdk/util-arn-parser'
 import globals from '../../shared/extensionGlobals'
-import { Ec2Selection } from '../utils'
+
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public override readonly regionCode: string,
+        private readonly partitionId: string,
         private instance: Ec2Instance,
         public override readonly contextValue: string
     ) {
@@ -29,15 +31,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.instance = newInstance
     }
 
-    public toSelection(): Ec2Selection {
-        return {
-            region: this.regionCode,
-            instanceId: this.InstanceId,
-        }
-    }
-
     public get name(): string {
-        return getNameOfInstance(this.instance) ?? '(no name)'
+        return getNameOfInstance(this.instance) ?? 'Unnamed instance'
     }
 
     public get InstanceId(): string {
@@ -45,8 +40,12 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public get arn(): string {
-        return `arn:aws:ec2:${this.regionCode}:${globals.awsContext.getCredentialAccountId()}:instance/${
-            this.InstanceId
-        }`
+        return build({
+            partition: this.partitionId,
+            service: 'ec2',
+            region: this.regionCode,
+            accountId: globals.awsContext.getCredentialAccountId()!,
+            resource: 'instance',
+        })
     }
 }
