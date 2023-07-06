@@ -11,7 +11,7 @@ import * as semver from 'semver'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { areEqual, normalize } from '../../../shared/utilities/pathUtils'
+import { areEqual } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util function inside testUtil.ts
 let tempFolder: string
