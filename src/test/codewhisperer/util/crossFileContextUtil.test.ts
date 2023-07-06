@@ -12,7 +12,6 @@ import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalC
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { areEqual } from '../../../shared/utilities/pathUtils'
-import { getLogger } from '../../../shared/logger/logger'
 
 // TODO: make it a util function inside testUtil.ts
 let tempFolder: string
