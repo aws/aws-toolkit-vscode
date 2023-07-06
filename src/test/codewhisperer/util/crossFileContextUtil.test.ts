@@ -85,7 +85,11 @@ describe('crossfileUtil', function () {
 
             const actuals = await getRelevantCrossFiles(editor)
 
-            getLogger().verbose(`size of actual is: ${actuals.length}`)
+            assert.strictEqual(actuals[0], path.join(tempFolder, fileWithDistance3))
+            assert.strictEqual(actuals[1], path.join(tempFolder, fileWithDistance5))
+            assert.strictEqual(actuals[2], path.join(tempFolder, fileWithDistance6))
+            assert.strictEqual(actuals[3], path.join(tempFolder, fileWithDistance7))
+
             assert.ok(areEqual(undefined, actuals[0], path.join(tempFolder, fileWithDistance3)))
             assert.ok(areEqual(undefined, actuals[1], path.join(tempFolder, fileWithDistance5)))
             assert.ok(areEqual(undefined, actuals[2], path.join(tempFolder, fileWithDistance6)))
