@@ -121,7 +121,7 @@ export class Ec2ConnectionManager {
         } catch (err: unknown) {
             // Default error if pre-check fails.
             this.throwConnectionError('Unable to connect to target instance. ', selection, {
-                code: 'EC2SSMAgentStatus',
+                code: 'EC2SSMConnect',
                 cause: err as Error,
             })
         }
