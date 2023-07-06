@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as semver from 'semver'
@@ -12,7 +13,7 @@ import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testU
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { areEqual } from '../../../shared/utilities/pathUtils'
 
-// TODO: make it a util functio inside testUtil.ts
+// TODO: make it a util function inside testUtil.ts
 let tempFolder: string
 
 async function openATextEditorWithText(fileText: string, fileName: string): Promise<vscode.TextEditor> {
@@ -71,15 +72,17 @@ describe('crossfileUtil', function () {
                 await assertTabSize(cnt)
             }
 
-            // to make the target file editor active
             const editor = await openATextEditorWithText(targetFile, targetFile)
-            await assertTabSize(shuffledFilePaths.length + 1)
+            await assertTabSize(6)
 
-            const actual = await getRelevantCrossFiles(editor)
+            const actuals = await getRelevantCrossFiles(editor)
 
-            actual.forEach((file, index) => {
-                areEqual(undefined, file, tempFolder + '/' + filePaths[index])
-            })
+            assert.ok(actuals.length === 5)
+            assert.ok(areEqual(undefined, actuals[0], path.join(tempFolder, fileWithDistance3)))
+            assert.ok(areEqual(undefined, actuals[1], path.join(tempFolder, fileWithDistance5)))
+            assert.ok(areEqual(undefined, actuals[2], path.join(tempFolder, fileWithDistance6)))
+            assert.ok(areEqual(undefined, actuals[3], path.join(tempFolder, fileWithDistance7)))
+            assert.ok(areEqual(undefined, actuals[4], path.join(tempFolder, fileWithDistance8)))
         })
     })
 })
