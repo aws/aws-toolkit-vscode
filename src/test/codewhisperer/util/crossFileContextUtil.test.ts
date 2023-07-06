@@ -11,6 +11,7 @@ import * as semver from 'semver'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util function inside testUtil.ts
 let tempFolder: string
@@ -62,14 +63,14 @@ describe('crossfileUtil', function () {
                 'AcceptRecommendationAction.java'
             )
 
-            const filePaths = [
+            const expectedFilePaths = [
                 fileWithDistance3,
                 fileWithDistance5,
                 fileWithDistance6,
                 fileWithDistance7,
                 fileWithDistance8,
             ]
-            const shuffledFilePaths = shuffleList(filePaths)
+            const shuffledFilePaths = shuffleList(expectedFilePaths)
 
             let cnt = 0
             for (const file of shuffledFilePaths) {
@@ -84,17 +85,16 @@ describe('crossfileUtil', function () {
             const actuals = await getRelevantCrossFiles(editor)
 
             assert.ok(actuals.length === 5)
-            assert.strictEqual(actuals[0], path.join(tempFolder, fileWithDistance3))
-            assert.strictEqual(actuals[1], path.join(tempFolder, fileWithDistance5))
-            assert.strictEqual(actuals[2], path.join(tempFolder, fileWithDistance6))
-            assert.strictEqual(actuals[3], path.join(tempFolder, fileWithDistance7))
-            assert.strictEqual(actuals[4], path.join(tempFolder, fileWithDistance8))
+            actuals.forEach((actual, index) => {
+                // vscode API will return normalized file path, thus /C:/Users/.../ for windows
+                // thus need to manually add '/' and normalize
+                const expected =
+                    process.platform === 'win32'
+                        ? '/' + normalize(path.join(tempFolder, expectedFilePaths[index]))
+                        : normalize(path.join(tempFolder, expectedFilePaths[index]))
 
-            // assert.ok(areEqual(tempFolder, actuals[0], path.join(tempFolder, fileWithDistance3)))
-            // assert.ok(areEqual(tempFolder, actuals[1], path.join(tempFolder, fileWithDistance5)))
-            // assert.ok(areEqual(tempFolder, actuals[2], path.join(tempFolder, fileWithDistance6)))
-            // assert.ok(areEqual(tempFolder, actuals[3], path.join(tempFolder, fileWithDistance7)))
-            // assert.ok(areEqual(tempFolder, actuals[4], path.join(tempFolder, fileWithDistance8)))
+                assert.strictEqual(actual, expected)
+            })
         })
     })
 })
