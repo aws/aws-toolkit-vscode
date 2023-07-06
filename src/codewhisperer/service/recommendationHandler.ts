@@ -202,11 +202,9 @@ export class RecommendationHandler {
                 TelemetryHelper.instance.triggerType = triggerType
                 TelemetryHelper.instance.CodeWhispererAutomatedtriggerType =
                     autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
-                if (
-                    recommendation.length > 0 &&
-                    recommendation[0].content.search(CodeWhispererConstants.lineBreak) !== -1
-                ) {
-                    completionType = 'Block'
+                if (page === 0 && recommendation.length > 0) {
+                    completionType =
+                        recommendation[0].content.search(CodeWhispererConstants.lineBreak) !== -1 ? 'Block' : 'Line'
                 }
                 TelemetryHelper.instance.completionType = completionType
                 requestId = resp?.$response && resp?.$response?.requestId
