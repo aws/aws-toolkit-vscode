@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { throttle } from '../shared/utilities/functionUtils'
+import { debounce } from '../shared/utilities/functionUtils'
 
 export interface RootNode<T = unknown> extends TreeNode<T> {
     /**
@@ -40,7 +40,7 @@ export function createLocalExplorerView(rootNodes: RootNode[]): vscode.TreeView<
         rootNodes.forEach(node => {
             // Refreshes are delayed to guard against excessive calls to `getTreeItem` and `getChildren`
             // The 10ms delay is arbitrary. A single event loop may be good enough in many scenarios.
-            const refresh = throttle(() => treeDataProvider.refresh(node), 10)
+            const refresh = debounce(() => treeDataProvider.refresh(node), 10)
             node.onDidChangeTreeItem?.(() => refresh())
             node.onDidChangeChildren?.(() => refresh())
         })
