@@ -13,4 +13,6 @@ export interface AWSResourceNode {
      * Returns the name of the AWS resource.
      */
     readonly name: string
+
+    readonly id?: string
 }
