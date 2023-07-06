@@ -43,7 +43,9 @@ export class Ec2Client {
             .flatten()
             .filter(instance => instance!.InstanceId !== undefined)
             .map(instance => {
-                return instance!.Tags ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') } : instance!
+                return instanceHasName(instance!)
+                    ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
+                    : instance!
             })
     }
 
@@ -109,9 +111,13 @@ export class Ec2Client {
 }
 
 export function getNameOfInstance(instance: EC2.Instance): string | undefined {
-    return instance.Tags ? lookupTagKey(instance.Tags, 'Name') : undefined
+    return instanceHasName(instance) ? lookupTagKey(instance.Tags!, 'Name')! : undefined
+}
+
+export function instanceHasName(instance: EC2.Instance): boolean {
+    return instance.Tags !== undefined && instance.Tags.filter(tag => tag.Key === 'Name').length != 0
 }
 
 function lookupTagKey(tags: EC2.Tag[], targetKey: string) {
-    return tags.filter(tag => tag.Key == targetKey)[0].Value
+    return tags.filter(tag => tag.Key === targetKey)[0].Value
 }
