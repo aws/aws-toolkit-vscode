@@ -21,7 +21,7 @@ export function resolvePath(fname: string) {
     return fname
 }
 
-function isUncPath(path: string) {
+export function isUncPath(path: string) {
     return /^\s*[\/\\]{2}[^\/\\]+/.test(path)
 }
 
