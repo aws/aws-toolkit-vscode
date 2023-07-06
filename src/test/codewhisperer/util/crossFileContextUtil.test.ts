@@ -82,21 +82,30 @@ describe('crossfileUtil', function () {
             const editor = await openATextEditorWithText(targetFile, targetFile)
             await assertTabSize(6)
 
-            const actuals = (await getRelevantCrossFiles(editor)).map(aPath => {
-                // for windows path: /C:/Users/RUNNER~1/AppData/Local.../...
-                if (aPath.length > 0 && aPath[0] === '/') {
-                    return aPath.substring(1)
-                } else {
-                    return aPath
-                }
-            })
+            const actuals = await getRelevantCrossFiles(editor)
 
             assert.ok(actuals.length === 5)
-            assert.ok(areEqual(undefined, actuals[0], path.join(tempFolder, fileWithDistance3)))
-            assert.ok(areEqual(undefined, actuals[1], path.join(tempFolder, fileWithDistance5)))
-            assert.ok(areEqual(undefined, actuals[2], path.join(tempFolder, fileWithDistance6)))
-            assert.ok(areEqual(undefined, actuals[3], path.join(tempFolder, fileWithDistance7)))
-            assert.ok(areEqual(undefined, actuals[4], path.join(tempFolder, fileWithDistance8)))
+            assert.strictEqual(actuals[0], path.join(tempFolder, fileWithDistance3))
+            assert.strictEqual(actuals[1], path.join(tempFolder, fileWithDistance5))
+            assert.strictEqual(actuals[2], path.join(tempFolder, fileWithDistance6))
+            assert.strictEqual(actuals[3], path.join(tempFolder, fileWithDistance7))
+            assert.strictEqual(actuals[4], path.join(tempFolder, fileWithDistance8))
+
+            assert.ok(areEqual(tempFolder, actuals[0], path.join(tempFolder, fileWithDistance3)))
+            assert.ok(areEqual(tempFolder, actuals[1], path.join(tempFolder, fileWithDistance5)))
+            assert.ok(areEqual(tempFolder, actuals[2], path.join(tempFolder, fileWithDistance6)))
+            assert.ok(areEqual(tempFolder, actuals[3], path.join(tempFolder, fileWithDistance7)))
+            assert.ok(areEqual(tempFolder, actuals[4], path.join(tempFolder, fileWithDistance8)))
         })
+    })
+
+    it('test', function () {
+        assert.ok(
+            areEqual(
+                undefined,
+                '//C:/Users/RUNNER~1/AppData/Local/Temp/aws-toolkit-vscode/vsctkuZfgmq/service/CodewhispererRecommendationService.java',
+                'C:/Users/RUNNER~1/AppData/Local/Temp/aws-toolkit-vscode/vsctkuZfgmq/service/CodewhispererRecommendationService.java'
+            )
+        )
     })
 })
