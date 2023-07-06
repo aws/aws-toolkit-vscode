@@ -9,6 +9,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import { build } from '@aws-sdk/util-arn-parser'
 import globals from '../../shared/extensionGlobals'
+import { Ec2Selection } from '../utils'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
@@ -29,6 +30,13 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public setInstance(newInstance: Ec2Instance) {
         this.instance = newInstance
+    }
+
+    public toSelection(): Ec2Selection {
+        return {
+            region: this.regionCode,
+            instanceId: this.InstanceId,
+        }
     }
 
     public get name(): string {
