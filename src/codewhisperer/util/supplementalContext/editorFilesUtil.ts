@@ -6,6 +6,7 @@
 import path = require('path')
 import { isTestFileByName } from './codeParsingUtil'
 import * as vscode from 'vscode'
+import { areEqual } from '../../../shared/utilities/pathUtils'
 
 /**
  * From Editor we refer to the files open in multiple editors (split view)
@@ -37,7 +38,7 @@ export async function getRelevantFilesFromEditor(inputFileName: string, language
 }
 
 export function isRelevant(inputFileName: string, crossFileName: string, language: string) {
-    if (inputFileName === crossFileName) {
+    if (areEqual(undefined, inputFileName, crossFileName)) {
         //Same file should not referenced as cross file
         return false
     }
