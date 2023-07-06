@@ -12,7 +12,6 @@ import { CancellationError, Timeout, waitTimeout, waitUntil } from './timeoutUti
 import { telemetry } from '../telemetry/telemetry'
 import * as semver from 'semver'
 import { isNonNullable } from './tsUtils'
-import globals from '../extensionGlobals'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -45,36 +44,6 @@ export async function closeAllEditors() {
                 vscode.window.activeTextEditor!.document.fileName
             }" was still open after executing "closeAllEditors"`
         )
-    }
-}
-
-/**
- * Class to get info about the extension being first used
- */
-export class ExtensionUse {
-    private readonly isExtensionFirstUseKey = 'isExtensionFirstUse'
-
-    // The result of if is first use for the remainder of the extension session.
-    // This will reset on next startup.
-    private isFirstUseCurrentSession: boolean | undefined
-
-    isFirstUse(state: vscode.Memento = globals.context.globalState): boolean {
-        if (this.isFirstUseCurrentSession !== undefined) {
-            return this.isFirstUseCurrentSession
-        }
-
-        this.isFirstUseCurrentSession = state.get(this.isExtensionFirstUseKey, true)
-
-        // Update state, so next time it is not first use
-        state.update(this.isExtensionFirstUseKey, false)
-
-        return this.isFirstUseCurrentSession
-    }
-
-    static #instance: ExtensionUse
-
-    static get instance(): ExtensionUse {
-        return (this.#instance ??= new ExtensionUse())
     }
 }
 
