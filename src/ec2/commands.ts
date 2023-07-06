@@ -38,7 +38,7 @@ export async function copyInstanceId(instanceId: string): Promise<void> {
         if (!instanceId) {
             throw new ToolkitError(`Attempting to copy undefined instanceId.`)
         }
-        await copyToClipboard(instanceId)
+        await copyToClipboard(instanceId, 'Id')
     } catch (e) {
         throw new ToolkitError('Failed to copy instanceId', { code: 'InvalidResource', cause: e as Error })
     }
