@@ -157,7 +157,7 @@ export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<
     const targetFile = editor.document.uri.path
 
     const relevantFiles = getOpenFilesInWindow().filter(file => {
-        return isRelevant(editor.document.fileName, file, editor.document.languageId)
+        return isRelevant(targetFile, file, editor.document.languageId)
     })
 
     const fileToFileDistanceList = relevantFiles
