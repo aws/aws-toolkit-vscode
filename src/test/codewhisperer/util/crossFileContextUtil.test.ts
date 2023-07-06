@@ -92,7 +92,6 @@ describe('crossfileUtil', function () {
             })
 
             assert.ok(actuals.length === 5)
-            assert.strictEqual(normalize(actuals[0]), normalize(path.join(tempFolder, fileWithDistance3)))
             assert.ok(areEqual(undefined, actuals[0], path.join(tempFolder, fileWithDistance3)))
             assert.ok(areEqual(undefined, actuals[1], path.join(tempFolder, fileWithDistance5)))
             assert.ok(areEqual(undefined, actuals[2], path.join(tempFolder, fileWithDistance6)))
