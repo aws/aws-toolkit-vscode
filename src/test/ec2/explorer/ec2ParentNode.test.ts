@@ -6,7 +6,7 @@
 import * as assert from 'assert'
 import { Ec2ParentNode, contextValueEc2 } from '../../../ec2/explorer/ec2ParentNode'
 import { stub } from '../../utilities/stubber'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
@@ -16,7 +16,7 @@ import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
-    let instanceNames: string[]
+    let instances: Ec2Instance[]
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
@@ -24,7 +24,10 @@ describe('ec2ParentNode', function () {
         const client = stub(Ec2Client, { regionCode: testRegion })
         client.getInstances.callsFake(async () =>
             intoCollection(
-                instanceNames.map(name => ({ InstanceId: name + name, Tags: [{ Key: 'Name', Value: name }] }))
+                instances.map(instance => ({
+                    InstanceId: instance.InstanceId,
+                    Tags: [{ Key: 'Name', Value: instance.name }],
+                }))
             )
         )
 
@@ -32,12 +35,16 @@ describe('ec2ParentNode', function () {
     }
 
     beforeEach(function () {
-        instanceNames = ['firstOne', 'secondOne']
+        instances = [
+            { name: 'firstOne', InstanceId: '0' },
+            { name: 'secondOne', InstanceId: '1' },
+        ]
+
         testNode = new Ec2ParentNode(testRegion, testPartition, createClient())
     })
 
     it('returns placeholder node if no children are present', async function () {
-        instanceNames = []
+        instances = []
 
         const childNodes = await testNode.getChildren()
 
@@ -47,7 +54,7 @@ describe('ec2ParentNode', function () {
     it('has instance child nodes', async function () {
         const childNodes = await testNode.getChildren()
 
-        assert.strictEqual(childNodes.length, instanceNames.length, 'Unexpected child count')
+        assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
 
         childNodes.forEach(node =>
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
@@ -64,11 +71,18 @@ describe('ec2ParentNode', function () {
 
     it('sorts child nodes', async function () {
         const sortedText = ['aa', 'ab', 'bb', 'bc', 'cc', 'cd']
-        instanceNames = ['ab', 'bb', 'bc', 'aa', 'cc', 'cd']
+        instances = [
+            { name: 'ab', InstanceId: '0' },
+            { name: 'bb', InstanceId: '1' },
+            { name: 'bc', InstanceId: '2' },
+            { name: 'aa', InstanceId: '3' },
+            { name: 'cc', InstanceId: '4' },
+            { name: 'cd', InstanceId: '5' },
+        ]
 
         const childNodes = await testNode.getChildren()
 
-        const actualChildOrder = childNodes.map(node => node.label)
+        const actualChildOrder = childNodes.map(node => (node instanceof Ec2InstanceNode ? node.name : undefined))
         assert.deepStrictEqual(actualChildOrder, sortedText, 'Unexpected child sort order')
     })
 
@@ -78,5 +92,16 @@ describe('ec2ParentNode', function () {
 
         const node = new Ec2ParentNode(testRegion, testPartition, client)
         assertNodeListOnlyHasErrorNode(await node.getChildren())
+    })
+
+    it('is able to handle children with duplicate names', async function () {
+        instances = [
+            { name: 'firstOne', InstanceId: '0' },
+            { name: 'secondOne', InstanceId: '1' },
+            { name: 'firstOne', InstanceId: '2' },
+        ]
+
+        const childNodes = await testNode.getChildren()
+        assert.strictEqual(childNodes.length, instances.length, 'Unexpected child count')
     })
 })
