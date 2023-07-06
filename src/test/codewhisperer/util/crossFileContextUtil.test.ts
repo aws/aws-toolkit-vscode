@@ -11,7 +11,7 @@ import * as semver from 'semver'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { areEqual, isUncPath } from '../../../shared/utilities/pathUtils'
+import { areEqual, isUncPath, normalize } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util function inside testUtil.ts
 let tempFolder: string
@@ -91,6 +91,7 @@ describe('crossfileUtil', function () {
             })
 
             assert.ok(actuals.length === 5)
+            assert.strictEqual(normalize(actuals[0]), normalize(path.join(tempFolder, fileWithDistance3)))
             assert.ok(areEqual(tempFolder, actuals[0], path.join(tempFolder, fileWithDistance3)))
             assert.ok(areEqual(tempFolder, actuals[1], path.join(tempFolder, fileWithDistance5)))
             assert.ok(areEqual(tempFolder, actuals[2], path.join(tempFolder, fileWithDistance6)))
