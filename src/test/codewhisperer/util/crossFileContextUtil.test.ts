@@ -35,7 +35,7 @@ describe('getRelevantFiles', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.rm(tempFolder, { recursive: true, force: true })
     })
 
     after(async function () {
