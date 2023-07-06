@@ -26,7 +26,7 @@ async function openATextEditorWithText(fileText: string, fileName: string): Prom
 }
 
 describe('crossfileUtil', function () {
-    describe('getRelevantFiles', function () {
+    describe('getRelevantFiles', async function () {
         before(async function () {
             this.timeout(600000)
         })
