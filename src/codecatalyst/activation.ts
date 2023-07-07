@@ -12,16 +12,17 @@ import { CodeCatalystCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
-import { DevEnvClient } from '../shared/clients/devenvClient'
+import { DevEnvClient, DevEnvActivity } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
-import { getThisDevEnv } from './model'
 import { isDevenvVscode } from './utils'
+import { getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
+import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
 
 const localize = nls.loadMessageBundle()
 
@@ -98,6 +99,16 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     CodeCatalystCommands.declared.openDevEnvSettings.execute()
                 }
             })
+        }
+
+        const maxInactivityMinutes = thisDevenv.summary.inactivityTimeoutMinutes
+        const devEnvClient = thisDevenv.devenvClient
+        const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClient)
+        if (shouldTrackUserActivity(maxInactivityMinutes) && devEnvActivity) {
+            const inactivityMessage = new InactivityMessage()
+            inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
+
+            ctx.extensionContext.subscriptions.push(inactivityMessage, devEnvActivity)
         }
     }
 }
