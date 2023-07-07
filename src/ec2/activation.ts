@@ -15,6 +15,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 span.record({ ec2ConnectionType: 'ssm' })
                 await (node ? tryConnect(node.toSelection()) : tryConnect())
             })
+        }),
+
+        Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2InstanceNode) => {
+            console.log('You have just run the aws.ec2.openRemoteConnection command!')
         })
     )
 }
