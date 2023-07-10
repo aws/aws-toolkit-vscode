@@ -56,6 +56,8 @@ public class LambdaInputPanel {
     EditorTextField inputText;
     JPanel panel;
 
+    private final int setWidthSize = 20;
+
     public LambdaInputPanel(Project project) {
         this.project = project;
 
@@ -136,6 +138,7 @@ public class LambdaInputPanel {
 
     private void createUIComponents() {
         inputText = EditorTextFieldProvider.getInstance().getEditorField(JsonLanguage.INSTANCE, project, Collections.emptyList());
+        inputText.setPreferredWidth(setWidthSize);
 
         eventComboBoxModel = new SortedComboBoxModel<>(Comparator.comparing(LambdaSampleEvent::getName));
 
