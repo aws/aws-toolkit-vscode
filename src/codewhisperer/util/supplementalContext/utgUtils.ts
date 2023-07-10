@@ -45,12 +45,16 @@ export async function fetchSupplementalContextForTest(
     // 4. Failure count - when unable to find focal file (supplemental context empty)
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
-    if (!languageConfig || CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.Utg) {
+    if (!languageConfig) {
         // This is required because we are launching this support for even smaller subset of
         // supported languages.
         // TODO: Add a metrics to see number of calls falling in this bucket.
         // TODO: Either catch this error upstream or here.
         return undefined
+    }
+
+    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.Utg) {
+        return []
     }
 
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
