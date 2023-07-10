@@ -14,9 +14,12 @@ import { Ec2Client } from '../shared/clients/ec2Client'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
-import { openRemoteTerminal } from '../shared/remoteSession'
+import { ensureDependencies, openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
+import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
+import { createBoundProcess } from '../codecatalyst/model'
+import { getLogger } from '../shared/logger/logger'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -126,4 +129,35 @@ export class Ec2ConnectionManager {
             })
         }
     }
+
+    public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
+        await this.checkForStartSessionError(selection)
+        try {
+            const logPrefix = `ec2 (${selection.instanceId})`
+            const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
+            const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
+            const vars = getEc2SsmEnv(selection.region, ssm)
+            const envProvider = async () => {
+                return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
+            }
+            const SessionProcess = createBoundProcess(envProvider).extend({
+                onStdout: logger,
+                onStderr: logger,
+                rejectOnErrorCode: true,
+            })
+            await startVscodeRemote(SessionProcess, selection.instanceId, '/', vsc)
+        } catch (e) {
+            console.log(e as Error)
+        }
+    }
+}
+
+function getEc2SsmEnv(region: string, ssmPath: string): NodeJS.ProcessEnv {
+    return Object.assign(
+        {
+            AWS_REGION: region,
+            AWS_SSM_CLI: ssmPath,
+        },
+        process.env
+    )
 }

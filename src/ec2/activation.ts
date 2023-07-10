@@ -23,8 +23,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2InstanceNode) => {
             const selection = node ? node.toSelection() : await promptUserForEc2Selection()
-            //const connectionManager = new Ec2ConnectionManager(selection.region)
-            console.log(selection)
+            const connectionManager = new Ec2ConnectionManager(selection.region)
+
+            await connectionManager.attemptToOpenRemoteConnection(selection)
         })
     )
 }

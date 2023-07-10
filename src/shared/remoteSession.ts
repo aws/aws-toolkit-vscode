@@ -4,9 +4,21 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
+const localize = nls.loadMessageBundle()
+
 import { Settings } from '../shared/settings'
 import { showMessageWithCancel } from './utilities/messages'
-import { Timeout } from './utilities/timeoutUtils'
+import { CancellationError, Timeout } from './utilities/timeoutUtils'
+import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
+import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
+import { Err, Result } from '../shared/utilities/result'
+import { ToolkitError, UnknownError } from './errors'
+import { MissingTool } from '../codecatalyst/tools'
+import { getLogger } from './logger/logger'
+import { SystemUtilities } from './systemUtilities'
+import { getOrInstallCli } from './utilities/cliUtils'
+import { pushIf } from './utilities/collectionUtils'
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)
@@ -35,4 +47,108 @@ async function withoutShellIntegration<T>(cb: () => T | Promise<T>): Promise<T> 
     } finally {
         Settings.instance.update('terminal.integrated.shellIntegration.enabled', userValue)
     }
+}
+
+interface DependencyPaths {
+    readonly vsc: string
+    readonly ssm: string
+    readonly ssh: string
+}
+
+export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
+    try {
+        await ensureRemoteSshInstalled()
+    } catch (e) {
+        return Result.err(e as Error)
+    }
+
+    const tools = await ensureTools()
+    if (tools.isErr()) {
+        return await handleMissingTool(tools)
+    }
+
+    return tools
+}
+
+export async function ensureRemoteSshInstalled(): Promise<void> {
+    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
+        showInstallExtensionMsg(
+            VSCODE_EXTENSION_ID.remotessh,
+            'Remote SSH',
+            'Connecting to Dev Environment',
+            vscodeExtensionMinVersion.remotessh
+        )
+
+        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            throw new ToolkitError('Remote SSH extension version is too low', {
+                cancelled: true,
+                code: 'ExtensionVersionTooLow',
+                details: { expected: vscodeExtensionMinVersion.remotessh },
+            })
+        } else {
+            throw new ToolkitError('Remote SSH extension not installed', {
+                cancelled: true,
+                code: 'MissingExtension',
+            })
+        }
+    }
+}
+
+/**
+ * Checks if the SSM plugin CLI `session-manager-plugin` is available and
+ * working, else prompts user to install it.
+ *
+ * @returns Result object indicating whether the SSH config is working, or failure reason.
+ */
+async function ensureSsmCli() {
+    const r = await Result.promise(getOrInstallCli('session-manager-plugin', false))
+
+    return r.mapErr(e => UnknownError.cast(e).message)
+}
+
+export async function ensureTools() {
+    const [vsc, ssh, ssm] = await Promise.all([
+        SystemUtilities.getVscodeCliPath(),
+        SystemUtilities.findSshPath(),
+        ensureSsmCli(),
+    ])
+
+    const missing: MissingTool[] = []
+    pushIf(missing, vsc === undefined, { name: 'code' })
+    pushIf(missing, ssh === undefined, { name: 'ssh' })
+
+    if (ssm.isErr()) {
+        missing.push({ name: 'ssm', reason: ssm.err() })
+    }
+
+    if (vsc === undefined || ssh === undefined || ssm.isErr()) {
+        return Result.err(missing)
+    }
+
+    return Result.ok({ vsc, ssh, ssm: ssm.ok() })
+}
+
+export async function handleMissingTool(tools: Err<MissingTool[]>) {
+    const missing = tools
+        .err()
+        .map(d => d.name)
+        .join(', ')
+    const msg = localize(
+        'AWS.codecatalyst.missingRequiredTool',
+        'Failed to connect to Dev Environment, missing required tools: {0}',
+        missing
+    )
+
+    tools.err().forEach(d => {
+        if (d.reason) {
+            getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
+        }
+    })
+
+    return Result.err(
+        new ToolkitError(msg, {
+            code: 'MissingTools',
+            details: { missing },
+        })
+    )
 }

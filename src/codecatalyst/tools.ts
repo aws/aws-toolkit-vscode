@@ -11,20 +11,16 @@ const localize = nls.loadMessageBundle()
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
 import * as path from 'path'
-import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { Result } from '../shared/utilities/result'
-import { isExtensionInstalled, showInstallExtensionMsg } from '../shared/utilities/vsCodeUtils'
-import { SystemUtilities } from '../shared/systemUtilities'
-import { pushIf } from '../shared/utilities/collectionUtils'
 import { ChildProcess } from '../shared/utilities/childProcess'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
-import { ToolkitError, UnknownError } from '../shared/errors'
+import { ToolkitError } from '../shared/errors'
 import { getLogger } from '../shared/logger'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { getSshConfigPath } from '../shared/extensions/ssh'
-import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from '../shared/extensions'
+import { ensureRemoteSshInstalled, ensureTools, handleMissingTool } from '../shared/remoteSession'
 
 interface DependencyPaths {
     readonly vsc: string
@@ -32,7 +28,7 @@ interface DependencyPaths {
     readonly ssh: string
 }
 
-interface MissingTool {
+export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
     readonly reason?: string
 }
@@ -40,56 +36,15 @@ interface MissingTool {
 export const hostNamePrefix = 'aws-devenv-'
 
 export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
-    if (!isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh, vscodeExtensionMinVersion.remotessh)) {
-        showInstallExtensionMsg(
-            VSCODE_EXTENSION_ID.remotessh,
-            'Remote SSH',
-            'Connecting to Dev Environment',
-            vscodeExtensionMinVersion.remotessh
-        )
-
-        if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
-            return Result.err(
-                new ToolkitError('Remote SSH extension version is too low', {
-                    cancelled: true,
-                    code: 'ExtensionVersionTooLow',
-                    details: { expected: vscodeExtensionMinVersion.remotessh },
-                })
-            )
-        } else {
-            return Result.err(
-                new ToolkitError('Remote SSH extension not installed', {
-                    cancelled: true,
-                    code: 'MissingExtension',
-                })
-            )
-        }
+    try {
+        await ensureRemoteSshInstalled()
+    } catch (e) {
+        return Result.err(e as Error)
     }
 
     const tools = await ensureTools()
     if (tools.isErr()) {
-        const missing = tools
-            .err()
-            .map(d => d.name)
-            .join(', ')
-        const msg = localize(
-            'AWS.codecatalyst.missingRequiredTool',
-            'Failed to connect to Dev Environment, missing required tools: {0}',
-            missing
-        )
-
-        tools.err().forEach(d => {
-            if (d.reason) {
-                getLogger().error(`codecatalyst: failed to get tool "${d.name}": ${d.reason}`)
-            }
-        })
-
-        return Result.err(
-            new ToolkitError(msg, {
-                code: 'MissingTools',
-                details: { missing },
-            })
-        )
+        return await handleMissingTool(tools)
     }
 
     const config = await ensureCodeCatalystSshConfig(tools.ok().ssh)
@@ -129,40 +84,6 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
 
         return Result.err(ToolkitError.chain(e, message, { code: 'ConnectScriptUpdateFailed' }))
     }
-}
-
-async function ensureTools() {
-    const [vsc, ssh, ssm] = await Promise.all([
-        SystemUtilities.getVscodeCliPath(),
-        SystemUtilities.findSshPath(),
-        ensureSsmCli(),
-    ])
-
-    const missing: MissingTool[] = []
-    pushIf(missing, vsc === undefined, { name: 'code' })
-    pushIf(missing, ssh === undefined, { name: 'ssh' })
-
-    if (ssm.isErr()) {
-        missing.push({ name: 'ssm', reason: ssm.err() })
-    }
-
-    if (vsc === undefined || ssh === undefined || ssm.isErr()) {
-        return Result.err(missing)
-    }
-
-    return Result.ok({ vsc, ssh, ssm: ssm.ok() })
-}
-
-/**
- * Checks if the SSM plugin CLI `session-manager-plugin` is available and
- * working, else prompts user to install it.
- *
- * @returns Result object indicating whether the SSH config is working, or failure reason.
- */
-async function ensureSsmCli() {
-    const r = await Result.promise(getOrInstallCli('session-manager-plugin', false))
-
-    return r.mapErr(e => UnknownError.cast(e).message)
 }
 
 /**
