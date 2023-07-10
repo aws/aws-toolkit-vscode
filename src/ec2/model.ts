@@ -22,7 +22,7 @@ import { showMessageWithCancel } from '../shared/utilities/messages'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
-interface Ec2RemoteConnection extends VscodeRemoteConnection {
+interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
 }
 
@@ -142,7 +142,7 @@ export class Ec2ConnectionManager {
         await this.checkForStartSessionError(selection)
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
-        const remoteEnv = await this.prepareRemoteConnection(selection)
+        const remoteEnv = await this.prepareEc2RemoteEnv(selection)
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, selection.instanceId, '/', remoteEnv.vscPath)
         } catch (err) {
@@ -152,7 +152,7 @@ export class Ec2ConnectionManager {
         }
     }
 
-    public async prepareRemoteConnection(selection: Ec2Selection): Promise<Ec2RemoteConnection> {
+    public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const vars = getEc2SsmEnv(selection.region, ssm)
