@@ -140,16 +140,18 @@ export class Ec2ConnectionManager {
 
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
-        const timeout = new Timeout(60000)
-        await showMessageWithCancel('AWS: Opening remote connection...', timeout)
-        const remoteEnv = await this.prepareEc2RemoteEnv(selection)
+        const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection)
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, selection.instanceId, '/', remoteEnv.vscPath)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
-        } finally {
-            timeout.cancel()
         }
+    }
+    public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
+        const timeout = new Timeout(60000)
+        await showMessageWithCancel('AWS: Opening remote connection...', timeout)
+        const remoteEnv = await this.prepareEc2RemoteEnv(selection).finally(() => timeout.cancel())
+        return remoteEnv
     }
 
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
