@@ -6,12 +6,18 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import * as nls from 'vscode-nls'
+import * as fs from 'fs-extra'
 import { getLogger } from '../logger'
 import { ChildProcess } from '../utilities/childProcess'
 import { SystemUtilities } from '../systemUtilities'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
+import { Result } from '../utilities/result'
+import { ToolkitError } from '../errors'
+import { getIdeProperties } from '../extensionUtilities'
+import { showConfirmationMessage } from '../utilities/messages'
+import { CancellationError } from '../utilities/timeoutUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -142,4 +148,103 @@ export async function startVscodeRemote(
     }
 
     await new ProcessClass(vscPath, ['--folder-uri', workspaceUri]).run()
+}
+
+export abstract class VscodeRemoteSshConfig {
+    private readonly iswin: boolean = process.platform === 'win32'
+    protected readonly configHostName: string
+    private readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i
+
+    public constructor(protected readonly sshPath: string, protected readonly hostNamePrefix: string) {
+        this.configHostName = `${hostNamePrefix}*`
+    }
+
+    protected async getProxyCommand(script: string): Promise<Result<string, ToolkitError>> {
+        if (this.iswin) {
+            // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
+            const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
+            const r = await proc.run()
+            if (r.exitCode !== 0) {
+                return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
+            }
+            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${script}" %h`)
+        } else {
+            return Result.ok(`'${script}' '%h'`)
+        }
+    }
+
+    protected abstract createSSHConfigSection(proxyCommand: string): string
+
+    protected async matchSshSection(proxyCommandRegExp: RegExp) {
+        const proc = new ChildProcess(this.sshPath, ['-G', `${this.hostNamePrefix}test`])
+        const r = await proc.run()
+        if (r.exitCode !== 0) {
+            return Result.err(r.error ?? new Error(`ssh check against host failed: ${r.exitCode}`))
+        }
+        const matches = r.stdout.match(proxyCommandRegExp)
+        return Result.ok(matches?.[0])
+    }
+
+    // Check if the hostname pattern is working.
+    protected async verifySSHHost({ section, proxyCommand }: { section: string; proxyCommand: string }) {
+        const matchResult = await this.matchSshSection(this.proxyCommandRegExp)
+        if (matchResult.isErr()) {
+            return matchResult
+        }
+
+        const configSection = matchResult.ok()
+        const hasProxyCommand = configSection?.includes(proxyCommand)
+
+        if (!hasProxyCommand) {
+            if (configSection !== undefined) {
+                getLogger().warn(
+                    `codecatalyst: SSH config: found old/outdated "${this.configHostName}" section:\n%O`,
+                    configSection
+                )
+                const oldConfig = localize(
+                    'AWS.codecatalyst.error.oldConfig',
+                    'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
+                    this.configHostName
+                )
+
+                const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
+                vscode.window.showWarningMessage(oldConfig, openConfig).then(resp => {
+                    if (resp === openConfig) {
+                        vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
+                    }
+                })
+
+                return Result.err(new ToolkitError(oldConfig, { code: 'OldConfig' }))
+            }
+
+            const confirmTitle = localize(
+                'AWS.codecatalyst.confirm.installSshConfig.title',
+                '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
+                getIdeProperties().company,
+                this.configHostName
+            )
+            const confirmText = localize('AWS.codecatalyst.confirm.installSshConfig.button', 'Update SSH config')
+            const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
+            if (!response) {
+                return Result.err(new CancellationError('user'))
+            }
+
+            const sshConfigPath = getSshConfigPath()
+            try {
+                await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
+                await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
+                await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
+            } catch (e) {
+                const message = localize(
+                    'AWS.codecatalyst.error.writeFail',
+                    'Failed to write SSH config: {0} (permission issue?)',
+                    sshConfigPath
+                )
+
+                return Result.err(ToolkitError.chain(e, message, { code: 'ConfigWriteFailed' }))
+            }
+        }
+
+        return Result.ok()
+    }
 }

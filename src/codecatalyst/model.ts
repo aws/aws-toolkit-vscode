@@ -21,7 +21,7 @@ import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDe
 import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { ensureCodeCatalystSshConfig, hostNamePrefix } from './tools'
+import { CodeCatalystSshConfig, hostNamePrefix } from './tools'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -211,7 +211,9 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const config = await ensureCodeCatalystSshConfig(ssh)
+    const sshConfig = new CodeCatalystSshConfig(ssh, hostNamePrefix)
+    const config = await sshConfig.ensureValid()
+
     if (config.isErr()) {
         const err = config.err()
         getLogger().error(`codecatalyst: failed to add ssh config section: ${err.message}`)

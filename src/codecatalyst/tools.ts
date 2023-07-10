@@ -10,16 +10,11 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import * as path from 'path'
 import { Result } from '../shared/utilities/result'
-import { ChildProcess } from '../shared/utilities/childProcess'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { getLogger } from '../shared/logger'
-import { getIdeProperties } from '../shared/extensionUtilities'
-import { showConfirmationMessage } from '../shared/utilities/messages'
-import { getSshConfigPath } from '../shared/extensions/ssh'
+import { VscodeRemoteSshConfig } from '../shared/extensions/ssh'
 
 export const hostNamePrefix = 'aws-devenv-'
 
@@ -51,142 +46,45 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
     }
 }
 
-/**
- * Checks if the "aws-devenv-*" SSH config hostname pattern is working, else prompts user to add it.
- *
- * @returns Result object indicating whether the SSH config is working, or failure reason.
- */
-export async function ensureCodeCatalystSshConfig(sshPath: string) {
-    const iswin = process.platform === 'win32'
-
-    const scriptResult = await ensureConnectScript()
-    if (scriptResult.isErr()) {
-        return scriptResult
-    }
-
-    const connectScript = scriptResult.ok()
-    const proxyCommand = await getProxyCommand(iswin, connectScript.fsPath)
-    if (proxyCommand.isErr()) {
-        return proxyCommand
-    }
-
-    const section = createSSHConfigSection(proxyCommand.unwrap())
-
-    const verifyHost = await verifySSHHost({ sshPath, proxyCommand: proxyCommand.unwrap(), section })
-    if (verifyHost.isErr()) {
-        return verifyHost
-    }
-
-    return Result.ok()
-}
-
-const configHostName = `${hostNamePrefix}*`
-function createSSHConfigSection(proxyCommand: string): string {
-    // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
-    // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
-
-    return `
-# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host ${configHostName}
-    ForwardAgent yes
-    AddKeysToAgent yes
-    StrictHostKeyChecking accept-new
-    ProxyCommand ${proxyCommand}
-`
-}
-
-// Check if the "aws-devenv-*" hostname pattern is working.
-async function verifySSHHost({
-    sshPath,
-    section,
-    proxyCommand,
-}: {
-    sshPath: string
-    section: string
-    proxyCommand: string
-}) {
-    const matchResult = await matchSshSection(sshPath, `${hostNamePrefix}test`)
-    if (matchResult.isErr()) {
-        return matchResult
-    }
-
-    const configSection = matchResult.ok()
-    const hasProxyCommand = configSection?.includes(proxyCommand)
-
-    if (!hasProxyCommand) {
-        if (configSection !== undefined) {
-            getLogger().warn(
-                `codecatalyst: SSH config: found old/outdated "${configHostName}" section:\n%O`,
-                configSection
-            )
-            const oldConfig = localize(
-                'AWS.codecatalyst.error.oldConfig',
-                'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
-                configHostName
-            )
-
-            const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
-            vscode.window.showWarningMessage(oldConfig, openConfig).then(resp => {
-                if (resp === openConfig) {
-                    vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
-                }
-            })
-
-            return Result.err(new ToolkitError(oldConfig, { code: 'OldConfig' }))
+export class CodeCatalystSshConfig extends VscodeRemoteSshConfig {
+    /**
+     * Checks if the "aws-devenv-*" SSH config hostname pattern is working, else prompts user to add it.
+     *
+     * @returns Result object indicating whether the SSH config is working, or failure reason.
+     */
+    public async ensureValid() {
+        const scriptResult = await ensureConnectScript()
+        if (scriptResult.isErr()) {
+            return scriptResult
         }
 
-        const confirmTitle = localize(
-            'AWS.codecatalyst.confirm.installSshConfig.title',
-            '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
-            getIdeProperties().company,
-            configHostName
-        )
-        const confirmText = localize('AWS.codecatalyst.confirm.installSshConfig.button', 'Update SSH config')
-        const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
-        if (!response) {
-            return Result.err(new CancellationError('user'))
+        const connectScript = scriptResult.ok()
+        const proxyCommand = await this.getProxyCommand(connectScript.fsPath)
+        if (proxyCommand.isErr()) {
+            return proxyCommand
         }
 
-        const sshConfigPath = getSshConfigPath()
-        try {
-            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
-            await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
-            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
-        } catch (e) {
-            const message = localize(
-                'AWS.codecatalyst.error.writeFail',
-                'Failed to write SSH config: {0} (permission issue?)',
-                sshConfigPath
-            )
+        const section = this.createSSHConfigSection(proxyCommand.unwrap())
 
-            return Result.err(ToolkitError.chain(e, message, { code: 'ConfigWriteFailed' }))
+        const verifyHost = await this.verifySSHHost({ proxyCommand: proxyCommand.unwrap(), section })
+        if (verifyHost.isErr()) {
+            return verifyHost
         }
+
+        return Result.ok()
     }
 
-    return Result.ok()
-}
+    public createSSHConfigSection(proxyCommand: string): string {
+        // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
+        // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
 
-async function matchSshSection(sshPath: string, sshName: string) {
-    const proc = new ChildProcess(sshPath, ['-G', sshName])
-    const r = await proc.run()
-    if (r.exitCode !== 0) {
-        return Result.err(r.error ?? new Error(`ssh check against host failed: ${r.exitCode}`))
-    }
-
-    const matches = r.stdout.match(/proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i)
-    return Result.ok(matches?.[0])
-}
-
-async function getProxyCommand(iswin: boolean, script: string): Promise<Result<string, ToolkitError>> {
-    if (iswin) {
-        // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
-        const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
-        const r = await proc.run()
-        if (r.exitCode !== 0) {
-            return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
-        }
-        return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${script}" %h`)
-    } else {
-        return Result.ok(`'${script}' '%h'`)
+        return `
+    # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+    Host ${this.configHostName}
+        ForwardAgent yes
+        AddKeysToAgent yes
+        StrictHostKeyChecking accept-new
+        ProxyCommand ${proxyCommand}
+    `
     }
 }
