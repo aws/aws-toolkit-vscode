@@ -17,6 +17,8 @@ import { ErrorInformation } from '../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
+import { Timeout } from '../shared/utilities/timeoutUtils'
+import { showMessageWithCancel } from '../shared/utilities/messages'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -138,11 +140,15 @@ export class Ec2ConnectionManager {
 
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
+        const timeout = new Timeout(60000)
+        await showMessageWithCancel('AWS: Opening remote connection...', timeout)
         const remoteEnv = await this.prepareRemoteConnection(selection)
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, selection.instanceId, '/', remoteEnv.vscPath)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
+        } finally {
+            timeout.cancel()
         }
     }
 
