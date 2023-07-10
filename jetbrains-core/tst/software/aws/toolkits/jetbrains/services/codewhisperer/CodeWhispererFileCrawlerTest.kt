@@ -46,6 +46,65 @@ class JavaCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(JavaCodeIn
     }
 
     @Test
+    fun getFileDistance() {
+        val targetFile = fixture.addFileToProject("service/microService/CodeWhispererFileContextProvider.java", aString())
+
+        val fileWithDistance0 = fixture.addFileToProject("service/microService/CodeWhispererFileCrawler.java", aString())
+        val fileWithDistance1 = fixture.addFileToProject("service/CodewhispererRecommendationService.java", aString())
+        val fileWithDistance3 = fixture.addFileToProject("util/CodeWhispererConstants.java", aString())
+        val fileWithDistance4 = fixture.addFileToProject("ui/popup/CodeWhispererPopupManager.java", aString())
+        val fileWithDistance5 = fixture.addFileToProject("ui/popup/components/CodeWhispererPopup.java", aString())
+        val fileWithDistance6 = fixture.addFileToProject("ui/popup/components/actions/AcceptRecommendationAction.java", aString())
+
+        assertThat(CodeWhispererFileCrawler.getFileDistance(targetFile.virtualFile, fileWithDistance0.virtualFile))
+            .isEqualTo(0)
+
+        assertThat(CodeWhispererFileCrawler.getFileDistance(targetFile.virtualFile, fileWithDistance1.virtualFile))
+            .isEqualTo(1)
+
+        assertThat(CodeWhispererFileCrawler.getFileDistance(targetFile.virtualFile, fileWithDistance3.virtualFile))
+            .isEqualTo(3)
+
+        assertThat(CodeWhispererFileCrawler.getFileDistance(targetFile.virtualFile, fileWithDistance4.virtualFile))
+            .isEqualTo(4)
+
+        assertThat(CodeWhispererFileCrawler.getFileDistance(targetFile.virtualFile, fileWithDistance5.virtualFile))
+            .isEqualTo(5)
+
+        assertThat(CodeWhispererFileCrawler.getFileDistance(targetFile.virtualFile, fileWithDistance6.virtualFile))
+            .isEqualTo(6)
+    }
+
+    @Test
+    fun listRelevantFilesInEditor() {
+        val recommendationServiceFile = fixture.addFileToProject("service/CodewhispererRecommendationService.java", aString())
+        val fileContextProviderFile = fixture.addFileToProject("service/microService/CodeWhispererFileContextProvider.java", aString())
+        val constantFile = fixture.addFileToProject("util/CodeWhispererConstants.java", aString())
+        val popupManagerFile = fixture.addFileToProject("ui/popup/CodeWhispererPopupManager.java", aString())
+        val popupFile = fixture.addFileToProject("ui/popup/components/CodeWhispererPopup.java", aString())
+        val popupActionFile = fixture.addFileToProject("ui/popup/components/actions/AcceptRecommendationAction.java", aString())
+
+        val files = listOf(recommendationServiceFile, fileContextProviderFile, constantFile, popupManagerFile, popupFile, popupActionFile)
+
+        files.shuffled().forEach {
+            runInEdtAndWait {
+                fixture.openFileInEditor(it.virtualFile)
+            }
+        }
+
+        val actual = sut.listRelevantFilesInEditors(fileContextProviderFile)
+        assertThat(actual).isEqualTo(
+            listOf(
+                recommendationServiceFile.virtualFile,
+                constantFile.virtualFile,
+                popupManagerFile.virtualFile,
+                popupFile.virtualFile,
+                popupActionFile.virtualFile
+            )
+        )
+    }
+
+    @Test
     fun `findFilesUnderProjectRoot`() {
         val mainClass = fixture.addFileToProject(
             "Main.java",

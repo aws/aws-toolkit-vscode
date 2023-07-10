@@ -25,10 +25,20 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
 
     override fun guessSourceFileName(tstFileName: String): String = tstFileName.substring(0, tstFileName.length - "Test.java".length) + ".java"
 
-    override fun listRelevantFilesInEditors(psiFile: PsiFile): List<VirtualFile> = FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
-        it.name != psiFile.virtualFile.name &&
-            it.extension == psiFile.virtualFile.extension &&
-            !TestSourcesFilter.isTestSources(it, psiFile.project)
+    override fun listRelevantFilesInEditors(psiFile: PsiFile): List<VirtualFile> {
+        val targetFile = psiFile.virtualFile
+
+        val openedFiles = FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
+            it.name != psiFile.virtualFile.name &&
+                it.extension == psiFile.virtualFile.extension &&
+                !TestSourcesFilter.isTestSources(it, psiFile.project)
+        }
+
+        val fileToFileDistanceList = openedFiles.map {
+            return@map it to CodeWhispererFileCrawler.getFileDistance(targetFile = targetFile, candidateFile = it)
+        }
+
+        return fileToFileDistanceList.sortedBy { it.second }.map { it.first }
     }
 
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> {

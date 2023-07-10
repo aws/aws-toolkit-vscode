@@ -91,5 +91,30 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
                 acc
             }
         }
+
+        /**
+         * For [LocalFileSystem](implementation of virtual file system), the path will be an absolute file path with file separator characters replaced
+         * by forward slash "/"
+         * @see [VirtualFile.getPath]
+         */
+        fun getFileDistance(targetFile: VirtualFile, candidateFile: VirtualFile): Int {
+            val targetFilePaths = targetFile.path.split("/").dropLast(1)
+            val candidateFilePaths = candidateFile.path.split("/").dropLast(1)
+
+            var i = 0
+            while (i < minOf(targetFilePaths.size, candidateFilePaths.size)) {
+                val dir1 = targetFilePaths[i]
+                val dir2 = candidateFilePaths[i]
+
+                if (dir1 != dir2) {
+                    break
+                }
+
+                i++
+            }
+
+            return targetFilePaths.subList(fromIndex = i, toIndex = targetFilePaths.size).size +
+                candidateFilePaths.subList(fromIndex = i, toIndex = candidateFilePaths.size).size
+        }
     }
 }
