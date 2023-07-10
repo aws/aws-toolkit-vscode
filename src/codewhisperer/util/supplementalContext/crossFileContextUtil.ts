@@ -68,7 +68,10 @@ export async function fetchSupplementalContextForSrc(
         })
     }
 
-    return supplementalContexts
+    // DO NOT send code chunk with empty content
+    return supplementalContexts.filter(item => {
+        item.content.trim().length !== 0
+    })
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
