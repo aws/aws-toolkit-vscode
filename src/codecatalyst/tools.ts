@@ -47,12 +47,13 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
 }
 
 export class CodeCatalystSshConfig extends VscodeRemoteSshConfig {
+    protected override readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i
     /**
      * Checks if the "aws-devenv-*" SSH config hostname pattern is working, else prompts user to add it.
      *
      * @returns Result object indicating whether the SSH config is working, or failure reason.
      */
-    public async ensureValid() {
+    public override async ensureValid() {
         const scriptResult = await ensureConnectScript()
         if (scriptResult.isErr()) {
             return scriptResult

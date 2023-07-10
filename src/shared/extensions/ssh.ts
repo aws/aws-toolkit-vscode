@@ -13,7 +13,7 @@ import { SystemUtilities } from '../systemUtilities'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
 import { VSCODE_EXTENSION_ID } from '../extensions'
-import { Result } from '../utilities/result'
+import { Err, Ok, Result } from '../utilities/result'
 import { ToolkitError } from '../errors'
 import { getIdeProperties } from '../extensionUtilities'
 import { showConfirmationMessage } from '../utilities/messages'
@@ -153,7 +153,7 @@ export async function startVscodeRemote(
 export abstract class VscodeRemoteSshConfig {
     private readonly iswin: boolean = process.platform === 'win32'
     protected readonly configHostName: string
-    private readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i
+    protected abstract proxyCommandRegExp: RegExp
 
     public constructor(protected readonly sshPath: string, protected readonly hostNamePrefix: string) {
         this.configHostName = `${hostNamePrefix}*`
@@ -172,7 +172,7 @@ export abstract class VscodeRemoteSshConfig {
             return Result.ok(`'${script}' '%h'`)
         }
     }
-
+    public abstract ensureValid(): Promise<Err<Error> | Err<ToolkitError> | Ok<void>>
     protected abstract createSSHConfigSection(proxyCommand: string): string
 
     protected async matchSshSection(proxyCommandRegExp: RegExp) {
