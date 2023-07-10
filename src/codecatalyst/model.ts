@@ -30,7 +30,7 @@ import { fileExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
-import { ensureDependencies } from '../shared/remoteSession'
+import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 
@@ -201,12 +201,7 @@ export async function getThisDevEnv(authProvider: CodeCatalystAuthenticationProv
 /**
  * Everything needed to connect to a dev environment via VS Code or `ssh`
  */
-interface DevEnvConnection {
-    readonly sshPath: string
-    readonly vscPath: string
-    readonly hostname: string
-    readonly envProvider: EnvProvider
-    readonly SessionProcess: typeof ChildProcess
+interface DevEnvConnection extends VscodeRemoteConnection {
     readonly devenv: DevEnvironment
 }
 

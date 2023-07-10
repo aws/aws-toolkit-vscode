@@ -18,6 +18,7 @@ import { getLogger } from './logger/logger'
 import { SystemUtilities } from './systemUtilities'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
+import { ChildProcess } from './utilities/childProcess'
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -57,6 +58,16 @@ interface DependencyPaths {
     readonly vsc: string
     readonly ssm: string
     readonly ssh: string
+}
+
+type EnvProvider = () => Promise<NodeJS.ProcessEnv>
+
+export interface VscodeRemoteConnection {
+    readonly sshPath: string
+    readonly vscPath: string
+    readonly hostname: string
+    readonly envProvider: EnvProvider
+    readonly SessionProcess: typeof ChildProcess
 }
 
 export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {

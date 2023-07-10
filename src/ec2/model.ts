@@ -11,15 +11,18 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
-
-export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
-
-import { ensureDependencies, openRemoteTerminal } from '../shared/remoteSession'
+import { VscodeRemoteConnection, ensureDependencies, openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
+
+export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
+
+interface Ec2RemoteConnection extends VscodeRemoteConnection {
+    selection: Ec2Selection
+}
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -135,9 +138,17 @@ export class Ec2ConnectionManager {
 
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
-        const logPrefix = `ec2 (${selection.instanceId})`
-        const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
-        const { ssm, vsc } = (await ensureDependencies()).unwrap()
+        const remoteEnv = await this.prepareRemoteConnection(selection)
+        try {
+            await startVscodeRemote(remoteEnv.SessionProcess, selection.instanceId, '/', remoteEnv.vscPath)
+        } catch (err) {
+            this.throwGeneralConnectionError(selection, err as Error)
+        }
+    }
+
+    public async prepareRemoteConnection(selection: Ec2Selection): Promise<Ec2RemoteConnection> {
+        const logger = this.configureRemoteConnectionLogger(selection.instanceId)
+        const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const vars = getEc2SsmEnv(selection.region, ssm)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
@@ -147,11 +158,21 @@ export class Ec2ConnectionManager {
             onStderr: logger,
             rejectOnErrorCode: true,
         })
-        try {
-            await startVscodeRemote(SessionProcess, selection.instanceId, '/', vsc)
-        } catch (err) {
-            this.throwGeneralConnectionError(selection, err as Error)
+
+        return {
+            hostname: selection.instanceId,
+            envProvider,
+            sshPath: ssh,
+            vscPath: vsc,
+            SessionProcess,
+            selection,
         }
+    }
+
+    private configureRemoteConnectionLogger(instanceId: string) {
+        const logPrefix = `ec2 (${instanceId})`
+        const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
+        return logger
     }
 }
 
