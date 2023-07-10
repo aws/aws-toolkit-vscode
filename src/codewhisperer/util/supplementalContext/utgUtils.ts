@@ -21,6 +21,8 @@ import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
+import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
+import { UserGroup } from '../../models/constants'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -43,7 +45,7 @@ export async function fetchSupplementalContextForTest(
     // 4. Failure count - when unable to find focal file (supplemental context empty)
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
-    if (!languageConfig) {
+    if (!languageConfig || CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.Utg) {
         // This is required because we are launching this support for even smaller subset of
         // supported languages.
         // TODO: Add a metrics to see number of calls falling in this bucket.

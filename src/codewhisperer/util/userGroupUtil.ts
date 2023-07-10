@@ -52,7 +52,7 @@ export class CodeWhispererUserGroupSettings {
 
     private guessUserGroup(): UserGroup {
         const randomNum = Math.random()
-        const result = randomNum <= 1 / 2 ? UserGroup.Control : UserGroup.CrossFile
+        const result = randomNum <= 1 / 2 ? UserGroup.Control : UserGroup.Utg
 
         return result
     }
