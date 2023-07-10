@@ -16,7 +16,6 @@ import {
     fetchSupplementalContext,
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
-import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { isTestFile } from './supplementalContext/codeParsingUtil'
 import { DependencyGraphFactory } from './dependencyGraph/dependencyGraphFactory'
 import { selectFrom } from '../../shared/utilities/tsUtils'
@@ -94,10 +93,9 @@ export async function buildListRecommendationRequest(
     // (1) User is CrossFile user group
     // (2) The supplemental context is from Supplemental Context but not UTG(unit test generator)
     const isUtg = await isTestFile(editor, DependencyGraphFactory.getDependencyGraph(editor.document.languageId))
-    const supplementalContexts: CodeWhispererSupplementalContext | undefined =
-        CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.CrossFile && !isUtg
-            ? await fetchSupplementalContext(editor, tokenSource.token)
-            : undefined
+    const supplementalContexts: CodeWhispererSupplementalContext | undefined = !isUtg
+        ? await fetchSupplementalContext(editor, tokenSource.token)
+        : undefined
 
     const suppelmetalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
         supplementalContexts
