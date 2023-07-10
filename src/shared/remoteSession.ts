@@ -14,11 +14,15 @@ import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCod
 import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
 import { Err, Result } from '../shared/utilities/result'
 import { ToolkitError, UnknownError } from './errors'
-import { MissingTool } from '../codecatalyst/tools'
 import { getLogger } from './logger/logger'
 import { SystemUtilities } from './systemUtilities'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
+
+export interface MissingTool {
+    readonly name: 'code' | 'ssm' | 'ssh'
+    readonly reason?: string
+}
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)

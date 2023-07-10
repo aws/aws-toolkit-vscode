@@ -20,43 +20,8 @@ import { getLogger } from '../shared/logger'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { getSshConfigPath } from '../shared/extensions/ssh'
-import { ensureRemoteSshInstalled, ensureTools, handleMissingTool } from '../shared/remoteSession'
-
-interface DependencyPaths {
-    readonly vsc: string
-    readonly ssm: string
-    readonly ssh: string
-}
-
-export interface MissingTool {
-    readonly name: 'code' | 'ssm' | 'ssh'
-    readonly reason?: string
-}
 
 export const hostNamePrefix = 'aws-devenv-'
-
-export async function ensureDependencies(): Promise<Result<DependencyPaths, CancellationError | Error>> {
-    try {
-        await ensureRemoteSshInstalled()
-    } catch (e) {
-        return Result.err(e as Error)
-    }
-
-    const tools = await ensureTools()
-    if (tools.isErr()) {
-        return await handleMissingTool(tools)
-    }
-
-    const config = await ensureCodeCatalystSshConfig(tools.ok().ssh)
-    if (config.isErr()) {
-        const err = config.err()
-        getLogger().error(`codecatalyst: failed to add ssh config section: ${err.message}`)
-
-        return Result.err(err)
-    }
-
-    return tools
-}
 
 export async function ensureConnectScript(context = globals.context): Promise<Result<vscode.Uri, ToolkitError>> {
     const scriptName = `codecatalyst_connect${process.platform === 'win32' ? '.ps1' : ''}`
@@ -91,7 +56,7 @@ export async function ensureConnectScript(context = globals.context): Promise<Re
  *
  * @returns Result object indicating whether the SSH config is working, or failure reason.
  */
-async function ensureCodeCatalystSshConfig(sshPath: string) {
+export async function ensureCodeCatalystSshConfig(sshPath: string) {
     const iswin = process.platform === 'win32'
 
     const scriptResult = await ensureConnectScript()
