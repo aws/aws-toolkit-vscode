@@ -216,8 +216,9 @@ export abstract class VscodeRemoteSshConfig {
         throw new ToolkitError(oldConfig, { code: 'OldConfig' })
     }
 
-    private async writeSectionToConfig(section: string) {
+    private async writeSectionToConfig(proxyCommand: string) {
         const sshConfigPath = getSshConfigPath()
+        const section = this.createSSHConfigSection(proxyCommand)
         try {
             await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
             await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
@@ -233,7 +234,10 @@ export abstract class VscodeRemoteSshConfig {
         }
     }
 
-    private async promptUserToConfigureSshConfig(configSection: string | undefined, section: string): Promise<void> {
+    protected async promptUserToConfigureSshConfig(
+        configSection: string | undefined,
+        proxyCommand: string
+    ): Promise<void> {
         if (configSection !== undefined) {
             await this.promptUserForOutdatedSection(configSection)
         }
@@ -250,11 +254,11 @@ export abstract class VscodeRemoteSshConfig {
             throw new CancellationError('user')
         }
 
-        await this.writeSectionToConfig(section)
+        await this.writeSectionToConfig(proxyCommand)
     }
 
     // Check if the hostname pattern is working.
-    protected async verifySSHHost({ section, proxyCommand }: { section: string; proxyCommand: string }) {
+    protected async verifySSHHost(proxyCommand: string) {
         const matchResult = await this.matchSshSection()
         if (matchResult.isErr()) {
             return matchResult
@@ -265,7 +269,7 @@ export abstract class VscodeRemoteSshConfig {
 
         if (!hasProxyCommand) {
             try {
-                await this.promptUserToConfigureSshConfig(configSection, section)
+                await this.promptUserToConfigureSshConfig(configSection, proxyCommand)
             } catch (e) {
                 return Result.err(e as Error)
             }

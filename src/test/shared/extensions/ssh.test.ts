@@ -12,13 +12,15 @@ const testCommand = 'run-thing'
 
 class MockSshConfig extends VscodeRemoteSshConfig {
     private readonly testCommand: string = testCommand
-    protected readonly proxyCommandRegExp: RegExp = /run-thing/
+    protected readonly proxyCommandRegExp: RegExp = new RegExp(`${testCommand}`)
 
+    // State variables to track logic flow.
     public testIsWin: boolean = false
     public configSection: string = ''
+    public SshConfigWritten: boolean = false
 
     protected override createSSHConfigSection(proxyCommand: string): string {
-        return 'test-config-section'
+        return this.configSection
     }
 
     public override async ensureValid(): Promise<Err<ToolkitError> | Err<Error> | Ok<void>> {
@@ -27,9 +29,7 @@ class MockSshConfig extends VscodeRemoteSshConfig {
             return proxyCommand
         }
 
-        const section = this.createSSHConfigSection(proxyCommand.unwrap())
-
-        const verifyHost = await this.verifySSHHost({ proxyCommand: proxyCommand.unwrap(), section })
+        const verifyHost = await this.verifySSHHost(proxyCommand.unwrap())
         if (verifyHost.isErr()) {
             return verifyHost
         }
@@ -41,12 +41,29 @@ class MockSshConfig extends VscodeRemoteSshConfig {
         return await this.getProxyCommand(command)
     }
 
-    public async matchSshSectionWrapper() {
-        return await this.matchSshSection()
+    public async testMatchSshSection(testSection: string) {
+        this.configSection = testSection
+        const result = await this.matchSshSection()
+        this.configSection = ''
+        return result
+    }
+
+    public async testVerifySshHostWrapper(proxyCommand: string, testSection: string) {
+        this.configSection = testSection
+        const result = this.verifySSHHost(proxyCommand)
+        this.configSection = ''
+        return result
     }
 
     protected override isWin() {
         return this.testIsWin
+    }
+
+    protected override async promptUserToConfigureSshConfig(
+        configSection: string | undefined,
+        section: string
+    ): Promise<void> {
+        this.SshConfigWritten = true
     }
 
     protected override async checkSshOnHost(): Promise<ChildProcessResult> {
@@ -78,19 +95,41 @@ describe('VscodeRemoteSshConfig', async function () {
 
     describe('matchSshSection', async function () {
         it('returns ok with match when proxycommand is present', async function () {
-            config.configSection = 'fdsafdsafdsarun-thing342432'
-            const result = await config.matchSshSectionWrapper()
+            const testSection = 'fdsafdsafdsarun-thing342432'
+            const result = await config.testMatchSshSection(testSection)
             assert.ok(result.isOk())
             const match = result.unwrap()
             assert.ok(match)
         })
 
         it('returns ok with undefined when proxycommand is not present', async function () {
-            config.configSection = 'fdsafdsafdsa342432'
-            const result = await config.matchSshSectionWrapper()
+            const testSection = 'fdsafdsafdsa342432'
+            const result = await config.testMatchSshSection(testSection)
             assert.ok(result.isOk())
             const match = result.unwrap()
             assert.strictEqual(match, undefined)
+        })
+    })
+
+    describe('verifySSHHost', async function () {
+        beforeEach(function () {
+            config.SshConfigWritten = false
+        })
+
+        it('writes to ssh config if command not found.', async function () {
+            const testSection = 'no-command-here'
+            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+
+            assert.ok(result.isOk())
+            assert.ok(config.SshConfigWritten)
+        })
+
+        it('does not write to ssh config if command is find', async function () {
+            const testSection = 'run-thing'
+            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+
+            assert.ok(result.isOk())
+            assert.ok(!config.SshConfigWritten)
         })
     })
 })

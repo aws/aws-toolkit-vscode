@@ -17,9 +17,7 @@ export class Ec2RemoteSshConfig extends VscodeRemoteSshConfig {
             return proxyCommand
         }
 
-        const section = this.createSSHConfigSection(proxyCommand.unwrap())
-
-        const verifyHost = await this.verifySSHHost({ proxyCommand: proxyCommand.unwrap(), section })
+        const verifyHost = await this.verifySSHHost(proxyCommand.unwrap())
         if (verifyHost.isErr()) {
             return verifyHost
         }
