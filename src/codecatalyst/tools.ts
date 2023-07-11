@@ -16,8 +16,6 @@ import { ToolkitError } from '../shared/errors'
 import { getLogger } from '../shared/logger'
 import { VscodeRemoteSshConfig } from '../shared/extensions/ssh'
 
-export const hostNamePrefix = 'aws-devenv-'
-
 export async function ensureConnectScript(context = globals.context): Promise<Result<vscode.Uri, ToolkitError>> {
     const scriptName = `codecatalyst_connect${process.platform === 'win32' ? '.ps1' : ''}`
 

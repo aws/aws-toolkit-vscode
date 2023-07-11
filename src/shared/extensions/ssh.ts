@@ -8,7 +8,7 @@ import * as path from 'path'
 import * as nls from 'vscode-nls'
 import * as fs from 'fs-extra'
 import { getLogger } from '../logger'
-import { ChildProcess } from '../utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../utilities/childProcess'
 import { SystemUtilities } from '../systemUtilities'
 import { ArrayConstructor, NonNullObject } from '../utilities/typeConstructors'
 import { Settings } from '../settings'
@@ -151,7 +151,6 @@ export async function startVscodeRemote(
 }
 
 export abstract class VscodeRemoteSshConfig {
-    private readonly iswin: boolean = process.platform === 'win32'
     protected readonly configHostName: string
     protected abstract proxyCommandRegExp: RegExp
 
@@ -159,8 +158,12 @@ export abstract class VscodeRemoteSshConfig {
         this.configHostName = `${hostNamePrefix}*`
     }
 
+    protected isWin(): boolean {
+        return process.platform === 'win32'
+    }
+
     protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
-        if (this.iswin) {
+        if (this.isWin()) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
             const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
             const r = await proc.run()
@@ -172,23 +175,29 @@ export abstract class VscodeRemoteSshConfig {
             return Result.ok(`'${command}' '%h'`)
         }
     }
+
     public abstract ensureValid(): Promise<Err<Error> | Err<ToolkitError> | Ok<void>>
 
     protected abstract createSSHConfigSection(proxyCommand: string): string
 
-    protected async matchSshSection(proxyCommandRegExp: RegExp) {
+    protected async checkSshOnHost(): Promise<ChildProcessResult> {
         const proc = new ChildProcess(this.sshPath, ['-G', `${this.hostNamePrefix}test`])
-        const r = await proc.run()
-        if (r.exitCode !== 0) {
-            return Result.err(r.error ?? new Error(`ssh check against host failed: ${r.exitCode}`))
+        const result = await proc.run()
+        return result
+    }
+
+    protected async matchSshSection() {
+        const result = await this.checkSshOnHost()
+        if (result.exitCode !== 0) {
+            return Result.err(result.error ?? new Error(`ssh check against host failed: ${result.exitCode}`))
         }
-        const matches = r.stdout.match(proxyCommandRegExp)
+        const matches = result.stdout.match(this.proxyCommandRegExp)
         return Result.ok(matches?.[0])
     }
 
     // Check if the hostname pattern is working.
     protected async verifySSHHost({ section, proxyCommand }: { section: string; proxyCommand: string }) {
-        const matchResult = await this.matchSshSection(this.proxyCommandRegExp)
+        const matchResult = await this.matchSshSection()
         if (matchResult.isErr()) {
             return matchResult
         }
