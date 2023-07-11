@@ -195,6 +195,64 @@ export abstract class VscodeRemoteSshConfig {
         return Result.ok(matches?.[0])
     }
 
+    private async promptUserForOutdatedSection(configSection: string): Promise<void> {
+        getLogger().warn(
+            `codecatalyst: SSH config: found old/outdated "${this.configHostName}" section:\n%O`,
+            configSection
+        )
+        const oldConfig = localize(
+            'AWS.codecatalyst.error.oldConfig',
+            'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
+            this.configHostName
+        )
+
+        const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
+        vscode.window.showWarningMessage(oldConfig, openConfig).then(resp => {
+            if (resp === openConfig) {
+                vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
+            }
+        })
+
+        throw new ToolkitError(oldConfig, { code: 'OldConfig' })
+    }
+
+    private async writeSectionToConfig(section: string) {
+        const sshConfigPath = getSshConfigPath()
+        try {
+            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
+            await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
+            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
+        } catch (e) {
+            const message = localize(
+                'AWS.codecatalyst.error.writeFail',
+                'Failed to write SSH config: {0} (permission issue?)',
+                sshConfigPath
+            )
+
+            throw ToolkitError.chain(e, message, { code: 'ConfigWriteFailed' })
+        }
+    }
+
+    private async promptUserToConfigureSshConfig(configSection: string | undefined, section: string): Promise<void> {
+        if (configSection !== undefined) {
+            await this.promptUserForOutdatedSection(configSection)
+        }
+
+        const confirmTitle = localize(
+            'AWS.codecatalyst.confirm.installSshConfig.title',
+            '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
+            getIdeProperties().company,
+            this.configHostName
+        )
+        const confirmText = localize('AWS.codecatalyst.confirm.installSshConfig.button', 'Update SSH config')
+        const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
+        if (!response) {
+            throw new CancellationError('user')
+        }
+
+        await this.writeSectionToConfig(section)
+    }
+
     // Check if the hostname pattern is working.
     protected async verifySSHHost({ section, proxyCommand }: { section: string; proxyCommand: string }) {
         const matchResult = await this.matchSshSection()
@@ -206,52 +264,10 @@ export abstract class VscodeRemoteSshConfig {
         const hasProxyCommand = configSection?.includes(proxyCommand)
 
         if (!hasProxyCommand) {
-            if (configSection !== undefined) {
-                getLogger().warn(
-                    `codecatalyst: SSH config: found old/outdated "${this.configHostName}" section:\n%O`,
-                    configSection
-                )
-                const oldConfig = localize(
-                    'AWS.codecatalyst.error.oldConfig',
-                    'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
-                    this.configHostName
-                )
-
-                const openConfig = localize('AWS.ssh.openConfig', 'Open config...')
-                vscode.window.showWarningMessage(oldConfig, openConfig).then(resp => {
-                    if (resp === openConfig) {
-                        vscode.window.showTextDocument(vscode.Uri.file(getSshConfigPath()))
-                    }
-                })
-
-                return Result.err(new ToolkitError(oldConfig, { code: 'OldConfig' }))
-            }
-
-            const confirmTitle = localize(
-                'AWS.codecatalyst.confirm.installSshConfig.title',
-                '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
-                getIdeProperties().company,
-                this.configHostName
-            )
-            const confirmText = localize('AWS.codecatalyst.confirm.installSshConfig.button', 'Update SSH config')
-            const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
-            if (!response) {
-                return Result.err(new CancellationError('user'))
-            }
-
-            const sshConfigPath = getSshConfigPath()
             try {
-                await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
-                await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
-                await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
+                await this.promptUserToConfigureSshConfig(configSection, section)
             } catch (e) {
-                const message = localize(
-                    'AWS.codecatalyst.error.writeFail',
-                    'Failed to write SSH config: {0} (permission issue?)',
-                    sshConfigPath
-                )
-
-                return Result.err(ToolkitError.chain(e, message, { code: 'ConfigWriteFailed' }))
+                return Result.err(e as Error)
             }
         }
 
