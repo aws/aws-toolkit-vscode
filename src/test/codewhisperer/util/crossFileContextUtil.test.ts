@@ -45,7 +45,7 @@ describe('getRelevantFiles', async function () {
     it('should return opened files in the current window and sorted ascendingly by file distance', async function () {
         const shouldRunTheTest = semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0')
 
-        if (process.platform === 'win32' || !shouldRunTheTest) {
+        if (!shouldRunTheTest) {
             this.skip()
         }
 
