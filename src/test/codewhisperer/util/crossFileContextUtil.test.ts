@@ -12,6 +12,7 @@ import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalC
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
+import { getLogger } from '../../../shared/logger'
 
 // TODO: make it a util function inside testUtil.ts
 let tempFolder: string
@@ -35,7 +36,9 @@ describe('getRelevantFiles', async function () {
     })
 
     afterEach(async function () {
-        await fs.rm(tempFolder, { recursive: true, force: true })
+        getLogger().debug('Deleting temp folder')
+        await fs.remove(tempFolder)
+        getLogger().debug('Done deleting temp folder')
     })
 
     after(async function () {
@@ -76,8 +79,12 @@ describe('getRelevantFiles', async function () {
         await assertTabSize(6)
 
         const actuals = await getRelevantCrossFiles(editor)
+        actuals.forEach(actual => {
+            getLogger().debug(`${actual}`)
+        })
 
         assert.ok(actuals.length === 5)
+
         actuals.forEach((actual, index) => {
             // vscode API will return normalized file path, thus /C:/Users/.../ for windows
             // thus need to manually add '/' and normalize
@@ -85,6 +92,8 @@ describe('getRelevantFiles', async function () {
                 process.platform === 'win32'
                     ? '/' + normalize(path.join(tempFolder, expectedFilePaths[index]))
                     : normalize(path.join(tempFolder, expectedFilePaths[index]))
+
+            getLogger().debug(`${expected}`)
 
             assert.strictEqual(actual, expected)
         })
