@@ -89,7 +89,7 @@ describe('getRelevantFiles', async function () {
             //         : normalize(path.join(tempFolder, expectedFilePaths[index]))
 
             const expected = normalize(path.join(tempFolder, expectedFilePaths[index]))
-            assert.strictEqual(actual, expected)
+            assert.strictEqual(normalize(actual), expected)
         })
     })
 })
