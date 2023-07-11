@@ -35,9 +35,10 @@ describe('getRelevantFiles', async function () {
     })
 
     afterEach(async function () {
-        try {
-            await fs.remove(tempFolder)
-        } catch (e) {}
+        await fs.remove(tempFolder)
+        // try {
+        //     await fs.remove(tempFolder)
+        // } catch (e) {}
     })
 
     after(async function () {
@@ -81,13 +82,6 @@ describe('getRelevantFiles', async function () {
 
         assert.ok(actuals.length === 5)
         actuals.forEach((actual, index) => {
-            // vscode API will return normalized file path, thus /C:/Users/.../ for windows
-            // thus need to manually add '/' and normalize
-            // const expected =
-            //     process.platform === 'win32'
-            //         ? '/' + normalize(path.join(tempFolder, expectedFilePaths[index]))
-            //         : normalize(path.join(tempFolder, expectedFilePaths[index]))
-
             const expected = normalize(path.join(tempFolder, expectedFilePaths[index]))
             assert.strictEqual(normalize(actual), expected)
         })
