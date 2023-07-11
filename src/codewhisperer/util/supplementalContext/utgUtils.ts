@@ -21,6 +21,8 @@ import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
+import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
+import { UserGroup } from '../../models/constants'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -49,6 +51,10 @@ export async function fetchSupplementalContextForTest(
         // TODO: Add a metrics to see number of calls falling in this bucket.
         // TODO: Either catch this error upstream or here.
         return undefined
+    }
+
+    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
+        return []
     }
 
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
