@@ -1,0 +1,11 @@
+{
+  "date" : "2023-07-11",
+  "version" : "1.72",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Improve suggestion quality with enhanced file context fetching"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix AWS Lambda configuration window resize (#3657)"
+  } ]
+}

@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "Fix AWS Lambda configuration window resize (#3657)"
-}

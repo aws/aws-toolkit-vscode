@@ -1,3 +1,6 @@
+# _1.71_ (2023-07-06)
+- **(Bug Fix)** Fix inproper request format when sending empty supplemental context
+
 # _1.70_ (2023-06-27)
 - **(Feature)** CodeWhisperer improves auto-suggestions for tsx and jsx
 - **(Bug Fix)** Show re-authenticate prompt when invoking CodeWhisperer APIs while connection expired
