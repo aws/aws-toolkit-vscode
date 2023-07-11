@@ -109,7 +109,7 @@
     "AWS.command.refreshCdkExplorer": "Refresh CDK Explorer",
     "AWS.command.cdk.help": "View CDK Documentation",
     "AWS.command.ec2.openTerminal": "Open terminal to EC2 instance...",
-    "AWS.command.ec2.openRemoteConnection": "Open EC2 instance in VSCode remote...",
+    "AWS.command.ec2.openRemoteConnection": "Connect to EC2 instance in New Window...",
     "AWS.command.ecr.copyTagUri": "Copy Tag URI",
     "AWS.command.ecr.copyRepositoryUri": "Copy Repository URI",
     "AWS.command.ecr.createRepository": "Create Repository...",
