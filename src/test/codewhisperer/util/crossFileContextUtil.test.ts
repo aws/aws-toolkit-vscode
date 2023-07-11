@@ -33,11 +33,20 @@ describe('getRelevantFiles', async function () {
 
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
+        getLogger().verbose('Created temp folder: ' + tempFolder)
+        getLogger().error('Created temp folder: ' + tempFolder)
+        getLogger().info('Created temp folder: ' + tempFolder)
     })
 
     afterEach(async function () {
         getLogger().debug('Deleting temp folder')
-        await fs.remove(tempFolder)
+        try {
+            await fs.remove(tempFolder)
+        } catch (e) {
+            getLogger().error('Error deleting temp folder: ' + tempFolder)
+            getLogger().error(`${e}`)
+        }
+
         getLogger().debug('Done deleting temp folder')
     })
 
@@ -94,6 +103,8 @@ describe('getRelevantFiles', async function () {
                     : normalize(path.join(tempFolder, expectedFilePaths[index]))
 
             getLogger().debug(`${expected}`)
+            getLogger().error(`${expected}`)
+            getLogger().verbose(`${expected}`)
 
             assert.strictEqual(actual, expected)
         })
