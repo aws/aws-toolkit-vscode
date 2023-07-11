@@ -17,6 +17,7 @@ import {
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 
 let tabSize: number = getTabSizeSetting()
 

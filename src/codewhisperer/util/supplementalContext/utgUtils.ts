@@ -53,7 +53,7 @@ export async function fetchSupplementalContextForTest(
         return undefined
     }
 
-    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.Utg) {
+    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
         return []
     }
 

@@ -262,7 +262,6 @@ export enum UserGroup {
     Classifier = 'Classifier',
     CrossFile = 'CrossFile',
     Control = 'Control',
-    Utg = 'Utg',
 }
 
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
