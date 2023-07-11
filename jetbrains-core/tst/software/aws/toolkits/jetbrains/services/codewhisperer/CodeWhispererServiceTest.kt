@@ -86,7 +86,7 @@ class CodeWhispererServiceTest {
     }
 
     @Test
-    fun `getRequestContext - cross file context should be null for non-cross-file user group`() {
+    fun `getRequestContext - cross file context should be empty for non-cross-file user group`() {
         whenever(userGroupSetting.getUserGroup()).thenReturn(CodeWhispererUserGroup.Control)
         val file = projectRule.fixture.addFileToProject("main.java", "public class Main {}")
 
@@ -102,6 +102,8 @@ class CodeWhispererServiceTest {
             LatencyContext()
         )
 
-        assertThat(actual.supplementalContext).isNull()
+        assertThat(actual.supplementalContext).isNotNull
+        assertThat(actual.supplementalContext?.contents).isEmpty()
+        assertThat(actual.supplementalContext?.contentLength).isEqualTo(0)
     }
 }

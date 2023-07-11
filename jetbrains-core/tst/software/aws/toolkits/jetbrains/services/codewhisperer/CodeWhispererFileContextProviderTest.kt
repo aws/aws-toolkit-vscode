@@ -3,11 +3,14 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
+import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.fixtures.JavaCodeInsightTestFixture
+import com.intellij.testFramework.replaceService
 import com.intellij.testFramework.runInEdtAndGet
 import com.intellij.testFramework.runInEdtAndWait
 import kotlinx.coroutines.runBlocking
@@ -17,12 +20,16 @@ import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererKotlin
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.DefaultCodeWhispererFileContextProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
@@ -34,6 +41,10 @@ class CodeWhispererFileContextProviderTest {
     @JvmField
     @Rule
     val projectRule = HeavyJavaCodeInsightTestFixtureRule()
+
+    @JvmField
+    @Rule
+    val disposableRule = DisposableRule()
 
     lateinit var sut: DefaultCodeWhispererFileContextProvider
 
@@ -213,10 +224,13 @@ class CodeWhispererFileContextProviderTest {
      *          - MainTest.java
      *
      */
-    // TODO: unignore this case once we configure isUtgSupport = true
-    @Ignore
     @Test
     fun `extractSupplementalFileContext from tst file should extract focal file`() {
+        ApplicationManager.getApplication().replaceService(
+            CodeWhispererUserGroupSettings::class.java,
+            mock { on { getUserGroup() } doReturn CodeWhispererUserGroup.CrossFile },
+            disposableRule.disposable
+        )
         val module = fixture.addModule("main")
         fixture.addClass(module, JAVA_MAIN)
 
