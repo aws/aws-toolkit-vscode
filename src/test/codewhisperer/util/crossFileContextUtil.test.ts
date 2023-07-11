@@ -12,7 +12,6 @@ import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalC
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
-import { getLogger } from '../../../shared/logger'
 
 // TODO: make it a util function inside testUtil.ts
 let tempFolder: string
@@ -33,21 +32,12 @@ describe('getRelevantFiles', async function () {
 
     beforeEach(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
-        getLogger().verbose('Created temp folder: ' + tempFolder)
-        getLogger().error('Created temp folder: ' + tempFolder)
-        getLogger().info('Created temp folder: ' + tempFolder)
     })
 
     afterEach(async function () {
-        getLogger().debug('Deleting temp folder')
         try {
             await fs.remove(tempFolder)
-        } catch (e) {
-            getLogger().error('Error deleting temp folder: ' + tempFolder)
-            getLogger().error(`${e}`)
-        }
-
-        getLogger().debug('Done deleting temp folder')
+        } catch (e) {}
     })
 
     after(async function () {
@@ -88,24 +78,17 @@ describe('getRelevantFiles', async function () {
         await assertTabSize(6)
 
         const actuals = await getRelevantCrossFiles(editor)
-        actuals.forEach(actual => {
-            getLogger().debug(`${actual}`)
-        })
 
         assert.ok(actuals.length === 5)
-
         actuals.forEach((actual, index) => {
             // vscode API will return normalized file path, thus /C:/Users/.../ for windows
             // thus need to manually add '/' and normalize
-            const expected =
-                process.platform === 'win32'
-                    ? '/' + normalize(path.join(tempFolder, expectedFilePaths[index]))
-                    : normalize(path.join(tempFolder, expectedFilePaths[index]))
+            // const expected =
+            //     process.platform === 'win32'
+            //         ? '/' + normalize(path.join(tempFolder, expectedFilePaths[index]))
+            //         : normalize(path.join(tempFolder, expectedFilePaths[index]))
 
-            getLogger().debug(`${expected}`)
-            getLogger().error(`${expected}`)
-            getLogger().verbose(`${expected}`)
-
+            const expected = normalize(path.join(tempFolder, expectedFilePaths[index]))
             assert.strictEqual(actual, expected)
         })
     })
