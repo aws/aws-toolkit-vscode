@@ -19,6 +19,7 @@ import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
+import { Ec2RemoteSshConfig } from './tools'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -157,6 +158,15 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
+        const sshConfig = new Ec2RemoteSshConfig(ssh, 'ec2-user')
+        const config = await sshConfig.ensureValid()
+        if (config.isErr()) {
+            const err = config.err()
+            getLogger().error(`ec2: failed to add ssh config section: ${err.message}`)
+
+            throw err
+        }
+
         const vars = getEc2SsmEnv(selection.region, ssm)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }

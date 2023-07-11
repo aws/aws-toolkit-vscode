@@ -159,7 +159,7 @@ export abstract class VscodeRemoteSshConfig {
         this.configHostName = `${hostNamePrefix}*`
     }
 
-    protected async getProxyCommand(script: string): Promise<Result<string, ToolkitError>> {
+    protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
         if (this.iswin) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
             const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
@@ -167,12 +167,13 @@ export abstract class VscodeRemoteSshConfig {
             if (r.exitCode !== 0) {
                 return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
             }
-            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${script}" %h`)
+            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" %h`)
         } else {
-            return Result.ok(`'${script}' '%h'`)
+            return Result.ok(`'${command}' '%h'`)
         }
     }
     public abstract ensureValid(): Promise<Err<Error> | Err<ToolkitError> | Ok<void>>
+
     protected abstract createSSHConfigSection(proxyCommand: string): string
 
     protected async matchSshSection(proxyCommandRegExp: RegExp) {

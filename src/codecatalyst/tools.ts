@@ -80,12 +80,12 @@ export class CodeCatalystSshConfig extends VscodeRemoteSshConfig {
         // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
 
         return `
-    # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-    Host ${this.configHostName}
-        ForwardAgent yes
-        AddKeysToAgent yes
-        StrictHostKeyChecking accept-new
-        ProxyCommand ${proxyCommand}
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host ${this.configHostName}
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand ${proxyCommand}
     `
     }
 }
