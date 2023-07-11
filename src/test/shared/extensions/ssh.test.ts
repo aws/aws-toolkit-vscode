@@ -90,7 +90,7 @@ describe('VscodeRemoteSshConfig', async function () {
             const result = await config.getProxyCommandWrapper(testCommand)
             assert.ok(result.isOk())
             const command = result.unwrap()
-            assert.strictEqual(command, `'${testCommand}' '%h'`)
+            assert.strictEqual(command, testProxyCommand)
         })
     })
 
@@ -98,7 +98,6 @@ describe('VscodeRemoteSshConfig', async function () {
         it('returns ok with match when proxycommand is present', async function () {
             const testSection = `fdsafdsafd${testProxyCommand}sa342432`
             const result = await config.testMatchSshSection(testSection)
-            console.log(result)
             assert.ok(result.isOk())
             const match = result.unwrap()
             assert.ok(match)
