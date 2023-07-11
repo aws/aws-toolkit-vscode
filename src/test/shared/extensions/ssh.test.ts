@@ -9,10 +9,11 @@ import { Err, Ok, Result } from '../../../shared/utilities/result'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 
 const testCommand = 'run-thing'
+const testProxyCommand = `'run-thing' '%h'`
 
 class MockSshConfig extends VscodeRemoteSshConfig {
     private readonly testCommand: string = testCommand
-    protected readonly proxyCommandRegExp: RegExp = new RegExp(`${testCommand}`)
+    protected readonly proxyCommandRegExp: RegExp = new RegExp(`${testProxyCommand}`)
 
     // State variables to track logic flow.
     public testIsWin: boolean = false
@@ -95,15 +96,16 @@ describe('VscodeRemoteSshConfig', async function () {
 
     describe('matchSshSection', async function () {
         it('returns ok with match when proxycommand is present', async function () {
-            const testSection = 'fdsafdsafdsarun-thing342432'
+            const testSection = `fdsafdsafd${testProxyCommand}sa342432`
             const result = await config.testMatchSshSection(testSection)
+            console.log(result)
             assert.ok(result.isOk())
             const match = result.unwrap()
             assert.ok(match)
         })
 
         it('returns ok with undefined when proxycommand is not present', async function () {
-            const testSection = 'fdsafdsafdsa342432'
+            const testSection = `fdsafdsafdsa342432`
             const result = await config.testMatchSshSection(testSection)
             assert.ok(result.isOk())
             const match = result.unwrap()
@@ -118,15 +120,15 @@ describe('VscodeRemoteSshConfig', async function () {
 
         it('writes to ssh config if command not found.', async function () {
             const testSection = 'no-command-here'
-            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+            const result = await config.testVerifySshHostWrapper(testProxyCommand, testSection)
 
             assert.ok(result.isOk())
             assert.ok(config.SshConfigWritten)
         })
 
         it('does not write to ssh config if command is find', async function () {
-            const testSection = 'run-thing'
-            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+            const testSection = `this is some text that doesn't matter, but here ${testProxyCommand}`
+            const result = await config.testVerifySshHostWrapper(testProxyCommand, testSection)
 
             assert.ok(result.isOk())
             assert.ok(!config.SshConfigWritten)
