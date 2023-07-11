@@ -9,7 +9,7 @@ import { Err, Ok, Result } from '../../../shared/utilities/result'
 import { ChildProcessResult } from '../../../shared/utilities/childProcess'
 
 const testCommand = 'run-thing'
-const testProxyCommand = `'run-thing' '%h'`
+const testProxyCommand = `'${testCommand}' '%h'`
 
 class MockSshConfig extends VscodeRemoteSshConfig {
     private readonly testCommand: string = testCommand
