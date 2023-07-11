@@ -172,8 +172,8 @@ export function getFileDistance(fileA: string, fileB: string): number {
 
     let i = 0
     while (i < Math.min(filePathA.length, filePathB.length)) {
-        const dir1 = filePathA[i].toLowerCase()
-        const dir2 = filePathB[i].toLowerCase()
+        const dir1 = filePathA[i]
+        const dir2 = filePathB[i]
 
         if (dir1 !== dir2) {
             break

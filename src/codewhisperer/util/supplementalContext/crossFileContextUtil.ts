@@ -154,7 +154,7 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * by referencing open files, imported files and same package files.
  */
 export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<string[]> {
-    const targetFile = editor.document.uri.path
+    const targetFile = editor.document.uri.fsPath
 
     const relevantFiles = getOpenFilesInWindow().filter(file => {
         return isRelevant(targetFile, file, editor.document.languageId)
@@ -183,7 +183,7 @@ function getOpenFilesInWindow(): string[] {
         const tabArrays = vscode.window.tabGroups.all
         tabArrays.forEach(tabArray => {
             tabArray.tabs.forEach(tab => {
-                filesOpenedInEditor.push((tab.input as any).uri.path)
+                filesOpenedInEditor.push((tab.input as any).uri.fsPath)
             })
         })
     } catch (e) {
