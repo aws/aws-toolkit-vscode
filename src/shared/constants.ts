@@ -103,6 +103,13 @@ export const ecsRequiredTaskPermissionsUrl: string =
 export const ecsRequiredIamPermissionsUrl: string =
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command'
 
+// URL for stuck CFN deployment help
+export const stuckCfnDeploymentUrl =
+    'https://aws.amazon.com/premiumsupport/knowledge-center/cloudformation-stack-stuck-progress/'
+
+// URL for AWS service health status
+export const awsHealthStatusUrl = 'https://status.aws.amazon.com/'
+
 /**
  * Moment format for rendering readable dates.
  *
