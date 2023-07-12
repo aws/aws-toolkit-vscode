@@ -42,6 +42,8 @@ import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { AuthSource } from './ui/vue/show'
+import { getLogger } from '../shared/logger'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -54,7 +56,8 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
 
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
-        vscode.commands.executeCommand(showConnectionsPageCommand)
+        const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
+        vscode.commands.executeCommand(showConnectionsPageCommand, source)
         return undefined
     }
 
@@ -552,5 +555,56 @@ export class AuthNode implements TreeNode<Auth> {
         } else {
             item.description = text
         }
+    }
+}
+
+/**
+ * Class to get info about the user + use of this extension
+ *
+ * Why is this extension in this file?
+ * - Due to circular dependency issues since this class needs to use the {@link Auth}
+ *   instance. If we can find a better spot and not run in to the isssue this should be moved.
+ *
+ * Keywords for searchability:
+ * - new user
+ * - first time
+ */
+export class ExtensionUse {
+    public readonly isExtensionFirstUseKey = 'isExtensionFirstUse'
+
+    // The result of if is first use for the remainder of the extension session.
+    // This will reset on next startup.
+    private isFirstUseCurrentSession: boolean | undefined
+
+    isFirstUse(
+        state: vscode.Memento = globals.context.globalState,
+        hasExistingConnections = () => Auth.instance.hasConnections
+    ): boolean {
+        if (this.isFirstUseCurrentSession !== undefined) {
+            return this.isFirstUseCurrentSession
+        }
+
+        this.isFirstUseCurrentSession = state.get(this.isExtensionFirstUseKey)
+        if (this.isFirstUseCurrentSession === undefined) {
+            // The variable in the store is not defined yet, fallback to checking if they have existing connections.
+            this.isFirstUseCurrentSession = !hasExistingConnections()
+
+            getLogger().debug(
+                `isFirstUse: State not found, marking user as '${
+                    this.isFirstUseCurrentSession ? '' : 'NOT '
+                }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
+            )
+        }
+
+        // Update state, so next time it is not first use
+        state.update(this.isExtensionFirstUseKey, false)
+
+        return this.isFirstUseCurrentSession
+    }
+
+    static #instance: ExtensionUse
+
+    static get instance(): ExtensionUse {
+        return (this.#instance ??= new ExtensionUse())
     }
 }

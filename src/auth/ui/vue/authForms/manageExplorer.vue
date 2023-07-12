@@ -60,6 +60,7 @@ export default defineComponent({
     methods: {
         showExplorer() {
             client.showResourceExplorer()
+            client.emitUiClick('auth_openAWSExplorer')
         },
         async updateConnectionName() {
             const currentConnection = await this.getCurrentConnection()

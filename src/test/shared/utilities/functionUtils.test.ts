@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { once, onceChanged, throttle } from '../../../shared/utilities/functionUtils'
+import { once, onceChanged, debounce } from '../../../shared/utilities/functionUtils'
 import { installFakeClock } from '../../testUtil'
 
 describe('functionUtils', function () {
@@ -50,13 +50,13 @@ describe('functionUtils', function () {
     })
 })
 
-describe('throttle', function () {
+describe('debounce', function () {
     let counter: number
     let fn: () => Promise<unknown>
 
     beforeEach(function () {
         counter = 0
-        fn = throttle(() => void counter++)
+        fn = debounce(() => void counter++)
     })
 
     it('prevents a function from executing more than once in the `delay` window', async function () {
@@ -86,7 +86,7 @@ describe('throttle', function () {
 
         beforeEach(function () {
             clock = installFakeClock()
-            fn = throttle(() => void counter++, 10)
+            fn = debounce(() => void counter++, 10)
         })
 
         afterEach(function () {

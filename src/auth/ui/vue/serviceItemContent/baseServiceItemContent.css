@@ -7,7 +7,7 @@
 
     border-color: #0097fb;
 
-    width: 700px;
+    width: 520px;
 
     padding: 30px;
 }
@@ -18,10 +18,14 @@
     font-weight: bold;
 }
 
+.service-item-content-image {
+    height: 280px;
+}
+
 .service-item-content-container hr {
     border: none;
     height: 1px;
-    background-color: #4d4d4d;
+    background-color: var(--vscode-descriptionForeground);
     width: 100%;
 }
 

@@ -1,0 +1,22 @@
+{
+	"date": "2023-06-27",
+	"version": "1.78.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "ECS: tasks from unrelated task definitions are shown in the \"Open Terminal...\" command"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Show re-authentication prompt if connection expires at extension restart."
+		},
+		{
+			"type": "Feature",
+			"description": "Use the `Search Log Group` command to search all log streams in a CloudWatch Log Group"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer improves auto-suggestions for tsx and jsx"
+		}
+	]
+}

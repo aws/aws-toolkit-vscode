@@ -2,6 +2,7 @@
     display: flex;
     flex-direction: column;
     text-align: left;
+    color: var(--vscode-foreground);
 
     padding: 10px;
 }
@@ -19,20 +20,23 @@
     margin-top: 3px;
 }
 
+/* Consistent margins between the elements of a grouping of elements */
+.auth-form .form-section > button {
+    margin-top: 3px;
+}
+
 .auth-form-title {
     font-size: 14px;
     font-weight: bold;
-    color: #ffffff;
 }
 
 .input-title {
     font-size: 12px;
-    color: #ffffff;
 }
 
 .small-description {
     font-size: 10px;
-    color: #cccccc;
+    color: var(--vscode-descriptionForeground);
 }
 
 .edit-icon {
@@ -41,6 +45,7 @@
 
 .error-text {
     color: #f14c4c;
+    font-size: 12px;
 }
 
 input[data-invalid='true'] {

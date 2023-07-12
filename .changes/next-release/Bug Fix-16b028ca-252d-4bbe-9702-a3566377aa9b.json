@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "codewhisperer: improper request format when sending empty supplemental context"
+}

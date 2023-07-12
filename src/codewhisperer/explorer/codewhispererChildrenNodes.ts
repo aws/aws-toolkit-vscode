@@ -61,10 +61,12 @@ export const createSecurityScanNode = () => {
 }
 
 export const createSsoSignIn = () =>
-    AuthCommandDeclarations.instance.declared.showConnectionsPage.build('codewhisperer').asTreeNode({
-        label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
-        iconPath: getIcon('vscode-debug-start'),
-    })
+    AuthCommandDeclarations.instance.declared.showConnectionsPage
+        .build('codewhispererDeveloperTools', 'codewhisperer')
+        .asTreeNode({
+            label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
+            iconPath: getIcon('vscode-debug-start'),
+        })
 
 export const createReconnectNode = () =>
     reconnect.build().asTreeNode({

@@ -37,7 +37,10 @@ export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistr
         }
 
         if (r.kind === 'doSearchLogGroup') {
-            return searchLogGroup(registry, { regionName: node.regionCode, groupName: node.logGroup.logGroupName! })
+            return searchLogGroup(registry, 'LogStreamMenu', {
+                regionName: node.regionCode,
+                groupName: node.logGroup.logGroupName!,
+            })
         }
 
         const logGroupInfo: CloudWatchLogsGroupInfo = {

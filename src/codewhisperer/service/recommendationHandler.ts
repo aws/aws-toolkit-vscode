@@ -55,7 +55,7 @@ export class RecommendationHandler {
     public isGenerateRecommendationInProgress: boolean
     private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
-    private supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+    private supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 
     constructor() {
         this.requestId = ''
@@ -152,7 +152,7 @@ export class RecommendationHandler {
         let nextToken = ''
         let errorCode = ''
         let req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
-        let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
         let shouldRecordServiceInvocation = false
 
         if (pagination) {
@@ -205,11 +205,9 @@ export class RecommendationHandler {
                 TelemetryHelper.instance.triggerType = triggerType
                 TelemetryHelper.instance.CodeWhispererAutomatedtriggerType =
                     autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
-                if (
-                    recommendation.length > 0 &&
-                    recommendation[0].content.search(CodeWhispererConstants.lineBreak) !== -1
-                ) {
-                    completionType = 'Block'
+                if (page === 0 && recommendation.length > 0) {
+                    completionType =
+                        recommendation[0].content.search(CodeWhispererConstants.lineBreak) !== -1 ? 'Block' : 'Line'
                 }
                 TelemetryHelper.instance.completionType = completionType
                 requestId = resp?.$response && resp?.$response?.requestId
