@@ -203,34 +203,3 @@ function getEc2SsmEnv(region: string, ssmPath: string): NodeJS.ProcessEnv {
         process.env
     )
 }
-
-// function ensureEc2SshConfig(sshPath: string) {
-//     const iswin = process.platform === 'win32'
-//     const proxyCommand = "sh -c 'aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters 'portNumber=%p''"
-//     const section = createSSHConfigSection(proxyCommand)
-
-// }
-
-// function createSSHConfigSection(proxyCommand: string): string {
-//     return `
-// # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-// Host i-* mi-*
-//     User ${hostname}
-//     ProxyCommand ${proxyCommand}
-// `
-// }
-
-// async function verifySSHHost({sshPath, section, proxyCommand}: {
-//     sshPath: string
-//     section: string
-//     proxyCommand: string
-// }) {
-//     const proxyCommandRegEx = new RegExp(`/proxycommand.{0,1024}${proxyCommand}.{0,99}/i`)
-//     const matchResult = await matchSshSection(sshPath, `i-123456`, proxyCommandRegEx)
-//     if (matchResult.isErr()) {
-//         return matchResult
-//     }
-//     const configSection = matchResult.ok()
-//     const hasProxyCommand = configSection?.includes(proxyCommand)
-
-// }
