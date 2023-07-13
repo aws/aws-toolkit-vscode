@@ -20,3 +20,8 @@ export async function openRemoteConnection(node?: Ec2Node) {
     //const connectionManager = new Ec2ConnectionManager(selection.region)
     console.log(selection)
 }
+
+export async function startInstance(node?: Ec2Node) {
+    const selection = node instanceof Ec2InstanceNode ? node.toSelection() : await promptUserForEc2Selection()
+    console.log(selection)
+}
