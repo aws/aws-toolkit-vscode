@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { startInstanceWithCancel, stopInstanceWithCancel } from './changeInstanceStatus'
+import { InstanceStateManager } from './instanceStateManager'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
@@ -25,12 +25,14 @@ export async function openRemoteConnection(node?: Ec2Node) {
 
 export async function startInstance(node?: Ec2Node) {
     const selection = await getSelection(node)
-    await startInstanceWithCancel(selection)
+    const stateManager = new InstanceStateManager(selection.instanceId, selection.region)
+    await stateManager.startInstanceWithCancel()
 }
 
 export async function stopInstance(node?: Ec2Node) {
     const selection = await getSelection(node)
-    await stopInstanceWithCancel(selection)
+    const stateManager = new InstanceStateManager(selection.instanceId, selection.region)
+    await stateManager.stopInstanceWithCancel()
 }
 
 async function getSelection(node: Ec2Node | undefined): Promise<Ec2Selection> {
