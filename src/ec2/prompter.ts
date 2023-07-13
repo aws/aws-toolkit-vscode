@@ -13,7 +13,7 @@ import { CancellationError } from '../shared/utilities/timeoutUtils'
 export class Ec2Prompter {
     public constructor() {}
 
-    private static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
+    protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
         return {
             label: '$(terminal) \t' + (instance.name ?? '(no name)'),
             detail: instance.InstanceId,
@@ -21,7 +21,7 @@ export class Ec2Prompter {
         }
     }
 
-    private static handleEc2ConnectPrompterResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
+    protected static getSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
         return {
             instanceId: response.data,
             region: response.region,
@@ -33,7 +33,7 @@ export class Ec2Prompter {
         const response = await prompter.prompt()
 
         if (isValidResponse(response)) {
-            return Ec2Prompter.handleEc2ConnectPrompterResponse(response)
+            return Ec2Prompter.getSelectionFromResponse(response)
         } else {
             throw new CancellationError('user')
         }
