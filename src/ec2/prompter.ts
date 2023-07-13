@@ -45,7 +45,7 @@ export class Ec2Prompter {
         return await client.getInstances()
     }
 
-    private async getInstancesAsQuickPickItem(region: string): Promise<DataQuickPickItem<string>[]> {
+    protected async getInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
         return (await this.getInstancesFromRegion(region))
             .map(instance => Ec2Prompter.asQuickPickItem(instance))
             .promise()
@@ -53,7 +53,7 @@ export class Ec2Prompter {
 
     private createEc2ConnectPrompter(): RegionSubmenu<string> {
         return new RegionSubmenu(
-            async region => this.getInstancesAsQuickPickItem(region),
+            async region => this.getInstancesAsQuickPickItems(region),
             { title: 'Select EC2 Instance', matchOnDetail: true },
             { title: 'Select Region for EC2 Instance' },
             'Instances'

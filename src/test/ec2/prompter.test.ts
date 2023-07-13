@@ -7,15 +7,27 @@ import { Ec2Prompter } from '../../ec2/prompter'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../ec2/utils'
+import { AsyncCollection } from '../../shared/utilities/asyncCollection'
+import { intoCollection } from '../../shared/utilities/collectionUtils'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 
 describe('Ec2Prompter', async function () {
     class MockEc2Prompter extends Ec2Prompter {
+        public instances: Ec2Instance[] = []
+
         public testAsQuickPickItem(testInstance: Ec2Instance) {
             return Ec2Prompter.asQuickPickItem(testInstance)
         }
 
         public testGetSelectionFromResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
             return Ec2Prompter.getSelectionFromResponse(response)
+        }
+        public async testGetInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
+            return this.getInstancesAsQuickPickItems(region)
+        }
+
+        protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<Ec2Instance>> {
+            return intoCollection(this.instances)
         }
     }
     it('initializes properly', function () {
@@ -81,6 +93,52 @@ describe('Ec2Prompter', async function () {
             }
 
             assert.deepStrictEqual(result, expected)
+        })
+    })
+
+    describe('getInstancesAsQuickPickItem', async function () {
+        let prompter: MockEc2Prompter
+
+        before(function () {
+            prompter = new MockEc2Prompter()
+        })
+
+        beforeEach(function () {
+            prompter.instances = []
+        })
+
+        it('returns empty when no instances present', async function () {
+            const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
+            assert.ok(items.length === 0)
+        })
+
+        it('returns items mapped to QuickPick items without filter', async function () {
+            prompter.instances = [
+                {
+                    InstanceId: 'test-id1',
+                    name: 'test-name1',
+                },
+                {
+                    InstanceId: 'test-id2',
+                    name: 'test-name2',
+                },
+            ]
+
+            const expected = [
+                {
+                    label: '$(terminal) \t' + prompter.instances[0].name!,
+                    detail: prompter.instances[0].InstanceId!,
+                    data: prompter.instances[0].InstanceId!,
+                },
+                {
+                    label: '$(terminal) \t' + prompter.instances[1].name!,
+                    detail: prompter.instances[1].InstanceId!,
+                    data: prompter.instances[1].InstanceId!,
+                },
+            ]
+
+            const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
+            assert.deepStrictEqual(items, expected)
         })
     })
 })
