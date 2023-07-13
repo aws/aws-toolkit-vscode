@@ -18,7 +18,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
-            await (node ? openRemoteConnection(node) : openTerminal(node))
+            await (node ? openRemoteConnection(node) : openRemoteConnection(node))
         }),
 
         Commands.register('aws.ec2.startInstance', async (node?: Ec2Node) => {
