@@ -28,6 +28,8 @@ import { CodeWhispererSupplementalContext } from './supplementalContext/suppleme
 import { getSelectedCustomization } from './customizationUtil'
 import { AuthUtil } from './authUtil'
 import { CodeWhispererStates } from './codewhispererStates'
+import { isAwsError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -331,6 +333,18 @@ export class TelemetryHelper {
                 },
             })
             .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
 
         this.resetUserTriggerDecisionTelemetry()
     }

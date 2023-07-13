@@ -16,6 +16,7 @@ import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
+import { isAwsError } from '../../shared/errors'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -147,6 +148,18 @@ export class CodeWhispererCodeCoverageTracker {
                 },
             })
             .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
     }
 
     private tryStartTimer() {
