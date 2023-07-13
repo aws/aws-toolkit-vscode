@@ -192,8 +192,10 @@ export class DefaultCodeWhispererClient {
     }
 
     public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
-        const requester = async () => (await this.createUserSdkClient()).listAvailableCustomizations().promise()
-        return pageableToCollection(requester, { nextToken: '' }, 'nextToken').promise()
+        const client = await this.createUserSdkClient()
+        const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
+            client.listAvailableCustomizations(request).promise()
+        return pageableToCollection(requester, {}, 'nextToken').promise()
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {

@@ -168,7 +168,7 @@ export async function showCustomizationPrompt() {
             }
             return a.label < b.label ? -1 : 1
         },
-        recentlyUsed: localize('AWS.codewhisperer.customization.selected', 'Connected'),
+        recentlyUsed: localize('AWS.codewhisperer.customization.selected', '   Connected'),
     })
 }
 
@@ -247,7 +247,10 @@ const createCustomizationItem = (customization: Customization, persistedArns: (R
                 )
             )
         },
-        detail: customization.description,
+        detail:
+            customization.description !== ''
+                ? customization.description
+                : localize('AWS.codewhisperer.customization.no.description.text', 'No description provided'),
         description: renderDescriptionText(label, isNewCustomization),
         data: customization.arn,
         recentlyUsed: selectedArn === customization.arn,
@@ -278,14 +281,5 @@ export const switchToBaseCustomizationAndNotify = async () => {
 }
 
 const renderDescriptionText = (label: string, isNewCustomization: boolean = false) => {
-    const selectedCustomization = getSelectedCustomization()
-    let description = ''
-    if (isNewCustomization) {
-        description += '   New'
-    }
-    if (label.includes(selectedCustomization.name ?? '')) {
-        // A workaround to align the "Connected" text on the right
-        description += isNewCustomization ? ' '.repeat(124 - label.length) : ' '.repeat(129 - label.length)
-    }
-    return description
+    return isNewCustomization ? '   New' : ''
 }
