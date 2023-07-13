@@ -112,6 +112,7 @@
     "AWS.command.ec2.openRemoteConnection": "Connect to EC2 instance in New Window...",
     "AWS.command.ec2.startInstance": "Start EC2 Instance...",
     "AWS.command.ec2.stopInstance": "Stop EC2 Instance...",
+    "AWS.command.ec2.rebootInstance": "Reboot EC2 Instance...",
     "AWS.command.ecr.copyTagUri": "Copy Tag URI",
     "AWS.command.ecr.copyRepositoryUri": "Copy Repository URI",
     "AWS.command.ecr.createRepository": "Create Repository...",

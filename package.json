@@ -1127,6 +1127,10 @@
                     "whem": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.rebootInstance",
+                    "whem": "aws.isDevMode"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -2106,6 +2110,16 @@
             {
                 "command": "aws.ec2.stopInstance",
                 "title": "%AWS.command.ec2.stopInstance%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.rebootInstance",
+                "title": "%AWS.command.ec2.rebootInstance%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
