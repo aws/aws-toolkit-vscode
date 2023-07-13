@@ -11,8 +11,10 @@ import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
 
+export type instanceFilter = (instance: Ec2Instance) => boolean
+
 export class Ec2Prompter {
-    public constructor() {}
+    public constructor(protected filter?: instanceFilter) {}
 
     protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
         return {
@@ -47,6 +49,7 @@ export class Ec2Prompter {
 
     protected async getInstancesAsQuickPickItems(region: string): Promise<DataQuickPickItem<string>[]> {
         return (await this.getInstancesFromRegion(region))
+            .filter(this.filter ?? (i => true))
             .map(instance => Ec2Prompter.asQuickPickItem(instance))
             .promise()
     }
