@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import { Ec2Prompter, instanceFilter } from '../../ec2/prompter'
+import { Ec2Prompter } from '../../ec2/prompter'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { Ec2Selection } from '../../ec2/utils'
@@ -28,10 +28,6 @@ describe('Ec2Prompter', async function () {
 
         protected override async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<Ec2Instance>> {
             return intoCollection(this.instances)
-        }
-
-        public setFilter(filter: instanceFilter) {
-            this.filter = filter
         }
     }
     it('initializes properly', function () {
@@ -130,7 +126,7 @@ describe('Ec2Prompter', async function () {
             assert.ok(items.length === 0)
         })
 
-        it('returns items mapped to QuickPick items without filter', async function () {
+        it('returns items mapped to QuickPick items', async function () {
             const expected = [
                 {
                     label: '$(terminal) \t' + prompter.instances[0].name!,
@@ -148,27 +144,6 @@ describe('Ec2Prompter', async function () {
                     data: prompter.instances[2].InstanceId!,
                 },
             ]
-
-            const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
-            assert.deepStrictEqual(items, expected)
-        })
-
-        it('filters the resulting items when filter present', async function () {
-            const expected = [
-                {
-                    label: '$(terminal) \t' + prompter.instances[0].name!,
-                    detail: prompter.instances[0].InstanceId!,
-                    data: prompter.instances[0].InstanceId!,
-                },
-                {
-                    label: '$(terminal) \t' + prompter.instances[2].name!,
-                    detail: prompter.instances[2].InstanceId!,
-                    data: prompter.instances[2].InstanceId!,
-                },
-            ]
-
-            const onlyOddId = (instance: Ec2Instance) => parseInt(instance.InstanceId!) % 2 === 1
-            prompter.setFilter(onlyOddId)
 
             const items = await prompter.testGetInstancesAsQuickPickItems('test-region')
             assert.deepStrictEqual(items, expected)
