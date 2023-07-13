@@ -58,18 +58,13 @@ export class Ec2ConnectionManager {
         return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
-    public async isInstanceRunning(instanceId: string): Promise<boolean> {
-        const instanceStatus = await this.ec2Client.getInstanceStatus(instanceId)
-        return instanceStatus == 'running'
-    }
-
     private throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
-        const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
+        const isInstanceRunning = await this.ec2Client.isInstanceRunning(selection.instanceId)
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
         const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
 

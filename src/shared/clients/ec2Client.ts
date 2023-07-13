@@ -67,6 +67,11 @@ export class Ec2Client {
         return response[0]
     }
 
+    public async isInstanceRunning(instanceId: string): Promise<boolean> {
+        const status = await this.getInstanceStatus(instanceId)
+        return status == 'running'
+    }
+
     public getInstancesFilter(instanceIds: string[]): EC2.Filter[] {
         return [
             {
