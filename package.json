@@ -1119,6 +1119,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.startInstance",
+                    "whem": "aws.isDevMode"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
@@ -2078,6 +2082,16 @@
             {
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.startInstance",
+                "title": "%AWS.command.ec2.startInstance%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
