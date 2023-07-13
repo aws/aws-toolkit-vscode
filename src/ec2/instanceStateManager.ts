@@ -28,6 +28,16 @@ export class InstanceStateManager {
         }
     }
 
+    private async handleError(err: unknown) {
+        if (isAwsError(err)) {
+            throw new ToolkitError(`EC2: failed to change status of instance ${this.instanceId}`, {
+                cause: err as Error,
+            })
+        } else {
+            throw err
+        }
+    }
+
     public async startInstanceWithCancel(): Promise<void> {
         const timeout = new Timeout(5000)
 
@@ -37,11 +47,7 @@ export class InstanceStateManager {
             await this.ensureInstanceNotInStatus('running')
             await this.client.startInstance(this.instanceId)
         } catch (err) {
-            if (isAwsError(err)) {
-                throw new ToolkitError(`EC2: failed to start instance ${this.instanceId}`, { cause: err as Error })
-            } else {
-                throw err
-            }
+            this.handleError(err)
         } finally {
             timeout.cancel()
         }
@@ -56,11 +62,7 @@ export class InstanceStateManager {
             await this.ensureInstanceNotInStatus('stopped')
             await this.client.stopInstance(this.instanceId)
         } catch (err) {
-            if (isAwsError(err)) {
-                throw new ToolkitError(`EC2: failed to stop instance ${this.instanceId}`, { cause: err as Error })
-            } else {
-                throw err
-            }
+            this.handleError(err)
         } finally {
             timeout.cancel()
         }
@@ -74,11 +76,7 @@ export class InstanceStateManager {
         try {
             await this.client.rebootInstance(this.instanceId)
         } catch (err) {
-            if (isAwsError(err)) {
-                throw new ToolkitError(`EC2: failed to reboot instance ${this.instanceId}`, { cause: err as Error })
-            } else {
-                throw err
-            }
+            this.handleError(err)
         } finally {
             timeout.cancel()
         }
