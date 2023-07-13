@@ -1,3 +1,7 @@
+## 1.80.0 2023-07-05
+
+- **Bug Fix** Fix function that determined who was a first time user
+
 ## 1.79.0 2023-06-30
 
 - **Feature** New Add Connection workflow
