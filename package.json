@@ -1335,6 +1335,21 @@
                     "when": "viewItem == awsEc2Node"
                 },
                 {
+                    "command": "aws.ec2.startInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
+                    "command": "aws.ec2.stopInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
                     "command": "aws.ecr.createRepository",
                     "when": "view == aws.explorer && viewItem == awsEcrNode",
                     "group": "inline@1"
