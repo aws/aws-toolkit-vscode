@@ -90,6 +90,14 @@ export class Ec2Client {
         return response
     }
 
+    public async stopInstance(instanceId: string): Promise<PromiseResult<EC2.StopInstancesResult, AWSError>> {
+        const client = await this.createSdkClient()
+
+        const response = await client.stopInstances({ InstanceIds: [instanceId] }).promise()
+
+        return response
+    }
+
     /**
      * Retrieve IAM Association for a given EC2 instance.
      * @param instanceId target EC2 instance ID
