@@ -10,37 +10,42 @@ import { Ec2Instance } from '../shared/clients/ec2Client'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 
-function asQuickpickItem(instance: Ec2Instance): DataQuickPickItem<string> {
-    return {
-        label: '$(terminal) \t' + (instance.name ?? '(no name)'),
-        detail: instance.InstanceId,
-        data: instance.InstanceId,
+export class Ec2Prompter {
+    public constructor() {}
+
+    private static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
+        return {
+            label: '$(terminal) \t' + (instance.name ?? '(no name)'),
+            detail: instance.InstanceId,
+            data: instance.InstanceId,
+        }
     }
-}
 
-export async function promptUserForEc2Selection(): Promise<Ec2Selection> {
-    const prompter = createEc2ConnectPrompter()
-    const response = await prompter.prompt()
-
-    if (isValidResponse(response)) {
-        return handleEc2ConnectPrompterResponse(response)
-    } else {
-        throw new CancellationError('user')
+    private static handleEc2ConnectPrompterResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
+        return {
+            instanceId: response.data,
+            region: response.region,
+        }
     }
-}
 
-export function handleEc2ConnectPrompterResponse(response: RegionSubmenuResponse<string>): Ec2Selection {
-    return {
-        instanceId: response.data,
-        region: response.region,
+    public async promptUser(): Promise<Ec2Selection> {
+        const prompter = this.createEc2ConnectPrompter()
+        const response = await prompter.prompt()
+
+        if (isValidResponse(response)) {
+            return Ec2Prompter.handleEc2ConnectPrompterResponse(response)
+        } else {
+            throw new CancellationError('user')
+        }
     }
-}
 
-export function createEc2ConnectPrompter(): RegionSubmenu<string> {
-    return new RegionSubmenu(
-        async region => (await getInstancesFromRegion(region)).map(asQuickpickItem).promise(),
-        { title: 'Select EC2 Instance', matchOnDetail: true },
-        { title: 'Select Region for EC2 Instance' },
-        'Instances'
-    )
+    private createEc2ConnectPrompter(): RegionSubmenu<string> {
+        return new RegionSubmenu(
+            async region =>
+                (await getInstancesFromRegion(region)).map(instance => Ec2Prompter.asQuickPickItem(instance)).promise(),
+            { title: 'Select EC2 Instance', matchOnDetail: true },
+            { title: 'Select Region for EC2 Instance' },
+            'Instances'
+        )
+    }
 }
