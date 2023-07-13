@@ -4,11 +4,12 @@
  */
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { Ec2Selection, getInstancesFromRegion } from './utils'
+import { Ec2Selection } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
-import { Ec2Instance } from '../shared/clients/ec2Client'
+import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
+import { AsyncCollection } from '../shared/utilities/asyncCollection'
 
 export class Ec2Prompter {
     public constructor() {}
@@ -39,10 +40,20 @@ export class Ec2Prompter {
         }
     }
 
+    protected async getInstancesFromRegion(regionCode: string): Promise<AsyncCollection<Ec2Instance>> {
+        const client = new Ec2Client(regionCode)
+        return await client.getInstances()
+    }
+
+    private async getInstancesAsQuickPickItem(region: string): Promise<DataQuickPickItem<string>[]> {
+        return (await this.getInstancesFromRegion(region))
+            .map(instance => Ec2Prompter.asQuickPickItem(instance))
+            .promise()
+    }
+
     private createEc2ConnectPrompter(): RegionSubmenu<string> {
         return new RegionSubmenu(
-            async region =>
-                (await getInstancesFromRegion(region)).map(instance => Ec2Prompter.asQuickPickItem(instance)).promise(),
+            async region => this.getInstancesAsQuickPickItem(region),
             { title: 'Select EC2 Instance', matchOnDetail: true },
             { title: 'Select Region for EC2 Instance' },
             'Instances'
