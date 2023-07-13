@@ -28,7 +28,7 @@ export class InstanceStateManager {
         }
     }
 
-    private async handleError(err: unknown) {
+    private handleError(err: unknown) {
         if (isAwsError(err)) {
             throw new ToolkitError(`EC2: failed to change status of instance ${this.instanceId}`, {
                 cause: err as Error,
