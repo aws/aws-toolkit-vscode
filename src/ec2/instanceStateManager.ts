@@ -23,7 +23,7 @@ export class InstanceStateManager {
         const isAlreadyInStatus = (await this.client.getInstanceStatus(this.instanceId)) == targetStatus
         if (isAlreadyInStatus) {
             throw new ToolkitError(
-                `EC2: Instance already ${targetStatus}. Unable to update status of ${this.instanceId}.`
+                `EC2: Instance is currently ${targetStatus}. Unable to update status of ${this.instanceId}.`
             )
         }
     }
@@ -58,6 +58,24 @@ export class InstanceStateManager {
         } catch (err) {
             if (isAwsError(err)) {
                 throw new ToolkitError(`EC2: failed to stop instance ${this.instanceId}`, { cause: err as Error })
+            } else {
+                throw err
+            }
+        } finally {
+            timeout.cancel()
+        }
+    }
+
+    public async rebootInstanceWithCancel(): Promise<void> {
+        const timeout = new Timeout(5000)
+
+        await showMessageWithCancel(`EC2: Rebooting instance ${this.instanceId}`, timeout)
+
+        try {
+            await this.client.rebootInstance(this.instanceId)
+        } catch (err) {
+            if (isAwsError(err)) {
+                throw new ToolkitError(`EC2: failed to reboot instance ${this.instanceId}`, { cause: err as Error })
             } else {
                 throw err
             }

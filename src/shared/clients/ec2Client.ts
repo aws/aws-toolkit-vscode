@@ -98,6 +98,12 @@ export class Ec2Client {
         return response
     }
 
+    public async rebootInstance(instanceId: string): Promise<void> {
+        const client = await this.createSdkClient()
+
+        await client.rebootInstances({ InstanceIds: [instanceId] }).promise()
+    }
+
     /**
      * Retrieve IAM Association for a given EC2 instance.
      * @param instanceId target EC2 instance ID

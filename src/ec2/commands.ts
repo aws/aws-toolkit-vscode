@@ -35,6 +35,12 @@ export async function stopInstance(node?: Ec2Node) {
     await stateManager.stopInstanceWithCancel()
 }
 
+export async function rebootInstance(node?: Ec2Node) {
+    const selection = await getSelection(node)
+    const stateManager = new InstanceStateManager(selection.instanceId, selection.region)
+    await stateManager.rebootInstanceWithCancel()
+}
+
 async function getSelection(node: Ec2Node | undefined): Promise<Ec2Selection> {
     const prompter = new Ec2Prompter()
     const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
