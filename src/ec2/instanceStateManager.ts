@@ -11,7 +11,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 export class InstanceStateManager {
     private readonly client: Ec2Client
 
-    public constructor(private readonly instanceId: string, private readonly regionCode: string) {
+    public constructor(protected readonly instanceId: string, protected readonly regionCode: string) {
         this.client = this.getEc2Client()
     }
 
@@ -19,9 +19,9 @@ export class InstanceStateManager {
         return new Ec2Client(this.regionCode)
     }
 
-    private async ensureInstanceNotInStatus(targetStatus: string) {
-        const isAlreadyRunning = (await this.client.getInstanceStatus(this.instanceId)) == targetStatus
-        if (isAlreadyRunning) {
+    protected async ensureInstanceNotInStatus(targetStatus: string) {
+        const isAlreadyInStatus = (await this.client.getInstanceStatus(this.instanceId)) == targetStatus
+        if (isAlreadyInStatus) {
             throw new ToolkitError(
                 `EC2: Instance already ${targetStatus}. Unable to update status of ${this.instanceId}.`
             )
