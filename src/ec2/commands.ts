@@ -3,6 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Ec2Client } from '../shared/clients/ec2Client'
+import { ToolkitError, isAwsError } from '../shared/errors'
+import { showMessageWithCancel } from '../shared/utilities/messages'
+import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
@@ -24,7 +28,26 @@ export async function openRemoteConnection(node?: Ec2Node) {
 
 export async function startInstance(node?: Ec2Node) {
     const selection = await getSelection(node)
-    console.log(selection)
+    const timeout = new Timeout(5000)
+    await showMessageWithCancel(`EC2: Starting instance ${selection.instanceId}`, timeout)
+    const client = new Ec2Client(selection.region)
+    const isAlreadyRunning = await client.isInstanceRunning(selection.instanceId)
+
+    try {
+        if (isAlreadyRunning) {
+            throw new ToolkitError(`EC2: Instance already running. Attempted to start ${selection.instanceId}.`)
+        }
+        const response = await client.startInstance(selection.instanceId)
+        console.log(response)
+    } catch (err) {
+        if (isAwsError(err)) {
+            console.log(err)
+        } else {
+            throw err
+        }
+    } finally {
+        timeout.cancel()
+    }
 }
 
 async function getSelection(node: Ec2Node | undefined): Promise<Ec2Selection> {

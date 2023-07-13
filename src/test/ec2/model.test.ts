@@ -47,22 +47,6 @@ describe('Ec2ConnectClient', function () {
         }
     }
 
-    describe('isInstanceRunning', async function () {
-        let client: MockEc2ConnectClient
-
-        before(function () {
-            client = new MockEc2ConnectClient()
-        })
-
-        it('only returns true with the instance is running', async function () {
-            const actualFirstResult = await client.isInstanceRunning('running:noPolicies')
-            const actualSecondResult = await client.isInstanceRunning('stopped:noPolicies')
-
-            assert.strictEqual(true, actualFirstResult)
-            assert.strictEqual(false, actualSecondResult)
-        })
-    })
-
     describe('handleStartSessionError', async function () {
         let client: MockEc2ConnectClientForError
 

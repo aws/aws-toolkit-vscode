@@ -3,11 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EC2 } from 'aws-sdk'
+import { AWSError, EC2 } from 'aws-sdk'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
+import { PromiseResult } from 'aws-sdk/lib/request'
 
 export interface Ec2Instance extends EC2.Instance {
     name?: string
@@ -79,6 +80,14 @@ export class Ec2Client {
                 Values: instanceIds,
             },
         ]
+    }
+
+    public async startInstance(instanceId: string): Promise<PromiseResult<EC2.StartInstancesResult, AWSError>> {
+        const client = await this.createSdkClient()
+
+        const response = await client.startInstances({ InstanceIds: [instanceId] }).promise()
+
+        return response
     }
 
     /**
