@@ -9,9 +9,10 @@ import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { BM25Document, BM25Okapi } from './rankBm25'
 import { isRelevant } from './editorFilesUtil'
 import { ToolkitError } from '../../../shared/errors'
-import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 
 const crossFileLanguageConfigs = ['java']
 interface Chunk {
@@ -28,6 +29,10 @@ export async function fetchSupplementalContextForSrc(
 ): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     if (crossFileLanguageConfigs.includes(editor.document.languageId) === false) {
         return undefined
+    }
+
+    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
+        return []
     }
 
     // Step 1: Get relevant cross files to refer
@@ -68,7 +73,10 @@ export async function fetchSupplementalContextForSrc(
         })
     }
 
-    return supplementalContexts
+    // DO NOT send code chunk with empty content
+    return supplementalContexts.filter(item => {
+        item.content.trim().length !== 0
+    })
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
