@@ -15,14 +15,18 @@ export async function isEc2SelectionRunning(selection: Ec2Selection): Promise<bo
     return await client.isInstanceRunning(selection.instanceId)
 }
 
-export function getIconForInstance(instance: Ec2Instance) {
+export function getIconForInstanceStatus(instance: Ec2Instance) {
+    return `$(${getIconCodeForInstanceStatus(instance)})`
+}
+
+export function getIconCodeForInstanceStatus(instance: Ec2Instance) {
     if (instance.status === 'running') {
-        return '$(check)'
+        return 'check'
     }
 
     if (instance.status === 'stopped') {
-        return '$(stop)'
+        return 'stop'
     }
 
-    return '$(loading~spin)'
+    return 'loading~spin'
 }

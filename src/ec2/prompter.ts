@@ -4,7 +4,7 @@
  */
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { Ec2Selection, getIconForInstance } from './utils'
+import { Ec2Selection, getIconForInstanceStatus } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 import { isValidResponse } from '../shared/wizards/wizard'
@@ -17,7 +17,7 @@ export class Ec2Prompter {
     public constructor(protected filter?: instanceFilter) {}
 
     protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
-        const icon = getIconForInstance(instance)
+        const icon = getIconForInstanceStatus(instance)
         return {
             label: `${icon} \t ${instance.name ?? '(no name)'}`,
             detail: instance.InstanceId,
