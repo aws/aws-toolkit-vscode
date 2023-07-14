@@ -37,7 +37,8 @@ export async function stopInstance(node?: Ec2Node) {
 }
 
 export async function rebootInstance(node?: Ec2Node) {
-    const stateManager = await getStateManager(node)
+    const prompterFilter = (instance: Ec2Instance) => instance.status !== 'stopped'
+    const stateManager = await getStateManager(node, prompterFilter)
     await stateManager.rebootInstanceWithCancel()
 }
 

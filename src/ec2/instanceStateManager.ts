@@ -75,6 +75,7 @@ export class InstanceStateManager {
         await showMessageWithCancel(`EC2: Rebooting instance ${this.instanceId}`, timeout)
 
         try {
+            await this.ensureInstanceNotInStatus('stopped')
             await this.client.rebootInstance(this.instanceId)
         } catch (err) {
             this.handleError(err)
