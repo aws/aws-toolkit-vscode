@@ -7,6 +7,7 @@ import { Ec2Client } from '../shared/clients/ec2Client'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { Timeout } from '../shared/utilities/timeoutUtils'
+import { Ec2Selection } from './utils'
 
 export class InstanceStateManager {
     private readonly client: Ec2Client
@@ -81,4 +82,8 @@ export class InstanceStateManager {
             timeout.cancel()
         }
     }
+}
+
+export function getStateManagerForSelection(selection: Ec2Selection) {
+    return new InstanceStateManager(selection.instanceId, selection.region)
 }

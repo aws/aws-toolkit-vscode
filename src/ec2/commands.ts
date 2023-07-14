@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { InstanceStateManager } from './instanceStateManager'
+import { InstanceStateManager, getStateManagerForSelection } from './instanceStateManager'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
@@ -24,21 +24,24 @@ export async function openRemoteConnection(node?: Ec2Node) {
 }
 
 export async function startInstance(node?: Ec2Node) {
-    const selection = await getSelection(node)
-    const stateManager = new InstanceStateManager(selection.instanceId, selection.region)
+    const stateManager = await getStateManager(node)
     await stateManager.startInstanceWithCancel()
 }
 
 export async function stopInstance(node?: Ec2Node) {
-    const selection = await getSelection(node)
-    const stateManager = new InstanceStateManager(selection.instanceId, selection.region)
+    const stateManager = await getStateManager(node)
     await stateManager.stopInstanceWithCancel()
 }
 
 export async function rebootInstance(node?: Ec2Node) {
-    const selection = await getSelection(node)
-    const stateManager = new InstanceStateManager(selection.instanceId, selection.region)
+    const stateManager = await getStateManager(node)
     await stateManager.rebootInstanceWithCancel()
+}
+
+async function getStateManager(node: Ec2Node | undefined): Promise<InstanceStateManager> {
+    const selection = await getSelection(node)
+    const stateManager = getStateManagerForSelection(selection)
+    return stateManager
 }
 
 async function getSelection(node: Ec2Node | undefined): Promise<Ec2Selection> {
