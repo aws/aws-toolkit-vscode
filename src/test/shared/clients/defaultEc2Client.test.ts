@@ -10,6 +10,20 @@ import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2Client'
 import { EC2 } from 'aws-sdk'
 
+class MockEc2Client extends Ec2Client {
+    public override async getInstanceStatus(instanceId: string): Promise<string> {
+        return instanceId.split('-')[0]
+    }
+
+    public async testAddNamesToInstances(instances: EC2.Instance[]) {
+        return await (await this.addNamesToInstances(intoCollection(instances))).promise()
+    }
+
+    public async testAddStatusesToInstances(instances: EC2.Instance[]) {
+        return await (await this.addStatusesToInstances(intoCollection(instances))).promise()
+    }
+}
+
 describe('extractInstancesFromReservations', function () {
     const client = new Ec2Client('')
     it('returns empty when given empty collection', async function () {
@@ -54,10 +68,10 @@ describe('extractInstancesFromReservations', function () {
         const actualResult = await client.getInstancesFromReservations(intoCollection([testReservationsList])).promise()
         assert.deepStrictEqual(
             [
-                { InstanceId: 'id1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
-                { InstanceId: 'id2', name: 'name2', Tags: [{ Key: 'Name', Value: 'name2' }] },
-                { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
-                { InstanceId: 'id4', name: 'name4', Tags: [{ Key: 'Name', Value: 'name4' }] },
+                { InstanceId: 'id1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+                { InstanceId: 'id2', Tags: [{ Key: 'Name', Value: 'name2' }] },
+                { InstanceId: 'id3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+                { InstanceId: 'id4', Tags: [{ Key: 'Name', Value: 'name4' }] },
             ],
             actualResult
         )
@@ -89,7 +103,7 @@ describe('extractInstancesFromReservations', function () {
                 .getInstancesFromReservations(intoCollection([testReservationsList]))
                 .promise()
             assert.deepStrictEqual(
-                [{ InstanceId: 'id1' }, { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] }],
+                [{ InstanceId: 'id1' }, { InstanceId: 'id3', Tags: [{ Key: 'Name', Value: 'name3' }] }],
                 actualResult
             )
         })
@@ -125,13 +139,84 @@ describe('extractInstancesFromReservations', function () {
 
         assert.deepStrictEqual(
             [
-                { InstanceId: 'id1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+                { InstanceId: 'id1', Tags: [{ Key: 'Name', Value: 'name1' }] },
                 { InstanceId: 'id2' },
-                { InstanceId: 'id3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+                { InstanceId: 'id3', Tags: [{ Key: 'Name', Value: 'name3' }] },
                 { InstanceId: 'id4', Tags: [] },
             ],
             actualResult
         )
+    })
+})
+
+describe('addStatusesToInstances', async function () {
+    let client: MockEc2Client
+
+    before(function () {
+        client = new MockEc2Client('test-region')
+    })
+
+    it('adds appropriate status field to the instance', async function () {
+        const testInstances = [
+            { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'stopped-2' },
+            { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-4', Tags: [] },
+        ]
+
+        const actualResult = await client.testAddStatusesToInstances(testInstances)
+        const expectedResult = [
+            { InstanceId: 'running-1', status: 'running', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'stopped-2', status: 'stopped' },
+            { InstanceId: 'pending-3', status: 'pending', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-4', status: 'running', Tags: [] },
+        ]
+
+        assert.deepStrictEqual(actualResult, expectedResult)
+    })
+})
+
+describe('addNamesToInstances', async function () {
+    let client: MockEc2Client
+
+    before(function () {
+        client = new MockEc2Client('test-region')
+    })
+
+    it('adds corresponding name to instance', async function () {
+        const testInstances = [
+            { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+        ]
+
+        const actualResult = await client.testAddNamesToInstances(testInstances)
+
+        const expectedResult = [
+            { InstanceId: 'running-1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'pending-3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+        ]
+
+        assert.deepStrictEqual(actualResult, expectedResult)
+    })
+
+    it('handles incomplete and missing tag fields', async function () {
+        const testInstances = [
+            { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'stopped-2' },
+            { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-4', Tags: [] },
+        ]
+
+        const actualResult = await client.testAddNamesToInstances(testInstances)
+
+        const expectedResult = [
+            { InstanceId: 'running-1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'stopped-2' },
+            { InstanceId: 'pending-3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-4', Tags: [] },
+        ]
+
+        assert.deepStrictEqual(actualResult, expectedResult)
     })
 })
 
