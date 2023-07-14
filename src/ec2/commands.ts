@@ -38,13 +38,13 @@ export async function rebootInstance(node?: Ec2Node) {
     await stateManager.rebootInstanceWithCancel()
 }
 
-async function getStateManager(node: Ec2Node | undefined): Promise<InstanceStateManager> {
+async function getStateManager(node?: Ec2Node): Promise<InstanceStateManager> {
     const selection = await getSelection(node)
     const stateManager = getStateManagerForSelection(selection)
     return stateManager
 }
 
-async function getSelection(node: Ec2Node | undefined): Promise<Ec2Selection> {
+async function getSelection(node?: Ec2Node): Promise<Ec2Selection> {
     const prompter = new Ec2Prompter()
     const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
     return selection
