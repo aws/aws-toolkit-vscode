@@ -1340,13 +1340,28 @@
                     "when": "viewItem == awsEc2Node"
                 },
                 {
+                    "command": "aws.ec2.startInstance",
+                    "group": "inline@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
                     "command": "aws.ec2.stopInstance",
                     "group": "0@1",
                     "when": "viewItem == awsEc2Node"
                 },
                 {
+                    "command": "aws.ec2.stopInstance",
+                    "group": "inline@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
+                    "group": "inline@1",
                     "when": "viewItem == awsEc2Node"
                 },
                 {
@@ -2115,6 +2130,7 @@
             {
                 "command": "aws.ec2.startInstance",
                 "title": "%AWS.command.ec2.startInstance%",
+                "icon": "$(debug-start)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2125,6 +2141,7 @@
             {
                 "command": "aws.ec2.stopInstance",
                 "title": "%AWS.command.ec2.stopInstance%",
+                "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2135,6 +2152,7 @@
             {
                 "command": "aws.ec2.rebootInstance",
                 "title": "%AWS.command.ec2.rebootInstance%",
+                "icon": "$(debug-restart)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
