@@ -113,7 +113,7 @@ export class Ec2ConnectionManager {
         })
     }
 
-    public async attemptEc2Connection(selection: Ec2Selection): Promise<void> {
+    public async attemptToOpenEc2Terminal(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
         try {
             const response = await this.ssmClient.startSession(selection.instanceId)
