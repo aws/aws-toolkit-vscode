@@ -1327,12 +1327,12 @@
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running|Stopped|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Parent|Running|Stopped|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
                     "command": "aws.ec2.startInstance",
@@ -1357,12 +1357,12 @@
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ecr.createRepository",

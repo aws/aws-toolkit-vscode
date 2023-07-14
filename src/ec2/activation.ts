@@ -6,7 +6,14 @@ import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import { openRemoteConnection, openTerminal, rebootInstance, startInstance, stopInstance } from './commands'
+import {
+    openRemoteConnection,
+    openTerminal,
+    rebootInstance,
+    refreshExplorer,
+    startInstance,
+    stopInstance,
+} from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -23,14 +30,18 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.startInstance', async (node?: Ec2Node) => {
             await startInstance(node)
+
+            refreshExplorer()
         }),
 
         Commands.register('aws.ec2.stopInstance', async (node?: Ec2Node) => {
             await stopInstance(node)
+            refreshExplorer()
         }),
 
         Commands.register('aws.ec2.rebootInstance', async (node?: Ec2Node) => {
             await rebootInstance(node)
+            refreshExplorer()
         })
     )
 }

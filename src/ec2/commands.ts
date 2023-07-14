@@ -10,6 +10,16 @@ import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter } from './prompter'
 import { Ec2Selection } from './utils'
 import { Ec2Instance } from '../shared/clients/ec2Client'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { commands } from 'vscode'
+
+export function refreshExplorer(node?: Ec2Node) {
+    if (isCloud9()) {
+        commands.executeCommand('aws.refreshAwsExplorer', true)
+    } else {
+        commands.executeCommand('aws.refreshAwsExplorerNode', node)
+    }
+}
 
 export async function openTerminal(node?: Ec2Node) {
     const selection = await getSelection(node)
