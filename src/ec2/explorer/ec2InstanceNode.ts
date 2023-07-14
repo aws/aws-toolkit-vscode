@@ -10,12 +10,13 @@ import { Ec2Instance } from '../../shared/clients/ec2Client'
 import globals from '../../shared/extensionGlobals'
 import { Ec2Selection, getIconCodeForInstanceStatus } from '../utils'
 
+type Ec2InstanceNodeContext = 'awsEc2RunningNode' | 'awsEc2StoppedNode' | 'awsEc2PendingNode'
+
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public override readonly regionCode: string,
         private readonly partitionId: string,
-        private instance: Ec2Instance,
-        public override readonly contextValue: string
+        private instance: Ec2Instance
     ) {
         super('')
         this.update(instance)
@@ -24,8 +25,21 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     public update(newInstance: Ec2Instance) {
         this.setInstance(newInstance)
         this.label = `${this.name} (${this.InstanceId})`
+        this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
+    }
+
+    private getContext(): Ec2InstanceNodeContext {
+        if (this.instance.status == 'running') {
+            return 'awsEc2RunningNode'
+        }
+
+        if (this.instance.status == 'stopped') {
+            return 'awsEc2StoppedNode'
+        }
+
+        return 'awsEc2PendingNode'
     }
 
     public setInstance(newInstance: Ec2Instance) {

@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { Ec2ParentNode, contextValueEc2 } from '../../../ec2/explorer/ec2ParentNode'
+import { Ec2ParentNode, parentContextValue } from '../../../ec2/explorer/ec2ParentNode'
 import { stub } from '../../utilities/stubber'
 import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
@@ -65,7 +65,7 @@ describe('ec2ParentNode', function () {
         const childNodes = await testNode.getChildren()
 
         childNodes.forEach(node =>
-            assert.strictEqual(node.contextValue, contextValueEc2, 'expected the node to have a ec2 contextValue')
+            assert.strictEqual(node.contextValue, parentContextValue, 'expected the node to have a ec2 contextValue')
         )
     })
 
