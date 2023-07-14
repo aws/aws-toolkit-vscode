@@ -35,6 +35,14 @@ export class Ec2Client {
         return instances
     }
 
+    public async getInstancesWithStatus(filter?: EC2.Filter[]) {
+        const instances = await this.getInstances(filter)
+
+        return instances.map(async instance => {
+            return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
+        })
+    }
+
     public getInstancesFromReservations(
         reservations: AsyncCollection<EC2.ReservationList | undefined>
     ): AsyncCollection<EC2.Instance> {
