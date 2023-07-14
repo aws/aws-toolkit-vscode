@@ -1111,7 +1111,11 @@
                     "command": "aws.auth.manageConnections"
                 },
                 {
-                    "command": "aws.ec2.connectToInstance",
+                    "command": "aws.ec2.openRemoteConnection",
+                    "when": "aws.isDevMode"
+                },
+                {
+                    "command": "aws.ec2.openTerminal",
                     "when": "aws.isDevMode"
                 },
                 {
@@ -1309,7 +1313,7 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.ec2.connectToInstance",
+                    "command": "aws.ec2.openTerminal",
                     "group": "0@1",
                     "when": "viewItem == awsEc2Node"
                 },
@@ -2056,8 +2060,18 @@
                 }
             },
             {
-                "command": "aws.ec2.connectToInstance",
-                "title": "%AWS.command.ec2.connectToInstance%",
+                "command": "aws.ec2.openTerminal",
+                "title": "%AWS.command.ec2.openTerminal%",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.openRemoteConnection",
+                "title": "%AWS.command.ec2.openRemoteConnection%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
