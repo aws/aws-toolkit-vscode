@@ -12,6 +12,7 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 
 export interface Ec2Instance extends EC2.Instance {
     name?: string
+    status?: EC2.InstanceStateName
 }
 
 export class Ec2Client {
@@ -31,15 +32,26 @@ export class Ec2Client {
             'NextToken',
             'Reservations'
         )
-        const instances = this.getInstancesFromReservations(collection)
-        return instances
+        const extractedInstances = this.getInstancesFromReservations(collection)
+        const instancesWithStatuses = await this.addStatusesToInstances(extractedInstances)
+        const instancesWithNames = await this.addNamesToInstances(instancesWithStatuses)
+
+        return instancesWithNames
     }
 
-    public async getInstancesWithStatus(filter?: EC2.Filter[]) {
-        const instances = await this.getInstances(filter)
-
+    protected async addStatusesToInstances(
+        instances: AsyncCollection<EC2.Instance>
+    ): Promise<AsyncCollection<EC2.Instance>> {
         return instances.map(async instance => {
             return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
+        })
+    }
+
+    protected async addNamesToInstances(
+        instances: AsyncCollection<EC2.Instance>
+    ): Promise<AsyncCollection<EC2.Instance>> {
+        return instances.map(instance => {
+            return instanceHasName(instance!) ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') } : instance!
         })
     }
 
@@ -51,11 +63,6 @@ export class Ec2Client {
             .map(instanceList => instanceList?.Instances)
             .flatten()
             .filter(instance => instance!.InstanceId !== undefined)
-            .map(instance => {
-                return instanceHasName(instance!)
-                    ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
-                    : instance!
-            })
     }
 
     public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
