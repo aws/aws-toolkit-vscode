@@ -75,7 +75,7 @@ export async function fetchSupplementalContextForSrc(
 
     // DO NOT send code chunk with empty content
     return supplementalContexts.filter(item => {
-        item.content.trim().length !== 0
+        return item.content.trim().length !== 0
     })
 }
 
