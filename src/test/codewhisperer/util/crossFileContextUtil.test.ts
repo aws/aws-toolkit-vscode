@@ -5,12 +5,11 @@
 
 import * as vscode from 'vscode'
 import * as assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as semver from 'semver'
 import { getRelevantCrossFiles } from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { shuffleList, closeAllEditors, toFile, assertTabSize } from '../../testUtil'
-import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
+import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { normalize } from '../../../shared/utilities/pathUtils'
 
 // TODO: make it a util function inside testUtil.ts
@@ -36,8 +35,7 @@ describe('getRelevantFiles', async function () {
 
     afterEach(async function () {
         await closeAllEditors()
-        await assertTabSize(0)
-        await fs.remove(tempFolder)
+        await tryRemoveFolder(tempFolder)
         // try {
         //     await fs.remove(tempFolder)
         // } catch (e) {}
