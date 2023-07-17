@@ -131,7 +131,7 @@ open class S3TreeDirectoryNode(bucket: S3VirtualBucket, parent: S3TreeDirectoryN
             bucket.handleDeletedBucket()
             return emptyList()
         } catch (e: S3Exception) {
-            e.notifyError("Access denied to bucket")
+            e.notifyError(message("s3.bucket.load.fail.title"))
             return buildList {
                 if (continuationMarker != null) {
                     add(S3TreeErrorContinuationNode(bucket, this@S3TreeDirectoryNode, this@S3TreeDirectoryNode.key, continuationMarker))
@@ -218,6 +218,22 @@ class S3TreeObjectNode(parent: S3TreeDirectoryNode, key: String, override val si
         } catch (e: NoSuchBucketException) {
             bucket.handleDeletedBucket()
             return emptyList()
+        } catch (e: S3Exception) {
+            e.notifyError(message("s3.object.load.fail.title"))
+            return buildList {
+                if (continuationMarker != null) {
+                    add(
+                        S3TreeErrorContinuationNode(
+                            bucket,
+                            this@S3TreeObjectNode,
+                            this@S3TreeObjectNode.key,
+                            continuationMarker
+                        )
+                    )
+                } else {
+                    add(S3TreeErrorNode(bucket, this@S3TreeObjectNode))
+                }
+            }
         } catch (e: Exception) {
             LOG.error(e) { "Loading objects failed!" }
             return buildList {
