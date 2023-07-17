@@ -509,20 +509,30 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function deleteOldDevEnvironments(projectName: CodeCatalystProject['name']): Promise<void> {
         const environments = await getAllDevEnvs(projectName)
-
-        // Deleting a dev env that has already been deleted will throw an error.
-        // We need to be selective about which dev envs get explicitly deleted.
-        const oneDayInMs = 60 * 60 * 24 * 1000
-        await Promise.all(
-            environments
-                .filter(devEnv => Date.now() - devEnv.lastUpdatedTime.getTime() >= oneDayInMs)
-                .filter(devEnv => !['DELETING', 'DELETED'].includes(devEnv.status))
-                .map(devEnv =>
-                    deleteDevEnv(devEnv.project.name, devEnv.id).catch(err => {
-                        getLogger().warn(`tests: failed to deleted old dev environment "${devEnv.id}": %s`, err)
-                    })
-                )
+        getLogger().info(
+            `NIKOLAS: Would deleting from ${environments.length} envs from ${projectName}: ${environments.map(
+                env => `${env.id}`
+            )}`
         )
+        console.log(
+            `NIKOLAS: Would deleting from ${environments.length} envs from ${projectName}: ${environments.map(
+                env => `${env.id}`
+            )}`
+        )
+        return
+        // // Deleting a dev env that has already been deleted will throw an error.
+        // // We need to be selective about which dev envs get explicitly deleted.
+        // const oneDayInMs = 60 * 60 * 24 * 1000
+        // await Promise.all(
+        //     environments
+        //         .filter(devEnv => Date.now() - devEnv.lastUpdatedTime.getTime() >= oneDayInMs)
+        //         .filter(devEnv => !['DELETING', 'DELETED'].includes(devEnv.status))
+        //         .map(devEnv =>
+        //             deleteDevEnv(devEnv.project.name, devEnv.id).catch(err => {
+        //                 getLogger().warn(`tests: failed to deleted old dev environment "${devEnv.id}": %s`, err)
+        //             })
+        //         )
+        // )
     }
 
     async function getAllDevEnvs(projectName: CodeCatalystProject['name']): Promise<DevEnvironment[]> {
@@ -584,7 +594,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
                 return devEnvBeingDeleted.status === 'DELETED'
             },
             {
-                interval: 1000,
+                interval: 5000,
                 timeout: 60000,
             }
         )
