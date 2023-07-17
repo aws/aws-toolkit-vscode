@@ -10,14 +10,20 @@ import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
+
+const pollingInterval = 3000
 
 export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
+    protected pollingNodes: Set<string> = new Set<string>()
+    private pollTimer?: NodeJS.Timeout
 
     public constructor(
         public override readonly regionCode: string,
@@ -48,6 +54,38 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             key => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
             key => new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
         )
+    }
+
+    public isPolling(): boolean {
+        return this.pollingNodes.size !== 0
+    }
+
+    public startPolling(instanceId: string) {
+        this.pollingNodes.add(instanceId)
+        this.pollTimer =
+            this.pollTimer ?? globals.clock.setInterval(this.updatePollingNodes.bind(this), pollingInterval)
+    }
+
+    public updatePollingNodes() {
+        console.log('here')
+        this.pollingNodes.forEach(async value => {
+            const instanceNode = this.getChild(value)
+            await instanceNode.updateStatus()
+
+            if (instanceNode.status != 'pending') {
+                this.pollingNodes.delete(value)
+            }
+        })
+        this.refreshNode()
+    }
+
+    public getChild(instanceId: string): Ec2InstanceNode {
+        if (!this.ec2InstanceNodes.has(instanceId)) {
+            throw new ToolkitError(`Unable to retrieve child instance requested with id: ${instanceId}`, {
+                code: 'MissingChild',
+            })
+        }
+        return this.ec2InstanceNodes.get(instanceId)!
     }
 
     public async clearChildren() {

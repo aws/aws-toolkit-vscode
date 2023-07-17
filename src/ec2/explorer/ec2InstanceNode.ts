@@ -23,7 +23,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly client: Ec2Client,
         public override readonly regionCode: string,
         private readonly partitionId: string,
-        protected instance: Ec2Instance
+        public instance: Ec2Instance
     ) {
         super('')
         this.updateInstance(instance)
@@ -63,6 +63,10 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
             region: this.regionCode,
             instanceId: this.InstanceId,
         }
+    }
+
+    public get status(): string {
+        return this.instance.status!
     }
 
     public get name(): string {
