@@ -1119,18 +1119,6 @@
                     "when": "aws.isDevMode"
                 },
                 {
-                    "command": "aws.ec2.startInstance",
-                    "whem": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.stopInstance",
-                    "whem": "aws.isDevMode"
-                },
-                {
-                    "command": "aws.ec2.rebootInstance",
-                    "whem": "aws.isDevMode"
-                },
-                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
