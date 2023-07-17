@@ -10,9 +10,9 @@ import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
 import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
-import { ExtensionUse } from '../shared/utilities/vsCodeUtils'
 import { getLogger } from '../shared/logger'
 import { isInDevEnv } from '../codecatalyst/utils'
+import { ExtensionUse } from './utils'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -28,8 +28,6 @@ export async function initialize(
         }
     })
 
-    // TODO: To enable this in prod we need to remove the 'when' clause
-    // for: '"command": "aws.auth.manageConnections"' in package.json
     registerCommandsWithVSCode(
         extensionContext,
         AuthCommandDeclarations.instance,
@@ -51,8 +49,6 @@ async function showManageConnectionsOnStartup() {
     }
 
     if (isInDevEnv()) {
-        // A dev env will have an existing connection so this scenario is redundant. But keeping
-        // for reference.
         getLogger().debug('firstStartup: Detected we are in Dev Env, skipping showing Add Connections page.')
         return
     }
