@@ -35,14 +35,11 @@ describe('getRelevantFiles', async function () {
     })
 
     afterEach(async function () {
+        await closeAllEditors()
         await fs.remove(tempFolder)
         // try {
         //     await fs.remove(tempFolder)
         // } catch (e) {}
-    })
-
-    after(async function () {
-        await closeAllEditors()
     })
 
     it('should return opened files in the current window and sorted ascendingly by file distance', async function () {
