@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
 import { Ec2Instance, getNameOfInstance } from '../../../shared/clients/ec2Client'
-import { parentContextValue } from '../../../ec2/explorer/ec2ParentNode'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
@@ -23,7 +22,7 @@ describe('ec2InstanceNode', function () {
             ],
         }
 
-        testNode = new Ec2InstanceNode('testRegion', 'testPartition', testInstance, parentContextValue)
+        testNode = new Ec2InstanceNode('testRegion', 'testPartition', testInstance)
     })
 
     it('instantiates without issue', async function () {
