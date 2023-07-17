@@ -3,31 +3,39 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { getNameOfInstance } from '../../shared/clients/ec2Client'
+import { Ec2Client, getNameOfInstance } from '../../shared/clients/ec2Client'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import globals from '../../shared/extensionGlobals'
 import { Ec2Selection, getIconCodeForInstanceStatus } from '../utils'
+import { Ec2ParentNode } from './ec2ParentNode'
 
 type Ec2InstanceNodeContext = 'awsEc2RunningNode' | 'awsEc2StoppedNode' | 'awsEc2PendingNode'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
+        public readonly parent: Ec2ParentNode,
+        public readonly client: Ec2Client,
         public override readonly regionCode: string,
         private readonly partitionId: string,
         private instance: Ec2Instance
     ) {
         super('')
-        this.update(instance)
+        this.updateInstance(instance)
     }
 
-    public update(newInstance: Ec2Instance) {
+    public updateInstance(newInstance: Ec2Instance) {
         this.setInstance(newInstance)
         this.label = `${this.name} (${this.InstanceId})`
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
+    }
+
+    public async updateStatus() {
+        const newStatus = await this.client.getInstanceStatus(this.InstanceId)
+        this.updateInstance({ ...this.instance, status: newStatus })
     }
 
     private getContext(): Ec2InstanceNodeContext {
