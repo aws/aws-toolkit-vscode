@@ -36,6 +36,7 @@ describe('getRelevantFiles', async function () {
 
     afterEach(async function () {
         await closeAllEditors()
+        await assertTabSize(0)
         await fs.remove(tempFolder)
         // try {
         //     await fs.remove(tempFolder)
