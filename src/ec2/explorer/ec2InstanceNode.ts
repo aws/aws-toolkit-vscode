@@ -11,6 +11,10 @@ import globals from '../../shared/extensionGlobals'
 import { Ec2Selection, getIconCodeForInstanceStatus } from '../utils'
 import { Ec2ParentNode } from './ec2ParentNode'
 
+export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
+export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
+export const Ec2InstancePendingContext = 'awsEc2PendingNode'
+
 type Ec2InstanceNodeContext = 'awsEc2RunningNode' | 'awsEc2StoppedNode' | 'awsEc2PendingNode'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
@@ -19,7 +23,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly client: Ec2Client,
         public override readonly regionCode: string,
         private readonly partitionId: string,
-        private instance: Ec2Instance
+        protected instance: Ec2Instance
     ) {
         super('')
         this.updateInstance(instance)
@@ -40,14 +44,14 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     private getContext(): Ec2InstanceNodeContext {
         if (this.instance.status == 'running') {
-            return 'awsEc2RunningNode'
+            return Ec2InstanceRunningContext
         }
 
         if (this.instance.status == 'stopped') {
-            return 'awsEc2StoppedNode'
+            return Ec2InstanceStoppedContext
         }
 
-        return 'awsEc2PendingNode'
+        return Ec2InstancePendingContext
     }
 
     public setInstance(newInstance: Ec2Instance) {

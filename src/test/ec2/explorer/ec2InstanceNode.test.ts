@@ -4,7 +4,12 @@
  */
 
 import * as assert from 'assert'
-import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
+import {
+    Ec2InstanceNode,
+    Ec2InstancePendingContext,
+    Ec2InstanceRunningContext,
+    Ec2InstanceStoppedContext,
+} from '../../../ec2/explorer/ec2InstanceNode'
 import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../shared/clients/ec2Client'
 import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
 
@@ -16,14 +21,14 @@ describe('ec2InstanceNode', function () {
 
     before(function () {
         testInstance = {
-            InstanceId: 'testId',
+            InstanceId: 'running-testId',
             Tags: [
                 {
                     Key: 'Name',
                     Value: 'testName',
                 },
             ],
-            status: 'testing',
+            status: 'running',
         }
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
@@ -58,5 +63,19 @@ describe('ec2InstanceNode', function () {
 
     it('intializes the client', async function () {
         assert.ok(testNode.client instanceof Ec2Client)
+    })
+
+    it('sets context value based on status', async function () {
+        const stoppedInstance = { ...testInstance, status: 'stopped' }
+        testNode.updateInstance(stoppedInstance)
+        assert.strictEqual(testNode.contextValue, Ec2InstanceStoppedContext)
+
+        const runningInstance = { ...testInstance, status: 'running' }
+        testNode.updateInstance(runningInstance)
+        assert.strictEqual(testNode.contextValue, Ec2InstanceRunningContext)
+
+        const pendingInstance = { ...testInstance, status: 'pending' }
+        testNode.updateInstance(pendingInstance)
+        assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
     })
 })
