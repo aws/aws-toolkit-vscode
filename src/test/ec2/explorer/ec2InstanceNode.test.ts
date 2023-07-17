@@ -5,11 +5,14 @@
 
 import * as assert from 'assert'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
-import { Ec2Instance, getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { Ec2Client, Ec2Instance, getNameOfInstance } from '../../../shared/clients/ec2Client'
+import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
 
 describe('ec2InstanceNode', function () {
     let testNode: Ec2InstanceNode
     let testInstance: Ec2Instance
+    const testRegion = 'testRegion'
+    const testPartition = 'testPartition'
 
     before(function () {
         testInstance = {
@@ -20,9 +23,11 @@ describe('ec2InstanceNode', function () {
                     Value: 'testName',
                 },
             ],
+            status: 'testing',
         }
-
-        testNode = new Ec2InstanceNode('testRegion', 'testPartition', testInstance)
+        const testClient = new Ec2Client('')
+        const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
+        testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
     })
 
     it('instantiates without issue', async function () {
@@ -41,13 +46,17 @@ describe('ec2InstanceNode', function () {
         assert.strictEqual(testNode.name, getNameOfInstance(testInstance))
     })
 
-    it('initializes the tooltip', async function () {
-        assert.strictEqual(testNode.tooltip, `${testNode.name}\n${testNode.InstanceId}\n${testNode.arn}`)
-    })
-
     it('has no children', async function () {
         const childNodes = await testNode.getChildren()
         assert.ok(childNodes)
         assert.strictEqual(childNodes.length, 0, 'Expected node to have no children')
+    })
+
+    it('has an EC2ParentNode as parent', async function () {
+        assert.ok(testNode.parent instanceof Ec2ParentNode)
+    })
+
+    it('intializes the client', async function () {
+        assert.ok(testNode.client instanceof Ec2Client)
     })
 })
