@@ -5,9 +5,10 @@
                 >IAM Identity Center&nbsp;<a
                     class="icon icon-lg icon-vscode-info"
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                    v-on:click="emitUiClick('auth_infoIAMIdentityCenter')"
                 ></a
             ></FormTitle>
-            <div v-if="!isConnected">Successor to AWS Single Sign-on</div>
+            <div v-if="!isConnected" class="sub-text-color">Successor to AWS Single Sign-on</div>
         </div>
         <div v-else>
             <!-- In this scenario we do not care about the active IC connection -->
@@ -15,9 +16,10 @@
                 >IAM Identity Center&nbsp;<a
                     class="icon icon-lg icon-vscode-info"
                     href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html"
+                    v-on:click="emitUiClick('auth_infoIAMIdentityCenter')"
                 ></a
             ></FormTitle>
-            <div>Successor to AWS Single Sign-on</div>
+            <div style="color: var(--vscode-descriptionForeground)">Successor to AWS Single Sign-on</div>
         </div>
 
         <div v-if="stage === 'START'">
@@ -31,15 +33,17 @@
             <div class="form-section">
                 <label class="input-title">Region</label>
                 <label class="small-description">AWS Region that hosts Identity directory</label>
-
-                <div style="display: flex; flex-direction: row; gap: 10px">
-                    <div v-on:click="getRegion()" class="icon icon-lg icon-vscode-edit edit-icon"></div>
-                    <div style="width: 100%">{{ data.region ? data.region : 'Not Selected' }}</div>
+                <div v-on:click="getRegion()" style="display: flex; flex-direction: row; gap: 10px; cursor: pointer">
+                    <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
+                    <div class="text-link-color" style="width: 100%">
+                        {{ data.region ? data.region : 'Select a region...' }}
+                    </div>
                 </div>
+                <div class="small-description error-text">{{ errors.region }}</div>
             </div>
 
             <div class="form-section">
-                <button v-on:click="signin()" :disabled="!canSubmit">Sign up or Sign in</button>
+                <button v-on:click="signin()">Sign in</button>
                 <div class="small-description error-text">{{ errors.submit }}</div>
             </div>
         </div>
@@ -52,7 +56,7 @@
 
         <div v-if="stage === 'CONNECTED'">
             <div class="form-section">
-                <div v-on:click="signout()" style="cursor: pointer; color: #75beff">Sign out</div>
+                <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
             </div>
 
             <div class="form-section">
@@ -66,10 +70,12 @@ import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
-import { AuthWebview } from '../show'
-import { AuthStatus } from './shared.vue'
+import { AuthUiClick, AuthWebview } from '../show'
 import { AuthFormId } from './types'
 import { Region } from '../../../../shared/regions/endpoints'
+import { AuthError } from '../types'
+import { FeatureId } from '../../../../shared/telemetry/telemetry.gen'
+import { AuthForm } from './shared.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -105,9 +111,9 @@ export default defineComponent({
             },
             errors: {
                 startUrl: '',
+                region: '',
                 submit: '',
             },
-            canSubmit: false,
             isConnected: false,
 
             stage: 'START' as IdentityCenterStage,
@@ -126,20 +132,49 @@ export default defineComponent({
     computed: {},
     methods: {
         async signin(): Promise<void> {
-            this.stage = 'WAITING_ON_USER'
-            this.errors.submit = await this.state.startIdentityCenterSetup()
+            await client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
 
-            if (this.errors.submit) {
+            // Error checks
+            this.updateEmptyFieldErrors()
+            const fieldsWithError = this.processFieldsWithError()
+            if (fieldsWithError.length > 0) {
+                client.failedAuthAttempt({
+                    authType: 'iamIdentityCenter',
+                    featureType: this.state.featureType,
+                    reason: 'fieldHasError',
+                    invalidInputFields: fieldsWithError,
+                })
+                return
+            }
+
+            this.stage = 'WAITING_ON_USER'
+            const authError = await this.state.startIdentityCenterSetup()
+
+            if (authError) {
+                this.errors.submit = authError.text
+                const fieldsWithError = this.processFieldsWithError()
                 // We do not run update() when there is a submission error
                 // so we do not trigger a full re-render, instead
                 // only updating this form
                 this.stage = await this.state.stage()
+
+                client.failedAuthAttempt({
+                    authType: 'iamIdentityCenter',
+                    featureType: this.state.featureType,
+                    reason: authError.id,
+                    invalidInputFields: fieldsWithError,
+                })
             } else {
+                client.successfulAuthAttempt({
+                    featureType: this.state.featureType,
+                    authType: 'iamIdentityCenter',
+                })
                 await this.update('signIn')
             }
         },
         async signout(): Promise<void> {
             await this.state.signout()
+            client.emitUiClick(this.state.uiClickSignout)
             this.update('signOut')
         },
         async update(cause?: ConnectionUpdateCause) {
@@ -149,25 +184,55 @@ export default defineComponent({
             this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: actualIsConnected, cause })
         },
         async getRegion() {
+            client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
             const region = await this.state.getRegion()
+            if (!region) {
+                return
+            }
+            this.errors.region = ''
             this.data.region = region.id
         },
         async updateData(key: IdentityCenterKey, value: string) {
             this.errors.submit = '' // If previous submission error, we clear it when user starts typing
             this.state.setValue(key, value)
-
+            await this.updateError(key)
+        },
+        async updateError(key: IdentityCenterKey) {
             if (key === 'startUrl') {
                 this.errors.startUrl = await this.state.getStartUrlError(this.allowExistingStartUrl)
             }
-
-            this.canSubmit = await this.state.canSubmit(this.allowExistingStartUrl)
+            this.processFieldsWithError()
+        },
+        updateEmptyFieldErrors() {
+            const cannotBeEmpty = 'Cannot be empty.'
+            if (!this.data.startUrl) {
+                this.errors.startUrl = cannotBeEmpty
+            }
+            if (!this.data.region) {
+                this.errors.region = 'Select a region.'
+            }
+        },
+        /** This is run whenever errors have updated, it keeps the backend up to date about the latest errors */
+        processFieldsWithError(): (keyof typeof this.errors)[] {
+            const fieldsWithError = Object.keys(this.errors).filter(key => this.errors[key as keyof typeof this.errors])
+            client.setInvalidInputFields(fieldsWithError)
+            return fieldsWithError as (keyof typeof this.errors)[]
         },
         showView() {
             this.state.showView()
+            client.emitUiClick(this.state.uiClickOpenId)
         },
     },
     watch: {
         'data.startUrl'(value: string) {
+            if (value) {
+                // Edge Case:
+                // Since we CAN allow subsequent identity centers to be added,
+                // we will automatically wipe the form values after success.
+                // That triggers this function, but we only want to
+                // indicate a new form interaction if the user adds text themselves.
+                client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
+            }
             this.updateData('startUrl', value)
         },
         'data.region'(value: string) {
@@ -182,20 +247,20 @@ type IdentityCenterKey = keyof IdentityCenterData
 /**
  * Manages the state of Builder ID.
  */
-abstract class BaseIdentityCenterState implements AuthStatus {
+abstract class BaseIdentityCenterState implements AuthForm {
     protected _data: IdentityCenterData
     protected _stage: IdentityCenterStage = 'START'
 
     constructor() {
-        this._data = {
-            startUrl: '',
-            region: '',
-        }
+        this._data = BaseIdentityCenterState.initialData()
     }
 
     abstract get id(): AuthFormId
     abstract get name(): string
-    protected abstract _startIdentityCenterSetup(): Promise<string>
+    abstract get uiClickOpenId(): AuthUiClick
+    abstract get uiClickSignout(): AuthUiClick
+    abstract get featureType(): FeatureId
+    protected abstract _startIdentityCenterSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
     abstract signout(): Promise<void>
@@ -213,17 +278,14 @@ abstract class BaseIdentityCenterState implements AuthStatus {
      *
      * @returns An error message if it exist, otherwise empty string if no error.
      */
-    async startIdentityCenterSetup(): Promise<string> {
+    async startIdentityCenterSetup(): Promise<AuthError | undefined> {
         this._stage = 'WAITING_ON_USER'
         const error = await this._startIdentityCenterSetup()
 
         // Successful submission, so we can clear
         // old data.
         if (!error) {
-            this._data = {
-                startUrl: '',
-                region: '',
-            }
+            this._data = BaseIdentityCenterState.initialData()
         }
         return error
     }
@@ -234,7 +296,7 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         return this._stage
     }
 
-    async getRegion(): Promise<Region> {
+    async getRegion(): Promise<Region | undefined> {
         return client.getIdentityCenterRegion()
     }
 
@@ -243,14 +305,15 @@ abstract class BaseIdentityCenterState implements AuthStatus {
         return error ?? ''
     }
 
-    async canSubmit(canUrlExist: boolean) {
-        const allFieldsFilled = Object.values(this._data).every(val => !!val)
-        const hasErrors = await this.getStartUrlError(canUrlExist)
-        return allFieldsFilled && !hasErrors
-    }
-
     protected async getSubmittableDataOrThrow(): Promise<IdentityCenterData> {
         return this._data as IdentityCenterData
+    }
+
+    private static initialData(): IdentityCenterData {
+        return {
+            startUrl: '',
+            region: '',
+        }
     }
 }
 
@@ -263,7 +326,19 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return 'CodeWhisperer'
     }
 
-    protected override async _startIdentityCenterSetup(): Promise<string> {
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeWhisperer'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codewhisperer_signoutIdentityCenter'
+    }
+
+    override get featureType(): FeatureId {
+        return 'codewhisperer'
+    }
+
+    protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
         const data = await this.getSubmittableDataOrThrow()
         return client.startCWIdentityCenterSetup(data.startUrl, data.region)
     }
@@ -298,13 +373,25 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
         return 'Resource Explorer'
     }
 
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openAWSExplorer'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_explorer_signoutIdentityCenter'
+    }
+
+    override get featureType(): FeatureId {
+        return 'awsExplorer'
+    }
+
     override async stage(): Promise<IdentityCenterStage> {
         // We always want to allow the user to add a new connection
         // for this context, so we always keep it as the start
         return 'START'
     }
 
-    protected override async _startIdentityCenterSetup(): Promise<string> {
+    protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
         const data = await this.getSubmittableDataOrThrow()
         return client.createIdentityCenterConnection(data.startUrl, data.region)
     }

@@ -55,7 +55,7 @@ describe('AuthUtil', async function () {
         const ssoConn = await auth.createInvalidSsoConnection(
             createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: [randomScope] })
         )
-        
+
         // Method under test
         await authUtil.connectToEnterpriseSso(ssoConn.startUrl, 'us-east-1')
 
@@ -133,5 +133,15 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authUtil.conn.startUrl, upgradeableConn.startUrl)
         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)
         assert.strictEqual((await auth.listConnections()).filter(isSsoConnection).length, 1)
+    })
+
+    it('test reformatStartUrl should remove trailing slash and hash', function () {
+        const expected = 'https://view.awsapps.com/start'
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '/'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(undefined), undefined)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '/#'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '#/'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '/#/'), expected)
+        assert.strictEqual(authUtil.reformatStartUrl(expected + '####'), expected)
     })
 })

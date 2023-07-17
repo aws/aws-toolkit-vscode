@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.78.0-SNAPSHOT",
+    "version": "1.81.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -218,10 +218,6 @@
                             "default": false
                         },
                         "codeWhispererConnectionExpired": {
-                            "type": "boolean",
-                            "default": false
-                        },
-                        "manageConnections": {
                             "type": "boolean",
                             "default": false
                         }
@@ -1112,8 +1108,7 @@
                     "when": "false"
                 },
                 {
-                    "command": "aws.auth.manageConnections",
-                    "when": "aws.isDevMode"
+                    "command": "aws.auth.manageConnections"
                 },
                 {
                     "command": "aws.ec2.connectToInstance",
@@ -1312,6 +1307,11 @@
                     "command": "aws.codecatalyst.removeConnection",
                     "when": "viewItem == awsCodeCatalystNodeSaved",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.ec2.connectToInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -3292,48 +3292,7 @@
                 }
             }
         ],
-        "walkthroughs": [
-            {
-                "id": "getStarted",
-                "title": "%AWS.walkthrough.gettingStarted.title%",
-                "description": "%AWS.walkthrough.gettingStarted.description%",
-                "cloud9": {
-                    "cn": {
-                        "description": "%AWS.walkthrough.gettingStarted.description.cn%"
-                    }
-                },
-                "steps": [
-                    {
-                        "id": "connect",
-                        "title": "%AWS.walkthrough.gettingStarted.connect%",
-                        "media": {
-                            "markdown": "resources/walkthrough/setup-connect.md"
-                        },
-                        "completionEvents": [
-                            "onCommand:aws.login",
-                            "onCommand:aws.credentials.profile.create"
-                        ]
-                    },
-                    {
-                        "id": "changeRegions",
-                        "title": "%AWS.walkthrough.gettingStarted.changeRegions%",
-                        "media": {
-                            "markdown": "resources/walkthrough/setup-region.md"
-                        },
-                        "completionEvents": [
-                            "onCommand:aws.showRegion"
-                        ]
-                    },
-                    {
-                        "id": "setupToolchain",
-                        "title": "%AWS.walkthrough.gettingStarted.setupToolchain%",
-                        "media": {
-                            "markdown": "resources/walkthrough/setup-toolchain.md"
-                        }
-                    }
-                ]
-            }
-        ],
+        "walkthroughs": [],
         "icons": {
             "aws-apprunner-service": {
                 "description": "AWS Contributed Icon",
@@ -3500,7 +3459,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.131",
+        "@aws-toolkits/telemetry": "^1.0.136",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -3527,7 +3486,7 @@
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.3.2",
+        "@vscode/test-electron": "^2.3.3",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
@@ -3586,7 +3545,7 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
         "portfinder": "^1.0.32",
-        "semver": "^7.5.1",
+        "semver": "^7.5.2",
         "strip-ansi": "^5.2.0",
         "tcp-port-used": "^1.0.1",
         "typescript": "^5.0.4",

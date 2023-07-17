@@ -94,13 +94,19 @@ export class AuthUtil {
         })
     }
 
+    public reformatStartUrl(startUrl: string | undefined) {
+        return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
+    }
+
     // current active cwspr connection
     public get conn() {
         return this.secondaryAuth.activeConnection
     }
 
     public get startUrl(): string | undefined {
-        return isSsoConnection(this.conn) ? this.conn?.startUrl : undefined
+        // Reformat the url to remove any trailing '/' and `#`
+        // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+        return isSsoConnection(this.conn) ? this.reformatStartUrl(this.conn?.startUrl) : undefined
     }
 
     public get isUsingSavedConnection() {

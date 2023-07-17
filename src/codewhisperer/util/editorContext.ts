@@ -16,10 +16,8 @@ import {
     fetchSupplementalContext,
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
-import { CodeWhispererUserGroupSettings } from './userGroupUtil'
-import { isTestFile } from './supplementalContext/codeParsingUtil'
-import { DependencyGraphFactory } from './dependencyGraph/dependencyGraphFactory'
 import { getSelectedCustomization } from './customizationUtil'
+import { selectFrom } from '../../shared/utilities/tsUtils'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -81,7 +79,7 @@ export async function buildListRecommendationRequest(
     allowCodeWithReference: boolean | undefined = undefined
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -90,33 +88,33 @@ export async function buildListRecommendationRequest(
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
 
-    // Send Cross file context to CodeWhisperer service if and only if
-    // (1) User is CrossFile user group
-    // (2) The supplemental context is from Supplemental Context but not UTG(unit test generator)
-    const isUtg = await isTestFile(editor, DependencyGraphFactory.getDependencyGraph(editor.document.languageId))
-    const supplementalContexts: CodeWhispererSupplementalContext | undefined =
-        CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.CrossFile && !isUtg
-            ? await fetchSupplementalContext(editor, tokenSource.token)
-            : undefined
+    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
 
-    const suppelmetalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined = supplementalContexts
-        ? {
-              isUtg: supplementalContexts.isUtg,
-              isProcessTimeout: supplementalContexts.isProcessTimeout,
-              contentsLength: supplementalContexts.contentsLength,
-              latency: supplementalContexts.latency,
-          }
-        : undefined
+    const suppelmetalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
+        supplementalContexts
+            ? {
+                  isUtg: supplementalContexts.isUtg,
+                  isProcessTimeout: supplementalContexts.isProcessTimeout,
+                  contentsLength: supplementalContexts.contentsLength,
+                  latency: supplementalContexts.latency,
+              }
+            : undefined
 
     logSupplementalContext(supplementalContexts)
 
     const selectedCustomization = getSelectedCustomization()
+    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+        ? supplementalContexts.supplementalContextItems.map(v => {
+              return selectFrom(v, 'content', 'filePath')
+          })
+        : []
+
     if (allowCodeWithReference === undefined) {
         return {
             request: {
                 fileContext: fileContext,
                 nextToken: nextToken,
-                supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+                supplementalContexts: supplementalContext,
                 customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             },
             supplementalMetadata: suppelmetalMetadata,
@@ -130,7 +128,7 @@ export async function buildListRecommendationRequest(
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContexts ? supplementalContexts.contents : [],
+            supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         },
         supplementalMetadata: suppelmetalMetadata,
@@ -139,7 +137,7 @@ export async function buildListRecommendationRequest(
 
 export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
     request: codewhispererClient.GenerateRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -148,7 +146,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    let supplemetalMetadata: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+    let supplemetalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 
     if (supplementalContexts) {
         supplemetalMetadata = {
@@ -165,7 +163,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         request: {
             fileContext: fileContext,
             maxResults: CodeWhispererConstants.maxRecommendations,
-            supplementalContexts: supplementalContexts?.contents ?? [],
+            supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
         },
         supplementalMetadata: supplemetalMetadata,
     }
@@ -232,10 +230,12 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
             latency: ${supplementalContext.latency},
         `)
 
-    supplementalContext.contents.forEach((context, index) => {
+    supplementalContext.supplementalContextItems.forEach((context, index) => {
         getLogger().verbose(`
                 -----------------------------------------------
-                Chunk ${index}:${context.content}
+                Path: ${context.filePath}
+                Score: ${context.score}
+                Chunk: ${index}:${context.content}
                 -----------------------------------------------
             `)
     })

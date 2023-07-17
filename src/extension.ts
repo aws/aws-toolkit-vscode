@@ -68,8 +68,8 @@ import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { openUrl } from './shared/utilities/vsCodeUtils'
 import { showMessageWithUrl } from './shared/utilities/messages'
+import { openUrl } from './shared/utilities/vsCodeUtils'
 
 let localize: nls.LocalizeFunc
 

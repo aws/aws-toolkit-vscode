@@ -17,7 +17,7 @@
                     <label class="small-description"
                         >Credentials will be added to the appropriate `~/.aws/` files.</label
                     >
-                    <div v-on:click="editCredentialsFile()" style="cursor: pointer">
+                    <div v-on:click="editCredentialsFile()" class="sub-text-color" style="cursor: pointer">
                         <div class="icon icon-vscode-edit edit-icon"></div>
                         Edit file directly
                     </div>
@@ -32,14 +32,12 @@
 
                 <div class="form-section">
                     <label class="input-title">Access Key</label>
-                    <label class="small-description">The access key</label>
                     <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
                     <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
                 </div>
 
                 <div class="form-section">
                     <label class="input-title">Secret Key</label>
-                    <label class="small-description">The secret key</label>
                     <input
                         v-model="data.aws_secret_access_key"
                         type="password"
@@ -49,7 +47,7 @@
                 </div>
 
                 <div class="form-section">
-                    <button :disabled="!canSubmit" v-on:click="submitData()">Add Profile</button>
+                    <button v-on:click="submitData()">Add Profile</button>
                     <div class="small-description error-text">{{ errors.submit }}</div>
                 </div>
             </div>
@@ -60,10 +58,11 @@
 import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
-import { SectionName, StaticProfile } from '../../../credentials/types'
+import { SectionName, StaticProfile, StaticProfileKeyErrorMessage } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
-import { AuthStatus } from './shared.vue'
+import { AuthForm } from './shared.vue'
+import { AuthFormId } from './types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -124,6 +123,15 @@ export default defineComponent({
     },
     methods: {
         setNewValue(key: CredentialsDataKey, newVal: string) {
+            if (newVal) {
+                // Edge Case:
+                // Since we allow subsequent credentials to be added,
+                // we will automatically wipe the form values after success.
+                // That triggers this function, but we only want to
+                // indicate a new form interaction if the user adds text themselves.
+                client.startAuthFormInteraction('awsExplorer', 'sharedCredentials')
+            }
+
             // If there is an error under the submit button
             // we can clear it since there is new data
             this.errors.submit = ''
@@ -134,9 +142,11 @@ export default defineComponent({
         },
         /** Updates the error using the current data */
         async updateDataError(key: CredentialsDataKey): Promise<void> {
-            return this.state.getFormatError(key).then(error => {
+            await this.state.getFormatError(key).then(error => {
                 this.errors[key] = error ?? ''
             })
+
+            client.setInvalidInputFields(this.getFieldsWithErrors())
         },
         async updateSubmittableStatus() {
             return this.state.getSubmissionErrors().then(errors => {
@@ -150,23 +160,62 @@ export default defineComponent({
             })
         },
         async submitData() {
+            client.startAuthFormInteraction('awsExplorer', 'sharedCredentials')
+
+            const hasEmptyFields = this.setCannotBeEmptyErrors()
+            const fieldsWithErrors = this.getFieldsWithErrors()
+            if (fieldsWithErrors.length > 0) {
+                client.failedAuthAttempt({
+                    featureType: 'awsExplorer',
+                    authType: 'sharedCredentials',
+                    reason: hasEmptyFields ? 'emptyFields' : 'fieldHasError',
+                    invalidInputFields: this.getFieldsWithErrors(),
+                })
+                return
+            }
+
             // pre submission
             this.canSubmit = false // disable submit button
 
-            this.errors.submit = '' // Makes UI flicker if same message as before (shows something changed)
-            this.errors.submit = await this.state.getAuthenticationError()
-            if (this.errors.submit) {
+            const error = await this.state.getAuthenticationError()
+            if (error) {
+                this.errors.submit = error.error
+                client.failedAuthAttempt({
+                    featureType: 'awsExplorer',
+                    authType: 'sharedCredentials',
+                    reason: error.key,
+                    invalidInputFields: this.getFieldsWithErrors(),
+                })
                 return // Do not allow submission since data fails authentication
             }
 
             // submission
-            await this.state.submitData()
+            const successful = await this.state.submitData()
+
+            if (successful) {
+                client.successfulAuthAttempt({
+                    featureType: 'awsExplorer',
+                    authType: 'sharedCredentials',
+                })
+            }
 
             // post submission (successfully connected)
             this.clearFormData()
             this.isFormShown = false
             this.canSubmit = true // enable submit button
             await this.updateConnectedStatus('signIn')
+        },
+        /**
+         * Sets the 'cannot be empty' error for each empty field
+         *
+         * @returns true if there was an empty field, otherwise false
+         */
+        setCannotBeEmptyErrors() {
+            const emptyFields = Object.keys(this.data).filter(key => !this.data[key as keyof typeof this.data])
+            emptyFields.forEach(fieldName => {
+                this.errors[fieldName as keyof typeof this.data] = 'Cannot be empty.'
+            })
+            return emptyFields.length > 0
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown
@@ -179,9 +228,16 @@ export default defineComponent({
         },
         editCredentialsFile() {
             client.editCredentialsFile()
+            client.emitUiClick('auth_editCredentials')
         },
         showResourceExplorer() {
             client.showResourceExplorer()
+        },
+        /** Names of fields that have an error */
+        getFieldsWithErrors(): (keyof typeof this.errors)[] {
+            return Object.keys(this.errors).filter(
+                key => this.errors[key as keyof typeof this.errors]
+            ) as (keyof typeof this.errors)[]
         },
     },
     watch: {
@@ -205,7 +261,7 @@ type CredentialsDataKey = keyof CredentialsProfile
 /**
  * Manages the state of credentials data.
  */
-export class CredentialsState implements AuthStatus {
+export class CredentialsState implements AuthForm {
     private _data: CredentialsProfile
 
     constructor(data?: CredentialsProfile) {
@@ -227,6 +283,10 @@ export class CredentialsState implements AuthStatus {
 
     async isAuthConnected(): Promise<boolean> {
         return await client.isCredentialConnected()
+    }
+
+    get id(): AuthFormId {
+        return 'credentials'
     }
 
     async getFormatError(key: CredentialsDataKey): Promise<string | undefined> {
@@ -253,26 +313,22 @@ export class CredentialsState implements AuthStatus {
         }
     }
 
-    async getAuthenticationError(): Promise<string> {
-        const error = await client.getAuthenticatedCredentialsError(this._data)
-        if (!error) {
-            return ''
-        }
-        return error.error
+    async getAuthenticationError(): Promise<StaticProfileKeyErrorMessage | undefined> {
+        return client.getAuthenticatedCredentialsError(this._data)
     }
 
     async submitData(): Promise<boolean> {
-        const data = await this.getSubmittableDataOrThrow()
-        return client.trySubmitCredentials(data.profileName, data)
+        const submit = await client.trySubmitCredentials(this._data.profileName, this._data)
+        this.clearData()
+        return submit
     }
 
-    private async getSubmittableDataOrThrow(): Promise<CredentialsProfile> {
-        const errors = await this.getSubmissionErrors()
-        const hasError = errors !== undefined
-        if (hasError) {
-            throw new Error(`authWebview: data should be valid at this point, but is invalid: ${errors}`)
+    private clearData() {
+        this._data = {
+            profileName: '',
+            aws_access_key_id: '',
+            aws_secret_access_key: '',
         }
-        return this._data as CredentialsProfile
     }
 }
 </script>

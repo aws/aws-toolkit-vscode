@@ -83,14 +83,21 @@ export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsDa
     }
 }
 
-/** "Search Log Group" command */
+/**
+ * "Search Log Group" command
+ *
+ * @param registry
+ * @param source Telemetry "source" name
+ * @param logData
+ */
 export async function searchLogGroup(
     registry: LogDataRegistry,
+    source: string,
     logData?: { regionName: string; groupName: string }
 ): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async span => {
         const wizard = new SearchLogGroupWizard(logData)
-        span.record({ source: logData ? 'Explorer' : 'Command', cloudWatchResourceType: 'logGroup' })
+        span.record({ cloudWatchResourceType: 'logGroup', source: source })
         const response = await wizard.run()
         if (!response) {
             throw new CancellationError('user')

@@ -99,7 +99,7 @@ export class TelemetryHelper {
         lineNumber: number | undefined,
         language: CodewhispererLanguage,
         reason: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         const event = {
             codewhispererRequestId: requestId ? requestId : undefined,
@@ -132,7 +132,7 @@ export class TelemetryHelper {
         sessionId: string,
         paginationIndex: number,
         languageId: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
@@ -172,7 +172,7 @@ export class TelemetryHelper {
         languageId: string | undefined,
         paginationIndex: number,
         recommendationSuggestionState?: Map<number, string>,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         const events: CodewhispererUserDecision[] = []
@@ -261,7 +261,7 @@ export class TelemetryHelper {
 
     private sendUserTriggerDecisionTelemetry(
         sessionId: string,
-        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'contents'> | undefined
+        supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
         // and add additional session level insights

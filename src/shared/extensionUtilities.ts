@@ -241,6 +241,7 @@ export function setMostRecentVersion(context: vscode.ExtensionContext): void {
  * Shows a message with a link to the quickstart page.
  */
 async function promptQuickstart(): Promise<void> {
+    return // We want to skip this to reduce clutter, but will look back at improving this
     const view = localize('AWS.command.quickStart', 'View Quick Start')
     const prompt = await vscode.window.showInformationMessage(
         localize(
@@ -362,4 +363,48 @@ export function getComputeRegion(): string | undefined {
     }
 
     return computeRegion
+}
+
+/**
+ * Provides an {@link vscode.Event} that is triggered when the user interacts with the extension.
+ * This will help to be notified of user activity.
+ */
+export class ExtensionUserActivity {
+    private activityEvent = new vscode.EventEmitter<void>()
+    /** The event that is triggered when the user interacts with the extension */
+    onUserActivity = this.activityEvent.event
+
+    /** To be efficient we re-used instances that already have the same throttle delay */
+    private static instances: { [delay: number]: ExtensionUserActivity } = {}
+
+    /**
+     * @param delay The delay until a throttled user activity event is fired in milliseconds.
+     * @param activityEvents The events that trigger the user activity.
+     * @returns
+     */
+    static instance(delay: number = 500, activityEvents = ExtensionUserActivity.activityEvents): ExtensionUserActivity {
+        if (!ExtensionUserActivity.instances[delay]) {
+            const newInstance = new ExtensionUserActivity(delay, activityEvents)
+            ExtensionUserActivity.instances[delay] = newInstance
+        }
+        return ExtensionUserActivity.instances[delay]
+    }
+
+    private constructor(delay: number, private readonly activityEvents: vscode.Event<any>[]) {
+        const throttledEvent = _.throttle(() => this.activityEvent.fire(), delay, { leading: true })
+        this.activityEvents.forEach(event => event(throttledEvent))
+    }
+
+    private static activityEvents = [
+        vscode.window.onDidChangeActiveTextEditor,
+        vscode.window.onDidChangeTextEditorSelection,
+        vscode.window.onDidChangeActiveTerminal,
+        vscode.window.onDidChangeVisibleTextEditors,
+        vscode.window.onDidChangeWindowState,
+        vscode.window.onDidChangeTextEditorOptions,
+        vscode.window.onDidOpenTerminal,
+        vscode.window.onDidCloseTerminal,
+        vscode.window.onDidChangeTextEditorVisibleRanges,
+        vscode.window.onDidChangeTextEditorViewColumn,
+    ]
 }
