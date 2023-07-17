@@ -65,7 +65,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
-    public get status(): string {
+    public getStatus(): string {
         return this.instance.status!
     }
 

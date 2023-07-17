@@ -6,7 +6,6 @@
 import * as assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { verify, anything, instance, mock, when } from 'ts-mockito'
 import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
 import { stub } from '../../utilities/stubber'
 import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'
@@ -17,7 +16,7 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
 import { installFakeClock } from '../../testUtil'
-import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
+import { mock, when } from 'ts-mockito'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
@@ -111,6 +110,21 @@ describe('ec2ParentNode', function () {
     })
 
     it('is not polling on initialization', async function () {
+        assert.strictEqual(testNode.isPolling(), false)
+    })
+
+    it('updates the nodes when the timer is up', async function () {
+        const mockChildNode: Ec2InstanceNode = mock()
+        testNode.startPolling(mockChildNode)
+        await clock.tickAsync(4000)
+        sinon.assert.calledOn(refreshStub, testNode)
+    })
+
+    it('deletes node from polling set when state changes', async function () {
+        const mockChildNode: Ec2InstanceNode = mock()
+        when(mockChildNode.getStatus()).thenReturn('running')
+        testNode.startPolling(mockChildNode)
+        await clock.tickAsync(4000)
         assert.strictEqual(testNode.isPolling(), false)
     })
 })
