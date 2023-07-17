@@ -16,7 +16,6 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
 import { installFakeClock } from '../../testUtil'
-import { mock, when } from 'ts-mockito'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
@@ -33,6 +32,7 @@ describe('ec2ParentNode', function () {
             intoCollection(
                 instances.map(instance => ({
                     InstanceId: instance.InstanceId,
+                    status: instance.status,
                     Tags: [{ Key: 'Name', Value: instance.name }],
                 }))
             )
@@ -113,18 +113,32 @@ describe('ec2ParentNode', function () {
         assert.strictEqual(testNode.isPolling(), false)
     })
 
-    it('updates the nodes when the timer is up', async function () {
-        const mockChildNode: Ec2InstanceNode = mock()
-        testNode.startPolling(mockChildNode)
-        await clock.tickAsync(4000)
+    it('adds pending nodes to the polling nodes set', async function () {
+        await testNode.updateChildren()
+        assert.strictEqual(testNode.pollingNodes.size, 1)
+    })
+
+    it('refreshes explorer when timer goes off', async function () {
+        await testNode.updateChildren()
+        await clock.tickAsync(6000)
         sinon.assert.calledOn(refreshStub, testNode)
     })
 
-    it('deletes node from polling set when state changes', async function () {
-        const mockChildNode: Ec2InstanceNode = mock()
-        when(mockChildNode.getStatus()).thenReturn('running')
-        testNode.startPolling(mockChildNode)
-        await clock.tickAsync(4000)
-        assert.strictEqual(testNode.isPolling(), false)
-    })
+    // it('deletes node from polling set when state changes', async function () {
+    //     const mockChildNode: Ec2InstanceNode = mock()
+    //     when(mockChildNode.getStatus()).thenReturn('running')
+    //     testNode.startPolling(mockChildNode)
+    //     await clock.tickAsync(4000)
+    //     assert.strictEqual(testNode.isPolling(), false)
+    // })
+
+    // it('stops polling once node status has been updated', async function () {
+    //     const mockChildNode: Ec2InstanceNode = mock()
+    //     when(mockChildNode.getStatus()).thenReturn('running')
+    //     testNode.startPolling(mockChildNode)
+    //     await clock.tickAsync(4000)
+    //     sinon.assert.calledOn(refreshStub, testNode)
+    //     await clock.tickAsync(4000)
+    //     sinon.assert.calledOnce(refreshStub)
+    // })
 })

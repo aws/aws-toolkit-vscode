@@ -15,13 +15,13 @@ import globals from '../../shared/extensionGlobals'
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
 
-const pollingInterval = 3000
+const pollingInterval = 5000
 
 export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
-    protected pollingNodes: Set<Ec2InstanceNode> = new Set<Ec2InstanceNode>()
+    public pollingNodes: Set<string> = new Set<string>()
     private pollTimer?: NodeJS.Timeout
 
     public constructor(
@@ -59,18 +59,19 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         return this.pollingNodes.size !== 0
     }
 
-    public startPolling(childNode: Ec2InstanceNode) {
-        this.pollingNodes.add(childNode)
+    public startPolling(newNode: string) {
+        this.pollingNodes.add(newNode)
         this.pollTimer =
             this.pollTimer ?? globals.clock.setInterval(this.updatePollingNodes.bind(this), pollingInterval)
     }
 
     public updatePollingNodes() {
-        this.pollingNodes.forEach(async childNode => {
+        this.pollingNodes.forEach(async instanceId => {
+            const childNode = this.ec2InstanceNodes.get(instanceId)!
             await childNode.updateStatus()
 
-            if (childNode.getStatus() != 'pending') {
-                this.pollingNodes.delete(childNode)
+            if (!childNode.isPending()) {
+                this.pollingNodes.delete(instanceId)
             }
         })
         this.refreshNode()

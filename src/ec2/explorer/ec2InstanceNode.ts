@@ -35,6 +35,14 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
+
+        if (this.isPending()) {
+            this.parent.startPolling(this.InstanceId)
+        }
+    }
+
+    public isPending(): boolean {
+        return this.getStatus() != 'running' && this.getStatus() != 'stopped'
     }
 
     public async updateStatus() {
