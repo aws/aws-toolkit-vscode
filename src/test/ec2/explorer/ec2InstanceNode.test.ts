@@ -21,7 +21,7 @@ describe('ec2InstanceNode', function () {
 
     before(function () {
         testInstance = {
-            InstanceId: 'running-testId',
+            InstanceId: 'testId',
             Tags: [
                 {
                     Key: 'Name',
@@ -33,6 +33,10 @@ describe('ec2InstanceNode', function () {
         const testClient = new Ec2Client('')
         const testParentNode = new Ec2ParentNode(testRegion, testPartition, testClient)
         testNode = new Ec2InstanceNode(testParentNode, testClient, 'testRegion', 'testPartition', testInstance)
+    })
+
+    this.beforeEach(function () {
+        testNode.updateInstance(testInstance)
     })
 
     it('instantiates without issue', async function () {
@@ -77,5 +81,11 @@ describe('ec2InstanceNode', function () {
         const pendingInstance = { ...testInstance, status: 'pending' }
         testNode.updateInstance(pendingInstance)
         assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
+    })
+
+    it('updates label with new instance', async function () {
+        const newIdInstance = { ...testInstance, InstanceId: 'testId2' }
+        testNode.updateInstance(newIdInstance)
+        assert.strictEqual(testNode.label, `${getNameOfInstance(newIdInstance)} (${newIdInstance.InstanceId})`)
     })
 })
