@@ -202,6 +202,8 @@ function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string): NodeJS.ProcessE
             AWS_REGION: selection.region,
             AWS_SSM_CLI: ssmPath,
             LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
+            STREAM_URL: 'testStream',
+            SESSION_ID: 'session_id',
         },
         process.env
     )
