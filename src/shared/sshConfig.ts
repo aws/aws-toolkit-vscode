@@ -20,9 +20,9 @@ import { fileExists, readFileAsString } from './filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
-export abstract class VscodeRemoteSshConfig {
+export class VscodeRemoteSshConfig {
     protected readonly configHostName: string
-    protected abstract proxyCommandRegExp: RegExp
+    protected readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i
 
     public constructor(protected readonly sshPath: string, protected readonly hostNamePrefix: string) {
         this.configHostName = `${hostNamePrefix}*`

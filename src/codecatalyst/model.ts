@@ -21,7 +21,6 @@ import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDe
 import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { CodeCatalystSshConfig } from './tools'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -31,6 +30,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
 import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
+import { VscodeRemoteSshConfig } from '../shared/sshConfig'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const hostNamePrefix = 'aws-devenv-'
@@ -212,7 +212,7 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const sshConfig = new CodeCatalystSshConfig(ssh, hostNamePrefix)
+    const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix)
     const config = await sshConfig.ensureValid()
 
     if (config.isErr()) {

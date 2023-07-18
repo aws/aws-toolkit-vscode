@@ -13,7 +13,7 @@ const testProxyCommand = `'${testCommand}' '%h'`
 
 class MockSshConfig extends VscodeRemoteSshConfig {
     private readonly testCommand: string = testCommand
-    protected readonly proxyCommandRegExp: RegExp = new RegExp(`${testProxyCommand}`)
+    protected override readonly proxyCommandRegExp: RegExp = new RegExp(`${testProxyCommand}`)
 
     // State variables to track logic flow.
     public testIsWin: boolean = false

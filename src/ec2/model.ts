@@ -19,7 +19,7 @@ import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import { Ec2RemoteSshConfig } from './tools'
+import { VscodeRemoteSshConfig } from '../shared/sshConfig'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -158,7 +158,7 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const sshConfig = new Ec2RemoteSshConfig(ssh, 'ec2-user')
+        const sshConfig = new VscodeRemoteSshConfig(ssh, 'ec2-user')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()
