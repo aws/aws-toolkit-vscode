@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import { getLogger } from './logger'
 import { ChildProcess, ChildProcessResult } from './utilities/childProcess'
-import { Err, Ok, Result } from './utilities/result'
+import { Result } from './utilities/result'
 import { ToolkitError } from './errors'
 import { getIdeProperties } from './extensionUtilities'
 import { showConfirmationMessage } from './utilities/messages'
@@ -46,7 +46,25 @@ export abstract class VscodeRemoteSshConfig {
         }
     }
 
-    public abstract ensureValid(): Promise<Err<Error> | Err<ToolkitError> | Ok<void>>
+    public async ensureValid() {
+        const scriptResult = await ensureConnectScript()
+        if (scriptResult.isErr()) {
+            return scriptResult
+        }
+
+        const connectScript = scriptResult.ok()
+        const proxyCommand = await this.getProxyCommand(connectScript.fsPath)
+        if (proxyCommand.isErr()) {
+            return proxyCommand
+        }
+
+        const verifyHost = await this.verifySSHHost(proxyCommand.unwrap())
+        if (verifyHost.isErr()) {
+            return verifyHost
+        }
+
+        return Result.ok()
+    }
 
     protected async checkSshOnHost(): Promise<ChildProcessResult> {
         const proc = new ChildProcess(this.sshPath, ['-G', `${this.hostNamePrefix}test`])
