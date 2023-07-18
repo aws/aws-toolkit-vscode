@@ -50,11 +50,12 @@ describe('ec2ParentNode', function () {
 
     beforeEach(function () {
         instances = [
-            { name: 'firstOne', InstanceId: '0', status: 'pending' },
+            { name: 'firstOne', InstanceId: '0', status: 'running' },
             { name: 'secondOne', InstanceId: '1', status: 'stopped' },
         ]
 
         testNode = new Ec2ParentNode(testRegion, testPartition, createClient())
+        refreshStub.resetHistory()
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -116,18 +117,34 @@ describe('ec2ParentNode', function () {
     })
 
     it('adds pending nodes to the polling nodes set', async function () {
+        instances = [
+            { name: 'firstOne', InstanceId: '0', status: 'pending' },
+            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
+            { name: 'thirdOne', InstanceId: '2', status: 'running' },
+        ]
         await testNode.updateChildren()
         assert.strictEqual(testNode.pollingNodes.size, 1)
     })
 
     it('refreshes explorer when timer goes off', async function () {
+        instances = [
+            { name: 'firstOne', InstanceId: '0', status: 'pending' },
+            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
+            { name: 'thirdOne', InstanceId: '2', status: 'running' },
+        ]
         await testNode.updateChildren()
         await clock.tickAsync(6000)
         sinon.assert.calledOn(refreshStub, testNode)
     })
 
     it('stops timer once polling nodes are empty', async function () {
+        instances = [
+            { name: 'firstOne', InstanceId: '0', status: 'pending' },
+            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
+            { name: 'thirdOne', InstanceId: '2', status: 'running' },
+        ]
         await testNode.updateChildren()
+
         assert.strictEqual(testNode.isPolling(), true)
         testNode.pollingNodes.delete('0')
         await clock.tickAsync(6000)
