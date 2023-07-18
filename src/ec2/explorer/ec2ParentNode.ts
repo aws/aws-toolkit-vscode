@@ -75,6 +75,14 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             }
         })
         this.refreshNode()
+        if (!this.isPolling()) {
+            this.clearPollTimer()
+        }
+    }
+
+    public clearPollTimer() {
+        globals.clock.clearInterval(this.pollTimer!)
+        this.pollTimer = undefined
     }
 
     public async clearChildren() {

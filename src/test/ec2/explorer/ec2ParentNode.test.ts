@@ -22,6 +22,7 @@ describe('ec2ParentNode', function () {
     let instances: Ec2Instance[]
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
+    let clearTimerStub: sinon.SinonStub<[], void>
 
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
@@ -44,6 +45,7 @@ describe('ec2ParentNode', function () {
     before(function () {
         clock = installFakeClock()
         refreshStub = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
+        clearTimerStub = sinon.stub(Ec2ParentNode.prototype, 'clearPollTimer')
     })
 
     beforeEach(function () {
@@ -124,21 +126,12 @@ describe('ec2ParentNode', function () {
         sinon.assert.calledOn(refreshStub, testNode)
     })
 
-    // it('deletes node from polling set when state changes', async function () {
-    //     const mockChildNode: Ec2InstanceNode = mock()
-    //     when(mockChildNode.getStatus()).thenReturn('running')
-    //     testNode.startPolling(mockChildNode)
-    //     await clock.tickAsync(4000)
-    //     assert.strictEqual(testNode.isPolling(), false)
-    // })
-
-    // it('stops polling once node status has been updated', async function () {
-    //     const mockChildNode: Ec2InstanceNode = mock()
-    //     when(mockChildNode.getStatus()).thenReturn('running')
-    //     testNode.startPolling(mockChildNode)
-    //     await clock.tickAsync(4000)
-    //     sinon.assert.calledOn(refreshStub, testNode)
-    //     await clock.tickAsync(4000)
-    //     sinon.assert.calledOnce(refreshStub)
-    // })
+    it('stops timer once polling nodes are empty', async function () {
+        await testNode.updateChildren()
+        assert.strictEqual(testNode.isPolling(), true)
+        testNode.pollingNodes.delete('0')
+        await clock.tickAsync(6000)
+        assert.strictEqual(testNode.isPolling(), false)
+        sinon.assert.calledOn(clearTimerStub, testNode)
+    })
 })
