@@ -24,7 +24,11 @@ export class VscodeRemoteSshConfig {
     protected readonly configHostName: string
     protected readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i
 
-    public constructor(protected readonly sshPath: string, protected readonly hostNamePrefix: string) {
+    public constructor(
+        protected readonly sshPath: string,
+        protected readonly hostNamePrefix: string,
+        protected readonly scriptPrefix: string
+    ) {
         this.configHostName = `${hostNamePrefix}*`
     }
 
@@ -47,7 +51,7 @@ export class VscodeRemoteSshConfig {
     }
 
     public async ensureValid() {
-        const scriptResult = await ensureConnectScript()
+        const scriptResult = await ensureConnectScript(this.scriptPrefix)
         if (scriptResult.isErr()) {
             return scriptResult
         }
@@ -179,8 +183,15 @@ Host ${this.configHostName}
     }
 }
 
-export async function ensureConnectScript(context = globals.context): Promise<Result<vscode.Uri, ToolkitError>> {
-    const scriptName = `codecatalyst_connect${process.platform === 'win32' ? '.ps1' : ''}`
+export function constructScriptName(scriptPrefix: string) {
+    return `${scriptPrefix}${process.platform === 'win32' ? '.ps1' : ''}`
+}
+
+export async function ensureConnectScript(
+    scriptPrefix: string,
+    context = globals.context
+): Promise<Result<vscode.Uri, ToolkitError>> {
+    const scriptName = constructScriptName(scriptPrefix)
 
     // Script resource path. Includes the Toolkit version string so it changes with each release.
     const versionedScript = vscode.Uri.joinPath(context.extensionUri, 'resources', scriptName)

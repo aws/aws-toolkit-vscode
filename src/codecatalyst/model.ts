@@ -34,6 +34,7 @@ import { VscodeRemoteSshConfig } from '../shared/sshConfig'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const hostNamePrefix = 'aws-devenv-'
+export const connectScriptPrefix = 'codecatalyst_connect'
 
 export const docs = {
     vscode: {
@@ -212,7 +213,7 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-    const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix)
+    const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, connectScriptPrefix)
     const config = await sshConfig.ensureValid()
 
     if (config.isErr()) {

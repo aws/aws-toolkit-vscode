@@ -80,7 +80,7 @@ class MockSshConfig extends VscodeRemoteSshConfig {
 describe('VscodeRemoteSshConfig', async function () {
     let config: MockSshConfig
     before(function () {
-        config = new MockSshConfig('sshPath', 'testHostNamePrefix')
+        config = new MockSshConfig('sshPath', 'testHostNamePrefix', 'scirpt')
         config.testIsWin = false
     })
 

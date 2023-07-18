@@ -158,7 +158,7 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const sshConfig = new VscodeRemoteSshConfig(ssh, 'ec2-user')
+        const sshConfig = new VscodeRemoteSshConfig(ssh, 'ec2-user', 'ec2_connect')
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()

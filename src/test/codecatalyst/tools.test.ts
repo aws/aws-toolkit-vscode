@@ -14,6 +14,7 @@ import { FakeExtensionContext } from '../fakeExtensionContext'
 import { startSshAgent } from '../../shared/extensions/ssh'
 import {
     bearerTokenCacheLocation,
+    connectScriptPrefix,
     DevEnvironmentId,
     getCodeCatalystSsmEnv,
     sshLogFileLocation,
@@ -61,7 +62,7 @@ describe('Connect Script', function () {
     })
 
     it('can get a connect script path, adding a copy to global storage', async function () {
-        const script = (await ensureConnectScript(context)).unwrap().fsPath
+        const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
         assert.ok(await fileExists(script))
         assert.ok(isWithin(context.globalStorageUri.fsPath, script))
     })
@@ -115,7 +116,7 @@ describe('Connect Script', function () {
         })
 
         await writeFile(bearerTokenCacheLocation(testDevEnv.id), 'token')
-        const script = (await ensureConnectScript(context)).unwrap().fsPath
+        const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
         const env = getCodeCatalystSsmEnv('us-weast-1', 'echo', testDevEnv)
         env.CODECATALYST_ENDPOINT = address
 
@@ -147,12 +148,12 @@ describe('Connect Script', function () {
         })
 
         it('works if the .ssh directory is missing', async function () {
-            ;(await ensureConnectScript(context)).unwrap()
+            ;(await ensureConnectScript(connectScriptPrefix, context)).unwrap()
         })
 
         it('works if the .ssh directory exists but has different perms', async function () {
             await mkdir(path.join(tmpDir, '.ssh'), 0o777)
-            ;(await ensureConnectScript(context)).unwrap()
+            ;(await ensureConnectScript(connectScriptPrefix, context)).unwrap()
         })
     })
 })
