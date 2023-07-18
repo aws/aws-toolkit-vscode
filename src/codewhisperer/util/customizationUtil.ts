@@ -104,8 +104,8 @@ export const getSelectedCustomization = (): Customization => {
         return baseCustomization
     }
     const selectedCustomizationArr =
-        globals.context.globalState.get<{ [id: string]: Customization }>(selectedCustomizationKey) || {}
-    return selectedCustomizationArr[AuthUtil.instance.conn.id] || baseCustomization
+        globals.context.globalState.get<{ [label: string]: Customization }>(selectedCustomizationKey) || {}
+    return selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
 }
 
 export const setSelectedCustomization = async (customization: Customization) => {
@@ -113,9 +113,9 @@ export const setSelectedCustomization = async (customization: Customization) => 
         return
     }
     const selectedCustomizationObj =
-        globals.context.globalState.get<{ [id: string]: Customization }>(selectedCustomizationKey) || {}
-    selectedCustomizationObj[AuthUtil.instance.conn.id] = customization
-    getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.id}`)
+        globals.context.globalState.get<{ [label: string]: Customization }>(selectedCustomizationKey) || {}
+    selectedCustomizationObj[AuthUtil.instance.conn.label] = customization
+    getLogger().debug(`Selected customization ${customization.name} for ${AuthUtil.instance.conn.label}`)
 
     await set(selectedCustomizationKey, selectedCustomizationObj, globals.context.globalState)
     vscode.commands.executeCommand('aws.codeWhisperer.refresh')
@@ -127,8 +127,8 @@ export const getPersistedCustomizations = (): Customization[] => {
         return []
     }
     const persistedCustomizationsObj =
-        globals.context.globalState.get<{ [id: string]: Customization[] }>(persistedCustomizationsKey) || {}
-    return persistedCustomizationsObj[AuthUtil.instance.conn.id] || []
+        globals.context.globalState.get<{ [label: string]: Customization[] }>(persistedCustomizationsKey) || {}
+    return persistedCustomizationsObj[AuthUtil.instance.conn.label] || []
 }
 
 export const setPersistedCustomizations = async (customizations: Customization[]) => {
@@ -136,8 +136,8 @@ export const setPersistedCustomizations = async (customizations: Customization[]
         return
     }
     const persistedCustomizationsObj =
-        globals.context.globalState.get<{ [id: string]: Customization[] }>(persistedCustomizationsKey) || {}
-    persistedCustomizationsObj[AuthUtil.instance.conn.id] = customizations
+        globals.context.globalState.get<{ [label: string]: Customization[] }>(persistedCustomizationsKey) || {}
+    persistedCustomizationsObj[AuthUtil.instance.conn.label] = customizations
     await set(persistedCustomizationsKey, persistedCustomizationsObj, globals.context.globalState)
 }
 
