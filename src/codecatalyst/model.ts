@@ -30,7 +30,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
 import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
-import { VscodeRemoteSshConfig } from '../shared/sshConfig'
+import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/sshConfig'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const hostNamePrefix = 'aws-devenv-'
@@ -89,7 +89,7 @@ export function getCodeCatalystSsmEnv(region: string, ssmPath: string, devenv: D
             AWS_SSM_CLI: ssmPath,
             CODECATALYST_ENDPOINT: getCodeCatalystConfig().endpoint,
             BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(devenv.id),
-            LOG_FILE_LOCATION: sshLogFileLocation(devenv.id),
+            LOG_FILE_LOCATION: sshLogFileLocation('codecatalyst', devenv.id),
             SPACE_NAME: devenv.org.name,
             PROJECT_NAME: devenv.project.name,
             DEVENV_ID: devenv.id,
@@ -140,10 +140,6 @@ export async function cacheBearerToken(bearerToken: string, devenvId: string): P
 
 export function bearerTokenCacheLocation(devenvId: string): string {
     return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${devenvId}.token`)
-}
-
-export function sshLogFileLocation(devenvId: string): string {
-    return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${devenvId}.log`)
 }
 
 export function getHostNameFromEnv(env: DevEnvironmentId): string {

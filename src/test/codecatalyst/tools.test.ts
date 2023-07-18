@@ -17,12 +17,11 @@ import {
     connectScriptPrefix,
     DevEnvironmentId,
     getCodeCatalystSsmEnv,
-    sshLogFileLocation,
 } from '../../codecatalyst/model'
 import { mkdir, readFile, writeFile } from 'fs-extra'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { ensureConnectScript } from '../../shared/sshConfig'
+import { ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {
@@ -127,7 +126,7 @@ describe('Connect Script', function () {
 
         const output = await new ChildProcess(cmd, args).run({ spawnOptions: { env } })
         if (output.exitCode !== 0) {
-            const logOutput = sshLogFileLocation(testDevEnv.id)
+            const logOutput = sshLogFileLocation('codecatalyst', testDevEnv.id)
             const message = `stderr:\n${output.stderr}\n\nlogs:\n${await readFile(logOutput)}`
 
             assert.fail(`Connect script should exit with a zero status:\n${message}`)

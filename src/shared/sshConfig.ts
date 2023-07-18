@@ -184,6 +184,10 @@ Host ${this.configHostName}
     }
 }
 
+export function sshLogFileLocation(service: string, id: string): string {
+    return path.join(globals.context.globalStorageUri.fsPath, `${service}.${id}.log`)
+}
+
 export function constructScriptName(scriptPrefix: string) {
     return `${scriptPrefix}${process.platform === 'win32' ? '.ps1' : ''}`
 }

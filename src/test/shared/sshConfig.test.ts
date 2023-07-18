@@ -6,7 +6,7 @@ import * as assert from 'assert'
 import { ToolkitError } from '../../shared/errors'
 import { Err, Ok, Result } from '../../shared/utilities/result'
 import { ChildProcessResult } from '../../shared/utilities/childProcess'
-import { VscodeRemoteSshConfig } from '../../shared/sshConfig'
+import { VscodeRemoteSshConfig, sshLogFileLocation } from '../../shared/sshConfig'
 
 class MockSshConfig extends VscodeRemoteSshConfig {
     // State variables to track logic flow.
@@ -135,6 +135,18 @@ describe('VscodeRemoteSshConfig', async function () {
             const testScriptName = 'testScript'
             const section = config.createSSHConfigSectionWrapper(testScriptName)
             assert.ok(section.includes(testScriptName))
+        })
+    })
+
+    describe('sshLogFileLocation', async function () {
+        it('combines service and id into proper log file', function () {
+            const testService = 'testScript'
+            const testId = 'id'
+            const result = sshLogFileLocation(testService, testId)
+
+            assert.ok(result.includes(testService))
+            assert.ok(result.includes(testId))
+            assert.ok(result.endsWith('.log'))
         })
     })
 })

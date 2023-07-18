@@ -19,7 +19,7 @@ import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import { VscodeRemoteSshConfig } from '../shared/sshConfig'
+import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/sshConfig'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -169,7 +169,7 @@ export class Ec2ConnectionManager {
             throw err
         }
 
-        const vars = getEc2SsmEnv(selection.region, ssm)
+        const vars = getEc2SsmEnv(selection, ssm)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
         }
@@ -196,11 +196,12 @@ export class Ec2ConnectionManager {
     }
 }
 
-function getEc2SsmEnv(region: string, ssmPath: string): NodeJS.ProcessEnv {
+function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string): NodeJS.ProcessEnv {
     return Object.assign(
         {
-            AWS_REGION: region,
+            AWS_REGION: selection.region,
             AWS_SSM_CLI: ssmPath,
+            LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
         },
         process.env
     )
