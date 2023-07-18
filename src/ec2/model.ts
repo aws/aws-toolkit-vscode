@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
-import { IAM } from 'aws-sdk'
+import { IAM, SSM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -170,8 +170,8 @@ export class Ec2ConnectionManager {
 
             throw err
         }
-
-        const vars = getEc2SsmEnv(selection, ssm)
+        const session = await this.ssmClient.startSession(selection.instanceId)
+        const vars = getEc2SsmEnv(selection, ssm, session)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
         }
@@ -198,15 +198,15 @@ export class Ec2ConnectionManager {
     }
 }
 
-function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string): NodeJS.ProcessEnv {
+function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string, session: SSM.StartSessionResponse): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: selection.region,
             AWS_SSM_CLI: ssmPath,
             LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
-            STREAM_URL: 'testStream',
-            SESSION_ID: 'session_id',
-            TOKEN: 'token',
+            STREAM_URL: session.StreamUrl,
+            SESSION_ID: session.SessionId,
+            TOKEN: session.TokenValue,
         },
         process.env
     )
