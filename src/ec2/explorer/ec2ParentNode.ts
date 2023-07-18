@@ -11,10 +11,12 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 
 export const contextValueEc2 = 'awsEc2Node'
+export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
 
 export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected readonly ec2InstanceNodes: Map<string, Ec2InstanceNode>
+    public override readonly contextValue: string = contextValueEc2
 
     public constructor(
         public override readonly regionCode: string,
