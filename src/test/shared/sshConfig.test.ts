@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import { VscodeRemoteSshConfig } from '../../../shared/extensions/ssh'
-import { ToolkitError } from '../../../shared/errors'
-import { Err, Ok, Result } from '../../../shared/utilities/result'
-import { ChildProcessResult } from '../../../shared/utilities/childProcess'
+import { ToolkitError } from '../../shared/errors'
+import { Err, Ok, Result } from '../../shared/utilities/result'
+import { ChildProcessResult } from '../../shared/utilities/childProcess'
+import { VscodeRemoteSshConfig } from '../../shared/sshConfig'
 
 const testCommand = 'run-thing'
 const testProxyCommand = `'${testCommand}' '%h'`

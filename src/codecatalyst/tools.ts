@@ -14,7 +14,7 @@ import { Result } from '../shared/utilities/result'
 import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
 import { ToolkitError } from '../shared/errors'
 import { getLogger } from '../shared/logger'
-import { VscodeRemoteSshConfig } from '../shared/extensions/ssh'
+import { VscodeRemoteSshConfig } from '../shared/sshConfig'
 
 export async function ensureConnectScript(context = globals.context): Promise<Result<vscode.Uri, ToolkitError>> {
     const scriptName = `codecatalyst_connect${process.platform === 'win32' ? '.ps1' : ''}`

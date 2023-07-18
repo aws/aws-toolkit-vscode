@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { VscodeRemoteSshConfig } from '../shared/extensions/ssh'
+import { VscodeRemoteSshConfig } from '../shared/sshConfig'
 import { Result } from '../shared/utilities/result'
 
 export class Ec2RemoteSshConfig extends VscodeRemoteSshConfig {
