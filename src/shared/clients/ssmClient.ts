@@ -28,9 +28,15 @@ export class SsmClient {
         return termination!
     }
 
-    public async startSession(target: string): Promise<SSM.StartSessionResponse> {
+    public async startSession(
+        target: string,
+        document?: string,
+        parameters?: SSM.SessionManagerParameters
+    ): Promise<SSM.StartSessionResponse> {
         const client = await this.createSdkClient()
-        const response = await client.startSession({ Target: target }).promise()
+        const response = await client
+            .startSession({ Target: target, DocumentName: document, Parameters: parameters })
+            .promise()
         return response
     }
 

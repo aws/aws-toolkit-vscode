@@ -31,12 +31,6 @@ _require() {
     _log "$1=$2"
 }
 
-_parse_json_for_value() {
-    key=$1
-    json=$2
-    echo "$json" | grep -o "\"$key\":\"[^\"]*" | grep -o '[^"]*$'
-}
-
 _ec2() {
     # Function inputs
     local AWS_SSM_CLI=$1
