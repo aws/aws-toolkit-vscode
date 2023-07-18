@@ -28,6 +28,7 @@ interface Ec2RemoteEnv extends VscodeRemoteConnection {
 }
 
 const ec2ConnectScriptPrefix = 'ec2_connect'
+const hostNamePrefix = 'ec2-'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -144,8 +145,9 @@ export class Ec2ConnectionManager {
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection)
+        const fullHostName = `${hostNamePrefix}${selection.instanceId}`
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, selection.instanceId, '/', remoteEnv.vscPath)
+            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
@@ -160,7 +162,7 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const sshConfig = new VscodeRemoteSshConfig(ssh, 'ec2-user', ec2ConnectScriptPrefix)
+        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix)
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()
@@ -204,6 +206,7 @@ function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string): NodeJS.ProcessE
             LOG_FILE_LOCATION: sshLogFileLocation('ec2', selection.instanceId),
             STREAM_URL: 'testStream',
             SESSION_ID: 'session_id',
+            TOKEN: 'token',
         },
         process.env
     )

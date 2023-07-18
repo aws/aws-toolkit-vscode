@@ -42,6 +42,7 @@ _ec2() {
     local AWS_SSM_CLI=$1
     local AWS_REGION=$2
     local STREAM_URL=$3
+    local TOKEN=$4
     local SESSION_ID=$4
     local LOG_FILE_LOCATION=$5
 
@@ -54,10 +55,11 @@ _main() {
     _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
     _require AWS_REGION "${AWS_REGION:-}"
     _require STREAM_URL "${STREAM_URL:-}"
+    _require TOKEN "${TOKEN:-}"
     _require SESSION_ID "${SESSION_ID:-}"
     _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
 
-    _ec2 "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$SESSION_ID" "$LOG_FILE_LOCATION"
+    _ec2 "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID" "$LOG_FILE_LOCATION"
 }
 
 _main
