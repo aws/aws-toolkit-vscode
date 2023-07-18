@@ -112,13 +112,15 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
      * check files in editors and pick one which has most substring matches to the target
      */
     private fun findRelevantFileFromEditors(psiFile: PsiFile): VirtualFile? = searchRelevantFileInEditors(psiFile) { myPsiFile ->
-        myPsiFile as PsiClassOwner
-        // (1)
-        val classAndMethod = myPsiFile.classes.mapNotNull { clazz ->
-            // class name itself + its method names
-            listOfNotNull(clazz.name) +
-                clazz.methods.mapNotNull { method -> method.name }
-        }.flatten()
+        if (myPsiFile !is PsiClassOwner) {
+            return@searchRelevantFileInEditors emptyList()
+        }
+
+        val classAndMethod = runReadAction {
+            myPsiFile.classes.mapNotNull { clazz ->
+                listOfNotNull(clazz.name) + clazz.methods.mapNotNull { method -> method.name }
+            }.flatten()
+        }
 
         classAndMethod
     }

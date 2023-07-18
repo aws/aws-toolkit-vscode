@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.fileEditor.FileEditorManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.guessProjectDir
@@ -69,15 +70,17 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
             val project = target.project
             val targetElements = keywordProducer(target)
 
-            return FileEditorManager.getInstance(project).openFiles
-                .filter { openedFile ->
-                    openedFile.name != target.virtualFile.name && openedFile.extension == target.virtualFile.extension
-                }
-                .mapNotNull { openedFile -> PsiManager.getInstance(project).findFile(openedFile) }
-                .maxByOrNull {
-                    val elementsToCheck = keywordProducer(it)
-                    countSubstringMatches(targetElements, elementsToCheck)
-                }?.virtualFile
+            return runReadAction {
+                FileEditorManager.getInstance(project).openFiles
+                    .filter { openedFile ->
+                        openedFile.name != target.virtualFile.name && openedFile.extension == target.virtualFile.extension
+                    }
+                    .mapNotNull { openedFile -> PsiManager.getInstance(project).findFile(openedFile) }
+                    .maxByOrNull {
+                        val elementsToCheck = keywordProducer(it)
+                        countSubstringMatches(targetElements, elementsToCheck)
+                    }?.virtualFile
+            }
         }
 
         /**

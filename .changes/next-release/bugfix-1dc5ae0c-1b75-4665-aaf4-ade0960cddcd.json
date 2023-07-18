@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "CodeWhisperer: Run read operation in the background thread without runReadAction"
+}

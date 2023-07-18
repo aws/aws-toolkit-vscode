@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
+import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.vfs.VfsUtil
@@ -51,16 +52,19 @@ object PythonCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
      * check files in editors and pick one which has most substring matches to the target
      */
     private fun findRelevantFileFromEditors(psiFile: PsiFile): VirtualFile? = searchRelevantFileInEditors(psiFile) { myPsiFile ->
-        myPsiFile as PyFile
-        // (1)
-        val classAndMethod = myPsiFile.topLevelClasses.mapNotNull {
-            // class name itself + its method names
-            listOfNotNull(it.name) +
-                it.methods.mapNotNull { method -> method.name }
-        }.flatten()
+        if (myPsiFile !is PyFile) {
+            return@searchRelevantFileInEditors emptyList()
+        }
 
-        // (2)
-        val topLevelFunc = myPsiFile.topLevelFunctions.mapNotNull { it.name }
+        val classAndMethod = runReadAction {
+            myPsiFile.topLevelClasses.mapNotNull {
+                listOfNotNull(it.name) + it.methods.mapNotNull { method -> method.name }
+            }.flatten()
+        }
+
+        val topLevelFunc = runReadAction {
+            myPsiFile.topLevelFunctions.mapNotNull { it.name }
+        }
 
         classAndMethod + topLevelFunc
     }
