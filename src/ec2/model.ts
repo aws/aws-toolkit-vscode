@@ -27,6 +27,8 @@ interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
 }
 
+const ec2ConnectScriptPrefix = 'ec2_connect'
+
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
     private ec2Client: Ec2Client
@@ -158,7 +160,7 @@ export class Ec2ConnectionManager {
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const sshConfig = new VscodeRemoteSshConfig(ssh, 'ec2-user', 'ec2_connect')
+        const sshConfig = new VscodeRemoteSshConfig(ssh, 'ec2-user', ec2ConnectScriptPrefix)
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
             const err = config.err()
