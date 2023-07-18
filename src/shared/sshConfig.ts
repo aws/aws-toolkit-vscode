@@ -22,7 +22,7 @@ const localize = nls.loadMessageBundle()
 
 export class VscodeRemoteSshConfig {
     protected readonly configHostName: string
-    protected readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i
+    protected readonly proxyCommandRegExp: RegExp
 
     public constructor(
         protected readonly sshPath: string,
@@ -30,6 +30,7 @@ export class VscodeRemoteSshConfig {
         protected readonly scriptPrefix: string
     ) {
         this.configHostName = `${hostNamePrefix}*`
+        this.proxyCommandRegExp = new RegExp(`proxycommand.{0,1024}${scriptPrefix}(.ps1)?.{0,99}`)
     }
 
     protected isWin(): boolean {

@@ -8,20 +8,14 @@ import { Err, Ok, Result } from '../../shared/utilities/result'
 import { ChildProcessResult } from '../../shared/utilities/childProcess'
 import { VscodeRemoteSshConfig } from '../../shared/sshConfig'
 
-const testCommand = 'run-thing'
-const testProxyCommand = `'${testCommand}' '%h'`
-
 class MockSshConfig extends VscodeRemoteSshConfig {
-    private readonly testCommand: string = testCommand
-    protected override readonly proxyCommandRegExp: RegExp = new RegExp(`${testProxyCommand}`)
-
     // State variables to track logic flow.
     public testIsWin: boolean = false
     public configSection: string = ''
     public SshConfigWritten: boolean = false
 
     public override async ensureValid(): Promise<Err<ToolkitError> | Err<Error> | Ok<void>> {
-        const proxyCommand = await this.getProxyCommand(this.testCommand)
+        const proxyCommand = await this.getProxyCommand(this.scriptPrefix)
         if (proxyCommand.isErr()) {
             return proxyCommand
         }
@@ -79,8 +73,10 @@ class MockSshConfig extends VscodeRemoteSshConfig {
 
 describe('VscodeRemoteSshConfig', async function () {
     let config: MockSshConfig
+    const testCommand = 'test_connect'
+    const testProxyCommand = `'${testCommand}' '%h'`
     before(function () {
-        config = new MockSshConfig('sshPath', 'testHostNamePrefix', 'scirpt')
+        config = new MockSshConfig('sshPath', 'testHostNamePrefix', testCommand)
         config.testIsWin = false
     })
 
@@ -96,7 +92,7 @@ describe('VscodeRemoteSshConfig', async function () {
 
     describe('matchSshSection', async function () {
         it('returns ok with match when proxycommand is present', async function () {
-            const testSection = `fdsafdsafd${testProxyCommand}sa342432`
+            const testSection = `proxycommandfdsafdsafd${testProxyCommand}sa342432`
             const result = await config.testMatchSshSection(testSection)
             assert.ok(result.isOk())
             const match = result.unwrap()
@@ -119,15 +115,15 @@ describe('VscodeRemoteSshConfig', async function () {
 
         it('writes to ssh config if command not found.', async function () {
             const testSection = 'no-command-here'
-            const result = await config.testVerifySshHostWrapper(testProxyCommand, testSection)
+            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
 
             assert.ok(result.isOk())
             assert.ok(config.SshConfigWritten)
         })
 
         it('does not write to ssh config if command is find', async function () {
-            const testSection = `this is some text that doesn't matter, but here ${testProxyCommand}`
-            const result = await config.testVerifySshHostWrapper(testProxyCommand, testSection)
+            const testSection = `this is some text that doesn't matter, but here proxycommand ${testProxyCommand}`
+            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
 
             assert.ok(result.isOk())
             assert.ok(!config.SshConfigWritten)
