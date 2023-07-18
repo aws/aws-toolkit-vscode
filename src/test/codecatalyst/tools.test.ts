@@ -12,7 +12,6 @@ import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemU
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { startSshAgent } from '../../shared/extensions/ssh'
-import { ensureConnectScript } from '../../codecatalyst/tools'
 import {
     bearerTokenCacheLocation,
     DevEnvironmentId,
@@ -22,6 +21,7 @@ import {
 import { mkdir, readFile, writeFile } from 'fs-extra'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 import { SystemUtilities } from '../../shared/systemUtilities'
+import { ensureConnectScript } from '../../shared/sshConfig'
 
 describe('SSH Agent', function () {
     it('can start the agent on windows', async function () {

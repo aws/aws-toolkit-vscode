@@ -3,46 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import globals from '../shared/extensionGlobals'
-
-import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
-
-import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { Result } from '../shared/utilities/result'
-import { fileExists, readFileAsString } from '../shared/filesystemUtilities'
-import { ToolkitError } from '../shared/errors'
-import { getLogger } from '../shared/logger'
-import { VscodeRemoteSshConfig } from '../shared/sshConfig'
-
-export async function ensureConnectScript(context = globals.context): Promise<Result<vscode.Uri, ToolkitError>> {
-    const scriptName = `codecatalyst_connect${process.platform === 'win32' ? '.ps1' : ''}`
-
-    // Script resource path. Includes the Toolkit version string so it changes with each release.
-    const versionedScript = vscode.Uri.joinPath(context.extensionUri, 'resources', scriptName)
-
-    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
-    const connectScript = vscode.Uri.joinPath(context.globalStorageUri, scriptName)
-
-    try {
-        const exists = await fileExists(connectScript.fsPath)
-        const contents1 = await readFileAsString(versionedScript.fsPath)
-        const contents2 = exists ? await readFileAsString(connectScript.fsPath) : ''
-        const isOutdated = contents1 !== contents2
-
-        if (isOutdated) {
-            await fs.copyFile(versionedScript.fsPath, connectScript.fsPath)
-            getLogger().info('ssh: updated connect script')
-        }
-
-        return Result.ok(connectScript)
-    } catch (e) {
-        const message = localize('AWS.codecatalyst.error.copyScript', 'Failed to update connect script')
-
-        return Result.err(ToolkitError.chain(e, message, { code: 'ConnectScriptUpdateFailed' }))
-    }
-}
+import { VscodeRemoteSshConfig, ensureConnectScript } from '../shared/sshConfig'
 
 export class CodeCatalystSshConfig extends VscodeRemoteSshConfig {
     protected override readonly proxyCommandRegExp: RegExp = /proxycommand.{0,1024}codecatalyst_connect(.ps1)?.{0,99}/i

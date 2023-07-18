@@ -15,6 +15,8 @@ import { getIdeProperties } from './extensionUtilities'
 import { showConfirmationMessage } from './utilities/messages'
 import { CancellationError } from './utilities/timeoutUtils'
 import { getSshConfigPath } from './extensions/ssh'
+import globals from './extensionGlobals'
+import { fileExists, readFileAsString } from './filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
@@ -156,5 +158,33 @@ Host ${this.configHostName}
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
     `
+    }
+}
+
+export async function ensureConnectScript(context = globals.context): Promise<Result<vscode.Uri, ToolkitError>> {
+    const scriptName = `codecatalyst_connect${process.platform === 'win32' ? '.ps1' : ''}`
+
+    // Script resource path. Includes the Toolkit version string so it changes with each release.
+    const versionedScript = vscode.Uri.joinPath(context.extensionUri, 'resources', scriptName)
+
+    // Copy to globalStorage to ensure a "stable" path (not influenced by Toolkit version string.)
+    const connectScript = vscode.Uri.joinPath(context.globalStorageUri, scriptName)
+
+    try {
+        const exists = await fileExists(connectScript.fsPath)
+        const contents1 = await readFileAsString(versionedScript.fsPath)
+        const contents2 = exists ? await readFileAsString(connectScript.fsPath) : ''
+        const isOutdated = contents1 !== contents2
+
+        if (isOutdated) {
+            await fs.copyFile(versionedScript.fsPath, connectScript.fsPath)
+            getLogger().info('ssh: updated connect script')
+        }
+
+        return Result.ok(connectScript)
+    } catch (e) {
+        const message = localize('AWS.codecatalyst.error.copyScript', 'Failed to update connect script')
+
+        return Result.err(ToolkitError.chain(e, message, { code: 'ConnectScriptUpdateFailed' }))
     }
 }
