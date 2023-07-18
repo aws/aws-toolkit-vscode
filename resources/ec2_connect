@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+# Usage:
+#   When connecting to a dev environment
+#       AWS_REGION=… AWS_SSM_CLI=… CODECATALYST_ENDPOINT=… BEARER_TOKEN_LOCATION=… SPACE_NAME=… PROJECT_NAME=… DEVENV_ID=… ./codecatalyst_connect
+
+set -e
+set -u
+
+_DATE_CMD=true
+
+if command > /dev/null 2>&1 -v date; then
+    _DATE_CMD=date
+elif command > /dev/null 2>&1 -v /bin/date; then
+    _DATE_CMD=/bin/date
+fi
+
+_log() {
+    echo "$("$_DATE_CMD" '+%Y/%m/%d %H:%M:%S')" "$@" >> "${LOG_FILE_LOCATION}" 2>&1
+}
+
+_require_nolog() {
+    if [ -z "${1:-}" ] || [ -z "${2:-}" ]; then
+        _log "error: missing required arg: $1"
+        exit 1
+    fi
+}
+
+_require() {
+    _require_nolog "$@"
+    _log "$1=$2"
+}
+
+_parse_json_for_value() {
+    key=$1
+    json=$2
+    echo "$json" | grep -o "\"$key\":\"[^\"]*" | grep -o '[^"]*$'
+}
+
+# Note: dev environment must have been previously started by VSCode Extension/CodeCatalyst
+_start_dev_environment_session() {
+    # Function inputs
+    local CODECATALYST_ENDPOINT=$1
+    local BEARER_TOKEN=$2
+    local SPACE_NAME=$3
+    local PROJECT_NAME=$4
+    local DEVENV_ID=$5
+
+    # Local variables
+    local START_SESSION_PATH="/v1/spaces/$SPACE_NAME/projects/$PROJECT_NAME/devEnvironments/$DEVENV_ID/session"
+    local START_SESSION_QUERY=$(
+        cat << EOF
+{
+    "sessionConfiguration": { 
+        "sessionType": "SSH" 
+    }
+}
+EOF
+    )
+
+    curl -s -X PUT \
+        -H "Content-Type: application/json" \
+        -H "Authorization: Bearer $BEARER_TOKEN" \
+        -d "$START_SESSION_QUERY" \
+        "$CODECATALYST_ENDPOINT$START_SESSION_PATH"
+}
+
+_codecatalyst() {
+    # Function inputs
+    local AWS_SSM_CLI=$1
+    local CODECATALYST_ENDPOINT=$2
+    local BEARER_TOKEN=$3
+    local SPACE_NAME=$4
+    local PROJECT_NAME=$5
+    local DEVENV_ID=$6
+    local AWS_REGION=$7
+
+    # Local variables
+    local START_SESSION_RESPONSE
+    local STREAM_URL
+    local TOKEN
+    local SESSION
+
+    START_SESSION_RESPONSE=$(_start_dev_environment_session "$CODECATALYST_ENDPOINT" "$BEARER_TOKEN" "$SPACE_NAME" "$PROJECT_NAME" "$DEVENV_ID")
+
+    # Errors happen when you have invalid token etc
+    # ValidationExceptions happen when the devenv is not running
+    if [[ "$START_SESSION_RESPONSE" == *"errors"* || "$START_SESSION_RESPONSE" == *"ValidationException"* || "$START_SESSION_RESPONSE" == *"NotValidException"* ]]; then
+        _log "Failed to start the session with error:" "$START_SESSION_RESPONSE"
+        exit 1
+    fi
+
+    STREAM_URL=$(_parse_json_for_value "streamUrl" "$START_SESSION_RESPONSE")
+    TOKEN=$(_parse_json_for_value "tokenValue" "$START_SESSION_RESPONSE")
+    SESSION=$(_parse_json_for_value "sessionId" "$START_SESSION_RESPONSE")
+
+    exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION\"}" "$AWS_REGION" "StartSession"
+}
+
+_main() {
+    _log "=============================================================================="
+
+    _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
+    _require AWS_REGION "${AWS_REGION:-}"
+    _require AWS_SSM_CLI "${AWS_SSM_CLI:-}"
+
+    _require CODECATALYST_ENDPOINT "${CODECATALYST_ENDPOINT:-}"
+    _require BEARER_TOKEN_LOCATION "${BEARER_TOKEN_LOCATION:-}"
+    _require SPACE_NAME "${SPACE_NAME:-}"
+    _require PROJECT_NAME "${PROJECT_NAME:-}"
+    _require DEVENV_ID "${DEVENV_ID:-}"
+
+    CACHED_BEARER_TOKEN=$(cat "$BEARER_TOKEN_LOCATION")
+
+    _codecatalyst "$AWS_SSM_CLI" "$CODECATALYST_ENDPOINT" "$CACHED_BEARER_TOKEN" "$SPACE_NAME" "$PROJECT_NAME" "$DEVENV_ID" "$AWS_REGION"
+}
+
+_main

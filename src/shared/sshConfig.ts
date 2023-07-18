@@ -46,8 +46,6 @@ export abstract class VscodeRemoteSshConfig {
 
     public abstract ensureValid(): Promise<Err<Error> | Err<ToolkitError> | Ok<void>>
 
-    protected abstract createSSHConfigSection(proxyCommand: string): string
-
     protected async checkSshOnHost(): Promise<ChildProcessResult> {
         const proc = new ChildProcess(this.sshPath, ['-G', `${this.hostNamePrefix}test`])
         const result = await proc.run()
@@ -144,5 +142,19 @@ export abstract class VscodeRemoteSshConfig {
         }
 
         return Result.ok()
+    }
+
+    protected createSSHConfigSection(proxyCommand: string): string {
+        // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
+        // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
+
+        return `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host ${this.configHostName}
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand ${proxyCommand}
+    `
     }
 }

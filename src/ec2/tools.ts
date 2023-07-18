@@ -24,13 +24,4 @@ export class Ec2RemoteSshConfig extends VscodeRemoteSshConfig {
 
         return Result.ok()
     }
-
-    protected override createSSHConfigSection(proxyCommand: string): string {
-        return `
-# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host i-* mi-*
-    User ${this.hostNamePrefix}
-    ProxyCommand sh -c \"${this.command}\"
-`
-    }
 }

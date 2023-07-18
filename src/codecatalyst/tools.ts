@@ -70,18 +70,4 @@ export class CodeCatalystSshConfig extends VscodeRemoteSshConfig {
 
         return Result.ok()
     }
-
-    public createSSHConfigSection(proxyCommand: string): string {
-        // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
-        // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
-
-        return `
-# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
-Host ${this.configHostName}
-    ForwardAgent yes
-    AddKeysToAgent yes
-    StrictHostKeyChecking accept-new
-    ProxyCommand ${proxyCommand}
-    `
-    }
 }
