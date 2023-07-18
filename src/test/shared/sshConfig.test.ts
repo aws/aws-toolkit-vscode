@@ -20,10 +20,6 @@ class MockSshConfig extends VscodeRemoteSshConfig {
     public configSection: string = ''
     public SshConfigWritten: boolean = false
 
-    protected override createSSHConfigSection(proxyCommand: string): string {
-        return this.configSection
-    }
-
     public override async ensureValid(): Promise<Err<ToolkitError> | Err<Error> | Ok<void>> {
         const proxyCommand = await this.getProxyCommand(this.testCommand)
         if (proxyCommand.isErr()) {
@@ -74,6 +70,10 @@ class MockSshConfig extends VscodeRemoteSshConfig {
             stdout: this.configSection,
             stderr: '',
         }
+    }
+
+    public createSSHConfigSectionWrapper(proxyCommand: string): string {
+        return this.createSSHConfigSection(proxyCommand)
     }
 }
 
@@ -131,6 +131,14 @@ describe('VscodeRemoteSshConfig', async function () {
 
             assert.ok(result.isOk())
             assert.ok(!config.SshConfigWritten)
+        })
+    })
+
+    describe('createSSHConfigSection', async function () {
+        it('section includes relevant script prefix', function () {
+            const testScriptName = 'testScript'
+            const section = config.createSSHConfigSectionWrapper(testScriptName)
+            assert.ok(section.includes(testScriptName))
         })
     })
 })
