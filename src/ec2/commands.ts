@@ -11,10 +11,8 @@ import { Ec2Prompter, instanceFilter } from './prompter'
 import { Ec2Selection } from './utils'
 import { Ec2Instance } from '../shared/clients/ec2Client'
 
-export function refreshExplorer(node?: Ec2Node) {
-    if (node) {
-        node instanceof Ec2InstanceNode ? node.parent.refreshNode() : node.refreshNode()
-    }
+export async function refreshExplorer(node?: Ec2Node) {
+    await node?.refreshNode()
 }
 
 export async function openTerminal(node?: Ec2Node) {

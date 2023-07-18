@@ -65,16 +65,19 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             this.pollTimer ?? globals.clock.setInterval(this.updatePollingNodes.bind(this), pollingInterval)
     }
 
-    public updatePollingNodes() {
+    private checkForPendingNodes() {
         this.pollingNodes.forEach(async instanceId => {
             const childNode = this.ec2InstanceNodes.get(instanceId)!
             await childNode.updateStatus()
-
             if (!childNode.isPending()) {
                 this.pollingNodes.delete(instanceId)
+                childNode.refreshNode()
             }
         })
-        this.refreshNode()
+    }
+
+    public updatePollingNodes() {
+        this.checkForPendingNodes()
         if (!this.isPolling()) {
             this.clearPollTimer()
         }

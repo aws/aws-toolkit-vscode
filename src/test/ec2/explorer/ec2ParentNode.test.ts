@@ -23,6 +23,7 @@ describe('ec2ParentNode', function () {
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], Promise<void>>
     let clearTimerStub: sinon.SinonStub<[], void>
+    let statusUpdateFromClient: string
 
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
@@ -38,13 +39,14 @@ describe('ec2ParentNode', function () {
                 }))
             )
         )
+        client.getInstanceStatus.callsFake(async () => statusUpdateFromClient)
 
         return client
     }
 
     before(function () {
         clock = installFakeClock()
-        refreshStub = sinon.stub(Ec2ParentNode.prototype, 'refreshNode')
+        refreshStub = sinon.stub(Ec2InstanceNode.prototype, 'refreshNode')
         clearTimerStub = sinon.stub(Ec2ParentNode.prototype, 'clearPollTimer')
     })
 
@@ -126,7 +128,8 @@ describe('ec2ParentNode', function () {
         assert.strictEqual(testNode.pollingNodes.size, 1)
     })
 
-    it('refreshes explorer when timer goes off', async function () {
+    it('does not refresh explorer when timer goes off if status unchanged', async function () {
+        statusUpdateFromClient = 'pending'
         instances = [
             { name: 'firstOne', InstanceId: '0', status: 'pending' },
             { name: 'secondOne', InstanceId: '1', status: 'stopped' },
@@ -134,7 +137,15 @@ describe('ec2ParentNode', function () {
         ]
         await testNode.updateChildren()
         await clock.tickAsync(6000)
-        sinon.assert.calledOn(refreshStub, testNode)
+        sinon.assert.notCalled(refreshStub)
+    })
+
+    it('does refresh explorer when timer goes and status changed', async function () {
+        sinon.assert.notCalled(refreshStub)
+        statusUpdateFromClient = 'running'
+        testNode.pollingNodes.add('0')
+        await clock.tickAsync(6000)
+        sinon.assert.called(refreshStub)
     })
 
     it('stops timer once polling nodes are empty', async function () {

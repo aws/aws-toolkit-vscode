@@ -10,6 +10,7 @@ import { Ec2Instance } from '../../shared/clients/ec2Client'
 import globals from '../../shared/extensionGlobals'
 import { Ec2Selection, getIconCodeForInstanceStatus } from '../utils'
 import { Ec2ParentNode } from './ec2ParentNode'
+import { Commands } from '../../shared/vscode/commands'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
@@ -89,5 +90,10 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return `arn:${this.partitionId}:ec2:${
             this.regionCode
         }:${globals.awsContext.getCredentialAccountId()}:instance/${this.InstanceId}`
+    }
+
+    public async refreshNode(): Promise<void> {
+        await this.updateStatus()
+        Commands.vscode().execute('aws.refreshAwsExplorerNode', this)
     }
 }
