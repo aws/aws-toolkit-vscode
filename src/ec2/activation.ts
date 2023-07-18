@@ -4,17 +4,21 @@
  */
 import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
-import { tryConnect } from './commands'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { Ec2Node } from './explorer/ec2ParentNode'
+import { openRemoteConnection, openTerminal } from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        Commands.register('aws.ec2.connectToInstance', async (node?: Ec2InstanceNode) => {
+        Commands.register('aws.ec2.openTerminal', async (node?: Ec2Node) => {
             await telemetry.ec2_connectToInstance.run(async span => {
                 span.record({ ec2ConnectionType: 'ssm' })
-                await (node ? tryConnect(node.toSelection()) : tryConnect())
+                await (node ? openTerminal(node) : openTerminal(node))
             })
+        }),
+
+        Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
+            await (node ? openRemoteConnection(node) : openRemoteConnection(node))
         })
     )
 }
