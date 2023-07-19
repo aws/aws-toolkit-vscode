@@ -1119,6 +1119,18 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.startInstance",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ec2.stopInstance",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
+                    "when": "false"
+                },
+                {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
                 }
