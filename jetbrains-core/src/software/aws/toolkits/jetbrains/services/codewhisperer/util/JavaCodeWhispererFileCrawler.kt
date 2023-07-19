@@ -21,6 +21,7 @@ import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
 object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "java"
     override val testFilenamePattern: Regex = """(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java)$""".toRegex()
+    override val dialects: Set<String> = setOf("java")
 
     override fun guessSourceFileName(tstFileName: String): String = tstFileName.substring(0, tstFileName.length - "Test.java".length) + ".java"
 

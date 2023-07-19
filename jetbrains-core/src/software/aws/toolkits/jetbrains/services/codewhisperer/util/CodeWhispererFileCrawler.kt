@@ -60,6 +60,7 @@ class NoOpFileCrawler : FileCrawler {
 abstract class CodeWhispererFileCrawler : FileCrawler {
     abstract val fileExtension: String
     abstract val testFilenamePattern: Regex
+    abstract val dialects: Set<String>
 
     override fun listFilesUnderProjectRoot(project: Project): List<VirtualFile> = project.guessProjectDir()?.let { rootDir ->
         VfsUtil.collectChildrenRecursively(rootDir).filter {
@@ -73,7 +74,7 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         val openedFiles = runReadAction {
             FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
                 it.name != psiFile.virtualFile.name &&
-                    it.extension == psiFile.virtualFile.extension &&
+                    isSameDialect(psiFile.virtualFile.extension) &&
                     !TestSourcesFilter.isTestSources(it, psiFile.project)
             }
         }
@@ -88,6 +89,10 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
     }
 
     abstract fun guessSourceFileName(tstFileName: String): String
+
+    private fun isSameDialect(fileExt: String?): Boolean = fileExt?.let {
+        dialects.contains(fileExt)
+    } ?: false
 
     companion object {
         fun searchRelevantFileInEditors(target: PsiFile, keywordProducer: (psiFile: PsiFile) -> List<String>): VirtualFile? {
