@@ -9,7 +9,6 @@ import {
     newCustomizationAvailableKey,
     newCustomizationMessageMultiple,
     newCustomizationMessageSingle,
-    noAccessToCustomizationsMessage,
     persistedCustomizationsKey,
     selectedCustomizationKey,
 } from '../models/constants'
@@ -22,7 +21,6 @@ import { DataQuickPickItem, showQuickPick } from '../../shared/ui/pickerPrompter
 import { codeWhispererClient } from '../client/codewhisperer'
 import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
-import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 
 export const getNewCustomizations = (availableCustomizations: Customization[]) => {
@@ -36,18 +34,11 @@ export async function notifyNewCustomizations() {
         availableCustomizations = await getAvailableCustomizationsList()
         AuthUtil.instance.isCustomizationFeatureEnabled = true
     } catch (error) {
-        if (
-            isAwsError(error) &&
-            error.code === 'AccessDeniedException' &&
-            error.message == noAccessToCustomizationsMessage
-        ) {
-            getLogger().debug(`User does not have access to customizations`)
-            AuthUtil.instance.isCustomizationFeatureEnabled = false
-            await setSelectedCustomization(baseCustomization)
-            return
-        } else {
-            getLogger().error(`Failed to fetch customizations: %O`, error)
-        }
+        // On receiving any error, we will disable the customization feature
+        AuthUtil.instance.isCustomizationFeatureEnabled = false
+        await setSelectedCustomization(baseCustomization)
+        getLogger().error(`Failed to fetch customizations: %O`, error)
+        return
     }
 
     const selectedCustomization = getSelectedCustomization()

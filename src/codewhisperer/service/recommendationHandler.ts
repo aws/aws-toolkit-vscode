@@ -247,7 +247,7 @@ export class RecommendationHandler {
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
             } else {
-                errorCode = error as string
+                errorCode = error instanceof Error ? error.message : 'unknown error'
                 reason = error ? String(error) : 'unknown'
                 this.errorMessagePrompt = errorCode
             }
