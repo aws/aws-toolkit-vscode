@@ -265,9 +265,7 @@ export const userGroupKey = 'CODEWHISPERER_USER_GROUP'
 
 export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
-export const newCustomizationMessageSingle = 'You have access to a new CodeWhisperer customization.'
-
-export const newCustomizationMessageMultiple = 'You have access to new CodeWhisperer customizations.'
+export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
 
 export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
 

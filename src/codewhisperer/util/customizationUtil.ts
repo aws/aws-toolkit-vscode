@@ -7,12 +7,11 @@ import globals from '../../shared/extensionGlobals'
 import {
     learnMoreUri,
     newCustomizationAvailableKey,
-    newCustomizationMessageMultiple,
-    newCustomizationMessageSingle,
+    newCustomizationMessage,
     persistedCustomizationsKey,
     selectedCustomizationKey,
 } from '../models/constants'
-import { localize } from '../../shared/utilities/vsCodeUtils'
+import { localize, openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from './authUtil'
 import { set } from './commonUtil'
 import * as vscode from 'vscode'
@@ -61,24 +60,19 @@ export async function notifyNewCustomizations() {
         'AWS.codewhisperer.customization.notification.new_customizations.learn_more',
         'Learn More'
     )
-    vscode.window
-        .showInformationMessage(
-            newCustomizations.length === 1 ? newCustomizationMessageSingle : newCustomizationMessageMultiple,
-            select,
-            learnMore
-        )
-        .then(async resp => {
-            if (resp === select) {
-                showCustomizationPrompt().then()
-            } else if (resp === learnMore) {
-                // TODO: figure out the right uri
-                vscode.env.openExternal(vscode.Uri.parse(learnMoreUri))
-            }
-        })
+    vscode.window.showInformationMessage(newCustomizationMessage, select, learnMore).then(async resp => {
+        if (resp === select) {
+            showCustomizationPrompt().then()
+        } else if (resp === learnMore) {
+            // TODO: figure out the right uri
+            openUrl(vscode.Uri.parse(learnMoreUri))
+        }
+    })
 }
 
+// Return true when either it's the default option or the selected one is in the ones we fetched from upstream.
 export const isSelectedCustomizationAvailable = (available: Customization[], selected: Customization) => {
-    return !selected.arn || available.map(c => c.arn).includes(selected.arn)
+    return selected.arn === '' || available.map(c => c.arn).includes(selected.arn)
 }
 
 export const baseCustomization = {
@@ -170,6 +164,11 @@ const createCustomizationItems = async () => {
     // Order matters
     const persistedCustomizations = getPersistedCustomizations()
     await setPersistedCustomizations(availableCustomizations)
+
+    const selectedCustomization = getSelectedCustomization()
+    if (!isSelectedCustomizationAvailable(availableCustomizations, selectedCustomization)) {
+        await switchToBaseCustomizationAndNotify()
+    }
 
     if (availableCustomizations.length === 0) {
         items.push(noCustomizationsItem())
