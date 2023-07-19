@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { BuilderIdKind, ExtensionUse, SsoKind, hasBuilderId, hasIamCredentials, hasSso } from '../../auth/utils'
-import { Connection, SsoConnection, codewhispererScopes } from '../../auth/connection'
+import { Connection, SsoConnection, codecatalystScopes, codewhispererScopes } from '../../auth/connection'
 import { builderIdConnection, iamConnection, ssoConnection } from './testUtil'
 
 describe('ExtensionUse.isFirstUse()', function () {
@@ -75,7 +75,18 @@ describe('connection exists funcs', function () {
         scopes: codewhispererScopes,
         label: 'codeWhispererBuilderId',
     }
-    const ssoConnections: Connection[] = [ssoConnection, builderIdConnection, cwIdcConnection, cwBuilderIdConnection]
+    const ccBuilderIdConnection: SsoConnection = {
+        ...builderIdConnection,
+        scopes: codecatalystScopes,
+        label: 'codeCatalystBuilderId',
+    }
+    const ssoConnections: Connection[] = [
+        ssoConnection,
+        builderIdConnection,
+        cwIdcConnection,
+        cwBuilderIdConnection,
+        ccBuilderIdConnection,
+    ]
     const allConnections = [iamConnection, ...ssoConnections]
 
     describe('ssoExists()', function () {
@@ -116,7 +127,16 @@ describe('connection exists funcs', function () {
             return { ...c, kind: 'codewhisperer' }
         })
 
-        cwBuilderIdCases.forEach(args => {
+        const ccBuilderIdCases: BuilderIdTestCase[] = [
+            {connections: [ccBuilderIdConnection], expected: true},
+            {connections: allConnections, expected: true},
+            {connections: [], expected: false},
+            {connections: allConnections.filter(c => c !== ccBuilderIdConnection), expected: false},
+        ].map(c => { return {...c, kind: 'codecatalyst'}})
+
+        const allCases = [...cwBuilderIdCases, ...ccBuilderIdCases]
+
+        allCases.forEach(args => {
             it(`builderIdExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
                 .map(c => c.label)
                 .join(', ')}]`, async function () {
