@@ -214,22 +214,11 @@ describe('ExtensionUserActivity', function () {
         ]
         const waitFor = 500 // some additional buffer to make sure everything triggers
 
-        const instance = ExtensionUserActivity.instance(throttleDelay, [...eventsFirst, ...eventsSecond])
+        const instance = new ExtensionUserActivity(throttleDelay, [...eventsFirst, ...eventsSecond])
         instance.onUserActivity(onEventTriggered)
         await sleep(waitFor)
 
         assert.strictEqual(count, 2)
-    })
-
-    it('gives the same instance if the throttle delay is the same', function () {
-        const instance1 = ExtensionUserActivity.instance(100)
-        const instance2 = ExtensionUserActivity.instance(100)
-        const instance3 = ExtensionUserActivity.instance(200)
-        const instance4 = ExtensionUserActivity.instance(200)
-
-        assert.strictEqual(instance1, instance2)
-        assert.strictEqual(instance3, instance4)
-        assert.notStrictEqual(instance1, instance3)
     })
 
     function delayedFiringEvent(fireInMillis: number): vscode.Event<any> {

@@ -374,28 +374,12 @@ export class ExtensionUserActivity {
     /** The event that is triggered when the user interacts with the extension */
     onUserActivity = this.activityEvent.event
 
-    /** To be efficient we re-used instances that already have the same throttle delay */
-    private static instances: { [delay: number]: ExtensionUserActivity } = {}
-
-    /**
-     * @param delay The delay until a throttled user activity event is fired in milliseconds.
-     * @param activityEvents The events that trigger the user activity.
-     * @returns
-     */
-    static instance(delay: number = 500, activityEvents = ExtensionUserActivity.activityEvents): ExtensionUserActivity {
-        if (!ExtensionUserActivity.instances[delay]) {
-            const newInstance = new ExtensionUserActivity(delay, activityEvents)
-            ExtensionUserActivity.instances[delay] = newInstance
-        }
-        return ExtensionUserActivity.instances[delay]
-    }
-
-    private constructor(delay: number, private readonly activityEvents: vscode.Event<any>[]) {
+    constructor(delay: number = 10_000, activityEvents = ExtensionUserActivity.activityEvents) {
         const throttledEvent = _.throttle(() => this.activityEvent.fire(), delay, { leading: true })
-        this.activityEvents.forEach(event => event(throttledEvent))
+        activityEvents.forEach(event => event(throttledEvent))
     }
 
-    private static activityEvents = [
+    private static readonly activityEvents = [
         vscode.window.onDidChangeActiveTextEditor,
         vscode.window.onDidChangeTextEditorSelection,
         vscode.window.onDidChangeActiveTerminal,
