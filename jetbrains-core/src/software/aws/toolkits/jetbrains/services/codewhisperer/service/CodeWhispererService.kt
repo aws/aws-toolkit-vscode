@@ -511,36 +511,27 @@ class CodeWhispererService {
         // 2. supplemental context
         val startFetchingTimestamp = System.currentTimeMillis()
         val isTstFile = FileContextProvider.getInstance(project).isTestFile(psiFile)
-        val supplementalContext = if (CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.CrossFile) {
-            runBlocking {
-                try {
-                    withTimeout(SUPPLEMENTAL_CONTEXT_TIMEOUT) {
-                        FileContextProvider.getInstance(project).extractSupplementalFileContext(psiFile, fileContext)
+        val supplementalContext = runBlocking {
+            try {
+                withTimeout(SUPPLEMENTAL_CONTEXT_TIMEOUT) {
+                    FileContextProvider.getInstance(project).extractSupplementalFileContext(psiFile, fileContext)
+                }
+            } catch (e: Exception) {
+                if (e is TimeoutCancellationException) {
+                    LOG.debug {
+                        "Supplemental context fetch timed out in ${System.currentTimeMillis() - startFetchingTimestamp}ms"
                     }
-                } catch (e: Exception) {
-                    if (e is TimeoutCancellationException) {
-                        LOG.debug {
-                            "Supplemental context fetch timed out in ${System.currentTimeMillis() - startFetchingTimestamp}ms"
-                        }
-                        SupplementalContextInfo(
-                            isUtg = isTstFile,
-                            contents = emptyList(),
-                            latency = System.currentTimeMillis() - startFetchingTimestamp,
-                            targetFileName = fileContext.filename
-                        )
-                    } else {
-                        LOG.debug { "Run into unexpected error when fetching supplemental context, error: ${e.message}" }
-                        null
-                    }
+                    SupplementalContextInfo(
+                        isUtg = isTstFile,
+                        contents = emptyList(),
+                        latency = System.currentTimeMillis() - startFetchingTimestamp,
+                        targetFileName = fileContext.filename
+                    )
+                } else {
+                    LOG.debug { "Run into unexpected error when fetching supplemental context, error: ${e.message}" }
+                    null
                 }
             }
-        } else {
-            SupplementalContextInfo(
-                isUtg = isTstFile,
-                contents = emptyList(),
-                latency = 0,
-                targetFileName = fileContext.filename
-            )
         }
 
         // 3. caret position

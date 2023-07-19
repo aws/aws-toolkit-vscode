@@ -23,6 +23,8 @@ class CodeWhispererPython private constructor() : CodeWhispererProgrammingLangua
 
     override fun isUTGSupported() = true
 
+    override fun isSupplementalContextSupported() = true
+
     companion object {
         const val ID = "python"
 

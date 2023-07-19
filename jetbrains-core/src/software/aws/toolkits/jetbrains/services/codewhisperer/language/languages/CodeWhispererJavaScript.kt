@@ -19,6 +19,8 @@ class CodeWhispererJavaScript private constructor() : CodeWhispererProgrammingLa
 
     override fun isAllClassifier(): Boolean = true
 
+    override fun isSupplementalContextSupported() = true
+
     companion object {
         const val ID = "javascript"
 

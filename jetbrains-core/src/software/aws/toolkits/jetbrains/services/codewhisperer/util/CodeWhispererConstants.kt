@@ -77,7 +77,7 @@ object CodeWhispererConstants {
     }
 
     object CrossFile {
-        const val CHUNK_SIZE = 3000
+        const val CHUNK_SIZE = 60
     }
 
     object Utg {
