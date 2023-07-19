@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import { AWSError, SSM } from 'aws-sdk'
 import { getLogger } from '../logger/logger'
 import globals from '../extensionGlobals'
 import { pageableToCollection } from '../utilities/collectionUtils'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import { ToolkitError } from '../errors'
 
 export class SsmClient {
     public constructor(public readonly regionCode: string) {}
@@ -59,6 +61,36 @@ export class SsmClient {
             .promise()
 
         return response[0]!
+    }
+
+    public async sendCommand(
+        target: string,
+        documentName: string,
+        parameters: SSM.Parameters
+    ): Promise<SSM.SendCommandResult> {
+        const client = await this.createSdkClient()
+        const response = await client
+            .sendCommand({ InstanceIds: [target], DocumentName: documentName, Parameters: parameters })
+            .promise()
+        return response
+    }
+
+    public async sendCommandAndWait(
+        target: string,
+        documentName: string,
+        parameters: SSM.Parameters
+    ): Promise<PromiseResult<SSM.GetCommandInvocationResult, AWSError>> {
+        const response = await this.sendCommand(target, documentName, parameters)
+        const client = await this.createSdkClient()
+        try {
+            const commandId = response.Command!.CommandId!
+            const result = await client
+                .waitFor('commandExecuted', { CommandId: commandId, InstanceId: target })
+                .promise()
+            return result
+        } catch (err) {
+            throw new ToolkitError(`Failed in sending command to target ${target}`, { cause: err as Error })
+        }
     }
 
     public async getInstanceAgentPingStatus(target: string): Promise<string> {

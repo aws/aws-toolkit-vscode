@@ -20,6 +20,7 @@ import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/sshConfig'
+import { SshKeyPair } from './sshKeyPair'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
 
@@ -31,9 +32,9 @@ const ec2ConnectScriptPrefix = 'ec2_connect'
 const hostNamePrefix = 'ec2-'
 
 export class Ec2ConnectionManager {
-    private ssmClient: SsmClient
-    private ec2Client: Ec2Client
-    private iamClient: DefaultIamClient
+    protected ssmClient: SsmClient
+    protected ec2Client: Ec2Client
+    protected iamClient: DefaultIamClient
 
     public constructor(readonly regionCode: string) {
         this.ssmClient = this.createSsmSdkClient()
@@ -196,6 +197,14 @@ export class Ec2ConnectionManager {
         const logPrefix = `ec2 (${instanceId})`
         const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
         return logger
+    }
+
+    public async sendSshKeyToInstance(selection: Ec2Selection, sshKeyPair: SshKeyPair): Promise<void> {
+        const sshKey = sshKeyPair.getPublicKey()
+        const remoteAuthorizedKeysPaths = '/home/ec2-user/.ssh/authorized_keys'
+        const command = `echo ${sshKey} > ${remoteAuthorizedKeysPaths}`
+        const documentName = 'AWS-RunShellScript'
+        await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, { commands: [command] })
     }
 }
 

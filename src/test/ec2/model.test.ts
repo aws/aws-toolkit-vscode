@@ -4,13 +4,18 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { EC2 } from 'aws-sdk'
+import { AWSError, EC2, SSM } from 'aws-sdk'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import { GetCommandInvocationResult } from 'aws-sdk/clients/ssm'
+import { mock } from 'ts-mockito'
+import { SshKeyPair } from '../../ec2/sshKeyPair'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -187,6 +192,33 @@ describe('Ec2ConnectClient', function () {
 
             result = await client.hasProperPolicies('fourthInstance')
             assert.strictEqual(false, result)
+        })
+    })
+
+    describe('sendSshKeysToInstance', async function () {
+        let client: MockEc2ConnectClient
+        let sendCommandStub: sinon.SinonStub<
+            [target: string, documentName: string, parameters: SSM.Parameters],
+            Promise<PromiseResult<GetCommandInvocationResult, AWSError>>
+        >
+
+        before(function () {
+            client = new MockEc2ConnectClient()
+            sendCommandStub = sinon.stub(MockSsmClient.prototype, 'sendCommandAndWait')
+        })
+
+        after(function () {
+            sinon.restore()
+        })
+
+        it('calls the sdk with the proper parameters', async function () {
+            const testSelection = {
+                instanceId: 'test-id',
+                region: 'test-region',
+            }
+            const mockKeys = mock() as SshKeyPair
+            await client.sendSshKeyToInstance(testSelection, mockKeys)
+            sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
         })
     })
 })

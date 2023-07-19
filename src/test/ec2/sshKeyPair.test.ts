@@ -6,22 +6,26 @@
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
-import { generateSshKeys } from '../../ec2/sendKeysToInstance'
+import { SshKeyPair } from '../../ec2/sshKeyPair'
 
-describe('generateSshKeys', async function () {
+describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
+    let keyPath: string
+    let keyPair: SshKeyPair
     before(async function () {
         temporaryDirectory = await makeTemporaryToolkitFolder()
+        keyPath = `${temporaryDirectory}/test-key`
+        keyPair = await SshKeyPair.generateSshKeys(keyPath)
     })
 
     after(async function () {
         await tryRemoveFolder(temporaryDirectory)
     })
 
-    it('generates key in target file', async function () {
-        const keyPath = `${temporaryDirectory}testKey`
-        await generateSshKeys(keyPath)
-        const contents = await fs.readFile(keyPath, 'utf-8')
-        assert.notStrictEqual(contents.length, 0)
+    describe('generateSshKeys', async function () {
+        it('generates key in target file', async function () {
+            const contents = await fs.readFile(keyPath, 'utf-8')
+            assert.notStrictEqual(contents.length, 0)
+        })
     })
 })
