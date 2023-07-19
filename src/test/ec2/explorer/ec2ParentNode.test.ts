@@ -60,6 +60,11 @@ describe('ec2ParentNode', function () {
         refreshStub.resetHistory()
     })
 
+    after(function () {
+        clock.uninstall()
+        sinon.restore()
+    })
+
     it('returns placeholder node if no children are present', async function () {
         instances = []
 
