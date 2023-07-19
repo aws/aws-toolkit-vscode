@@ -107,7 +107,7 @@ export class CodeWhispererTracker {
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
-            TelemetryHelper.instance.sendUserModificationEventToRTS(suggestion, percentage)
+            TelemetryHelper.instance.sendUserModificationEvent(suggestion, percentage)
         }
     }
 

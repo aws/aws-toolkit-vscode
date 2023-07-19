@@ -7,7 +7,6 @@
         "protocol": "json",
         "serviceFullName": "Amazon CodeWhisperer",
         "serviceId": "CodeWhispererRuntime",
-        "signatureVersion": "bearer",
         "signingName": "amazoncodewhispererservice",
         "targetPrefix": "AmazonCodeWhispererService",
         "uid": "codewhispererruntime-2022-11-11"
@@ -184,8 +183,7 @@
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "acceptedCharacterCount": { "shape": "Integer" },
                 "totalCharacterCount": { "shape": "Integer" },
-                "timestamp": { "shape": "Timestamp" },
-                "codePercentage": { "shape": "Double" }
+                "timestamp": { "shape": "Timestamp" }
             }
         },
         "CodeScanEvent": {

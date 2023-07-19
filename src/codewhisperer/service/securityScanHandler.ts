@@ -132,7 +132,7 @@ export async function createScanJob(
     }
     const resp = await client.createCodeScan(req)
     getLogger().verbose(`Request id: ${resp.$response.requestId}`)
-    TelemetryHelper.instance.sendCodeScanEventToRTS(languageId, resp.$response.requestId)
+    TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
 }
 

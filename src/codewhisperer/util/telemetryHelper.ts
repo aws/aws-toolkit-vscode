@@ -75,6 +75,7 @@ export class TelemetryHelper {
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
     private suggestionReferenceNumber = 0
+    private generatedLines = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -216,6 +217,12 @@ export class TelemetryHelper {
         if (aggregatedEvent) {
             this.sessionDecisions.push(aggregatedEvent)
         }
+        let acceptedRecommendationContent
+        if (acceptIndex != -1 && recommendations[acceptIndex] != undefined) {
+            acceptedRecommendationContent = recommendations[acceptIndex].content
+        } else {
+            acceptedRecommendationContent = ''
+        }
 
         // after we have all request level user decisions, aggregate them at session level and send
         if (
@@ -223,7 +230,7 @@ export class TelemetryHelper {
             (this.lastRequestId && this.lastRequestId === requestId) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
-            this.sendUserTriggerDecisionTelemetry(sessionId, supplementalContextMetadata)
+            this.sendUserTriggerDecisionTelemetry(sessionId, acceptedRecommendationContent, supplementalContextMetadata)
         }
     }
 
@@ -265,6 +272,7 @@ export class TelemetryHelper {
 
     private sendUserTriggerDecisionTelemetry(
         sessionId: string,
+        acceptedRecommendationContent: string,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
@@ -279,6 +287,12 @@ export class TelemetryHelper {
         const aggregatedCompletionType = this.getAggregatedCompletionType(this.sessionDecisions)
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
         const selectedCustomization = getSelectedCustomization()
+        if (acceptedRecommendationContent.trim() === '') {
+            this.generatedLines = 0
+        } else {
+            this.generatedLines = acceptedRecommendationContent.split('\n').length
+        }
+
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
@@ -317,7 +331,6 @@ export class TelemetryHelper {
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -334,7 +347,7 @@ export class TelemetryHelper {
                             this.firstSuggestionShowTime - CodeWhispererStates.instance.invokeSuggestionStartTime,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: this.suggestionReferenceNumber,
-                        generatedLine: 0, // place holder, need to implement later panshao
+                        generatedLine: this.generatedLines,
                     },
                 },
             })
@@ -416,6 +429,7 @@ export class TelemetryHelper {
         this.classifierResult = undefined
         this.classifierThreshold = undefined
         this.suggestionReferenceNumber = 0
+        this.generatedLines = 0
     }
 
     private getAggregatedCompletionType(
@@ -569,18 +583,18 @@ export class TelemetryHelper {
         })
     }
 
-    public sendUserModificationEventToRTS(suggestion: AcceptedSuggestionEntry, percentage: number) {
-        getLogger().debug('panshao debug sendUserModificationEventToRTS')
+    public sendUserModificationEvent(suggestion: AcceptedSuggestionEntry, percentage: number) {
+        const customArn = getSelectedCustomization().arn
+
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
                     userModificationEvent: {
                         sessionId: suggestion.sessionId ? suggestion.sessionId : 'undefined',
                         requestId: suggestion.requestId ? suggestion.requestId : 'undefined',
-                        // get programming language from suggestion entry
                         programmingLanguage: { languageName: suggestion.language },
                         modificationPercentage: percentage,
-                        customizationArn: '', // need real implement later panshao
+                        customizationArn: customArn === '' ? undefined : customArn, // need real implement later panshao
                         timestamp: new Date(Date.now()),
                     },
                 },
@@ -600,8 +614,8 @@ export class TelemetryHelper {
             })
     }
 
-    public sendCodeScanEventToRTS(languageId: string, jobId: string) {
-        getLogger().debug('panshao debug sendUserModificationEventToRTS')
+    public sendCodeScanEvent(languageId: string, jobId: string) {
+        getLogger().debug(`start sendUserModificationEvent: jobId: "${jobId}", languageId: "${languageId}"`)
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
