@@ -38,7 +38,6 @@ _ec2() {
     local STREAM_URL=$3
     local TOKEN=$4
     local SESSION_ID=$4
-    local LOG_FILE_LOCATION=$5
 
     exec "$AWS_SSM_CLI" "{\"streamUrl\":\"$STREAM_URL\",\"tokenValue\":\"$TOKEN\",\"sessionId\":\"$SESSION_ID\"}" "$AWS_REGION" "StartSession"
 }
@@ -53,7 +52,7 @@ _main() {
     _require SESSION_ID "${SESSION_ID:-}"
     _require LOG_FILE_LOCATION "${LOG_FILE_LOCATION:-}"
 
-    _ec2 "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID" "$LOG_FILE_LOCATION"
+    _ec2 "$AWS_SSM_CLI" "$AWS_REGION" "$STREAM_URL" "$TOKEN" "$SESSION_ID"
 }
 
 _main
