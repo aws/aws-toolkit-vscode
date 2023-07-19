@@ -4,13 +4,9 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.util
 
 import com.intellij.openapi.application.runReadAction
-import com.intellij.openapi.module.ModuleUtilCore
-import com.intellij.openapi.project.rootManager
-import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.jetbrains.python.psi.PyFile
-import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
 
 object PythonCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "py"
@@ -36,15 +32,12 @@ object PythonCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
 
     override fun findFocalFileForTest(psiFile: PsiFile): VirtualFile? = findSourceFileByName(psiFile) ?: findRelevantFileFromEditors(psiFile)
 
-    private fun findSourceFileByName(psiFile: PsiFile): VirtualFile? {
-        val module = ModuleUtilCore.findModuleForFile(psiFile)
-
-        return module?.rootManager?.getSourceRoots(JavaModuleSourceRootTypes.PRODUCTION)?.let { srcRoot ->
-            srcRoot
-                .map { root -> VfsUtil.collectChildrenRecursively(root) }
-                .flatten()
-                .find { !it.isDirectory && it.isWritable && it.name.contains(guessSourceFileName(psiFile.name)) }
-        }
+    private fun findSourceFileByName(psiFile: PsiFile): VirtualFile? = super.listFilesUnderProjectRoot(psiFile.project).find {
+        !it.isDirectory &&
+            it.isWritable &&
+            it.name != psiFile.virtualFile.name &&
+            // TODO: should we use strict equal instead?
+            it.name.contains(guessSourceFileName(psiFile.name))
     }
 
     /**

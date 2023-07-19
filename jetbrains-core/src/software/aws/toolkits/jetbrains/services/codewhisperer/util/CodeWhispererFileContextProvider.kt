@@ -25,7 +25,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhisper
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.Chunk
@@ -51,8 +53,8 @@ private val codewhispererCodeChunksIndex = GistManager.getInstance()
 private fun getFileCrawlerForLanguage(programmingLanguage: CodeWhispererProgrammingLanguage) = when (programmingLanguage) {
     is CodeWhispererJava -> JavaCodeWhispererFileCrawler
     is CodeWhispererPython -> PythonCodeWhispererFileCrawler
-    is CodeWhispererJavaScript -> JavascriptCodeWhispererFileCrawler
-    is CodeWhispererTypeScript -> TypescriptCodeWhispererFileCrawler
+    is CodeWhispererJavaScript, is CodeWhispererJsx -> JavascriptCodeWhispererFileCrawler
+    is CodeWhispererTypeScript, is CodeWhispererTsx -> TypescriptCodeWhispererFileCrawler
     else -> NoOpFileCrawler()
 }
 
@@ -127,11 +129,12 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
             when (language) {
                 is CodeWhispererJava -> extractSupplementalFileContextForSrc(psiFile, targetContext)
 
-                is CodeWhispererPython, is CodeWhispererJavaScript, is CodeWhispererTypeScript -> if (userGroup == CodeWhispererUserGroup.CrossFile) {
-                    extractSupplementalFileContextForSrc(psiFile, targetContext)
-                } else {
-                    emptyList()
-                }
+                is CodeWhispererPython, is CodeWhispererJavaScript, is CodeWhispererTypeScript, is CodeWhispererJsx, is CodeWhispererTsx ->
+                    if (userGroup == CodeWhispererUserGroup.CrossFile) {
+                        extractSupplementalFileContextForSrc(psiFile, targetContext)
+                    } else {
+                        emptyList()
+                    }
 
                 else -> emptyList()
             }
@@ -195,10 +198,12 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
         return chunks.take(CodeWhispererConstants.CrossFile.CHUNK_SIZE)
     }
 
-    override fun isTestFile(psiFile: PsiFile) = when (psiFile.programmingLanguage()) {
-        is CodeWhispererJava -> TestSourcesFilter.isTestSources(psiFile.virtualFile, project)
-        is CodeWhispererPython -> PythonCodeWhispererFileCrawler.testFilenamePattern.matches(psiFile.name)
-        else -> true
+    override fun isTestFile(psiFile: PsiFile): Boolean {
+        val path = runReadAction { contentRootPathProvider.getPathToElement(project, psiFile.virtualFile, null) ?: psiFile.virtualFile.path }
+        return TestSourcesFilter.isTestSources(psiFile.virtualFile, project) ||
+            path.contains("""test/""") ||
+            path.contains("""tst/""") ||
+            path.contains("""tests/""")
     }
 
     @VisibleForTesting
@@ -255,23 +260,25 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
         val focalFile = getFileCrawlerForLanguage(targetContext.programmingLanguage).findFocalFileForTest(psiFile)
 
         return focalFile?.let { file ->
-            val relativePath = contentRootPathProvider.getPathToElement(project, file, null) ?: file.path
-            val content = file.content()
+            runReadAction {
+                val relativePath = contentRootPathProvider.getPathToElement(project, file, null) ?: file.path
+                val content = file.content()
 
-            if (content.isBlank()) {
-                emptyList()
-            } else {
-                listOf(
-                    Chunk(
-                        content = CodeWhispererConstants.Utg.UTG_PREFIX + file.content().let {
-                            it.substring(
-                                0,
-                                minOf(it.length, CodeWhispererConstants.Utg.UTG_SEGMENT_SIZE)
-                            )
-                        },
-                        path = relativePath
+                if (content.isBlank()) {
+                    emptyList()
+                } else {
+                    listOf(
+                        Chunk(
+                            content = CodeWhispererConstants.Utg.UTG_PREFIX + file.content().let {
+                                it.substring(
+                                    0,
+                                    minOf(it.length, CodeWhispererConstants.Utg.UTG_SEGMENT_SIZE)
+                                )
+                            },
+                            path = relativePath
+                        )
                     )
-                )
+                }
             }
         }.orEmpty()
     }

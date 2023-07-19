@@ -10,8 +10,7 @@ object TypescriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "ts"
     override val dialects: Set<String> = setOf("ts", "tsx")
 
-    // TODO: Add implementation when UTG is enabled
-    override val testFilenamePattern: Regex = "".toRegex()
+    override val testFilenamePattern: Regex = """^.*\.test\.(ts|tsx)${'$'}""".toRegex()
 
     // TODO: Add implementation when UTG is enabled
     override fun guessSourceFileName(tstFileName: String): String = ""

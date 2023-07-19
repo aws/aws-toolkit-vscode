@@ -10,8 +10,7 @@ object JavascriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "js"
     override val dialects: Set<String> = setOf("js", "jsx")
 
-    // TODO: Add implementation when UTG is enabled
-    override val testFilenamePattern: Regex = "".toRegex()
+    override val testFilenamePattern: Regex = """^.*\.test\.(js|jsx)${'$'}""".toRegex()
 
     // TODO: Add implementation when UTG is enabled
     override fun guessSourceFileName(tstFileName: String): String = ""

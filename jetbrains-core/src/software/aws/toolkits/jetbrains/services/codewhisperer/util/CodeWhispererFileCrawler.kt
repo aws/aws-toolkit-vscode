@@ -12,6 +12,8 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 
 /**
  * An interface define how do we parse and fetch files provided a psi file or project
@@ -70,12 +72,19 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
 
     override fun listRelevantFilesInEditors(psiFile: PsiFile): List<VirtualFile> {
         val targetFile = psiFile.virtualFile
+        val language = psiFile.programmingLanguage()
+
+        val isTestFilePredicate: (file: VirtualFile, project: Project) -> Boolean = if (language is CodeWhispererJava) {
+            { file, project -> TestSourcesFilter.isTestSources(file, project) }
+        } else {
+            { file, _ -> testFilenamePattern.matches(file.name) }
+        }
 
         val openedFiles = runReadAction {
             FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
                 it.name != psiFile.virtualFile.name &&
                     isSameDialect(psiFile.virtualFile.extension) &&
-                    !TestSourcesFilter.isTestSources(it, psiFile.project)
+                    !isTestFilePredicate(it, psiFile.project)
             }
         }
 
