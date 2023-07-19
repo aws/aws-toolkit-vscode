@@ -47,6 +47,7 @@ import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
+import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -570,7 +571,7 @@ export async function hasIamCredentials(
 export type SsoKind = 'any' | 'codewhisperer'
 
 /**
- * Returns true if an Identity Center connection exists.
+ * Returns true if an Identity Center SSO connection exists.
  *
  * @param kind A specific kind of Identity Center connection that must exist.
  * @param allConnections func to get all connections that exist
@@ -588,7 +589,12 @@ async function findSsoConnections(
 ): Promise<SsoConnection[]> {
     let predicate: (c?: Connection) => boolean
     switch (kind) {
-        default:
+        case 'codewhisperer':
+            predicate = (conn?: Connection) => {
+                return isIdcConnection(conn) && isValidCodeWhispererConnection(conn)
+            }
+            break
+        case 'any':
             predicate = isIdcConnection
     }
     return (await allConnections()).filter(predicate).filter(isSsoConnection)
@@ -615,7 +621,12 @@ async function findBuilderIdConnections(
 ): Promise<SsoConnection[]> {
     let predicate: (c?: Connection) => boolean
     switch (kind) {
-        default:
+        case 'codewhisperer':
+            predicate = (conn?: Connection) => {
+                return isBuilderIdConnection(conn) && isValidCodeWhispererConnection(conn)
+            }
+            break
+        case 'any':
             predicate = isBuilderIdConnection
     }
     return (await allConnections()).filter(predicate).filter(isSsoConnection)
