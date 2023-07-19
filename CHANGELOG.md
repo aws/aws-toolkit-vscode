@@ -1,3 +1,7 @@
+# _1.72_ (2023-07-11)
+- **(Feature)** CodeWhisperer: Improve suggestion quality with enhanced file context fetching
+- **(Bug Fix)** Fix AWS Lambda configuration window resize ([#3657](https://github.com/aws/aws-toolkit-jetbrains/issues/3657))
+
 # _1.71_ (2023-07-06)
 - **(Bug Fix)** Fix inproper request format when sending empty supplemental context
 

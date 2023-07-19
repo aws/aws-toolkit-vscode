@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "CodeWhisperer: Fix an issue where CodeWhisperer would stuck in the invocation state indefinitely"
-}

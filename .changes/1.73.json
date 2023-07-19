@@ -1,0 +1,14 @@
+{
+  "date" : "2023-07-19",
+  "version" : "1.73",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: Run read operation in the background thread without runReadAction"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: Fix an issue where CodeWhisperer would stuck in the invocation state indefinitely"
+  } ]
+}
