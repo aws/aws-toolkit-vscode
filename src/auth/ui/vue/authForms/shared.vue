@@ -48,6 +48,14 @@ export interface AuthForm {
      * If the auth form is successfully connected
      */
     isAuthConnected(): Promise<boolean>
+
+    /**
+     * Return true if the toolkit extension is aware of
+     * a connection. It does not have to be actively used
+     * for it to exist.
+     */
+    isConnectionExists(): Promise<boolean>
+
     get id(): AuthFormId
 }
 

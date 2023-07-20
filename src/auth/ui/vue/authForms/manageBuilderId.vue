@@ -144,6 +144,7 @@ abstract class BaseBuilderIdState implements AuthForm {
     protected abstract _startBuilderIdSetup(): Promise<AuthError | undefined>
     abstract isAuthConnected(): Promise<boolean>
     abstract showNodeInView(): Promise<void>
+    abstract isConnectionExists(): Promise<boolean>
 
     protected constructor() {}
 
@@ -196,6 +197,10 @@ export class CodeWhispererBuilderIdState extends BaseBuilderIdState {
         return client.isCodeWhispererBuilderIdConnected()
     }
 
+    override isConnectionExists(): Promise<boolean> {
+        return client.hasBuilderId('codewhisperer')
+    }
+
     protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {
         return client.startCodeWhispererBuilderIdSetup()
     }
@@ -238,6 +243,10 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 
     override isAuthConnected(): Promise<boolean> {
         return client.isCodeCatalystBuilderIdConnected()
+    }
+
+    override isConnectionExists(): Promise<boolean> {
+        return client.hasBuilderId('codecatalyst')
     }
 
     protected override _startBuilderIdSetup(): Promise<AuthError | undefined> {

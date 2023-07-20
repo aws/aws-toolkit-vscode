@@ -268,6 +268,7 @@ abstract class BaseIdentityCenterState implements AuthForm {
     abstract isAuthConnected(): Promise<boolean>
     abstract showView(): Promise<void>
     abstract signout(): Promise<void>
+    abstract isConnectionExists(): Promise<boolean>
 
     setValue(key: IdentityCenterKey, value: string) {
         this._data[key] = value
@@ -351,6 +352,10 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
         return client.isCodeWhispererIdentityCenterConnected()
     }
 
+    override isConnectionExists(): Promise<boolean> {
+        return client.isCodeWhispererIdCExists()
+    }
+
     override async showView(): Promise<void> {
         client.showCodeWhispererNode()
     }
@@ -388,6 +393,10 @@ export class CodeCatalystIdentityCenterState extends BaseIdentityCenterState {
 
     override async isAuthConnected(): Promise<boolean> {
         return client.isCodeCatalystIdentityCenterConnected()
+    }
+
+    override isConnectionExists(): Promise<boolean> {
+        return client.isCodeCatalystIdCExists()
     }
 
     override async showView(): Promise<void> {
@@ -440,6 +449,10 @@ export class ExplorerIdentityCenterState extends BaseIdentityCenterState {
     }
 
     override async isAuthConnected(): Promise<boolean> {
+        return client.isIdentityCenterExists()
+    }
+
+    override isConnectionExists(): Promise<boolean> {
         return client.isIdentityCenterExists()
     }
 

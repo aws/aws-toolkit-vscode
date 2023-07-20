@@ -23,14 +23,7 @@ import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { ToolkitError } from '../../../shared/errors'
-import {
-    Connection,
-    SsoConnection,
-    createSsoProfile,
-    isBuilderIdConnection,
-    isIamConnection,
-    isSsoConnection,
-} from '../../connection'
+import { createSsoProfile, isBuilderIdConnection, isIdcSsoConnection } from '../../connection'
 import {
     tryAddCredentials,
     signout,
@@ -39,6 +32,10 @@ import {
     ExtensionUse,
     showConnectionsPageCommand,
     addConnection,
+    hasIamCredentials,
+    hasBuilderId,
+    hasSso,
+    BuilderIdKind,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -103,7 +100,7 @@ export class AuthWebview extends VueWebview {
      * Returns true if any credentials are found, including those discovered from SSO service API.
      */
     async isCredentialExists(): Promise<boolean> {
-        return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
+        return hasIamCredentials()
     }
 
     isCredentialConnected(): boolean {
@@ -154,6 +151,10 @@ export class AuthWebview extends VueWebview {
 
     isCodeWhispererBuilderIdConnected(): boolean {
         return CodeWhispererAuth.instance.isBuilderIdInUse() && CodeWhispererAuth.instance.isConnectionValid()
+    }
+
+    hasBuilderId(kind: BuilderIdKind): Promise<boolean> {
+        return hasBuilderId(kind)
     }
 
     isCodeCatalystBuilderIdConnected(): boolean {
@@ -261,10 +262,7 @@ export class AuthWebview extends VueWebview {
      * does not have to be active.
      */
     async isIdentityCenterExists(): Promise<boolean> {
-        const nonBuilderIdSsoConns = (await Auth.instance.listConnections()).find(conn =>
-            this.isNonBuilderIdSsoConnection(conn)
-        )
-        return nonBuilderIdSsoConns !== undefined
+        return hasSso('any')
     }
 
     isCodeWhispererIdentityCenterConnected(): boolean {
@@ -273,6 +271,14 @@ export class AuthWebview extends VueWebview {
 
     isCodeCatalystIdentityCenterConnected(): boolean {
         return this.codeCatalystAuth.isEnterpriseSsoInUse() && this.codeCatalystAuth.isConnectionValid()
+    }
+
+    isCodeCatalystIdCExists(): Promise<boolean> {
+        return hasSso('codecatalyst')
+    }
+
+    isCodeWhispererIdCExists(): Promise<boolean> {
+        return hasSso('codewhisperer')
     }
 
     async signoutCWIdentityCenter(): Promise<void> {
@@ -309,17 +315,13 @@ export class AuthWebview extends VueWebview {
 
     async signoutIdentityCenter(): Promise<void> {
         const conn = Auth.instance.activeConnection
-        const activeConn = this.isNonBuilderIdSsoConnection(conn) ? conn : undefined
+        const activeConn = isIdcSsoConnection(conn) ? conn : undefined
         if (!activeConn) {
             getLogger().warn('authWebview: Attempted to signout of identity center when it was not being used')
             return
         }
 
         await signout(Auth.instance, activeConn)
-    }
-
-    private isNonBuilderIdSsoConnection(conn?: Connection): conn is SsoConnection {
-        return isSsoConnection(conn) && !isBuilderIdConnection(conn)
     }
 
     getSsoUrlError(url: string | undefined, canUrlExist: boolean = true) {
