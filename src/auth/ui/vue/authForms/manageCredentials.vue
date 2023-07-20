@@ -89,13 +89,13 @@ export default defineComponent({
                 profileName: this.state.getValue('profileName'),
                 aws_access_key_id: this.state.getValue('aws_access_key_id'),
                 aws_secret_access_key: this.state.getValue('aws_secret_access_key'),
-            },
+            } as CredentialsProfile,
             errors: {
                 profileName: '',
                 aws_access_key_id: '',
                 aws_secret_access_key: '',
                 submit: '',
-            },
+            } as CredentialsFormErrors,
             canSubmit: true,
             isConnected: false,
 
@@ -251,19 +251,29 @@ type CredentialsProfileOptional = Partial<CredentialsProfile>
 type CredentialsProfileErrors = CredentialsProfileOptional
 type CredentialsDataKey = keyof CredentialsProfile
 
+type CredentialsFormErrors = {
+    profileName: string
+    aws_access_key_id: string
+    aws_secret_access_key: string
+    submit: string
+}
+
 /**
  * Manages the state of credentials data.
  */
 export class CredentialsState implements AuthForm {
     private _data: CredentialsProfile
+    private _errors: CredentialsFormErrors
 
-    constructor(data?: CredentialsProfile) {
-        this._data = {
-            profileName: '',
-            aws_access_key_id: '',
-            aws_secret_access_key: '',
-            ...data,
-        }
+    static #instance: CredentialsState
+
+    static get instance(): CredentialsState {
+        return (this.#instance ??= new CredentialsState())
+    }
+
+    private constructor() {
+        this._data = CredentialsState.defaultData
+        this._errors = CredentialsState.defaultErrors
     }
 
     setValue(key: CredentialsDataKey, value: string) {
@@ -292,10 +302,11 @@ export class CredentialsState implements AuthForm {
         }
 
         const result = await client.getCredentialFormatError(key, this._data[key])
+        this._errors[key] = result ?? ''
         return result
     }
 
-    async getSubmissionErrors(): Promise<CredentialsProfileErrors | undefined> {
+    async getPreSubmissionErrors(): Promise<CredentialsProfileErrors | undefined> {
         const profileNameError = await client.getProfileNameError(this._data.profileName)
         const formatErrors = await client.getCredentialsSubmissionErrors(this._data)
 
@@ -311,20 +322,44 @@ export class CredentialsState implements AuthForm {
     }
 
     async getAuthenticationError(): Promise<StaticProfileKeyErrorMessage | undefined> {
-        return client.getAuthenticatedCredentialsError(this._data)
+        const error = await client.getAuthenticatedCredentialsError(this._data)
+
+        if (error) {
+            this._errors.submit = error.error
+        }
+
+        return error
     }
 
     async submitData(): Promise<boolean> {
-        const submit = await client.trySubmitCredentials(this._data.profileName, this._data)
-        this.clearData()
-        return submit
+        const success = await client.trySubmitCredentials(this._data.profileName, this._data)
+
+        if (success) {
+            this.reset()
+        }
+
+        return success
     }
 
-    private clearData() {
-        this._data = {
+    private reset() {
+        this._data = CredentialsState.defaultData
+        this._errors = CredentialsState.defaultErrors
+    }
+
+    private static get defaultData(): CredentialsProfile {
+        return {
             profileName: '',
             aws_access_key_id: '',
             aws_secret_access_key: '',
+        }
+    }
+
+    private static get defaultErrors(): CredentialsFormErrors {
+        return {
+            aws_access_key_id: '',
+            aws_secret_access_key: '',
+            profileName: '',
+            submit: '',
         }
     }
 }
