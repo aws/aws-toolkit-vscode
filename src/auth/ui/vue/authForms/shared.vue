@@ -12,7 +12,7 @@ import { AuthFormId } from './types'
  * The state instance of all auth forms
  */
 const authFormsState = {
-    credentials: new CredentialsState() as CredentialsState,
+    credentials: CredentialsState.instance,
     builderIdCodeWhisperer: CodeWhispererBuilderIdState.instance,
     builderIdCodeCatalyst: CodeCatalystBuilderIdState.instance,
     identityCenterCodeWhisperer: new CodeWhispererIdentityCenterState(),
