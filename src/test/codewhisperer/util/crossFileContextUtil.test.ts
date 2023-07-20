@@ -72,7 +72,6 @@ describe('crossFileContextUtil', function () {
             await assertTabCount(4)
 
             const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
-            console.log(`in control test, ${CodeWhispererUserGroupSettings.instance.userGroup}`)
 
             assert.ok(actual !== undefined && actual.length === 0)
         })
@@ -105,7 +104,7 @@ describe('crossFileContextUtil', function () {
             await assertTabCount(4)
 
             const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
-            console.log(`in crossfile test, ${CodeWhispererUserGroupSettings.instance.userGroup}`)
+
             assert.ok(actual !== undefined && actual.length !== 0)
         })
     })

@@ -71,14 +71,19 @@ export async function isTestFile(
     filePath: string,
     languageConfig: { languageId: string; dependencyGraph?: DependencyGraph; fileContent?: string }
 ): Promise<boolean> {
-    const byPath = filePath.includes(`tests/`) || filePath.includes('test/') || filePath.includes('tst/')
-    const byName = isTestFileByName(filePath, languageConfig.languageId)
-    const byDependencyGraph =
+    const pathContainsTest = filePath.includes(`tests/`) || filePath.includes('test/') || filePath.includes('tst/')
+    const fileNameMatchTestPatterns = isTestFileByName(filePath, languageConfig.languageId)
+
+    if (pathContainsTest || fileNameMatchTestPatterns) {
+        return true
+    }
+
+    // This run slowly thus lazily execute
+    const fileHasTestDependency =
         languageConfig.dependencyGraph && languageConfig.fileContent
             ? await languageConfig.dependencyGraph.isTestFile(languageConfig.fileContent)
             : false
-
-    return byPath || byName || byDependencyGraph
+    return fileHasTestDependency
 }
 
 function isTestFileByName(filePath: string, language: string): boolean {
