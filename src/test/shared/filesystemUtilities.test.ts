@@ -160,6 +160,13 @@ describe('filesystemUtilities', function () {
             assert.strictEqual(actual, 4)
         })
 
+        it('another distance 4', function () {
+            fileA = 'foo/a.py'
+            fileB = 'foo/foo/foo/foo/foo/b.py'
+            const actual = getFileDistance(fileA, fileB)
+            assert.strictEqual(actual, 4)
+        })
+
         it('distance 5', function () {
             fileA = 'foo/bar/a.java'
             fileB = 'lzz/baz/zoo/b.java'
