@@ -5,7 +5,9 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { ExtensionUse } from '../../auth/utils'
+import { ExtensionUse, SsoKind, hasIamCredentials, hasSso } from '../../auth/utils'
+import { Connection } from '../../auth/connection'
+import { builderIdConnection, iamConnection, ssoConnection } from './testUtil'
 
 describe('ExtensionUse.isFirstUse()', function () {
     let fakeState: vscode.Memento
@@ -61,4 +63,45 @@ describe('ExtensionUse.isFirstUse()', function () {
     function nextExtensionStartup() {
         return new ExtensionUse()
     }
+})
+
+type Case = { kind: SsoKind; connections: Connection[]; expected: boolean }
+
+describe('connection exists funcs', function () {
+    const anyCases: Case[] = [
+        { connections: [iamConnection], expected: true },
+        { connections: [ssoConnection, builderIdConnection, iamConnection], expected: true },
+        { connections: [], expected: false },
+        { connections: [ssoConnection, builderIdConnection], expected: false },
+    ].map(args => {
+        return { ...args, kind: 'any' }
+    })
+
+    anyCases.forEach(args => {
+        it(`idcExists() returns '${args.expected}' when kind '${args.kind}' given [${args.connections
+            .map(c => c.label)
+            .join(', ')}]`, async function () {
+            assert.strictEqual(await hasSso(args.kind, async () => args.connections), args.expected)
+        })
+    })
+
+    describe('credentialExists()', function () {
+        const cases: [Connection[], boolean][] = [
+            [[iamConnection], true],
+            [[ssoConnection, builderIdConnection, iamConnection], true],
+            [[], false],
+            [[ssoConnection, builderIdConnection], false],
+        ]
+    
+        cases.forEach(args => {
+            it(`credentialExists() returns '${args[1]}' given [${args[0]
+                .map(c => c.label)
+                .join(', ')}]`, async function () {
+                const connections = args[0]
+                const expected = args[1]
+    
+                assert.strictEqual(await hasIamCredentials(async () => connections), expected)
+            })
+        })
+    })
 })

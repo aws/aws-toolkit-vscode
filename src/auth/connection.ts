@@ -27,6 +27,7 @@ export const isIamConnection = (conn?: Connection): conn is IamConnection => con
 export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
 export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
+export const isIdcConnection = (conn?: Connection) => isSsoConnection(conn) && !isBuilderIdConnection(conn)
 
 export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
     return scopes?.every(s => target.scopes?.includes(s))

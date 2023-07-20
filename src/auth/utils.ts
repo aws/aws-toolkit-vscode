@@ -32,10 +32,13 @@ import { SectionName, StaticProfile } from './credentials/types'
 import { throwOnInvalidCredentials } from './credentials/validation'
 import {
     Connection,
+    SsoConnection,
     createBuilderIdProfile,
     createSsoProfile,
     defaultSsoRegion,
     isBuilderIdConnection,
+    isIamConnection,
+    isIdcConnection,
     isSsoConnection,
 } from './connection'
 import { Commands } from '../shared/vscode/commands2'
@@ -556,6 +559,66 @@ export class AuthNode implements TreeNode<Auth> {
             item.description = text
         }
     }
+}
+
+export async function hasIamCredentials(
+    allConnections = () => Auth.instance.listAndTraverseConnections().promise()
+): Promise<boolean> {
+    return (await allConnections()).some(isIamConnection)
+}
+
+export type SsoKind = 'any' | 'codewhisperer'
+
+/**
+ * Returns true if an Identity Center connection exists.
+ *
+ * @param kind A specific kind of Identity Center connection that must exist.
+ * @param allConnections func to get all connections that exist
+ */
+export async function hasSso(
+    kind: SsoKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<boolean> {
+    return (await findSsoConnections(kind, allConnections)).length > 0
+}
+
+async function findSsoConnections(
+    kind: SsoKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<SsoConnection[]> {
+    let predicate: (c?: Connection) => boolean
+    switch (kind) {
+        default:
+            predicate = isIdcConnection
+    }
+    return (await allConnections()).filter(predicate).filter(isSsoConnection)
+}
+
+export type BuilderIdKind = 'any' | 'codewhisperer'
+
+/**
+ * Returns true if a Builder ID connection exists.
+ *
+ * @param kind A Builder ID connection that has the scopes of this kind.
+ * @param allConnections func to get all connections that exist
+ */
+export async function hasBuilderId(
+    kind: BuilderIdKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<boolean> {
+    return (await findBuilderIdConnections(kind, allConnections)).length > 0
+}
+
+async function findBuilderIdConnections(
+    kind: BuilderIdKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<SsoConnection[]> {
+    let predicate: (c?: Connection) => boolean
+    switch (kind) {
+        default:
+            predicate = isBuilderIdConnection
+    }
+    return (await allConnections()).filter(predicate).filter(isSsoConnection)
 }
 
 /**
