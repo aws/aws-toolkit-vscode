@@ -241,6 +241,25 @@ export async function assertTextEditorContains(contents: string): Promise<void |
 }
 
 /**
+ * Create and open an editor with provided fileText, fileName and options. If folder is not provided,
+ * will create a temp worksapce folder which will be automatically deleted in testing environment
+ */
+export async function openATextEditorWithText(
+    fileText: string,
+    fileName: string,
+    folder?: string,
+    options?: vscode.TextDocumentShowOptions
+): Promise<vscode.TextEditor> {
+    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
+    const filePath = path.join(myWorkspaceFolder, fileName)
+    toFile(fileText, filePath)
+
+    const textDocument = await vscode.workspace.openTextDocument(filePath)
+
+    return await vscode.window.showTextDocument(textDocument, options)
+}
+
+/**
  * Waits for _any_ tab to appear and have the desired count
  */
 export async function assertTabCount(size: number): Promise<void | never> {

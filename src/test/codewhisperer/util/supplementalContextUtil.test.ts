@@ -7,17 +7,8 @@ import * as vscode from 'vscode'
 import * as assert from 'assert'
 import * as path from 'path'
 import * as semver from 'semver'
-import { closeAllEditors, toFile, assertTabCount, createTestWorkspaceFolder } from '../../testUtil'
+import { closeAllEditors, assertTabCount, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 import { getOpenFilesInWindow } from '../../../codewhisperer/util/supplementalContext/supplementalContextUtil'
-
-async function openATextEditorWithText(fileText: string, fileName: string, folder: string): Promise<vscode.TextEditor> {
-    const completeFilePath = path.join(folder, fileName)
-    toFile(fileText, completeFilePath)
-
-    const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
-
-    return await vscode.window.showTextDocument(textDocument, { preview: false })
-}
 
 // VSCode tab APIs are available since 1.68.0
 function shouldRunTheTest(): boolean {
@@ -40,15 +31,15 @@ describe('supplementalContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('test case 1, no filter provided as argument', async function () {
+        it('no filter provided as argument, should return all files opened', async function () {
             if (!shouldRunTheTest) {
                 this.skip()
             }
 
-            await openATextEditorWithText('content-1', 'file-1.java', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder)
-            await openATextEditorWithText('content-3', 'file-3.java', tempFolder)
-            await openATextEditorWithText('content-4', 'file-4.java', tempFolder)
+            await openATextEditorWithText('content-1', 'file-1.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-3', 'file-3.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-4', 'file-4.java', tempFolder, { preview: false })
 
             await assertTabCount(4)
 
@@ -60,15 +51,15 @@ describe('supplementalContextUtil', function () {
             assert.ok(actual.has(path.join(tempFolder, 'file-4.java')))
         })
 
-        it('test case 2 with filter argument provided', async function () {
+        it('filter argument provided, should return only files matching the predicate', async function () {
             if (!shouldRunTheTest) {
                 this.skip()
             }
 
-            await openATextEditorWithText('content-1', 'file-1.java', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder)
-            await openATextEditorWithText('content-3', 'file-3.txt', tempFolder)
-            await openATextEditorWithText('content-4', 'file-4.txt', tempFolder)
+            await openATextEditorWithText('content-1', 'file-1.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-3', 'file-3.txt', tempFolder, { preview: false })
+            await openATextEditorWithText('content-4', 'file-4.txt', tempFolder, { preview: false })
 
             await assertTabCount(4)
 

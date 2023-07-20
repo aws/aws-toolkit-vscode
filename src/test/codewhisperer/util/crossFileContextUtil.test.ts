@@ -12,18 +12,9 @@ import * as crossFile from '../../../codewhisperer/util/supplementalContext/cros
 import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { UserGroup } from '../../../codewhisperer/models/constants'
-import { assertTabCount, closeAllEditors, createTestWorkspaceFolder, toFile } from '../../testUtil'
+import { assertTabCount, closeAllEditors, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 
 let tempFolder: string
-
-async function openATextEditorWithText(fileText: string, fileName: string, folder: string): Promise<vscode.TextEditor> {
-    const completeFilePath = path.join(folder, fileName)
-    toFile(fileText, completeFilePath)
-
-    const textDocument = await vscode.workspace.openTextDocument(completeFilePath)
-
-    return await vscode.window.showTextDocument(textDocument, { preview: false })
-}
 
 // VSCode tab APIs are available since 1.68.0
 function shouldRunTheTest(): boolean {
@@ -81,10 +72,10 @@ describe('crossFileContextUtil', function () {
             // TODO: flaky, is there other approach to achive this? need this probably because it's an async test
             while (userGroupSettings.userGroup !== UserGroup.Control) {}
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.js', tempFolder)
-            await openATextEditorWithText('content-3', 'file-3.js', tempFolder)
-            await openATextEditorWithText('content-4', 'file-4.js', tempFolder)
+            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
+            await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
+            await openATextEditorWithText('content-3', 'file-3.js', tempFolder, { preview: false })
+            await openATextEditorWithText('content-4', 'file-4.js', tempFolder, { preview: false })
 
             await assertTabCount(4)
 
@@ -121,10 +112,10 @@ describe('crossFileContextUtil', function () {
             // TODO: flaky, is there other approach to achive this? need this probably because it's an async test
             console.log(`in crossfile group test, ${userGroupSettings.userGroup}`)
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.js', tempFolder)
-            await openATextEditorWithText('content-3', 'file-3.js', tempFolder)
-            await openATextEditorWithText('content-4', 'file-4.js', tempFolder)
+            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
+            await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
+            await openATextEditorWithText('content-3', 'file-3.js', tempFolder, { preview: false })
+            await openATextEditorWithText('content-4', 'file-4.js', tempFolder, { preview: false })
 
             await assertTabCount(4)
 
@@ -154,9 +145,9 @@ describe('crossFileContextUtil', function () {
             }
 
             const editor = await openATextEditorWithText('content-1', 'file-1.java', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder)
-            await openATextEditorWithText('content-3', 'file-3.java', tempFolder)
-            await openATextEditorWithText('content-4', 'file-4.java', tempFolder)
+            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-3', 'file-3.java', tempFolder, { preview: false })
+            await openATextEditorWithText('content-4', 'file-4.java', tempFolder, { preview: false })
 
             await assertTabCount(4)
 
