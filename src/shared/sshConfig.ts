@@ -27,7 +27,9 @@ export class VscodeRemoteSshConfig {
     public constructor(
         protected readonly sshPath: string,
         protected readonly hostNamePrefix: string,
-        protected readonly scriptPrefix: string
+        protected readonly scriptPrefix: string,
+        protected readonly user?: string,
+        protected readonly identityFile?: string
     ) {
         this.configHostName = `${hostNamePrefix}*`
         this.proxyCommandRegExp = new RegExp(`proxycommand.{0,1024}${scriptPrefix}(.ps1)?.{0,99}`)
@@ -169,7 +171,7 @@ export class VscodeRemoteSshConfig {
         return Result.ok()
     }
 
-    protected createSSHConfigSection(proxyCommand: string): string {
+    private getBaseSSHConfig(proxyCommand: string): string {
         // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
         // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
 
@@ -181,6 +183,13 @@ Host ${this.configHostName}
     StrictHostKeyChecking accept-new
     ProxyCommand ${proxyCommand}
     `
+    }
+
+    protected createSSHConfigSection(proxyCommand: string): string {
+        if (this.user && this.identityFile) {
+            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.identityFile}'\n    User ${this.user}\n`
+        }
+        return this.getBaseSSHConfig(proxyCommand)
     }
 }
 

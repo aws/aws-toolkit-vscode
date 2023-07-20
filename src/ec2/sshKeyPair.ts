@@ -13,12 +13,15 @@ export class SshKeyPair {
     }
 
     public static async generateSshKeys(keyPath: string) {
-        const process = new ChildProcess('ssh-keygen', ['-t', 'rsa', '-N', "''", '-q', '-f', keyPath])
-        const result = await process.run()
-        if (result.exitCode !== 0) {
-            throw new ToolkitError('ec2: Failed to generate ssh key')
+        const keyExists = await fs.pathExists(keyPath)
+        if (!keyExists) {
+            const process = new ChildProcess(`ssh-keygen`, ['-t', 'rsa', '-N', '', '-q', '-f', keyPath])
+            const result = await process.run()
+            if (result.exitCode !== 0) {
+                throw new ToolkitError('ec2: Failed to generate ssh key')
+            }
+            console.log(result)
         }
-
         return new SshKeyPair(keyPath)
     }
 
