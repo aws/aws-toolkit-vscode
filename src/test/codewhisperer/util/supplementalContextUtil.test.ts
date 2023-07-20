@@ -32,7 +32,7 @@ describe('supplementalContextUtil', function () {
         })
 
         it('no filter provided as argument, should return all files opened', async function () {
-            if (!shouldRunTheTest) {
+            if (!shouldRunTheTest()) {
                 this.skip()
             }
 
@@ -52,7 +52,7 @@ describe('supplementalContextUtil', function () {
         })
 
         it('filter argument provided, should return only files matching the predicate', async function () {
-            if (!shouldRunTheTest) {
+            if (!shouldRunTheTest()) {
                 this.skip()
             }
 

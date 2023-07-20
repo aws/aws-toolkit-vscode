@@ -90,7 +90,7 @@ export async function getOpenFilesInWindow(
         const tabArrays = vscode.window.tabGroups.all
         tabArrays.forEach(tabArray => {
             tabArray.tabs.forEach(tab => {
-                filesOpenedInEditor.push((tab.input as any).uri.path)
+                filesOpenedInEditor.push((tab.input as any).uri.fsPath)
             })
         })
     } catch (e) {

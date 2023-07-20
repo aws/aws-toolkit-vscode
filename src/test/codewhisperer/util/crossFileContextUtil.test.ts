@@ -5,7 +5,6 @@
 
 import * as assert from 'assert'
 import * as vscode from 'vscode'
-import * as path from 'path'
 import * as sinon from 'sinon'
 import * as semver from 'semver'
 import * as crossFile from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
@@ -63,14 +62,11 @@ describe('crossFileContextUtil', function () {
         })
 
         it('should be empty if userGroup is control', async function () {
-            if (!shouldRunTheTest) {
+            if (!shouldRunTheTest()) {
                 this.skip()
             }
 
             sinon.stub(userGroupSettings, 'userGroup').returns(UserGroup.Control)
-
-            // TODO: flaky, is there other approach to achive this? need this probably because it's an async test
-            while (userGroupSettings.userGroup !== UserGroup.Control) {}
 
             const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
             await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
@@ -101,16 +97,11 @@ describe('crossFileContextUtil', function () {
         })
 
         it('should be non empty if userGroup is crossfile', async function () {
-            if (!shouldRunTheTest) {
+            if (!shouldRunTheTest()) {
                 this.skip()
             }
 
             sinon.stub(userGroupSettings, 'userGroup').returns(UserGroup.CrossFile)
-
-            while (userGroupSettings.userGroup !== UserGroup.CrossFile) {}
-
-            // TODO: flaky, is there other approach to achive this? need this probably because it's an async test
-            console.log(`in crossfile group test, ${userGroupSettings.userGroup}`)
 
             const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
             await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
@@ -140,7 +131,7 @@ describe('crossFileContextUtil', function () {
         })
 
         it('should be non empty', async function () {
-            if (!shouldRunTheTest) {
+            if (!shouldRunTheTest()) {
                 this.skip()
             }
 
