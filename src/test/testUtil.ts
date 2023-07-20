@@ -240,25 +240,6 @@ export async function assertTextEditorContains(contents: string): Promise<void |
     }
 }
 
-export async function assertTabSize(size: number): Promise<void | never> {
-    const tabs = await waitUntil(
-        async () => {
-            const tabs = vscode.window.tabGroups.all
-                .map(tabGroup => tabGroup.tabs)
-                .reduce((acc, curVal) => acc.concat(curVal), [])
-
-            if (tabs.length === size) {
-                return tabs
-            }
-        },
-        { interval: 5 }
-    )
-
-    if (!tabs) {
-        throw new Error('No desired tabs found')
-    }
-}
-
 /**
  * Executes the "openEditors.closeAll" command and asserts that all visible
  * editors were closed after waiting.
@@ -358,18 +339,4 @@ export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): P
             setTimeout(stop, timeout)
         }
     })
-}
-
-/**
- * Shuffle a list, Fisher-Yates Sorting Algorithm
- */
-export function shuffleList<T>(list: T[]): T[] {
-    const shuffledList = [...list]
-
-    for (let i = shuffledList.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        ;[shuffledList[i], shuffledList[j]] = [shuffledList[j], shuffledList[i]]
-    }
-
-    return shuffledList
 }
