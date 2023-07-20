@@ -47,7 +47,7 @@
                 </div>
 
                 <div class="form-section">
-                    <button v-on:click="submitData()">Add Profile</button>
+                    <button v-on:click="submitData()" :disabled="!canSubmit">Add Profile</button>
                     <div class="small-description error-text">{{ errors.submit }}</div>
                 </div>
             </div>
@@ -96,7 +96,7 @@ export default defineComponent({
                 aws_secret_access_key: '',
                 submit: '',
             },
-            canSubmit: false,
+            canSubmit: true,
             isConnected: false,
 
             /**
@@ -111,7 +111,6 @@ export default defineComponent({
         await this.updateDataError('aws_access_key_id')
         await this.updateDataError('aws_secret_access_key')
         this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
-        await this.updateSubmittableStatus()
 
         this.updateConnectedStatus('created')
     },
@@ -137,7 +136,6 @@ export default defineComponent({
             this.errors.submit = ''
 
             this.state.setValue(key, newVal.trim())
-            this.updateSubmittableStatus()
             this.updateDataError(key)
         },
         /** Updates the error using the current data */
@@ -147,11 +145,6 @@ export default defineComponent({
             })
 
             client.setInvalidInputFields(this.getFieldsWithErrors())
-        },
-        async updateSubmittableStatus() {
-            return this.state.getSubmissionErrors().then(errors => {
-                this.canSubmit = errors === undefined
-            })
         },
         async updateConnectedStatus(cause?: ConnectionUpdateCause) {
             return this.state.isAuthConnected().then(isConnected => {
@@ -186,24 +179,24 @@ export default defineComponent({
                     reason: error.key,
                     invalidInputFields: this.getFieldsWithErrors(),
                 })
-                return // Do not allow submission since data fails authentication
+            } else {
+                // submission
+                const successful = await this.state.submitData()
+
+                if (successful) {
+                    client.successfulAuthAttempt({
+                        featureType: 'awsExplorer',
+                        authType: 'sharedCredentials',
+                    })
+                }
+
+                // post submission (successfully connected)
+                this.clearFormData()
+                this.isFormShown = false
+                await this.updateConnectedStatus('signIn')
             }
 
-            // submission
-            const successful = await this.state.submitData()
-
-            if (successful) {
-                client.successfulAuthAttempt({
-                    featureType: 'awsExplorer',
-                    authType: 'sharedCredentials',
-                })
-            }
-
-            // post submission (successfully connected)
-            this.clearFormData()
-            this.isFormShown = false
             this.canSubmit = true // enable submit button
-            await this.updateConnectedStatus('signIn')
         },
         /**
          * Sets the 'cannot be empty' error for each empty field
