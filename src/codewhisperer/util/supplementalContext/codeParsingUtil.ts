@@ -5,7 +5,6 @@
 
 import path = require('path')
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
-import * as vscode from 'vscode'
 
 export interface utgLanguageConfig {
     extension: string
@@ -68,29 +67,21 @@ export function countSubstringMatches(arr1: string[], arr2: string[]): number {
     return count
 }
 
-export async function isTestFile(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<boolean> {
-    const languageConfig = utgLanguageConfigs[editor.document.languageId]
-    if (!languageConfig) {
-        // We have enabled the support only for python and Java for this check
-        // as we depend on Regex for this validation.
-        return false
-    }
+export async function isTestFile(
+    filePath: string,
+    languageConfig: { languageId: string; dependencyGraph?: DependencyGraph; fileContent?: string }
+): Promise<boolean> {
+    const byPath = filePath.includes(`tests/`) || filePath.includes('test/') || filePath.includes('tst/')
+    const byName = isTestFileByName(filePath, languageConfig.languageId)
+    const byDependencyGraph =
+        languageConfig.dependencyGraph && languageConfig.fileContent
+            ? await languageConfig.dependencyGraph.isTestFile(languageConfig.fileContent)
+            : false
 
-    // TODO (Metrics): Add total number of calls to isTestFile
-    if (isTestFileByName(editor.document.uri.fsPath, editor.document.languageId)) {
-        return true
-    }
-
-    // TODO (Metrics): Add metrics for isTestFileByName Failure
-    // (to help us determine if people follow naming conventions)
-    if (await dependencyGraph.isTestFile(editor.document.getText())) {
-        return true
-    }
-
-    return false
+    return byPath || byName || byDependencyGraph
 }
 
-export function isTestFileByName(filePath: string, language: string): boolean {
+function isTestFileByName(filePath: string, language: string): boolean {
     const languageConfig = utgLanguageConfigs[language]
     if (!languageConfig) {
         // We have enabled the support only for python and Java for this check
@@ -100,8 +91,6 @@ export function isTestFileByName(filePath: string, language: string): boolean {
     const testFilenamePattern = languageConfig.testFilenamePattern
 
     const filename = path.basename(filePath)
-    if (testFilenamePattern.test(filename)) {
-        return true
-    }
-    return false
+
+    return testFilenamePattern.test(filename)
 }

@@ -6,12 +6,10 @@
 import {
     extractClasses,
     extractFunctions,
-    isTestFileByName,
+    isTestFile,
     utgLanguageConfigs,
 } from '../../../codewhisperer/util/supplementalContext/codeParsingUtil'
 import * as assert from 'assert'
-//import * as fs from 'fs-extra';
-//import * as vscode from 'vscode';
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -63,47 +61,51 @@ describe('RegexValidationForJava', () => {
     })
 })
 
-describe('isTestFileByNameValidation', () => {
-    it('should return true if the file name matches the test filename pattern - Java', () => {
+describe('isTestFileValidation', () => {
+    it('should return true if the file name matches the test filename pattern - Java', async () => {
         const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java']
         const language = 'java'
-        filePaths.forEach(filePath => {
-            const result = isTestFileByName(filePath, language)
+
+        for (const filePath of filePaths) {
+            const result = await isTestFile(filePath, { languageId: language })
             assert.strictEqual(result, true)
-        })
+        }
     })
 
-    it('should return false if the file name does not match the test filename pattern - Java', () => {
+    it('should return false if the file name does not match the test filename pattern - Java', async () => {
         const filePaths = ['/path/to/MyClass.java', '/path/to/MyClass_test.java', '/path/to/test_MyClass.java']
         const language = 'java'
-        filePaths.forEach(filePath => {
-            const result = isTestFileByName(filePath, language)
+
+        for (const filePath of filePaths) {
+            const result = await isTestFile(filePath, { languageId: language })
             assert.strictEqual(result, false)
-        })
+        }
     })
 
-    it('should return true if the file name does not match the test filename pattern - Python', () => {
+    it('should return true if the file name does not match the test filename pattern - Python', async () => {
         const filePaths = ['/path/to/util_test.py', '/path/to/test_util.py']
         const language = 'python'
-        filePaths.forEach(filePath => {
-            const result = isTestFileByName(filePath, language)
+
+        for (const filePath of filePaths) {
+            const result = await isTestFile(filePath, { languageId: language })
             assert.strictEqual(result, true)
-        })
+        }
     })
 
-    it('should return false if the file name does not match the test filename pattern - Python', () => {
+    it('should return false if the file name does not match the test filename pattern - Python', async () => {
         const filePaths = ['/path/to/util.py', '/path/to/utilTest.java', '/path/to/Testutil.java']
         const language = 'python'
-        filePaths.forEach(filePath => {
-            const result = isTestFileByName(filePath, language)
+
+        for (const filePath of filePaths) {
+            const result = await isTestFile(filePath, { languageId: language })
             assert.strictEqual(result, false)
-        })
+        }
     })
 
-    it('should return false if the language is not supported', () => {
+    it('should return false if the language is not supported', async () => {
         const filePath = '/path/to/MyClass.cpp'
         const language = 'c++'
-        const result = isTestFileByName(filePath, language)
+        const result = await isTestFile(filePath, { languageId: language })
         assert.strictEqual(result, false)
     })
 })

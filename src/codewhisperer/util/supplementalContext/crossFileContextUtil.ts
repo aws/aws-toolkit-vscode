@@ -5,16 +5,17 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
+import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
-import { isRelevant } from './editorFilesUtil'
 import { ToolkitError } from '../../../shared/errors'
 import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContextItem, getOpenFilesInWindow } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
+import { isTestFile } from './codeParsingUtil'
 
-const crossFileLanguageConfigs = ['java']
+// VSCode language identifier, refer to https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers
+const crossFileLanguageConfigs = ['java', 'python', 'typescript', 'javascript', 'javascriptreact', 'typescriptreact']
 interface Chunk {
     fileName: string
     content: string
@@ -24,20 +25,21 @@ interface Chunk {
 
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
-    dependencyGraph: DependencyGraph,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
-    if (crossFileLanguageConfigs.includes(editor.document.languageId) === false) {
-        return undefined
-    }
+    const shouldProceed = shouldFetchCrossFileContext(
+        editor.document.languageId,
+        CodeWhispererUserGroupSettings.instance.userGroup
+    )
 
-    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
-        return []
+    if (!shouldProceed) {
+        return shouldProceed === undefined ? undefined : []
     }
 
     // Step 1: Get relevant cross files to refer
-    const relevantCrossFilePaths = await getRelevantCrossFiles(editor, dependencyGraph)
+    const relevantCrossFilePaths = await getCrossFileCandidates(editor)
     throwIfCancelled(cancellationToken)
+
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
     // Chunk linking is required as we want to pass the next chunk value for matched chunk.
@@ -111,6 +113,27 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
 }
 
 /**
+ * Util to decide if we need to fetch crossfile context since CodeWhisperer CrossFile Context feature is gated by userGroup and language level
+ * @param languageId: VSCode language Identifier
+ * @param userGroup: CodeWhisperer user group settings, refer to userGroupUtil.ts
+ * @returns specifically returning undefined if the langueage is not supported,
+ * otherwise true/false depending on if the language is fully supported or not belonging to the user group
+ */
+function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
+    if (!crossFileLanguageConfigs.includes(languageId)) {
+        return undefined
+    }
+
+    if (languageId === 'java') {
+        return true
+    } else if (crossFileLanguageConfigs.includes(languageId) && userGroup === UserGroup.CrossFile) {
+        return true
+    } else {
+        return false
+    }
+}
+
+/**
  * This linking is required from science experimentations to pass the next contnet chunk
  * when a given chunk context passes the match in BM25.
  * Special handling is needed for last(its next points to its own) and first chunk
@@ -158,27 +181,17 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * This function will return relevant cross files for the given editor file
  * by referencing open files, imported files and same package files.
  */
-async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
-    return getOpenFilesInWindow().filter(file => {
-        return isRelevant(editor.document.fileName, file, editor.document.languageId)
+async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
+    const targetFileName = editor.document.fileName
+    const language = editor.document.languageId
+
+    return getOpenFilesInWindow(async candidateFile => {
+        return (
+            targetFileName !== candidateFile &&
+            path.extname(targetFileName) === path.extname(candidateFile) &&
+            !(await isTestFile(candidateFile, { languageId: language }))
+        )
     })
-}
-
-function getOpenFilesInWindow(): string[] {
-    const filesOpenedInEditor: string[] = []
-
-    try {
-        const tabArrays = vscode.window.tabGroups.all
-        tabArrays.forEach(tabArray => {
-            tabArray.tabs.forEach(tab => {
-                filesOpenedInEditor.push((tab.input as any).uri.path)
-            })
-        })
-    } catch (e) {
-        // Older versions of VSC do not have the tab API
-    }
-
-    return filesOpenedInEditor
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {

@@ -35,19 +35,18 @@ export async function fetchSupplementalContext(
     const timesBeforeFetching = performance.now()
     const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
 
-    if (dependencyGraph === undefined) {
-        // This is a general check for language support of CW.
-        // We perform feature level language filtering later.
-        return undefined
-    }
+    const isUtg = await isTestFile(editor.document.uri.fsPath, {
+        languageId: editor.document.languageId,
+        dependencyGraph: dependencyGraph,
+        fileContent: editor.document.getText(),
+    })
 
-    const isUtg = await isTestFile(editor, dependencyGraph)
     let supplementalContextPromise: Promise<CodeWhispererSupplementalContextItem[] | undefined>
 
     if (isUtg) {
-        supplementalContextPromise = fetchSupplementalContextForTest(editor, dependencyGraph, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, dependencyGraph, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
     }
 
     return supplementalContextPromise
@@ -80,4 +79,27 @@ export async function fetchSupplementalContext(
                 return undefined
             }
         })
+}
+
+export async function getOpenFilesInWindow(
+    filterPredicate?: (filePath: string) => Promise<boolean>
+): Promise<string[]> {
+    const filesOpenedInEditor: string[] = []
+
+    try {
+        const tabArrays = vscode.window.tabGroups.all
+        tabArrays.forEach(tabArray => {
+            tabArray.tabs.forEach(tab => {
+                filesOpenedInEditor.push((tab.input as any).uri.path)
+            })
+        })
+    } catch (e) {
+        // Older versions of VSC do not have the tab API
+    }
+
+    if (filterPredicate) {
+        return filesOpenedInEditor.filter(filePath => filterPredicate(filePath))
+    } else {
+        return filesOpenedInEditor
+    }
 }
