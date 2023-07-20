@@ -247,8 +247,6 @@ export default defineComponent({
 })
 
 type CredentialsProfile = { profileName: SectionName } & StaticProfile
-type CredentialsProfileOptional = Partial<CredentialsProfile>
-type CredentialsProfileErrors = CredentialsProfileOptional
 type CredentialsDataKey = keyof CredentialsProfile
 
 type CredentialsFormErrors = {
@@ -304,21 +302,6 @@ export class CredentialsState implements AuthForm {
         const result = await client.getCredentialFormatError(key, this._data[key])
         this._errors[key] = result ?? ''
         return result
-    }
-
-    async getPreSubmissionErrors(): Promise<CredentialsProfileErrors | undefined> {
-        const profileNameError = await client.getProfileNameError(this._data.profileName)
-        const formatErrors = await client.getCredentialsSubmissionErrors(this._data)
-
-        // No errors for anything
-        if (!profileNameError && !formatErrors) {
-            return undefined
-        }
-
-        return {
-            profileName: profileNameError,
-            ...formatErrors,
-        }
     }
 
     async getAuthenticationError(): Promise<StaticProfileKeyErrorMessage | undefined> {
