@@ -10,8 +10,10 @@ import * as semver from 'semver'
 import * as crossFile from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
-import { UserGroup } from '../../../codewhisperer/models/constants'
+import { UserGroup, userGroupKey } from '../../../codewhisperer/models/constants'
 import { assertTabCount, closeAllEditors, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
+import globals from '../../../shared/extensionGlobals'
+import { extensionVersion } from '../../../shared/vscode/env'
 
 let tempFolder: string
 
@@ -21,8 +23,6 @@ function shouldRunTheTest(): boolean {
 }
 
 describe('crossFileContextUtil', function () {
-    const userGroupSettings = CodeWhispererUserGroupSettings.instance
-
     const fakeCancellationToken: vscode.CancellationToken = {
         isCancellationRequested: false,
         onCancellationRequested: sinon.spy(),
@@ -56,9 +56,8 @@ describe('crossFileContextUtil', function () {
         })
 
         afterEach(async function () {
-            sinon.restore()
-            userGroupSettings.reset()
             await closeAllEditors()
+            await globals.context.globalState.update(userGroupKey, undefined)
         })
 
         it('should be empty if userGroup is control', async function () {
@@ -66,7 +65,10 @@ describe('crossFileContextUtil', function () {
                 this.skip()
             }
 
-            sinon.stub(userGroupSettings, 'userGroup').returns(UserGroup.Control)
+            await globals.context.globalState.update(userGroupKey, {
+                group: UserGroup.Control,
+                version: extensionVersion,
+            })
 
             const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
             await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
@@ -76,6 +78,7 @@ describe('crossFileContextUtil', function () {
             await assertTabCount(4)
 
             const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+            console.log(`in control test, ${CodeWhispererUserGroupSettings.instance.userGroup}`)
 
             assert.ok(actual !== undefined && actual.length === 0)
         })
@@ -91,8 +94,6 @@ describe('crossFileContextUtil', function () {
         })
 
         afterEach(async function () {
-            sinon.restore()
-            userGroupSettings.reset()
             await closeAllEditors()
         })
 
@@ -101,7 +102,10 @@ describe('crossFileContextUtil', function () {
                 this.skip()
             }
 
-            sinon.stub(userGroupSettings, 'userGroup').returns(UserGroup.CrossFile)
+            await globals.context.globalState.update(userGroupKey, {
+                group: UserGroup.CrossFile,
+                version: extensionVersion,
+            })
 
             const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
             await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
@@ -111,12 +115,12 @@ describe('crossFileContextUtil', function () {
             await assertTabCount(4)
 
             const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
-
+            console.log(`in crossfile test, ${CodeWhispererUserGroupSettings.instance.userGroup}`)
             assert.ok(actual !== undefined && actual.length !== 0)
         })
     })
 
-    describe('full support', async function () {
+    describe('full support', function () {
         before(async function () {
             this.timeout(60000)
         })
