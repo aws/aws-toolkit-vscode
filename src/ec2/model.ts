@@ -200,6 +200,7 @@ export class Ec2ConnectionManager {
 
     public async sendSshKeyToInstance(selection: Ec2Selection, sshKeyPair: SshKeyPair): Promise<void> {
         const sshKey = sshKeyPair.getPublicKey()
+        // TODO: this path is hard-coded from amazon linux instances.
         const remoteAuthorizedKeysPaths = '/home/ec2-user/.ssh/authorized_keys'
         const command = `echo ${sshKey} > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
