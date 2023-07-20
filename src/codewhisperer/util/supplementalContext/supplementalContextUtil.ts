@@ -103,11 +103,11 @@ export async function getOpenFilesInWindow(
         const resultsWithNulls = await Promise.all(
             filesOpenedInEditor.map(async file => {
                 const aResult = await filterPredicate(file)
-                return aResult ? file : null
+                return aResult ? file : undefined
             })
         )
 
-        return resultsWithNulls.filter(item => item !== null) as string[]
+        return resultsWithNulls.filter(item => item !== undefined) as string[]
     } else {
         return filesOpenedInEditor
     }
