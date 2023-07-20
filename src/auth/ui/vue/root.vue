@@ -194,7 +194,7 @@ export default defineComponent({
         }
     },
     async created() {
-        await this.getAllConnectedAuths().then(connectedAuths => client.setInitialConnectedAuths(connectedAuths))
+        await this.getAllExistingAuths().then(connectedAuths => client.setInitialExistingAuths(connectedAuths))
         this.updateFoundCredentialButNotConnected()
 
         await this.selectInitialService()
@@ -316,7 +316,7 @@ export default defineComponent({
             })
             return Promise.all(allFeatureUpdates).then(() => this.renderItems())
         },
-        async getAllConnectedAuths(): Promise<AuthFormId[]> {
+        async getAllExistingAuths(): Promise<AuthFormId[]> {
             const allFeatureStates = Object.keys(this.serviceItemsAuthStatus).map(key => {
                 const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
                 return this.serviceItemsAuthStatus[id]
@@ -324,7 +324,7 @@ export default defineComponent({
             const connectedAuths: AuthFormId[] = []
             for (const featureState of allFeatureStates) {
                 for (const authForm of featureState.getAuthForms()) {
-                    if (await authForm.isAuthConnected()) {
+                    if (await authForm.isConnectionExists()) {
                         connectedAuths.push(authForm.id)
                     }
                 }

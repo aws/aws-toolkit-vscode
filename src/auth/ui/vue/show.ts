@@ -396,25 +396,24 @@ export class AuthWebview extends VueWebview {
     }
 
     /**
-     * Represents the 'unlocked' tabs/auth areas in the UI
-     *
-     * We use this to get a high level view of what features are enabled/unlocked
+     * All auths that existed prior to the webview being opened.
      */
-    private initialConnectedAuths: Set<AuthFormId> = new Set()
-    setInitialConnectedAuths(auths: AuthFormId[]) {
-        this.initialConnectedAuths = new Set(auths)
+    private initialExistingAuths: Set<AuthFormId> = new Set()
+    setInitialExistingAuths(auths: AuthFormId[]) {
+        this.initialExistingAuths = new Set(auths)
     }
 
-    #allConnectedAuths: Set<AuthFormId> | undefined
+    #allExistingAuths: Set<AuthFormId> | undefined
+    /** Called when a new auth form is successfully completed. */
     authFormSuccess(id: AuthFormId | undefined) {
         if (!id) {
             return
         }
-        this.#allConnectedAuths ??= new Set(this.initialConnectedAuths)
-        this.#allConnectedAuths.add(id)
+        this.#allExistingAuths ??= new Set(this.initialExistingAuths)
+        this.#allExistingAuths.add(id)
     }
-    getAllConnectedAuths(): Set<AuthFormId> {
-        return (this.#allConnectedAuths ??= new Set())
+    getAllExistingAuths(): Set<AuthFormId> {
+        return (this.#allExistingAuths ??= new Set())
     }
 
     /**
@@ -612,11 +611,9 @@ export class AuthWebview extends VueWebview {
             await this.stopAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
         }
 
-        const allConnectedAuths = this.getAllConnectedAuths()
-        const newConnectedAuths = new Set(
-            [...allConnectedAuths].filter(value => !this.initialConnectedAuths.has(value))
-        )
-        const uncountedBuilderIds = this.getUncountedBuilderIds(allConnectedAuths, newConnectedAuths)
+        const allAuths = this.getAllExistingAuths()
+        const newAuths = new Set([...allAuths].filter(value => !this.initialExistingAuths.has(value)))
+        const uncountedBuilderIds = this.getUncountedBuilderIds(allAuths, newAuths)
 
         let numAuthConnections = (await this.getConnectionCount()) + uncountedBuilderIds
         let numNewAuthConnections = numAuthConnections - this.initialNumConnections! + uncountedBuilderIds
@@ -628,7 +625,7 @@ export class AuthWebview extends VueWebview {
             // If this is the case, we will set the total connections to what it initially was
             // since we don't consider removing connections as not having existed.
             numAuthConnections = this.initialNumConnections!
-            numNewAuthConnections = newConnectedAuths.size // best effort guess but can be wrong
+            numNewAuthConnections = newAuths.size // best effort guess but can be wrong
         }
 
         let result: Result
@@ -662,8 +659,8 @@ export class AuthWebview extends VueWebview {
             reason: 'closedWebview',
             authConnectionsCount: numAuthConnections,
             newAuthConnectionsCount: numNewAuthConnections,
-            enabledAuthConnections: builderCommaDelimitedString(allConnectedAuths),
-            newEnabledAuthConnections: builderCommaDelimitedString(newConnectedAuths),
+            enabledAuthConnections: builderCommaDelimitedString(allAuths),
+            newEnabledAuthConnections: builderCommaDelimitedString(newAuths),
         })
     }
 
@@ -675,12 +672,18 @@ export class AuthWebview extends VueWebview {
      */
     private getUncountedBuilderIds(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
         const newBuilderIds = [...newAuths].filter(isBuilderIdAuth).length
+
+        if (newBuilderIds === 0) {
+            return 0
+        }
+
         if (this.hadBuilderIdBefore(allAuths, newAuths)) {
             // Had a builder id so all new builder ids didn't get added.
             return newBuilderIds
+        } else {
+            // Didn't have builder id before, so only the first was added, but not the rest (hence -1)
+            return newBuilderIds - 1
         }
-        // Didn't have builder id before, so only the first was added, but not the rest (hence -1)
-        return newBuilderIds > 0 ? newBuilderIds - 1 : 0
     }
 
     private hadBuilderIdBefore(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
