@@ -12,7 +12,6 @@ import { ToolkitError } from '../../../shared/errors'
 import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
-import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 
 const crossFileLanguageConfigs = ['java']
@@ -37,7 +36,7 @@ export async function fetchSupplementalContextForSrc(
     }
 
     // Step 1: Get relevant cross files to refer
-    const relevantCrossFilePaths = await getRelevantCrossFiles(editor)
+    const relevantCrossFilePaths = await getRelevantCrossFiles(editor, dependencyGraph)
     throwIfCancelled(cancellationToken)
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
@@ -159,26 +158,9 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * This function will return relevant cross files for the given editor file
  * by referencing open files, imported files and same package files.
  */
-export async function getRelevantCrossFiles(editor: vscode.TextEditor): Promise<string[]> {
-    const targetFile = editor.document.uri.fsPath
-
-    const relevantFiles = getOpenFilesInWindow().filter(file => {
-        return isRelevant(targetFile, file, editor.document.languageId)
-    })
-
-    const fileToFileDistanceList = relevantFiles
-        .map(file => {
-            return {
-                file: file,
-                fileDistance: getFileDistance(targetFile, file),
-            }
-        })
-        .sort((obj1, obj2) => {
-            return obj1.fileDistance - obj2.fileDistance
-        })
-
-    return fileToFileDistanceList.map(pair => {
-        return pair.file
+async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
+    return getOpenFilesInWindow().filter(file => {
+        return isRelevant(editor.document.fileName, file, editor.document.languageId)
     })
 }
 
@@ -189,7 +171,7 @@ function getOpenFilesInWindow(): string[] {
         const tabArrays = vscode.window.tabGroups.all
         tabArrays.forEach(tabArray => {
             tabArray.tabs.forEach(tab => {
-                filesOpenedInEditor.push((tab.input as any).uri.fsPath)
+                filesOpenedInEditor.push((tab.input as any).uri.path)
             })
         })
     } catch (e) {

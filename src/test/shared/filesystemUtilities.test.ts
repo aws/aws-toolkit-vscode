@@ -126,50 +126,50 @@ describe('filesystemUtilities', function () {
         let fileB: string
 
         it('distance 0', function () {
-            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
-            fileB = 'service/microService/CodeWhispererFileCrawler.java'
+            fileA = 'foo/bar/a.java'
+            fileB = 'foo/bar/b.java'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 0)
         })
 
         it('root distance 0', function () {
-            fileA = 'A.txt'
-            fileB = 'B.txt'
+            fileA = 'a.txt'
+            fileB = 'b.txt'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 0)
         })
 
         it('distance 1', function () {
-            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
-            fileB = 'service/CodewhispererRecommendationService.java'
+            fileA = 'foo/bar/a.java'
+            fileB = 'foo/b.java'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 1)
         })
 
         it('distance 3', function () {
-            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
-            fileB = 'util/CodeWhispererConstants.java'
+            fileA = 'foo/bar/a.java'
+            fileB = 'lzz/b.java'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 3)
         })
 
         it('distance 4', function () {
-            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
-            fileB = 'ui/popup/CodeWhispererPopupManager.java'
+            fileA = 'foo/bar/a.java'
+            fileB = 'lzz/baz/b.java'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 4)
         })
 
         it('distance 5', function () {
-            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
-            fileB = 'ui/popup/components/CodeWhispererPopup.java'
+            fileA = 'foo/bar/a.java'
+            fileB = 'lzz/baz/zoo/b.java'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 5)
         })
 
         it('distance 6', function () {
-            fileA = 'service/microService/CodeWhispererFileContextProvider.java'
-            fileB = 'ui/popup/components/actions/AcceptRecommendationAction.java'
+            fileA = 'foo/zoo/a.java'
+            fileB = 'bar/baz/bee/bww/b.java'
             const actual = getFileDistance(fileA, fileB)
             assert.strictEqual(actual, 6)
         })
