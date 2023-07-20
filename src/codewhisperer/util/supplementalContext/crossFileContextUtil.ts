@@ -10,10 +10,11 @@ import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
 import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem, getOpenFilesInWindow } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import * as CodeWhispererConstants from '../../models/constants'
+import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
 // TODO: ugly, can we make it prettier?
 // TODO: Move to another config file or constants file

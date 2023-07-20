@@ -18,10 +18,11 @@ import {
 import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem, getOpenFilesInWindow } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
+import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
