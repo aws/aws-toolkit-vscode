@@ -25,6 +25,7 @@ export class SshKeyPair {
     public getPublicKeyPath(): string {
         return this.publicKeyPath
     }
+
     public async getPublicKey(): Promise<string> {
         const contents = await fs.readFile(this.publicKeyPath, 'utf-8')
         return contents
