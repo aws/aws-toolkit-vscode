@@ -285,6 +285,10 @@ export class CredentialsState implements AuthForm {
         return await client.isCredentialConnected()
     }
 
+    async isConnectionExists(): Promise<boolean> {
+        return client.isCredentialExists()
+    }
+
     get id(): AuthFormId {
         return 'credentials'
     }

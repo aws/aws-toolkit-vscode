@@ -43,6 +43,13 @@ export interface AuthForm {
      * If the auth form is successfully connected
      */
     isAuthConnected(): Promise<boolean>
+
+    /**
+     * If a connection for this auth form exists, it does
+     * not have to be active.
+     */
+    isConnectionExists(): Promise<boolean>
+
     get id(): AuthFormId
 }
 
