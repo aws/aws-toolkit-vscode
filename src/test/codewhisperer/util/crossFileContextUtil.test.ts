@@ -12,9 +12,8 @@ import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { UserGroup, userGroupKey } from '../../../codewhisperer/models/constants'
 import { assertTabCount, closeAllEditors, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
-import globals from '../../../shared/extensionGlobals'
-import { extensionVersion } from '../../../shared/vscode/env'
 
+const userGroupSettings = CodeWhispererUserGroupSettings.instance
 let tempFolder: string
 
 // VSCode tab APIs are available since 1.68.0
@@ -49,6 +48,7 @@ describe('crossFileContextUtil', function () {
     describe('partial support - control group', function () {
         before(async function () {
             this.timeout(60000)
+            userGroupSettings.userGroup = UserGroup.Control
         })
 
         beforeEach(async function () {
@@ -57,18 +57,12 @@ describe('crossFileContextUtil', function () {
 
         afterEach(async function () {
             await closeAllEditors()
-            await globals.context.globalState.update(userGroupKey, undefined)
         })
 
         it('should be empty if userGroup is control', async function () {
             if (!shouldRunTheTest()) {
                 this.skip()
             }
-
-            await globals.context.globalState.update(userGroupKey, {
-                group: UserGroup.Control,
-                version: extensionVersion,
-            })
 
             const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
             await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
@@ -87,6 +81,7 @@ describe('crossFileContextUtil', function () {
     describe('partial support - crossfile group', function () {
         before(async function () {
             this.timeout(60000)
+            userGroupSettings.userGroup = UserGroup.CrossFile
         })
 
         beforeEach(async function () {
@@ -101,11 +96,6 @@ describe('crossFileContextUtil', function () {
             if (!shouldRunTheTest()) {
                 this.skip()
             }
-
-            await globals.context.globalState.update(userGroupKey, {
-                group: UserGroup.CrossFile,
-                version: extensionVersion,
-            })
 
             const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
             await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
