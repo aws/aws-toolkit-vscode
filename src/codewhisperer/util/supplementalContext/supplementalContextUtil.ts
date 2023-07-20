@@ -98,7 +98,16 @@ export async function getOpenFilesInWindow(
     }
 
     if (filterPredicate) {
-        return filesOpenedInEditor.filter(filePath => filterPredicate(filePath))
+        // since we are not able to use async predicate in array.filter
+        // return filesOpenedInEditor.filter(async filePath => await filterPredicate(filePath))
+        const resultsWithNulls = await Promise.all(
+            filesOpenedInEditor.map(async file => {
+                const aResult = await filterPredicate(file)
+                return aResult ? file : null
+            })
+        )
+
+        return resultsWithNulls.filter(item => item !== null) as string[]
     } else {
         return filesOpenedInEditor
     }

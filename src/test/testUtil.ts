@@ -241,6 +241,28 @@ export async function assertTextEditorContains(contents: string): Promise<void |
 }
 
 /**
+ * Waits for _any_ tab to appear and have the desired count
+ */
+export async function assertTabCount(size: number): Promise<void | never> {
+    const tabs = await waitUntil(
+        async () => {
+            const tabs = vscode.window.tabGroups.all
+                .map(tabGroup => tabGroup.tabs)
+                .reduce((acc, curVal) => acc.concat(curVal), [])
+
+            if (tabs.length === size) {
+                return tabs
+            }
+        },
+        { interval: 5 }
+    )
+
+    if (!tabs) {
+        throw new Error('No desired tabs found')
+    }
+}
+
+/**
  * Executes the "openEditors.closeAll" command and asserts that all visible
  * editors were closed after waiting.
  */
