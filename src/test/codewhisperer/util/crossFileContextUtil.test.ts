@@ -10,7 +10,7 @@ import * as semver from 'semver'
 import * as crossFile from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
-import { UserGroup, userGroupKey } from '../../../codewhisperer/models/constants'
+import { UserGroup } from '../../../codewhisperer/models/constants'
 import { assertTabCount, closeAllEditors, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 
 const userGroupSettings = CodeWhispererUserGroupSettings.instance
