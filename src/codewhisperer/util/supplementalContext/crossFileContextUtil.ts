@@ -13,9 +13,19 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem, getOpenFilesInWindow } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
+import * as CodeWhispererConstants from '../../models/constants'
 
-// VSCode language identifier, refer to https://code.visualstudio.com/docs/languages/identifiers#_known-language-identifiers
-const crossFileLanguageConfigs = ['java', 'python', 'typescript', 'javascript', 'javascriptreact', 'typescriptreact']
+// TODO: ugly, can we make it prettier?
+// TODO: Move to another config file or constants file
+// Supported language to its dialects
+const supportedLanguageToDialects: Record<string, Set<string>> = {
+    // TODO: why I couldn't use CodeWhispererConstants.java as key?
+    java: new Set<string>([CodeWhispererConstants.java]),
+    python: new Set<string>([CodeWhispererConstants.python]),
+    javascript: new Set<string>([CodeWhispererConstants.javascript, CodeWhispererConstants.jsx]),
+    typescript: new Set<string>([CodeWhispererConstants.typescript, CodeWhispererConstants.tsx]),
+}
+
 interface Chunk {
     fileName: string
     content: string
@@ -120,13 +130,13 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
 function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
-    if (!crossFileLanguageConfigs.includes(languageId)) {
+    if (!supportedLanguageToDialects[languageId]) {
         return undefined
     }
 
     if (languageId === 'java') {
         return true
-    } else if (crossFileLanguageConfigs.includes(languageId) && userGroup === UserGroup.CrossFile) {
+    } else if (supportedLanguageToDialects[languageId] && userGroup === UserGroup.CrossFile) {
         return true
     } else {
         return false
@@ -184,11 +194,19 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
 async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
     const targetFileName = editor.document.fileName
     const language = editor.document.languageId
+    const dialects = supportedLanguageToDialects[language]
 
+    /**
+     * Consider a file which
+     * 1. is different from the target
+     * 2. has the same file extension or it's one of the dialect of target file (e.g .js vs. .jsx)
+     * 3. is not a test file
+     */
     return getOpenFilesInWindow(async candidateFile => {
         return (
             targetFileName !== candidateFile &&
-            path.extname(targetFileName) === path.extname(candidateFile) &&
+            (path.extname(targetFileName) === path.extname(candidateFile) ||
+                (dialects && dialects.has(path.extname(candidateFile)))) &&
             !(await isTestFile(candidateFile, { languageId: language }))
         )
     })
