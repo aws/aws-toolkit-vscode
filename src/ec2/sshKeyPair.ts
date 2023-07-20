@@ -2,12 +2,15 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as fs from 'fs-extra'
 import { ToolkitError } from '../shared/errors'
 import { ChildProcess } from '../shared/utilities/childProcess'
 
 export class SshKeyPair {
-    private constructor(protected keyPath: string) {}
+    private publicKeyPath: string
+    private constructor(keyPath: string) {
+        this.publicKeyPath = `${keyPath}.pub`
+    }
 
     public static async generateSshKeys(keyPath: string) {
         const process = new ChildProcess('ssh-keygen', ['-t', 'rsa', '-N', "''", '-q', '-f', keyPath])
@@ -19,7 +22,11 @@ export class SshKeyPair {
         return new SshKeyPair(keyPath)
     }
 
-    public getPublicKey(): string {
-        return ''
+    public getPublicKeyPath(): string {
+        return this.publicKeyPath
+    }
+    public async getPublicKey(): Promise<string> {
+        const contents = await fs.readFile(this.publicKeyPath, 'utf-8')
+        return contents
     }
 }

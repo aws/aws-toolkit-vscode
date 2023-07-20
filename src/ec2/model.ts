@@ -172,7 +172,6 @@ export class Ec2ConnectionManager {
             throw err
         }
         const session = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
-        console.log(session)
         const vars = getEc2SsmEnv(selection, ssm, session)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }

@@ -28,4 +28,13 @@ describe('SshKeyUtility', async function () {
             assert.notStrictEqual(contents.length, 0)
         })
     })
+
+    it('properly names the public key', function () {
+        assert.strictEqual(keyPair.getPublicKeyPath(), `${keyPath}.pub`)
+    })
+
+    it('reads in public ssh key that is non-empty', async function () {
+        const key = await keyPair.getPublicKey()
+        assert.notStrictEqual(key.length, 0)
+    })
 })
