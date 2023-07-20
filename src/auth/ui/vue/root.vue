@@ -194,7 +194,7 @@ export default defineComponent({
         }
     },
     async created() {
-        await this.getAllConnectedAuths().then(connectedAuths => client.setInitialConnectedAuths(connectedAuths))
+        await this.getAllExistingAuths().then(existingAuths => client.setInitialExistingAuths(existingAuths))
         this.updateFoundCredentialButNotConnected()
 
         await this.selectInitialService()
@@ -316,20 +316,24 @@ export default defineComponent({
             })
             return Promise.all(allFeatureUpdates).then(() => this.renderItems())
         },
-        async getAllConnectedAuths(): Promise<AuthFormId[]> {
+        /** Returns all the Auths that currently exist */
+        async getAllExistingAuths(): Promise<AuthFormId[]> {
+            // gather all auth state instances
             const allFeatureStates = Object.keys(this.serviceItemsAuthStatus).map(key => {
                 const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
                 return this.serviceItemsAuthStatus[id]
             })
-            const connectedAuths: AuthFormId[] = []
+
+            // find all auths that currently exist
+            const existingAuths: AuthFormId[] = []
             for (const featureState of allFeatureStates) {
                 for (const authForm of featureState.getAuthForms()) {
-                    if (await authForm.isAuthConnected()) {
-                        connectedAuths.push(authForm.id)
+                    if (await authForm.isConnectionExists()) {
+                        existingAuths.push(authForm.id)
                     }
                 }
             }
-            return connectedAuths
+            return existingAuths
         },
         /**
          * This will trigger a re-rendering of the currently shown content window.
