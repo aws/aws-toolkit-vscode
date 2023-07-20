@@ -12,17 +12,20 @@ export class SshKeyPair {
         this.publicKeyPath = `${keyPath}.pub`
     }
 
-    public static async generateSshKeys(keyPath: string) {
+    public static async getSshKeyPair(keyPath: string) {
         const keyExists = await fs.pathExists(keyPath)
         if (!keyExists) {
-            const process = new ChildProcess(`ssh-keygen`, ['-t', 'rsa', '-N', '', '-q', '-f', keyPath])
-            const result = await process.run()
-            if (result.exitCode !== 0) {
-                throw new ToolkitError('ec2: Failed to generate ssh key')
-            }
-            console.log(result)
+            await SshKeyPair.generateSshKeyPair(keyPath)
         }
         return new SshKeyPair(keyPath)
+    }
+
+    public static async generateSshKeyPair(keyPath: string) {
+        const process = new ChildProcess(`ssh-keygen`, ['-t', 'rsa', '-N', '', '-q', '-f', keyPath])
+        const result = await process.run()
+        if (result.exitCode !== 0) {
+            throw new ToolkitError('ec2: Failed to generate ssh key')
+        }
     }
 
     public getPublicKeyPath(): string {

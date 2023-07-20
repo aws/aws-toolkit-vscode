@@ -163,12 +163,10 @@ export class Ec2ConnectionManager {
     }
 
     public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
-        console.log('running function')
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPath = await this.configureSshKeys(selection)
         const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, 'ec2-user', keyPath)
-        console.log('configure ssh keys')
         await this.configureSshKeys(selection)
 
         const config = await sshConfig.ensureValid()
@@ -207,8 +205,7 @@ export class Ec2ConnectionManager {
 
     public async configureSshKeys(selection: Ec2Selection): Promise<string> {
         const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
-        console.log(keyPath)
-        const keyPair = await SshKeyPair.generateSshKeys(keyPath)
+        const keyPair = await SshKeyPair.getSshKeyPair(keyPath)
         await this.sendSshKeyToInstance(selection, keyPair)
         return keyPath
     }
@@ -219,11 +216,9 @@ export class Ec2ConnectionManager {
         const remoteAuthorizedKeysPaths = '/home/ec2-user/.ssh/authorized_keys'
         const command = `echo "${sshKey}" > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
-        console.log(sshKey)
-        const resp = await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
+        await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
             commands: [command],
         })
-        console.log(resp)
     }
 }
 

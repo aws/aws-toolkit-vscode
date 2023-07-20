@@ -15,7 +15,7 @@ describe('SshKeyUtility', async function () {
     before(async function () {
         temporaryDirectory = await makeTemporaryToolkitFolder()
         keyPath = `${temporaryDirectory}/test-key`
-        keyPair = await SshKeyPair.generateSshKeys(keyPath)
+        keyPair = await SshKeyPair.getSshKeyPair(keyPath)
     })
 
     after(async function () {
