@@ -18,7 +18,7 @@ import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../sha
 import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { showMessageWithCancel } from '../shared/utilities/messages'
+import { copyToClipboard, showMessageWithCancel } from '../shared/utilities/messages'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/sshConfig'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
@@ -170,8 +170,16 @@ export class Ec2ConnectionManager {
 
             throw err
         }
-        const session = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession')
+        const session = await this.ssmClient.startSession(selection.instanceId, 'AWS-StartSSHSession', {
+            portNumber: ['22'],
+        })
         console.log(session)
+
+        const manualScript = `"${ssm}" "{\\"streamUrl\\":\\"${session.StreamUrl}\\",\\"tokenValue\\":\\"${session.TokenValue}\\",\\"sessionId\\":\\"${session.SessionId}\\"}" "${selection.region}" "StartSession"`
+        await copyToClipboard(manualScript)
+
+        console.log(manualScript)
+
         const vars = getEc2SsmEnv(selection, ssm, session)
         const envProvider = async () => {
             return { [sshAgentSocketVariable]: await startSshAgent(), ...vars }
