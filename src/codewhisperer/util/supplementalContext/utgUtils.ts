@@ -129,13 +129,13 @@ async function findSourceFileByContent(
 }
 
 async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]> {
-    const targetFileName = editor.document.fileName
+    const targetFile = editor.document.uri.fsPath
     const language = editor.document.languageId
 
-    return getOpenFilesInWindow(async candidateFile => {
+    return await getOpenFilesInWindow(async candidateFile => {
         return (
-            targetFileName !== candidateFile &&
-            path.extname(targetFileName) === path.extname(candidateFile) &&
+            targetFile !== candidateFile &&
+            path.extname(targetFile) === path.extname(candidateFile) &&
             !(await isTestFile(candidateFile, { languageId: language }))
         )
     })

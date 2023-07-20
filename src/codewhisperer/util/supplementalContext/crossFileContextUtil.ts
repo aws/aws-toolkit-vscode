@@ -192,7 +192,7 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  * by referencing open files, imported files and same package files.
  */
 async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
-    const targetFileName = editor.document.fileName
+    const targetFile = editor.document.uri.fsPath
     const language = editor.document.languageId
     const dialects = supportedLanguageToDialects[language]
 
@@ -202,10 +202,10 @@ async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string
      * 2. has the same file extension or it's one of the dialect of target file (e.g .js vs. .jsx)
      * 3. is not a test file
      */
-    return getOpenFilesInWindow(async candidateFile => {
+    return await getOpenFilesInWindow(async candidateFile => {
         return (
-            targetFileName !== candidateFile &&
-            (path.extname(targetFileName) === path.extname(candidateFile) ||
+            targetFile !== candidateFile &&
+            (path.extname(targetFile) === path.extname(candidateFile) ||
                 (dialects && dialects.has(path.extname(candidateFile)))) &&
             !(await isTestFile(candidateFile, { languageId: language }))
         )
