@@ -64,6 +64,7 @@ import { AuthWebview } from '../show'
 import { AuthForm } from './shared.vue'
 import { AuthFormId } from './types'
 import { CredentialSourceId, FeatureId } from '../../../../shared/telemetry/telemetry'
+import { emptyFields, fieldHasError } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -257,7 +258,7 @@ export class CredentialsState implements AuthForm {
             client.failedAuthAttempt({
                 featureType: this.featureType,
                 authType: this.authType,
-                reason: hasEmptyFields ? 'emptyFields' : 'fieldHasError',
+                reason: hasEmptyFields ? emptyFields : fieldHasError,
                 invalidInputFields: this.#errors.getFieldsWithErrors(),
             })
             return false
