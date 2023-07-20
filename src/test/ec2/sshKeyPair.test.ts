@@ -5,6 +5,7 @@
 
 import * as assert from 'assert'
 import * as fs from 'fs-extra'
+import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { SshKeyPair } from '../../ec2/sshKeyPair'
 
@@ -12,6 +13,7 @@ describe('SshKeyUtility', async function () {
     let temporaryDirectory: string
     let keyPath: string
     let keyPair: SshKeyPair
+
     before(async function () {
         temporaryDirectory = await makeTemporaryToolkitFolder()
         keyPath = `${temporaryDirectory}/test-key`
@@ -20,6 +22,7 @@ describe('SshKeyUtility', async function () {
 
     after(async function () {
         await tryRemoveFolder(temporaryDirectory)
+        sinon.restore()
     })
 
     describe('generateSshKeys', async function () {
@@ -36,5 +39,12 @@ describe('SshKeyUtility', async function () {
     it('reads in public ssh key that is non-empty', async function () {
         const key = await keyPair.getPublicKey()
         assert.notStrictEqual(key.length, 0)
+    })
+
+    it('does not overwrite existing keys', async function () {
+        const generateStub = sinon.stub(SshKeyPair, 'generateSshKeyPair')
+        await SshKeyPair.getSshKeyPair(keyPath)
+        sinon.assert.notCalled(generateStub)
+        sinon.restore()
     })
 })

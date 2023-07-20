@@ -20,7 +20,7 @@ export class SshKeyPair {
         return new SshKeyPair(keyPath)
     }
 
-    public static async generateSshKeyPair(keyPath: string) {
+    public static async generateSshKeyPair(keyPath: string): Promise<void> {
         const process = new ChildProcess(`ssh-keygen`, ['-t', 'rsa', '-N', '', '-q', '-f', keyPath])
         const result = await process.run()
         if (result.exitCode !== 0) {
