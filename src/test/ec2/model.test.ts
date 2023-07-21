@@ -18,6 +18,7 @@ import { mock } from 'ts-mockito'
 import { SshKeyPair } from '../../ec2/sshKeyPair'
 
 describe('Ec2ConnectClient', function () {
+    let currentInstanceOs: string
     class MockSsmClient extends SsmClient {
         public constructor() {
             super('test-region')
@@ -36,6 +37,10 @@ describe('Ec2ConnectClient', function () {
         public override async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
             return instanceId.split(':')[0] as EC2.InstanceStateName
         }
+
+        public override async guessInstanceOsName(instanceId: string): Promise<string> {
+            return currentInstanceOs
+        }
     }
 
     class MockEc2ConnectClient extends Ec2ConnectionManager {
@@ -49,6 +54,12 @@ describe('Ec2ConnectClient', function () {
 
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
+        }
+
+        public async testGetRemoteUser(instanceId: string, osName: string) {
+            currentInstanceOs = osName
+            const remoteUser = await this.getRemoteUser(instanceId)
+            return remoteUser
         }
     }
 
@@ -217,8 +228,26 @@ describe('Ec2ConnectClient', function () {
                 region: 'test-region',
             }
             const mockKeys = mock() as SshKeyPair
-            await client.sendSshKeyToInstance(testSelection, mockKeys)
+            await client.sendSshKeyToInstance(testSelection, mockKeys, '')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
+        })
+    })
+
+    describe('determineRemoteUser', async function () {
+        let client: MockEc2ConnectClient
+
+        before(function () {
+            client = new MockEc2ConnectClient()
+        })
+
+        it('identifies the user for ubuntu as ubuntu', async function () {
+            const remoteUser = await client.testGetRemoteUser('testInstance', 'ubuntu')
+            assert.strictEqual(remoteUser, 'ubuntu')
+        })
+
+        it('identifies the user for amazon linux as ec2-user', async function () {
+            const remoteUser = await client.testGetRemoteUser('testInstance', 'linux')
+            assert.strictEqual(remoteUser, 'ec2-user')
         })
     })
 })

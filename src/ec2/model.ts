@@ -225,6 +225,15 @@ export class Ec2ConnectionManager {
             commands: [command],
         })
     }
+
+    protected async getRemoteUser(instanceId: string): Promise<string> {
+        const osName = await this.ec2Client.guessInstanceOsName(instanceId)
+        if (osName == 'ubuntu') {
+            return 'ubuntu'
+        }
+
+        return 'ec2-user'
+    }
 }
 
 function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string, session: SSM.StartSessionResponse): NodeJS.ProcessEnv {

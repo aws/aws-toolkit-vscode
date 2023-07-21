@@ -8,6 +8,7 @@ import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
+import { ToolkitError } from '../errors'
 
 export interface Ec2Instance extends EC2.Instance {
     name?: string
@@ -107,6 +108,45 @@ export class Ec2Client {
     public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const association = await this.getIamInstanceProfileAssociation(instanceId)
         return association ? association.IamInstanceProfile : undefined
+    }
+
+    public async getImageFromInstance(instanceId: string): Promise<EC2.Image> {
+        const imageId = await this.getInstanceImageId(instanceId)
+        const image = await this.describeImage(imageId)
+        return image
+    }
+
+    public async guessInstanceOsName(instanceId: string): Promise<string> {
+        const image = await this.getImageFromInstance(instanceId)
+        const imageName = image.Name!
+
+        if (imageName.match('al{0-9}{4}')) {
+            return 'amazon-linux'
+        }
+
+        if (imageName.match('ubuntu')) {
+            return 'ubuntu'
+        }
+
+        return ''
+    }
+
+    public async getInstanceImageId(instanceId: string): Promise<string> {
+        const instanceFilter = this.getInstancesFilter([instanceId])
+        const instance = (await (await this.getInstances(instanceFilter)).promise())[0]
+        return instance.ImageId!
+    }
+
+    public async describeImage(imageId: string): Promise<EC2.Image> {
+        const client = await this.createSdkClient()
+        const requester = async (request: EC2.DescribeImagesRequest) => client.describeImages(request).promise()
+        const response = (
+            await pageableToCollection(requester, { ImageIds: [imageId] }, 'NextToken', 'Images')
+                .flatten()
+                .promise()
+        )[0]!
+
+        return response
     }
 }
 
