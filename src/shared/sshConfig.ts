@@ -188,9 +188,9 @@ Host ${this.configHostName}
 
     protected createSSHConfigSection(proxyCommand: string): string {
         if (this.keyParameters) {
-            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyParameters.identityFile}'\n    User ${
-                this.keyParameters.user
-            }\n`
+            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${
+                this.keyParameters.identityFile
+            }'\n    User '%r'\n`
         }
         return this.getBaseSSHConfig(proxyCommand)
     }

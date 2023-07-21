@@ -129,6 +129,14 @@ describe('VscodeRemoteSshConfig', async function () {
             const section = config.createSSHConfigSectionWrapper(testScriptName)
             assert.ok(section.includes(testScriptName))
         })
+
+        // it('includes keyParameters if included in the class', function () {
+        //     const keyParameters = {
+        //         identityFile: 'path/to/identity/file',
+        //         user:
+        //     }
+        //     const newConfig = new VscodeRemoteSshConfig('sshPath', 'testHostNamePrefix', 'someScript', )
+        // })
     })
 
     describe('sshLogFileLocation', async function () {

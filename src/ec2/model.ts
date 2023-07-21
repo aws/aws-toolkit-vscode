@@ -146,31 +146,31 @@ export class Ec2ConnectionManager {
     }
 
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
+        const remoteUser = 'ec2-user'
         await this.checkForStartSessionError(selection)
-        const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection)
+        const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
         const fullHostName = `${hostNamePrefix}${selection.instanceId}`
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath)
+            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath, 'ec2-user')
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
     }
-    public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
+    public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
-        const remoteEnv = await this.prepareEc2RemoteEnv(selection).finally(() => timeout.cancel())
+        const remoteEnv = await this.prepareEc2RemoteEnv(selection, remoteUser).finally(() => timeout.cancel())
         return remoteEnv
     }
 
-    public async prepareEc2RemoteEnv(selection: Ec2Selection): Promise<Ec2RemoteEnv> {
+    public async prepareEc2RemoteEnv(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
-        const keyPath = await this.configureSshKeys(selection)
+        const keyPath = await this.configureSshKeys(selection, remoteUser)
         const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, {
             identityFile: keyPath,
             user: 'ec2-user',
         })
-        await this.configureSshKeys(selection)
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -206,17 +206,21 @@ export class Ec2ConnectionManager {
         return logger
     }
 
-    public async configureSshKeys(selection: Ec2Selection): Promise<string> {
+    public async configureSshKeys(selection: Ec2Selection, remoteUser: string): Promise<string> {
         const keyPath = path.join(globals.context.globalStorageUri.fsPath, `aws-ec2-key`)
         const keyPair = await SshKeyPair.getSshKeyPair(keyPath)
-        await this.sendSshKeyToInstance(selection, keyPair)
+        await this.sendSshKeyToInstance(selection, keyPair, remoteUser)
         return keyPath
     }
 
-    public async sendSshKeyToInstance(selection: Ec2Selection, sshKeyPair: SshKeyPair): Promise<void> {
+    public async sendSshKeyToInstance(
+        selection: Ec2Selection,
+        sshKeyPair: SshKeyPair,
+        remoteUser: string
+    ): Promise<void> {
         const sshKey = await sshKeyPair.getPublicKey()
         // TODO: this path is hard-coded from amazon linux instances.
-        const remoteAuthorizedKeysPaths = '/home/ec2-user/.ssh/authorized_keys'
+        const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
         const command = `echo "${sshKey}" > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
         await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
