@@ -21,6 +21,7 @@ import { codeWhispererClient } from '../client/codewhisperer'
 import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger'
+import { showMessageWithUrl } from '../../shared/utilities/messages'
 
 export const getNewCustomizations = (availableCustomizations: Customization[]) => {
     const persistedCustomizations = getPersistedCustomizations()
@@ -171,8 +172,18 @@ const createCustomizationItems = async () => {
     }
 
     if (availableCustomizations.length === 0) {
-        items.push(noCustomizationsItem())
         items.push(createBaseCustomizationItem())
+
+        // TODO: finalize the url string with documentation
+        showMessageWithUrl(
+            localize(
+                'AWS.codewhisperer.customization.noCustomizations.description',
+                'You dont have access to any CodeWhisperer customizations. Contact your admin for access.'
+            ),
+            learnMoreUri,
+            localize('AWS.codewhisperer.customization.notification.new_customizations.learn_more', 'Learn More'),
+            'info'
+        )
         return items
     }
 
@@ -180,18 +191,6 @@ const createCustomizationItems = async () => {
     items.push(createBaseCustomizationItem())
     items.push(...availableCustomizations.map(c => createCustomizationItem(c, persistedArns)))
     return items
-}
-
-const noCustomizationsItem = () => {
-    return {
-        label: codicon`${getIcon('vscode-info')}`,
-        // TODO: make this text auto-wrap
-        description: localize(
-            'AWS.codewhisperer.customization.noCustomizations.description',
-            'Contact your administrator for access to CodeWhisperer customizations. After your have access, they will be displayed in the dropdown below'
-        ),
-        invalidSelection: true,
-    } as DataQuickPickItem<string>
 }
 
 const createBaseCustomizationItem = () => {
