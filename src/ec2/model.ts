@@ -146,10 +146,11 @@ export class Ec2ConnectionManager {
     }
 
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
-        const remoteUser = 'ec2-user'
-        console.log(await this.getRemoteUser(selection.instanceId))
         await this.checkForStartSessionError(selection)
+
+        const remoteUser = await this.getRemoteUser(selection.instanceId)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
+
         const fullHostName = `${hostNamePrefix}${selection.instanceId}`
         try {
             await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath, 'ec2-user')
