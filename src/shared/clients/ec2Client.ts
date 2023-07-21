@@ -8,7 +8,6 @@ import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
-import { ToolkitError } from '../errors'
 
 export interface Ec2Instance extends EC2.Instance {
     name?: string
@@ -119,16 +118,15 @@ export class Ec2Client {
     public async guessInstanceOsName(instanceId: string): Promise<string> {
         const image = await this.getImageFromInstance(instanceId)
         const imageName = image.Name!
-
-        if (imageName.match('al{0-9}{4}')) {
+        if (imageName.match(/al[0-9]{4}-/) || imageName.match('AmazonLinux')) {
             return 'amazon-linux'
         }
 
         if (imageName.match('ubuntu')) {
             return 'ubuntu'
         }
-
-        return ''
+        // Currently defaults to amazon-linux because this is default in console.
+        return 'amazon-linux'
     }
 
     public async getInstanceImageId(instanceId: string): Promise<string> {
