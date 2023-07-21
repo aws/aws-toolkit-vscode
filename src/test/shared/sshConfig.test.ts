@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { ToolkitError } from '../../shared/errors'
-import { Err, Ok, Result } from '../../shared/utilities/result'
+import { Result } from '../../shared/utilities/result'
 import { ChildProcessResult } from '../../shared/utilities/childProcess'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../../shared/sshConfig'
 
@@ -12,21 +13,6 @@ class MockSshConfig extends VscodeRemoteSshConfig {
     // State variables to track logic flow.
     public testIsWin: boolean = false
     public configSection: string = ''
-    public SshConfigWritten: boolean = false
-
-    public override async ensureValid(): Promise<Err<ToolkitError> | Err<Error> | Ok<void>> {
-        const proxyCommand = await this.getProxyCommand(this.scriptPrefix)
-        if (proxyCommand.isErr()) {
-            return proxyCommand
-        }
-
-        const verifyHost = await this.verifySSHHost(proxyCommand.unwrap())
-        if (verifyHost.isErr()) {
-            return verifyHost
-        }
-
-        return Result.ok()
-    }
 
     public async getProxyCommandWrapper(command: string): Promise<Result<string, ToolkitError>> {
         return await this.getProxyCommand(command)
@@ -50,13 +36,6 @@ class MockSshConfig extends VscodeRemoteSshConfig {
         return this.testIsWin
     }
 
-    protected override async promptUserToConfigureSshConfig(
-        configSection: string | undefined,
-        section: string
-    ): Promise<void> {
-        this.SshConfigWritten = true
-    }
-
     protected override async checkSshOnHost(): Promise<ChildProcessResult> {
         return {
             exitCode: 0,
@@ -73,11 +52,24 @@ class MockSshConfig extends VscodeRemoteSshConfig {
 
 describe('VscodeRemoteSshConfig', async function () {
     let config: MockSshConfig
+    let promptUserToConfigureSshConfigStub: sinon.SinonStub<
+        [configSection: string | undefined, proxyCommand: string],
+        Promise<void>
+    >
+
     const testCommand = 'test_connect'
     const testProxyCommand = `'${testCommand}' '%h'`
     before(function () {
         config = new MockSshConfig('sshPath', 'testHostNamePrefix', testCommand)
         config.testIsWin = false
+        promptUserToConfigureSshConfigStub = sinon.stub(
+            VscodeRemoteSshConfig.prototype,
+            'promptUserToConfigureSshConfig'
+        )
+    })
+
+    after(function () {
+        sinon.restore()
     })
 
     describe('getProxyCommand', async function () {
@@ -99,7 +91,7 @@ describe('VscodeRemoteSshConfig', async function () {
             assert.ok(match)
         })
 
-        it('returns ok with undefined when proxycommand is not present', async function () {
+        it('returns ok result with undefined inside when proxycommand is not present', async function () {
             const testSection = `fdsafdsafdsa342432`
             const result = await config.testMatchSshSection(testSection)
             assert.ok(result.isOk())
@@ -110,7 +102,7 @@ describe('VscodeRemoteSshConfig', async function () {
 
     describe('verifySSHHost', async function () {
         beforeEach(function () {
-            config.SshConfigWritten = false
+            promptUserToConfigureSshConfigStub.resetHistory()
         })
 
         it('writes to ssh config if command not found.', async function () {
@@ -118,7 +110,8 @@ describe('VscodeRemoteSshConfig', async function () {
             const result = await config.testVerifySshHostWrapper(testCommand, testSection)
 
             assert.ok(result.isOk())
-            assert.ok(config.SshConfigWritten)
+            sinon.assert.calledOn(promptUserToConfigureSshConfigStub, config)
+            sinon.assert.calledOnce(promptUserToConfigureSshConfigStub)
         })
 
         it('does not write to ssh config if command is find', async function () {
@@ -126,7 +119,7 @@ describe('VscodeRemoteSshConfig', async function () {
             const result = await config.testVerifySshHostWrapper(testCommand, testSection)
 
             assert.ok(result.isOk())
-            assert.ok(!config.SshConfigWritten)
+            sinon.assert.notCalled(promptUserToConfigureSshConfigStub)
         })
     })
 

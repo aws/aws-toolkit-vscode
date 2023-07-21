@@ -113,7 +113,7 @@ export class VscodeRemoteSshConfig {
         throw new ToolkitError(oldConfig, { code: 'OldConfig' })
     }
 
-    private async writeSectionToConfig(proxyCommand: string) {
+    protected async writeSectionToConfig(proxyCommand: string) {
         const sshConfigPath = getSshConfigPath()
         const section = this.createSSHConfigSection(proxyCommand)
         try {
@@ -131,7 +131,7 @@ export class VscodeRemoteSshConfig {
         }
     }
 
-    protected async promptUserToConfigureSshConfig(
+    public async promptUserToConfigureSshConfig(
         configSection: string | undefined,
         proxyCommand: string
     ): Promise<void> {
