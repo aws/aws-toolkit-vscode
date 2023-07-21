@@ -177,7 +177,7 @@
         },
         "CodeCoverageEvent": {
             "type": "structure",
-            "required": ["programmingLanguage", "acceptedCharacterCount", "totalCharacterCount"],
+            "required": ["programmingLanguage", "acceptedCharacterCount", "totalCharacterCount", "timestamp"],
             "members": {
                 "customizationArn": { "shape": "ResourceArn" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
@@ -185,6 +185,20 @@
                 "totalCharacterCount": { "shape": "Integer" },
                 "timestamp": { "shape": "Timestamp" }
             }
+        },
+        "CodeScanEvent": {
+            "type": "structure",
+            "required": ["programmingLanguage", "codeScanJobId", "timestamp"],
+            "members": {
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "codeScanJobId": { "shape": "CodeScanJobId" },
+                "timestamp": { "shape": "Timestamp" }
+            }
+        },
+        "CodeScanJobId": {
+            "type": "string",
+            "max": 128,
+            "min": 1
         },
         "Completion": {
             "type": "structure",
@@ -507,6 +521,7 @@
         },
         "SendTelemetryEventRequest": {
             "type": "structure",
+            "required": ["telemetryEvent"],
             "members": {
                 "clientToken": {
                     "shape": "IdempotencyToken",
@@ -602,7 +617,9 @@
             "type": "structure",
             "members": {
                 "userTriggerDecisionEvent": { "shape": "UserTriggerDecisionEvent" },
-                "codeCoverageEvent": { "shape": "CodeCoverageEvent" }
+                "codeCoverageEvent": { "shape": "CodeCoverageEvent" },
+                "userModificationEvent": { "shape": "UserModificationEvent" },
+                "codeScanEvent": { "shape": "CodeScanEvent" }
             },
             "union": true
         },
@@ -626,6 +643,18 @@
             "max": 128,
             "min": 1
         },
+        "UserModificationEvent": {
+            "type": "structure",
+            "required": ["sessionId", "requestId", "programmingLanguage", "modificationPercentage", "timestamp"],
+            "members": {
+                "sessionId": { "shape": "UUID" },
+                "requestId": { "shape": "UUID" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "modificationPercentage": { "shape": "Double" },
+                "customizationArn": { "shape": "ResourceArn" },
+                "timestamp": { "shape": "Timestamp" }
+            }
+        },
         "UserTriggerDecisionEvent": {
             "type": "structure",
             "required": [
@@ -634,7 +663,8 @@
                 "programmingLanguage",
                 "completionType",
                 "suggestionState",
-                "recommendationLatencyMilliseconds"
+                "recommendationLatencyMilliseconds",
+                "timestamp"
             ],
             "members": {
                 "sessionId": { "shape": "UUID" },
@@ -644,7 +674,9 @@
                 "completionType": { "shape": "CompletionType" },
                 "suggestionState": { "shape": "SuggestionState" },
                 "recommendationLatencyMilliseconds": { "shape": "Double" },
-                "timestamp": { "shape": "Timestamp" }
+                "timestamp": { "shape": "Timestamp" },
+                "suggestionReferenceCount": { "shape": "Integer" },
+                "generatedLine": { "shape": "Integer" }
             }
         },
         "ValidationException": {

@@ -30,6 +30,7 @@ import { AuthUtil } from './authUtil'
 import { CodeWhispererStates } from './codewhispererStates'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
+import { AcceptedSuggestionEntry } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -73,6 +74,8 @@ export class TelemetryHelper {
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
+    private suggestionReferenceNumber = 0
+    private generatedLines = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -207,10 +210,18 @@ export class TelemetryHelper {
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
         })
+        //aggregate suggestion references count
+        this.getAggregatedSuggestionReferenceCount(events)
         // aggregate user decision events at requestId level
         const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
         if (aggregatedEvent) {
             this.sessionDecisions.push(aggregatedEvent)
+        }
+        let acceptedRecommendationContent
+        if (acceptIndex != -1 && recommendations[acceptIndex] != undefined) {
+            acceptedRecommendationContent = recommendations[acceptIndex].content
+        } else {
+            acceptedRecommendationContent = ''
         }
 
         // after we have all request level user decisions, aggregate them at session level and send
@@ -219,7 +230,7 @@ export class TelemetryHelper {
             (this.lastRequestId && this.lastRequestId === requestId) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
-            this.sendUserTriggerDecisionTelemetry(sessionId, supplementalContextMetadata)
+            this.sendUserTriggerDecisionTelemetry(sessionId, acceptedRecommendationContent, supplementalContextMetadata)
         }
     }
 
@@ -261,6 +272,7 @@ export class TelemetryHelper {
 
     private sendUserTriggerDecisionTelemetry(
         sessionId: string,
+        acceptedRecommendationContent: string,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
@@ -275,6 +287,12 @@ export class TelemetryHelper {
         const aggregatedCompletionType = this.getAggregatedCompletionType(this.sessionDecisions)
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
         const selectedCustomization = getSelectedCustomization()
+        if (acceptedRecommendationContent.trim() === '') {
+            this.generatedLines = 0
+        } else {
+            this.generatedLines = acceptedRecommendationContent.split('\n').length
+        }
+
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
@@ -313,7 +331,6 @@ export class TelemetryHelper {
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -329,6 +346,8 @@ export class TelemetryHelper {
                         recommendationLatencyMilliseconds:
                             this.firstSuggestionShowTime - CodeWhispererStates.instance.invokeSuggestionStartTime,
                         timestamp: new Date(Date.now()),
+                        suggestionReferenceCount: this.suggestionReferenceNumber,
+                        generatedLine: this.generatedLines,
                     },
                 },
             })
@@ -409,6 +428,8 @@ export class TelemetryHelper {
         this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
+        this.suggestionReferenceNumber = 0
+        this.generatedLines = 0
     }
 
     private getAggregatedCompletionType(
@@ -451,6 +472,19 @@ export class TelemetryHelper {
             return 'DISCARD'
         }
         return 'EMPTY'
+    }
+
+    private getAggregatedSuggestionReferenceCount(
+        events: CodewhispererUserDecision[]
+        // if there is any RecommendationReferenceCount within the session, mark the session as RecommendationReferenceCount
+        // otherwise mark the session as 0
+    ) {
+        for (const event of events) {
+            if (event.codewhispererSuggestionReferenceCount != 0) {
+                this.suggestionReferenceNumber = 1
+                return
+            }
+        }
     }
 
     public getSuggestionState(
@@ -547,5 +581,65 @@ export class TelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
+    }
+
+    public sendUserModificationEvent(suggestion: AcceptedSuggestionEntry, percentage: number) {
+        const customArn = getSelectedCustomization().arn
+
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    userModificationEvent: {
+                        sessionId: suggestion.sessionId ? suggestion.sessionId : 'undefined',
+                        requestId: suggestion.requestId ? suggestion.requestId : 'undefined',
+                        programmingLanguage: { languageName: suggestion.language },
+                        modificationPercentage: percentage,
+                        customizationArn: customArn === '' ? undefined : customArn, // need real implement later panshao
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendUserModificationEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanEvent(languageId: string, jobId: string) {
+        getLogger().debug(`start sendUserModificationEvent: jobId: "${jobId}", languageId: "${languageId}"`)
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanEvent: {
+                        programmingLanguage: {
+                            languageName: languageId,
+                        },
+                        codeScanJobId: jobId,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendCodeScanEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
     }
 }
