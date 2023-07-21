@@ -59,7 +59,6 @@ export class SsmClient {
             .flatten()
             .flatten()
             .promise()
-        console.log(response)
         return response[0]!
     }
 
