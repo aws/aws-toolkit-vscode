@@ -20,11 +20,6 @@ import { fileExists, readFileAsString } from './filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
-interface KeyParameters {
-    user: string
-    identityFile: string
-}
-
 export class VscodeRemoteSshConfig {
     protected readonly configHostName: string
     protected readonly proxyCommandRegExp: RegExp
@@ -33,7 +28,7 @@ export class VscodeRemoteSshConfig {
         protected readonly sshPath: string,
         protected readonly hostNamePrefix: string,
         protected readonly scriptPrefix: string,
-        protected readonly keyParameters?: KeyParameters
+        protected readonly keyPath?: string
     ) {
         this.configHostName = `${hostNamePrefix}*`
         this.proxyCommandRegExp = new RegExp(`proxycommand.{0,1024}${scriptPrefix}(.ps1)?.{0,99}`)
@@ -187,10 +182,8 @@ Host ${this.configHostName}
     }
 
     protected createSSHConfigSection(proxyCommand: string): string {
-        if (this.keyParameters) {
-            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${
-                this.keyParameters.identityFile
-            }'\n    User '%r'\n`
+        if (this.keyPath) {
+            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
         }
         return this.getBaseSSHConfig(proxyCommand)
     }

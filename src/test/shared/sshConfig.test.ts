@@ -124,19 +124,32 @@ describe('VscodeRemoteSshConfig', async function () {
     })
 
     describe('createSSHConfigSection', async function () {
+        const testKeyPath = 'path/to/keys'
+        const newConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'someScript', testKeyPath)
+        const expectedUserString = `User '%r'`
+        const expectedIdentityFileString = `IdentityFile '${testKeyPath}'`
+
         it('section includes relevant script prefix', function () {
             const testScriptName = 'testScript'
             const section = config.createSSHConfigSectionWrapper(testScriptName)
             assert.ok(section.includes(testScriptName))
         })
 
-        // it('includes keyParameters if included in the class', function () {
-        //     const keyParameters = {
-        //         identityFile: 'path/to/identity/file',
-        //         user:
-        //     }
-        //     const newConfig = new VscodeRemoteSshConfig('sshPath', 'testHostNamePrefix', 'someScript', )
-        // })
+        it('includes keyPath if included in the class', function () {
+            const section = newConfig.createSSHConfigSectionWrapper('proxyCommand')
+            assert.ok(section.match(expectedIdentityFileString))
+        })
+
+        it('parses the remote username from the ssh execution', function () {
+            const section = newConfig.createSSHConfigSectionWrapper('proxyCommand')
+            assert.ok(section.match(expectedUserString))
+        })
+
+        it('omits User and IdentityFile fields when keyPath not given', function () {
+            const section = config.createSSHConfigSectionWrapper('proxyCommand')
+            assert.ok(!section.match(expectedUserString))
+            assert.ok(!section.match(expectedIdentityFileString))
+        })
     })
 
     describe('sshLogFileLocation', async function () {

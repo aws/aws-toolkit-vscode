@@ -167,10 +167,7 @@ export class Ec2ConnectionManager {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPath = await this.configureSshKeys(selection, remoteUser)
-        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, {
-            identityFile: keyPath,
-            user: 'ec2-user',
-        })
+        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, keyPath)
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -219,10 +216,11 @@ export class Ec2ConnectionManager {
         remoteUser: string
     ): Promise<void> {
         const sshKey = await sshKeyPair.getPublicKey()
-        // TODO: this path is hard-coded from amazon linux instances.
+
         const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
         const command = `echo "${sshKey}" > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
+
         await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
             commands: [command],
         })
