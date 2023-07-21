@@ -30,6 +30,7 @@ import { AuthUtil } from './authUtil'
 import { CodeWhispererStates } from './codewhispererStates'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
+import { AcceptedSuggestionEntry } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -73,6 +74,7 @@ export class TelemetryHelper {
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
+    private suggestionReferenceNumber = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -207,6 +209,8 @@ export class TelemetryHelper {
             telemetry.codewhisperer_userDecision.emit(event)
             events.push(event)
         })
+        //aggregate suggestion references count
+        this.getAggregatedSuggestionReferenceCount(events)
         // aggregate user decision events at requestId level
         const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
         if (aggregatedEvent) {
@@ -329,6 +333,8 @@ export class TelemetryHelper {
                         recommendationLatencyMilliseconds:
                             this.firstSuggestionShowTime - CodeWhispererStates.instance.invokeSuggestionStartTime,
                         timestamp: new Date(Date.now()),
+                        suggestionReferenceCount: this.suggestionReferenceNumber,
+                        generatedLine: 0, // place holder, need to implement later panshao
                     },
                 },
             })
@@ -409,6 +415,7 @@ export class TelemetryHelper {
         this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
+        this.suggestionReferenceNumber = 0
     }
 
     private getAggregatedCompletionType(
@@ -451,6 +458,19 @@ export class TelemetryHelper {
             return 'DISCARD'
         }
         return 'EMPTY'
+    }
+
+    private getAggregatedSuggestionReferenceCount(
+        events: CodewhispererUserDecision[]
+        // if there is any RecommendationReferenceCount within the session, mark the session as RecommendationReferenceCount
+        // otherwise mark the session as 0
+    ) {
+        for (const event of events) {
+            if (event.codewhispererSuggestionReferenceCount != 0) {
+                this.suggestionReferenceNumber = 1
+                return
+            }
+        }
     }
 
     public getSuggestionState(
@@ -547,5 +567,65 @@ export class TelemetryHelper {
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
+    }
+
+    public sendUserModificationEventToRTS(suggestion: AcceptedSuggestionEntry, percentage: number) {
+        getLogger().debug('panshao debug sendUserModificationEventToRTS')
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    userModificationEvent: {
+                        sessionId: suggestion.sessionId ? suggestion.sessionId : 'undefined',
+                        requestId: suggestion.requestId ? suggestion.requestId : 'undefined',
+                        // get programming language from suggestion entry
+                        programmingLanguage: { languageName: suggestion.language },
+                        modificationPercentage: percentage,
+                        customizationArn: '', // need real implement later panshao
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendUserModificationEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
+    }
+
+    public sendCodeScanEventToRTS(languageId: string, jobId: string) {
+        getLogger().debug('panshao debug sendUserModificationEventToRTS')
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeScanEvent: {
+                        programmingLanguage: {
+                            languageName: languageId,
+                        },
+                        codeScanJobId: jobId,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendCodeScanEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
     }
 }
