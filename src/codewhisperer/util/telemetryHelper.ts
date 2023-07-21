@@ -324,8 +324,8 @@ export class TelemetryHelper {
                         programmingLanguage: {
                             languageName: this.sessionDecisions[0].codewhispererLanguage,
                         },
-                        completionType: aggregatedCompletionType,
-                        suggestionState: aggregatedSuggestionState,
+                        completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
+                        suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds:
                             this.firstSuggestionShowTime - CodeWhispererStates.instance.invokeSuggestionStartTime,
                         timestamp: new Date(Date.now()),
@@ -418,6 +418,10 @@ export class TelemetryHelper {
         return events.some(e => e.codewhispererCompletionType === 'Block') ? 'Block' : 'Line'
     }
 
+    private getSendTelemetryCompletionType(completionType: CodewhispererCompletionType) {
+        return completionType === 'Block' ? 'BLOCK' : 'LINE'
+    }
+
     private getAggregatedSuggestionState(
         // if there is any Accept within the session, mark the session as Accept
         // if there is any Reject within the session, mark the session as Reject
@@ -436,6 +440,17 @@ export class TelemetryHelper {
             }
         }
         return isEmpty ? 'Empty' : 'Discard'
+    }
+
+    private getSendTelemetrySuggestionState(state: CodewhispererPreviousSuggestionState) {
+        if (state === 'Accept') {
+            return 'ACCEPT'
+        } else if (state === 'Reject') {
+            return 'REJECT'
+        } else if (state === 'Discard') {
+            return 'DISCARD'
+        }
+        return 'EMPTY'
     }
 
     public getSuggestionState(

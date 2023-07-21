@@ -202,7 +202,7 @@ export class DefaultCodeWhispererClient {
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.isCustomizationFeatureEnabled) {
             return
         }
-        ;(await this.createUserSdkClient()).sendTelemetryEvent(request)
+        await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
     }
 }
 
