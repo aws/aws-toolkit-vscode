@@ -12,7 +12,11 @@ export class CodeWhispererUserGroupSettings {
     private _version: string | undefined
 
     public get userGroup(): UserGroup {
-        return UserGroup.CrossFile
+        if (!this._userGroup) {
+            return this.determineUserGroupIfNeeded()
+        } else {
+            return this._userGroup
+        }
     }
 
     // Visible for testing, DO NOT use on production
