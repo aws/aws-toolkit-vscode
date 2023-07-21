@@ -153,7 +153,7 @@ export class Ec2ConnectionManager {
 
         const fullHostName = `${hostNamePrefix}${selection.instanceId}`
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath, 'ec2-user')
+            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
