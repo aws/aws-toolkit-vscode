@@ -13,18 +13,30 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
-import * as CodeWhispererConstants from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
-// TODO: ugly, can we make it prettier?
+type CrossFileSupportedLanguage =
+    | 'java'
+    | 'python'
+    | 'javascript'
+    | 'typescript'
+    | 'javascriptreact'
+    | 'typescriptreact'
+
+// TODO: ugly, can we make it prettier? like we have to manually type 'java', 'javascriptreact' which is error prone
 // TODO: Move to another config file or constants file
-// Supported language to its dialects
-const supportedLanguageToDialects: Record<string, Set<string>> = {
-    // TODO: why I couldn't use CodeWhispererConstants.java as key?
-    java: new Set<string>([CodeWhispererConstants.java]),
-    python: new Set<string>([CodeWhispererConstants.python]),
-    javascript: new Set<string>([CodeWhispererConstants.javascript, CodeWhispererConstants.jsx]),
-    typescript: new Set<string>([CodeWhispererConstants.typescript, CodeWhispererConstants.tsx]),
+// Supported language to its corresponding file ext
+const supportedLanguageToDialects: Record<CrossFileSupportedLanguage, Set<string>> = {
+    java: new Set<string>(['.java']),
+    python: new Set<string>(['.py']),
+    javascript: new Set<string>(['.js', '.jsx']),
+    javascriptreact: new Set<string>(['.js', '.jsx']),
+    typescript: new Set<string>(['.ts', '.tsx']),
+    typescriptreact: new Set<string>(['.ts', '.tsx']),
+}
+
+function isCrossFileSupported(languageId: string): languageId is CrossFileSupportedLanguage {
+    return Object.keys(supportedLanguageToDialects).includes(languageId)
 }
 
 interface Chunk {
@@ -131,7 +143,7 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
 function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
-    if (!supportedLanguageToDialects[languageId]) {
+    if (!isCrossFileSupported(languageId)) {
         return undefined
     }
 
@@ -194,7 +206,7 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
  */
 async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
     const targetFile = editor.document.uri.fsPath
-    const language = editor.document.languageId
+    const language = editor.document.languageId as CrossFileSupportedLanguage
     const dialects = supportedLanguageToDialects[language]
 
     /**
