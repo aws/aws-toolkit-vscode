@@ -93,12 +93,9 @@ export class VscodeRemoteSshConfig {
     }
 
     private async promptUserForOutdatedSection(configSection: string): Promise<void> {
-        getLogger().warn(
-            `codecatalyst: SSH config: found old/outdated "${this.configHostName}" section:\n%O`,
-            configSection
-        )
+        getLogger().warn(`SSH config: found old/outdated "${this.configHostName}" section:\n%O`, configSection)
         const oldConfig = localize(
-            'AWS.codecatalyst.error.oldConfig',
+            'AWS.sshConfig.error.oldConfig',
             'Your ~/.ssh/config has a {0} section that might be out of date. Delete it, then try again.',
             this.configHostName
         )
@@ -122,7 +119,7 @@ export class VscodeRemoteSshConfig {
             await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
         } catch (e) {
             const message = localize(
-                'AWS.codecatalyst.error.writeFail',
+                'AWS.sshConfig.error.writeFail',
                 'Failed to write SSH config: {0} (permission issue?)',
                 sshConfigPath
             )
@@ -140,12 +137,12 @@ export class VscodeRemoteSshConfig {
         }
 
         const confirmTitle = localize(
-            'AWS.codecatalyst.confirm.installSshConfig.title',
+            'AWS.sshConfig.confirm.installSshConfig.title',
             '{0} Toolkit will add host {1} to ~/.ssh/config to use SSH with your Dev Environments',
             getIdeProperties().company,
             this.configHostName
         )
-        const confirmText = localize('AWS.codecatalyst.confirm.installSshConfig.button', 'Update SSH config')
+        const confirmText = localize('AWS.sshConfig.confirm.installSshConfig.button', 'Update SSH config')
         const response = await showConfirmationMessage({ prompt: confirmTitle, confirm: confirmText })
         if (!response) {
             throw new CancellationError('user')
@@ -232,7 +229,7 @@ export async function ensureConnectScript(
 
         return Result.ok(connectScript)
     } catch (e) {
-        const message = localize('AWS.codecatalyst.error.copyScript', 'Failed to update connect script')
+        const message = localize('AWS.sshConfig.error.copyScript', 'Failed to update connect script')
 
         return Result.err(ToolkitError.chain(e, message, { code: 'ConnectScriptUpdateFailed' }))
     }
