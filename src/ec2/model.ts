@@ -166,7 +166,10 @@ export class Ec2ConnectionManager {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPath = await this.configureSshKeys(selection)
-        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, 'ec2-user', keyPath)
+        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, {
+            identityFile: keyPath,
+            user: 'ec2-user',
+        })
         await this.configureSshKeys(selection)
 
         const config = await sshConfig.ensureValid()
