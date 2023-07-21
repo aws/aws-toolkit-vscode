@@ -21,6 +21,8 @@ import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
+import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
+import { UserGroup } from '../../models/constants'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -51,6 +53,10 @@ export async function fetchSupplementalContextForTest(
         return undefined
     }
 
+    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
+        return []
+    }
+
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
     throwIfCancelled(cancellationToken)
 
@@ -77,8 +83,10 @@ function generateSupplementalContextFromFocalFile(
 ): CodeWhispererSupplementalContextItem[] {
     const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')
 
-    // TODO (Metrics) Publish fileContent.lenth to record the length of focal files observed.
-    // We prepend the content with 'UTG' to inform the server side.
+    // DO NOT send code chunk with empty content
+    if (fileContent.trim().length === 0) {
+        return []
+    }
 
     return [
         {
