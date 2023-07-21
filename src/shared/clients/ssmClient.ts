@@ -59,8 +59,13 @@ export class SsmClient {
             .flatten()
             .flatten()
             .promise()
-
+        console.log(response)
         return response[0]!
+    }
+
+    public async getTargetPlatformName(target: string): Promise<string> {
+        const instanceInformation = await this.describeInstance(target)
+        return instanceInformation.PlatformName!
     }
 
     public async sendCommand(

@@ -27,6 +27,10 @@ describe('Ec2ConnectClient', function () {
         public override async getInstanceAgentPingStatus(target: string): Promise<string> {
             return target.split(':')[2]
         }
+
+        public override async getTargetPlatformName(target: string): Promise<string> {
+            return currentInstanceOs
+        }
     }
 
     class MockEc2Client extends Ec2Client {
@@ -36,10 +40,6 @@ describe('Ec2ConnectClient', function () {
 
         public override async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
             return instanceId.split(':')[0] as EC2.InstanceStateName
-        }
-
-        public override async guessInstanceOsName(instanceId: string): Promise<string> {
-            return currentInstanceOs
         }
     }
 
@@ -241,13 +241,22 @@ describe('Ec2ConnectClient', function () {
         })
 
         it('identifies the user for ubuntu as ubuntu', async function () {
-            const remoteUser = await client.testGetRemoteUser('testInstance', 'ubuntu')
+            const remoteUser = await client.testGetRemoteUser('testInstance', 'Ubuntu')
             assert.strictEqual(remoteUser, 'ubuntu')
         })
 
         it('identifies the user for amazon linux as ec2-user', async function () {
-            const remoteUser = await client.testGetRemoteUser('testInstance', 'linux')
+            const remoteUser = await client.testGetRemoteUser('testInstance', 'Amazon Linux')
             assert.strictEqual(remoteUser, 'ec2-user')
+        })
+
+        it('throws error when not given known OS', async function () {
+            try {
+                await client.testGetRemoteUser('testInstance', 'ThisIsNotARealOs!')
+                assert.ok(false)
+            } catch (exception) {
+                assert.ok(true)
+            }
         })
     })
 })

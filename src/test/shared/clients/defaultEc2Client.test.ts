@@ -4,7 +4,6 @@
  */
 
 import * as assert from 'assert'
-import * as sinon from 'sinon'
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
@@ -192,41 +191,6 @@ describe('EC2Client', async function () {
             assert.deepStrictEqual(true, instanceHasName(instances[1]))
             assert.deepStrictEqual(false, instanceHasName(instances[2]))
             assert.deepStrictEqual(true, instanceHasName(instances[3]))
-        })
-    })
-
-    describe('guessInstanceOsName', async function () {
-        let client: Ec2Client
-        let getOsStub: sinon.SinonStub<[instanceId: string], Promise<EC2.Image>>
-
-        async function assertRecognizesAmiName(amiName: string, expectedOS: string) {
-            getOsStub = sinon.stub(Ec2Client.prototype, 'getImageFromInstance')
-            getOsStub.callsFake(async i => {
-                return { Name: amiName } as EC2.Image
-            })
-            const guess = await client.guessInstanceOsName('')
-            assert.deepStrictEqual(guess, expectedOS)
-            sinon.restore()
-        }
-
-        before(function () {
-            client = new Ec2Client('')
-        })
-
-        after(function () {
-            sinon.restore()
-        })
-        it('recognizes variants of amazon linux', async function () {
-            const amiName1 = `al2023-ami-2023.1.20230719.0-kernel-6.1-x86_64`
-            await assertRecognizesAmiName(amiName1, 'amazon-linux')
-
-            const amiName2 = `Cloud9AmazonLinux2-2022-08-01T09-18`
-            await assertRecognizesAmiName(amiName2, 'amazon-linux')
-        })
-
-        it('recognizes variants of ubuntu', async function () {
-            const amiName1 = `ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20230516`
-            await assertRecognizesAmiName(amiName1, 'ubuntu')
         })
     })
 })

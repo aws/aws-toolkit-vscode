@@ -147,6 +147,7 @@ export class Ec2ConnectionManager {
 
     public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         const remoteUser = 'ec2-user'
+        console.log(await this.getRemoteUser(selection.instanceId))
         await this.checkForStartSessionError(selection)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
         const fullHostName = `${hostNamePrefix}${selection.instanceId}`
@@ -226,13 +227,17 @@ export class Ec2ConnectionManager {
         })
     }
 
-    protected async getRemoteUser(instanceId: string): Promise<string> {
-        const osName = await this.ec2Client.guessInstanceOsName(instanceId)
-        if (osName == 'ubuntu') {
+    protected async getRemoteUser(instanceId: string) {
+        const osName = await this.ssmClient.getTargetPlatformName(instanceId)
+        if (osName === 'Amazon Linux') {
+            return 'ec2-user'
+        }
+
+        if (osName === 'Ubuntu') {
             return 'ubuntu'
         }
 
-        return 'ec2-user'
+        throw new ToolkitError(`Unrecognized OS name ${osName} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
     }
 }
 
