@@ -199,7 +199,7 @@ export class DefaultCodeWhispererClient {
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
-        if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.isCustomizationFeatureEnabled) {
+        if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
             return
         }
         await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
