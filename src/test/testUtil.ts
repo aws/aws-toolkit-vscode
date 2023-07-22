@@ -243,6 +243,10 @@ export async function assertTextEditorContains(contents: string): Promise<void |
 /**
  * Create and open an editor with provided fileText, fileName and options. If folder is not provided,
  * will create a temp worksapce folder which will be automatically deleted in testing environment
+ * @param fileText The supplied text to fill this file with
+ * @param fileName The name of the file to save it as. Include the file extension here.
+ *
+ * @returns TextEditor that was just opened
  */
 export async function openATextEditorWithText(
     fileText: string,
