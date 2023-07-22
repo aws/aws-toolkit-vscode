@@ -26,7 +26,7 @@ type CrossFileSupportedLanguage =
 // TODO: ugly, can we make it prettier? like we have to manually type 'java', 'javascriptreact' which is error prone
 // TODO: Move to another config file or constants file
 // Supported language to its corresponding file ext
-const supportedLanguageToDialects: Record<CrossFileSupportedLanguage, Set<string>> = {
+const supportedLanguageToDialects: Readonly<Record<CrossFileSupportedLanguage, Set<string>>> = {
     java: new Set<string>(['.java']),
     python: new Set<string>(['.py']),
     javascript: new Set<string>(['.js', '.jsx']),

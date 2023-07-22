@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import path = require('path')
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 
@@ -69,7 +70,11 @@ export function countSubstringMatches(arr1: string[], arr2: string[]): number {
 
 export async function isTestFile(
     filePath: string,
-    languageConfig: { languageId: string; dependencyGraph?: DependencyGraph; fileContent?: string }
+    languageConfig: {
+        languageId: vscode.TextDocument['languageId']
+        dependencyGraph?: DependencyGraph
+        fileContent?: string
+    }
 ): Promise<boolean> {
     const pathContainsTest = filePath.includes(`tests/`) || filePath.includes('test/') || filePath.includes('tst/')
     const fileNameMatchTestPatterns = isTestFileByName(filePath, languageConfig.languageId)
@@ -86,7 +91,7 @@ export async function isTestFile(
     return fileHasTestDependency
 }
 
-function isTestFileByName(filePath: string, language: string): boolean {
+function isTestFileByName(filePath: string, language: vscode.TextDocument['languageId']): boolean {
     const languageConfig = utgLanguageConfigs[language]
     if (!languageConfig) {
         // We have enabled the support only for python and Java for this check

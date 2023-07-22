@@ -61,7 +61,7 @@ describe('RegexValidationForJava', () => {
     })
 })
 
-describe('isTestFileValidation', () => {
+describe('isTestFile', () => {
     it('should return true if the file name matches the test filename pattern - Java', async () => {
         const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java']
         const language = 'java'
