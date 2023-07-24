@@ -19,6 +19,11 @@ export class CodeWhispererUserGroupSettings {
         }
     }
 
+    // Visible for testing, DO NOT use on production
+    public set userGroup(userGroup: UserGroup) {
+        this._userGroup = userGroup
+    }
+
     public get version(): string | undefined {
         return this._version
     }
