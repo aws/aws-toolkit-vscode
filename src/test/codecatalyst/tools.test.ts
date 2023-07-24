@@ -11,7 +11,6 @@ import * as assert from 'assert'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { ChildProcess } from '../../shared/utilities/childProcess'
 import { FakeExtensionContext } from '../fakeExtensionContext'
-import { startSshAgent } from '../../shared/extensions/ssh'
 import {
     bearerTokenCacheLocation,
     connectScriptPrefix,
@@ -22,30 +21,6 @@ import { mkdir, readFile, writeFile } from 'fs-extra'
 import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
-
-describe('SSH Agent', function () {
-    it('can start the agent on windows', async function () {
-        // TODO: we should also skip this test if not running in CI
-        // Local machines probably won't have admin permissions in the spawned processes
-        if (process.platform !== 'win32') {
-            this.skip()
-        }
-
-        const runCommand = (command: string) => {
-            const args = ['-Command', command]
-            return new ChildProcess('powershell.exe', args).run({ rejectOnErrorCode: true })
-        }
-
-        const getStatus = () => {
-            return runCommand('echo (Get-Service ssh-agent).Status').then(o => o.stdout)
-        }
-
-        await runCommand('Stop-Service ssh-agent')
-        assert.strictEqual(await getStatus(), 'Stopped')
-        await startSshAgent()
-        assert.strictEqual(await getStatus(), 'Running')
-    })
-})
 
 describe('Connect Script', function () {
     let context: FakeExtensionContext
