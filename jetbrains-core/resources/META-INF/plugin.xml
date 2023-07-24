@@ -318,12 +318,49 @@ with what features/services are supported.
         <toolWindow id="aws.codewhisperer.codereference" anchor="bottom" doNotActivateOnStart="true" canCloseContents="true"
                     factoryClass="software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceToolWindowFactory" icon="AllIcons.Actions.Preview"/>
 
-        <applicationConfigurable id="aws" groupId="tools" key="aws.settings.title" instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"/>
-        <projectConfigurable id="aws.lambda" parentId="aws" instance="software.aws.toolkits.jetbrains.services.lambda.settings.LambdaSettingsConfigurable"/>
-        <applicationConfigurable parentId="aws" key="aws.settings.dynamic_resources_configurable.title" instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable" />
-        <applicationConfigurable id="aws.experiments" parentId="aws" instance="software.aws.toolkits.jetbrains.core.experiments.ExperimentConfigurable"/>
-        <applicationConfigurable id="aws.tools" parentId="aws" instance="software.aws.toolkits.jetbrains.core.tools.ToolConfigurable"/>
-        <projectConfigurable id="aws.codewhisperer" parentId="aws" instance="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable"/>
+        <!-- plugin configurables -->
+        <applicationConfigurable
+            id="aws"
+            groupId="tools"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.settings.title"
+            instance="software.aws.toolkits.jetbrains.settings.AwsSettingsConfigurable"
+        />
+        <projectConfigurable
+            parentId="aws"
+            id="aws.lambda"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.settings.lambda.configurable.title"
+            instance="software.aws.toolkits.jetbrains.services.lambda.settings.LambdaSettingsConfigurable"
+        />
+        <applicationConfigurable
+            parentId="aws"
+            id="aws.dynamicresources"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.settings.dynamic_resources_configurable.title"
+            instance="software.aws.toolkits.jetbrains.settings.DynamicResourcesConfigurable"
+        />
+        <applicationConfigurable
+            parentId="aws"
+            id="aws.experiments"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.toolkit.experimental.title"
+            instance="software.aws.toolkits.jetbrains.core.experiments.ExperimentConfigurable"
+        />
+        <applicationConfigurable
+            parentId="aws"
+            id="aws.tools"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="executableCommon.configurable.title"
+            instance="software.aws.toolkits.jetbrains.core.tools.ToolConfigurable"
+        />
+        <projectConfigurable
+            parentId="aws"
+            id="aws.codewhisperer"
+            bundle="software.aws.toolkits.resources.MessagesBundle"
+            key="aws.settings.codewhisperer.configurable.title"
+            instance="software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererConfigurable"
+        />
 
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.sam.SamInvokeRunner"/>
         <programRunner implementation="software.aws.toolkits.jetbrains.services.lambda.execution.remote.RemoteLambdaRunner"/>
