@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.util.messages.Topic
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
@@ -27,6 +29,7 @@ import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.credentials.ChangeConnectionSettingIfValid
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
@@ -137,6 +140,9 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved))
 
         notifyUserOfResult(newProfiles, initialLoad)
+        if (profilesAdded.isNotEmpty() && newProfiles.validProfiles.size == 1) {
+            ApplicationManager.getApplication().messageBus.syncPublisher(NEW_PROFILE_ADDED).changeConnection(profilesAdded.first())
+        }
     }
 
     private fun notifyUserOfLoadFailure(e: Exception) {
@@ -306,6 +312,11 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
     companion object {
         private val LOG = getLogger<ProfileCredentialProviderFactory>()
+
+        val NEW_PROFILE_ADDED: Topic<ChangeConnectionSettingIfValid> = Topic.create(
+            "Change to newly added profile",
+            ChangeConnectionSettingIfValid::class.java
+        )
     }
 }
 

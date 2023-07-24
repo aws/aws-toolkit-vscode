@@ -119,6 +119,8 @@ with what features/services are supported.
                   topic="software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsStateChangeNotifier"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateChangedNotificationHandler"
                   topic="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceStateMutationHandler"/>
+        <listener class="software.aws.toolkits.jetbrains.core.credentials.RefreshExplorerCredentials"
+                  topic="software.aws.toolkits.jetbrains.core.credentials.ChangeConnectionSettingIfValid"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.SuggestEditExperimentListener"
                   topic="com.intellij.openapi.fileEditor.FileEditorManagerListener"/>
         <listener class="software.aws.toolkits.jetbrains.services.dynamic.UpdateOnExperimentState"
