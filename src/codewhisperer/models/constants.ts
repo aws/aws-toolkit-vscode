@@ -76,6 +76,10 @@ export const javascript = 'javascript'
 
 export const typescript = 'typescript'
 
+export const jsx = 'javascriptreact'
+
+export const tsx = 'typescriptreact'
+
 export const plaintext = 'plaintext'
 
 // use vscode languageId here
