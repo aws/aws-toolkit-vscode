@@ -19,7 +19,7 @@ import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/sshConfig'
+import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import path = require('path')
 import globals from '../shared/extensionGlobals'

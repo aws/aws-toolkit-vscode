@@ -10,7 +10,7 @@ import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
 import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
-import { VscodeRemoteSshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
+import { VscodeRemoteSshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/vscodeRemoteSshConfig'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
