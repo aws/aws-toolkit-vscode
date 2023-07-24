@@ -52,24 +52,13 @@ class MockSshConfig extends VscodeRemoteSshConfig {
 
 describe('VscodeRemoteSshConfig', async function () {
     let config: MockSshConfig
-    let promptUserToConfigureSshConfigStub: sinon.SinonStub<
-        [configSection: string | undefined, proxyCommand: string],
-        Promise<void>
-    >
 
     const testCommand = 'test_connect'
     const testProxyCommand = `'${testCommand}' '%h'`
+
     before(function () {
         config = new MockSshConfig('sshPath', 'testHostNamePrefix', testCommand)
         config.testIsWin = false
-        promptUserToConfigureSshConfigStub = sinon.stub(
-            VscodeRemoteSshConfig.prototype,
-            'promptUserToConfigureSshConfig'
-        )
-    })
-
-    after(function () {
-        sinon.restore()
     })
 
     describe('getProxyCommand', async function () {
@@ -101,8 +90,23 @@ describe('VscodeRemoteSshConfig', async function () {
     })
 
     describe('verifySSHHost', async function () {
+        let promptUserToConfigureSshConfigStub: sinon.SinonStub<
+            [configSection: string | undefined, proxyCommand: string],
+            Promise<void>
+        >
+        before(function () {
+            promptUserToConfigureSshConfigStub = sinon.stub(
+                VscodeRemoteSshConfig.prototype,
+                'promptUserToConfigureSshConfig'
+            )
+        })
+
         beforeEach(function () {
             promptUserToConfigureSshConfigStub.resetHistory()
+        })
+
+        after(function () {
+            sinon.restore()
         })
 
         it('writes to ssh config if command not found.', async function () {
