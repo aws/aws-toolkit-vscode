@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { Session } from 'aws-sdk/clients/ssm'
 import { IAM, SSM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
@@ -21,7 +22,6 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
 import { SshKeyPair } from './sshKeyPair'
-import path = require('path')
 import globals from '../shared/extensionGlobals'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMConnect' | 'EC2SSMAgentStatus'
