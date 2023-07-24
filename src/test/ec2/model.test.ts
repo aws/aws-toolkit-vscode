@@ -4,13 +4,15 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { EC2 } from 'aws-sdk'
+import { EC2, IAM } from 'aws-sdk'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -44,6 +46,10 @@ describe('Ec2ConnectClient', function () {
 
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
+        }
+
+        public async testGetAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
+            return await this.getAttachedPolicies(instanceId)
         }
     }
 
@@ -187,6 +193,30 @@ describe('Ec2ConnectClient', function () {
 
             result = await client.hasProperPolicies('fourthInstance')
             assert.strictEqual(false, result)
+        })
+    })
+
+    describe('getAttachedPolicies', async function () {
+        let client: MockEc2ConnectClient
+
+        before(async function () {
+            client = new MockEc2ConnectClient()
+        })
+
+        it('returns empty list when IamRole does not exist', async function () {
+            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves(undefined)
+            const response = await client.testGetAttachedPolicies('test-instance')
+            assert.deepStrictEqual(response, [])
+
+            sinon.restore()
+        })
+
+        it('returns empty list when IamRole returned does not exist', async function () {
+            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves({ Arn: 'some-fake-role' })
+            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws('NoSuchEntity')
+            const response = await client.testGetAttachedPolicies('test-instance')
+            assert.deepStrictEqual(response, [])
+            sinon.restore()
         })
     })
 })

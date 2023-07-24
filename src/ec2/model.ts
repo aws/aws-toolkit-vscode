@@ -41,14 +41,17 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    protected async getAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
+    protected async getAttachedPolicies(instanceId: string): Promise<IAM.AttachedPolicy[]> {
         const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
         if (!IamRole) {
             return []
         }
-        const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
-
-        return []
+        try {
+            const attachedRoles = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
+            return attachedRoles
+        } catch (e) {
+            return []
+        }
     }
 
     public async hasProperPolicies(instanceId: string): Promise<boolean> {
