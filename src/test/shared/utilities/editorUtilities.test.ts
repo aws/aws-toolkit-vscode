@@ -9,10 +9,14 @@ import * as path from 'path'
 import * as semver from 'semver'
 import { closeAllEditors, assertTabCount, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getMinVscodeVersion } from '../../../shared/vscode/env'
 
 // VSCode tab APIs are available since 1.68.0
 function shouldRunTheTest(): boolean {
-    return (semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0')) as boolean
+    if (semver.gte(getMinVscodeVersion(), '1.68.0')) {
+        throw new Error('Minimum VSCode version is greater than 1.68.0, this check should be removed')
+    }
+    return !!(semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0'))
 }
 
 describe('supplementalContextUtil', function () {
@@ -24,6 +28,7 @@ describe('supplementalContextUtil', function () {
         })
 
         beforeEach(async function () {
+            await closeAllEditors()
             tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
         })
 

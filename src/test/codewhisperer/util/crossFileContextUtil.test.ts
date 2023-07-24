@@ -12,13 +12,17 @@ import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { UserGroup } from '../../../codewhisperer/models/constants'
 import { assertTabCount, closeAllEditors, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
+import { getMinVscodeVersion } from '../../../shared/vscode/env'
 
 const userGroupSettings = CodeWhispererUserGroupSettings.instance
 let tempFolder: string
 
 // VSCode tab APIs are available since 1.68.0
 function shouldRunTheTest(): boolean {
-    return (semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0')) as boolean
+    if (semver.gte(getMinVscodeVersion(), '1.68.0')) {
+        throw new Error('Minimum VSCode version is greater than 1.68.0, this check should be removed')
+    }
+    return !!(semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0'))
 }
 
 describe('crossFileContextUtil', function () {

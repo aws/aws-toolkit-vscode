@@ -17,6 +17,12 @@ export function getInlineSuggestEnabled(): boolean {
     return Settings.instance.getSection('editor').get('inlineSuggest.enabled', true)
 }
 
+/**
+ * Unlike vscode.window.visibleTextEditors, which will only return the "visible" files in the IDE, this function will return all files opened in the IDE.
+ * See also: https://github.com/microsoft/vscode/issues/8886#issuecomment-259158438
+ * @param filterPredicate a predicate with file path as the argument used to filter all opened files
+ * @returns if no filterPredicate is provided, it will return all files in the IDE tabs otherwise the result matching the predicate
+ */
 export async function getOpenFilesInWindow(
     filterPredicate?: (filePath: string) => Promise<boolean>
 ): Promise<string[]> {
