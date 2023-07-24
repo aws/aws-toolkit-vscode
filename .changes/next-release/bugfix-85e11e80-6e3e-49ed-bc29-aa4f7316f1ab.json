@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix 'No display name is specified for configurable' in 2023.2"
+}
