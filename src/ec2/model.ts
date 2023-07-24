@@ -48,7 +48,7 @@ export class Ec2ConnectionManager {
         }
         const iamResponse = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
 
-        return iamResponse.AttachedPolicies ?? []
+        return []
     }
 
     public async hasProperPolicies(instanceId: string): Promise<boolean> {

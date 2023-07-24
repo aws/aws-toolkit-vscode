@@ -77,11 +77,20 @@ export class DefaultIamClient {
         return tokens[tokens.length - 1]
     }
 
-    public async listAttachedRolePolicies(arn: string): Promise<IAM.ListAttachedRolePoliciesResponse> {
+    public async listAttachedRolePolicies(arn: string): Promise<IAM.AttachedPolicy[]> {
         const client = await this.createSdkClient()
         const roleName = this.getFriendlyName(arn)
-        const response = await client.listAttachedRolePolicies({ RoleName: roleName }).promise()
 
-        return response
+        const requester = async (request: IAM.ListAttachedRolePoliciesRequest) =>
+            client.listAttachedRolePolicies(request).promise()
+
+        const collection = pageableToCollection(requester, { RoleName: roleName }, 'Marker', 'AttachedPolicies')
+            .flatten()
+            .filter(p => p !== undefined)
+            .map(p => p!)
+
+        const policies = await collection.promise()
+
+        return policies
     }
 }
