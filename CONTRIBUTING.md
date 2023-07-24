@@ -19,6 +19,7 @@ issues.
 To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
+    -   [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher) (for `$ts-webpack-watch` problemMatcher in `tasks.json`)
 -   [NodeJS and NPM](https://nodejs.org/) (latest version of both)
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
@@ -35,15 +36,21 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-You can run the extension from Visual Studio Code:
+To run the extension from VSCode as a Node.js app:
 
 1. Select the Run panel from the sidebar.
 2. From the dropdown at the top of the Run pane, choose `Extension`.
-3. Press `F5` to launch a new instance of Visual Studio Code with the extension installed and the debugger attached.
+3. Press `F5` to launch a new instance of VSCode with the extension installed and the debugger attached.
+
+To run the extension from VSCode in "web mode" (a browser app, or "PWA"):
+
+1. Select the Run panel from the sidebar.
+2. From the dropdown at the top of the Run pane, choose `Extension (web)`.
+3. Press `F5` to launch a new instance of VSCode (web mode) with the extension installed and the debugger attached.
 
 ### Build
 
-When you launch the extension or run tests from Visual Studio Code, it will automatically build the extension and watch for changes.
+When you launch the extension or run tests from VSCode, it will automatically build the extension and watch for changes.
 
 You can also use these NPM tasks (see `npm run` for the full list):
 
@@ -118,7 +125,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from Visual Studio Code:
+You can run tests directly from VSCode:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -343,7 +350,7 @@ Webviews can be hot-reloaded (updated without restarting the extension) by runni
 
 ### Font generation
 
-For extensions to contribute their own codicons, VS Code requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
+For extensions to contribute their own codicons, VSCode requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 

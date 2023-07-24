@@ -24,20 +24,13 @@
             "preLaunchTask": "watch"
         },
         {
-            "name": "Attach to ASL Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6009,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
-        },
-        {
-            "name": "Attach to SSM Document Language Server",
-            "type": "node",
-            "request": "attach",
-            "port": 6010,
-            "restart": true,
-            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
+            "name": "Extension (web)",
+            "type": "pwa-extensionHost",
+            "debugWebWorkerHost": true,
+            "request": "launch",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--extensionDevelopmentKind=web"],
+            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+            "preLaunchTask": "${defaultBuildTask}"
         },
         {
             "name": "Extension (webpack)",
@@ -147,13 +140,20 @@
             "preLaunchTask": "${defaultBuildTask}"
         },
         {
-            "name": "Run Web Extension ",
-            "type": "pwa-extensionHost",
-            "debugWebWorkerHost": true,
-            "request": "launch",
-            "args": ["--extensionDevelopmentPath=${workspaceFolder}", "--extensionDevelopmentKind=web"],
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "${defaultBuildTask}"
+            "name": "Attach to ASL Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6009,
+            "restart": true,
+            "outFiles": ["${workspaceRoot}/dist/src/stepFunctions/asl/**.js"]
+        },
+        {
+            "name": "Attach to SSM Document Language Server",
+            "type": "node",
+            "request": "attach",
+            "port": 6010,
+            "restart": true,
+            "outFiles": ["${workspaceRoot}/dist/src/ssmDocument/ssm/ssmServer.js"]
         }
     ],
     "compounds": [
