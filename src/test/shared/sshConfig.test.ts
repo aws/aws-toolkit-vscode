@@ -183,7 +183,7 @@ describe('VscodeRemoteSshConfig', async function () {
     })
 })
 
-describe('Connect Script', function () {
+describe('CodeCatalyst Connect Script', function () {
     let context: FakeExtensionContext
 
     function isWithin(path1: string, path2: string): boolean {
