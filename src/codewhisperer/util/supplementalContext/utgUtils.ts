@@ -7,15 +7,14 @@ import * as glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { getRelevantFilesFromEditor } from './editorFilesUtil'
 import {
     countSubstringMatches,
     extractClasses,
     extractFunctions,
+    isTestFile,
     utgLanguageConfig,
     utgLanguageConfigs,
 } from './codeParsingUtil'
-import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
 import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -23,6 +22,7 @@ import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
+import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -35,7 +35,6 @@ import { UserGroup } from '../../models/constants'
  */
 export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
-    dependencyGraph: DependencyGraph,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
     // TODO: Add metrices
@@ -60,7 +59,7 @@ export async function fetchSupplementalContextForTest(
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
     throwIfCancelled(cancellationToken)
 
-    let crossSourceFile = await findSourceFileByName(editor, languageConfig, dependencyGraph)
+    let crossSourceFile = await findSourceFileByName(editor, languageConfig)
     if (crossSourceFile) {
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
         return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
@@ -112,34 +111,44 @@ async function findSourceFileByContent(
         return sourceFilePath
     }
 
-    const relevantFilePaths: vscode.Uri[] = await getRelevantFilesFromEditor(
-        editor.document.fileName,
-        editor.document.languageId
-    )
+    const relevantFilePaths = await getRelevantUtgFiles(editor)
 
     // TODO (Metrics):Add metrics for relevantFilePaths length
     relevantFilePaths.forEach(filePath => {
         throwIfCancelled(cancellationToken)
 
-        const fileContent = fs.readFileSync(filePath.fsPath, 'utf-8')
+        const fileContent = fs.readFileSync(filePath, 'utf-8')
         const elementList = extractFunctions(fileContent, languageConfig.functionExtractionPattern)
         elementList.push(...extractClasses(fileContent, languageConfig.classExtractionPattern))
         const matchCount = countSubstringMatches(elementList, testElementList)
         if (matchCount > maxMatchCount) {
             maxMatchCount = matchCount
-            sourceFilePath = filePath.fsPath
+            sourceFilePath = filePath
         }
     })
     return sourceFilePath
 }
 
+async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]> {
+    const targetFile = editor.document.uri.fsPath
+    const language = editor.document.languageId
+
+    return await getOpenFilesInWindow(async candidateFile => {
+        return (
+            targetFile !== candidateFile &&
+            path.extname(targetFile) === path.extname(candidateFile) &&
+            !(await isTestFile(candidateFile, { languageId: language }))
+        )
+    })
+}
+
 async function findSourceFileByName(
     editor: vscode.TextEditor,
-    languageConfig: utgLanguageConfig,
-    dependencyGraph: DependencyGraph
+    languageConfig: utgLanguageConfig
 ): Promise<string | undefined> {
-    const uri = dependencyGraph.getRootFile(editor)
-    const projectPath = dependencyGraph.getProjectPath(uri)
+    const uri = editor.document.uri
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
+    const projectPath = workspaceFolder ? workspaceFolder.uri.fsPath : path.dirname(uri.fsPath)
     const testFileName = path.basename(editor.document.fileName)
 
     let basenameSuffix = testFileName
