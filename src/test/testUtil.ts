@@ -294,31 +294,34 @@ export async function closeAllEditors(): Promise<void> {
     // Note: `workbench.action.closeAllEditors` is unreliable.
     const closeAllCmd = 'openEditors.closeAll'
 
-    // Output channels are named with the prefix 'extension-output'
+    // Output channels are named with prefix "extension-output". https://github.com/microsoft/vscode/issues/148993#issuecomment-1167654358
     // Maybe we can close these with a command?
     const ignorePatterns = [/extension-output/, /tasks/]
+    const editors: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
             // Race: documents could appear after the call to closeAllEditors(), so retry.
             await vscode.commands.executeCommand(closeAllCmd)
-            const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
+            editors.length = 0
+            editors.push(
+                ...vscode.window.visibleTextEditors.filter(
+                    editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
+                )
             )
 
-            return visibleEditors.length === 0
+            return editors.length === 0
         },
         {
-            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            timeout: 5000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
             interval: 250,
             truthy: true,
         }
     )
 
     if (!noVisibleEditor) {
-        const editors = vscode.window.visibleTextEditors.map(editor => `\t${editor.document.fileName}`)
-
-        throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
+        const editorNames = editors.map(editor => `\t${editor.document.fileName}`)
+        throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
 
