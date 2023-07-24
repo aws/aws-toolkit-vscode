@@ -1318,11 +1318,6 @@
                     "when": "viewItem == awsEc2Node"
                 },
                 {
-                    "command": "aws.ec2.openTerminal",
-                    "group": "inline@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
                     "command": "aws.ecr.createRepository",
                     "when": "view == aws.explorer && viewItem == awsEcrNode",
                     "group": "inline@1"
@@ -2067,7 +2062,6 @@
             {
                 "command": "aws.ec2.openTerminal",
                 "title": "%AWS.command.ec2.openTerminal%",
-                "icon": "$(terminal-view-icon)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
