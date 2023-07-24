@@ -19,7 +19,7 @@ import {
     shuffleList,
 } from '../../testUtil'
 import { areEqual, normalize } from '../../../shared/utilities/pathUtils'
-import path from 'path'
+import * as path from 'path'
 import { getMinVscodeVersion } from '../../../shared/vscode/env'
 
 const userGroupSettings = CodeWhispererUserGroupSettings.instance
