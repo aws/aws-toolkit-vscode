@@ -157,35 +157,6 @@ export function isInDirectory(d: string, p: string): boolean {
 }
 
 /**
- *
- * @returns file distance between fileA and fileB
- * For example:
- * The file distance between A/B/C.java and A/B/D.java is 0
- * The file distance between A/B/C.java and A/D.java is 1
- */
-export function getFileDistance(fileA: string, fileB: string): number {
-    let filePathA = pathutils.normalize(fileA).split('/')
-    filePathA = filePathA.slice(0, filePathA.length - 1)
-
-    let filePathB = pathutils.normalize(fileB).split('/')
-    filePathB = filePathB.slice(0, filePathB.length - 1)
-
-    let i = 0
-    while (i < Math.min(filePathA.length, filePathB.length)) {
-        const dir1 = filePathA[i]
-        const dir2 = filePathB[i]
-
-        if (dir1 !== dir2) {
-            break
-        }
-
-        i++
-    }
-
-    return filePathA.slice(i).length + filePathB.slice(i).length
-}
-
-/**
  * Returns `name.suffix` if it does not already exist in directory `dir`, else appends
  * a number ("foo-1.txt", "foo-2.txt", etc.).
  *
