@@ -22,7 +22,6 @@ describe('SshKeyUtility', async function () {
 
     after(async function () {
         await tryRemoveFolder(temporaryDirectory)
-        sinon.restore()
     })
 
     describe('generateSshKeys', async function () {
