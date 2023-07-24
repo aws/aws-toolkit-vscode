@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as assert from 'assert'
-import * as sinon from 'sinon'
+//import * as sinon from 'sinon'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
 import { ChildProcessResult } from '../../shared/utilities/childProcess'
