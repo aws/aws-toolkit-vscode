@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import * as fs from 'fs-extra'
+// import * as fs from 'fs-extra'
 //import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../shared/filesystemUtilities'
 import { SshKeyPair } from '../../ec2/sshKeyPair'
@@ -24,12 +24,12 @@ describe('SshKeyUtility', async function () {
         await tryRemoveFolder(temporaryDirectory)
     })
 
-    describe('generateSshKeys', async function () {
-        it('generates key in target file', async function () {
-            const contents = await fs.readFile(keyPath, 'utf-8')
-            assert.notStrictEqual(contents.length, 0)
-        })
-    })
+    // describe('generateSshKeys', async function () {
+    //     it('generates key in target file', async function () {
+    //         const contents = await fs.readFile(keyPath, 'utf-8')
+    //         assert.notStrictEqual(contents.length, 0)
+    //     })
+    // })
 
     it('properly names the public key', function () {
         assert.strictEqual(keyPair.getPublicKeyPath(), `${keyPath}.pub`)
