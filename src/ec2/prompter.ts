@@ -7,25 +7,12 @@ import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/region
 import { Ec2Selection, getInstancesFromRegion } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import { Ec2Instance } from '../shared/clients/ec2Client'
-import { isValidResponse } from '../shared/wizards/wizard'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
 
 function asQuickpickItem(instance: Ec2Instance): DataQuickPickItem<string> {
     return {
         label: '$(terminal) \t' + (instance.name ?? '(no name)'),
         detail: instance.InstanceId,
         data: instance.InstanceId,
-    }
-}
-
-export async function promptUserForEc2Selection(): Promise<Ec2Selection> {
-    const prompter = createEc2ConnectPrompter()
-    const response = await prompter.prompt()
-
-    if (isValidResponse(response)) {
-        return handleEc2ConnectPrompterResponse(response)
-    } else {
-        throw new CancellationError('user')
     }
 }
 
