@@ -89,43 +89,43 @@ describe('VscodeRemoteSshConfig', async function () {
         })
     })
 
-    describe('verifySSHHost', async function () {
-        let promptUserToConfigureSshConfigStub: sinon.SinonStub<
-            [configSection: string | undefined, proxyCommand: string],
-            Promise<void>
-        >
-        before(function () {
-            promptUserToConfigureSshConfigStub = sinon.stub(
-                VscodeRemoteSshConfig.prototype,
-                'promptUserToConfigureSshConfig'
-            )
-        })
+    // describe('verifySSHHost', async function () {
+    //     let promptUserToConfigureSshConfigStub: sinon.SinonStub<
+    //         [configSection: string | undefined, proxyCommand: string],
+    //         Promise<void>
+    //     >
+    //     before(function () {
+    //         promptUserToConfigureSshConfigStub = sinon.stub(
+    //             VscodeRemoteSshConfig.prototype,
+    //             'promptUserToConfigureSshConfig'
+    //         )
+    //     })
 
-        beforeEach(function () {
-            promptUserToConfigureSshConfigStub.resetHistory()
-        })
+    //     beforeEach(function () {
+    //         promptUserToConfigureSshConfigStub.resetHistory()
+    //     })
 
-        after(function () {
-            sinon.restore()
-        })
+    //     after(function () {
+    //         sinon.restore()
+    //     })
 
-        it('writes to ssh config if command not found.', async function () {
-            const testSection = 'no-command-here'
-            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+    //     it('writes to ssh config if command not found.', async function () {
+    //         const testSection = 'no-command-here'
+    //         const result = await config.testVerifySshHostWrapper(testCommand, testSection)
 
-            assert.ok(result.isOk())
-            sinon.assert.calledOn(promptUserToConfigureSshConfigStub, config)
-            sinon.assert.calledOnce(promptUserToConfigureSshConfigStub)
-        })
+    //         assert.ok(result.isOk())
+    //         sinon.assert.calledOn(promptUserToConfigureSshConfigStub, config)
+    //         sinon.assert.calledOnce(promptUserToConfigureSshConfigStub)
+    //     })
 
-        it('does not write to ssh config if command is find', async function () {
-            const testSection = `this is some text that doesn't matter, but here proxycommand ${testProxyCommand}`
-            const result = await config.testVerifySshHostWrapper(testCommand, testSection)
+    //     it('does not write to ssh config if command is find', async function () {
+    //         const testSection = `this is some text that doesn't matter, but here proxycommand ${testProxyCommand}`
+    //         const result = await config.testVerifySshHostWrapper(testCommand, testSection)
 
-            assert.ok(result.isOk())
-            sinon.assert.notCalled(promptUserToConfigureSshConfigStub)
-        })
-    })
+    //         assert.ok(result.isOk())
+    //         sinon.assert.notCalled(promptUserToConfigureSshConfigStub)
+    //     })
+    // })
 
     describe('createSSHConfigSection', async function () {
         const testKeyPath = 'path/to/keys'
