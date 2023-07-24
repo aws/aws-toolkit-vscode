@@ -178,7 +178,7 @@ const createCustomizationItems = async () => {
         showMessageWithUrl(
             localize(
                 'AWS.codewhisperer.customization.noCustomizations.description',
-                'You dont have access to any CodeWhisperer customizations. Contact your admin for access.'
+                'You dont have access to any CodeWhisperer customization. Contact your admin for access.'
             ),
             learnMoreUri,
             localize('AWS.codewhisperer.customization.notification.new_customizations.learn_more', 'Learn More'),
