@@ -52,7 +52,6 @@ export class Ec2ConnectionManager {
             return attachedPolicies
         } catch (e) {
             if (isAwsError(e)) {
-                console.log(e)
                 const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
                 getLogger().error(`ec2: ${errorMessage}`)
                 throw ToolkitError.chain(e, errorMessage, { code: e.code })
@@ -68,12 +67,6 @@ export class Ec2ConnectionManager {
 
             return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
         } catch (e) {
-            if (e instanceof ToolkitError && e.code == 'NoSuchEntity') {
-                getLogger().warn(
-                    `ec2: due to error in checking policies attached to instance, assuming necessary policies do not exist for instance ${instanceId}.`
-                )
-                return false
-            }
             throw ToolkitError.chain(e as Error, `Failed to check policies for EC2 instance: ${instanceId}`, {
                 code: 'PolicyCheck',
             })
