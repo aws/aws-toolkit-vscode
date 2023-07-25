@@ -203,7 +203,7 @@ describe('Ec2ConnectClient', function () {
             client = new MockEc2ConnectClient()
         })
 
-        it('returns empty list when IamRole does not exist', async function () {
+        it('returns empty when IamRole not found', async function () {
             sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves(undefined)
             const response = await client.testGetAttachedPolicies('test-instance')
             assert.deepStrictEqual(response, [])
@@ -211,7 +211,7 @@ describe('Ec2ConnectClient', function () {
             sinon.restore()
         })
 
-        it('returns empty list when IamRole returned does not exist', async function () {
+        it('returns empty if IamRole is found but invalid', async function () {
             sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves({ Arn: 'some-fake-role' })
             sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws('NoSuchEntity')
             const response = await client.testGetAttachedPolicies('test-instance')
