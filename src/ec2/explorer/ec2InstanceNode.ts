@@ -35,7 +35,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.label = `${this.name} (${this.InstanceId})`
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
-        this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
+        this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status!.toUpperCase()}\n${this.arn}`
 
         if (this.isPending()) {
             this.parent.startPolling(this.InstanceId)
@@ -43,7 +43,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public isPending(): boolean {
-        return this.getStatus() != 'running' && this.getStatus() != 'stopped'
+        return this.getStatus() == 'pending'
     }
 
     public async updateStatus() {
