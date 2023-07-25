@@ -48,7 +48,7 @@ export class Ec2ConnectionManager {
             return []
         }
         try {
-            const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
+            const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole.Arn)
             return attachedPolicies
         } catch (e) {
             const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
