@@ -170,8 +170,8 @@ describe('Ec2ConnectClient', function () {
                                 PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
                             },
                         ]
-                    case 'errorInstance':
-                        throw new Error()
+                    case 'toolkitErrorInstance':
+                        throw new ToolkitError('', { code: 'NoSuchEntity' })
                     default:
                         return []
                 }
