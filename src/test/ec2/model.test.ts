@@ -203,7 +203,7 @@ describe('Ec2ConnectClient', function () {
             client = new MockEc2ConnectClient()
         })
 
-        it('returns empty list when IamRole does not exist', async function () {
+        it('returns empty when IamRole not found', async function () {
             sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves(undefined)
             const response = await client.testGetAttachedPolicies('test-instance')
             assert.deepStrictEqual(response, [])
