@@ -78,7 +78,7 @@ export const isSelectedCustomizationAvailable = (available: Customization[], sel
 
 export const baseCustomization = {
     arn: '',
-    name: localize('AWS.codewhisperer.customization.base.label', 'CodeWhisperer foundation'),
+    name: localize('AWS.codewhisperer.customization.base.label', 'CodeWhisperer foundation (Default)'),
     description: localize(
         'AWS.codewhisperer.customization.base.detail',
         'Receive suggestions from CodeWhisperer base model'
@@ -196,13 +196,13 @@ const createCustomizationItems = async () => {
 const createBaseCustomizationItem = () => {
     const label = codicon`${getIcon('vscode-circuit-board')} ${localize(
         'AWS.codewhisperer.customization.base.label',
-        'CodeWhisperer foundation'
+        'CodeWhisperer foundation (Default)'
     )}`
     const selectedArn = getSelectedCustomization().arn
     return {
         label: label,
         onClick: async () => {
-            await setSelectedCustomization(baseCustomization)
+            await selectCustomization(baseCustomization)
         },
         detail: localize(
             'AWS.codewhisperer.customization.base.description',
@@ -222,19 +222,7 @@ const createCustomizationItem = (customization: Customization, persistedArns: (R
     return {
         label: label,
         onClick: async () => {
-            // If the newly selected customization is same as the old one, do nothing
-            const selectedCustomization = getSelectedCustomization()
-            if (selectedCustomization.arn === customization.arn) {
-                return
-            }
-            await setSelectedCustomization(customization)
-            vscode.window.showInformationMessage(
-                localize(
-                    'AWS.codewhisperer.customization.selected.message',
-                    'CodeWhisperer suggestions are now coming from the {0} customization.',
-                    customization.name
-                )
-            )
+            await selectCustomization(customization)
         },
         detail:
             customization.description !== ''
@@ -244,6 +232,24 @@ const createCustomizationItem = (customization: Customization, persistedArns: (R
         data: customization.arn,
         recentlyUsed: selectedArn === customization.arn,
     } as DataQuickPickItem<string>
+}
+
+const selectCustomization = async (customization: Customization) => {
+    // If the newly selected customization is same as the old one, do nothing
+    const selectedCustomization = getSelectedCustomization()
+    if (selectedCustomization.arn === customization.arn) {
+        return
+    }
+    await setSelectedCustomization(customization)
+    const suffix =
+        customization.arn == baseCustomization.arn ? customization.name : customization.name + ' customization.'
+    vscode.window.showInformationMessage(
+        localize(
+            'AWS.codewhisperer.customization.selected.message',
+            'CodeWhisperer suggestions are now coming from the {0}',
+            suffix
+        )
+    )
 }
 
 export const getAvailableCustomizationsList = async () => {
