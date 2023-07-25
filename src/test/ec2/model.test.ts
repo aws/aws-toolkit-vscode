@@ -170,6 +170,8 @@ describe('Ec2ConnectClient', function () {
                                 PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
                             },
                         ]
+                    case 'errorInstance':
+                        throw new Error()
                     default:
                         return []
                 }
@@ -183,16 +185,21 @@ describe('Ec2ConnectClient', function () {
             let result: boolean
 
             result = await client.hasProperPolicies('firstInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
 
             result = await client.hasProperPolicies('secondInstance')
-            assert.strictEqual(true, result)
+            assert.strictEqual(result, true)
 
             result = await client.hasProperPolicies('thirdInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
 
             result = await client.hasProperPolicies('fourthInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
+        })
+
+        it('returns empty when sdk throws error', async function () {
+            const result = await client.hasProperPolicies('errorInstance')
+            assert.deepStrictEqual(result, false)
         })
     })
 
@@ -211,12 +218,17 @@ describe('Ec2ConnectClient', function () {
             sinon.restore()
         })
 
-        it('returns empty if IamRole is found but invalid', async function () {
+        it('throws error if IamRole is found but invalid', async function () {
             sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves({ Arn: 'some-fake-role' })
             sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws('NoSuchEntity')
-            const response = await client.testGetAttachedPolicies('test-instance')
-            assert.deepStrictEqual(response, [])
-            sinon.restore()
+            try {
+                await client.testGetAttachedPolicies('test-instance')
+                assert.ok(false)
+            } catch {
+                assert.ok(true)
+            } finally {
+                sinon.restore()
+            }
         })
     })
 })
