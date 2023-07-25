@@ -1,3 +1,8 @@
+# _1.73_ (2023-07-19)
+- **(Feature)** CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching
+- **(Bug Fix)** CodeWhisperer: Run read operation in the background thread without runReadAction
+- **(Bug Fix)** CodeWhisperer: Fix an issue where CodeWhisperer would stuck in the invocation state indefinitely
+
 # _1.72_ (2023-07-11)
 - **(Feature)** CodeWhisperer: Improve suggestion quality with enhanced file context fetching
 - **(Bug Fix)** Fix AWS Lambda configuration window resize ([#3657](https://github.com/aws/aws-toolkit-jetbrains/issues/3657))

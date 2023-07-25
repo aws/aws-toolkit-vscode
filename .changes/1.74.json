@@ -1,0 +1,14 @@
+{
+  "date" : "2023-07-25",
+  "version" : "1.74",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Explorer is automatically refreshed with new credentials when they are added to credential file."
+  }, {
+    "type" : "feature",
+    "description" : "Added 2023.2 support"
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix 'No display name is specified for configurable' in 2023.2"
+  } ]
+}
