@@ -51,7 +51,7 @@ export class Ec2ConnectionManager {
             const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
             return attachedPolicies
         } catch (e) {
-            const errorMessage = `Failed to find policies attached to role with ARN ${IamRole.Arn}.`
+            const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
             getLogger().error(`ec2: ${errorMessage}`)
             throw new ToolkitError(errorMessage)
         }
