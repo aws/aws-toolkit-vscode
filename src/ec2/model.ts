@@ -86,6 +86,26 @@ export class Ec2ConnectionManager {
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
+    private async throwPolicyError(selection: Ec2Selection) {
+        const role = await this.ec2Client.getAttachedIamRole(selection.instanceId)
+
+        const baseMessage = 'Ensure the IAM role attached to the instance has the required policies.'
+        const messageExtension =
+            role && role.Arn
+                ? `Found attached role ${role.Arn}.`
+                : `Failed to find role attached to ${selection.instanceId}`
+        const fullMessage = `${baseMessage} ${messageExtension}`
+
+        const documentationUri = vscode.Uri.parse(
+            'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
+        )
+
+        this.throwConnectionError(fullMessage, selection, {
+            code: 'EC2SSMPermission',
+            documentationUri: documentationUri,
+        })
+    }
+
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
         const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
         const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
@@ -97,14 +117,7 @@ export class Ec2ConnectionManager {
         }
 
         if (!hasProperPolicies) {
-            const message = 'Ensure the IAM role attached to the instance has the required policies.'
-            const documentationUri = vscode.Uri.parse(
-                'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
-            )
-            this.throwConnectionError(message, selection, {
-                code: 'EC2SSMPermission',
-                documentationUri: documentationUri,
-            })
+            await this.throwPolicyError(selection)
         }
 
         if (!isSsmAgentRunning) {
