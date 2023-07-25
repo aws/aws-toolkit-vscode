@@ -67,6 +67,9 @@ export class Ec2ConnectionManager {
 
             return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
         } catch (e) {
+            if (e instanceof ToolkitError && e.code == 'NoSuchEntity') {
+                throw e
+            }
             throw ToolkitError.chain(e as Error, `Failed to check policies for EC2 instance: ${instanceId}`, {
                 code: 'PolicyCheck',
             })
