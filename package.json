@@ -251,7 +251,8 @@
                 "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
-                    "default": true
+                    "default": true,
+                    "scope": "application"
                 },
                 "aws.codeWhisperer.javaCompilationOutput": {
                     "type": "string",
