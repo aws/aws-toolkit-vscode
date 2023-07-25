@@ -59,7 +59,7 @@ export async function fetchSupplementalContextForTest(
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
     throwIfCancelled(cancellationToken)
 
-    let crossSourceFile = await findSourceFileByName(editor, languageConfig)
+    let crossSourceFile = await findSourceFileByName(editor, languageConfig, cancellationToken)
     if (crossSourceFile) {
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
         return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
@@ -102,7 +102,13 @@ async function findSourceFileByContent(
 ): Promise<string | undefined> {
     const testFileContent = fs.readFileSync(editor.document.fileName, 'utf-8')
     const testElementList = extractFunctions(testFileContent, languageConfig.functionExtractionPattern)
+
+    throwIfCancelled(cancellationToken)
+
     testElementList.push(...extractClasses(editor.document.fileName, languageConfig.classExtractionPattern))
+
+    throwIfCancelled(cancellationToken)
+
     let sourceFilePath: string | undefined = undefined
     let maxMatchCount = 0
 
@@ -112,6 +118,8 @@ async function findSourceFileByContent(
     }
 
     const relevantFilePaths = await getRelevantUtgFiles(editor)
+
+    throwIfCancelled(cancellationToken)
 
     // TODO (Metrics):Add metrics for relevantFilePaths length
     relevantFilePaths.forEach(filePath => {
@@ -144,7 +152,8 @@ async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]>
 
 async function findSourceFileByName(
     editor: vscode.TextEditor,
-    languageConfig: utgLanguageConfig
+    languageConfig: utgLanguageConfig,
+    cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
     const uri = editor.document.uri
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
@@ -156,6 +165,8 @@ async function findSourceFileByName(
     if (match) {
         basenameSuffix = match[1] || match[2]
     }
+
+    throwIfCancelled(cancellationToken)
 
     // Assuming the convention of using similar path structure for test and src files.
     const dirPath = path.dirname(editor.document.uri.fsPath)
@@ -174,11 +185,15 @@ async function findSourceFileByName(
         return newPath
     }
 
+    throwIfCancelled(cancellationToken)
+
     // TODO: vscode.workspace.findFiles is preferred but doesn't seems to be working for now.
     // TODO: Enable this later.
     //const sourceFiles =
     //    await vscode.workspace.findFiles(`${projectPath}/**/${basenameSuffix}${languageConfig.extension}`);
     const sourceFiles = await globPromise(`${projectPath}/**/${basenameSuffix}${languageConfig.extension}`)
+
+    throwIfCancelled(cancellationToken)
 
     if (sourceFiles.length > 0) {
         return sourceFiles[0]
