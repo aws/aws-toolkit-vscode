@@ -56,24 +56,17 @@ export class Ec2ConnectionManager {
                 getLogger().error(`ec2: ${errorMessage}`)
                 throw ToolkitError.chain(e, errorMessage, { code: e.code })
             }
-            throw e
-        }
-    }
-
-    public async hasProperPolicies(instanceId: string): Promise<boolean> {
-        try {
-            const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
-            const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
-
-            return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
-        } catch (e) {
-            if (e instanceof ToolkitError && e.code == 'NoSuchEntity') {
-                throw e
-            }
             throw ToolkitError.chain(e as Error, `Failed to check policies for EC2 instance: ${instanceId}`, {
                 code: 'PolicyCheck',
             })
         }
+    }
+
+    public async hasProperPolicies(instanceId: string): Promise<boolean> {
+        const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
+        const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
+
+        return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
