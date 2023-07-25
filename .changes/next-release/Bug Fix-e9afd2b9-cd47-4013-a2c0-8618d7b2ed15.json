@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Change one of CodeWhisperer settings to User level settings"
+	"description": "User setting for \"Share CodeWhisperer Content With AWS\" was not reflected in workspace-level settings"
 }
