@@ -51,6 +51,12 @@ describe('Ec2ConnectClient', function () {
         public async testGetAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
             return await this.getAttachedPolicies(instanceId)
         }
+
+        protected override async throwPolicyError(selection: Ec2Selection): Promise<void> {
+            this.throwConnectionError('', selection, {
+                code: 'EC2SSMPermission',
+            })
+        }
     }
 
     describe('isInstanceRunning', async function () {

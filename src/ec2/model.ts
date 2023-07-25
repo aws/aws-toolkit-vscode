@@ -74,12 +74,12 @@ export class Ec2ConnectionManager {
         return instanceStatus == 'running'
     }
 
-    private throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
+    protected throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
-    private async throwPolicyError(selection: Ec2Selection) {
+    protected async throwPolicyError(selection: Ec2Selection) {
         const role = await this.ec2Client.getAttachedIamRole(selection.instanceId)
 
         const baseMessage = 'Ensure the IAM role attached to the instance has the required policies.'
