@@ -8,7 +8,7 @@ import { IAM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ToolkitError } from '../shared/errors'
+import { ToolkitError, isAwsError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
@@ -51,9 +51,13 @@ export class Ec2ConnectionManager {
             const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole.Arn)
             return attachedPolicies
         } catch (e) {
-            const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
-            getLogger().error(`ec2: ${errorMessage}`)
-            throw ToolkitError.chain(e, errorMessage, { code: 'NoSuchEntity' })
+            if (isAwsError(e)) {
+                console.log(e)
+                const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
+                getLogger().error(`ec2: ${errorMessage}`)
+                throw ToolkitError.chain(e, errorMessage, { code: e.code })
+            }
+            throw e
         }
     }
 
@@ -70,9 +74,8 @@ export class Ec2ConnectionManager {
                 )
                 return false
             }
-            throw new ToolkitError(`An unknown error occurred when checking the policies for ${instanceId}`, {
-                cause: e as Error,
-                code: 'PolicyCheckError',
+            throw ToolkitError.chain(e as Error, `Failed to check policies for EC2 instance: ${instanceId}`, {
+                code: 'PolicyCheck',
             })
         }
     }
