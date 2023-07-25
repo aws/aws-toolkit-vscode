@@ -13,6 +13,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
+import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
 type CrossFileSupportedLanguage =
@@ -201,10 +202,10 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
 }
 
 /**
- * This function will return relevant cross files for the given editor file
+ * This function will return relevant cross files sorted by file distance for the given editor file
  * by referencing open files, imported files and same package files.
  */
-async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
+export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
     const targetFile = editor.document.uri.fsPath
     const language = editor.document.languageId as CrossFileSupportedLanguage
     const dialects = supportedLanguageToDialects[language]
@@ -215,7 +216,7 @@ async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string
      * 2. has the same file extension or it's one of the dialect of target file (e.g .js vs. .jsx)
      * 3. is not a test file
      */
-    return await getOpenFilesInWindow(async candidateFile => {
+    const unsortedCandidates = await getOpenFilesInWindow(async candidateFile => {
         return (
             targetFile !== candidateFile &&
             (path.extname(targetFile) === path.extname(candidateFile) ||
@@ -223,6 +224,20 @@ async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string
             !(await isTestFile(candidateFile, { languageId: language }))
         )
     })
+
+    return unsortedCandidates
+        .map(candidate => {
+            return {
+                file: candidate,
+                fileDistance: getFileDistance(targetFile, candidate),
+            }
+        })
+        .sort((file1, file2) => {
+            return file1.fileDistance - file2.fileDistance
+        })
+        .map(fileToDistance => {
+            return fileToDistance.file
+        })
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {
