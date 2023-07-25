@@ -51,16 +51,24 @@ export class Ec2ConnectionManager {
             const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
             return attachedPolicies
         } catch (e) {
-            getLogger().error(`ec2: failed to find policies attached to role ${IamRole.Arn}.`)
-            return []
+            const errorMessage = `Failed to find policies attached to role with ARN ${IamRole.Arn}.`
+            getLogger().error(`ec2: ${errorMessage}`)
+            throw new ToolkitError(errorMessage)
         }
     }
 
     public async hasProperPolicies(instanceId: string): Promise<boolean> {
-        const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
-        const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
+        try {
+            const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
+            const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
 
-        return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
+            return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
+        } catch (e) {
+            getLogger().warn(
+                `ec2: due to error in checking policies attached to instance, assuming necessary policies do not exist for instance ${instanceId}.`
+            )
+            return false
+        }
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
