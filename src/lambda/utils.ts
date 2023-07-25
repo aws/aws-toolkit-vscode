@@ -11,7 +11,7 @@ import { CloudFormation, Lambda } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
 import { LambdaClient } from '../shared/clients/lambdaClient'
-import { getFamily, RuntimeFamily } from './models/samLambdaRuntime'
+import { getFamily, getNodeMajorVersion, RuntimeFamily } from './models/samLambdaRuntime'
 import { getLogger } from '../shared/logger'
 import { ResourceFetcher } from '../shared/resourcefetcher/resourcefetcher'
 import { CompositeResourceFetcher } from '../shared/resourcefetcher/compositeResourceFetcher'
@@ -64,9 +64,16 @@ export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
         case RuntimeFamily.Python:
             runtimeExtension = 'py'
             break
-        case RuntimeFamily.NodeJS:
-            runtimeExtension = 'js'
+        case RuntimeFamily.NodeJS: {
+            const nodeVersion = getNodeMajorVersion(configuration.Runtime)
+            if (nodeVersion && nodeVersion >= 18) {
+                // node18+ defaults to using the .mjs extension
+                runtimeExtension = 'mjs'
+            } else {
+                runtimeExtension = 'js'
+            }
             break
+        }
         default:
             throw new Error(`Toolkit does not currently support imports for runtime: ${configuration.Runtime}`)
     }
