@@ -172,8 +172,6 @@ describe('Ec2ConnectClient', function () {
                         ]
                     case 'toolkitErrorInstance':
                         throw new ToolkitError('', { code: 'NoSuchEntity' })
-                    case 'generalErrorInstance':
-                        throw new Error()
                     default:
                         return []
                 }
@@ -199,14 +197,9 @@ describe('Ec2ConnectClient', function () {
             assert.strictEqual(result, false)
         })
 
-        it('returns empty when sdk throws NoSuchEntity error', async function () {
-            const result = await client.hasProperPolicies('toolkitErrorInstance')
-            assert.deepStrictEqual(result, false)
-        })
-
-        it('throws error when sdk throws unknown error', async function () {
+        it('throws error when sdk throws error', async function () {
             try {
-                await client.hasProperPolicies('generalErrorInstance')
+                await client.hasProperPolicies('toolkitErrorInstance')
                 assert.ok(false)
             } catch {
                 assert.ok(true)
