@@ -10,13 +10,14 @@ import org.testng.annotations.DataProvider
 import org.testng.annotations.Test
 import software.amazon.awssdk.services.lambda.model.Runtime
 import software.aws.toolkits.jetbrains.services.lambda.Lambda
+import software.aws.toolkits.jetbrains.utils.OPEN_SOLUTION_DIR_NAME
 
 /**
  * Tests to verify R# backend PSI element based on handler string
  */
 class DotNetLambdaHandlerResolverTest : AwsReuseSolutionTestBase() {
 
-    override fun getSolutionDirectoryName(): String = "SamHelloWorldApp"
+    override fun getSolutionDirectoryName(): String = OPEN_SOLUTION_DIR_NAME
 
     @Test
     fun testHandler_SingleValidHandler() {

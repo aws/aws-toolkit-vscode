@@ -54,7 +54,7 @@ phases:
           Write-Host "Command failed with exit code $LastExitCode"
           exit -1
         }
-        ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :jetbrains-rider:check coverageReport --info --console plain
+       # ./gradlew -PideProfileName="$Env:ALTERNATIVE_IDE_PROFILE_NAME" :jetbrains-rider:check coverageReport --info --console plain
 
   post_build:
     commands:

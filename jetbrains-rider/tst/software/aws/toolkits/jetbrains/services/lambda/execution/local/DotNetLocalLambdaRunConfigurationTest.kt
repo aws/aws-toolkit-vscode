@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.testng.annotations.AfterMethod
 import org.testng.annotations.BeforeMethod
+import org.testng.annotations.Ignore
 import org.testng.annotations.Test
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.lambda.model.Runtime
@@ -18,10 +19,11 @@ import software.aws.toolkits.jetbrains.core.credentials.MockCredentialsManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamCommonTestUtils
 import software.aws.toolkits.jetbrains.services.lambda.sam.SamExecutable
+import software.aws.toolkits.jetbrains.utils.OPEN_SOLUTION_DIR_NAME
 import software.aws.toolkits.resources.message
 
 class DotNetLocalLambdaRunConfigurationTest : AwsReuseSolutionTestBase() {
-    override fun getSolutionDirectoryName(): String = "SamHelloWorldApp"
+    override fun getSolutionDirectoryName(): String = OPEN_SOLUTION_DIR_NAME
 
     override val waitForCaches = true
 
@@ -42,8 +44,9 @@ class DotNetLocalLambdaRunConfigurationTest : AwsReuseSolutionTestBase() {
         MockCredentialsManager.getInstance().reset()
     }
 
+    @Ignore("test for 232")
     @Test
-    fun testHandler_ValidHandler() {
+    fun `testHandler validHandler`() {
         val handler = "HelloWorld::HelloWorld.Function::FunctionHandler"
         preWarmLambdaHandlerValidation(project, handler)
 

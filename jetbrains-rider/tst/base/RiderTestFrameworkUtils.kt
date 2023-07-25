@@ -9,8 +9,6 @@ import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.vfs.newvfs.impl.VfsRootAccess
 import com.intellij.util.text.SemVer
-import com.jetbrains.rider.test.base.PrepareTestEnvironment
-import java.io.File
 import java.nio.file.Paths
 import java.time.Duration
 
@@ -63,6 +61,5 @@ fun allowCustomDotnetRoots() {
     VfsRootAccess.allowRootAccess(
         ApplicationManager.getApplication(),
         dotNetSdk,
-        File(PrepareTestEnvironment.dotnetCoreCliPath).parentFile.absolutePath
     )
 }

@@ -5,14 +5,10 @@ package software.aws.toolkits.jetbrains.services.lambda.completion
 
 import base.allowCustomDotnetRoots
 import base.backendStartTimeout
-import base.msBuild
-import base.setUpCustomToolset
-import com.intellij.openapi.application.ApplicationManager
 import com.jetbrains.rd.ide.model.IconModel
 import com.jetbrains.rd.ui.icons.toIdeaIcon
 import com.jetbrains.rider.test.annotations.TestEnvironment
 import com.jetbrains.rider.test.base.BaseTestWithSolution
-import com.jetbrains.rider.test.protocol.testProtocolHost
 import org.assertj.core.api.Assertions.assertThat
 import org.testng.annotations.BeforeSuite
 import org.testng.annotations.Test
@@ -26,12 +22,6 @@ class DotNetHandlerCompletionTest : BaseTestWithSolution() {
     override fun getSolutionDirectoryName(): String = ""
 
     override val waitForCaches = true
-
-    @BeforeSuite
-    fun setMsBuildVersion() {
-        val host = ApplicationManager.getApplication().testProtocolHost
-        setUpCustomToolset(msBuild, host)
-    }
 
     // TODO: Remove when https://youtrack.jetbrains.com/issue/RIDER-47995 is fixed FIX_WHEN_MIN_IS_203
     @BeforeSuite

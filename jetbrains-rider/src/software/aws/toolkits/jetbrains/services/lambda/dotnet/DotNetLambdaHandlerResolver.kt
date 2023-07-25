@@ -8,7 +8,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.NavigatablePsiElement
 import com.intellij.psi.PsiElement
 import com.intellij.psi.search.GlobalSearchScope
-import com.intellij.workspaceModel.ide.WorkspaceModel
 import com.jetbrains.rd.framework.impl.RpcTimeouts
 import com.jetbrains.rider.model.MethodExistingRequest
 import com.jetbrains.rider.model.backendPsiHelperModel
@@ -22,6 +21,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.protocol.HandlerExistRequest
 import software.aws.toolkits.jetbrains.protocol.lambdaPsiModel
 import software.aws.toolkits.jetbrains.services.lambda.LambdaHandlerResolver
+import software.aws.toolkits.jetbrains.services.lambda.WorkspaceModel
 import software.aws.toolkits.jetbrains.services.lambda.dotnet.element.RiderLambdaHandlerFakePsiElement
 import java.nio.file.Path
 

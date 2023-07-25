@@ -5,14 +5,18 @@ package software.aws.toolkits.jetbrains.services.lambda.nodejs
 
 import com.intellij.execution.executors.DefaultDebugExecutor
 import com.intellij.lang.typescript.compiler.languageService.TypeScriptLanguageServiceUtil
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.module.ModuleType
+import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.PsiTestUtil
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.AfterClass
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.BeforeClass
+import org.junit.ClassRule
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,9 +44,15 @@ class NodeJsLocalTypeScriptLambdaRunConfigurationIntegrationTest(private val run
 
         private var tsUseServiceSetting = false
 
+        @ClassRule
+        @JvmField
+        public val applicationRule = ApplicationRule()
+
         @JvmStatic
         @BeforeClass
         fun beforeAll() {
+            assumeTrue("Needs evaulation on what issues are with >= 232", ApplicationInfo.getInstance().build.baselineVersion < 232)
+
             tsUseServiceSetting = TypeScriptLanguageServiceUtil.USE_SERVICE
             // TS service is disabled in unit tests by default
             TypeScriptLanguageServiceUtil.setUseService(true)

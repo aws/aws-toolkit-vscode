@@ -6,10 +6,10 @@ package software.aws.toolkits.jetbrains.services.rds.auth
 import com.intellij.database.dataSource.DataSourceUiUtil
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.url.template.ParametersHolder
-import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import software.amazon.awssdk.services.rds.RdsClient
+import software.aws.toolkits.jetbrains.UiConstraints
 import software.aws.toolkits.jetbrains.services.rds.RdsResources
 import software.aws.toolkits.jetbrains.ui.AwsAuthWidget
 import software.aws.toolkits.resources.message
@@ -30,10 +30,10 @@ class IamAuthWidget : AwsAuthWidget() {
         val panel = super.createPanel()
         val rdsSigningHostLabel = JBLabel(message("rds.url")).apply { toolTipText = message("rds.iam_help") }
         val rdsSigningPortLabel = JBLabel(message("rds.port")).apply { toolTipText = message("rds.iam_help") }
-        panel.add(rdsSigningHostLabel, UrlPropertiesPanel.createLabelConstraints(3, 0, rdsSigningHostLabel.preferredSize.getWidth()))
-        panel.add(rdsSigningHostField, UrlPropertiesPanel.createSimpleConstraints(3, 1, 3))
-        panel.add(rdsSigningPortLabel, UrlPropertiesPanel.createLabelConstraints(3, 4, rdsSigningPortLabel.preferredSize.getWidth()))
-        panel.add(rdsSigningPortField, UrlPropertiesPanel.createSimpleConstraints(3, 5, 1))
+        panel.add(rdsSigningHostLabel, UiConstraints.createLabelConstraints(3, 0, rdsSigningHostLabel.preferredSize.getWidth()))
+        panel.add(rdsSigningHostField, UiConstraints.createSimpleConstraints(3, 1, 3))
+        panel.add(rdsSigningPortLabel, UiConstraints.createLabelConstraints(3, 4, rdsSigningPortLabel.preferredSize.getWidth()))
+        panel.add(rdsSigningPortField, UiConstraints.createSimpleConstraints(3, 5, 1))
         return panel
     }
 

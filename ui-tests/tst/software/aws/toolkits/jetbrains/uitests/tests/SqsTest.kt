@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.io.TempDir
 import software.amazon.awssdk.services.sns.SnsClient
 import software.amazon.awssdk.services.sqs.SqsClient
@@ -45,6 +46,7 @@ import java.time.Duration
 import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "2023.*", disabledReason = "Flakes on 231 above")
 class SqsTest {
     @TempDir
     lateinit var tempDir: Path

@@ -7,11 +7,11 @@ import com.intellij.database.dataSource.DataSourceUiUtil
 import com.intellij.database.dataSource.LocalDataSource
 import com.intellij.database.dataSource.url.template.ParametersHolder
 import com.intellij.database.dataSource.url.template.UrlEditorModel
-import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.redshift.RedshiftClient
+import software.aws.toolkits.jetbrains.UiConstraints
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftUtils
 import software.aws.toolkits.jetbrains.ui.AwsAuthWidget
 import software.aws.toolkits.resources.message
@@ -29,8 +29,8 @@ class IamAuthWidget : AwsAuthWidget() {
     override fun createPanel(): JPanel {
         val panel = super.createPanel()
         val regionLabel = JBLabel(message("redshift.cluster_id"))
-        panel.add(regionLabel, UrlPropertiesPanel.createLabelConstraints(3, 0, regionLabel.preferredSize.getWidth()))
-        panel.add(clusterIdSelector, UrlPropertiesPanel.createSimpleConstraints(3, 1, 3))
+        panel.add(regionLabel, UiConstraints.createLabelConstraints(3, 0, regionLabel.preferredSize.getWidth()))
+        panel.add(clusterIdSelector, UiConstraints.createSimpleConstraints(3, 1, 3))
         return panel
     }
 

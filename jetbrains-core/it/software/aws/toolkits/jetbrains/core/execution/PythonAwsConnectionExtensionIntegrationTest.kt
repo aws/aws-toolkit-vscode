@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.execution
 import com.intellij.execution.ExecutorRegistry
 import com.intellij.execution.RunManager
 import com.intellij.execution.executors.DefaultRunExecutor
+import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.application.runWriteActionAndWait
 import com.intellij.openapi.projectRoots.ProjectJdkTable
 import com.intellij.openapi.util.Disposer
@@ -18,6 +19,7 @@ import com.jetbrains.python.run.PythonRunConfiguration
 import com.jetbrains.python.sdk.PyDetectedSdk
 import com.jetbrains.python.sdk.detectSystemWideSdks
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import software.aws.toolkits.jetbrains.core.credentials.MockCredentialManagerRule
@@ -54,6 +56,7 @@ class PythonAwsConnectionExtensionIntegrationTest {
 
     @Test
     fun happyPathPythonConnectionInjection() {
+        assumeTrue("Needs heavy project on >= 232", ApplicationInfo.getInstance().build.baselineVersion < 232)
         val file = projectRule.fixture.addFileToProject(
             "hello.py",
             """ 

@@ -5,13 +5,13 @@ package software.aws.toolkits.jetbrains.datagrip.auth
 
 import com.intellij.database.dataSource.DataSourceUiUtil
 import com.intellij.database.dataSource.LocalDataSource
-import com.intellij.database.dataSource.url.ui.UrlPropertiesPanel
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
 import com.intellij.util.text.nullize
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
+import software.aws.toolkits.jetbrains.UiConstraints
 import software.aws.toolkits.jetbrains.services.rds.RdsResources
 import software.aws.toolkits.jetbrains.services.redshift.RedshiftUtils
 import software.aws.toolkits.jetbrains.ui.AwsAuthWidget
@@ -32,9 +32,9 @@ class SecretsManagerAuthWidget : AwsAuthWidget(userFieldEnabled = false) {
     override fun createPanel(): JPanel {
         val panel = super.createPanel()
         val secretLabel = JBLabel(message("datagrip.secret_id"))
-        panel.add(secretLabel, UrlPropertiesPanel.createLabelConstraints(3, 0, secretLabel.preferredSize.getWidth()))
-        panel.add(secretIdSelector, UrlPropertiesPanel.createSimpleConstraints(3, 1, 3))
-        panel.add(urlFromSecret, UrlPropertiesPanel.createSimpleConstraints(4, 1, 3))
+        panel.add(secretLabel, UiConstraints.createLabelConstraints(3, 0, secretLabel.preferredSize.getWidth()))
+        panel.add(secretIdSelector, UiConstraints.createSimpleConstraints(3, 1, 3))
+        panel.add(urlFromSecret, UiConstraints.createSimpleConstraints(4, 1, 3))
         return panel
     }
 
