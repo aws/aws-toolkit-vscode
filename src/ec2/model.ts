@@ -43,7 +43,7 @@ export class Ec2ConnectionManager {
 
     protected async getAttachedPolicies(instanceId: string): Promise<IAM.AttachedPolicy[]> {
         const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
-        if (!IamRole) {
+        if (!IamRole?.Arn) {
             return []
         }
         try {
