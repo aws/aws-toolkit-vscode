@@ -53,7 +53,7 @@ export class Ec2ConnectionManager {
         } catch (e) {
             const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
             getLogger().error(`ec2: ${errorMessage}`)
-            throw new ToolkitError(errorMessage)
+            throw new ToolkitError.chain(e, errorMessage)
         }
     }
 
