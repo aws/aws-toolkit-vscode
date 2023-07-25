@@ -17,6 +17,7 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
+import { getLogger } from '../shared/logger'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -47,9 +48,10 @@ export class Ec2ConnectionManager {
             return []
         }
         try {
-            const attachedRoles = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
-            return attachedRoles
+            const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole!.Arn!)
+            return attachedPolicies
         } catch (e) {
+            getLogger().error(`ec2: failed to find policies attached to role ${IamRole.Arn}.`)
             return []
         }
     }
