@@ -53,7 +53,7 @@ export class Ec2ConnectionManager {
         } catch (e) {
             const errorMessage = `Failed to find policies attached to role with ARN ${IamRole.Arn}.`
             getLogger().error(`ec2: ${errorMessage}`)
-            throw new ToolkitError(errorMessage)
+            throw new ToolkitError(errorMessage, { code: 'NoSuchEntity' })
         }
     }
 
@@ -64,10 +64,16 @@ export class Ec2ConnectionManager {
 
             return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
         } catch (e) {
-            getLogger().warn(
-                `ec2: due to error in checking policies attached to instance, assuming necessary policies do not exist for instance ${instanceId}.`
-            )
-            return false
+            if (e instanceof ToolkitError && e.code == 'NoSuchEntity') {
+                getLogger().warn(
+                    `ec2: due to error in checking policies attached to instance, assuming necessary policies do not exist for instance ${instanceId}.`
+                )
+                return false
+            }
+            throw new ToolkitError(`An unknown error occurred when checking the policies for ${instanceId}`, {
+                cause: e as Error,
+                code: 'PolicyCheckError',
+            })
         }
     }
 
