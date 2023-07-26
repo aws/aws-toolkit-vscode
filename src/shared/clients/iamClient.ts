@@ -93,4 +93,11 @@ export class DefaultIamClient {
 
         return policies
     }
+
+    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<IAM.Role> {
+        const client = await this.createSdkClient()
+        const instanceProfileName = this.getFriendlyName(instanceProfileArn)
+        const response = await client.getInstanceProfile({ InstanceProfileName: instanceProfileName }).promise()
+        return response.InstanceProfile.Roles[0]
+    }
 }

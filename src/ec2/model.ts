@@ -47,10 +47,11 @@ export class Ec2ConnectionManager {
     }
 
     protected async getAttachedPolicies(instanceId: string): Promise<IAM.AttachedPolicy[]> {
-        const IamRole = await this.ec2Client.getAttachedIamRole(instanceId)
-        if (!IamRole?.Arn) {
+        const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
+        if (!IamInstanceProfile?.Arn) {
             return []
         }
+        const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile!.Arn!)
         try {
             const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole.Arn)
             return attachedPolicies
@@ -87,7 +88,7 @@ export class Ec2ConnectionManager {
     }
 
     protected async throwPolicyError(selection: Ec2Selection) {
-        const role = await this.ec2Client.getAttachedIamRole(selection.instanceId)
+        const role = await this.ec2Client.getAttachedIamInstanceProfile(selection.instanceId)
 
         const baseMessage = 'Ensure an IAM role with the required policies is attached to the instance.'
         const messageExtension =

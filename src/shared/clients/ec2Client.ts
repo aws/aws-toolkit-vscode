@@ -100,11 +100,11 @@ export class Ec2Client {
     }
 
     /**
-     * Retrieve IAM role attached to given EC2 instance.
+     * Retrieve IAM Instance Profile attached to given EC2 instance.
      * @param instanceId target EC2 instance ID
-     * @returns IAM role associated with instance or undefined if none exists.
+     * @returns IAM Instance Profile associated with instance or undefined if none exists.
      */
-    public async getAttachedIamRole(instanceId: string): Promise<IamInstanceProfile | undefined> {
+    public async getAttachedIamInstanceProfile(instanceId: string): Promise<IamInstanceProfile | undefined> {
         const association = await this.getIamInstanceProfileAssociation(instanceId)
         return association ? association.IamInstanceProfile : undefined
     }
