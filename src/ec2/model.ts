@@ -82,7 +82,7 @@ export class Ec2ConnectionManager {
     protected async throwPolicyError(selection: Ec2Selection) {
         const role = await this.ec2Client.getAttachedIamRole(selection.instanceId)
 
-        const baseMessage = 'Ensure the IAM role attached to the instance has the required policies.'
+        const baseMessage = 'Ensure an IAM role with the required policies is attached to the instance.'
         const messageExtension =
             role && role.Arn
                 ? `Found attached role ${role.Arn}.`
