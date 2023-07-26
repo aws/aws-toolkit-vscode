@@ -24,6 +24,10 @@ export class Ec2ConnectionManager {
     private ec2Client: Ec2Client
     private iamClient: DefaultIamClient
 
+    private policyDocumentationUri = vscode.Uri.parse(
+        'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
+    )
+
     public constructor(readonly regionCode: string) {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
@@ -54,7 +58,10 @@ export class Ec2ConnectionManager {
             if (isAwsError(e) && e.code == 'NoSuchEntity') {
                 const errorMessage = `Attached role does not exist in IAM: ${IamRole.Arn}.`
                 getLogger().error(`ec2: ${errorMessage}`)
-                throw ToolkitError.chain(e, errorMessage, { code: e.code })
+                throw ToolkitError.chain(e, errorMessage, {
+                    code: e.code,
+                    documentationUri: this.policyDocumentationUri,
+                })
             }
             throw ToolkitError.chain(e as Error, `Failed to check policies for EC2 instance: ${instanceId}`, {
                 code: 'PolicyCheck',
@@ -89,13 +96,9 @@ export class Ec2ConnectionManager {
                 : `Failed to find role attached to ${selection.instanceId}`
         const fullMessage = `${baseMessage} ${messageExtension}`
 
-        const documentationUri = vscode.Uri.parse(
-            'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
-        )
-
         this.throwConnectionError(fullMessage, selection, {
             code: 'EC2SSMPermission',
-            documentationUri: documentationUri,
+            documentationUri: this.policyDocumentationUri,
         })
     }
 
