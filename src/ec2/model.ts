@@ -17,7 +17,6 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 import { openRemoteTerminal } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
-import { getLogger } from '../shared/logger'
 
 export class Ec2ConnectionManager {
     private ssmClient: SsmClient
@@ -50,35 +49,18 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role> {
+    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
         if (IamInstanceProfile && IamInstanceProfile.Arn) {
             const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)
             return IamRole
         }
-        throw new ToolkitError(`No IAM instance profile attached to instance ${instanceId}`, {
-            code: 'NoIamInstanceProfile',
-        })
     }
 
-    protected async getAttachedPolicies(instanceId: string): Promise<IAM.AttachedPolicy[]> {
-        try {
-            const IamRole = await this.getAttachedIamRole(instanceId)
-            const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole.Arn)
-            return attachedPolicies
-        } catch (e) {
-            if (e instanceof ToolkitError && e.code == 'NoIamInstanceProfile') {
-                getLogger().warn(
-                    `ec2: failed to find IAM Instance Profile associated with instance. Returning no policies attached for instance: ${instanceId}`
-                )
-                return []
-            }
-            throw e
-        }
-    }
-
-    public async hasProperPolicies(instanceId: string): Promise<boolean> {
-        const attachedPolicies = (await this.getAttachedPolicies(instanceId)).map(policy => policy.PolicyName!)
+    public async hasProperPolicies(IamRoleArn: string): Promise<boolean> {
+        const attachedPolicies = (await this.iamClient.listAttachedRolePolicies(IamRoleArn)).map(
+            policy => policy.PolicyName!
+        )
         const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
 
         return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
@@ -94,38 +76,38 @@ export class Ec2ConnectionManager {
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
-    private async getPolicyErrorText(selection: Ec2Selection): Promise<string> {
-        try {
-            const role = await this.getAttachedIamRole(selection.instanceId)
-            return `Found attached role ${role.Arn}.`
-        } catch (e) {
-            return `Failed to find role attached to ${selection.instanceId}`
-        }
-    }
-
-    protected async throwPolicyError(selection: Ec2Selection) {
-        const baseMessage = 'Ensure an IAM role with the required policies is attached to the instance.'
-        const roleText = await this.getPolicyErrorText(selection)
-        const fullMessage = `${baseMessage} ${roleText}`
-        this.throwConnectionError(fullMessage, selection, {
-            code: 'EC2SSMPermission',
-            documentationUri: this.policyDocumentationUri,
-        })
-    }
-
-    public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
+    private async checkForInstanceStatusError(selection: Ec2Selection): Promise<void> {
         const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
-        const hasProperPolicies = await this.hasProperPolicies(selection.instanceId)
-        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
 
         if (!isInstanceRunning) {
             const message = 'Ensure the target instance is running and not currently starting, stopping, or stopped.'
             this.throwConnectionError(message, selection, { code: 'EC2SSMStatus' })
         }
+    }
+
+    private async checkForInstancePermissionsError(selection: Ec2Selection): Promise<void> {
+        const IamRole = await this.getAttachedIamRole(selection.instanceId)
+
+        if (!IamRole) {
+            const message = `No IAM role attached to instance: ${selection.instanceId}`
+            this.throwConnectionError(message, selection, { code: 'EC2SSMPermission' })
+        }
+
+        const hasProperPolicies = await this.hasProperPolicies(IamRole!.Arn)
 
         if (!hasProperPolicies) {
-            await this.throwPolicyError(selection)
+            const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
+                IamRole!.Arn
+            }`
+            this.throwConnectionError(message, selection, {
+                code: 'EC2SSMPermission',
+                documentationUri: this.policyDocumentationUri,
+            })
         }
+    }
+
+    private async checkForInstanceSsmError(selection: Ec2Selection): Promise<void> {
+        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
 
         if (!isSsmAgentRunning) {
             this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
@@ -133,6 +115,14 @@ export class Ec2ConnectionManager {
                 documentationUri: this.ssmAgentDocumentationUri,
             })
         }
+    }
+
+    public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
+        await this.checkForInstanceStatusError(selection)
+
+        await this.checkForInstancePermissionsError(selection)
+
+        await this.checkForInstanceSsmError(selection)
     }
 
     private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
