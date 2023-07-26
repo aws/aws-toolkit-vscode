@@ -46,27 +46,30 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    protected async getAttachedPolicies(instanceId: string): Promise<IAM.AttachedPolicy[]> {
+    protected async getAttachedIamRole(instanceId: string): Promise<IAM.Role> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
-        if (!IamInstanceProfile?.Arn) {
-            return []
+        if (IamInstanceProfile && IamInstanceProfile.Arn) {
+            const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)
+            return IamRole
         }
-        const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile!.Arn!)
+        throw new ToolkitError(`No IAM instance profile attached to instance ${instanceId}`, {
+            code: 'NoIamInstanceProfile',
+        })
+    }
+
+    protected async getAttachedPolicies(instanceId: string): Promise<IAM.AttachedPolicy[]> {
         try {
+            const IamRole = await this.getAttachedIamRole(instanceId)
             const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole.Arn)
             return attachedPolicies
         } catch (e) {
-            if (isAwsError(e) && e.code == 'NoSuchEntity') {
-                const errorMessage = `Attached role does not exist in IAM: ${IamRole.Arn}.`
-                getLogger().error(`ec2: ${errorMessage}`)
-                throw ToolkitError.chain(e, errorMessage, {
-                    code: e.code,
-                    documentationUri: this.policyDocumentationUri,
-                })
+            if (isAwsError(e) && e.code == 'NoIamInstanceProfile') {
+                getLogger().warn(
+                    `ec2: failed to find IAM Instance Profile associated with instance. Returning no policies attached for instance: ${instanceId}`
+                )
+                return []
             }
-            throw ToolkitError.chain(e as Error, `Failed to check policies for EC2 instance: ${instanceId}`, {
-                code: 'PolicyCheck',
-            })
+            throw e
         }
     }
 
@@ -88,19 +91,23 @@ export class Ec2ConnectionManager {
     }
 
     protected async throwPolicyError(selection: Ec2Selection) {
-        const role = await this.ec2Client.getAttachedIamInstanceProfile(selection.instanceId)
-
         const baseMessage = 'Ensure an IAM role with the required policies is attached to the instance.'
-        const messageExtension =
-            role && role.Arn
-                ? `Found attached role ${role.Arn}.`
-                : `Failed to find role attached to ${selection.instanceId}`
-        const fullMessage = `${baseMessage} ${messageExtension}`
-
-        this.throwConnectionError(fullMessage, selection, {
-            code: 'EC2SSMPermission',
-            documentationUri: this.policyDocumentationUri,
-        })
+        try {
+            const role = await this.getAttachedIamRole(selection.instanceId)
+            const roleMsg = `Found attached role ${role.Arn}.`
+            this.throwConnectionError(`${baseMessage} ${roleMsg}`, selection, {
+                code: 'EC2SSMPermission',
+                documentationUri: this.policyDocumentationUri,
+            })
+        } catch (e) {
+            if (isAwsError(e) && e.code == 'NoIamInstanceProfile') {
+                const noRoleMsg = `Failed to find role attached to ${selection.instanceId}`
+                this.throwConnectionError(`${baseMessage} ${noRoleMsg}`, selection, {
+                    code: 'EC2SSMPermission',
+                    documentationUri: this.policyDocumentationUri,
+                })
+            }
+        }
     }
 
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
