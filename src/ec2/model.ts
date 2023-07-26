@@ -28,6 +28,10 @@ export class Ec2ConnectionManager {
         'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-instance-profile.html'
     )
 
+    private ssmAgentDocumentationUri = vscode.Uri.parse(
+        'https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html'
+    )
+
     public constructor(readonly regionCode: string) {
         this.ssmClient = this.createSsmSdkClient()
         this.ec2Client = this.createEc2SdkClient()
@@ -90,24 +94,23 @@ export class Ec2ConnectionManager {
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
-    protected async throwPolicyError(selection: Ec2Selection) {
-        const baseMessage = 'Ensure an IAM role with the required policies is attached to the instance.'
+    private async getPolicyErrorText(selection: Ec2Selection): Promise<string> {
         try {
             const role = await this.getAttachedIamRole(selection.instanceId)
-            const roleMsg = `Found attached role ${role.Arn}.`
-            this.throwConnectionError(`${baseMessage} ${roleMsg}`, selection, {
-                code: 'EC2SSMPermission',
-                documentationUri: this.policyDocumentationUri,
-            })
+            return `Found attached role ${role.Arn}.`
         } catch (e) {
-            if (isAwsError(e) && e.code == 'NoIamInstanceProfile') {
-                const noRoleMsg = `Failed to find role attached to ${selection.instanceId}`
-                this.throwConnectionError(`${baseMessage} ${noRoleMsg}`, selection, {
-                    code: 'EC2SSMPermission',
-                    documentationUri: this.policyDocumentationUri,
-                })
-            }
+            return `Failed to find role attached to ${selection.instanceId}`
         }
+    }
+
+    protected async throwPolicyError(selection: Ec2Selection) {
+        const baseMessage = 'Ensure an IAM role with the required policies is attached to the instance.'
+        const roleText = await this.getPolicyErrorText(selection)
+        const fullMessage = `${baseMessage} ${roleText}`
+        this.throwConnectionError(fullMessage, selection, {
+            code: 'EC2SSMPermission',
+            documentationUri: this.policyDocumentationUri,
+        })
     }
 
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
@@ -127,9 +130,7 @@ export class Ec2ConnectionManager {
         if (!isSsmAgentRunning) {
             this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
                 code: 'EC2SSMAgentStatus',
-                documentationUri: vscode.Uri.parse(
-                    'https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-agent.html'
-                ),
+                documentationUri: this.ssmAgentDocumentationUri,
             })
         }
     }
