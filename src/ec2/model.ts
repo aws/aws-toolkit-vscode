@@ -52,7 +52,7 @@ export class Ec2ConnectionManager {
             return attachedPolicies
         } catch (e) {
             if (isAwsError(e) && e.code == 'NoSuchEntity') {
-                const errorMessage = `No policies attached to role: ${IamRole.Arn}.`
+                const errorMessage = `Attached role does not exist in IAM: ${IamRole.Arn}.`
                 getLogger().error(`ec2: ${errorMessage}`)
                 throw ToolkitError.chain(e, errorMessage, { code: e.code })
             }
