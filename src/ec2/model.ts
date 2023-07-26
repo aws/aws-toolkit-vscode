@@ -8,7 +8,7 @@ import { IAM } from 'aws-sdk'
 import { Ec2Selection } from './utils'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
-import { ToolkitError, isAwsError } from '../shared/errors'
+import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
@@ -50,7 +50,7 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    protected async getAttachedIamRole(instanceId: string): Promise<IAM.Role> {
+    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
         if (IamInstanceProfile && IamInstanceProfile.Arn) {
             const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)
@@ -67,7 +67,7 @@ export class Ec2ConnectionManager {
             const attachedPolicies = await this.iamClient.listAttachedRolePolicies(IamRole.Arn)
             return attachedPolicies
         } catch (e) {
-            if (isAwsError(e) && e.code == 'NoIamInstanceProfile') {
+            if (e instanceof ToolkitError && e.code == 'NoIamInstanceProfile') {
                 getLogger().warn(
                     `ec2: failed to find IAM Instance Profile associated with instance. Returning no policies attached for instance: ${instanceId}`
                 )
