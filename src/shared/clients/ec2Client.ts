@@ -100,7 +100,7 @@ export class Ec2Client {
     }
 
     /**
-     * Retrieve IAM Instance Profile attached to given EC2 instance.
+     * Gets the IAM Instance Profile (not role) attached to given EC2 instance.
      * @param instanceId target EC2 instance ID
      * @returns IAM Instance Profile associated with instance or undefined if none exists.
      */
