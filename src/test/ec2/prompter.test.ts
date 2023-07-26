@@ -54,11 +54,14 @@ describe('Ec2Prompter', async function () {
             const testInstance = {
                 name: 'testName',
                 InstanceId: 'testInstanceId',
+                status: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: `${getIconForInstanceStatus(testInstance)} \t ${testInstance.name}`,
+                label: `${testInstance.name} \t ${getIconForInstanceStatus(
+                    testInstance
+                )} ${testInstance.status.toUpperCase()}`,
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -68,11 +71,12 @@ describe('Ec2Prompter', async function () {
         it('returns QuickPickItem for non-named instances', function () {
             const testInstance = {
                 InstanceId: 'testInstanceId',
+                status: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: `${getIconForInstanceStatus(testInstance)} \t (no name)`,
+                label: `(no name) \t ${getIconForInstanceStatus(testInstance)} ${testInstance.status.toUpperCase()}`,
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -116,14 +120,17 @@ describe('Ec2Prompter', async function () {
                 {
                     InstanceId: '1',
                     name: 'first',
+                    status: 'running',
                 },
                 {
                     InstanceId: '2',
                     name: 'second',
+                    status: 'running',
                 },
                 {
                     InstanceId: '3',
                     name: 'third',
+                    status: 'running',
                 },
             ]
             prompter.unsetFilter()
@@ -138,17 +145,23 @@ describe('Ec2Prompter', async function () {
         it('returns items mapped to QuickPick items without filter', async function () {
             const expected = [
                 {
-                    label: `${getIconForInstanceStatus(prompter.instances[0])} \t ${prompter.instances[0].name!}`,
+                    label: `${prompter.instances[0].name!} \t ${getIconForInstanceStatus(
+                        prompter.instances[0]
+                    )} ${prompter.instances[0].status?.toUpperCase()}`,
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: `${getIconForInstanceStatus(prompter.instances[1])} \t ${prompter.instances[1].name!}`,
+                    label: `${prompter.instances[1].name!} \t ${getIconForInstanceStatus(
+                        prompter.instances[1]
+                    )} ${prompter.instances[1].status?.toUpperCase()}`,
                     detail: prompter.instances[1].InstanceId!,
                     data: prompter.instances[1].InstanceId!,
                 },
                 {
-                    label: `${getIconForInstanceStatus(prompter.instances[2])} \t ${prompter.instances[2].name!}`,
+                    label: `${prompter.instances[2].name!} \t ${getIconForInstanceStatus(
+                        prompter.instances[2]
+                    )} ${prompter.instances[2].status?.toUpperCase()}`,
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
@@ -163,12 +176,16 @@ describe('Ec2Prompter', async function () {
 
             const expected = [
                 {
-                    label: `${getIconForInstanceStatus(prompter.instances[0])} \t ${prompter.instances[0].name!}`,
+                    label: `${prompter.instances[0].name!} \t ${getIconForInstanceStatus(
+                        prompter.instances[0]
+                    )} ${prompter.instances[0].status?.toUpperCase()}`,
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: `${getIconForInstanceStatus(prompter.instances[2])} \t ${prompter.instances[2].name!}`,
+                    label: `${prompter.instances[2].name!} \t ${getIconForInstanceStatus(
+                        prompter.instances[2]
+                    )} ${prompter.instances[0].status?.toUpperCase()}`,
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
