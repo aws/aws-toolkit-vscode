@@ -1,3 +1,10 @@
+## 1.82.0 2023-07-26
+
+- **Bug Fix** CodeWhisperer: issue with fetching enhanced file context
+- **Bug Fix** User setting for "Share CodeWhisperer Content With AWS" was not reflected in workspace-level settings
+- **Feature** CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching
+- **Feature** Lambda "Download" action now expects ".mjs" extension for Node18+ lambdas
+
 ## 1.81.0 2023-07-13
 
 - **Bug Fix** codewhisperer: improper request format when sending empty supplemental context
