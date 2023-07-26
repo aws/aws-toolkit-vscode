@@ -32,7 +32,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
 
     public updateInstance(newInstance: Ec2Instance) {
         this.setInstance(newInstance)
-        this.label = `${this.name} (${this.InstanceId})`
+        this.label = `${this.name} (${this.InstanceId}) ${this.instance.status!.toUpperCase()}`
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status!.toUpperCase()}\n${this.arn}`
