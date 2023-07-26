@@ -21,11 +21,11 @@ export function getIconForInstanceStatus(instance: Ec2Instance) {
 
 export function getIconCodeForInstanceStatus(instance: Ec2Instance) {
     if (instance.status === 'running') {
-        return 'check'
+        return 'pass'
     }
 
     if (instance.status === 'stopped') {
-        return 'stop'
+        return 'circle-slash'
     }
 
     return 'loading~spin'
