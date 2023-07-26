@@ -86,12 +86,12 @@ describe('ec2ParentNode', function () {
     it('sorts child nodes', async function () {
         const sortedText = ['aa', 'ab', 'bb', 'bc', 'cc', 'cd']
         instances = [
-            { name: 'ab', InstanceId: '0' },
-            { name: 'bb', InstanceId: '1' },
-            { name: 'bc', InstanceId: '2' },
-            { name: 'aa', InstanceId: '3' },
-            { name: 'cc', InstanceId: '4' },
-            { name: 'cd', InstanceId: '5' },
+            { name: 'ab', InstanceId: '0', status: 'running' },
+            { name: 'bb', InstanceId: '1', status: 'running' },
+            { name: 'bc', InstanceId: '2', status: 'running' },
+            { name: 'aa', InstanceId: '3', status: 'running' },
+            { name: 'cc', InstanceId: '4', status: 'running' },
+            { name: 'cd', InstanceId: '5', status: 'running' },
         ]
 
         const childNodes = await testNode.getChildren()
@@ -110,9 +110,9 @@ describe('ec2ParentNode', function () {
 
     it('is able to handle children with duplicate names', async function () {
         instances = [
-            { name: 'firstOne', InstanceId: '0' },
-            { name: 'secondOne', InstanceId: '1' },
-            { name: 'firstOne', InstanceId: '2' },
+            { name: 'firstOne', InstanceId: '0', status: 'running' },
+            { name: 'secondOne', InstanceId: '1', status: 'running' },
+            { name: 'firstOne', InstanceId: '2', status: 'running' },
         ]
 
         const childNodes = await testNode.getChildren()
