@@ -11,11 +11,12 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { AWSError, EC2, SSM } from 'aws-sdk'
+import { AWSError, EC2, IAM, SSM } from 'aws-sdk'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { GetCommandInvocationResult } from 'aws-sdk/clients/ssm'
 import { mock } from 'ts-mockito'
 import { SshKeyPair } from '../../ec2/sshKeyPair'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
     let currentInstanceOs: string
@@ -60,6 +61,16 @@ describe('Ec2ConnectClient', function () {
             currentInstanceOs = osName
             const remoteUser = await this.getRemoteUser(instanceId)
             return remoteUser
+        }
+
+        public async testGetAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
+            return await this.getAttachedPolicies(instanceId)
+        }
+
+        protected override async throwPolicyError(selection: Ec2Selection): Promise<void> {
+            this.throwConnectionError('', selection, {
+                code: 'EC2SSMPermission',
+            })
         }
     }
 
@@ -180,6 +191,8 @@ describe('Ec2ConnectClient', function () {
                                 PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
                             },
                         ]
+                    case 'toolkitErrorInstance':
+                        throw new ToolkitError('', { code: 'NoSuchEntity' })
                     default:
                         return []
                 }
@@ -193,16 +206,54 @@ describe('Ec2ConnectClient', function () {
             let result: boolean
 
             result = await client.hasProperPolicies('firstInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
 
             result = await client.hasProperPolicies('secondInstance')
-            assert.strictEqual(true, result)
+            assert.strictEqual(result, true)
 
             result = await client.hasProperPolicies('thirdInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
 
             result = await client.hasProperPolicies('fourthInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
+        })
+
+        it('throws error when sdk throws error', async function () {
+            try {
+                await client.hasProperPolicies('toolkitErrorInstance')
+                assert.ok(false)
+            } catch {
+                assert.ok(true)
+            }
+        })
+    })
+
+    describe('getAttachedPolicies', async function () {
+        let client: MockEc2ConnectClient
+
+        before(async function () {
+            client = new MockEc2ConnectClient()
+        })
+
+        it('returns empty when IamRole not found', async function () {
+            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves(undefined)
+            const response = await client.testGetAttachedPolicies('test-instance')
+            assert.deepStrictEqual(response, [])
+
+            sinon.restore()
+        })
+
+        it('throws error if IamRole is found but invalid', async function () {
+            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves({ Arn: 'some-fake-role' })
+            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws('NoSuchEntity')
+            try {
+                await client.testGetAttachedPolicies('test-instance')
+                assert.ok(false)
+            } catch {
+                assert.ok(true)
+            } finally {
+                sinon.restore()
+            }
         })
     })
 
