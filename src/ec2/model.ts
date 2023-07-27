@@ -77,19 +77,10 @@ export class Ec2ConnectionManager {
         }
     }
 
-    // public async hasProperPolicies(IamRoleArn: string): Promise<boolean> {
-    //     const attachedPolicies = (await this.iamClient.listAttachedRolePolicies(IamRoleArn)).map(
-    //         policy => policy.PolicyName!
-    //     )
-    //     const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
-
-    //     return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
-    // }
-
     public async hasProperPermissions(IamRoleArn: string): Promise<boolean> {
         const deniedActions = await getDeniedSsmActions(this.iamClient, IamRoleArn)
 
-        return deniedActions.length !== 0
+        return deniedActions.length === 0
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
@@ -119,9 +110,9 @@ export class Ec2ConnectionManager {
             this.throwConnectionError(message, selection, { code: 'EC2SSMPermission' })
         }
 
-        const hasProperPolicies = await this.hasProperPermissions(IamRole!.Arn)
+        const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
-        if (!hasProperPolicies) {
+        if (!hasPermission) {
             const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
                 IamRole!.Arn
             }`
