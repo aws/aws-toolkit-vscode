@@ -21,18 +21,23 @@ describe('lambda utils', async function () {
                 Runtime: 'nodejs12.x',
                 Handler: 'asdf/jkl/app.lambda_handler',
             })
+            const node18ModuleParsedName = getLambdaDetails({
+                Runtime: 'nodejs18.x',
+                Handler: 'asdf/jkl/app.lambda_handler',
+            })
             const PyNestedParsedName = getLambdaDetails({
                 Runtime: 'python3.8',
                 Handler: 'asdf/jkl/app.lambda_handler',
             })
-            assert(jsNonNestedParsedName.fileName, 'app.js')
-            assert(pyNonNestedParsedName.fileName, 'app.py')
-            assert(jsNestedParsedName.fileName, 'asdf/jkl/app.js')
-            assert(PyNestedParsedName.fileName, 'asdf/jkl/app.py')
-            assert(jsNonNestedParsedName.functionName, 'lambda_handler')
-            assert(pyNonNestedParsedName.functionName, 'lambda_handler')
-            assert(jsNestedParsedName.functionName, 'lambda_handler')
-            assert(PyNestedParsedName.functionName, 'lambda_handler')
+            assert.strictEqual(jsNonNestedParsedName.fileName, 'app.js')
+            assert.strictEqual(pyNonNestedParsedName.fileName, 'app.py')
+            assert.strictEqual(jsNestedParsedName.fileName, 'asdf/jkl/app.js')
+            assert.strictEqual(node18ModuleParsedName.fileName, 'asdf/jkl/app.mjs')
+            assert.strictEqual(PyNestedParsedName.fileName, 'asdf/jkl/app.py')
+            assert.strictEqual(jsNonNestedParsedName.functionName, 'lambda_handler')
+            assert.strictEqual(pyNonNestedParsedName.functionName, 'lambda_handler')
+            assert.strictEqual(jsNestedParsedName.functionName, 'lambda_handler')
+            assert.strictEqual(PyNestedParsedName.functionName, 'lambda_handler')
         })
 
         it('throws if the handler is not a supported runtime', async function () {

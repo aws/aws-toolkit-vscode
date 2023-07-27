@@ -12,16 +12,17 @@ import { CodeCatalystCommands } from './commands'
 import { GitExtension } from '../shared/extensions/git'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { registerDevfileWatcher } from './devfile'
-import { DevEnvClient } from '../shared/clients/devenvClient'
+import { DevEnvClient, DevEnvActivity } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
-import { getThisDevEnv } from './model'
 import { isDevenvVscode } from './utils'
+import { getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
+import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
 
 const localize = nls.loadMessageBundle()
 
@@ -37,6 +38,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
     )
+
+    Commands.register('aws.codecatalyst.removeConnection', () => {
+        authProvider.removeSavedConnection()
+    })
 
     if (!isCloud9()) {
         GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {
@@ -56,11 +61,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
         watchRestartingDevEnvs(ctx, authProvider)
     }
 
-    ctx.extensionContext.subscriptions.push(DevEnvClient.instance)
-    if (DevEnvClient.instance.id) {
-        ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
-    }
-
     const thisDevenv = (await getThisDevEnv(authProvider))?.unwrapOrElse(err => {
         getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
         return undefined
@@ -69,6 +69,11 @@ export async function activate(ctx: ExtContext): Promise<void> {
     if (!thisDevenv) {
         getLogger().verbose('codecatalyst: not a devenv, getThisDevEnv() returned empty')
     } else {
+        ctx.extensionContext.subscriptions.push(DevEnvClient.instance)
+        if (DevEnvClient.instance.id) {
+            ctx.extensionContext.subscriptions.push(registerDevfileWatcher(DevEnvClient.instance))
+        }
+
         getLogger().info('codecatalyst: Dev Environment ides=%O', thisDevenv?.summary.ides)
         if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
@@ -95,11 +100,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 }
             })
         }
-    }
 
-    Commands.register('aws.codecatalyst.removeConnection', () => {
-        authProvider.removeSavedConnection()
-    })
+        const maxInactivityMinutes = thisDevenv.summary.inactivityTimeoutMinutes
+        const devEnvClient = thisDevenv.devenvClient
+        const devEnvActivity = await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClient)
+        if (shouldTrackUserActivity(maxInactivityMinutes) && devEnvActivity) {
+            const inactivityMessage = new InactivityMessage()
+            inactivityMessage.setupMessage(maxInactivityMinutes, devEnvActivity)
+
+            ctx.extensionContext.subscriptions.push(inactivityMessage, devEnvActivity)
+        }
+    }
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {

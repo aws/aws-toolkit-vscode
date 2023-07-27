@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Lambda \"Download\" action now expects \".mjs\" extension for Node18+ lambdas"
+}

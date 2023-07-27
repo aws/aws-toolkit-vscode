@@ -76,6 +76,10 @@ export const javascript = 'javascript'
 
 export const typescript = 'typescript'
 
+export const jsx = 'javascriptreact'
+
+export const tsx = 'typescriptreact'
+
 export const plaintext = 'plaintext'
 
 // use vscode languageId here
@@ -269,7 +273,7 @@ export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
 
 export const crossFileContextConfig = {
-    numberOfChunkToFetch: 3000,
+    numberOfChunkToFetch: 60,
     topK: 3,
     numberOfLinesEachChunk: 10,
 }

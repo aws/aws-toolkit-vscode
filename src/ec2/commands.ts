@@ -3,33 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { createEc2ConnectPrompter, handleEc2ConnectPrompterResponse } from './prompter'
-import { isValidResponse } from '../shared/wizards/wizard'
+import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
-import { Ec2Selection } from './utils'
-import { RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { PromptResult } from '../shared/ui/prompter'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { copyToClipboard } from '../shared/utilities/messages'
+import { promptUserForEc2Selection } from './prompter'
 
-function getSelectionFromResponse(response: PromptResult<RegionSubmenuResponse<string>>): Ec2Selection {
-    if (isValidResponse(response)) {
-        return handleEc2ConnectPrompterResponse(response)
-    } else {
-        throw new CancellationError('user')
-    }
+export async function openTerminal(node?: Ec2Node) {
+    const selection = node instanceof Ec2InstanceNode ? node.toSelection() : await promptUserForEc2Selection()
+
+    const connectionManager = new Ec2ConnectionManager(selection.region)
+    await connectionManager.attemptToOpenEc2Terminal(selection)
 }
 
-export async function tryConnect(selection?: Ec2Selection): Promise<void> {
-    if (!selection) {
-        const prompter = createEc2ConnectPrompter()
-        const response = await prompter.prompt()
-
-        selection = getSelectionFromResponse(response)
-    }
-
-    const ec2Client = new Ec2ConnectionManager(selection.region)
-    await ec2Client.attemptEc2Connection(selection)
+export async function openRemoteConnection(node?: Ec2Node) {
+    const selection = node instanceof Ec2InstanceNode ? node.toSelection() : await promptUserForEc2Selection()
+    //const connectionManager = new Ec2ConnectionManager(selection.region)
+    console.log(selection)
 }
 
 export async function copyInstanceId(instanceId: string): Promise<void> {
