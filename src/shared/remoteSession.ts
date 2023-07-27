@@ -19,6 +19,8 @@ import { SystemUtilities } from './systemUtilities'
 import { getOrInstallCli } from './utilities/cliUtils'
 import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/childProcess'
+import { IamClient } from './clients/iamClient'
+import { IAM } from 'aws-sdk'
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -166,4 +168,18 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
             details: { missing },
         })
     )
+}
+
+export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
+    const deniedActions = await client.getDeniedActions({
+        PolicySourceArn: roleArn,
+        ActionNames: [
+            'ssmmessages:CreateControlChannel',
+            'ssmmessages:CreateDataChannel',
+            'ssmmessages:OpenControlChannel',
+            'ssmmessages:OpenDataChannel',
+        ],
+    })
+
+    return deniedActions
 }
