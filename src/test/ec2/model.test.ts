@@ -4,13 +4,15 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { EC2 } from 'aws-sdk'
+import { EC2, IAM } from 'aws-sdk'
+import { DefaultIamClient } from '../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
     class MockSsmClient extends SsmClient {
@@ -44,6 +46,16 @@ describe('Ec2ConnectClient', function () {
 
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
+        }
+
+        public async testGetAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
+            return await this.getAttachedPolicies(instanceId)
+        }
+
+        protected override async throwPolicyError(selection: Ec2Selection): Promise<void> {
+            this.throwConnectionError('', selection, {
+                code: 'EC2SSMPermission',
+            })
         }
     }
 
@@ -148,6 +160,8 @@ describe('Ec2ConnectClient', function () {
                                 PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
                             },
                         ]
+                    case 'toolkitErrorInstance':
+                        throw new ToolkitError('', { code: 'NoSuchEntity' })
                     default:
                         return []
                 }
@@ -161,16 +175,54 @@ describe('Ec2ConnectClient', function () {
             let result: boolean
 
             result = await client.hasProperPolicies('firstInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
 
             result = await client.hasProperPolicies('secondInstance')
-            assert.strictEqual(true, result)
+            assert.strictEqual(result, true)
 
             result = await client.hasProperPolicies('thirdInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
 
             result = await client.hasProperPolicies('fourthInstance')
-            assert.strictEqual(false, result)
+            assert.strictEqual(result, false)
+        })
+
+        it('throws error when sdk throws error', async function () {
+            try {
+                await client.hasProperPolicies('toolkitErrorInstance')
+                assert.ok(false)
+            } catch {
+                assert.ok(true)
+            }
+        })
+    })
+
+    describe('getAttachedPolicies', async function () {
+        let client: MockEc2ConnectClient
+
+        before(async function () {
+            client = new MockEc2ConnectClient()
+        })
+
+        it('returns empty when IamRole not found', async function () {
+            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves(undefined)
+            const response = await client.testGetAttachedPolicies('test-instance')
+            assert.deepStrictEqual(response, [])
+
+            sinon.restore()
+        })
+
+        it('throws error if IamRole is found but invalid', async function () {
+            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves({ Arn: 'some-fake-role' })
+            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws('NoSuchEntity')
+            try {
+                await client.testGetAttachedPolicies('test-instance')
+                assert.ok(false)
+            } catch {
+                assert.ok(true)
+            } finally {
+                sinon.restore()
+            }
         })
     })
 })

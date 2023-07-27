@@ -35,19 +35,18 @@ export async function fetchSupplementalContext(
     const timesBeforeFetching = performance.now()
     const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
 
-    if (dependencyGraph === undefined) {
-        // This is a general check for language support of CW.
-        // We perform feature level language filtering later.
-        return undefined
-    }
+    const isUtg = await isTestFile(editor.document.uri.fsPath, {
+        languageId: editor.document.languageId,
+        dependencyGraph: dependencyGraph,
+        fileContent: editor.document.getText(),
+    })
 
-    const isUtg = await isTestFile(editor, dependencyGraph)
     let supplementalContextPromise: Promise<CodeWhispererSupplementalContextItem[] | undefined>
 
     if (isUtg) {
-        supplementalContextPromise = fetchSupplementalContextForTest(editor, dependencyGraph, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, dependencyGraph, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
     }
 
     return supplementalContextPromise
