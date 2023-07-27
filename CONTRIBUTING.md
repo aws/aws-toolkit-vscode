@@ -19,7 +19,6 @@ issues.
 To develop this project, install these dependencies:
 
 -   [Visual Studio Code](https://code.visualstudio.com/Download)
-    -   [TypeScript + Webpack Problem Matcher](https://marketplace.visualstudio.com/items?itemName=amodio.tsl-problem-matcher) (for `$ts-webpack-watch` problemMatcher in `tasks.json`)
 -   [NodeJS and NPM](https://nodejs.org/) (latest version of both)
 -   [Typescript](https://www.typescriptlang.org/)
 -   [Git](https://git-scm.com/downloads)
