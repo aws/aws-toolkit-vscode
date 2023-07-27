@@ -1120,10 +1120,6 @@
                     "when": "aws.isDevMode"
                 },
                 {
-                    "command": "aws.ec2.openTerminal",
-                    "when": "aws.isDevMode"
-                },
-                {
                     "command": "aws.ec2.startInstance",
                     "whem": "aws.isDevMode"
                 },
@@ -1352,11 +1348,6 @@
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.openTerminal",
-                    "group": "inline@1",
                     "when": "viewItem == awsEc2Node"
                 },
                 {
