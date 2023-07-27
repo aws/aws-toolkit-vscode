@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.82.0-SNAPSHOT",
+    "version": "1.83.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -52,6 +52,7 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/main",
+    "browser": "./dist/src/extensionWeb",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -3507,6 +3508,7 @@
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
         "@vscode/test-electron": "^2.3.3",
+        "@vscode/vsce": "^2.19.0",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
@@ -3531,7 +3533,6 @@
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.9.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^2.6.3",
         "vscode-nls-dev": "^4.0.4",
         "vue-loader": "^17.2.2",
         "vue-style-loader": "^4.1.3",

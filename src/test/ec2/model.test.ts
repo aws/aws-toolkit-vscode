@@ -5,10 +5,9 @@
 
 import * as assert from 'assert'
 import * as sinon from 'sinon'
-import { Ec2ConnectErrorCode, Ec2ConnectionManager } from '../../ec2/model'
+import { Ec2ConnectionManager } from '../../ec2/model'
 import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
-import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
 import { AWSError, EC2, IAM, SSM } from 'aws-sdk'
@@ -56,22 +55,6 @@ describe('Ec2ConnectClient', function () {
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
         }
-
-        public async testGetRemoteUser(instanceId: string, osName: string) {
-            currentInstanceOs = osName
-            const remoteUser = await this.getRemoteUser(instanceId)
-            return remoteUser
-        }
-
-        public async testGetAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
-            return await this.getAttachedPolicies(instanceId)
-        }
-
-        protected override async throwPolicyError(selection: Ec2Selection): Promise<void> {
-            this.throwConnectionError('', selection, {
-                code: 'EC2SSMPermission',
-            })
-        }
     }
 
     describe('isInstanceRunning', async function () {
@@ -91,169 +74,99 @@ describe('Ec2ConnectClient', function () {
     })
 
     describe('handleStartSessionError', async function () {
-        let client: MockEc2ConnectClientForError
+        let client: Ec2ConnectionManager
+        let instanceSelection: Ec2Selection
 
-        class MockEc2ConnectClientForError extends MockEc2ConnectClient {
-            public override async hasProperPolicies(instanceId: string): Promise<boolean> {
-                return instanceId.split(':')[1] === 'hasPolicies'
-            }
-        }
         before(function () {
-            client = new MockEc2ConnectClientForError()
+            client = new Ec2ConnectionManager('test-region')
+            instanceSelection = { instanceId: 'testInstance', region: 'testRegion' }
         })
 
-        it('determines which error to throw based on if instance is running', async function () {
-            async function assertThrowsErrorCode(testInstance: Ec2Selection, errCode: Ec2ConnectErrorCode) {
-                try {
-                    await client.checkForStartSessionError(testInstance)
-                } catch (err: unknown) {
-                    assert.strictEqual((err as ToolkitError).code, errCode)
-                }
+        it('throws EC2SSMStatus error if instance is not running', async function () {
+            sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(false)
+            try {
+                await client.checkForStartSessionError(instanceSelection)
+                assert.ok(false)
+            } catch (err) {
+                assert.strictEqual((err as ToolkitError).code, 'EC2SSMStatus')
             }
+            sinon.restore()
+        })
 
-            await assertThrowsErrorCode(
-                {
-                    instanceId: 'pending:noPolicies:Online',
-                    region: 'test-region',
-                },
-                'EC2SSMStatus'
-            )
+        it('throws EC2SSMPermission error if instance is running but has no role', async function () {
+            sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
+            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves(undefined)
+            try {
+                await client.checkForStartSessionError(instanceSelection)
+                assert.ok(false)
+            } catch (err) {
+                assert.strictEqual((err as ToolkitError).code, 'EC2SSMPermission')
+            }
+            sinon.restore()
+        })
 
-            await assertThrowsErrorCode(
-                {
-                    instanceId: 'shutting-down:noPolicies:Online',
-                    region: 'test-region',
-                },
-                'EC2SSMStatus'
-            )
-
-            await assertThrowsErrorCode(
-                {
-                    instanceId: 'running:noPolicies:Online',
-                    region: 'test-region',
-                },
-                'EC2SSMPermission'
-            )
-
-            await assertThrowsErrorCode(
-                {
-                    instanceId: 'running:hasPolicies:Offline',
-                    region: 'test-region',
-                },
-                'EC2SSMAgentStatus'
-            )
+        it('throws EC2SSMAgent error if instance is running and has IAM Role, but agent is not running', async function () {
+            sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
+            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
+            sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPolicies').resolves(true)
+            sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('offline')
+            try {
+                await client.checkForStartSessionError(instanceSelection)
+                assert.ok(false)
+            } catch (err) {
+                assert.strictEqual((err as ToolkitError).code, 'EC2SSMAgentStatus')
+            }
+            sinon.restore()
         })
 
         it('does not throw an error if all checks pass', async function () {
-            const passingInstance = {
-                instanceId: 'running:hasPolicies:Online',
-                region: 'test-region',
-            }
-            assert.doesNotThrow(async () => await client.checkForStartSessionError(passingInstance))
+            sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
+            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
+            sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPolicies').resolves(true)
+            sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
+            assert.doesNotThrow(async () => await client.checkForStartSessionError(instanceSelection))
+            sinon.restore()
         })
     })
 
     describe('hasProperPolicies', async function () {
-        let client: MockEc2ConnectClientForPolicies
-        class MockEc2ConnectClientForPolicies extends MockEc2ConnectClient {
-            protected override async getAttachedPolicies(instanceId: string): Promise<attachedPoliciesListType> {
-                switch (instanceId) {
-                    case 'firstInstance':
-                        return [
-                            {
-                                PolicyName: 'name',
-                            },
-                            {
-                                PolicyName: 'name2',
-                            },
-                            {
-                                PolicyName: 'name3',
-                            },
-                        ]
-                    case 'secondInstance':
-                        return [
-                            {
-                                PolicyName: 'AmazonSSMManagedInstanceCore',
-                            },
-                            {
-                                PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
-                            },
-                        ]
-                    case 'thirdInstance':
-                        return [
-                            {
-                                PolicyName: 'AmazonSSMManagedInstanceCore',
-                            },
-                        ]
-                    case 'fourthInstance':
-                        return [
-                            {
-                                PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy',
-                            },
-                        ]
-                    case 'toolkitErrorInstance':
-                        throw new ToolkitError('', { code: 'NoSuchEntity' })
-                    default:
-                        return []
-                }
-            }
-        }
-        before(function () {
-            client = new MockEc2ConnectClientForPolicies()
+        let realClient: Ec2ConnectionManager
+
+        before(async function () {
+            realClient = new Ec2ConnectionManager('test-region')
         })
 
         it('correctly determines if proper policies are included', async function () {
-            let result: boolean
-
-            result = await client.hasProperPolicies('firstInstance')
-            assert.strictEqual(result, false)
-
-            result = await client.hasProperPolicies('secondInstance')
-            assert.strictEqual(result, true)
-
-            result = await client.hasProperPolicies('thirdInstance')
-            assert.strictEqual(result, false)
-
-            result = await client.hasProperPolicies('fourthInstance')
-            assert.strictEqual(result, false)
+            async function assertAcceptsPolicies(policies: IAM.Policy[], expectedResult: boolean) {
+                sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').resolves(policies)
+                const result = await realClient.hasProperPolicies('')
+                assert.strictEqual(result, expectedResult)
+                sinon.restore()
+            }
+            await assertAcceptsPolicies(
+                [{ PolicyName: 'name' }, { PolicyName: 'name2' }, { PolicyName: 'name3' }],
+                false
+            )
+            await assertAcceptsPolicies(
+                [
+                    { PolicyName: 'AmazonSSMManagedInstanceCore' },
+                    { PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy' },
+                ],
+                true
+            )
+            await assertAcceptsPolicies([{ PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy' }], false)
+            await assertAcceptsPolicies([{ PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy' }], false)
         })
 
         it('throws error when sdk throws error', async function () {
+            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws(new ToolkitError('error'))
             try {
-                await client.hasProperPolicies('toolkitErrorInstance')
+                await realClient.hasProperPolicies('')
                 assert.ok(false)
             } catch {
                 assert.ok(true)
             }
-        })
-    })
-
-    describe('getAttachedPolicies', async function () {
-        let client: MockEc2ConnectClient
-
-        before(async function () {
-            client = new MockEc2ConnectClient()
-        })
-
-        it('returns empty when IamRole not found', async function () {
-            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves(undefined)
-            const response = await client.testGetAttachedPolicies('test-instance')
-            assert.deepStrictEqual(response, [])
-
             sinon.restore()
-        })
-
-        it('throws error if IamRole is found but invalid', async function () {
-            sinon.stub(Ec2Client.prototype, 'getAttachedIamRole').resolves({ Arn: 'some-fake-role' })
-            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws('NoSuchEntity')
-            try {
-                await client.testGetAttachedPolicies('test-instance')
-                assert.ok(false)
-            } catch {
-                assert.ok(true)
-            } finally {
-                sinon.restore()
-            }
         })
     })
 
@@ -281,33 +194,6 @@ describe('Ec2ConnectClient', function () {
             const mockKeys = mock() as SshKeyPair
             await client.sendSshKeyToInstance(testSelection, mockKeys, '')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
-        })
-    })
-
-    describe('determineRemoteUser', async function () {
-        let client: MockEc2ConnectClient
-
-        before(function () {
-            client = new MockEc2ConnectClient()
-        })
-
-        it('identifies the user for ubuntu as ubuntu', async function () {
-            const remoteUser = await client.testGetRemoteUser('testInstance', 'Ubuntu')
-            assert.strictEqual(remoteUser, 'ubuntu')
-        })
-
-        it('identifies the user for amazon linux as ec2-user', async function () {
-            const remoteUser = await client.testGetRemoteUser('testInstance', 'Amazon Linux')
-            assert.strictEqual(remoteUser, 'ec2-user')
-        })
-
-        it('throws error when not given known OS', async function () {
-            try {
-                await client.testGetRemoteUser('testInstance', 'ThisIsNotARealOs!')
-                assert.ok(false)
-            } catch (exception) {
-                assert.ok(true)
-            }
         })
     })
 })
