@@ -52,6 +52,7 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/main",
+    "browser": "./dist/src/extensionWeb",
     "contributes": {
         "configuration": {
             "type": "object",
