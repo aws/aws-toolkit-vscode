@@ -19,7 +19,10 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
 const { VueLoaderPlugin } = require('vue-loader')
 
-/**@type {import('webpack').Configuration}*/
+//@ts-check
+/** @typedef {import('webpack').Configuration} WebpackConfig **/
+
+/** @type WebpackConfig */
 const baseConfig = {
     name: 'main',
     target: 'node',
@@ -91,6 +94,21 @@ const baseConfig = {
     },
 }
 
+/** @type WebpackConfig */
+const webConfig = {
+    ...baseConfig,
+    name: 'web',
+    target: 'webworker',
+    entry: {
+        'src/extensionWeb': './src/extensionWeb.ts',
+    },
+    plugins: baseConfig.plugins?.concat(
+        new webpack.optimize.LimitChunkCountPlugin({
+            maxChunks: 1, // disable chunks by default since web extensions must be a single bundle
+        })
+    ),
+}
+
 /**
  * Renames all Vue entry files to be `index`, located within the same directory.
  * Example: `src/lambda/vue/index.ts` -> `dist/src/lambda/vue/index.js`
@@ -111,6 +129,7 @@ const createVueEntries = (targetPattern = 'index.ts') => {
         .reduce((a, b) => ((a[b.name] = b.path), a), {})
 }
 
+/** @type WebpackConfig */
 const vueConfig = {
     ...baseConfig,
     name: 'vue',
@@ -135,6 +154,7 @@ const vueConfig = {
     plugins: baseConfig.plugins.concat(new VueLoaderPlugin()),
 }
 
+/** @type WebpackConfig */
 const vueHotReload = {
     ...vueConfig,
     name: 'vue-hmr',
@@ -153,4 +173,6 @@ const vueHotReload = {
 }
 
 module.exports =
-    process.env.npm_lifecycle_event === 'serve' ? [baseConfig, vueConfig, vueHotReload] : [baseConfig, vueConfig]
+    process.env.npm_lifecycle_event === 'serve'
+        ? [baseConfig, webConfig, vueConfig, vueHotReload]
+        : [baseConfig, webConfig, vueConfig]
