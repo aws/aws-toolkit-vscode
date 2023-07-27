@@ -113,7 +113,7 @@ export class Ec2ConnectionManager {
         const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
         if (!hasPermission) {
-            const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
+            const message = `Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
                 IamRole!.Arn
             }`
             this.throwConnectionError(message, selection, {
