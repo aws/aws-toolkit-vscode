@@ -2068,7 +2068,6 @@
             {
                 "command": "aws.ec2.openTerminal",
                 "title": "%AWS.command.ec2.openTerminal%",
-                "icon": "$(terminal-view-icon)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {

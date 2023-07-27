@@ -11,10 +11,15 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { attachedPoliciesListType } from 'aws-sdk/clients/iam'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
-import { EC2, IAM } from 'aws-sdk'
+import { AWSError, EC2, IAM, SSM } from 'aws-sdk'
+import { PromiseResult } from 'aws-sdk/lib/request'
+import { GetCommandInvocationResult } from 'aws-sdk/clients/ssm'
+import { mock } from 'ts-mockito'
+import { SshKeyPair } from '../../ec2/sshKeyPair'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 
 describe('Ec2ConnectClient', function () {
+    let currentInstanceOs: string
     class MockSsmClient extends SsmClient {
         public constructor() {
             super('test-region')
@@ -22,6 +27,10 @@ describe('Ec2ConnectClient', function () {
 
         public override async getInstanceAgentPingStatus(target: string): Promise<string> {
             return target.split(':')[2]
+        }
+
+        public override async getTargetPlatformName(target: string): Promise<string> {
+            return currentInstanceOs
         }
     }
 
@@ -46,6 +55,12 @@ describe('Ec2ConnectClient', function () {
 
         protected override createEc2SdkClient(): Ec2Client {
             return new MockEc2Client()
+        }
+
+        public async testGetRemoteUser(instanceId: string, osName: string) {
+            currentInstanceOs = osName
+            const remoteUser = await this.getRemoteUser(instanceId)
+            return remoteUser
         }
 
         public async testGetAttachedPolicies(instanceId: string): Promise<IAM.attachedPoliciesListType> {
@@ -238,6 +253,60 @@ describe('Ec2ConnectClient', function () {
                 assert.ok(true)
             } finally {
                 sinon.restore()
+            }
+        })
+    })
+
+    describe('sendSshKeysToInstance', async function () {
+        let client: MockEc2ConnectClient
+        let sendCommandStub: sinon.SinonStub<
+            [target: string, documentName: string, parameters: SSM.Parameters],
+            Promise<PromiseResult<GetCommandInvocationResult, AWSError>>
+        >
+
+        before(function () {
+            client = new MockEc2ConnectClient()
+            sendCommandStub = sinon.stub(MockSsmClient.prototype, 'sendCommandAndWait')
+        })
+
+        after(function () {
+            sinon.restore()
+        })
+
+        it('calls the sdk with the proper parameters', async function () {
+            const testSelection = {
+                instanceId: 'test-id',
+                region: 'test-region',
+            }
+            const mockKeys = mock() as SshKeyPair
+            await client.sendSshKeyToInstance(testSelection, mockKeys, '')
+            sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
+        })
+    })
+
+    describe('determineRemoteUser', async function () {
+        let client: MockEc2ConnectClient
+
+        before(function () {
+            client = new MockEc2ConnectClient()
+        })
+
+        it('identifies the user for ubuntu as ubuntu', async function () {
+            const remoteUser = await client.testGetRemoteUser('testInstance', 'Ubuntu')
+            assert.strictEqual(remoteUser, 'ubuntu')
+        })
+
+        it('identifies the user for amazon linux as ec2-user', async function () {
+            const remoteUser = await client.testGetRemoteUser('testInstance', 'Amazon Linux')
+            assert.strictEqual(remoteUser, 'ec2-user')
+        })
+
+        it('throws error when not given known OS', async function () {
+            try {
+                await client.testGetRemoteUser('testInstance', 'ThisIsNotARealOs!')
+                assert.ok(false)
+            } catch (exception) {
+                assert.ok(true)
             }
         })
     })

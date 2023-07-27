@@ -123,9 +123,10 @@ export async function startVscodeRemote(
     ProcessClass: typeof ChildProcess,
     hostname: string,
     targetDirectory: string,
-    vscPath: string
+    vscPath: string,
+    user?: string
 ): Promise<void> {
-    const workspaceUri = `vscode-remote://ssh-remote+${hostname}${targetDirectory}`
+    const workspaceUri = `vscode-remote://ssh-remote+${`${user}@` ?? ''}${hostname}${targetDirectory}`
 
     const settings = new RemoteSshSettings()
     settings.ensureDefaultExtension(VSCODE_EXTENSION_ID.awstoolkit)

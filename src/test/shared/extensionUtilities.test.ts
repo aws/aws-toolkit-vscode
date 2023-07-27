@@ -221,22 +221,28 @@ describe('ExtensionUserActivity', function () {
             delayedFiringEvent(throttleDelay + middleOfInterval + 2),
             delayedFiringEvent(throttleDelay + middleOfInterval + 3),
         ]
-        
+
         const instance = new ExtensionUserActivity(throttleDelay, [...eventsFirst, ...eventsSecond])
         instance.onUserActivity(onEventTriggered)
         await sleep(waitFor)
 
-        assert.strictEqual(count, 2, 'This may be flaky in CI, so we may need to increase the intervals for better tolerance')
+        assert.strictEqual(
+            count,
+            2,
+            'This may be flaky in CI, so we may need to increase the intervals for better tolerance'
+        )
     })
 
-    describe('does not fire user activity events in specific scenarios', function() {
+    describe('does not fire user activity events in specific scenarios', function () {
         let userActivitySubscriber: sinon.SinonStubbedMember<() => void>
         let _triggerUserActivity: (obj: any) => void
         let instance: ExtensionUserActivity
 
         beforeEach(function () {
             userActivitySubscriber = sandbox.stub()
-            _triggerUserActivity = () => { throw Error('Called before ExtensionUserActivity was instantiated')}
+            _triggerUserActivity = () => {
+                throw Error('Called before ExtensionUserActivity was instantiated')
+            }
         })
 
         afterEach(function () {
@@ -244,63 +250,73 @@ describe('ExtensionUserActivity', function () {
             sandbox.restore()
         })
 
-        it('does not fire onDidChangeWindowState when not active', function() {
+        it('does not fire onDidChangeWindowState when not active', function () {
             stubUserActivityEvent(vscode.window, 'onDidChangeWindowState')
-            
+
             const triggerUserActivity = createTriggerActivityFunc()
 
-            triggerUserActivity({active: false})
+            triggerUserActivity({ active: false })
             assert.strictEqual(userActivitySubscriber.callCount, 0)
 
-            triggerUserActivity({active: true})
+            triggerUserActivity({ active: true })
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
-        it('does not fire onDidChangeTextEditorSelection when editor is `Output` panel', function() {
+        it('does not fire onDidChangeTextEditorSelection when editor is `Output` panel', function () {
             stubUserActivityEvent(vscode.window, 'onDidChangeTextEditorSelection')
-            
+
             const triggerUserActivity = createTriggerActivityFunc()
 
-            triggerUserActivity({textEditor: {document: {uri: {scheme: 'output'}}}})
+            triggerUserActivity({ textEditor: { document: { uri: { scheme: 'output' } } } })
             assert.strictEqual(userActivitySubscriber.callCount, 0)
 
-            triggerUserActivity({textEditor: {document: {uri: {scheme: 'NOToutput'}}}})
+            triggerUserActivity({ textEditor: { document: { uri: { scheme: 'NOToutput' } } } })
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
-        it('does not fire onDidChangeTextEditorVisibleRanges when when editor is `Output` panel', function() {
+        it('does not fire onDidChangeTextEditorVisibleRanges when when editor is `Output` panel', function () {
             stubUserActivityEvent(vscode.window, 'onDidChangeTextEditorVisibleRanges')
-            
+
             const triggerUserActivity = createTriggerActivityFunc()
 
-            triggerUserActivity({textEditor: {document: {uri: {scheme: 'output'}}}})
+            triggerUserActivity({ textEditor: { document: { uri: { scheme: 'output' } } } })
             assert.strictEqual(userActivitySubscriber.callCount, 0)
 
-            triggerUserActivity({textEditor: {document: {uri: {scheme: 'NOToutput'}}}})
+            triggerUserActivity({ textEditor: { document: { uri: { scheme: 'NOToutput' } } } })
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
-        it('does not fire onDidChangeTextDocument when not the active user document', function() {
+        it('does not fire onDidChangeTextDocument when not the active user document', function () {
             stubUserActivityEvent(vscode.workspace, 'onDidChangeTextDocument')
             const activeEditorStub = sandbox.stub(vscode.window, 'activeTextEditor')
-            
+
             const triggerUserActivity = createTriggerActivityFunc()
 
             activeEditorStub.get(() => undefined)
             triggerUserActivity({})
             assert.strictEqual(userActivitySubscriber.callCount, 0, 'Was not ignored when no active editor')
 
-            activeEditorStub.get(() => {return {document: {uri: 'myUri'}}})
-            triggerUserActivity({document: {uri: 'myOtherUri'}})
-            assert.strictEqual(userActivitySubscriber.callCount, 0, 'Was not ignored when active editor document was different from the event')
+            activeEditorStub.get(() => {
+                return { document: { uri: 'myUri' } }
+            })
+            triggerUserActivity({ document: { uri: 'myOtherUri' } })
+            assert.strictEqual(
+                userActivitySubscriber.callCount,
+                0,
+                'Was not ignored when active editor document was different from the event'
+            )
 
-            triggerUserActivity({document: {uri: 'myUri'}})
-            assert.strictEqual(userActivitySubscriber.callCount, 1, 'Was ignored when the active editor document was the same as the event')
+            triggerUserActivity({ document: { uri: 'myUri' } })
+            assert.strictEqual(
+                userActivitySubscriber.callCount,
+                1,
+                'Was ignored when the active editor document was the same as the event'
+            )
         })
 
         it('fires for onDidChangeActiveColorTheme (sanity check)', function () {
             stubUserActivityEvent(vscode.window, 'onDidChangeActiveColorTheme')
-            
+
             const triggerUserActivity = createTriggerActivityFunc()
 
             triggerUserActivity({})
@@ -309,23 +325,20 @@ describe('ExtensionUserActivity', function () {
 
         /**
          * Helper to stub a vscode event object.
-         * 
+         *
          * Once stubbed, you can call {@link _triggerUserActivity} to fire
          * the event.
          */
-        function stubUserActivityEvent<T, K extends keyof T>(vscodeObj: T, eventName: K){
-            const eventStub = sandbox.stub(
-                vscodeObj, 
-                eventName
-            )
-            
+        function stubUserActivityEvent<T, K extends keyof T>(vscodeObj: T, eventName: K) {
+            const eventStub = sandbox.stub(vscodeObj, eventName)
+
             eventStub.callsFake((callback: any) => {
                 _triggerUserActivity = callback
                 return {
-                    dispose: sandbox.stub()
+                    dispose: sandbox.stub(),
                 }
             })
-            
+
             return eventStub
         }
 
