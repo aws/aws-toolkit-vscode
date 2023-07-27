@@ -1,0 +1,22 @@
+{
+	"date": "2023-07-26",
+	"version": "1.82.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: issue with fetching enhanced file context"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "User setting for \"Share CodeWhisperer Content With AWS\" was not reflected in workspace-level settings"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching"
+		},
+		{
+			"type": "Feature",
+			"description": "Lambda \"Download\" action now expects \".mjs\" extension for Node18+ lambdas"
+		}
+	]
+}
