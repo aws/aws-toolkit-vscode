@@ -184,6 +184,7 @@ export class Ec2ConnectionManager {
             this.throwGeneralConnectionError(selection, err as Error)
         }
     }
+
     public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
