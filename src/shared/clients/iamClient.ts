@@ -8,6 +8,7 @@ import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { ToolkitError } from '../errors'
 
 export type IamClient = ClassToInterfaceType<DefaultIamClient>
 
@@ -92,5 +93,15 @@ export class DefaultIamClient {
         const policies = await collection.promise()
 
         return policies
+    }
+
+    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<IAM.Role> {
+        const client = await this.createSdkClient()
+        const instanceProfileName = this.getFriendlyName(instanceProfileArn)
+        const response = await client.getInstanceProfile({ InstanceProfileName: instanceProfileName }).promise()
+        if (response.InstanceProfile.Roles.length === 0) {
+            throw new ToolkitError(`Failed to find IAM role associated with Instance profile ${instanceProfileArn}`)
+        }
+        return response.InstanceProfile.Roles[0]
     }
 }
