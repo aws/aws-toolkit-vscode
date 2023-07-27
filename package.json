@@ -3192,6 +3192,11 @@
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
+            },
+            {
+                "command": "aws.weaverbird.openChat",
+                "title": "Open Weaverbird Chat",
+                "category": "%AWS.title%"
             }
         ],
         "jsonValidation": [
