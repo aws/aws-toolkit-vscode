@@ -22,6 +22,27 @@ describe('Ec2ConnectClient', function () {
         client = new Ec2ConnectionManager('test-region')
     })
 
+    describe('getAttachedIamRole', async function () {
+        it('only returns role if recieves ARN from instance profile', async function () {
+            let role: IAM.Role | undefined
+            const getInstanceProfileStub = sinon.stub(Ec2Client.prototype, 'getAttachedIamInstanceProfile')
+
+            getInstanceProfileStub.resolves({ Arn: 'thisIsAnArn' })
+            sinon
+                .stub(DefaultIamClient.prototype, 'getIAMRoleFromInstanceProfile')
+                .resolves({ Arn: 'ThisIsARoleArn' } as IAM.Role)
+
+            role = await client.getAttachedIamRole('test-instance')
+            assert.ok(role)
+            assert.ok(role.Arn)
+
+            getInstanceProfileStub.resolves({})
+            role = await client.getAttachedIamRole('test-instance')
+            assert.strictEqual(role, undefined)
+            sinon.restore()
+        })
+    })
+
     describe('isInstanceRunning', async function () {
         it('only returns true with the instance is running', async function () {
             sinon.stub(Ec2Client.prototype, 'getInstanceStatus').callsFake(async (input: string) => input.split(':')[0])
