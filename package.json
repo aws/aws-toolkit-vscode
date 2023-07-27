@@ -713,6 +713,13 @@
                     "id": "aws.codeWhisperer.referenceLog",
                     "name": ""
                 }
+            ],
+            "explorer": [
+                {
+                    "type": "webview",
+                    "id": "configureChat",
+                    "name": "Weaverbird Chat"
+                }
             ]
         },
         "submenus": [
