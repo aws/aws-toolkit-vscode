@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import * as vscode from 'vscode'
 import { InstanceStateManager, getStateManagerForSelection } from './instanceStateManager'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
@@ -10,6 +10,7 @@ import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter } from './prompter'
 import { Ec2Selection } from './utils'
 import { Ec2Instance } from '../shared/clients/ec2Client'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export async function refreshExplorer(node?: Ec2Node) {
     await node?.refreshNode()
@@ -44,6 +45,11 @@ export async function rebootInstance(node?: Ec2Node) {
     const prompterFilter = (instance: Ec2Instance) => instance.status !== 'stopped'
     const stateManager = await getStateManager(node, prompterFilter)
     await stateManager.rebootInstanceWithCancel()
+}
+
+export async function linkToLaunchInstance() {
+    const url = vscode.Uri.parse('https://google.com')
+    await openUrl(url)
 }
 
 async function getStateManager(node?: Ec2Node, prompterFilter?: instanceFilter): Promise<InstanceStateManager> {

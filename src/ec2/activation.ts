@@ -7,6 +7,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import {
+    linkToLaunchInstance,
     openRemoteConnection,
     openTerminal,
     rebootInstance,
@@ -45,6 +46,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.linkToLaunchInstance', async () => {
             console.log('you just ran the linkToLaunch command!')
+            await linkToLaunchInstance()
         })
     )
 }
