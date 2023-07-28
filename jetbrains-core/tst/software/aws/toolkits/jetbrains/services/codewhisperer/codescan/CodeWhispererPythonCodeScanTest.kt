@@ -150,6 +150,42 @@ class CodeWhispererPythonCodeScanTest : CodeWhispererCodeScanTestBase(PythonCode
     }
 
     @Test
+    fun `test createPayload for file outside project`() {
+        val fileOutsideProjectPy = projectRule.fixture.addFileToProject(
+            "../fileOutsideProject.py",
+            """
+                import numpy as np
+                import util
+                a = 1
+                """
+        ).virtualFile
+        val totalSize = fileOutsideProjectPy.length
+        val totalLines = fileOutsideProjectPy.toNioPath().toFile().readLines().size.toLong()
+        sessionConfigSpy = spy(CodeScanSessionConfig.create(fileOutsideProjectPy, project) as PythonCodeScanSessionConfig)
+
+        val payload = sessionConfigSpy.createPayload()
+        assertNotNull(payload)
+        assertThat(payload.context.totalFiles).isEqualTo(1)
+
+        assertThat(payload.context.scannedFiles.size).isEqualTo(1)
+        assertThat(payload.context.scannedFiles).containsExactly(fileOutsideProjectPy)
+
+        assertThat(payload.context.srcPayloadSize).isEqualTo(totalSize)
+        assertThat(payload.context.language).isEqualTo(CodewhispererLanguage.Python)
+        assertThat(payload.context.totalLines).isEqualTo(totalLines)
+        assertNotNull(payload.srcZip)
+
+        val bufferedInputStream = BufferedInputStream(payload.srcZip.inputStream())
+        val zis = ZipInputStream(bufferedInputStream)
+        var filesInZip = 0
+        while (zis.nextEntry != null) {
+            filesInZip += 1
+        }
+
+        assertThat(filesInZip).isEqualTo(1)
+    }
+
+    @Test
     fun `e2e happy path integration test`() {
         assertE2ERunsSuccessfully(sessionConfigSpy, project, totalLines, 3, totalSize, 2)
     }

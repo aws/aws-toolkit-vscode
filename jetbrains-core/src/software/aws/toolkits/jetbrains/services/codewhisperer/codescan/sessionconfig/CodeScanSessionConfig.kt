@@ -33,7 +33,8 @@ sealed class CodeScanSessionConfig(
     private val selectedFile: VirtualFile,
     private val project: Project
 ) {
-    val projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
+    var projectRoot = project.guessProjectDir() ?: error("Cannot guess base directory for project ${project.name}")
+        private set
 
     abstract val sourceExt: String
 
@@ -64,22 +65,37 @@ sealed class CodeScanSessionConfig(
 
         LOG.debug { "Creating payload. File selected as root for the context truncation: ${selectedFile.path}" }
 
-        val (includedSourceFiles, payloadSize, totalLines, _) = includeDependencies()
+        val payloadMetadata = when (selectedFile.path.startsWith(projectRoot.path)) {
+            true -> includeDependencies()
+            false -> {
+                // Set project root as the parent of the selected file.
+                projectRoot = selectedFile.parent
+                includeFileOutsideProjectRoot()
+            }
+        }
 
         // Copy all the included source files to the source zip
-        val srcZip = zipFiles(includedSourceFiles.map { Path.of(it) })
+        val srcZip = zipFiles(payloadMetadata.sourceFiles.map { Path.of(it) })
         val payloadContext = PayloadContext(
             selectedFile.programmingLanguage().toTelemetryType(),
-            totalLines,
-            includedSourceFiles.size,
+            payloadMetadata.linesScanned,
+            payloadMetadata.sourceFiles.size,
             Instant.now().toEpochMilli() - start,
-            includedSourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
-            payloadSize,
+            payloadMetadata.sourceFiles.mapNotNull { Path.of(it).toFile().toVirtualFile() },
+            payloadMetadata.payloadSize,
             srcZip.length()
         )
 
         return Payload(payloadContext, srcZip)
     }
+
+    open fun includeFileOutsideProjectRoot(): PayloadMetadata =
+        // Handle the case where the selected file is outside the project root.
+        PayloadMetadata(
+            setOf(selectedFile.path),
+            selectedFile.length,
+            Files.lines(selectedFile.toNioPath()).count().toLong()
+        )
 
     open fun includeDependencies(): PayloadMetadata {
         val includedSourceFiles = mutableSetOf<String>()
