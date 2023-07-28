@@ -1415,6 +1415,11 @@
                     "group": "1@2"
                 },
                 {
+                    "command": "aws.ec2.copyInstanceId",
+                    "when": "view == aws.explorer && viewItem == awsEc2Node",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.ecr.copyTagUri",
                     "when": "view == aws.explorer && viewItem == awsEcrTagNode",
                     "group": "2@1"
@@ -1601,12 +1606,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsEc2Node)/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|awsEc2Node)/",
                     "group": "2@2"
                 },
                 {
@@ -2081,6 +2086,16 @@
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.copyInstanceId",
+                "title": "%AWS.command.ec2.copyInstanceId%",
+                "category": "%AWS.title",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
