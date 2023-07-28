@@ -14,5 +14,6 @@ export interface AWSResourceNode {
      */
     readonly name: string
 
+    /** Service-defined idenifier, e.g. for EC2 this is the "Instance Id". */
     readonly id?: string
 }
