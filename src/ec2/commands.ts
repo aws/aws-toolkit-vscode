@@ -10,6 +10,7 @@ import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter } from './prompter'
 import { Ec2Selection } from './utils'
 import { Ec2Instance } from '../shared/clients/ec2Client'
+import { copyToClipboard } from '../shared/utilities/messages'
 
 export async function openTerminal(node?: Ec2Node) {
     const selection = await getSelection(node)
@@ -51,4 +52,8 @@ async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec
     const prompter = new Ec2Prompter(filter)
     const selection = node && node instanceof Ec2InstanceNode ? node.toSelection() : await prompter.promptUser()
     return selection
+}
+
+export async function copyInstanceId(instanceId: string): Promise<void> {
+    await copyToClipboard(instanceId, 'Id')
 }
