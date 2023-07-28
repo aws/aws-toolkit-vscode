@@ -50,7 +50,7 @@ export async function rebootInstance(node?: Ec2Node) {
 
 export async function linkToLaunchInstance(node?: Ec2Node) {
     const region = node ? node.regionCode : globals.regionProvider.guessDefaultRegion()
-    const url = getAwsConsoleUrl('ec2', region)
+    const url = getAwsConsoleUrl('ec2-launch', region)
     await openUrl(url)
 }
 
