@@ -1122,7 +1122,7 @@
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "aws.isDevMode"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
