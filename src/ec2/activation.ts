@@ -8,6 +8,9 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { promptUserForEc2Selection } from './prompter'
 import { Ec2ConnectionManager } from './model'
+import { copyTextCommand } from '../awsexplorer/commands/copyText'
+import { Ec2Node } from './explorer/ec2ParentNode'
+import { openRemoteConnection } from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -26,6 +29,14 @@ export async function activate(ctx: ExtContext): Promise<void> {
             const connectionManager = new Ec2ConnectionManager(selection.region)
 
             await connectionManager.attemptToOpenRemoteConnection(selection)
+        }),
+
+        Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
+            await copyTextCommand(node, 'id')
+        }),
+
+        Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
+            await (node ? openRemoteConnection(node) : openRemoteConnection(node))
         })
     )
 }
