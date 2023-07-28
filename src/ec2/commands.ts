@@ -49,7 +49,6 @@ export async function rebootInstance(node?: Ec2Node) {
 }
 
 export async function linkToLaunchInstance(node?: Ec2Node) {
-    // Ex. https://us-west-2.console.aws.amazon.com/ec2/home?region=us-west-2#LaunchInstances:
     const region = node ? node.regionCode : globals.regionProvider.guessDefaultRegion()
     const url = getAwsConsoleUrl('ec2', region)
     await openUrl(url)
