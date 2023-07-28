@@ -6,9 +6,10 @@ import { SinonStub, SinonStubbedInstance, SinonStubbedMember, createSandbox, cre
 import * as assert from 'assert'
 import * as vscode from 'vscode'
 
-import { ExtensionUserActivity } from '../../../shared/extensionUtilities'
+import {ExtensionUserActivity} from '../../../shared/extensionUtilities'
 import { DevEnvClient, DevEnvActivity } from '../../../shared/clients/devenvClient'
 import { sleep } from '../../../shared/utilities/timeoutUtils'
+
 
 describe('DevEnvActivity', function () {
     let triggerUserActivityEvent: (obj: any) => Promise<void>
@@ -18,12 +19,15 @@ describe('DevEnvActivity', function () {
     let devEnvActivity: DevEnvActivity
     let sandbox: sinon.SinonSandbox
 
-    before(function () {
+    before(function() {
         sandbox = createSandbox()
     })
 
     beforeEach(async function () {
-        userActivityEvent = sandbox.stub(vscode.window, 'onDidChangeActiveColorTheme')
+        userActivityEvent = sandbox.stub(
+            vscode.window, 
+            'onDidChangeActiveColorTheme'
+        )
         userActivityEvent.callsFake((throttledEventFire: (obj: any) => void) => {
             triggerUserActivityEvent = async (obj: any) => {
                 throttledEventFire(obj)
@@ -34,16 +38,13 @@ describe('DevEnvActivity', function () {
                 await sleep(100)
             }
             return {
-                dispose: sandbox.stub(),
+                dispose: sandbox.stub()
             }
         })
-
+        
         devEnvClientStub = createStubInstance(DevEnvClient)
 
-        devEnvActivity = (await DevEnvActivity.instanceIfActivityTrackingEnabled(
-            devEnvClientStub as unknown as DevEnvClient,
-            new ExtensionUserActivity(0, [userActivityEvent])
-        ))!
+        devEnvActivity = (await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClientStub as unknown as DevEnvClient, new ExtensionUserActivity(0, [userActivityEvent])))!
     })
 
     afterEach(function () {
@@ -56,15 +57,12 @@ describe('DevEnvActivity', function () {
 
     it('does not allow instance to be created if activity API not working', async function () {
         devEnvClientStub.getActivity.throws()
-        const instance = await DevEnvActivity.instanceIfActivityTrackingEnabled(
-            devEnvClientStub as unknown as DevEnvClient,
-            new ExtensionUserActivity(0, [userActivityEvent])
-        )
+        const instance = (await DevEnvActivity.instanceIfActivityTrackingEnabled(devEnvClientStub as unknown as DevEnvClient, new ExtensionUserActivity(0, [userActivityEvent])))
         assert.strictEqual(instance, undefined)
     })
 
     describe('activity subscribers are properly notified', function () {
-        beforeEach(function () {
+        beforeEach(function() {
             activitySubscriber = sandbox.stub()
             devEnvActivity.onActivityUpdate(activitySubscriber)
         })
@@ -83,10 +81,10 @@ describe('DevEnvActivity', function () {
 
         it('when we discover a different activity timestamp on the server', async () => {
             assert.strictEqual(activitySubscriber.callCount, 0)
-
+    
             await devEnvActivity.sendActivityUpdate(111) // We send an activity update
             assert.strictEqual(activitySubscriber.callCount, 1)
-
+    
             devEnvClientStub.getActivity.resolves(222) // If we retrieve the latest activity timestamp it will be different
             await devEnvActivity.getLatestActivity()
             assert.strictEqual(activitySubscriber.callCount, 2)

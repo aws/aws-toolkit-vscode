@@ -124,11 +124,11 @@ export class DevEnvClient implements vscode.Disposable {
 
 /**
  * This allows you to easily work with Dev Env user activity timestamps.
- *
+ * 
  * An activity is a timestamp that the server uses to
  * determine when the user was last active.
  */
-export class DevEnvActivity implements vscode.Disposable {
+export class DevEnvActivity implements vscode.Disposable{
     private activityUpdatedEmitter = new vscode.EventEmitter<number>()
     private ideActivityListener: vscode.Disposable | undefined
     /** The last known activity timestamp, but there could be a newer one on the server. */
@@ -140,24 +140,21 @@ export class DevEnvActivity implements vscode.Disposable {
     /**
      * Returns an instance if the activity mechanism is confirmed to be working.
      */
-    static async instanceIfActivityTrackingEnabled(
-        client: DevEnvClient,
-        extensionUserActivity?: ExtensionUserActivity
-    ): Promise<DevEnvActivity | undefined> {
+    static async instanceIfActivityTrackingEnabled(client: DevEnvClient, extensionUserActivity?: ExtensionUserActivity): Promise<DevEnvActivity | undefined> {
         try {
             await client.getActivity()
-        } catch (e) {
+        }
+        catch (e) {
             const error = e instanceof HTTPError ? e.response.body : e
             getLogger().error(`DevEnvActivity: Activity API failed:%s`, error)
             return undefined
         }
-
+        
         return new DevEnvActivity(client, extensionUserActivity)
     }
 
     private constructor(private readonly client: DevEnvClient, extensionUserActivity?: ExtensionUserActivity) {
-        this.extensionUserActivity =
-            extensionUserActivity ?? new ExtensionUserActivity(DevEnvActivity.activityUpdateDelay)
+        this.extensionUserActivity = extensionUserActivity ?? new ExtensionUserActivity(DevEnvActivity.activityUpdateDelay)
     }
 
     /** Send activity timestamp to the Dev Env */
@@ -171,7 +168,7 @@ export class DevEnvActivity implements vscode.Disposable {
     /** Get the latest activity timestamp from the Dev Env */
     async getLatestActivity(): Promise<number | undefined> {
         const lastServerActivity = await this.client.getActivity()
-
+        
         // A single Dev Env can have multiple clients connected to it.
         // So if one client updates the timestamp, it will be different from what the
         // other clients assumed the last activity was.
@@ -185,7 +182,7 @@ export class DevEnvActivity implements vscode.Disposable {
 
     /** true, if the latest activity on the server is different from what this client has as the latest */
     async isLocalActivityStale(): Promise<boolean> {
-        return (await this.getLatestActivity()) !== this.lastLocalActivity
+        return await this.getLatestActivity() !== this.lastLocalActivity
     }
 
     /** Runs the given callback when the activity is updated */
