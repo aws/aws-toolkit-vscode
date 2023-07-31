@@ -94,21 +94,6 @@ const baseConfig = {
     },
 }
 
-/** @type WebpackConfig */
-const webConfig = {
-    ...baseConfig,
-    name: 'web',
-    target: 'webworker',
-    entry: {
-        'src/extensionWeb': './src/extensionWeb.ts',
-    },
-    plugins: baseConfig.plugins?.concat(
-        new webpack.optimize.LimitChunkCountPlugin({
-            maxChunks: 1, // disable chunks by default since web extensions must be a single bundle
-        })
-    ),
-}
-
 /**
  * Renames all Vue entry files to be `index`, located within the same directory.
  * Example: `src/lambda/vue/index.ts` -> `dist/src/lambda/vue/index.js`
@@ -174,5 +159,5 @@ const vueHotReload = {
 
 module.exports =
     process.env.npm_lifecycle_event === 'serve'
-        ? [baseConfig, webConfig, vueConfig, vueHotReload]
-        : [baseConfig, webConfig, vueConfig]
+        ? [baseConfig, vueConfig, vueHotReload]
+        : [baseConfig, vueConfig]
