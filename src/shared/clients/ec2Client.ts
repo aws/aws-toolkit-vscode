@@ -9,6 +9,9 @@ import { pageableToCollection } from '../utilities/collectionUtils'
 import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
 import { PromiseResult } from 'aws-sdk/lib/request'
+import { Timeout } from '../utilities/timeoutUtils'
+import { showMessageWithCancel } from '../utilities/messages'
+import { ToolkitError, isAwsError } from '../errors'
 
 export interface Ec2Instance extends EC2.Instance {
     name?: string
@@ -97,12 +100,46 @@ export class Ec2Client {
         ]
     }
 
+    private handleStatusError(instanceId: string, err: unknown) {
+        if (isAwsError(err)) {
+            throw new ToolkitError(`EC2: failed to change status of instance ${instanceId}`, {
+                cause: err as Error,
+            })
+        } else {
+            throw err
+        }
+    }
+
+    protected async ensureInstanceNotInStatus(instanceId: string, targetStatus: string) {
+        const isAlreadyInStatus = (await this.getInstanceStatus(instanceId)) == targetStatus
+        if (isAlreadyInStatus) {
+            throw new ToolkitError(
+                `EC2: Instance is currently ${targetStatus}. Unable to update status of ${instanceId}.`
+            )
+        }
+    }
+
     public async startInstance(instanceId: string): Promise<PromiseResult<EC2.StartInstancesResult, AWSError>> {
         const client = await this.createSdkClient()
 
         const response = await client.startInstances({ InstanceIds: [instanceId] }).promise()
 
         return response
+    }
+
+    public async startInstanceWithCancel(instanceId: string): Promise<void> {
+        const timeout = new Timeout(5000)
+
+        await showMessageWithCancel(`EC2: Starting instance ${instanceId}`, timeout)
+
+        try {
+            await this.ensureInstanceNotInStatus(instanceId, 'running')
+            await this.startInstance(instanceId)
+        } catch (err) {
+            this.handleStatusError(instanceId, err)
+        } finally {
+            timeout.cancel()
+        }
     }
 
     public async stopInstance(instanceId: string): Promise<PromiseResult<EC2.StopInstancesResult, AWSError>> {
@@ -113,10 +150,39 @@ export class Ec2Client {
         return response
     }
 
+    public async stopInstanceWithCancel(instanceId: string): Promise<void> {
+        const timeout = new Timeout(5000)
+
+        await showMessageWithCancel(`EC2: Stopping instance ${instanceId}`, timeout)
+
+        try {
+            await this.ensureInstanceNotInStatus(instanceId, 'stopped')
+            await this.stopInstance(instanceId)
+        } catch (err) {
+            this.handleStatusError(instanceId, err)
+        } finally {
+            timeout.cancel()
+        }
+    }
+
     public async rebootInstance(instanceId: string): Promise<void> {
         const client = await this.createSdkClient()
 
         await client.rebootInstances({ InstanceIds: [instanceId] }).promise()
+    }
+
+    public async rebootInstanceWithCancel(instanceId: string): Promise<void> {
+        const timeout = new Timeout(5000)
+
+        await showMessageWithCancel(`EC2: Rebooting instance ${instanceId}`, timeout)
+
+        try {
+            await this.rebootInstance(instanceId)
+        } catch (err) {
+            this.handleStatusError(instanceId, err)
+        } finally {
+            timeout.cancel()
+        }
     }
 
     /**
