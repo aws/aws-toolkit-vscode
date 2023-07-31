@@ -84,7 +84,7 @@ describe('DefaultAwsClientBuilder', function () {
         })
 
         describe('request listeners', function () {
-            type WithConfig = Parameters<typeof builder['createAwsService']>[1] & { apiConfig: Record<string, any> }
+            type WithConfig = Parameters<(typeof builder)['createAwsService']>[1] & { apiConfig: Record<string, any> }
 
             it('calls listener with correct type', async function () {
                 const service = await builder.createAwsService(Service, {
