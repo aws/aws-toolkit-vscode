@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import { Settings } from '../shared/settings'
-import { showMessageWithCancel } from './utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
 import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
@@ -26,6 +26,13 @@ export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
     readonly reason?: string
 }
+
+const minimumSsmActions = [
+    'ssmmessages:CreateControlChannel',
+    'ssmmessages:CreateDataChannel',
+    'ssmmessages:OpenControlChannel',
+    'ssmmessages:OpenDataChannel',
+]
 
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)
@@ -173,13 +180,41 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
 export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
     const deniedActions = await client.getDeniedActions({
         PolicySourceArn: roleArn,
-        ActionNames: [
-            'ssmmessages:CreateControlChannel',
-            'ssmmessages:CreateDataChannel',
-            'ssmmessages:OpenControlChannel',
-            'ssmmessages:OpenDataChannel',
-        ],
+        ActionNames: minimumSsmActions,
     })
 
     return deniedActions
+}
+
+export async function promptToAddPolicies(client: IamClient, roleArn: string): Promise<boolean> {
+    const promptText = `In order to connect, toolkit will add actions ${minimumSsmActions} to role ${roleArn}`
+    const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
+
+    if (confirmation) {
+        await addSsmActionsToInlinePolicy(client, roleArn)
+    }
+
+    return confirmation
+}
+
+function getSsmPolicyDocument() {
+    return `{
+        \"Version\": \"2012-10-17\",
+        \"Statement\": {
+            \"Effect\": \"Allow\",
+            \"Action\": [
+                \"ssmmessages:CreateControlChannel\",
+                \"ssmmessages:CreateDataChannel\",
+                \"ssmmessages:OpenControlChannel\",
+                \"ssmmessages:OpenDataChannel\",
+            ],
+            \"Resource\": \"*\"
+        }
+    }`
+}
+
+async function addSsmActionsToInlinePolicy(client: IamClient, roleArn: string) {
+    const policyName = 'AWSVSCodeRemoteConnect'
+    const policyDocument = getSsmPolicyDocument()
+    await client.putRolePolicy(roleArn, policyName, policyDocument)
 }

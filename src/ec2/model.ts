@@ -17,6 +17,7 @@ import {
     ensureDependencies,
     getDeniedSsmActions,
     openRemoteTerminal,
+    promptToAddPolicies,
 } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
@@ -24,7 +25,7 @@ import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../sha
 import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { showMessageWithCancel } from '../shared/utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel } from '../shared/utilities/messages'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../shared/extensionGlobals'
@@ -113,6 +114,7 @@ export class Ec2ConnectionManager {
         const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
         if (!hasPermission) {
+            await promptToAddPolicies(this.iamClient, IamRole!.Arn!)
             const message = `Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
                 IamRole!.Arn
             }`
@@ -142,7 +144,7 @@ export class Ec2ConnectionManager {
     }
 
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
-        await this.checkForInstanceStatusError(selection)
+        //await this.checkForInstanceStatusError(selection)
 
         await this.checkForInstancePermissionsError(selection)
 

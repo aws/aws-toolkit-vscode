@@ -104,4 +104,13 @@ export class DefaultIamClient {
         }
         return response.InstanceProfile.Roles[0]
     }
+
+    public async putRolePolicy(roleArn: string, policyName: string, policyDocument: string): Promise<void> {
+        const client = await this.createSdkClient()
+        const roleName = this.getFriendlyName(roleArn)
+        const response = await client
+            .putRolePolicy({ RoleName: roleName, PolicyName: policyName, PolicyDocument: policyDocument })
+            .promise()
+        console.log(response)
+    }
 }
