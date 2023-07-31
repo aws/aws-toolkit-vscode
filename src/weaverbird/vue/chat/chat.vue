@@ -20,7 +20,7 @@ import { WeaverbirdChatWebview } from './backend'
 const client = WebviewClientFactory.create<WeaverbirdChatWebview>()
 
 const model = {
-    history: ['asd', 'asdasd'] as string[],
+    history: [] as string[],
     message: '',
     isInputDisabled: false,
 }
@@ -54,9 +54,6 @@ export default defineComponent({
             this.message = ''
 
             this.isInputDisabled = true
-
-            // Simulate waiting for server before re-enabling button
-            await new Promise(r => setTimeout(r, 2500))
 
             // TODO extract this into a try/catch?
             const serviceResponse = await client.send(message)

@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { isCloud9 } from '../../../shared/extensionUtilities'
+import { ChildProcess } from '../../../shared/utilities/childProcess'
 
 // const localize = nls.loadMessageBundle()
 
@@ -30,8 +31,33 @@ export class WeaverbirdChatWebview extends VueWebview {
     public async send(msg: string): Promise<string | undefined> {
         console.log(msg)
 
-        // return random result that can be shown as the
-        return Promise.resolve(Math.random().toString(36).substring(2, 7))
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
+            throw new Error('Could not find workspace folder')
+        }
+
+        // We might need to pipe in the previous history here so we need to store that somewhere in the class
+        const result = await new ChildProcess(
+            '/usr/local/bin/python3',
+            ['/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py', '--context', '--query', msg],
+            {
+                spawnOptions: {
+                    shell: '/bin/zsh',
+                    // TODO add better detection for the workspace path because it can technically be in any number of workspaces
+                    cwd: workspaceFolders[0].uri.fsPath,
+                },
+            }
+        ).run({
+            onStdout: text => console.log(`hey-claude: ${text}`),
+            onStderr: text => console.log(`hey-claude: ${text}`),
+        })
+
+        if (result.error) {
+            console.log(result.stderr)
+            return Promise.resolve('Unable to interact with hey-claude')
+        }
+
+        return result.stdout
     }
 }
 
