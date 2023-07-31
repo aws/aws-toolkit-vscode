@@ -140,7 +140,7 @@ const vueConfig = {
         libraryTarget: 'this',
     },
     module: {
-        rules: baseConfig.module.rules.concat(
+        rules: (baseConfig.module?.rules ?? []).concat(
             {
                 test: /\.vue$/,
                 loader: 'vue-loader',
@@ -151,7 +151,7 @@ const vueConfig = {
             }
         ),
     },
-    plugins: baseConfig.plugins.concat(new VueLoaderPlugin()),
+    plugins: (baseConfig.plugins ?? []).concat(new VueLoaderPlugin()),
 }
 
 /** @type WebpackConfig */
