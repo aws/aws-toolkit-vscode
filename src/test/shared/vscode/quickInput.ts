@@ -132,7 +132,7 @@ export class PickerTester<T extends vscode.QuickPickItem> {
 
     public constructor(
         private readonly picker: vscode.QuickPick<T>,
-        private readonly triggers: Pick<EventEmitters<vscode.QuickPick<T>>, typeof pickerEvents[number]>,
+        private readonly triggers: Pick<EventEmitters<vscode.QuickPick<T>>, (typeof pickerEvents)[number]>,
         private readonly extraEmitters: ReturnType<typeof createExtraEmitters>
     ) {}
 
@@ -332,7 +332,7 @@ class InputBoxTester {
 
     public constructor(
         private readonly inputBox: vscode.InputBox,
-        private readonly triggers: Pick<EventEmitters<vscode.InputBox>, typeof inputEvents[number]>,
+        private readonly triggers: Pick<EventEmitters<vscode.InputBox>, (typeof inputEvents)[number]>,
         private readonly extraEmitters: ReturnType<typeof createExtraEmitters>
     ) {}
 
