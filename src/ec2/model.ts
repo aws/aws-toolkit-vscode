@@ -25,7 +25,7 @@ import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../sha
 import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
-import { showConfirmationMessage, showMessageWithCancel } from '../shared/utilities/messages'
+import { showMessageWithCancel } from '../shared/utilities/messages'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../shared/extensionGlobals'
@@ -114,20 +114,21 @@ export class Ec2ConnectionManager {
         const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
         if (!hasPermission) {
-            await promptToAddPolicies(this.iamClient, IamRole!.Arn!)
-            const message = `Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
-                IamRole!.Arn
-            }`
-            this.throwConnectionError(message, selection, {
-                code: 'EC2SSMPermission',
-                documentationUri: this.policyDocumentationUri,
-            })
+            const policiesAdded = await promptToAddPolicies(this.iamClient, IamRole!.Arn!)
+            if (!policiesAdded) {
+                const message = `Did not add permissions. Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
+                    IamRole!.Arn
+                }`
+                this.throwConnectionError(message, selection, {
+                    code: 'EC2SSMPermission',
+                    documentationUri: this.policyDocumentationUri,
+                })
+            }
         }
     }
 
     private async checkForInstanceSsmError(selection: Ec2Selection): Promise<void> {
         const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
-
         if (!isSsmAgentRunning) {
             this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
                 code: 'EC2SSMAgentStatus',
@@ -137,14 +138,14 @@ export class Ec2ConnectionManager {
     }
 
     public throwGeneralConnectionError(selection: Ec2Selection, error: Error) {
-        this.throwConnectionError('Unable to connect to target instance. ', selection, {
+        this.throwConnectionError('', selection, {
             code: 'EC2SSMConnect',
             cause: error,
         })
     }
 
     public async checkForStartSessionError(selection: Ec2Selection): Promise<void> {
-        //await this.checkForInstanceStatusError(selection)
+        await this.checkForInstanceStatusError(selection)
 
         await this.checkForInstancePermissionsError(selection)
 
