@@ -50,7 +50,8 @@ export class Ec2Client {
         })
     }
 
-    protected async addNamesToInstances(
+    /** Updates names in-place for displaying to humans. */
+    protected async updateNames(
         instances: AsyncCollection<EC2.Instance>
     ): Promise<AsyncCollection<EC2.Instance>> {
         return instances.map(instance => {
