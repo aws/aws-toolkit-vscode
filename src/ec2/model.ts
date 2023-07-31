@@ -95,7 +95,7 @@ export class Ec2ConnectionManager {
         const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
 
         if (!isInstanceRunning) {
-            const message = 'Ensure the target instance is running and not currently starting, stopping, or stopped.'
+            const message = 'Ensure the target instance is running.'
             this.throwConnectionError(message, selection, { code: 'EC2SSMStatus' })
         }
     }
