@@ -219,3 +219,16 @@ describe('instanceHasName', function () {
         assert.deepStrictEqual(true, instanceHasName(instances[3]))
     })
 })
+
+describe('ensureInstanceNotInStatus', async function () {
+    it('only throws error if instance is in status', async function () {
+        const client = new MockEc2Client('test-region')
+
+        await client.ensureInstanceNotInStatus('stopped-instance', 'running')
+
+        try {
+            await client.ensureInstanceNotInStatus('running-instance', 'running')
+            assert.ok(false)
+        } catch {}
+    })
+})

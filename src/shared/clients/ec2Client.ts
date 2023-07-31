@@ -110,7 +110,7 @@ export class Ec2Client {
         }
     }
 
-    protected async ensureInstanceNotInStatus(instanceId: string, targetStatus: string) {
+    public async ensureInstanceNotInStatus(instanceId: string, targetStatus: string) {
         const isAlreadyInStatus = (await this.getInstanceStatus(instanceId)) == targetStatus
         if (isAlreadyInStatus) {
             throw new ToolkitError(
