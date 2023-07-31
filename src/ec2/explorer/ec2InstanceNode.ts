@@ -8,7 +8,7 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import globals from '../../shared/extensionGlobals'
-import { Ec2Selection } from '../utils'
+import { Ec2Selection } from '../prompter'
 
 export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(

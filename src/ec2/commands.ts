@@ -7,7 +7,7 @@ import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter } from './prompter'
-import { Ec2Selection } from './utils'
+import { Ec2Selection } from './prompter'
 import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 import { copyToClipboard } from '../shared/utilities/messages'
 
