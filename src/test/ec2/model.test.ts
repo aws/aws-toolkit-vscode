@@ -11,7 +11,6 @@ import { Ec2Client } from '../../shared/clients/ec2Client'
 import { Ec2Selection } from '../../ec2/utils'
 import { ToolkitError } from '../../shared/errors'
 import { IAM } from 'aws-sdk'
-import { mock } from 'ts-mockito'
 import { SshKeyPair } from '../../ec2/sshKeyPair'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 
@@ -160,12 +159,12 @@ describe('Ec2ConnectClient', function () {
     describe('sendSshKeysToInstance', async function () {
         it('calls the sdk with the proper parameters', async function () {
             const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
-
+            sinon.stub(SshKeyPair, 'generateSshKeyPair')
             const testSelection = {
                 instanceId: 'test-id',
                 region: 'test-region',
             }
-            const mockKeys = mock() as SshKeyPair
+            const mockKeys = await SshKeyPair.getSshKeyPair('')
             await client.sendSshKeyToInstance(testSelection, mockKeys, '')
             sinon.assert.calledWith(sendCommandStub, testSelection.instanceId, 'AWS-RunShellScript')
             sinon.restore()
