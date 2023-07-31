@@ -36,27 +36,24 @@ export class Ec2Client {
             'Reservations'
         )
         const extractedInstances = this.getInstancesFromReservations(collection)
-        const instancesWithStatuses = await this.addStatusesToInstances(extractedInstances)
-        const instancesWithNames = await this.addNamesToInstances(instancesWithStatuses)
+        const instances = await this.updateInstancesDetail(extractedInstances)
 
-        return instancesWithNames
+        return instances
     }
 
-    protected async addStatusesToInstances(
+    /** Updates status and name in-place for displaying to humans. */
+    protected async updateInstancesDetail(
         instances: AsyncCollection<EC2.Instance>
     ): Promise<AsyncCollection<EC2.Instance>> {
-        return instances.map(async instance => {
-            return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
-        })
-    }
-
-    /** Updates names in-place for displaying to humans. */
-    protected async updateNames(
-        instances: AsyncCollection<EC2.Instance>
-    ): Promise<AsyncCollection<EC2.Instance>> {
-        return instances.map(instance => {
-            return instanceHasName(instance!) ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') } : instance!
-        })
+        return instances
+            .map(async instance => {
+                return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
+            })
+            .map(instance => {
+                return instanceHasName(instance!)
+                    ? { ...instance, name: lookupTagKey(instance!.Tags!, 'Name') }
+                    : instance!
+            })
     }
 
     public getInstancesFromReservations(
