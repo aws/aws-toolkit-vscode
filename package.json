@@ -1369,6 +1369,16 @@
                     "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
+                    "command": "aws.ec2.linkToLaunchInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2ParentNode"
+                },
+                {
+                    "command": "aws.ec2.linkToLaunchInstance",
+                    "group": "inline@1",
+                    "when": "viewItem == awsEc2ParentNode"
+                },
+                {
                     "command": "aws.ecr.createRepository",
                     "when": "view == aws.explorer && viewItem == awsEcrNode",
                     "group": "inline@1"
@@ -2167,6 +2177,7 @@
             {
                 "command": "aws.ec2.linkToLaunchInstance",
                 "title": "%AWS.command.ec2.linkToLaunchInstance%",
+                "icon": "$(add)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
