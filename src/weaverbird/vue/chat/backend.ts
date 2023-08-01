@@ -36,15 +36,26 @@ export class WeaverbirdChatWebview extends VueWebview {
             throw new Error('Could not find workspace folder')
         }
 
+        // TODO: figure out how to pass environment variables
         // We might need to pipe in the previous history here so we need to store that somewhere in the class
         const result = await new ChildProcess(
             '/usr/local/bin/python3',
-            ['/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py', '--query', msg],
+            // TODO: Currently adding /src to the end of the workspace path. How should this actually work?
+            [
+                '/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py',
+                '--query',
+                `"${msg}"`,
+                '--workspace',
+                workspaceFolders[0].uri.fsPath + '/src',
+            ],
             {
                 spawnOptions: {
                     shell: '/bin/zsh',
                     // TODO add better detection for the workspace path because it can technically be in any number of workspaces
                     cwd: workspaceFolders[0].uri.fsPath,
+                    env: {
+                        ANTHROPIC_API_KEY: '',
+                    },
                 },
             }
         ).run({
@@ -57,7 +68,11 @@ export class WeaverbirdChatWebview extends VueWebview {
             return Promise.resolve('Unable to interact with hey-claude')
         }
 
-        return result.stdout
+        // Clean up the summary by stripping the description from the actual generated text contents
+        const fileBeginnings = result.stdout.split('--BEGIN-FILE')
+        const outputSummary = fileBeginnings.length > 0 ? fileBeginnings[0] : result.stdout
+
+        return outputSummary
     }
 }
 
