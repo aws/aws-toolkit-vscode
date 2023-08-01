@@ -206,16 +206,16 @@ describe('ExtensionUserActivity', function () {
     })
 
     it('triggers twice when multiple user activities are fired in separate intervals', async function () {
-        const throttleDelay = 200
+        const throttleDelay = 500
 
-        const firstInvervalMillisUntilFire = [51, 52, 53, 54]
+        const firstInvervalMillisUntilFire = [100, 101, 102, 103]
 
         const secondIntervalStart = firstInvervalMillisUntilFire[0] + throttleDelay + 1
         const secondIntervalMillisUntilFire = [
-            secondIntervalStart + 10,
-            secondIntervalStart + 11,
-            secondIntervalStart + 11,
-            secondIntervalStart + 12,
+            secondIntervalStart + 200,
+            secondIntervalStart + 201,
+            secondIntervalStart + 201,
+            secondIntervalStart + 202,
         ]
 
         const instance = new ExtensionUserActivity(throttleDelay, [
@@ -225,7 +225,7 @@ describe('ExtensionUserActivity', function () {
         instance.onUserActivity(onEventTriggered)
         await sleep(secondIntervalStart + throttleDelay + 1)
 
-        assert.strictEqual(count, 2)
+        assert.strictEqual(count, 2, 'May be flaky in CI, increase timings to improve reliability.')
     })
 
     describe('does not fire user activity events in specific scenarios', function () {
