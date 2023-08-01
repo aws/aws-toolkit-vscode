@@ -39,7 +39,7 @@ export class WeaverbirdChatWebview extends VueWebview {
         // We might need to pipe in the previous history here so we need to store that somewhere in the class
         const result = await new ChildProcess(
             '/usr/local/bin/python3',
-            ['/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py', '--context', '--query', msg],
+            ['/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py', '--query', msg],
             {
                 spawnOptions: {
                     shell: '/bin/zsh',
