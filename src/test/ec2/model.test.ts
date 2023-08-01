@@ -159,7 +159,10 @@ describe('Ec2ConnectClient', function () {
     describe('sendSshKeysToInstance', async function () {
         it('calls the sdk with the proper parameters', async function () {
             const sendCommandStub = sinon.stub(SsmClient.prototype, 'sendCommandAndWait')
+
             sinon.stub(SshKeyPair, 'generateSshKeyPair')
+            sinon.stub(SshKeyPair.prototype, 'getPublicKey').resolves('test-key')
+
             const testSelection = {
                 instanceId: 'test-id',
                 region: 'test-region',
