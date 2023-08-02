@@ -30,6 +30,20 @@ export default defineComponent({
     data() {
         return model
     },
+    mounted() {
+        client.onDidCreateContent(async (content: string) => {
+            // TODO refactor so we aren't duplicating code
+            this.history.push(content)
+            this.isInputDisabled = true
+
+            const serviceResponse = await client.send(content)
+            this.history.push(
+                serviceResponse ?? 'Could not retrieve message from the Weaverbird service. Please try again.'
+            )
+
+            this.isInputDisabled = false
+        })
+    },
     emits: {},
     // lazily evaluated and cached based on their dependencies
     // only gets recomputed once it's dependencies change

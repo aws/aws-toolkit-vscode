@@ -14,10 +14,20 @@ import { ChildProcess } from '../../../shared/utilities/childProcess'
 export class WeaverbirdChatWebview extends VueWebview {
     public readonly id = 'configureChat'
     public readonly source = 'src/weaverbird/vue/chat/index.js'
+    public readonly workspaceRoot: string
+    public readonly onDidCreateContent = new vscode.EventEmitter<string>()
 
     public constructor() {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
         super()
+
+        // TODO do something better then handle this in the constructor
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
+            throw new Error('Could not find workspace folder')
+        }
+
+        this.workspaceRoot = workspaceFolders[0].uri.fsPath
     }
 
     public init() {
@@ -31,11 +41,6 @@ export class WeaverbirdChatWebview extends VueWebview {
     public async send(msg: string): Promise<string | undefined> {
         console.log(msg)
 
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            throw new Error('Could not find workspace folder')
-        }
-
         // TODO: figure out how to pass environment variables
         // We might need to pipe in the previous history here so we need to store that somewhere in the class
         const result = await new ChildProcess(
@@ -46,13 +51,13 @@ export class WeaverbirdChatWebview extends VueWebview {
                 '--query',
                 `"${msg}"`,
                 '--workspace',
-                workspaceFolders[0].uri.fsPath + '/src',
+                this.workspaceRoot + '/src',
             ],
             {
                 spawnOptions: {
                     shell: '/bin/zsh',
                     // TODO add better detection for the workspace path because it can technically be in any number of workspaces
-                    cwd: workspaceFolders[0].uri.fsPath,
+                    cwd: this.workspaceRoot,
                     env: {
                         ANTHROPIC_API_KEY: '',
                     },
@@ -90,9 +95,10 @@ export async function showChat(ctx: vscode.ExtensionContext): Promise<void> {
     })
 }
 
-export async function registerChatView(ctx: vscode.ExtensionContext): Promise<void> {
+export async function registerChatView(ctx: vscode.ExtensionContext): Promise<WeaverbirdChatWebview> {
     activeView ??= new View(ctx)
     activeView.register({
         title: 'Weaverbird Chat',
     })
+    return activeView.server
 }

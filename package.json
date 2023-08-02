@@ -1905,6 +1905,13 @@
                     "enablement": "!isCloud9",
                     "group": "0@3"
                 }
+            ],
+            "comments/commentThread/context": [
+                {
+                    "command": "aws.weaverbird.chat.submit",
+                    "group": "inline",
+                    "when": "commentController == aws.weaverbird.comment-controller"
+                }
             ]
         },
         "commands": [
@@ -3204,6 +3211,10 @@
                 "command": "aws.weaverbird.openChat",
                 "title": "Open Weaverbird Chat",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.weaverbird.chat.submit",
+                "title": "Submit"
             }
         ],
         "jsonValidation": [
