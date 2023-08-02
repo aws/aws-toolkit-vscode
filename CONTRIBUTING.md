@@ -379,6 +379,18 @@ Note therefore:
 2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
    `master`). Changes to other branches won't affect the marketplace page.
 
+## Using new vscode APIs
+
+The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
+is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+
+But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
+
+1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
+2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
+
+Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
+
 ## Importing icons from other open source repos
 
 If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
