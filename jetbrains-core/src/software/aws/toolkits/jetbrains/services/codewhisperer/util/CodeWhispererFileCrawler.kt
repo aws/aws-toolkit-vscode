@@ -83,7 +83,7 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         val openedFiles = runReadAction {
             FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
                 it.name != psiFile.virtualFile.name &&
-                    isSameDialect(psiFile.virtualFile.extension) &&
+                    isSameDialect(it.extension) &&
                     !isTestFilePredicate(it, psiFile.project)
             }
         }
