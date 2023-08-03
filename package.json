@@ -3215,6 +3215,11 @@
             {
                 "command": "aws.weaverbird.chat.submit",
                 "title": "Submit"
+            },
+            {
+                "command": "aws.weaverbird.chat.showProgress",
+                "title": "Show Weaverbird Notification",
+                "category": "%AWS.title%"
             }
         ],
         "jsonValidation": [

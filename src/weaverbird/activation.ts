@@ -39,4 +39,51 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             comment.thread.dispose()
         })
     )
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('aws.weaverbird.chat.showProgress', () => {
+            chatView.onDidSubmitPlan.fire()
+        })
+    )
+
+    /**
+     * Start
+     * Message
+     * End
+     */
+    chatView.onDidSubmitPlan.event(() => {
+        vscode.window.withProgress(
+            {
+                location: vscode.ProgressLocation.Notification,
+                title: 'Weaverbird Progress Update',
+                cancellable: true,
+            },
+            (progress, token) => {
+                progress.report({
+                    message: 'Starting to execute plan',
+                })
+
+                chatView.session.onProgressEvent(message => {
+                    progress.report({
+                        message,
+                    })
+                })
+
+                // Temporary progress to call the commands
+                setTimeout(() => {
+                    chatView.session.onProgressEventEmitter.fire('Continuing to execute the plan')
+                }, 2000)
+
+                setTimeout(() => {
+                    chatView.session.onProgressFinishedEventEmitter.fire()
+                }, 6000)
+
+                return new Promise<void>(resolve => {
+                    chatView.session.onProgressFinishedEvent(() => {
+                        resolve()
+                    })
+                })
+            }
+        )
+    })
 }

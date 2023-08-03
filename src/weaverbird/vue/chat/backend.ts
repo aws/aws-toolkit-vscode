@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { isCloud9 } from '../../../shared/extensionUtilities'
-import { ChildProcess } from '../../../shared/utilities/childProcess'
+import { Session } from './session'
 
 // const localize = nls.loadMessageBundle()
 
@@ -16,6 +16,8 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly source = 'src/weaverbird/vue/chat/index.js'
     public readonly workspaceRoot: string
     public readonly onDidCreateContent = new vscode.EventEmitter<string>()
+    public readonly onDidSubmitPlan = new vscode.EventEmitter<void>()
+    public readonly session: Session
 
     public constructor() {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
@@ -28,56 +30,16 @@ export class WeaverbirdChatWebview extends VueWebview {
         }
 
         this.workspaceRoot = workspaceFolders[0].uri.fsPath
-    }
-
-    public init() {
-        // history could come from a previous chat session if neccessary
-        return {
-            history: [],
-        }
+        this.session = new Session([], this.workspaceRoot)
     }
 
     // Instrument the client sending here
     public async send(msg: string): Promise<string | undefined> {
         console.log(msg)
 
-        // TODO: figure out how to pass environment variables
-        // We might need to pipe in the previous history here so we need to store that somewhere in the class
-        const result = await new ChildProcess(
-            '/usr/local/bin/python3',
-            // TODO: Currently adding /src to the end of the workspace path. How should this actually work?
-            [
-                '/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py',
-                '--query',
-                `"${msg}"`,
-                '--workspace',
-                this.workspaceRoot + '/src',
-            ],
-            {
-                spawnOptions: {
-                    shell: '/bin/zsh',
-                    // TODO add better detection for the workspace path because it can technically be in any number of workspaces
-                    cwd: this.workspaceRoot,
-                    env: {
-                        ANTHROPIC_API_KEY: '',
-                    },
-                },
-            }
-        ).run({
-            onStdout: text => console.log(`hey-claude: ${text}`),
-            onStderr: text => console.log(`hey-claude: ${text}`),
-        })
+        const result = await this.session.send(msg)
 
-        if (result.error) {
-            console.log(result.stderr)
-            return Promise.resolve('Unable to interact with hey-claude')
-        }
-
-        // Clean up the summary by stripping the description from the actual generated text contents
-        const fileBeginnings = result.stdout.split('--BEGIN-FILE')
-        const outputSummary = fileBeginnings.length > 0 ? fileBeginnings[0] : result.stdout
-
-        return outputSummary
+        return result
     }
 }
 
