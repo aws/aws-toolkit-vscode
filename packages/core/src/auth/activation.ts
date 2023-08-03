@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+import globals from '../shared/extensionGlobals'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
@@ -11,6 +13,7 @@ import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../shared/vscode/env'
 import { isWeb } from '../shared/extensionGlobals'
+import { CredentialsInjector } from './environment'
 
 export async function initialize(loginManager: LoginManager): Promise<void> {
     Auth.instance.onDidChangeActiveConnection(async conn => {
@@ -23,6 +26,12 @@ export async function initialize(loginManager: LoginManager): Promise<void> {
     })
 
     await showManageConnectionsOnStartup()
+
+    if (!isCloud9()) {
+        const injector = new CredentialsInjector(globals.context.environmentVariableCollection)
+
+        globals.context.subscriptions.push(injector, vscode.window.registerTerminalProfileProvider('aws', injector))
+    }
 }
 
 /**

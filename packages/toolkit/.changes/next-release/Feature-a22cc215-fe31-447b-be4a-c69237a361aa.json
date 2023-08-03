@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Terminals connected to AWS can be created using the current AWS Toolkit connection."
+}

@@ -394,7 +394,7 @@ export class Auth implements AuthService, ConnectionManager {
     ): Promise<Connection> {
         getLogger().info(`auth: Updating connection ${connection.id}`)
         if (profile.type === 'iam') {
-            throw new Error('Updating IAM connections is not supported')
+            throw new ToolkitError('Updating IAM connections is not supported', { code: 'InvalidConnectionType' })
         }
 
         if (invalidate ?? false) {
@@ -422,6 +422,15 @@ export class Auth implements AuthService, ConnectionManager {
 
     public getInvalidationReason(connection: Pick<Connection, 'id'>): Error | undefined {
         return this.#validationErrors.get(connection.id)
+    }
+
+    public async getDefaultRegion(connection: Pick<IamConnection, 'id'>): Promise<string | undefined> {
+        const profile = this.store.getProfileOrThrow(connection.id)
+        if (profile.type !== 'iam') {
+            throw new ToolkitError('Only IAM credentials have a default region', { code: 'InvalidConnectionType' })
+        }
+
+        return (await this.getCredentialsProvider(connection.id, profile)).getDefaultRegion()
     }
 
     /**
