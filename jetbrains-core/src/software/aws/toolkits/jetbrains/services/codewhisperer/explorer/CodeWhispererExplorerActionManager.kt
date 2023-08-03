@@ -20,7 +20,6 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.isAccessTokenExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.isRefreshTokenExpired
 import software.aws.toolkits.telemetry.AwsTelemetry
 import java.time.LocalDateTime
@@ -120,7 +119,7 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
 
     fun checkActiveCodeWhispererConnectionType(project: Project) = when {
         actionState.token != null -> CodeWhispererLoginType.Accountless
-        isAccessTokenExpired(project) || isRefreshTokenExpired(project) -> CodeWhispererLoginType.Expired
+        isRefreshTokenExpired(project) -> CodeWhispererLoginType.Expired
         else -> {
             val conn = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
             if (conn != null) {

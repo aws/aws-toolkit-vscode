@@ -207,7 +207,7 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
         }
 
         // or state is not authorized
-        return provider.state() != BearerTokenAuthState.AUTHORIZED
+        return provider.state() == BearerTokenAuthState.NOT_AUTHENTICATED
     }
 
     // not a bearer token provider
