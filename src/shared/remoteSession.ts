@@ -37,7 +37,7 @@ const minimumSsmActions = [
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)
 
-    await showMessageWithCancel('AWS: Starting session...', timeout, 1000)
+    await showMessageWithCancel('AWS: Opening remote terminal...', timeout, 1000)
     await withoutShellIntegration(async () => {
         const terminal = vscode.window.createTerminal(options)
 
