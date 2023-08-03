@@ -1,3 +1,8 @@
+# _1.74_ (2023-07-25)
+- **(Feature)** Explorer is automatically refreshed with new credentials when they are added to credential file.
+- **(Feature)** Added 2023.2 support
+- **(Bug Fix)** Fix 'No display name is specified for configurable' in 2023.2
+
 # _1.73_ (2023-07-19)
 - **(Feature)** CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching
 - **(Bug Fix)** CodeWhisperer: Run read operation in the background thread without runReadAction

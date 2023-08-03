@@ -1,4 +1,0 @@
-{
-  "type" : "bugfix",
-  "description" : "codewhisperer: file context fetching not considering file extension correctly"
-}
