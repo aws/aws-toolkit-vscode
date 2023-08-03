@@ -46,7 +46,8 @@ class PythonLocalLambdaRunConfigurationIntegrationTest(private val runtime: Runt
             arrayOf(Runtime.PYTHON3_7),
             arrayOf(Runtime.PYTHON3_8),
             arrayOf(Runtime.PYTHON3_9),
-            arrayOf(Runtime.PYTHON3_10)
+            arrayOf(Runtime.PYTHON3_10),
+            arrayOf(Runtime.PYTHON3_11)
         )
     }
 

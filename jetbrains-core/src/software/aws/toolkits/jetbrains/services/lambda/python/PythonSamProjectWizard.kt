@@ -22,8 +22,10 @@ import software.aws.toolkits.jetbrains.services.lambda.wizard.SdkSelector
 import software.aws.toolkits.jetbrains.services.lambda.wizard.TemplateParameters
 import software.aws.toolkits.resources.message
 
-private val pythonTemplateRuntimes = setOf(LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8, LambdaRuntime.PYTHON3_9, LambdaRuntime.PYTHON3_10)
-private val eventBridgeTemplateRuntimes = setOf(LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8, LambdaRuntime.PYTHON3_9, LambdaRuntime.PYTHON3_10)
+private val pythonTemplateRuntimes =
+    setOf(LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8, LambdaRuntime.PYTHON3_9, LambdaRuntime.PYTHON3_10, LambdaRuntime.PYTHON3_11)
+private val eventBridgeTemplateRuntimes =
+    setOf(LambdaRuntime.PYTHON3_7, LambdaRuntime.PYTHON3_8, LambdaRuntime.PYTHON3_9, LambdaRuntime.PYTHON3_10, LambdaRuntime.PYTHON3_11)
 
 class PythonSamProjectWizard : SamProjectWizard {
     override fun createSdkSelectionPanel(projectLocation: TextFieldWithBrowseButton?): SdkSelector = when {

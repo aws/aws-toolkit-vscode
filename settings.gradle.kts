@@ -23,7 +23,7 @@ buildscript {
     // also since this is a settings plugin, we can't use a version catalog
     // TODO: can we serve a remote cache out of CloudFront instead? https://docs.gradle.org/8.1/userguide/build_cache.html#sec:build_cache_configure_remote
     dependencies {
-        classpath(platform("software.amazon.awssdk:bom:2.20.48"))
+        classpath(platform("software.amazon.awssdk:bom:2.20.111"))
     }
 }
 
