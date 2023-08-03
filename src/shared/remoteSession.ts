@@ -187,7 +187,7 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
 }
 
 export async function promptToAddPolicies(client: IamClient, roleArn: string): Promise<boolean> {
-    const promptText = `In order to connect, toolkit will add actions ${minimumSsmActions} to role ${roleArn}`
+    const promptText = `In order to connect, toolkit will add actions ${getFormattedSsmActions()} to role ${roleArn}`
     const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
 
     if (confirmation) {
@@ -195,6 +195,12 @@ export async function promptToAddPolicies(client: IamClient, roleArn: string): P
     }
 
     return confirmation
+}
+
+function getFormattedSsmActions() {
+    const formattedActions = minimumSsmActions.map(action => `${action},\n`).reduce((l, r) => l + r)
+
+    return formattedActions.slice(0, formattedActions.length - 2)
 }
 
 function getSsmPolicyDocument() {
