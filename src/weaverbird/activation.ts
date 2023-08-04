@@ -3,9 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as path from 'path'
 import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
 import { registerChatView } from './vue/chat/backend'
+import { applyPatch } from 'diff'
+import { readFileAsString } from '../shared/filesystemUtilities'
+import Diff = require('diff')
+import { writeFileSync } from 'fs-extra'
 
 /**
  * Activate Weaverbird functionality for the extension.
@@ -16,6 +21,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         Commands.register('aws.weaverbird.openChat', () => {
             console.log(chatView)
             chatView.onDidCreateContent.fire('I am a test')
+        })
+    )
+
+    context.subscriptions.push(
+        Commands.register('aws.weaverbird.applyPatch', async () => {
+            // Note this patch is specifically for the weaverbird-poc project. Theres no point of trying to apply it to any other projects
+            const selection = await vscode.window.showInformationMessage(
+                'Code has been generated for session id: 1234',
+                'Apply diff'
+            )
+            if (selection !== undefined && selection === 'Apply diff') {
+                const testFilePath = path.join(chatView.session.workspaceRoot, 'src', 'App.tsx')
+                const testFileContents = await readFileAsString(testFilePath)
+                const patch = Diff.createPatch(
+                    `App.tsx`,
+                    testFileContents,
+                    testFileContents.replace('Learn React', 'Diff has been applied!')
+                )
+
+                const appliedPatchResult = applyPatch(testFileContents, patch)
+                writeFileSync(testFilePath, appliedPatchResult)
+            }
         })
     )
 

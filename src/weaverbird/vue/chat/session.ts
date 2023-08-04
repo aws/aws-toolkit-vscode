@@ -9,7 +9,8 @@ import { ChildProcess } from '../../../shared/utilities/childProcess'
 
 export class Session {
     private history: string[]
-    private workspaceRoot: string
+    public readonly workspaceRoot: string
+    public readonly sourceRoot: string
 
     // TODO remake private
     public onProgressEventEmitter: vscode.EventEmitter<string>
@@ -22,6 +23,7 @@ export class Session {
     constructor(history: string[], workspaceRoot: string) {
         this.history = history
         this.workspaceRoot = workspaceRoot
+        this.sourceRoot = this.workspaceRoot + '/src'
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
         this.onProgressEvent = this.onProgressEventEmitter.event
 
@@ -35,13 +37,7 @@ export class Session {
         const result = await new ChildProcess(
             '/usr/local/bin/python3',
             // TODO: Currently adding /src to the end of the workspace path. How should this actually work?
-            [
-                path.join(__dirname, '../../llm/claude.py'),
-                '--query',
-                `"${msg}"`,
-                '--workspace',
-                this.workspaceRoot + '/src',
-            ],
+            [path.join(__dirname, '../../llm/claude.py'), '--query', `"${msg}"`, '--workspace', this.sourceRoot],
             {
                 spawnOptions: {
                     env: {

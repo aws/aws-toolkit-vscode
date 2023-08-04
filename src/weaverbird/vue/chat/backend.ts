@@ -14,7 +14,6 @@ import { Session } from './session'
 export class WeaverbirdChatWebview extends VueWebview {
     public readonly id = 'configureChat'
     public readonly source = 'src/weaverbird/vue/chat/index.js'
-    public readonly workspaceRoot: string
     public readonly onDidCreateContent = new vscode.EventEmitter<string>()
     public readonly onDidSubmitPlan = new vscode.EventEmitter<void>()
     public readonly session: Session
@@ -29,8 +28,8 @@ export class WeaverbirdChatWebview extends VueWebview {
             throw new Error('Could not find workspace folder')
         }
 
-        this.workspaceRoot = workspaceFolders[0].uri.fsPath
-        this.session = new Session([], this.workspaceRoot)
+        const workspaceRoot = workspaceFolders[0].uri.fsPath
+        this.session = new Session([], workspaceRoot)
     }
 
     // Instrument the client sending here
