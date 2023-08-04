@@ -130,9 +130,8 @@ export class Ec2ConnectionManager {
                 function delay(ms: number) {
                     return new Promise(resolve => setTimeout(resolve, ms))
                 }
-
                 await showMessageWithCancel(`Adding Inline Policy to ${IamRole!.Arn}`, timeout)
-                await delay(policyAttachDelay)
+                await delay(policyAttachDelay).finally(() => timeout.cancel())
             }
         }
     }
