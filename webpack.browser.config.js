@@ -30,7 +30,7 @@ const webConfig = {
             NODE_DEBUG: 'development',
             READABLE_STREAM: 'disable',
         }),
-        // polyfills 'fs' and 'path'
+        // polyfills global 'fs' and 'path'
         new FilerWebpackPlugin()
     ),
     resolve: {
@@ -38,6 +38,7 @@ const webConfig = {
         fallback: {
             stream: require.resolve('stream-browserify'),
             os: require.resolve('os-browserify/browser'),
+            path: require.resolve('path-browserify'),
 
             // *** If one of these modules actually gets used an error will be raised ***
             // You may see something like: "TypeError: path_ignored_0.join is not a function"

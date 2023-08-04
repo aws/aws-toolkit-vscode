@@ -3694,5 +3694,8 @@
         "bracketSpacing": true,
         "arrowParens": "avoid",
         "endOfLine": "lf"
-    }
+    },
+    "workspaces": [
+        "src/browser"
+    ]
 }
