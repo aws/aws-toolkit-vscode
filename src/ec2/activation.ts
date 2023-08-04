@@ -8,14 +8,14 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import { openRemoteConnection, openTerminal } from './commands'
+import { openRemoteConnection, openTerminal, rebootInstance, startInstance, stopInstance } from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2Node) => {
             await telemetry.ec2_connectToInstance.run(async span => {
                 span.record({ ec2ConnectionType: 'ssm' })
-                await (node ? openTerminal(node) : openTerminal(node))
+                await openTerminal(node)
             })
         }),
 
@@ -23,7 +23,19 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await copyTextCommand(node, 'id')
         }),
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
-            await (node ? openRemoteConnection(node) : openRemoteConnection(node))
+            await openRemoteConnection(node)
+        }),
+
+        Commands.register('aws.ec2.startInstance', async (node?: Ec2Node) => {
+            await startInstance(node)
+        }),
+
+        Commands.register('aws.ec2.stopInstance', async (node?: Ec2Node) => {
+            await stopInstance(node)
+        }),
+
+        Commands.register('aws.ec2.rebootInstance', async (node?: Ec2Node) => {
+            await rebootInstance(node)
         })
     )
 }
