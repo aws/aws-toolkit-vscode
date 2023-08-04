@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { Session } from 'aws-sdk/clients/ssm'
 import { IAM } from 'aws-sdk'
-import { Ec2Selection } from './utils'
+import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
