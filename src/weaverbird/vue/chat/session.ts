@@ -4,6 +4,7 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 
 export class Session {
@@ -35,7 +36,7 @@ export class Session {
             '/usr/local/bin/python3',
             // TODO: Currently adding /src to the end of the workspace path. How should this actually work?
             [
-                '/Volumes/workplace/weaverbird-poc/.codecatalyst/llm/claude.py',
+                path.join(__dirname, '../../llm/claude.py'),
                 '--query',
                 `"${msg}"`,
                 '--workspace',
@@ -43,12 +44,8 @@ export class Session {
             ],
             {
                 spawnOptions: {
-                    shell: '/bin/zsh',
-                    // TODO add better detection for the workspace path because it can technically be in any number of workspaces
-                    cwd: this.workspaceRoot,
                     env: {
-                        ANTHROPIC_API_KEY:
-                            'sk-rgmn1tyTX3nb_uq33kY_GkOLT2wT93JmZzFWPyd9GL0OLvUBEBq37fVPPoBEjRP2bmV-w2sl_97BXeu1VqGWvQ',
+                        ANTHROPIC_API_KEY: '',
                     },
                 },
             }

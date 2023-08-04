@@ -36,3 +36,7 @@ src/testFixtures/**/obj
 resources/icons/cloud9/generated/**
 resources/fonts/aws-toolkit-icons.woff
 resources/css/icons.css
+
+# Python
+**/__pycache__
+**/context.txt
