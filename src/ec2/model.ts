@@ -38,6 +38,7 @@ interface Ec2RemoteEnv extends VscodeRemoteConnection {
 
 const ec2ConnectScriptPrefix = 'ec2_connect'
 const hostNamePrefix = 'ec2-'
+const policyAttachDelay = 5000
 
 export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
@@ -123,6 +124,15 @@ export class Ec2ConnectionManager {
                     code: 'EC2SSMPermission',
                     documentationUri: this.policyDocumentationUri,
                 })
+            } else {
+                const timeout = new Timeout(policyAttachDelay)
+
+                function delay(ms: number) {
+                    return new Promise(resolve => setTimeout(resolve, ms))
+                }
+
+                await showMessageWithCancel(`Adding Inline Policy to ${IamRole!.Arn}`, timeout)
+                await delay(policyAttachDelay)
             }
         }
     }

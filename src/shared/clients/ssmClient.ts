@@ -39,7 +39,6 @@ export class SsmClient {
         const response = await client
             .startSession({ Target: target, DocumentName: document, Parameters: parameters })
             .promise()
-        console.log(response)
         return response
     }
 
