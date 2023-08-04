@@ -24,7 +24,7 @@ import { ErrorInformation } from '../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
-import { Timeout } from '../shared/utilities/timeoutUtils'
+import { Timeout, sleep } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
 import { SshKeyPair } from './sshKeyPair'
@@ -93,6 +93,19 @@ export class Ec2ConnectionManager {
     protected throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
         const generalErrorMessage = `Unable to connect to target instance ${selection.instanceId} on region ${selection.region}. `
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
+    }
+
+    private async pollForPermissions(roleArn: string): Promise<void> {
+        const timeout = new Timeout(-1)
+        await showMessageWithCancel(`Adding inline policy to IAM role ${roleArn}`, timeout)
+        while (true) {
+            const permissionsAdded = await this.hasProperPermissions(roleArn)
+            if (permissionsAdded) {
+                break
+            }
+            await sleep(1000)
+        }
+        timeout.cancel()
     }
 
     private async checkForInstanceStatusError(selection: Ec2Selection): Promise<void> {
