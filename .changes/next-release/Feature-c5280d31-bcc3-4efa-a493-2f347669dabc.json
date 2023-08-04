@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "IAM Identity Center (SSO): log a warning if SSO user is not linked to an account"
-}
