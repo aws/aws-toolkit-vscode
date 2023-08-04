@@ -11,6 +11,7 @@ import { applyPatch } from 'diff'
 import { readFileAsString } from '../shared/filesystemUtilities'
 import Diff = require('diff')
 import { writeFileSync } from 'fs-extra'
+import { Storage } from './storage'
 
 /**
  * Activate Weaverbird functionality for the extension.
@@ -113,4 +114,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         )
     })
+
+    try {
+        const weaverbirdStorage = new Storage()
+        weaverbirdStorage.memento.update('WeaverbirdSessionStorage', undefined)
+        await weaverbirdStorage.createSessionStorage()
+
+        const sessionId = await weaverbirdStorage.createSession()
+        await weaverbirdStorage.updateSession(sessionId, {
+            name: 'testing',
+        })
+        const currentSession = weaverbirdStorage.getSessionById(weaverbirdStorage.getSessionStorage(), sessionId)
+        console.log(currentSession)
+        await weaverbirdStorage.deleteSession(sessionId)
+    } catch (e) {
+        console.log('Weaverbird storage initialization failed', e)
+    }
 }
