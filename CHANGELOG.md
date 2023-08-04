@@ -1,3 +1,7 @@
+## 1.83.0 2023-08-03
+
+- **Feature** IAM Identity Center (SSO): log a warning if SSO user is not linked to an account
+
 ## 1.82.0 2023-07-26
 
 - **Bug Fix** CodeWhisperer: issue with fetching enhanced file context
