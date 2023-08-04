@@ -219,7 +219,7 @@ export class TelemetryHelper {
             (this.lastRequestId && this.lastRequestId === requestId) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
-            this.sendUserTriggerDecisionTelemetry(sessionId, supplementalContextMetadata)
+            this.sendUserTriggerDecisionTelemetry(supplementalContextMetadata)
         }
     }
 
@@ -260,7 +260,6 @@ export class TelemetryHelper {
     }
 
     private sendUserTriggerDecisionTelemetry(
-        sessionId: string,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
@@ -273,7 +272,7 @@ export class TelemetryHelper {
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
         const language = this.sessionDecisions[0].codewhispererLanguage
         const aggregated: CodewhispererUserTriggerDecision = {
-            codewhispererSessionId: sessionId,
+            codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
             credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             codewhispererCompletionType: this.getAggregatedCompletionType(this.sessionDecisions),

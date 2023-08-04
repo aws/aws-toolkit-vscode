@@ -212,7 +212,7 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * This method will gather all AWS accounts/roles that are associated with SSO connections.
+     * Gathers all AWS accounts/roles associated with SSO ("IAM Identity Center", "IdC") connections.
      *
      * Use {@link Auth.listConnections} when you do not want to make extra API calls to the SSO service.
      */
@@ -232,12 +232,14 @@ export class Auth implements AuthService, ConnectionManager {
             const linked = this.store
                 .listProfiles()
                 .filter(isLinkable)
-                .map(([id, profile]) =>
-                    toCollection(() =>
+                .map(([id, profile]) => {
+                    const startUrl = this.truncateStartUrl(profile.startUrl)
+                    return toCollection(() =>
                         loadLinkedProfilesIntoStore(
                             this.store,
                             id,
-                            this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile))
+                            this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile)),
+                            startUrl
                         )
                     )
                         .catch(err => {
@@ -245,7 +247,7 @@ export class Auth implements AuthService, ConnectionManager {
                         })
                         .filter(isNonNullable)
                         .map(entry => this.getConnectionFromStoreEntry(entry))
-                )
+                })
 
             yield* linked.reduce(join, stream)
         }
@@ -748,8 +750,12 @@ export class Auth implements AuthService, ConnectionManager {
         return (this.#instance ??= new Auth(new ProfileStore(memento)))
     }
 
+    private truncateStartUrl(startUrl: string) {
+        return startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? startUrl
+    }
+
     private getSsoProfileLabel(profile: SsoProfile) {
-        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
+        const truncatedUrl = this.truncateStartUrl(profile.startUrl)
 
         return profile.startUrl === builderIdStartUrl
             ? localizedText.builderId()

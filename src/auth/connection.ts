@@ -9,6 +9,7 @@ import { builderIdStartUrl, SsoToken } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
+import { getLogger } from '../shared/logger/logger'
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -247,18 +248,27 @@ export async function loadIamProfilesIntoStore(store: ProfileStore, manager: Cre
     }
 }
 
+/**
+ * Fetches profiles from the given SSO ("IAM Identity Center", "IdC") connection.
+ */
 export async function* loadLinkedProfilesIntoStore(
     store: ProfileStore,
     source: SsoConnection['id'],
-    client: SsoClient
+    client: SsoClient,
+    profileLabel: string
 ) {
+    const accounts = new Set<string>()
+    const found = new Set<Connection['id']>()
+
     const stream = client
         .listAccounts()
         .flatten()
-        .map(resp => client.listAccountRoles({ accountId: resp.accountId }).flatten())
+        .map(resp => {
+            accounts.add(resp.accountId)
+            return client.listAccountRoles({ accountId: resp.accountId }).flatten()
+        })
         .flatten()
 
-    const found = new Set<Connection['id']>()
     for await (const info of stream) {
         const name = `${info.roleName}-${info.accountId}`
         const id = `sso:${source}#${name}`
@@ -278,6 +288,20 @@ export async function* loadLinkedProfilesIntoStore(
         })
 
         yield [id, profile] as const
+    }
+
+    if (accounts.size === 0) {
+        // Possible causes:
+        // - SSO org has no "Permission sets"
+        // - user is not an "Assigned user" in any account in the SSO org
+        // - user is an "Assigned user" but no "Permission sets"
+        getLogger().warn('auth: SSO org (%s) returned no accounts', profileLabel)
+    } else if (found.size === 0) {
+        getLogger().warn(
+            'auth: SSO org (%s) returned no IAM credentials for account: %s',
+            profileLabel,
+            Array.from(accounts).join()
+        )
     }
 
     // Clean-up stale references in case the user no longer has access
