@@ -8,7 +8,8 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import globals from '../../shared/extensionGlobals'
-import { Ec2Selection, getIconCodeForInstanceStatus } from '../utils'
+import { getIconCodeForInstanceStatus } from '../utils'
+import { Ec2Selection } from '../prompter'
 import { Ec2ParentNode } from './ec2ParentNode'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
@@ -27,6 +28,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     ) {
         super('')
         this.updateInstance(instance)
+        this.id = this.InstanceId
     }
 
     public updateInstance(newInstance: Ec2Instance) {

@@ -7,9 +7,7 @@ import * as assert from 'assert'
 import { assertTelemetryCurried } from '../../testUtil'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
-import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 
 describe('telemetryHelper', function () {
@@ -68,10 +66,7 @@ describe('telemetryHelper', function () {
         })
 
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
-            await globals.context.globalState.update(CodeWhispererConstants.userGroupKey, {
-                group: CodeWhispererConstants.UserGroup.Classifier,
-                version: extensionVersion,
-            })
+            CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Classifier
 
             const telemetryHelper = new TelemetryHelper()
             const response = [{ content: "print('Hello')" }]

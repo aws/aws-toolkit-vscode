@@ -5,14 +5,16 @@
 import { ExtContext } from '../shared/extensions'
 import { Commands } from '../shared/vscode/commands2'
 import { telemetry } from '../shared/telemetry/telemetry'
+import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
+import { copyTextCommand } from '../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import {
     openRemoteConnection,
     openTerminal,
     rebootInstance,
-    refreshExplorer,
     startInstance,
     stopInstance,
+    refreshExplorer,
 } from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
@@ -24,6 +26,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
             })
         }),
 
+        Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
+            await copyTextCommand(node, 'id')
+        }),
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
             await openRemoteConnection(node)
         }),
