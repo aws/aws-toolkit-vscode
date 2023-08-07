@@ -194,7 +194,7 @@ export async function promptToAddPolicies(client: IamClient, roleArn: string): P
     const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
 
     if (confirmation) {
-        await addSsmActionsToInlinePolicy(client, roleArn)
+        addSsmActionsToInlinePolicy(client, roleArn)
     }
 
     return confirmation
