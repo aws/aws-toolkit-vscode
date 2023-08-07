@@ -129,6 +129,7 @@ export class Ec2ConnectionManager {
 
         if (!hasPermission) {
             const policiesAdded = await promptToAddPolicies(this.iamClient, IamRole!.Arn!)
+
             if (!policiesAdded) {
                 const message = `Did not add permissions. Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
                     IamRole!.Arn

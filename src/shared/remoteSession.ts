@@ -21,6 +21,7 @@ import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/childProcess'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
+import { getIdeProperties } from './extensionUtilities'
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -187,7 +188,9 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
 }
 
 export async function promptToAddPolicies(client: IamClient, roleArn: string): Promise<boolean> {
-    const promptText = `${getIdeProperties().company} Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
+    const promptText = `${
+        getIdeProperties().company
+    } Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
     const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
 
     if (confirmation) {
