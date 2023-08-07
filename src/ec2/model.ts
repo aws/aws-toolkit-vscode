@@ -98,7 +98,7 @@ export class Ec2ConnectionManager {
     private async pollForPermissions(roleArn: string): Promise<void> {
         const timeout = new Timeout(-1)
         await showMessageWithCancel(`Adding inline policy to IAM role ${roleArn}`, timeout)
-        while (true) {
+        while (!timeout.completed) {
             const permissionsAdded = await this.hasProperPermissions(roleArn)
             if (permissionsAdded) {
                 break
