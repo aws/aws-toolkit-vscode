@@ -615,7 +615,7 @@ export class TelemetryHelper {
     }
 
     public sendCodeScanEvent(languageId: string, jobId: string) {
-        getLogger().debug(`start sendUserModificationEvent: jobId: "${jobId}", languageId: "${languageId}"`)
+        getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
