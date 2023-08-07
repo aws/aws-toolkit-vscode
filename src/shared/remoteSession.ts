@@ -187,7 +187,7 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
 }
 
 export async function promptToAddPolicies(client: IamClient, roleArn: string): Promise<boolean> {
-    const promptText = `In order to connect, toolkit will add actions ${getFormattedSsmActions()} to role ${roleArn}`
+    const promptText = `${getIdeProperties().company} Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
     const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
 
     if (confirmation) {
