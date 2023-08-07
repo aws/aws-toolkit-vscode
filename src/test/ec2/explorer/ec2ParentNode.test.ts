@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { Ec2ParentNode, contextValueEc2 } from '../../../ec2/explorer/ec2ParentNode'
+import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
 import { stub } from '../../utilities/stubber'
 import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
@@ -36,8 +36,8 @@ describe('ec2ParentNode', function () {
 
     beforeEach(function () {
         instances = [
-            { name: 'firstOne', InstanceId: '0' },
-            { name: 'secondOne', InstanceId: '1' },
+            { name: 'firstOne', InstanceId: '0', status: 'running' },
+            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
         ]
 
         testNode = new Ec2ParentNode(testRegion, testPartition, createClient())
@@ -58,14 +58,6 @@ describe('ec2ParentNode', function () {
 
         childNodes.forEach(node =>
             assert.ok(node instanceof Ec2InstanceNode, 'Expected child node to be Ec2InstanceNode')
-        )
-    })
-
-    it('has child nodes with ec2 contextValuue', async function () {
-        const childNodes = await testNode.getChildren()
-
-        childNodes.forEach(node =>
-            assert.strictEqual(node.contextValue, contextValueEc2, 'expected the node to have a ec2 contextValue')
         )
     })
 

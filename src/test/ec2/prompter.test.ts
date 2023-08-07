@@ -6,6 +6,7 @@ import * as assert from 'assert'
 import { Ec2Prompter, instanceFilter } from '../../ec2/prompter'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
+import { getIconCode } from '../../ec2/utils'
 import { Ec2Selection } from '../../ec2/prompter'
 import { AsyncCollection } from '../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../shared/utilities/collectionUtils'
@@ -58,7 +59,7 @@ describe('Ec2Prompter', async function () {
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: '$(terminal) \t' + testInstance.name,
+                label: `$(${getIconCode(testInstance)}) \t ${testInstance.name}`,
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -72,7 +73,7 @@ describe('Ec2Prompter', async function () {
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: '$(terminal) \t' + '(no name)',
+                label: `$(${getIconCode(testInstance)}) \t (no name)`,
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -138,17 +139,17 @@ describe('Ec2Prompter', async function () {
         it('returns items mapped to QuickPick items without filter', async function () {
             const expected = [
                 {
-                    label: '$(terminal) \t' + prompter.instances[0].name!,
+                    label: `$(${getIconCode(prompter.instances[0])}) \t ${prompter.instances[0].name!}`,
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: '$(terminal) \t' + prompter.instances[1].name!,
+                    label: `$(${getIconCode(prompter.instances[1])}) \t ${prompter.instances[1].name!}`,
                     detail: prompter.instances[1].InstanceId!,
                     data: prompter.instances[1].InstanceId!,
                 },
                 {
-                    label: '$(terminal) \t' + prompter.instances[2].name!,
+                    label: `$(${getIconCode(prompter.instances[2])}) \t ${prompter.instances[2].name!}`,
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
@@ -163,12 +164,12 @@ describe('Ec2Prompter', async function () {
 
             const expected = [
                 {
-                    label: '$(terminal) \t' + prompter.instances[0].name!,
+                    label: `$(${getIconCode(prompter.instances[0])}) \t ${prompter.instances[0].name!}`,
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: '$(terminal) \t' + prompter.instances[2].name!,
+                    label: `$(${getIconCode(prompter.instances[2])}) \t ${prompter.instances[2].name!}`,
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
