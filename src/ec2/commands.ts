@@ -20,8 +20,8 @@ export async function openTerminal(node?: Ec2Node) {
 
 export async function openRemoteConnection(node?: Ec2Node) {
     const selection = await getSelection(node)
-    //const connectionManager = new Ec2ConnectionManager(selection.region)
-    console.log(selection)
+    const connectionManager = new Ec2ConnectionManager(selection.region)
+    await connectionManager.attemptToOpenRemoteConnection(selection)
 }
 
 export async function startInstance(node?: Ec2Node) {
