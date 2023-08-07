@@ -178,7 +178,7 @@ export class Ec2ConnectionManager {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
         const shellArgs = [JSON.stringify(session), selection.region, 'StartSession']
         const terminalOptions = {
-            name: selection.region + '/' + selection.instanceId,
+            name: `${selection.region}/${selection.instanceId}`,
             shellPath: ssmPlugin,
             shellArgs: shellArgs,
         }
