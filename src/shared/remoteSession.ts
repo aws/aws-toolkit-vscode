@@ -208,16 +208,16 @@ function getFormattedSsmActions() {
 
 function getSsmPolicyDocument() {
     return `{
-            \"Version\": \"2012-10-17\",
-            \"Statement\": {
-                \"Effect\": \"Allow\",
-                \"Action\": [
-                    \"ssmmessages:CreateControlChannel\",
-                    \"ssmmessages:CreateDataChannel\",
-                    \"ssmmessages:OpenControlChannel\",
-                    \"ssmmessages:OpenDataChannel\"
+            "Version": "2012-10-17",
+            "Statement": {
+                "Effect": "Allow",
+                "Action": [
+                    "ssmmessages:CreateControlChannel",
+                    "ssmmessages:CreateDataChannel",
+                    "ssmmessages:OpenControlChannel",
+                    "ssmmessages:OpenDataChannel"
                 ],
-                \"Resource\": \"*\"
+                "Resource": "*"
                 }
             }`
 }
