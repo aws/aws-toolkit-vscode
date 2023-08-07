@@ -10,14 +10,19 @@ import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
 import { Commands } from '../../shared/vscode/commands'
+import globals from '../../shared/extensionGlobals'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
+
+const pollingInterval = 5000
 
 export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
+    public pollingNodes: Set<string> = new Set<string>()
+    private pollTimer?: NodeJS.Timeout
 
     public constructor(
         public override readonly regionCode: string,
@@ -48,6 +53,39 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             key => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
             key => new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
         )
+    }
+
+    public isPolling(): boolean {
+        return this.pollingNodes.size !== 0
+    }
+
+    public startPolling(newNode: string) {
+        this.pollingNodes.add(newNode)
+        this.pollTimer =
+            this.pollTimer ?? globals.clock.setInterval(this.updatePollingNodes.bind(this), pollingInterval)
+    }
+
+    private checkForPendingNodes() {
+        this.pollingNodes.forEach(async instanceId => {
+            const childNode = this.ec2InstanceNodes.get(instanceId)!
+            await childNode.updateStatus()
+            if (!childNode.isPending()) {
+                this.pollingNodes.delete(instanceId)
+                childNode.refreshNode()
+            }
+        })
+    }
+
+    public updatePollingNodes() {
+        this.checkForPendingNodes()
+        if (!this.isPolling()) {
+            this.clearPollTimer()
+        }
+    }
+
+    public clearPollTimer() {
+        globals.clock.clearInterval(this.pollTimer!)
+        this.pollTimer = undefined
     }
 
     public async clearChildren() {

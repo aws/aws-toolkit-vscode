@@ -11,6 +11,7 @@ import globals from '../../shared/extensionGlobals'
 import { getIconCodeForInstanceStatus } from '../utils'
 import { Ec2Selection } from '../prompter'
 import { Ec2ParentNode } from './ec2ParentNode'
+import { Commands } from '../../shared/vscode/commands'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
@@ -24,7 +25,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly client: Ec2Client,
         public override readonly regionCode: string,
         private readonly partitionId: string,
-        protected instance: Ec2Instance
+        public instance: Ec2Instance
     ) {
         super('')
         this.updateInstance(instance)
@@ -37,6 +38,14 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
+
+        if (this.isPending()) {
+            this.parent.startPolling(this.InstanceId)
+        }
+    }
+
+    public isPending(): boolean {
+        return this.getStatus() != 'running' && this.getStatus() != 'stopped'
     }
 
     public async updateStatus() {
@@ -67,6 +76,10 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         }
     }
 
+    public getStatus(): string {
+        return this.instance.status!
+    }
+
     public get name(): string {
         return getNameOfInstance(this.instance) ?? `(no name)`
     }
@@ -79,5 +92,10 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return `arn:${this.partitionId}:ec2:${
             this.regionCode
         }:${globals.awsContext.getCredentialAccountId()}:instance/${this.InstanceId}`
+    }
+
+    public async refreshNode(): Promise<void> {
+        await this.updateStatus()
+        Commands.vscode().execute('aws.refreshAwsExplorerNode', this)
     }
 }

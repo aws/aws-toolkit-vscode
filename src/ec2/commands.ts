@@ -11,10 +11,8 @@ import { Ec2Selection } from './prompter'
 import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 import { copyToClipboard } from '../shared/utilities/messages'
 
-export function refreshExplorer(node?: Ec2Node) {
-    if (node) {
-        node instanceof Ec2InstanceNode ? node.parent.refreshNode() : node.refreshNode()
-    }
+export async function refreshExplorer(node?: Ec2Node) {
+    await node?.refreshNode()
 }
 
 export async function openTerminal(node?: Ec2Node) {

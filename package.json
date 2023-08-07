@@ -1122,15 +1122,15 @@
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "when": "aws.isDevMode"
+                    "when": "false"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "false"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "whem": "aws.isDevMode"
+                    "when": "false"
                 },
                 {
                     "command": "aws.dev.openMenu",
@@ -1359,22 +1359,22 @@
                 {
                     "command": "aws.ec2.startInstance",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Stopped|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2StoppedNode)$/"
                 },
                 {
                     "command": "aws.ec2.startInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Stopped|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2StoppedNode)$/"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
