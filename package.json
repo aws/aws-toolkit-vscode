@@ -1337,6 +1337,16 @@
                     "when": "viewItem == awsEc2Node"
                 },
                 {
+                    "command": "aws.ec2.openRemoteConnection",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
+                    "command": "aws.ec2.openRemoteConnection",
+                    "group": "inline@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
                     "command": "aws.ec2.startInstance",
                     "group": "0@1",
                     "when": "viewItem == awsEc2Node"
@@ -2112,6 +2122,7 @@
             {
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
+                "icon": "$(remote-explorer)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
