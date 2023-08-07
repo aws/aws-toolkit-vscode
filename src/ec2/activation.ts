@@ -8,7 +8,14 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
-import { openRemoteConnection, openTerminal, rebootInstance, startInstance, stopInstance } from './commands'
+import {
+    openRemoteConnection,
+    openTerminal,
+    rebootInstance,
+    startInstance,
+    stopInstance,
+    refreshExplorer,
+} from './commands'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
@@ -28,14 +35,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.startInstance', async (node?: Ec2Node) => {
             await startInstance(node)
+            refreshExplorer(node)
         }),
 
         Commands.register('aws.ec2.stopInstance', async (node?: Ec2Node) => {
             await stopInstance(node)
+            refreshExplorer(node)
         }),
 
         Commands.register('aws.ec2.rebootInstance', async (node?: Ec2Node) => {
             await rebootInstance(node)
+            refreshExplorer(node)
         })
     )
 }
