@@ -137,15 +137,14 @@ export class Ec2ConnectionManager {
                     code: 'EC2SSMPermission',
                     documentationUri: this.policyDocumentationUri,
                 })
-            } else {
-                const timeout = new Timeout(policyAttachDelay)
-
-                function delay(ms: number) {
-                    return new Promise(resolve => setTimeout(resolve, ms))
-                }
-                await showMessageWithCancel(`Adding Inline Policy to ${IamRole!.Arn}`, timeout)
-                await delay(policyAttachDelay).finally(() => timeout.cancel())
             }
+            const timeout = new Timeout(policyAttachDelay)
+
+            function delay(ms: number) {
+                return new Promise(resolve => setTimeout(resolve, ms))
+            }
+            await showMessageWithCancel(`Adding Inline Policy to ${IamRole!.Arn}`, timeout)
+            await delay(policyAttachDelay).finally(() => timeout.cancel())
         }
     }
 
