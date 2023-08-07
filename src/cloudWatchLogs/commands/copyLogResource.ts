@@ -12,15 +12,14 @@ import { copyToClipboard } from '../../shared/utilities/messages'
 
 export async function copyLogResource(uri?: vscode.Uri): Promise<void> {
     try {
-
         if (!uri) {
             // No URI = used command palette as entrypoint, attempt to get URI from active editor
             // should work correctly under any normal circumstances since the action only appears in command palette when the editor is a CloudWatch Logs editor
             uri = vscode.window.activeTextEditor?.document.uri
             if (!uri) {
-                throw new Error("no active text editor, or undefined URI")
+                throw new Error('no active text editor, or undefined URI')
             }
-        } 
+        }
         const parsedUri = parseCloudWatchLogsUri(uri)
         const resourceName = isLogStreamUri(uri) ? parsedUri.logGroupInfo.streamName : parsedUri.logGroupInfo.groupName
 

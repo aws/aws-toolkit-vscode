@@ -241,6 +241,51 @@ export async function assertTextEditorContains(contents: string): Promise<void |
 }
 
 /**
+ * Create and open an editor with provided fileText, fileName and options. If folder is not provided,
+ * will create a temp worksapce folder which will be automatically deleted in testing environment
+ * @param fileText The supplied text to fill this file with
+ * @param fileName The name of the file to save it as. Include the file extension here.
+ *
+ * @returns TextEditor that was just opened
+ */
+export async function openATextEditorWithText(
+    fileText: string,
+    fileName: string,
+    folder?: string,
+    options?: vscode.TextDocumentShowOptions
+): Promise<vscode.TextEditor> {
+    const myWorkspaceFolder = folder ? folder : (await createTestWorkspaceFolder()).uri.fsPath
+    const filePath = path.join(myWorkspaceFolder, fileName)
+    toFile(fileText, filePath)
+
+    const textDocument = await vscode.workspace.openTextDocument(filePath)
+
+    return await vscode.window.showTextDocument(textDocument, options)
+}
+
+/**
+ * Waits for _any_ tab to appear and have the desired count
+ */
+export async function assertTabCount(size: number): Promise<void | never> {
+    const tabs = await waitUntil(
+        async () => {
+            const tabs = vscode.window.tabGroups.all
+                .map(tabGroup => tabGroup.tabs)
+                .reduce((acc, curVal) => acc.concat(curVal), [])
+
+            if (tabs.length === size) {
+                return tabs
+            }
+        },
+        { interval: 5 }
+    )
+
+    if (!tabs) {
+        throw new Error('No desired tabs found')
+    }
+}
+
+/**
  * Executes the "openEditors.closeAll" command and asserts that all visible
  * editors were closed after waiting.
  */
@@ -249,31 +294,34 @@ export async function closeAllEditors(): Promise<void> {
     // Note: `workbench.action.closeAllEditors` is unreliable.
     const closeAllCmd = 'openEditors.closeAll'
 
-    // Output channels are named with the prefix 'extension-output'
+    // Output channels are named with prefix "extension-output". https://github.com/microsoft/vscode/issues/148993#issuecomment-1167654358
     // Maybe we can close these with a command?
     const ignorePatterns = [/extension-output/, /tasks/]
+    const editors: vscode.TextEditor[] = []
 
     const noVisibleEditor: boolean | undefined = await waitUntil(
         async () => {
             // Race: documents could appear after the call to closeAllEditors(), so retry.
             await vscode.commands.executeCommand(closeAllCmd)
-            const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
+            editors.length = 0
+            editors.push(
+                ...vscode.window.visibleTextEditors.filter(
+                    editor => !ignorePatterns.find(p => p.test(editor.document.fileName))
+                )
             )
 
-            return visibleEditors.length === 0
+            return editors.length === 0
         },
         {
-            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
+            timeout: 5000, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
             interval: 250,
             truthy: true,
         }
     )
 
     if (!noVisibleEditor) {
-        const editors = vscode.window.visibleTextEditors.map(editor => `\t${editor.document.fileName}`)
-
-        throw new Error(`The following editors were still open after closeAllEditors():\n${editors.join('\n')}`)
+        const editorNames = editors.map(editor => `\t${editor.document.fileName}`)
+        throw new Error(`Editors were still open after closeAllEditors():\n${editorNames.join('\n')}`)
     }
 }
 
@@ -339,4 +387,18 @@ export function captureEventOnce<T>(event: vscode.Event<T>, timeout?: number): P
             setTimeout(stop, timeout)
         }
     })
+}
+
+/**
+ * Shuffle a list, Fisher-Yates Sorting Algorithm
+ */
+export function shuffleList<T>(list: T[]): T[] {
+    const shuffledList = [...list]
+
+    for (let i = shuffledList.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[shuffledList[i], shuffledList[j]] = [shuffledList[j], shuffledList[i]]
+    }
+
+    return shuffledList
 }
