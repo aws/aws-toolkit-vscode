@@ -201,7 +201,7 @@ export async function promptToAddPolicies(client: IamClient, roleArn: string): P
 }
 
 function getFormattedSsmActions() {
-    const formattedActions = minimumSsmActions.map(action => `${action},\n`).reduce((l, r) => l + r)
+    const formattedActions = minimumSsmActions.map(action => `"${action}",\n`).reduce((l, r) => l + r)
 
     return formattedActions.slice(0, formattedActions.length - 2)
 }
@@ -212,10 +212,7 @@ function getSsmPolicyDocument() {
             "Statement": {
                 "Effect": "Allow",
                 "Action": [
-                    "ssmmessages:CreateControlChannel",
-                    "ssmmessages:CreateDataChannel",
-                    "ssmmessages:OpenControlChannel",
-                    "ssmmessages:OpenDataChannel"
+                    ${getFormattedSsmActions()}
                 ],
                 "Resource": "*"
                 }
