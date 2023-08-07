@@ -17,7 +17,7 @@ import {
     ensureDependencies,
     getDeniedSsmActions,
     openRemoteTerminal,
-    promptToAddPolicies,
+    promptToAddInlinePolicy,
 } from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
@@ -38,7 +38,6 @@ interface Ec2RemoteEnv extends VscodeRemoteConnection {
 
 const ec2ConnectScriptPrefix = 'ec2_connect'
 const hostNamePrefix = 'ec2-'
-const policyAttachDelay = 5000
 
 export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
@@ -128,7 +127,7 @@ export class Ec2ConnectionManager {
         const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
         if (!hasPermission) {
-            const policiesAdded = await promptToAddPolicies(this.iamClient, IamRole!.Arn!)
+            const policiesAdded = await promptToAddInlinePolicy(this.iamClient, IamRole!.Arn!)
 
             if (!policiesAdded) {
                 const message = `Did not add permissions. Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
@@ -139,13 +138,6 @@ export class Ec2ConnectionManager {
                     documentationUri: this.policyDocumentationUri,
                 })
             }
-            const timeout = new Timeout(policyAttachDelay)
-
-            function delay(ms: number) {
-                return new Promise(resolve => setTimeout(resolve, ms))
-            }
-            await showMessageWithCancel(`Adding Inline Policy to ${IamRole!.Arn}`, timeout)
-            await delay(policyAttachDelay).finally(() => timeout.cancel())
         }
     }
 

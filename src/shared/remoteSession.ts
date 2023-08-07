@@ -35,6 +35,8 @@ const minimumSsmActions = [
     'ssmmessages:OpenDataChannel',
 ]
 
+const policyAttachDelay = 5000
+
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)
 
@@ -187,17 +189,29 @@ export async function getDeniedSsmActions(client: IamClient, roleArn: string): P
     return deniedActions
 }
 
-export async function promptToAddPolicies(client: IamClient, roleArn: string): Promise<boolean> {
+export async function promptToAddInlinePolicy(client: IamClient, roleArn: string): Promise<boolean> {
     const promptText = `${
         getIdeProperties().company
     } Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
     const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
 
     if (confirmation) {
-        addSsmActionsToInlinePolicy(client, roleArn)
+        await addInlinePolicyWithDelay(client, roleArn)
     }
 
     return confirmation
+}
+
+async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
+    const timeout = new Timeout(policyAttachDelay)
+    await showMessageWithCancel(`Adding Inline Policy to ${roleArn}`, timeout)
+    await addSsmActionsToInlinePolicy(client, roleArn)
+
+    function delay(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+    }
+
+    await delay(policyAttachDelay).finally(() => timeout.cancel())
 }
 
 function getFormattedSsmActions() {
