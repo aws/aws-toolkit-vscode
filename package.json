@@ -1121,6 +1121,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.openTerminal",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.ec2.startInstance",
                     "when": "aws.isDevMode"
                 },
@@ -1349,7 +1353,42 @@
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.openTerminal",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.startInstance",
+                    "group": "0@1",
+                    "when": "viewItem =~ /^(awsEc2(Stopped|Pending)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.startInstance",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2(Stopped|Pending)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.stopInstance",
+                    "group": "0@1",
+                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.stopInstance",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
+                    "group": "0@1",
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -2122,6 +2161,7 @@
             {
                 "command": "aws.ec2.startInstance",
                 "title": "%AWS.command.ec2.startInstance%",
+                "icon": "$(debug-start)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2132,6 +2172,7 @@
             {
                 "command": "aws.ec2.stopInstance",
                 "title": "%AWS.command.ec2.stopInstance%",
+                "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2142,6 +2183,7 @@
             {
                 "command": "aws.ec2.rebootInstance",
                 "title": "%AWS.command.ec2.rebootInstance%",
+                "icon": "$(debug-restart)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
