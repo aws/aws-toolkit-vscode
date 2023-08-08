@@ -15,12 +15,8 @@ class MockEc2Client extends Ec2Client {
         return instanceId.split('-')[0]
     }
 
-    public async testAddNamesToInstances(instances: EC2.Instance[]) {
-        return await (await this.addNamesToInstances(intoCollection(instances))).promise()
-    }
-
-    public async testAddStatusesToInstances(instances: EC2.Instance[]) {
-        return await (await this.addStatusesToInstances(intoCollection(instances))).promise()
+    public async testUpdateInstancesDetail(instances: EC2.Instance[]) {
+        return await (await this.updateInstancesDetail(intoCollection(instances))).promise()
     }
 }
 
@@ -116,53 +112,32 @@ describe('extractInstancesFromReservations', function () {
         })
 })
 
-describe('addStatusesToInstances', async function () {
+describe('updateInstancesDetail', async function () {
     let client: MockEc2Client
 
     before(function () {
         client = new MockEc2Client('test-region')
     })
 
-    it('adds appropriate status field to the instance', async function () {
-        const actualResult = await client.testAddStatusesToInstances(completeInstanceList)
+    it('adds appropriate status and name field to the instance', async function () {
+        const actualResult = await client.testUpdateInstancesDetail(completeInstanceList)
         const expectedResult = [
-            { InstanceId: 'running-1', status: 'running', Tags: [{ Key: 'Name', Value: 'name1' }] },
-            { InstanceId: 'stopped-2', status: 'stopped', Tags: [{ Key: 'Name', Value: 'name2' }] },
-            { InstanceId: 'pending-3', status: 'pending', Tags: [{ Key: 'Name', Value: 'name3' }] },
-            { InstanceId: 'running-4', status: 'running', Tags: [{ Key: 'Name', Value: 'name4' }] },
-        ]
-
-        assert.deepStrictEqual(actualResult, expectedResult)
-    })
-})
-
-describe('addNamesToInstances', async function () {
-    let client: MockEc2Client
-
-    before(function () {
-        client = new MockEc2Client('test-region')
-    })
-
-    it('adds corresponding name to instance', async function () {
-        const actualResult = await client.testAddNamesToInstances(completeInstanceList)
-
-        const expectedResult = [
-            { InstanceId: 'running-1', name: 'name1', Tags: [{ Key: 'Name', Value: 'name1' }] },
-            { InstanceId: 'stopped-2', name: 'name2', Tags: [{ Key: 'Name', Value: 'name2' }] },
-            { InstanceId: 'pending-3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
-            { InstanceId: 'running-4', name: 'name4', Tags: [{ Key: 'Name', Value: 'name4' }] },
+            { InstanceId: 'running-1', name: 'name1', status: 'running', Tags: [{ Key: 'Name', Value: 'name1' }] },
+            { InstanceId: 'stopped-2', name: 'name2', status: 'stopped', Tags: [{ Key: 'Name', Value: 'name2' }] },
+            { InstanceId: 'pending-3', name: 'name3', status: 'pending', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-4', name: 'name4', status: 'running', Tags: [{ Key: 'Name', Value: 'name4' }] },
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
     })
 
     it('handles incomplete and missing tag fields', async function () {
-        const actualResult = await client.testAddNamesToInstances(incomepleteInstanceList)
+        const actualResult = await client.testUpdateInstancesDetail(incomepleteInstanceList)
 
         const expectedResult = [
-            { InstanceId: 'running-1' },
-            { InstanceId: 'stopped-2', Tags: [] },
-            { InstanceId: 'pending-3', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
+            { InstanceId: 'running-1', status: 'running' },
+            { InstanceId: 'stopped-2', status: 'stopped', Tags: [] },
+            { InstanceId: 'pending-3', status: 'pending', name: 'name3', Tags: [{ Key: 'Name', Value: 'name3' }] },
         ]
 
         assert.deepStrictEqual(actualResult, expectedResult)
@@ -217,5 +192,18 @@ describe('instanceHasName', function () {
         assert.deepStrictEqual(true, instanceHasName(instances[1]))
         assert.deepStrictEqual(false, instanceHasName(instances[2]))
         assert.deepStrictEqual(true, instanceHasName(instances[3]))
+    })
+})
+
+describe('ensureInstanceNotInStatus', async function () {
+    it('only throws error if instance is in status', async function () {
+        const client = new MockEc2Client('test-region')
+
+        await client.ensureInstanceNotInStatus('stopped-instance', 'running')
+
+        try {
+            await client.ensureInstanceNotInStatus('running-instance', 'running')
+            assert.ok(false)
+        } catch {}
     })
 })

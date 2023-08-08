@@ -35,15 +35,21 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-You can run the extension from Visual Studio Code:
+To run the extension from VSCode as a Node.js app:
 
 1. Select the Run panel from the sidebar.
 2. From the dropdown at the top of the Run pane, choose `Extension`.
-3. Press `F5` to launch a new instance of Visual Studio Code with the extension installed and the debugger attached.
+3. Press `F5` to launch a new instance of VSCode with the extension installed and the debugger attached.
+
+To run the extension from VSCode in "web mode" (a browser app, or "PWA"):
+
+1. Select the Run panel from the sidebar.
+2. From the dropdown at the top of the Run pane, choose `Extension (web)`.
+3. Press `F5` to launch a new instance of VSCode (web mode) with the extension installed and the debugger attached.
 
 ### Build
 
-When you launch the extension or run tests from Visual Studio Code, it will automatically build the extension and watch for changes.
+When you launch the extension or run tests from VSCode, it will automatically build the extension and watch for changes.
 
 You can also use these NPM tasks (see `npm run` for the full list):
 
@@ -118,7 +124,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from Visual Studio Code:
+You can run tests directly from VSCode:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -343,7 +349,7 @@ Webviews can be hot-reloaded (updated without restarting the extension) by runni
 
 ### Font generation
 
-For extensions to contribute their own codicons, VS Code requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
+For extensions to contribute their own codicons, VSCode requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 
@@ -372,6 +378,18 @@ Note therefore:
    AWS Toolkit release doesn't depend on them.
 2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
    `master`). Changes to other branches won't affect the marketplace page.
+
+## Using new vscode APIs
+
+The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
+is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+
+But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
+
+1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
+2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
+
+Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
 
 ## Importing icons from other open source repos
 

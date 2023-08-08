@@ -3,23 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
+import { Ec2Instance } from '../shared/clients/ec2Client'
 
-export interface Ec2Selection {
-    instanceId: string
-    region: string
-}
-
-export async function isEc2SelectionRunning(selection: Ec2Selection): Promise<boolean> {
-    const client = new Ec2Client(selection.region)
-    return await client.isInstanceRunning(selection.instanceId)
-}
-
-export function getIconForInstanceStatus(instance: Ec2Instance) {
-    return `$(${getIconCodeForInstanceStatus(instance)})`
-}
-
-export function getIconCodeForInstanceStatus(instance: Ec2Instance) {
+export function getIconCode(instance: Ec2Instance) {
     if (instance.status === 'running') {
         return 'pass'
     }

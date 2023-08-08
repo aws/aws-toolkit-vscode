@@ -1,0 +1,10 @@
+{
+	"date": "2023-07-05",
+	"version": "1.80.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix function that determined who was a first time user"
+		}
+	]
+}

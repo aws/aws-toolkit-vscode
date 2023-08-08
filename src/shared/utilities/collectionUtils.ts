@@ -508,4 +508,3 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
         return pages[pages.length - 1]
     })
 }
-

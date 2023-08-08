@@ -4,20 +4,24 @@
  */
 
 import { RegionSubmenu, RegionSubmenuResponse } from '../shared/ui/common/regionSubmenu'
-import { Ec2Selection, getIconForInstanceStatus } from './utils'
 import { DataQuickPickItem } from '../shared/ui/pickerPrompter'
 import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
+import { getIconCode } from './utils'
 
 export type instanceFilter = (instance: Ec2Instance) => boolean
+export interface Ec2Selection {
+    instanceId: string
+    region: string
+}
 
 export class Ec2Prompter {
     public constructor(protected filter?: instanceFilter) {}
 
     protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
-        const icon = getIconForInstanceStatus(instance)
+        const icon = `$(${getIconCode(instance)})`
         return {
             label: `${instance.name ?? '(no name)'} \t ${icon} ${instance.status!.toUpperCase()}`,
             detail: instance.InstanceId,

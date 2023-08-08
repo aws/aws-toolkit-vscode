@@ -44,7 +44,6 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 
-const logger = getLogger()
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
@@ -238,7 +237,7 @@ export class AuthWebview extends VueWebview {
                 return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
             }
 
-            logger.error('Failed to setup.', e)
+            getLogger().error('AuthWebview: Failed to setup: %s', (e as Error).message)
             return { id: 'defaultFailure', text: 'Failed to setup.' }
         }
     }
