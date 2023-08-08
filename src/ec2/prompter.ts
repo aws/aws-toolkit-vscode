@@ -9,7 +9,7 @@ import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { AsyncCollection } from '../shared/utilities/asyncCollection'
-import { getIconForInstanceStatus } from './utils'
+import { getIconCode } from './utils'
 
 export type instanceFilter = (instance: Ec2Instance) => boolean
 export interface Ec2Selection {
@@ -21,7 +21,7 @@ export class Ec2Prompter {
     public constructor(protected filter?: instanceFilter) {}
 
     protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
-        const icon = getIconForInstanceStatus(instance)
+        const icon = `$(${getIconCode(instance)})`
         return {
             label: `${icon} \t ${instance.name ?? '(no name)'}`,
             detail: instance.InstanceId,

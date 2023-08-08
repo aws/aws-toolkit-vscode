@@ -1121,6 +1121,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.openTerminal",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.ec2.startInstance",
                     "when": "false"
                 },

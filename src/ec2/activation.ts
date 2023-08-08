@@ -36,17 +36,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.startInstance', async (node?: Ec2Node) => {
             await startInstance(node)
-            await refreshExplorer(node)
+            refreshExplorer(node)
         }),
 
         Commands.register('aws.ec2.stopInstance', async (node?: Ec2Node) => {
             await stopInstance(node)
-            await refreshExplorer(node)
+            refreshExplorer(node)
         }),
 
         Commands.register('aws.ec2.rebootInstance', async (node?: Ec2Node) => {
             await rebootInstance(node)
-            await refreshExplorer(node)
+            refreshExplorer(node)
         })
     )
 }
