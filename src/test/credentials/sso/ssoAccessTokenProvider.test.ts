@@ -8,7 +8,7 @@ import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { installFakeClock } from '../../testUtil'
-import { getCache, getTokenCacheFile, isDirSafeToDeleteFrom, getRegistrationCacheFile } from '../../../auth/sso/cache'
+import { getCache } from '../../../auth/sso/cache'
 
 import { instance, mock, when, anything, reset } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
@@ -122,74 +122,6 @@ describe('SsoAccessTokenProvider', function () {
             await sut.getToken()
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
-        })
-
-        describe('does not return old tokens', function () {
-            // A file is old when the creation time is under a certain date
-            const oldTime: Date = new Date(2023, 3, 10) // April 10, 2023
-            const nonOldTime: Date = new Date(2023, 3, 15) // April 15, 2023
-
-            function oldBirthtime(file: fs.PathLike): fs.Stats {
-                return { birthtimeMs: oldTime.getTime(), birthtime: oldTime } as fs.Stats
-            }
-
-            /** Windows edge case where birthtime does not exist, instead check ctime */
-            function noBirthtimeOldCTime(file: fs.PathLike): fs.Stats {
-                return { birthtimeMs: 0, ctime: oldTime } as fs.Stats
-            }
-
-            const oldStatsFuncs = [oldBirthtime, noBirthtimeOldCTime]
-
-            oldStatsFuncs.forEach(invalidStatsFunc => {
-                it(`deletes old invalid tokens when ${invalidStatsFunc.name} then returns undefined`, async function () {
-                    await cache.token.save(startUrl, { region, startUrl, token: createToken(hourInMs) })
-                    const tokenCacheFile = getTokenCacheFile(tempDir, startUrl)
-                    assert.strictEqual(fs.existsSync(tokenCacheFile), true)
-
-                    // Set the func which returns Stats that are always 'invalid'
-                    cache = getCache(tempDir, invalidStatsFunc)
-
-                    assert.strictEqual(await cache.token.load(startUrl), undefined)
-                    assert.strictEqual(fs.existsSync(tokenCacheFile), false)
-                })
-
-                it(`deletes old invalid registrations when ${invalidStatsFunc.name} then returns undefined`, async function () {
-                    const registrationKey = { region }
-                    await cache.registration.save(registrationKey, createRegistration(hourInMs))
-                    const registrationCacheFile = getRegistrationCacheFile(tempDir, registrationKey)
-                    assert.strictEqual(fs.existsSync(registrationCacheFile), true)
-
-                    // Set the func which returns Stats that are always 'invalid'
-                    cache = getCache(tempDir, invalidStatsFunc)
-                    assert.strictEqual(await cache.token.load(startUrl), undefined)
-                    assert.strictEqual(fs.existsSync(registrationCacheFile), false)
-                })
-            })
-
-            function nonOldBirthtime(file: fs.PathLike): fs.Stats {
-                return { birthtimeMs: nonOldTime.getTime() } as fs.Stats
-            }
-
-            it(`returns token from non-old file`, async function () {
-                const token = createToken(hourInMs)
-                await cache.token.save(startUrl, { region, startUrl, token })
-                const tokenCacheFile = getTokenCacheFile(tempDir, startUrl)
-                assert.strictEqual(fs.existsSync(tokenCacheFile), true)
-
-                cache = getCache(tempDir, nonOldBirthtime)
-
-                assert.deepStrictEqual((await cache.token.load(startUrl))!.token, token)
-                assert.strictEqual(fs.existsSync(tokenCacheFile), true)
-            })
-
-            it('isDirSafeToDeleteFrom()', function () {
-                assert.ok(!isDirSafeToDeleteFrom('.'))
-                assert.ok(!isDirSafeToDeleteFrom('/'))
-                assert.ok(!isDirSafeToDeleteFrom('not/an/absolute/path'))
-                assert.ok(!isDirSafeToDeleteFrom('/a/b/c')) // Too shallow
-
-                assert.ok(isDirSafeToDeleteFrom('/a/b/c/d'))
-            })
         })
 
         it('returns `undefined` for expired tokens that cannot be refreshed', async function () {

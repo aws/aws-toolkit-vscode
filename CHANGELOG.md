@@ -1,3 +1,23 @@
+## 1.83.0 2023-08-03
+
+- **Feature** IAM Identity Center (SSO): log a warning if SSO user is not linked to an account
+
+## 1.82.0 2023-07-26
+
+- **Bug Fix** CodeWhisperer: issue with fetching enhanced file context
+- **Bug Fix** User setting for "Share CodeWhisperer Content With AWS" was not reflected in workspace-level settings
+- **Feature** CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching
+- **Feature** Lambda "Download" action now expects ".mjs" extension for Node18+ lambdas
+
+## 1.81.0 2023-07-13
+
+- **Bug Fix** codewhisperer: improper request format when sending empty supplemental context
+- **Feature** CodeWhisperer: Improve suggestion quality with enhanced file context fetching
+
+## 1.80.0 2023-07-05
+
+- **Bug Fix** Fix function that determined who was a first time user
+
 ## 1.79.0 2023-06-30
 
 - **Feature** New Add Connection workflow

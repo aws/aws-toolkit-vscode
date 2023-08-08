@@ -8,6 +8,7 @@ import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
+import { ToolkitError } from '../errors'
 
 export type IamClient = ClassToInterfaceType<DefaultIamClient>
 
@@ -77,11 +78,30 @@ export class DefaultIamClient {
         return tokens[tokens.length - 1]
     }
 
-    public async listAttachedRolePolicies(arn: string): Promise<IAM.ListAttachedRolePoliciesResponse> {
+    public async listAttachedRolePolicies(arn: string): Promise<IAM.AttachedPolicy[]> {
         const client = await this.createSdkClient()
         const roleName = this.getFriendlyName(arn)
-        const response = await client.listAttachedRolePolicies({ RoleName: roleName }).promise()
 
-        return response
+        const requester = async (request: IAM.ListAttachedRolePoliciesRequest) =>
+            client.listAttachedRolePolicies(request).promise()
+
+        const collection = pageableToCollection(requester, { RoleName: roleName }, 'Marker', 'AttachedPolicies')
+            .flatten()
+            .filter(p => p !== undefined)
+            .map(p => p!)
+
+        const policies = await collection.promise()
+
+        return policies
+    }
+
+    public async getIAMRoleFromInstanceProfile(instanceProfileArn: string): Promise<IAM.Role> {
+        const client = await this.createSdkClient()
+        const instanceProfileName = this.getFriendlyName(instanceProfileArn)
+        const response = await client.getInstanceProfile({ InstanceProfileName: instanceProfileName }).promise()
+        if (response.InstanceProfile.Roles.length === 0) {
+            throw new ToolkitError(`Failed to find IAM role associated with Instance profile ${instanceProfileArn}`)
+        }
+        return response.InstanceProfile.Roles[0]
     }
 }

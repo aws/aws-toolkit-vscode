@@ -8,9 +8,10 @@ import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import globals from '../../shared/extensionGlobals'
-import { Ec2Selection, getIconCodeForInstanceStatus } from '../utils'
-import { Ec2ParentNode } from './ec2ParentNode'
 import { Commands } from '../../shared/vscode/commands'
+import { getIconCode } from '../utils'
+import { Ec2Selection } from '../prompter'
+import { Ec2ParentNode } from './ec2ParentNode'
 
 export const Ec2InstanceRunningContext = 'awsEc2RunningNode'
 export const Ec2InstanceStoppedContext = 'awsEc2StoppedNode'
@@ -28,13 +29,14 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     ) {
         super('')
         this.updateInstance(instance)
+        this.id = this.InstanceId
     }
 
     public updateInstance(newInstance: Ec2Instance) {
         this.setInstance(newInstance)
         this.label = `${this.name} (${this.InstanceId})`
         this.contextValue = this.getContext()
-        this.iconPath = new vscode.ThemeIcon(getIconCodeForInstanceStatus(this.instance))
+        this.iconPath = new vscode.ThemeIcon(getIconCode(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
 
         if (this.isPending()) {
