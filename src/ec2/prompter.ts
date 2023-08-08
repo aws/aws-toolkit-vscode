@@ -22,7 +22,7 @@ export class Ec2Prompter {
 
     public static getLabel(instance: Ec2Instance) {
         const icon = `$(${getIconCode(instance)})`
-        return `${instance.name ?? '(no name)'} \t ${icon} ${instance.status!.toUpperCase()}`
+        return `${instance.name ?? '(no name)'} \t ${icon} ${instance.status?.toUpperCase()}`
     }
 
     protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
