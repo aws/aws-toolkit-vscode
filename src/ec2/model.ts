@@ -30,9 +30,6 @@ interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
 }
 
-const ec2ConnectScriptPrefix = 'ec2_connect'
-const hostNamePrefix = 'ec2-'
-
 export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
     protected ec2Client: Ec2Client
@@ -177,9 +174,8 @@ export class Ec2ConnectionManager {
         const remoteUser = await this.getRemoteUser(selection.instanceId)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
-        const fullHostName = `${hostNamePrefix}${selection.instanceId}`
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath, remoteUser)
+            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
@@ -195,7 +191,8 @@ export class Ec2ConnectionManager {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPath = await this.configureSshKeys(selection, remoteUser)
-        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, keyPath)
+        const hostNamePrefix = 'aws-ec2-'
+        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, 'ec2-connect', keyPath)
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -216,7 +213,7 @@ export class Ec2ConnectionManager {
         })
 
         return {
-            hostname: selection.instanceId,
+            hostname: `${hostNamePrefix}${selection.instanceId}`,
             envProvider,
             sshPath: ssh,
             vscPath: vsc,
