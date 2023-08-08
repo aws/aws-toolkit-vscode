@@ -58,8 +58,8 @@ describe('ec2ParentNode', function () {
     beforeEach(function () {
         getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
         defaultInstances = [
-            { name: 'firstOne', InstanceId: '0' },
-            { name: 'secondOne', InstanceId: '1' },
+            { name: 'firstOne', InstanceId: '0', status: 'running' },
+            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
         ]
 
         testNode = new Ec2ParentNode(testRegion, testPartition, client)
