@@ -243,7 +243,7 @@ export class Ec2ConnectionManager {
         const sshPubKey = await sshKeyPair.getPublicKey()
 
         const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
-        const command = `echo "${sshKey}" > ${remoteAuthorizedKeysPaths}`
+        const command = `echo "${sshPubKey}" > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
 
         await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {
