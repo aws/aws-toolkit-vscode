@@ -7,11 +7,11 @@ import { Ec2Instance } from '../shared/clients/ec2Client'
 
 export function getIconCode(instance: Ec2Instance) {
     if (instance.status === 'running') {
-        return 'check'
+        return 'pass'
     }
 
     if (instance.status === 'stopped') {
-        return 'stop'
+        return 'circle-slash'
     }
 
     return 'loading~spin'

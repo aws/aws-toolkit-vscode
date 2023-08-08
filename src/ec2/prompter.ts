@@ -23,7 +23,7 @@ export class Ec2Prompter {
     protected static asQuickPickItem(instance: Ec2Instance): DataQuickPickItem<string> {
         const icon = `$(${getIconCode(instance)})`
         return {
-            label: `${icon} \t ${instance.name ?? '(no name)'}`,
+            label: `${instance.name ?? '(no name)'} \t ${icon} ${instance.status!.toUpperCase()}`,
             detail: instance.InstanceId,
             data: instance.InstanceId,
         }

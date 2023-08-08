@@ -55,6 +55,7 @@ describe('Ec2Prompter', async function () {
             const testInstance = {
                 name: 'testName',
                 InstanceId: 'testInstanceId',
+                status: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
@@ -69,6 +70,7 @@ describe('Ec2Prompter', async function () {
         it('returns QuickPickItem for non-named instances', function () {
             const testInstance = {
                 InstanceId: 'testInstanceId',
+                status: 'running',
             }
 
             const result = prompter.testAsQuickPickItem(testInstance)
@@ -117,14 +119,17 @@ describe('Ec2Prompter', async function () {
                 {
                     InstanceId: '1',
                     name: 'first',
+                    status: 'running',
                 },
                 {
                     InstanceId: '2',
                     name: 'second',
+                    status: 'running',
                 },
                 {
                     InstanceId: '3',
                     name: 'third',
+                    status: 'running',
                 },
             ]
             prompter.unsetFilter()
