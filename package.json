@@ -1348,12 +1348,12 @@
                 {
                     "command": "aws.ec2.openRemoteConnection",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
                     "command": "aws.ec2.openRemoteConnection",
                     "group": "inline@1",
-                    "when": "viewItem == awsEc2Node"
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
                     "command": "aws.ec2.startInstance",
