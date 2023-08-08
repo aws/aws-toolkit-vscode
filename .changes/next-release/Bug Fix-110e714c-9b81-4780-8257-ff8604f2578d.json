@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "misleading error when downloading a Lambda to a workspace without a folder"
+}

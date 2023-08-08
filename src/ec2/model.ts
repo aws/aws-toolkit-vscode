@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { Session } from 'aws-sdk/clients/ssm'
 import { IAM, SSM } from 'aws-sdk'
-import { Ec2Selection } from './utils'
+import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
@@ -151,7 +151,7 @@ export class Ec2ConnectionManager {
         const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
         const shellArgs = [JSON.stringify(session), selection.region, 'StartSession']
         const terminalOptions = {
-            name: selection.region + '/' + selection.instanceId,
+            name: `${selection.region}/${selection.instanceId}`,
             shellPath: ssmPlugin,
             shellArgs: shellArgs,
         }

@@ -64,6 +64,7 @@ export class SsmClient {
 
     public async getTargetPlatformName(target: string): Promise<string> {
         const instanceInformation = await this.describeInstance(target)
+
         return instanceInformation.PlatformName!
     }
 
