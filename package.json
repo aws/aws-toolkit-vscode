@@ -1362,32 +1362,17 @@
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Stopped|Pending)Node)$/"
-                },
-                {
-                    "command": "aws.ec2.startInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Stopped|Pending)Node)$/"
-                },
-                {
-                    "command": "aws.ec2.stopInstance",
-                    "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
+                    "when": "viewItem =~ /^(awsEc2StoppedNode)$/"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2(Running|Pending)Node)$/"
-                },
-                {
-                    "command": "aws.ec2.rebootInstance",
-                    "group": "0@1",
                     "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
-                    "group": "inline@1",
+                    "group": "0@1",
                     "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
