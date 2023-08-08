@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { v4 as uuidv4 } from 'uuid'
 import globals from '../shared/extensionGlobals'
 
 interface SessionStorage {
@@ -50,7 +49,7 @@ export class Storage {
         const sessionStorage = this.getSessionStorage()
 
         // TODO do we create this on the VSCode side or on the server side? server side probably makes the most sense
-        const sessionId = uuidv4()
+        const sessionId = '1234'
 
         // Re-generated? Answer the above TODO first
         if (sessionId in sessionStorage) {
