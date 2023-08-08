@@ -240,7 +240,7 @@ export class Ec2ConnectionManager {
         sshKeyPair: SshKeyPair,
         remoteUser: string
     ): Promise<void> {
-        const sshKey = await sshKeyPair.getPublicKey()
+        const sshPubKey = await sshKeyPair.getPublicKey()
 
         const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
         const command = `echo "${sshKey}" > ${remoteAuthorizedKeysPaths}`
