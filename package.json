@@ -1333,26 +1333,6 @@
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.openTerminal",
-                    "group": "inline@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.startInstance",
-                    "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.stopInstance",
-                    "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.rebootInstance",
-                    "group": "0@1",
                     "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
@@ -1362,13 +1342,18 @@
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "group": "0@1",
+                    "group": "inline@1",
                     "when": "viewItem =~ /^(awsEc2StoppedNode)$/"
                 },
                 {
                     "command": "aws.ec2.startInstance",
-                    "group": "inline@1",
+                    "group": "0@1",
                     "when": "viewItem =~ /^(awsEc2StoppedNode)$/"
+                },
+                {
+                    "command": "aws.ec2.stopInstance",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
@@ -1376,7 +1361,7 @@
                     "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
                 {
-                    "command": "aws.ec2.stopInstance",
+                    "command": "aws.ec2.rebootInstance",
                     "group": "inline@1",
                     "when": "viewItem =~ /^(awsEc2RunningNode)$/"
                 },
@@ -1384,6 +1369,11 @@
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
                     "when": "viewItem =~ /^(awsEc2RunningNode)$/"
+                },
+                {
+                    "command": "aws.ec2.linkToLaunchInstance",
+                    "group": "inline@1",
+                    "when": "viewItem == awsEc2ParentNode"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -1477,7 +1467,7 @@
                 },
                 {
                     "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem == awsEc2Node",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Parent|Running|Pending|Stopped)Node)$/",
                     "group": "2@0"
                 },
                 {
@@ -1672,7 +1662,7 @@
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|awsEc2Node)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|awsEc2(Parent|Running|Pending|Stopped)Node)/",
                     "group": "2@2"
                 },
                 {
