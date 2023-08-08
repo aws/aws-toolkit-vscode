@@ -45,7 +45,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public isPending(): boolean {
-        return this.getStatus() == 'pending'
+        return this.getStatus() != 'running' && this.getStatus() != 'stopped'
     }
 
     public async updateStatus() {
