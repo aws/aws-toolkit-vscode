@@ -9,6 +9,9 @@ import { Ec2ConnectionManager } from './model'
 import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
 import { Ec2Instance, Ec2Client } from '../shared/clients/ec2Client'
 import { copyToClipboard } from '../shared/utilities/messages'
+import { getAwsConsoleUrl } from '../shared/awsConsole'
+import globals from '../shared/extensionGlobals'
+import { openUrl } from '../shared/utilities/vsCodeUtils'
 
 export async function refreshExplorer(node?: Ec2Node) {
     await node?.refreshNode()
@@ -45,6 +48,12 @@ export async function rebootInstance(node?: Ec2Node) {
     const selection = await getSelection(node)
     const client = new Ec2Client(selection.region)
     await client.rebootInstanceWithCancel(selection.instanceId)
+}
+
+export async function linkToLaunchInstance(node?: Ec2Node) {
+    const region = node ? node.regionCode : globals.regionProvider.guessDefaultRegion()
+    const url = getAwsConsoleUrl('ec2-launch', region)
+    await openUrl(url)
 }
 
 async function getSelection(node?: Ec2Node, filter?: instanceFilter): Promise<Ec2Selection> {

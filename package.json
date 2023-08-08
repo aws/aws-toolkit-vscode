@@ -1121,6 +1121,10 @@
                     "when": "aws.isDevMode"
                 },
                 {
+                    "command": "aws.ec2.linkToLaunchInstance",
+                    "when": "aws.isDevMode"
+                },
+                {
                     "command": "aws.ec2.startInstance",
                     "when": "false"
                 },
@@ -2186,6 +2190,17 @@
                 "command": "aws.ec2.copyInstanceId",
                 "title": "%AWS.command.ec2.copyInstanceId%",
                 "category": "%AWS.title",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.linkToLaunchInstance",
+                "title": "%AWS.command.ec2.linkToLaunchInstance%",
+                "icon": "$(add)",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"

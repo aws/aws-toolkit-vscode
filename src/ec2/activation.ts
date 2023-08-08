@@ -9,6 +9,7 @@ import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { copyTextCommand } from '../awsexplorer/commands/copyText'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import {
+    linkToLaunchInstance,
     openRemoteConnection,
     openTerminal,
     rebootInstance,
@@ -47,6 +48,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.ec2.rebootInstance', async (node?: Ec2Node) => {
             await rebootInstance(node)
             refreshExplorer(node)
+        }),
+
+        Commands.register('aws.ec2.linkToLaunchInstance', async (node?: Ec2Node) => {
+            await linkToLaunchInstance()
         })
     )
 }
