@@ -20,7 +20,7 @@ import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
+import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../shared/extensionGlobals'
 
@@ -192,7 +192,7 @@ export class Ec2ConnectionManager {
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPath = await this.configureSshKeys(selection, remoteUser)
         const hostNamePrefix = 'aws-ec2-'
-        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPath)
+        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPath)
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {

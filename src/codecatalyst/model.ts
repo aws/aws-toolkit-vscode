@@ -30,7 +30,7 @@ import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
 import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
-import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
+import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const connectScriptPrefix = 'codecatalyst_connect'
@@ -205,7 +205,7 @@ export async function prepareDevEnvConnection(
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
     const hostNamePrefix = 'aws-devenv-'
-    const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, connectScriptPrefix)
+    const sshConfig = new SshConfig(ssh, hostNamePrefix, connectScriptPrefix)
     const config = await sshConfig.ensureValid()
 
     if (config.isErr()) {

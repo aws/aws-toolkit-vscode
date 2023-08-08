@@ -10,7 +10,7 @@ import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
 import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
-import { VscodeRemoteSshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/vscodeRemoteSshConfig'
+import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
@@ -23,7 +23,7 @@ import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
 import { mkdir, readFile, writeFile } from 'fs-extra'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
-class MockSshConfig extends VscodeRemoteSshConfig {
+class MockSshConfig extends SshConfig {
     // State variables to track logic flow.
     public testIsWin: boolean = false
     public configSection: string = ''
@@ -109,10 +109,7 @@ describe('VscodeRemoteSshConfig', async function () {
             Promise<void>
         >
         before(function () {
-            promptUserToConfigureSshConfigStub = sinon.stub(
-                VscodeRemoteSshConfig.prototype,
-                'promptUserToConfigureSshConfig'
-            )
+            promptUserToConfigureSshConfigStub = sinon.stub(SshConfig.prototype, 'promptUserToConfigureSshConfig')
         })
 
         beforeEach(function () {
