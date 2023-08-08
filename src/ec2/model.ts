@@ -12,7 +12,12 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { ToolkitError } from '../shared/errors'
 import { SsmClient } from '../shared/clients/ssmClient'
 import { Ec2Client } from '../shared/clients/ec2Client'
-import { VscodeRemoteConnection, ensureDependencies, openRemoteTerminal } from '../shared/remoteSession'
+import {
+    VscodeRemoteConnection,
+    ensureDependencies,
+    getDeniedSsmActions,
+    openRemoteTerminal,
+} from '../shared/remoteSession'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { ErrorInformation } from '../shared/errors'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
@@ -72,13 +77,10 @@ export class Ec2ConnectionManager {
         }
     }
 
-    public async hasProperPolicies(IamRoleArn: string): Promise<boolean> {
-        const attachedPolicies = (await this.iamClient.listAttachedRolePolicies(IamRoleArn)).map(
-            policy => policy.PolicyName!
-        )
-        const requiredPolicies = ['AmazonSSMManagedInstanceCore', 'AmazonSSMManagedEC2InstanceDefaultPolicy']
+    public async hasProperPermissions(IamRoleArn: string): Promise<boolean> {
+        const deniedActions = await getDeniedSsmActions(this.iamClient, IamRoleArn)
 
-        return requiredPolicies.length !== 0 && requiredPolicies.every(policy => attachedPolicies.includes(policy))
+        return deniedActions.length === 0
     }
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
@@ -108,10 +110,10 @@ export class Ec2ConnectionManager {
             this.throwConnectionError(message, selection, { code: 'EC2SSMPermission' })
         }
 
-        const hasProperPolicies = await this.hasProperPolicies(IamRole!.Arn)
+        const hasPermission = await this.hasProperPermissions(IamRole!.Arn)
 
-        if (!hasProperPolicies) {
-            const message = `Ensure an IAM role with the required policies is attached to the instance. Found attached role: ${
+        if (!hasPermission) {
+            const message = `Ensure an IAM role with the proper permissions is attached to the instance. Found attached role: ${
                 IamRole!.Arn
             }`
             this.throwConnectionError(message, selection, {

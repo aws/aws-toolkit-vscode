@@ -18,6 +18,7 @@ import { TaskDefinition } from 'aws-sdk/clients/ecs'
 import { getLogger } from '../shared/logger'
 import { SSM } from 'aws-sdk'
 import { fromExtensionManifest } from '../shared/settings'
+import { getDeniedSsmActions } from '../shared/remoteSession'
 
 interface EcsTaskIdentifer {
     readonly task: string
@@ -41,15 +42,7 @@ export async function checkPermissionsForSsm(
         })
     }
 
-    const deniedActions = await client.getDeniedActions({
-        PolicySourceArn: task.taskRoleArn,
-        ActionNames: [
-            'ssmmessages:CreateControlChannel',
-            'ssmmessages:CreateDataChannel',
-            'ssmmessages:OpenControlChannel',
-            'ssmmessages:OpenDataChannel',
-        ],
-    })
+    const deniedActions = await getDeniedSsmActions(client, task.taskRoleArn)
 
     if (deniedActions.length !== 0) {
         const message = localize(

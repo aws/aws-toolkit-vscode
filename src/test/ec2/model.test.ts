@@ -42,45 +42,6 @@ describe('Ec2ConnectClient', function () {
         })
     })
 
-    describe('hasProperPolicies', async function () {
-        it('correctly determines if proper policies are included', async function () {
-            async function assertAcceptsPolicies(policies: IAM.Policy[], expectedResult: boolean) {
-                sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').resolves(policies)
-
-                const result = await client.hasProperPolicies('')
-                assert.strictEqual(result, expectedResult)
-
-                sinon.restore()
-            }
-            await assertAcceptsPolicies(
-                [{ PolicyName: 'name' }, { PolicyName: 'name2' }, { PolicyName: 'name3' }],
-                false
-            )
-            await assertAcceptsPolicies(
-                [
-                    { PolicyName: 'AmazonSSMManagedInstanceCore' },
-                    { PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy' },
-                ],
-                true
-            )
-            await assertAcceptsPolicies([{ PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy' }], false)
-            await assertAcceptsPolicies([{ PolicyName: 'AmazonSSMManagedEC2InstanceDefaultPolicy' }], false)
-        })
-
-        it('throws error when sdk throws error', async function () {
-            sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').throws(new ToolkitError('error'))
-
-            try {
-                await client.hasProperPolicies('')
-                assert.ok(false)
-            } catch {
-                assert.ok(true)
-            }
-
-            sinon.restore()
-        })
-    })
-
     describe('isInstanceRunning', async function () {
         it('only returns true with the instance is running', async function () {
             sinon.stub(Ec2Client.prototype, 'getInstanceStatus').callsFake(async (input: string) => input.split(':')[0])
@@ -131,7 +92,7 @@ describe('Ec2ConnectClient', function () {
         it('throws EC2SSMAgent error if instance is running and has IAM Role, but agent is not running', async function () {
             sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
             sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
-            sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPolicies').resolves(true)
+            sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPermissions').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('offline')
 
             try {
@@ -147,7 +108,7 @@ describe('Ec2ConnectClient', function () {
         it('does not throw an error if all checks pass', async function () {
             sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
             sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
-            sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPolicies').resolves(true)
+            sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPermissions').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
 
             assert.doesNotThrow(async () => await client.checkForStartSessionError(instanceSelection))
