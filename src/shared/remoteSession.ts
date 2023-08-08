@@ -5,10 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 import { Settings } from '../shared/settings'
-import { showMessageWithCancel } from './utilities/messages'
+import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
 import { CancellationError, Timeout } from './utilities/timeoutUtils'
 import { isExtensionInstalled, showInstallExtensionMsg } from './utilities/vsCodeUtils'
 import { VSCODE_EXTENSION_ID, vscodeExtensionMinVersion } from './extensions'
@@ -21,16 +20,28 @@ import { pushIf } from './utilities/collectionUtils'
 import { ChildProcess } from './utilities/childProcess'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
+import { getIdeProperties } from './extensionUtilities'
+
+const localize = nls.loadMessageBundle()
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
     readonly reason?: string
 }
 
+const minimumSsmActions = [
+    'ssmmessages:CreateControlChannel',
+    'ssmmessages:CreateDataChannel',
+    'ssmmessages:OpenControlChannel',
+    'ssmmessages:OpenDataChannel',
+]
+
+const policyAttachDelay = 5000
+
 export async function openRemoteTerminal(options: vscode.TerminalOptions, onClose: () => void) {
     const timeout = new Timeout(60000)
 
-    await showMessageWithCancel('AWS: Starting session...', timeout, 1000)
+    await showMessageWithCancel('AWS: Opening remote terminal...', timeout, 1000)
     await withoutShellIntegration(async () => {
         const terminal = vscode.window.createTerminal(options)
 
@@ -173,13 +184,63 @@ export async function handleMissingTool(tools: Err<MissingTool[]>) {
 export async function getDeniedSsmActions(client: IamClient, roleArn: string): Promise<IAM.EvaluationResult[]> {
     const deniedActions = await client.getDeniedActions({
         PolicySourceArn: roleArn,
-        ActionNames: [
-            'ssmmessages:CreateControlChannel',
-            'ssmmessages:CreateDataChannel',
-            'ssmmessages:OpenControlChannel',
-            'ssmmessages:OpenDataChannel',
-        ],
+        ActionNames: minimumSsmActions,
     })
 
     return deniedActions
+}
+
+export async function promptToAddInlinePolicy(client: IamClient, roleArn: string): Promise<boolean> {
+    const promptText = `${
+        getIdeProperties().company
+    } Toolkit will add required actions to role ${roleArn}:\n${getFormattedSsmActions()}`
+    const confirmation = await showConfirmationMessage({ prompt: promptText, confirm: 'Approve' })
+
+    if (confirmation) {
+        await addInlinePolicyWithDelay(client, roleArn)
+    }
+
+    return confirmation
+}
+
+async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
+    const timeout = new Timeout(policyAttachDelay)
+    const message = `Adding Inline Policy to ${roleArn}`
+    await showMessageWithCancel(message, timeout)
+    await addSsmActionsToInlinePolicy(client, roleArn)
+
+    function delay(ms: number) {
+        return new Promise(resolve => setTimeout(resolve, ms))
+    }
+
+    await delay(policyAttachDelay)
+    if (timeout.elapsedTime < policyAttachDelay) {
+        throw new CancellationError('user')
+    }
+    timeout.cancel()
+}
+
+function getFormattedSsmActions() {
+    const formattedActions = minimumSsmActions.map(action => `"${action}",\n`).reduce((l, r) => l + r)
+
+    return formattedActions.slice(0, formattedActions.length - 2)
+}
+
+function getSsmPolicyDocument() {
+    return `{
+            "Version": "2012-10-17",
+            "Statement": {
+                "Effect": "Allow",
+                "Action": [
+                    ${getFormattedSsmActions()}
+                ],
+                "Resource": "*"
+                }
+            }`
+}
+
+async function addSsmActionsToInlinePolicy(client: IamClient, roleArn: string) {
+    const policyName = 'AWSVSCodeRemoteConnect'
+    const policyDocument = getSsmPolicyDocument()
+    await client.putRolePolicy(roleArn, policyName, policyDocument)
 }
