@@ -213,8 +213,8 @@ async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
         return new Promise(resolve => setTimeout(resolve, ms))
     }
 
-    await delay(policyAttachDelay - 100)
-    if (timeout.completed) {
+    await delay(policyAttachDelay)
+    if (timeout.elapsedTime < policyAttachDelay) {
         throw new CancellationError('user')
     }
     timeout.cancel()
