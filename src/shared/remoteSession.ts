@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-const localize = nls.loadMessageBundle()
 
 import { Settings } from '../shared/settings'
 import { showConfirmationMessage, showMessageWithCancel } from './utilities/messages'
@@ -22,6 +21,8 @@ import { ChildProcess } from './utilities/childProcess'
 import { IamClient } from './clients/iamClient'
 import { IAM } from 'aws-sdk'
 import { getIdeProperties } from './extensionUtilities'
+
+const localize = nls.loadMessageBundle()
 
 export interface MissingTool {
     readonly name: 'code' | 'ssm' | 'ssh'
@@ -204,14 +205,19 @@ export async function promptToAddInlinePolicy(client: IamClient, roleArn: string
 
 async function addInlinePolicyWithDelay(client: IamClient, roleArn: string) {
     const timeout = new Timeout(policyAttachDelay)
-    await showMessageWithCancel(`Adding Inline Policy to ${roleArn}`, timeout)
+    const message = `Adding Inline Policy to ${roleArn}`
+    await showMessageWithCancel(message, timeout)
     await addSsmActionsToInlinePolicy(client, roleArn)
 
     function delay(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms))
     }
 
-    await delay(policyAttachDelay).finally(() => timeout.cancel())
+    await delay(policyAttachDelay - 100)
+    if (timeout.completed) {
+        throw new CancellationError('user')
+    }
+    timeout.cancel()
 }
 
 function getFormattedSsmActions() {
