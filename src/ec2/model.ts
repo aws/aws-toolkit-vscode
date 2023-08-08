@@ -184,6 +184,7 @@ export class Ec2ConnectionManager {
             this.throwGeneralConnectionError(selection, err as Error)
         }
     }
+
     public async prepareEc2RemoteEnvWithProgress(selection: Ec2Selection, remoteUser: string): Promise<Ec2RemoteEnv> {
         const timeout = new Timeout(60000)
         await showMessageWithCancel('AWS: Opening remote connection...', timeout)
@@ -254,7 +255,7 @@ export class Ec2ConnectionManager {
         })
     }
 
-    protected async getRemoteUser(instanceId: string) {
+    public async getRemoteUser(instanceId: string) {
         const osName = await this.ssmClient.getTargetPlatformName(instanceId)
         if (osName === 'Amazon Linux') {
             return 'ec2-user'
