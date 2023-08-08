@@ -60,7 +60,7 @@ describe('Ec2Prompter', async function () {
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: `$(${getIconCode(testInstance)}) \t ${testInstance.name}`,
+                label: Ec2Prompter.getLabel(testInstance),
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -75,7 +75,7 @@ describe('Ec2Prompter', async function () {
 
             const result = prompter.testAsQuickPickItem(testInstance)
             const expected = {
-                label: `$(${getIconCode(testInstance)}) \t (no name)`,
+                label: Ec2Prompter.getLabel(testInstance),
                 detail: testInstance.InstanceId,
                 data: testInstance.InstanceId,
             }
@@ -144,17 +144,17 @@ describe('Ec2Prompter', async function () {
         it('returns items mapped to QuickPick items without filter', async function () {
             const expected = [
                 {
-                    label: `$(${getIconCode(prompter.instances[0])}) \t ${prompter.instances[0].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[0]),
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: `$(${getIconCode(prompter.instances[1])}) \t ${prompter.instances[1].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[1]),
                     detail: prompter.instances[1].InstanceId!,
                     data: prompter.instances[1].InstanceId!,
                 },
                 {
-                    label: `$(${getIconCode(prompter.instances[2])}) \t ${prompter.instances[2].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[2]),
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
@@ -169,12 +169,12 @@ describe('Ec2Prompter', async function () {
 
             const expected = [
                 {
-                    label: `$(${getIconCode(prompter.instances[0])}) \t ${prompter.instances[0].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[0]),
                     detail: prompter.instances[0].InstanceId!,
                     data: prompter.instances[0].InstanceId!,
                 },
                 {
-                    label: `$(${getIconCode(prompter.instances[2])}) \t ${prompter.instances[2].name!}`,
+                    label: Ec2Prompter.getLabel(prompter.instances[2]),
                     detail: prompter.instances[2].InstanceId!,
                     data: prompter.instances[2].InstanceId!,
                 },
