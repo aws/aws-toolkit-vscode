@@ -17,13 +17,13 @@ import com.intellij.psi.search.GlobalSearchScope
 import kotlinx.coroutines.yield
 import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
 
-// version1: Utilize PSI import elements to resolve imported files
 object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "java"
-    override val testFilenamePattern: Regex = """(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java)$""".toRegex()
     override val dialects: Set<String> = setOf("java")
-
-    override fun guessSourceFileName(tstFileName: String): String = tstFileName.substring(0, tstFileName.length - "Test.java".length) + ".java"
+    override val testFileNamingPatterns = listOf(
+        Regex("""^(.+)Test(\.java)$"""),
+        Regex("""^(.+)Tests(\.java)$""")
+    )
 
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> {
         if (psiFile !is PsiJavaFile) return emptyList()
@@ -67,35 +67,23 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
         return result
     }
 
-    override fun listFilesWithinSamePackage(targetFile: PsiFile): List<VirtualFile> = runReadAction {
-        targetFile.containingDirectory?.files?.mapNotNull {
-            // exclude target file
-            if (it != targetFile) {
-                it.virtualFile
-            } else {
-                null
-            }
-        }.orEmpty()
-    }
-
-    override fun findFocalFileForTest(psiFile: PsiFile): VirtualFile? = findSourceFileByName(psiFile) ?: findRelevantFileFromEditors(psiFile)
-
     // psiFile = "MainTest.java", targetFileName = "Main.java"
-    private fun findSourceFileByName(psiFile: PsiFile): VirtualFile? {
-        val module = ModuleUtilCore.findModuleForFile(psiFile)
+    override fun findSourceFileByName(psiFile: PsiFile): VirtualFile? =
+        guessSourceFileName(psiFile.virtualFile.name)?.let { srcName ->
+            val module = ModuleUtilCore.findModuleForFile(psiFile)
 
-        return module?.rootManager?.getSourceRoots(JavaModuleSourceRootTypes.PRODUCTION)?.let { srcRoot ->
-            srcRoot
-                .map { root -> VfsUtil.collectChildrenRecursively(root) }
-                .flatten()
-                .find { !it.isDirectory && it.isWritable && it.name.contains(guessSourceFileName(psiFile.name)) }
+            module?.rootManager?.getSourceRoots(JavaModuleSourceRootTypes.PRODUCTION)?.let { srcRoot ->
+                srcRoot
+                    .map { root -> VfsUtil.collectChildrenRecursively(root) }
+                    .flatten()
+                    .find { !it.isDirectory && it.isWritable && it.name == srcName }
+            }
         }
-    }
 
     /**
      * check files in editors and pick one which has most substring matches to the target
      */
-    private fun findRelevantFileFromEditors(psiFile: PsiFile): VirtualFile? = searchRelevantFileInEditors(psiFile) { myPsiFile ->
+    override fun findSourceFileByContent(psiFile: PsiFile): VirtualFile? = searchRelevantFileInEditors(psiFile) { myPsiFile ->
         if (myPsiFile !is PsiClassOwner) {
             return@searchRelevantFileInEditors emptyList()
         }

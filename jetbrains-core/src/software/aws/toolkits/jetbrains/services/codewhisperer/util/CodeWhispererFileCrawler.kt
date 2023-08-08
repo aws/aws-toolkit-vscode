@@ -12,8 +12,7 @@ import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiManager
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
+import software.aws.toolkits.core.utils.tryOrNull
 
 /**
  * An interface define how do we parse and fetch files provided a psi file or project
@@ -40,51 +39,84 @@ interface FileCrawler {
      * @param psiFile psi of the test file we are searching with, e.g. MainTest.java
      * @return its source file e.g. Main.java, main.py or most relevant file if any
      */
-    fun findFocalFileForTest(psiFile: PsiFile): VirtualFile?
+    fun listUtgCandidate(psiFile: PsiFile): VirtualFile?
 
     /**
      * List files opened in the editors and sorted by file distance @see [CodeWhispererFileCrawler.getFileDistance]
+     * @return opened files and satisfy the following conditions
+     * (1) not the input file
+     * (2) with the same file extension as the input file has
+     * (3) non-test file which will be determined by [FileCrawler.isTestFile]
+     * (4) writable file
      */
-    fun listRelevantFilesInEditors(psiFile: PsiFile): List<VirtualFile>
+    fun listCrossFileCandidate(psiFile: PsiFile): List<VirtualFile>
+
+    /**
+     * Determine if the file given is test file or not based on its path and file name
+     */
+    fun isTestFile(virtualFile: VirtualFile, project: Project): Boolean
 }
 
 class NoOpFileCrawler : FileCrawler {
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
     override fun listFilesUnderProjectRoot(project: Project): List<VirtualFile> = emptyList()
-    override fun findFocalFileForTest(psiFile: PsiFile): VirtualFile? = null
+    override fun listUtgCandidate(psiFile: PsiFile): VirtualFile? = null
 
     override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
-    override fun listRelevantFilesInEditors(psiFile: PsiFile): List<VirtualFile> = emptyList()
+    override fun listCrossFileCandidate(psiFile: PsiFile): List<VirtualFile> = emptyList()
+
+    override fun isTestFile(virtualFile: VirtualFile, project: Project): Boolean = false
 }
 
 abstract class CodeWhispererFileCrawler : FileCrawler {
     abstract val fileExtension: String
-    abstract val testFilenamePattern: Regex
     abstract val dialects: Set<String>
+    abstract val testFileNamingPatterns: List<Regex>
+
+    override fun isTestFile(virtualFile: VirtualFile, project: Project): Boolean {
+        val filePath = virtualFile.path
+
+        // if file path itself explicitly explains the file is under test sources
+        if (TestSourcesFilter.isTestSources(virtualFile, project) ||
+            filePath.contains("""test/""", ignoreCase = true) ||
+            filePath.contains("""tst/""", ignoreCase = true) ||
+            filePath.contains("""tests/""", ignoreCase = true)
+        ) {
+            return true
+        }
+
+        // no explicit clue from the file path, use regexes based on naming conventions
+        return testFileNamingPatterns.any { it.matches(virtualFile.name) }
+    }
 
     override fun listFilesUnderProjectRoot(project: Project): List<VirtualFile> = project.guessProjectDir()?.let { rootDir ->
         VfsUtil.collectChildrenRecursively(rootDir).filter {
+            // TODO: need to handle cases js vs. jsx, ts vs. tsx when we enable js/ts utg since we likely have different file extensions
             it.path.endsWith(fileExtension)
         }
     }.orEmpty()
 
-    override fun listRelevantFilesInEditors(psiFile: PsiFile): List<VirtualFile> {
-        val targetFile = psiFile.virtualFile
-        val language = psiFile.programmingLanguage()
+    override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = runReadAction {
+        psiFile.containingDirectory?.files?.mapNotNull {
+            // exclude target file
+            if (it != psiFile) {
+                it.virtualFile
+            } else {
+                null
+            }
+        }.orEmpty()
+    }
 
-        val isTestFilePredicate: (file: VirtualFile, project: Project) -> Boolean = if (language is CodeWhispererJava) {
-            { file, project -> TestSourcesFilter.isTestSources(file, project) }
-        } else {
-            { file, _ -> testFilenamePattern.matches(file.name) }
-        }
+    override fun listCrossFileCandidate(psiFile: PsiFile): List<VirtualFile> {
+        val targetFile = psiFile.virtualFile
 
         val openedFiles = runReadAction {
             FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
                 it.name != psiFile.virtualFile.name &&
                     isSameDialect(it.extension) &&
-                    !isTestFilePredicate(it, psiFile.project)
+                    !isTestFile(it, psiFile.project)
             }
         }
 
@@ -97,7 +129,24 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         return fileToFileDistanceList.sortedBy { it.second }.map { it.first }
     }
 
-    abstract fun guessSourceFileName(tstFileName: String): String
+    override fun listUtgCandidate(psiFile: PsiFile): VirtualFile? = findSourceFileByName(psiFile) ?: findSourceFileByContent(psiFile)
+
+    abstract fun findSourceFileByName(psiFile: PsiFile): VirtualFile?
+
+    abstract fun findSourceFileByContent(psiFile: PsiFile): VirtualFile?
+
+    // TODO: may need to update when we enable JS/TS UTG, since we have to factor in .jsx/.tsx combinations
+    fun guessSourceFileName(tstFileName: String): String? {
+        val srcFileName = tryOrNull {
+            testFileNamingPatterns.firstNotNullOf { regex ->
+                regex.find(tstFileName)?.groupValues?.let { groupValues ->
+                    groupValues.get(1) + groupValues.get(2)
+                }
+            }
+        }
+
+        return srcFileName
+    }
 
     private fun isSameDialect(fileExt: String?): Boolean = fileExt?.let {
         dialects.contains(fileExt)

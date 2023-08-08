@@ -9,15 +9,14 @@ import com.intellij.psi.PsiFile
 object TypescriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "ts"
     override val dialects: Set<String> = setOf("ts", "tsx")
-
-    override val testFilenamePattern: Regex = """^.*\.test\.(ts|tsx)${'$'}""".toRegex()
-
-    // TODO: Add implementation when UTG is enabled
-    override fun guessSourceFileName(tstFileName: String): String = ""
+    override val testFileNamingPatterns: List<Regex> = listOf(
+        Regex("""^(.+)\.(?i:t)est(\.ts|\.tsx)$"""),
+        Regex("""^(.+)\.(?i:s)pec(\.ts|\.tsx)$""")
+    )
 
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
-    override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = emptyList()
+    override fun findSourceFileByName(psiFile: PsiFile): VirtualFile? = null
 
-    override fun findFocalFileForTest(psiFile: PsiFile): VirtualFile? = null
+    override fun findSourceFileByContent(psiFile: PsiFile): VirtualFile? = null
 }

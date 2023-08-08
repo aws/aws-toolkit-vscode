@@ -9,15 +9,14 @@ import com.intellij.psi.PsiFile
 object JavascriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "js"
     override val dialects: Set<String> = setOf("js", "jsx")
-
-    override val testFilenamePattern: Regex = """^.*\.test\.(js|jsx)${'$'}""".toRegex()
-
-    // TODO: Add implementation when UTG is enabled
-    override fun guessSourceFileName(tstFileName: String): String = ""
+    override val testFileNamingPatterns: List<Regex> = listOf(
+        Regex("""^(.+)\.(?i:t)est(\.js|\.jsx)$"""),
+        Regex("""^(.+)\.(?i:s)pec(\.js|\.jsx)$""")
+    )
 
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
-    override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = emptyList()
+    override fun findSourceFileByName(psiFile: PsiFile): VirtualFile? = null
 
-    override fun findFocalFileForTest(psiFile: PsiFile): VirtualFile? = null
+    override fun findSourceFileByContent(psiFile: PsiFile): VirtualFile? = null
 }
