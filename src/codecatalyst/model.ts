@@ -33,8 +33,7 @@ import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSess
 import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
-// export const hostNamePrefix = 'aws-devenv-'
-// export const connectScriptPrefix = 'codecatalyst_connect'
+export const connectScriptPrefix = 'codecatalyst_connect'
 
 export const docs = {
     vscode: {
@@ -206,7 +205,7 @@ export async function prepareDevEnvConnection(
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
     const hostNamePrefix = 'aws-devenv-'
-    const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, 'codecatalyst_connect')
+    const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, connectScriptPrefix)
     const config = await sshConfig.ensureValid()
 
     if (config.isErr()) {
