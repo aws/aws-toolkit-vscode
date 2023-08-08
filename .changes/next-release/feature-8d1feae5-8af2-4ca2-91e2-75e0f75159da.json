@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "CodeWhisperer: Improve file context fetching for Java test files"
+}

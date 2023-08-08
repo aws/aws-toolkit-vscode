@@ -119,31 +119,27 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
     override suspend fun extractSupplementalFileContext(psiFile: PsiFile, targetContext: FileContextInfo): SupplementalContextInfo? {
         val startFetchingTimestamp = System.currentTimeMillis()
         val isTst = isTestFile(psiFile)
-        val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         val language = targetContext.programmingLanguage
+        val group = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
 
-        val chunks = if (isTst && targetContext.programmingLanguage.isUTGSupported()) {
-            if (userGroup == CodeWhispererUserGroup.CrossFile) {
-                extractSupplementalFileContextForTst(psiFile, targetContext)
-            } else {
-                emptyList()
-            }
-        } else if (!isTst && targetContext.programmingLanguage.isSupplementalContextSupported()) {
-            when (language) {
-                is CodeWhispererJava -> extractSupplementalFileContextForSrc(psiFile, targetContext)
-
-                is CodeWhispererPython, is CodeWhispererJavaScript, is CodeWhispererTypeScript, is CodeWhispererJsx, is CodeWhispererTsx ->
-                    if (userGroup == CodeWhispererUserGroup.CrossFile) {
-                        extractSupplementalFileContextForSrc(psiFile, targetContext)
-                    } else {
-                        emptyList()
-                    }
-
-                else -> emptyList()
+        val chunks = if (isTst) {
+            when (shouldFetchUtgContext(language, group)) {
+                true -> extractSupplementalFileContextForTst(psiFile, targetContext)
+                false -> emptyList()
+                null -> {
+                    LOG.debug { "UTG is not supporting ${targetContext.programmingLanguage.languageId}" }
+                    null
+                }
             }
         } else {
-            LOG.debug { "${if (isTst) "UTG" else "CrossFile"} not supported for ${targetContext.programmingLanguage.languageId}" }
-            null
+            when (shouldFetchCrossfileContext(language, group)) {
+                true -> extractSupplementalFileContextForSrc(psiFile, targetContext)
+                false -> emptyList()
+                null -> {
+                    LOG.debug { "Crossfile is not supporting ${targetContext.programmingLanguage.languageId}" }
+                    null
+                }
+            }
         }
 
         return chunks?.let {
@@ -282,5 +278,27 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
 
     companion object {
         private val LOG = getLogger<DefaultCodeWhispererFileContextProvider>()
+
+        fun shouldFetchUtgContext(language: CodeWhispererProgrammingLanguage, userGroup: CodeWhispererUserGroup): Boolean? {
+            if (!language.isUTGSupported()) {
+                return null
+            }
+
+            return when (language) {
+                is CodeWhispererJava -> true
+                else -> userGroup == CodeWhispererUserGroup.CrossFile
+            }
+        }
+
+        fun shouldFetchCrossfileContext(language: CodeWhispererProgrammingLanguage, userGroup: CodeWhispererUserGroup): Boolean? {
+            if (!language.isSupplementalContextSupported()) {
+                return null
+            }
+
+            return when (language) {
+                is CodeWhispererJava -> true
+                else -> userGroup == CodeWhispererUserGroup.CrossFile
+            }
+        }
     }
 }
