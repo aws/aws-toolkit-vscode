@@ -168,7 +168,7 @@ export class Ec2ConnectionManager {
         }
     }
 
-    public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
+    public async tryOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
 
         const remoteUser = await this.getRemoteUser(selection.instanceId)
