@@ -94,19 +94,6 @@ export class Ec2ConnectionManager {
         throw new ToolkitError(generalErrorMessage + message, errorInfo)
     }
 
-    private async pollForPermissions(roleArn: string): Promise<void> {
-        const timeout = new Timeout(-1)
-        await showMessageWithCancel(`Adding inline policy to IAM role ${roleArn}`, timeout)
-        while (!timeout.completed) {
-            const permissionsAdded = await this.hasProperPermissions(roleArn)
-            if (permissionsAdded) {
-                break
-            }
-            await sleep(1000)
-        }
-        timeout.cancel()
-    }
-
     private async checkForInstanceStatusError(selection: Ec2Selection): Promise<void> {
         const isInstanceRunning = await this.isInstanceRunning(selection.instanceId)
 
