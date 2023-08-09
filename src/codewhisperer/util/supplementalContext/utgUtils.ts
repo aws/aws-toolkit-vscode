@@ -24,6 +24,27 @@ import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
+type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
+
+function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
+    return languageId in utgLanguageConfigs
+}
+
+export function shouldFetchUtgContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
+    if (!isUtgSupportedLanguage(languageId)) {
+        return undefined
+    }
+
+    if (languageId === 'java') {
+        return true
+    } else {
+        return userGroup === UserGroup.CrossFile
+    }
+}
+
 /**
  * This function attempts to find a focal file for the given trigger file.
  * Attempt 1: If naming patterns followed correctly, source file can be found by name referencing.
@@ -37,24 +58,16 @@ export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
-    // TODO: Add metrices
-    // 1. Total number of calls to fetchSupplementalContextForTest
-    // 2. Success count for fetchSourceFileByName (find source file by name)
-    // 3. Success count for fetchSourceFileByContent (find source file by content)
-    // 4. Failure count - when unable to find focal file (supplemental context empty)
+    const shouldProceed = shouldFetchUtgContext(
+        editor.document.languageId,
+        CodeWhispererUserGroupSettings.instance.userGroup
+    )
+
+    if (!shouldProceed) {
+        return shouldProceed === undefined ? undefined : []
+    }
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
-    if (!languageConfig) {
-        // This is required because we are launching this support for even smaller subset of
-        // supported languages.
-        // TODO: Add a metrics to see number of calls falling in this bucket.
-        // TODO: Either catch this error upstream or here.
-        return undefined
-    }
-
-    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
-        return []
-    }
 
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
     throwIfCancelled(cancellationToken)
