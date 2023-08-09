@@ -8,7 +8,7 @@ import * as vscode from 'vscode'
 export async function activate(context: vscode.ExtensionContext) {
     vscode.window.showInformationMessage(
         'AWS Toolkit: Browser Mode Under Development. No features are currently provided',
-        { modal: true }
+        { modal: false }
     )
 }
 

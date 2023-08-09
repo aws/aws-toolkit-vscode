@@ -13,6 +13,7 @@ const webConfig = {
     target: 'webworker',
     entry: {
         'src/extensionWeb': './src/extensionWeb.ts',
+        'src/testBrowser/testRunner': './src/testBrowser/testRunner.ts',
     },
     plugins: (baseConfig.plugins ?? []).concat(
         new webpack.optimize.LimitChunkCountPlugin({
@@ -47,7 +48,6 @@ const webConfig = {
             http: false, // http: require.resolve('stream-http'),
             https: false, // https: require.resolve('https-browserify'),
             zlib: false, // zlib: require.resolve('browserify-zlib'),
-            assert: false, // assert: require.resolve('assert/'),
             constants: false, //constants: require.resolve('constants-browserify'),
             crypto: false, // crypto: require.resolve('crypto-browserify'),
             // These do not have a straight forward replacement
