@@ -4,6 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import * as fs from 'fs'
+
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 
 /**
@@ -40,6 +42,14 @@ export class Session {
         const client = new LambdaClient({
             region: 'eu-west-1',
         })
+        console.log(`WS: ${this.workspaceRoot}`)
+        if (false) {
+            fs.readdirSync(this.workspaceRoot, (err, files: string[]) => {
+                files.forEach(file => {
+                    console.log(file)
+                })
+            })
+        }
 
         const command = new InvokeCommand({
             FunctionName: 'arn:aws:lambda:eu-west-1:761763482860:function:tempFunc',
