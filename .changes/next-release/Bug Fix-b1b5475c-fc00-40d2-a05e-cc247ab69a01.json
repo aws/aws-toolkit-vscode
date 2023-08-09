@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "auth: remote workspaces use the global state, showing incorrect profile info"
+}

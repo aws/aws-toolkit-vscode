@@ -20,7 +20,7 @@ import { fileExists, readFileAsString } from './filesystemUtilities'
 
 const localize = nls.loadMessageBundle()
 
-export class VscodeRemoteSshConfig {
+export class SshConfig {
     protected readonly configHostName: string
     protected readonly proxyCommandRegExp: RegExp
 
