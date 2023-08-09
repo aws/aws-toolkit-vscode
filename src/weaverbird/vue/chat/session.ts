@@ -7,8 +7,11 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { ChildProcess } from '../../../shared/utilities/childProcess'
 
+/**
+ * Session keeps track of all the information related to a session, and persists session information to disk
+ */
 export class Session {
-    private history: string[]
+    public readonly history: string[]
     public readonly workspaceRoot: string
     public readonly sourceRoot: string
 

@@ -30,6 +30,10 @@ export default defineComponent({
     data() {
         return model
     },
+    async created() {
+        const currentSession = await client.getSession()
+        this.$data.history = currentSession.history
+    },
     mounted() {
         client.onDidCreateContent(async (content: string) => {
             // TODO refactor so we aren't duplicating code

@@ -17,7 +17,27 @@ import { Storage } from './storage'
  * Activate Weaverbird functionality for the extension.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const chatView = await registerChatView(context)
+    const weaverbirdStorage = new Storage()
+
+    // For testing, undefine WeaverbirdSessionStorage everytime
+    weaverbirdStorage.memento.update('WeaverbirdSessionStorage', undefined)
+    await weaverbirdStorage.createSessionStorage()
+
+    const sessionId = await weaverbirdStorage.createSession()
+
+    // Create some default session history
+    await weaverbirdStorage.updateSession(sessionId, {
+        name: 'testing',
+        history: [
+            'some example message from the user',
+            'some example message from the LLM',
+            'some example message from the user',
+            'some example message from the LLM',
+        ],
+    })
+    const currentSession = weaverbirdStorage.getSessionById(weaverbirdStorage.getSessionStorage(), sessionId)
+    const chatView = await registerChatView(context, currentSession.history)
+
     context.subscriptions.push(
         Commands.register('aws.weaverbird.openChat', () => {
             console.log(chatView)
@@ -114,20 +134,4 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         )
     })
-
-    try {
-        const weaverbirdStorage = new Storage()
-        weaverbirdStorage.memento.update('WeaverbirdSessionStorage', undefined)
-        await weaverbirdStorage.createSessionStorage()
-
-        const sessionId = await weaverbirdStorage.createSession()
-        await weaverbirdStorage.updateSession(sessionId, {
-            name: 'testing',
-        })
-        const currentSession = weaverbirdStorage.getSessionById(weaverbirdStorage.getSessionStorage(), sessionId)
-        console.log(currentSession)
-        await weaverbirdStorage.deleteSession(sessionId)
-    } catch (e) {
-        console.log('Weaverbird storage initialization failed', e)
-    }
 }

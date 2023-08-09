@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { isCloud9 } from '../../../shared/extensionUtilities'
 import { Session } from './session'
 
 // const localize = nls.loadMessageBundle()
@@ -18,7 +17,7 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly onDidSubmitPlan = new vscode.EventEmitter<void>()
     public readonly session: Session
 
-    public constructor() {
+    public constructor(history: string[]) {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
         super()
 
@@ -29,7 +28,12 @@ export class WeaverbirdChatWebview extends VueWebview {
         }
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath
-        this.session = new Session([], workspaceRoot)
+        this.session = new Session(history, workspaceRoot)
+    }
+
+    public async getSession(): Promise<Session> {
+        // TODO if we have a client we can do a async request here to get the history (if any)
+        return this.session
     }
 
     // Instrument the client sending here
@@ -42,22 +46,14 @@ export class WeaverbirdChatWebview extends VueWebview {
     }
 }
 
-const Panel = VueWebview.compilePanel(WeaverbirdChatWebview)
-let activePanel: InstanceType<typeof Panel> | undefined
-
 const View = VueWebview.compileView(WeaverbirdChatWebview)
 let activeView: InstanceType<typeof View> | undefined
 
-export async function showChat(ctx: vscode.ExtensionContext): Promise<void> {
-    activePanel ??= new Panel(ctx)
-    await activePanel.show({
-        title: 'Weaverbird Chat', // TODO localize
-        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
-    })
-}
-
-export async function registerChatView(ctx: vscode.ExtensionContext): Promise<WeaverbirdChatWebview> {
-    activeView ??= new View(ctx)
+export async function registerChatView(
+    ctx: vscode.ExtensionContext,
+    history: string[]
+): Promise<WeaverbirdChatWebview> {
+    activeView ??= new View(ctx, history)
     activeView.register({
         title: 'Weaverbird Chat',
     })
