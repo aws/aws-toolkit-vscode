@@ -51,7 +51,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.linkToLaunchInstance', async (node?: Ec2Node) => {
-            await linkToLaunchInstance()
+            await linkToLaunchInstance(node)
         })
     )
 }
