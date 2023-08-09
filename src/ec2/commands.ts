@@ -10,8 +10,8 @@ import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
 import { Ec2Instance, Ec2Client } from '../shared/clients/ec2Client'
 import { copyToClipboard } from '../shared/utilities/messages'
 import { getAwsConsoleUrl } from '../shared/awsConsole'
-import globals from '../shared/extensionGlobals'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { showRegionPrompter } from '../auth/utils'
 
 export async function refreshExplorer(node?: Ec2Node) {
     await node?.refreshNode()
@@ -51,7 +51,7 @@ export async function rebootInstance(node?: Ec2Node) {
 }
 
 export async function linkToLaunchInstance(node?: Ec2Node) {
-    const region = node ? node.regionCode : globals.regionProvider.guessDefaultRegion()
+    const region = node ? node.regionCode : (await showRegionPrompter('Select Region', '')).id
     const url = getAwsConsoleUrl('ec2-launch', region)
     await openUrl(url)
 }
