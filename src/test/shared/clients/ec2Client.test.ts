@@ -103,13 +103,14 @@ describe('extractInstancesFromReservations', function () {
             .getInstancesFromReservations(intoCollection([completeReservationsList]))
             .promise()
         assert.deepStrictEqual(actualResult, completeInstanceList)
-    }),
-        it('handles undefined and missing pieces in the ReservationList.', async function () {
-            const actualResult = await client
-                .getInstancesFromReservations(intoCollection([incompleteReservationsList]))
-                .promise()
-            assert.deepStrictEqual(actualResult, incomepleteInstanceList)
-        })
+    })
+
+    it('handles undefined and missing pieces in the ReservationList.', async function () {
+        const actualResult = await client
+            .getInstancesFromReservations(intoCollection([incompleteReservationsList]))
+            .promise()
+        assert.deepStrictEqual(actualResult, incomepleteInstanceList)
+    })
 })
 
 describe('updateInstancesDetail', async function () {
