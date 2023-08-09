@@ -106,7 +106,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                     )
                 })
                 childNodes.push(...provisionedNodes)
-                newProvisionedToken = response.Marker ? response.Marker : ''
+                newProvisionedToken = response.Marker || ''
             }
         }
         // serverlessToken can be undefined (first time load) or non-empty (more results available). If it's empty, we've loaded all
@@ -123,7 +123,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                     )
                 })
                 childNodes.push(...serverlessNodes)
-                newServerlessToken = response.nextToken ? response.nextToken : ''
+                newServerlessToken = response.nextToken || ''
             }
         }
         return [childNodes, newProvisionedToken, newServerlessToken]

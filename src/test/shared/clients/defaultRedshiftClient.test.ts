@@ -38,7 +38,7 @@ describe('DefaultRedshiftClient', function () {
         workgroupName,
         RedshiftWarehouseType.SERVERLESS
     )
-    let sandbox: Sinon.SinonSandbox
+    let sandbox: sinon.SinonSandbox
 
     before(function () {
         sandbox = sinon.createSandbox()
