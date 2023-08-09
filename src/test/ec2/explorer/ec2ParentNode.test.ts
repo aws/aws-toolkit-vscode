@@ -4,8 +4,8 @@
  */
 
 import * as assert from 'assert'
+import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
-import { stub } from '../../utilities/stubber'
 import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import {
@@ -13,16 +13,34 @@ import {
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
+import { EC2 } from 'aws-sdk'
+import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let instances: Ec2Instance[]
+    let client: Ec2Client
+    let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
+
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'
 
-    function createClient() {
-        const client = stub(Ec2Client, { regionCode: testRegion })
-        client.getInstances.callsFake(async () =>
+    before(function () {
+        client = new Ec2Client(testRegion)
+    })
+
+    after(function () {
+        sinon.restore()
+    })
+
+    beforeEach(function () {
+        getInstanceStub = sinon.stub(Ec2Client.prototype, 'getInstances')
+        instances = [
+            { name: 'firstOne', InstanceId: '0' },
+            { name: 'secondOne', InstanceId: '1' },
+        ]
+
+        getInstanceStub.callsFake(async () =>
             intoCollection(
                 instances.map(instance => ({
                     InstanceId: instance.InstanceId,
@@ -31,16 +49,11 @@ describe('ec2ParentNode', function () {
             )
         )
 
-        return client
-    }
+        testNode = new Ec2ParentNode(testRegion, testPartition, client)
+    })
 
-    beforeEach(function () {
-        instances = [
-            { name: 'firstOne', InstanceId: '0', status: 'running' },
-            { name: 'secondOne', InstanceId: '1', status: 'stopped' },
-        ]
-
-        testNode = new Ec2ParentNode(testRegion, testPartition, createClient())
+    afterEach(function () {
+        getInstanceStub.restore()
     })
 
     it('returns placeholder node if no children are present', async function () {
@@ -79,11 +92,10 @@ describe('ec2ParentNode', function () {
     })
 
     it('has an error node for a child if an error happens during loading', async function () {
-        const client = createClient()
-        client.getInstances.throws(new Error())
-
+        getInstanceStub.throws(new Error())
         const node = new Ec2ParentNode(testRegion, testPartition, client)
         assertNodeListOnlyHasErrorNode(await node.getChildren())
+        getInstanceStub.restore()
     })
 
     it('is able to handle children with duplicate names', async function () {

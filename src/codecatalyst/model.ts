@@ -21,7 +21,6 @@ import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDe
 import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
 import { ChildProcess } from '../shared/utilities/childProcess'
-import { ensureDependencies, hostNamePrefix } from './tools'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -30,8 +29,11 @@ import { fileExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
+import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
+import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
+export const connectScriptPrefix = 'codecatalyst_connect'
 
 export const docs = {
     vscode: {
@@ -86,7 +88,7 @@ export function getCodeCatalystSsmEnv(region: string, ssmPath: string, devenv: D
             AWS_SSM_CLI: ssmPath,
             CODECATALYST_ENDPOINT: getCodeCatalystConfig().endpoint,
             BEARER_TOKEN_LOCATION: bearerTokenCacheLocation(devenv.id),
-            LOG_FILE_LOCATION: sshLogFileLocation(devenv.id),
+            LOG_FILE_LOCATION: sshLogFileLocation('codecatalyst', devenv.id),
             SPACE_NAME: devenv.org.name,
             PROJECT_NAME: devenv.project.name,
             DEVENV_ID: devenv.id,
@@ -137,14 +139,6 @@ export async function cacheBearerToken(bearerToken: string, devenvId: string): P
 
 export function bearerTokenCacheLocation(devenvId: string): string {
     return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${devenvId}.token`)
-}
-
-export function sshLogFileLocation(devenvId: string): string {
-    return path.join(globals.context.globalStorageUri.fsPath, `codecatalyst.${devenvId}.log`)
-}
-
-export function getHostNameFromEnv(env: DevEnvironmentId): string {
-    return `${hostNamePrefix}${env.id}`
 }
 
 export interface ConnectedDevEnv {
@@ -200,12 +194,7 @@ export async function getThisDevEnv(authProvider: CodeCatalystAuthenticationProv
 /**
  * Everything needed to connect to a dev environment via VS Code or `ssh`
  */
-interface DevEnvConnection {
-    readonly sshPath: string
-    readonly vscPath: string
-    readonly hostname: string
-    readonly envProvider: EnvProvider
-    readonly SessionProcess: typeof ChildProcess
+interface DevEnvConnection extends VscodeRemoteConnection {
     readonly devenv: DevEnvironment
 }
 
@@ -215,13 +204,24 @@ export async function prepareDevEnvConnection(
     { topic, timeout }: { topic?: string; timeout?: Timeout } = {}
 ): Promise<DevEnvConnection> {
     const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
+    const hostNamePrefix = 'aws-devenv-'
+    const sshConfig = new SshConfig(ssh, hostNamePrefix, connectScriptPrefix)
+    const config = await sshConfig.ensureValid()
+
+    if (config.isErr()) {
+        const err = config.err()
+        getLogger().error(`codecatalyst: failed to add ssh config section: ${err.message}`)
+
+        throw err
+    }
+
     const runningDevEnv = await client.startDevEnvironmentWithProgress({
         id,
         spaceName: org.name,
         projectName: project.name,
     })
 
-    const hostname = getHostNameFromEnv({ id, org, project })
+    const hostname = `${hostNamePrefix}${id}`
     const logPrefix = topic ? `codecatalyst ${topic} (${id})` : `codecatalyst (${id})`
     const logger = (data: string) => getLogger().verbose(`${logPrefix}: ${data}`)
     const envProvider = createCodeCatalystEnvProvider(client, ssm, runningDevEnv)
@@ -259,7 +259,7 @@ export async function openDevEnv(
         const repo = env.devenv.repositories.length == 1 ? env.devenv.repositories[0].repositoryName : undefined
         targetPath = repo ? `/projects/${repo}` : '/projects'
     }
-    await startVscodeRemote(env.SessionProcess, getHostNameFromEnv(env.devenv), targetPath, env.vscPath)
+    await startVscodeRemote(env.SessionProcess, env.hostname, targetPath, env.vscPath)
 }
 
 // The "codecatalyst_connect" metric should really be splt into two parts:
