@@ -45,8 +45,8 @@ export function createRegionPrompter(
 
     const defaultRegionItem = items.find(item => item.detail === defaultRegion)
 
-    if (defaultRegionItem !== undefined) {
-        defaultRegionItem.description = localize('AWS.generic.recentlyUsed', '(recently used)')
+    if (defaultRegionItem !== undefined && !defaultRegionItem.recentlyUsed) {
+        defaultRegionItem.description = localize('AWS.generic.defaultRegion', '(default region)')
     }
 
     const prompter = createQuickPick(items, {
