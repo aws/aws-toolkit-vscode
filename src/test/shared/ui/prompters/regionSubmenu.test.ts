@@ -45,7 +45,7 @@ describe('regionSubmenu', function () {
         const dataPrompterTester = createQuickPickPrompterTester(
             submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
-        dataPrompterTester.acceptItem('Switch region')
+        dataPrompterTester.acceptItem('Switch Region')
         await dataPrompterTester.result()
 
         const regionTester = createQuickPickPrompterTester(

@@ -46,7 +46,7 @@ export class RegionSubmenu<T> extends Prompter<RegionSubmenuResponse<T>> {
                 data: undefined,
             },
             {
-                label: 'Switch region',
+                label: 'Switch Region',
                 data: switchRegion,
                 description: `current region: ${this.currentRegion}`,
             },
