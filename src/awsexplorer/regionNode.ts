@@ -11,6 +11,7 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { RedshiftNode } from '../redshift/explorer/redshiftNode'
 import { IotNode } from '../iot/explorer/iotNodes'
 import { Region } from '../shared/regions/endpoints'
 import { defaultPartition, RegionProvider } from '../shared/regions/regionProvider'
@@ -21,6 +22,7 @@ import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
+import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
@@ -69,6 +71,10 @@ const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'ecr',
         createFn: (regionCode: string) => new EcrNode(new DefaultEcrClient(regionCode)),
+    },
+    {
+        serviceId: 'redshift',
+        createFn: (regionCode: string) => new RedshiftNode(new DefaultRedshiftClient(regionCode)),
     },
     {
         serviceId: 'ecs',
