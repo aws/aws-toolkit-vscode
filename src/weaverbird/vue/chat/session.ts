@@ -4,13 +4,18 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 import * as fs from 'fs'
 
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 
-/**
- * Session keeps track of all the information related to a session, and persists session information to disk
- */
+interface ResponseType {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    new_file_contents: object
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    deleted_files: string[]
+}
+
 export class Session {
     public readonly history: string[]
     public readonly workspaceRoot: string
@@ -43,31 +48,46 @@ export class Session {
             region: 'eu-west-1',
         })
         console.log(`WS: ${this.workspaceRoot}`)
+        const fileList = fs.readdirSync(path.join(this.workspaceRoot, 'src'))
+
+        const files = fileList.reduce((map: any, fileName) => {
+            const filePath = path.join(this.workspaceRoot, 'src', fileName)
+            map[filePath] = fs.readFileSync(filePath).toString()
+            return map
+        }, {})
         if (false) {
-            fs.readdirSync(this.workspaceRoot, (err, files: string[]) => {
-                files.forEach(file => {
-                    console.log(file)
-                })
+            const payload = {
+                original_file_contents: files,
+                task: msg,
+            }
+            console.log(`Invoking lambda ${payload}`)
+            const command = new InvokeCommand({
+                FunctionName: 'arn:aws:lambda:eu-west-1:761763482860:function:tempFunc',
+                Payload: JSON.stringify(payload),
             })
+
+            const { Payload } = await client.send(command)
+            const rawResult = Buffer.from(Payload!).toString()
+            console.log(rawResult)
+            //const result: ResponseType = JSON.parse(rawResult);
+        }
+        const result: ResponseType = {
+            new_file_contents: {
+                'src/HelloWorld.java':
+                    'public class HelloWorld {\n  public static void main(String[] args) {\n    System.out.println("Hello World");\n  }\n}\n',
+                'test/HelloWorldTest.java':
+                    'import static org.junit.Assert.assertEquals;\nimport org.junit.Test;\n\npublic class HelloWorldTest {\n\n  @Test\n  public void testMain() {\n    HelloWorld.main(null);\n    assertEquals("Hello World\\n", systemOut().getLog());\n  }\n\n',
+            },
+            deleted_files: [],
+        }
+        console.log(result)
+
+        for (const [filePath, fileContent] of Object.entries(result.new_file_contents)) {
+            const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
+            fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
+            fs.writeFileSync(pathUsed, fileContent)
         }
 
-        const command = new InvokeCommand({
-            FunctionName: 'arn:aws:lambda:eu-west-1:761763482860:function:tempFunc',
-            Payload: JSON.stringify({
-                original_file_contents: {},
-                task: msg,
-            }),
-        })
-
-        const { Payload } = await client.send(command)
-        const result = Buffer.from(Payload!).toString()
-
-        // Clean up the summary by stripping the description from the actual generated text contents
-        const fileBeginnings = result.split('--BEGIN-FILE')
-        const outputSummary = fileBeginnings.length > 0 ? fileBeginnings[0] : result
-
-        this.history.push(outputSummary)
-
-        return outputSummary
+        return 'Changes to files done'
     }
 }
