@@ -56,6 +56,9 @@ export async function activate(args: {
                 folder: element.element.folder,
             })
         }
+        if (element.element.serviceId) {
+            telemetry.aws_expandExplorerNode.emit({ serviceType: element.element.serviceId })
+        }
     })
     globals.context.subscriptions.push(view)
 
