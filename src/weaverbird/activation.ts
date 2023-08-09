@@ -5,6 +5,8 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
+import { TextDocumentShowOptions } from 'vscode'
+
 import { Commands } from '../shared/vscode/commands2'
 import { registerChatView } from './vue/chat/backend'
 import { applyPatch } from 'diff'
@@ -134,4 +136,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
         )
     })
+
+    const f = await vscode.workspace.findFiles('**/*.js', '**​/node_modules/**', 5)
+    await vscode.commands.executeCommand('vscode.diff', f[0], f[1], undefined, {
+        viewColumn: vscode.ViewColumn.Active,
+        preview: false,
+        preserveFocus: false,
+    } as TextDocumentShowOptions)
+
+    const myScheme = 'test'
+    const myProvider = new (class implements vscode.TextDocumentContentProvider {
+        // emitter and its event
+        onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>()
+        onDidChange = this.onDidChangeEmitter.event
+
+        provideTextDocumentContent(uri: vscode.Uri): string {
+            return 'sample file contents'
+        }
+    })()
+    context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(myScheme, myProvider))
+
+    const uri = vscode.Uri.parse('test:testfile')
+    const doc = await vscode.workspace.openTextDocument(uri) // calls back into the provider
+    await vscode.commands.executeCommand('vscode.diff', f[2], doc.uri, undefined, {
+        viewColumn: vscode.ViewColumn.One,
+        preview: false,
+        preserveFocus: false,
+    } as TextDocumentShowOptions)
 }
