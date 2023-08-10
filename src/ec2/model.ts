@@ -20,7 +20,7 @@ import { createBoundProcess } from '../codecatalyst/model'
 import { getLogger } from '../shared/logger/logger'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { showMessageWithCancel } from '../shared/utilities/messages'
-import { VscodeRemoteSshConfig, sshLogFileLocation } from '../shared/vscodeRemoteSshConfig'
+import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import globals from '../shared/extensionGlobals'
 
@@ -29,9 +29,6 @@ export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMC
 interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
 }
-
-const ec2ConnectScriptPrefix = 'ec2_connect'
-const hostNamePrefix = 'ec2-'
 
 export class Ec2ConnectionManager {
     protected ssmClient: SsmClient
@@ -171,15 +168,14 @@ export class Ec2ConnectionManager {
         }
     }
 
-    public async attemptToOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
+    public async tryOpenRemoteConnection(selection: Ec2Selection): Promise<void> {
         await this.checkForStartSessionError(selection)
 
         const remoteUser = await this.getRemoteUser(selection.instanceId)
         const remoteEnv = await this.prepareEc2RemoteEnvWithProgress(selection, remoteUser)
 
-        const fullHostName = `${hostNamePrefix}${selection.instanceId}`
         try {
-            await startVscodeRemote(remoteEnv.SessionProcess, fullHostName, '/', remoteEnv.vscPath, remoteUser)
+            await startVscodeRemote(remoteEnv.SessionProcess, remoteEnv.hostname, '/', remoteEnv.vscPath, remoteUser)
         } catch (err) {
             this.throwGeneralConnectionError(selection, err as Error)
         }
@@ -195,7 +191,8 @@ export class Ec2ConnectionManager {
         const logger = this.configureRemoteConnectionLogger(selection.instanceId)
         const { ssm, vsc, ssh } = (await ensureDependencies()).unwrap()
         const keyPath = await this.configureSshKeys(selection, remoteUser)
-        const sshConfig = new VscodeRemoteSshConfig(ssh, hostNamePrefix, ec2ConnectScriptPrefix, keyPath)
+        const hostNamePrefix = 'aws-ec2-'
+        const sshConfig = new SshConfig(ssh, hostNamePrefix, 'ec2_connect', keyPath)
 
         const config = await sshConfig.ensureValid()
         if (config.isErr()) {
@@ -216,7 +213,7 @@ export class Ec2ConnectionManager {
         })
 
         return {
-            hostname: selection.instanceId,
+            hostname: `${hostNamePrefix}${selection.instanceId}`,
             envProvider,
             sshPath: ssh,
             vscPath: vsc,
@@ -243,10 +240,10 @@ export class Ec2ConnectionManager {
         sshKeyPair: SshKeyPair,
         remoteUser: string
     ): Promise<void> {
-        const sshKey = await sshKeyPair.getPublicKey()
+        const sshPubKey = await sshKeyPair.getPublicKey()
 
         const remoteAuthorizedKeysPaths = `/home/${remoteUser}/.ssh/authorized_keys`
-        const command = `echo "${sshKey}" > ${remoteAuthorizedKeysPaths}`
+        const command = `echo "${sshPubKey}" > ${remoteAuthorizedKeysPaths}`
         const documentName = 'AWS-RunShellScript'
 
         await this.ssmClient.sendCommandAndWait(selection.instanceId, documentName, {

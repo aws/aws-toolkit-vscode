@@ -6,10 +6,15 @@
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
-import { Ec2Prompter, instanceFilter } from './prompter'
-import { Ec2Selection } from './prompter'
-import { Ec2Client, Ec2Instance } from '../shared/clients/ec2Client'
+import { Ec2Prompter, instanceFilter, Ec2Selection } from './prompter'
+import { Ec2Instance, Ec2Client } from '../shared/clients/ec2Client'
 import { copyToClipboard } from '../shared/utilities/messages'
+
+export function refreshExplorer(node?: Ec2Node) {
+    if (node) {
+        node instanceof Ec2InstanceNode ? node.parent.refreshNode() : node.refreshNode()
+    }
+}
 
 export async function openTerminal(node?: Ec2Node) {
     const selection = await getSelection(node)
@@ -21,7 +26,7 @@ export async function openTerminal(node?: Ec2Node) {
 export async function openRemoteConnection(node?: Ec2Node) {
     const selection = await getSelection(node)
     const connectionManager = new Ec2ConnectionManager(selection.region)
-    await connectionManager.attemptToOpenRemoteConnection(selection)
+    await connectionManager.tryOpenRemoteConnection(selection)
 }
 
 export async function startInstance(node?: Ec2Node) {

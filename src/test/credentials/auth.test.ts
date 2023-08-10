@@ -285,6 +285,20 @@ describe('Auth', function () {
             )
         })
 
+        it('shows a user message if SSO connection returned no accounts/roles', async function () {
+            auth.ssoClient.listAccounts.returns(
+                toCollection(async function* () {
+                    yield []
+                })
+            )
+            await auth.createConnection(linkedSsoProfile)
+            await auth.listAndTraverseConnections().promise()
+            assert.strictEqual(
+                getTestWindow().shownMessages[0].message,
+                'IAM Identity Center (d-0123456789) returned no roles. Ensure the user is assigned to an account with a Permission Set.'
+            )
+        })
+
         it('does not gather linked accounts when calling `listConnections`', async function () {
             await auth.createConnection(linkedSsoProfile)
             const connections = await auth.listConnections()
