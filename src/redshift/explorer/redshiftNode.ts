@@ -123,7 +123,7 @@ export class RedshiftNode extends AWSTreeNodeBase implements LoadMoreNode {
                     )
                 })
                 childNodes.push(...serverlessNodes)
-                newServerlessToken = response.nextToken || ''
+                newServerlessToken = response.nextToken ?? ''
             }
         }
         return [childNodes, newProvisionedToken, newServerlessToken]
