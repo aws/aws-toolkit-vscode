@@ -17,7 +17,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken } from './sso/model'
+import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -212,9 +212,10 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * Gathers all AWS accounts/roles associated with SSO ("IAM Identity Center", "IdC") connections.
+     * Gathers all local profiles plus any AWS accounts/roles associated with SSO ("IAM Identity
+     * Center", "IdC") connections.
      *
-     * Use {@link Auth.listConnections} when you do not want to make extra API calls to the SSO service.
+     * Use {@link Auth.listConnections} to avoid API calls to the SSO service.
      */
     public listAndTraverseConnections(): AsyncCollection<Connection> {
         async function* load(this: Auth) {
@@ -233,13 +234,12 @@ export class Auth implements AuthService, ConnectionManager {
                 .listProfiles()
                 .filter(isLinkable)
                 .map(([id, profile]) => {
-                    const startUrl = this.truncateStartUrl(profile.startUrl)
                     return toCollection(() =>
                         loadLinkedProfilesIntoStore(
                             this.store,
                             id,
                             this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile)),
-                            startUrl
+                            profile.startUrl
                         )
                     )
                         .catch(err => {
@@ -750,12 +750,8 @@ export class Auth implements AuthService, ConnectionManager {
         return (this.#instance ??= new Auth(new ProfileStore(memento)))
     }
 
-    private truncateStartUrl(startUrl: string) {
-        return startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? startUrl
-    }
-
     private getSsoProfileLabel(profile: SsoProfile) {
-        const truncatedUrl = this.truncateStartUrl(profile.startUrl)
+        const truncatedUrl = truncateStartUrl(profile.startUrl)
 
         return profile.startUrl === builderIdStartUrl
             ? localizedText.builderId()

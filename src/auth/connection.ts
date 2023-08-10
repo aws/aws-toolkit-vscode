@@ -5,11 +5,18 @@
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken } from './sso/model'
+import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
 import { getLogger } from '../shared/logger/logger'
+import { showMessageWithUrl } from '../shared/utilities/messages'
+import { onceChanged } from '../shared/utilities/functionUtils'
+
+/** Shows an error message unless it is the same as the last one shown. */
+const warnOnce = onceChanged((s: string, url: string) => {
+    showMessageWithUrl(s, url, undefined, 'error')
+})
 
 export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
@@ -255,7 +262,7 @@ export async function* loadLinkedProfilesIntoStore(
     store: ProfileStore,
     source: SsoConnection['id'],
     client: SsoClient,
-    profileLabel: string
+    startUrl: string
 ) {
     const accounts = new Set<string>()
     const found = new Set<Connection['id']>()
@@ -290,17 +297,21 @@ export async function* loadLinkedProfilesIntoStore(
         yield [id, profile] as const
     }
 
-    if (accounts.size === 0) {
+    const isBuilderId = startUrl === builderIdStartUrl // Special case.
+    if (!isBuilderId && (accounts.size === 0 || found.size === 0)) {
+        const name = truncateStartUrl(startUrl)
         // Possible causes:
         // - SSO org has no "Permission sets"
         // - user is not an "Assigned user" in any account in the SSO org
         // - user is an "Assigned user" but no "Permission sets"
-        getLogger().warn('auth: SSO org (%s) returned no accounts', profileLabel)
-    } else if (found.size === 0) {
-        getLogger().warn(
-            'auth: SSO org (%s) returned no IAM credentials for account: %s',
-            profileLabel,
-            Array.from(accounts).join()
+        if (accounts.size === 0) {
+            getLogger().warn('auth: SSO org (%s) returned no accounts', name)
+        } else if (found.size === 0) {
+            getLogger().warn('auth: SSO org (%s) returned no roles for account: %s', name, Array.from(accounts).join())
+        }
+        warnOnce(
+            `IAM Identity Center (${name}) returned no roles. Ensure the user is assigned to an account with a Permission Set.`,
+            'https://docs.aws.amazon.com/singlesignon/latest/userguide/getting-started.html'
         )
     }
 
