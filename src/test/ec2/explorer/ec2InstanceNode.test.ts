@@ -83,9 +83,10 @@ describe('ec2InstanceNode', function () {
         assert.strictEqual(testNode.contextValue, Ec2InstancePendingContext)
     })
 
-    it('updates label with new instance', async function () {
-        const newIdInstance = { ...testInstance, InstanceId: 'testId2' }
+    it('updates status with new instance', async function () {
+        const newStatus = 'pending'
+        const newIdInstance = { ...testInstance, InstanceId: 'testId2', status: newStatus }
         testNode.updateInstance(newIdInstance)
-        assert.strictEqual(testNode.label, `${getNameOfInstance(newIdInstance)} (${newIdInstance.InstanceId})`)
+        assert.strictEqual(testNode.getStatus(), newStatus)
     })
 })
