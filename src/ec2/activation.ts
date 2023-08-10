@@ -31,6 +31,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         }),
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
+            await telemetry.ec2_connectToInstance.run(async span => {
+                span.record({ ec2ConnectionType: 'remoteDesktop' })
+                await openRemoteConnection(node)
+            })
             await openRemoteConnection(node)
         }),
 
