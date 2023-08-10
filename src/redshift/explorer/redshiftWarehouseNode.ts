@@ -44,7 +44,8 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
-        public readonly warehouseType: RedshiftWarehouseType
+        public readonly warehouseType: RedshiftWarehouseType,
+        public readonly connectionWizard?: RedshiftNodeConnectionWizard
     ) {
         super(redshiftWarehouse.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = redshiftWarehouse.name
@@ -54,6 +55,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.name = redshiftWarehouse.name
         this.redshiftClient = parent.redshiftClient
         this.newStartButton = { label: 'Start', iconPath: getIcon('vscode-debug-start') }
+        this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
     }
 
     public setConnectionParams(connectionParams: ConnectionParams) {
@@ -97,8 +99,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 this.childLoader.clearChildren()
-                const connectionWizard = new RedshiftNodeConnectionWizard(this)
-                const connectionParams = await connectionWizard.run()
+                const connectionParams = await this.connectionWizard!.run()
                 if (!connectionParams) {
                     return [
                         new AWSCommandTreeNode(
