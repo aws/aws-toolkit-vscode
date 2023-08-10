@@ -30,6 +30,13 @@ function verifyChildNodes(childNodes: AWSTreeNodeBase[], databaseNodeCount: numb
     assert.strictEqual(loadMoreNodes.length, shouldHaveLoadMore ? 1 : 0)
 }
 
+function verifyRetryNode(childNodes: AWSTreeNodeBase[]) {
+    assert.strictEqual(childNodes.length, 1)
+    assert.ok(childNodes[0] instanceof AWSCommandTreeNode)
+    const cmdTreeNode = childNodes[0] as AWSCommandTreeNode
+    assert.strictEqual(cmdTreeNode.command?.command, 'aws.refreshAwsExplorerNode')
+}
+
 describe('redshiftWarehouseNode', function () {
     describe('getChildren', function () {
         const sandbox = sinon.createSandbox()
@@ -102,10 +109,20 @@ describe('redshiftWarehouseNode', function () {
                 connectionWizardStub
             )
             const childNodes = await warehouseNode.getChildren()
-            assert.strictEqual(childNodes.length, 1)
-            assert.ok(childNodes[0] instanceof AWSCommandTreeNode)
-            const cmdTreeNode = childNodes[0] as AWSCommandTreeNode
-            assert.strictEqual(cmdTreeNode.command?.command, 'aws.refreshAwsExplorerNode')
+            verifyRetryNode(childNodes)
+        })
+
+        it('shows a node with retry if there is error fetching databases', async () => {
+            connectionWizardStub = { run: () => Promise.resolve(connectionParams) } as RedshiftNodeConnectionWizard
+            warehouseNode = new RedshiftWarehouseNode(
+                redshiftNode,
+                resourceNode,
+                RedshiftWarehouseType.PROVISIONED,
+                connectionWizardStub
+            )
+            listDatabasesStub.returns({ promise: () => Promise.reject('Failed') })
+            const childNodes = await warehouseNode.getChildren()
+            verifyRetryNode(childNodes)
         })
     })
 })
