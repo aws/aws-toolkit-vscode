@@ -55,12 +55,12 @@ export class Session {
             map[filePath] = fs.readFileSync(filePath).toString()
             return map
         }, {})
-        if (false) {
-            const payload = {
-                original_file_contents: files,
-                task: msg,
-            }
-            console.log(`Invoking lambda ${payload}`)
+        const payload = {
+            original_file_contents: files,
+            task: msg,
+        }
+        console.log(`Invoking lambda ${JSON.stringify(payload)}`)
+        try {
             const command = new InvokeCommand({
                 FunctionName: 'arn:aws:lambda:eu-west-1:761763482860:function:tempFunc',
                 Payload: JSON.stringify(payload),
@@ -69,25 +69,20 @@ export class Session {
             const { Payload } = await client.send(command)
             const rawResult = Buffer.from(Payload!).toString()
             console.log(rawResult)
-            //const result: ResponseType = JSON.parse(rawResult);
-        }
-        const result: ResponseType = {
-            new_file_contents: {
-                'src/HelloWorld.java':
-                    'public class HelloWorld {\n  public static void main(String[] args) {\n    System.out.println("Hello World");\n  }\n}\n',
-                'test/HelloWorldTest.java':
-                    'import static org.junit.Assert.assertEquals;\nimport org.junit.Test;\n\npublic class HelloWorldTest {\n\n  @Test\n  public void testMain() {\n    HelloWorld.main(null);\n    assertEquals("Hello World\\n", systemOut().getLog());\n  }\n\n',
-            },
-            deleted_files: [],
-        }
-        console.log(result)
+            const result: ResponseType = JSON.parse(rawResult)
+            console.log(result)
 
-        for (const [filePath, fileContent] of Object.entries(result.new_file_contents)) {
-            const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
-            fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
-            fs.writeFileSync(pathUsed, fileContent)
-        }
+            for (const [filePath, fileContent] of Object.entries(result.new_file_contents)) {
+                const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
+                fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
+                fs.writeFileSync(pathUsed, fileContent)
+            }
 
-        return 'Changes to files done'
+            return 'Changes to files done'
+        } catch (e: any) {
+            {
+                return `Error happened: ${e}`
+            }
+        }
     }
 }
