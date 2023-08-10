@@ -25,7 +25,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly client: Ec2Client,
         public override readonly regionCode: string,
         private readonly partitionId: string,
-        public readonly instance: Ec2Instance
+        /* the instance attribute is not read-only because we update its state when polling for updates */
+        public instance: Ec2Instance
     ) {
         super('')
         this.updateInstance(instance)
