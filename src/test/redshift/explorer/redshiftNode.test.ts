@@ -13,6 +13,7 @@ import { ClusterList, ClustersMessage } from 'aws-sdk/clients/redshift'
 import { ListWorkgroupsResponse, WorkgroupList } from 'aws-sdk/clients/redshiftserverless'
 import { RedshiftWarehouseType } from '../../../redshift/models/models'
 import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
+import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 function success<T>(output?: T): Request<T, AWSError> {
     return {
@@ -40,6 +41,29 @@ function getExpectedServerlessResponse(withNextToken: boolean): ListWorkgroupsRe
     return response
 }
 
+function verifyChildNodeCounts(
+    childNodes: AWSTreeNodeBase[],
+    expectedProvisionedNodeCount: number,
+    expectedServerlessNodeCount: number,
+    expectedLoadMoreNodeCount: number
+) {
+    const provisionedNodes = childNodes.filter(
+        childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.PROVISIONED
+    )
+    const serverlessNodes = childNodes.filter(
+        childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.SERVERLESS
+    )
+    const loadMoreNodes = childNodes.filter(childNode => childNode instanceof MoreResultsNode)
+    assert.strictEqual(
+        childNodes.length,
+        expectedProvisionedNodeCount + expectedServerlessNodeCount + expectedLoadMoreNodeCount,
+        'Total node count mismatch'
+    )
+    assert.strictEqual(provisionedNodes.length, expectedProvisionedNodeCount, 'ProvisionedNode count mismatch')
+    assert.strictEqual(serverlessNodes.length, expectedServerlessNodeCount, 'ServerlessNode count mismatch')
+    assert.strictEqual(loadMoreNodes.length, expectedLoadMoreNodeCount, 'LoadMoreNode count mismatch')
+}
+
 describe('redshiftNode', function () {
     describe('getChildren', function () {
         let node: RedshiftNode
@@ -49,6 +73,19 @@ describe('redshiftNode', function () {
         const sandbox: sinon.SinonSandbox = sinon.createSandbox()
         const describeClustersStub = sandbox.stub()
         const listWorkgroupsStub = sandbox.stub()
+
+        function verifyStubCallCounts(describeClustersStubCallCount: number, listWorkgroupsStubCallCount: number) {
+            assert.strictEqual(
+                describeClustersStub.callCount,
+                describeClustersStubCallCount,
+                'DescribeClustersStub call count mismatch'
+            )
+            assert.strictEqual(
+                listWorkgroupsStub.callCount,
+                listWorkgroupsStubCallCount,
+                'ListWorkgroupsStub call count mismatch'
+            )
+        }
 
         beforeEach(function () {
             mockRedshift = <Redshift>{}
@@ -72,68 +109,38 @@ describe('redshiftNode', function () {
             describeClustersStub.returns(success(getExpectedProvisionedResponse(false)))
             listWorkgroupsStub.returns(success(getExpectedServerlessResponse(false)))
             const childNodes = await node.getChildren()
-            assert.ok(childNodes.length === 2)
-            const provisionedNode = childNodes.filter(
-                childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.PROVISIONED
-            )
-            const serverlessNode = childNodes.filter(
-                childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.SERVERLESS
-            )
-            assert.strictEqual(provisionedNode.length, 1)
-            assert.strictEqual(serverlessNode.length, 1)
-            assert.ok(describeClustersStub.calledOnce)
-            assert.ok(listWorkgroupsStub.calledOnce)
+            verifyChildNodeCounts(childNodes, 1, 1, 0)
+            verifyStubCallCounts(1, 1)
         })
 
         it('gets both provisioned and serverless warehouses if results have been loaded but there are more results', async () => {
             describeClustersStub.returns(success(getExpectedProvisionedResponse(true)))
             listWorkgroupsStub.returns(success(getExpectedServerlessResponse(true)))
             const childNodes = await node.getChildren()
-            assert.ok(childNodes.length === 3)
-            const provisionedNode = childNodes.filter(
-                childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.PROVISIONED
-            )
-            const serverlessNode = childNodes.filter(
-                childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.SERVERLESS
-            )
-            const loadMoreNode = childNodes.filter(childNode => childNode instanceof MoreResultsNode)
-            assert.strictEqual(provisionedNode.length, 1)
-            assert.strictEqual(serverlessNode.length, 1)
-            assert.strictEqual(loadMoreNode.length, 1)
-            assert.ok(describeClustersStub.calledOnce)
-            assert.ok(listWorkgroupsStub.calledOnce)
+            verifyChildNodeCounts(childNodes, 1, 1, 1)
+            verifyStubCallCounts(1, 1)
         })
 
         it('gets only provisioned warehouses if results have been loaded and there are only more provisioned warehouses', async () => {
             describeClustersStub.returns(success(getExpectedProvisionedResponse(true)))
             listWorkgroupsStub.returns(success(getExpectedServerlessResponse(false)))
             const childNodes = await node.getChildren()
-            assert.strictEqual(childNodes.length, 3)
+            verifyChildNodeCounts(childNodes, 1, 1, 1)
             await node.loadMoreChildren()
             const newChildNodes = await node.getChildren()
-            assert.strictEqual(newChildNodes.length, 4)
-            const provisionedNodes = newChildNodes.filter(
-                childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.PROVISIONED
-            )
-            assert.strictEqual(provisionedNodes.length, 2)
-            assert.strictEqual(describeClustersStub.callCount, 2)
-            assert.strictEqual(listWorkgroupsStub.callCount, 1)
+            verifyChildNodeCounts(newChildNodes, 2, 1, 1)
+            verifyStubCallCounts(2, 1)
         })
 
         it('gets only serverless warehouses if results have been loaded and there are only more serverless warehouses', async () => {
             describeClustersStub.returns(success(getExpectedProvisionedResponse(false)))
             listWorkgroupsStub.returns(success(getExpectedServerlessResponse(true)))
             const childNodes = await node.getChildren()
-            assert.strictEqual(childNodes.length, 3)
+            verifyChildNodeCounts(childNodes, 1, 1, 1)
             await node.loadMoreChildren()
             const newChildNodes = await node.getChildren()
-            assert.strictEqual(newChildNodes.length, 4)
-            const serverlessNodes = newChildNodes.filter(
-                childNode => (childNode as RedshiftWarehouseNode).warehouseType === RedshiftWarehouseType.SERVERLESS
-            )
-            assert.strictEqual(serverlessNodes.length, 2)
-            assert.strictEqual(describeClustersStub.callCount, 1)
-            assert.strictEqual(listWorkgroupsStub.callCount, 2)
+            verifyChildNodeCounts(newChildNodes, 1, 2, 1)
+            verifyStubCallCounts(1, 2)
         })
     })
 })
