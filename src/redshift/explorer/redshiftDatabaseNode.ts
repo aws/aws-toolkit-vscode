@@ -2,7 +2,6 @@
  * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-// eslint-disable-next-line header/header
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
@@ -14,9 +13,11 @@ import { ConnectionParams } from '../models/models'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { getIcon } from '../../shared/icons'
+import { getLogger } from '../../shared/logger'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
+    private readonly logger = getLogger()
 
     public constructor(
         public readonly databaseName: string,
@@ -61,7 +62,7 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
                 newContinuationToken: listSchemaResponse.NextToken,
             }
         } catch (error) {
-            console.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
+            this.logger.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
             vscode.window.showErrorMessage(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
             return Promise.reject(error)
         }
