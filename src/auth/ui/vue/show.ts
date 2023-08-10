@@ -91,7 +91,7 @@ export class AuthWebview extends VueWebview {
     }
 
     /**
-     * Returns true if any credentials are found, even ones associated with an sso
+     * Returns true if any credentials are found, including those discovered from SSO service API.
      */
     async isCredentialExists(): Promise<boolean> {
         return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined

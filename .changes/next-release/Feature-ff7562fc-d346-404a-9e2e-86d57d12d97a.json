@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "IAM Identity Center (SSO): show an error if SSO user is not assigned to an account with a Permission Set"
+}

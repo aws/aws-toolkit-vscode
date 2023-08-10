@@ -8,6 +8,8 @@ import { isCloud9 } from '../../extensionUtilities'
 
 export abstract class AWSTreeNodeBase extends TreeItem {
     public readonly regionCode?: string
+    /** Service id as defined in the service model. May be undefined for child nodes. */
+    public serviceId: string | undefined
 
     public constructor(label: string, collapsibleState?: TreeItemCollapsibleState) {
         super(label, collapsibleState)

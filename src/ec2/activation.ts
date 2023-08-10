@@ -19,7 +19,7 @@ import {
 
 export async function activate(ctx: ExtContext): Promise<void> {
     ctx.extensionContext.subscriptions.push(
-        Commands.register('aws.ec2.openTerminal', async (node?: Ec2Node) => {
+        Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
             await telemetry.ec2_connectToInstance.run(async span => {
                 span.record({ ec2ConnectionType: 'ssm' })
                 await openTerminal(node)
@@ -29,6 +29,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.ec2.copyInstanceId', async (node: Ec2InstanceNode) => {
             await copyTextCommand(node, 'id')
         }),
+
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
             await openRemoteConnection(node)
         }),
