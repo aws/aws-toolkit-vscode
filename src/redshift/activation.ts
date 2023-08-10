@@ -69,7 +69,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
                         )}}}]}`
                     )
                     const region = JSON.stringify(parentNode.connectionParams?.region)
-                    await vscode.window.showNotebookDocument({ uri: selectedUri } as vscode.NotebookDocument)
+                    await (vscode.window as any).showNotebookDocument({ uri: selectedUri } as vscode.NotebookDocument)
                     redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(region)
 
                     // TODO: Open file and close virtual doc? Is this possible?
