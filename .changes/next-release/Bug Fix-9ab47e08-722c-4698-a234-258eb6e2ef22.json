@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "bug: regionSubmenu prompter duplicate tag 'recently used' is replaced by 'default region'"
+}
