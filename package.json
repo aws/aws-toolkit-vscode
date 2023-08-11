@@ -3609,7 +3609,7 @@
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.3.3",
+        "@vscode/test-electron": "^2.3.4",
         "@vscode/vsce": "^2.19.0",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
