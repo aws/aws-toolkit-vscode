@@ -9,17 +9,13 @@ import * as fs from 'fs'
 
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 
-interface ResponseType {
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    new_file_contents: object
-    // eslint-disable-next-line @typescript-eslint/naming-convention
-    deleted_files: string[]
-}
-
 export class Session {
     public readonly history: string[]
     public readonly workspaceRoot: string
     public readonly sourceRoot: string
+    private state: 'refinement' | 'codegen'
+    private task: string = ''
+    private instruction: string = ''
 
     // TODO remake private
     public onProgressEventEmitter: vscode.EventEmitter<string>
@@ -33,6 +29,7 @@ export class Session {
         this.history = history
         this.workspaceRoot = workspaceRoot
         this.sourceRoot = this.workspaceRoot + '/src'
+        this.state = 'refinement'
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
         this.onProgressEvent = this.onProgressEventEmitter.event
 
@@ -40,14 +37,33 @@ export class Session {
         this.onProgressFinishedEvent = this.onProgressFinishedEventEmitter.event
     }
 
-    async send(msg: string) {
-        // TODO: figure out how to pass environment variables
-        // We might need to pipe in the previous history here so we need to store that somewhere in the class
-
+    async invokeLambda(arn: string, payload: any): Promise<any> {
         const client = new LambdaClient({
             region: 'eu-west-1',
         })
-        console.log(`WS: ${this.workspaceRoot}`)
+
+        const command = new InvokeCommand({
+            FunctionName: arn,
+            Payload: JSON.stringify(payload),
+        })
+
+        console.log(`Invoking ${arn} with payload ${JSON.stringify(payload)}`)
+
+        const { Payload } = await client.send(command)
+        const rawResult = Buffer.from(Payload!).toString()
+        console.log(rawResult)
+        return JSON.parse(rawResult)
+    }
+
+    async send(msg: string) {
+        try {
+            return await this.sendUnsafe(msg)
+        } catch (e: any) {
+            return `Unexpected error happened`
+        }
+    }
+
+    async sendUnsafe(msg: string) {
         const fileList = fs.readdirSync(path.join(this.workspaceRoot, 'src'))
 
         const files = fileList.reduce((map: any, fileName) => {
@@ -55,34 +71,40 @@ export class Session {
             map[filePath] = fs.readFileSync(filePath).toString()
             return map
         }, {})
-        const payload = {
-            original_file_contents: files,
-            task: msg,
+        if (msg.indexOf('WRITE CODE') !== -1) {
+            this.state = 'codegen'
+        } else {
+            this.task = msg
         }
-        console.log(`Invoking lambda ${JSON.stringify(payload)}`)
-        try {
-            const command = new InvokeCommand({
-                FunctionName: 'arn:aws:lambda:eu-west-1:761763482860:function:tempFunc',
-                Payload: JSON.stringify(payload),
-            })
-
-            const { Payload } = await client.send(command)
-            const rawResult = Buffer.from(Payload!).toString()
-            console.log(rawResult)
-            const result: ResponseType = JSON.parse(rawResult)
-            console.log(result)
+        if (this.state === 'refinement') {
+            const payload = {
+                original_file_contents: files,
+                task: msg,
+            }
+            const result = await this.invokeLambda(
+                'arn:aws:lambda:eu-west-1:761763482860:function:Weaverbird-Service-person-GenerateTaskLambdaEFA4E7-tNxFUYiHdp3z',
+                payload
+            )
+            this.instruction = result.instruction
+            return `${result.instruction}\n`
+        } else {
+            const payload = {
+                original_file_contents: files,
+                instruction: this.instruction,
+                task: this.task,
+            }
+            const result = await this.invokeLambda(
+                'arn:aws:lambda:eu-west-1:761763482860:function:Weaverbird-Service-person-GenerateCodeLambdaCDE418-KYgrsZ89ofdr',
+                payload
+            )
 
             for (const [filePath, fileContent] of Object.entries(result.new_file_contents)) {
                 const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
                 fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
-                fs.writeFileSync(pathUsed, fileContent)
+                fs.writeFileSync(pathUsed, fileContent as string)
             }
 
             return 'Changes to files done'
-        } catch (e: any) {
-            {
-                return `Error happened: ${e}`
-            }
         }
     }
 }
