@@ -38,10 +38,6 @@ export class TelemetryHelper {
      */
     public CodeWhispererAutomatedtriggerType: CodewhispererAutomatedTriggerType
     /**
-     * completion Type of the CodeWhisperer recommendation, line vs block
-     */
-    public completionType: CodewhispererCompletionType
-    /**
      * the cursor offset location at invocation time
      */
     public cursorOffset: number
@@ -77,7 +73,6 @@ export class TelemetryHelper {
     constructor() {
         this.triggerType = 'OnDemand'
         this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
-        this.completionType = 'Line'
         this.cursorOffset = 0
         this.startUrl = ''
         this.sessionId = ''
@@ -108,7 +103,6 @@ export class TelemetryHelper {
             codewhispererLastSuggestionIndex: lastSuggestionIndex,
             codewhispererTriggerType: triggerType,
             codewhispererAutomatedTriggerType: autoTriggerType,
-            codewhispererCompletionType: result === 'Succeeded' ? this.completionType : undefined,
             result,
             duration: duration || 0,
             codewhispererLineNumber: lineNumber || 0,
@@ -144,7 +138,7 @@ export class TelemetryHelper {
             codewhispererSuggestionState: 'Empty',
             codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
-            codewhispererCompletionType: this.completionType,
+            codewhispererCompletionType: 'Line',
             codewhispererLanguage: languageContext.language,
             credentialStartUrl: TelemetryHelper.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -171,6 +165,7 @@ export class TelemetryHelper {
         acceptIndex: number,
         languageId: string | undefined,
         paginationIndex: number,
+        completionTypes: Map<number, CodewhispererCompletionType>,
         recommendationSuggestionState?: Map<number, string>,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
@@ -196,7 +191,7 @@ export class TelemetryHelper {
                 codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 codewhispererSuggestionImportCount: getImportCount(_elem),
-                codewhispererCompletionType: this.completionType,
+                codewhispererCompletionType: this.getCompletionType(i, completionTypes),
                 codewhispererLanguage: languageContext.language,
                 credentialStartUrl: TelemetryHelper.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -417,6 +412,10 @@ export class TelemetryHelper {
         return i === acceptIndex ? 'Accept' : 'Ignore'
     }
 
+    public getCompletionType(i: number, completionTypes: Map<number, CodewhispererCompletionType>) {
+        return completionTypes.get(i) || 'Line'
+    }
+
     public isTelemetryEnabled(): boolean {
         return globals.telemetry.telemetryEnabled
     }
@@ -493,7 +492,7 @@ export class TelemetryHelper {
             codewhispererPostprocessingLatency: this.firstSuggestionShowTime - this.sdkApiCallEndTime,
             codewhispererCredentialFetchingLatency: this.sdkApiCallStartTime - this.fetchCredentialStartTime,
             codewhispererPreprocessingLatency: this.fetchCredentialStartTime - this.invokeSuggestionStartTime,
-            codewhispererCompletionType: this.completionType,
+            codewhispererCompletionType: 'Line',
             codewhispererTriggerType: this.triggerType,
             codewhispererLanguage: runtimeLanguageContext.getLanguageContext(languageId).language,
             credentialStartUrl: this.startUrl,
