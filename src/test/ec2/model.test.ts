@@ -101,6 +101,10 @@ describe('Ec2ConnectClient', function () {
             instanceSelection = { instanceId: 'testInstance', region: 'testRegion' }
         })
 
+        afterEach(function () {
+            sinon.restore()
+        })
+
         it('throws EC2SSMStatus error if instance is not running', async function () {
             sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(false)
 
@@ -110,8 +114,6 @@ describe('Ec2ConnectClient', function () {
             } catch (err) {
                 assert.strictEqual((err as ToolkitError).code, 'EC2SSMStatus')
             }
-
-            sinon.restore()
         })
 
         it('throws EC2SSMPermission error if instance is running but has no role', async function () {
@@ -124,8 +126,6 @@ describe('Ec2ConnectClient', function () {
             } catch (err) {
                 assert.strictEqual((err as ToolkitError).code, 'EC2SSMPermission')
             }
-
-            sinon.restore()
         })
 
         it('throws EC2SSMAgent error if instance is running and has IAM Role, but agent is not running', async function () {
@@ -140,8 +140,6 @@ describe('Ec2ConnectClient', function () {
             } catch (err) {
                 assert.strictEqual((err as ToolkitError).code, 'EC2SSMAgentStatus')
             }
-
-            sinon.restore()
         })
 
         it('does not throw an error if all checks pass', async function () {
@@ -151,8 +149,6 @@ describe('Ec2ConnectClient', function () {
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
 
             assert.doesNotThrow(async () => await client.checkForStartSessionError(instanceSelection))
-
-            sinon.restore()
         })
     })
 
