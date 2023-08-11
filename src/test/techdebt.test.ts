@@ -42,4 +42,15 @@ describe('tech debt', function () {
             'with node16+, we can use crypto.randomUUID and remove the "uuid" dependency'
         )
     })
+
+    it('remove explicit sam cli version', function () {
+        // Indicate to start using the latest aws-sam-cli version in our CI
+        // https://issues.amazon.com/issues/IDE-11386
+        const nextMonth = new Date(2023, 8, 12) // September 12th, 2023
+        const now = new Date()
+        assert(
+            now < nextMonth,
+            'Remove use of 1.94.0 for aws-sam-cli in linuxIntegrationTests.yml and see if integration tests are passing now'
+        )
+    })
 })
