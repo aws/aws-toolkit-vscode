@@ -25,7 +25,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         public readonly client: Ec2Client,
         public override readonly regionCode: string,
         private readonly partitionId: string,
-        public instance: Ec2Instance
+        // XXX: this variable is marked as readonly, but the 'status' attribute is updated when polling the nodes.
+        public readonly instance: Ec2Instance
     ) {
         super('')
         this.updateInstance(instance)
@@ -33,8 +34,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     public updateInstance(newInstance: Ec2Instance) {
-        this.setInstance(newInstance)
-        this.label = `${this.name} (${this.InstanceId}) ${this.instance.status?.toUpperCase()}`
+        this.setInstanceStatus(newInstance.status!)
+        this.label = `${this.name} (${this.InstanceId})`
         this.contextValue = this.getContext()
         this.iconPath = new vscode.ThemeIcon(getIconCode(this.instance))
         this.tooltip = `${this.name}\n${this.InstanceId}\n${this.instance.status}\n${this.arn}`
@@ -65,8 +66,8 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
         return Ec2InstancePendingContext
     }
 
-    public setInstance(newInstance: Ec2Instance) {
-        this.instance = newInstance
+    public setInstanceStatus(instanceStatus: string) {
+        this.instance.status = instanceStatus
     }
 
     public toSelection(): Ec2Selection {
