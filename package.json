@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.84.0-SNAPSHOT",
+    "version": "1.85.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -1329,26 +1329,6 @@
                 {
                     "command": "aws.ec2.openTerminal",
                     "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.openTerminal",
-                    "group": "inline@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.startInstance",
-                    "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.stopInstance",
-                    "group": "0@1",
-                    "when": "viewItem == awsEc2Node"
-                },
-                {
-                    "command": "aws.ec2.rebootInstance",
-                    "group": "0@1",
                     "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
@@ -1357,19 +1337,44 @@
                     "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
                 },
                 {
+                    "command": "aws.ec2.openRemoteConnection",
+                    "group": "0@1",
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.openRemoteConnection",
+                    "group": "inline@1",
+                    "when": "viewItem =~ /^(awsEc2(Parent|Running)Node)$/"
+                },
+                {
+                    "command": "aws.ec2.startInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2StoppedNode"
+                },
+                {
                     "command": "aws.ec2.startInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2StoppedNode)$/"
+                    "when": "viewItem == awsEc2StoppedNode"
+                },
+                {
+                    "command": "aws.ec2.stopInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2RunningNode"
                 },
                 {
                     "command": "aws.ec2.stopInstance",
                     "group": "inline@1",
-                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
+                    "when": "viewItem == awsEc2RunningNode"
                 },
                 {
                     "command": "aws.ec2.rebootInstance",
                     "group": "0@1",
-                    "when": "viewItem =~ /^(awsEc2RunningNode)$/"
+                    "when": "viewItem == awsEc2RunningNode"
+                },
+                {
+                    "command": "aws.ec2.rebootInstance",
+                    "group": "inline@1",
+                    "when": "viewItem == awsEc2RunningNode"
                 },
                 {
                     "command": "aws.ecr.createRepository",
@@ -1463,7 +1468,7 @@
                 },
                 {
                     "command": "aws.ec2.copyInstanceId",
-                    "when": "view == aws.explorer && viewItem == awsEc2Node",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsEc2(Parent|Running|Stopped)Node)$/",
                     "group": "2@0"
                 },
                 {
@@ -1653,12 +1658,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsEc2Node)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|(awsEc2(Running|Pending|Stopped)Node))/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|awsEc2Node)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|(awsEc2(Running|Pending|Stopped)Node))/",
                     "group": "2@2"
                 },
                 {
@@ -2132,6 +2137,7 @@
             {
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
+                "icon": "$(remote-explorer)",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3603,7 +3609,7 @@
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.3.3",
+        "@vscode/test-electron": "^2.3.4",
         "@vscode/vsce": "^2.19.0",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
