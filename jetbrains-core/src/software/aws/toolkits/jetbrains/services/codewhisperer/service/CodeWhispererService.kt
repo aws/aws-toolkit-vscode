@@ -65,8 +65,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhis
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CaretMovement
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.SUPPLEMENTAL_CONTEXT_TIMEOUT
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.checkCompletionType
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.checkEmptyRecommendations
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorCodeWhispererUsageLimit
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
@@ -180,9 +179,7 @@ class CodeWhispererService {
                     if (response.nextToken().isEmpty()) {
                         requestContext.latencyContext.paginationAllCompletionsEnd = System.nanoTime()
                     }
-                    val emptyRecommendations = checkEmptyRecommendations(response.completions())
-                    val completionType = checkCompletionType(response.completions(), emptyRecommendations)
-                    val responseContext = ResponseContext(sessionId, completionType)
+                    val responseContext = ResponseContext(sessionId)
                     logServiceInvocation(requestId, requestContext, responseContext, response.completions(), latency, null)
                     lastRecommendationIndex += response.completions().size
                     ApplicationManager.getApplication().messageBus.syncPublisher(CODEWHISPERER_CODE_COMPLETION_PERFORMED)
@@ -269,7 +266,7 @@ class CodeWhispererService {
                     }
                 }
                 val exceptionType = e::class.simpleName
-                val responseContext = ResponseContext(sessionId, CodewhispererCompletionType.Unknown)
+                val responseContext = ResponseContext(sessionId)
                 CodeWhispererInvocationStatus.getInstance().setInvocationSessionId(sessionId)
                 logServiceInvocation(requestId, requestContext, responseContext, emptyList(), null, exceptionType)
                 CodeWhispererTelemetryService.getInstance().sendServiceInvocationEvent(
@@ -373,10 +370,17 @@ class CodeWhispererService {
         if (nextStates.recommendationContext.details.isEmpty() && response.nextToken().isEmpty()) {
             LOG.debug { "Received just an empty list from this session, requestId: $requestId" }
             CodeWhispererTelemetryService.getInstance().sendUserDecisionEvent(
-                requestId,
                 requestContext,
                 responseContext,
-                Completion.builder().build(),
+                DetailContext(
+                    requestId,
+                    Completion.builder().build(),
+                    Completion.builder().build(),
+                    false,
+                    false,
+                    "",
+                    CodewhispererCompletionType.Unknown
+                ),
                 -1,
                 CodewhispererSuggestionState.Empty,
                 nextStates.recommendationContext.details.size
@@ -488,7 +492,9 @@ class CodeWhispererService {
         responseContext: ResponseContext,
         recommendations: List<Completion>
     ) {
-        val detailContexts = recommendations.map { DetailContext("", it, it, true, false) }
+        val detailContexts = recommendations.map {
+            DetailContext("", it, it, true, false, "", getCompletionType(it))
+        }
         val recommendationContext = RecommendationContext(detailContexts, "", "", VisualPosition(0, 0))
 
         CodeWhispererTelemetryService.getInstance().sendUserDecisionEventForAll(
@@ -719,7 +725,6 @@ data class RequestContext(
 
 data class ResponseContext(
     val sessionId: String,
-    val completionType: CodewhispererCompletionType
 )
 
 interface CodeWhispererCodeCompletionServiceListener {

@@ -10,7 +10,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
-import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 
@@ -52,7 +51,6 @@ class CodeWhispererStateTest : CodeWhispererTestBase() {
             assertThat(listOf(actualResponseContext.sessionId)).isEqualTo(
                 pythonResponse.sdkHttpResponse().headers()[CodeWhispererService.KET_SESSION_ID]
             )
-            assertThat(actualResponseContext.completionType).isEqualTo(CodewhispererCompletionType.Block)
         }
     }
 

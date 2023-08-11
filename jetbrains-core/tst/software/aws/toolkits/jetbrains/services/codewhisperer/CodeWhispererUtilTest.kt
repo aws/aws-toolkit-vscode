@@ -9,8 +9,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.toCodeChunk
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
+import software.aws.toolkits.telemetry.CodewhispererCompletionType
 
 class CodeWhispererUtilTest {
     @JvmField
@@ -135,6 +137,27 @@ class CodeWhispererUtilTest {
         )
         assertThat(result[4].path).isEqualTo("fake/path")
         assertThat(result[4].nextChunk).isEqualTo(result[4].content)
+    }
+
+    @Test
+    fun `test getCompletionType() should give Block completion type to multi-line completions that has at least two non-blank lines`() {
+        assertThat(getCompletionType(aCompletion("test\n\n\t\nanother test"))).isEqualTo(CodewhispererCompletionType.Block)
+        assertThat(getCompletionType(aCompletion("test\ntest\n"))).isEqualTo(CodewhispererCompletionType.Block)
+        assertThat(getCompletionType(aCompletion("\n   \t\r\ntest\ntest"))).isEqualTo(CodewhispererCompletionType.Block)
+    }
+
+    @Test
+    fun `test getCompletionType() should give Line completion type to line completions`() {
+        assertThat(getCompletionType(aCompletion("test"))).isEqualTo(CodewhispererCompletionType.Line)
+        assertThat(getCompletionType(aCompletion("test\n\t   "))).isEqualTo(CodewhispererCompletionType.Line)
+    }
+
+    @Test
+    fun `test getCompletionType() should give Line completion type to multi-line completions that has at most 1 non-blank line`() {
+        assertThat(getCompletionType(aCompletion("test\n\t"))).isEqualTo(CodewhispererCompletionType.Line)
+        assertThat(getCompletionType(aCompletion("test\n    "))).isEqualTo(CodewhispererCompletionType.Line)
+        assertThat(getCompletionType(aCompletion("test\n\r"))).isEqualTo(CodewhispererCompletionType.Line)
+        assertThat(getCompletionType(aCompletion("\n\n\n\ntest"))).isEqualTo(CodewhispererCompletionType.Line)
     }
 }
 

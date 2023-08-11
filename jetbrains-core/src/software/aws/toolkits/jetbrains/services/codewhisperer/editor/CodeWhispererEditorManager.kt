@@ -59,7 +59,8 @@ class CodeWhispererEditorManager {
                     PsiDocumentManager.getInstance(project).getPsiFile(document)?.virtualFile,
                     rangeMarker,
                     remainingRecommendation,
-                    selectedIndex
+                    selectedIndex,
+                    detail.completionType
                 )
 
                 ApplicationManager.getApplication().messageBus.syncPublisher(

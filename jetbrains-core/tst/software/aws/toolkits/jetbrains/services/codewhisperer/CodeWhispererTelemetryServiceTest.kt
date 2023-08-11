@@ -252,7 +252,7 @@ class CodeWhispererTelemetryServiceTest {
                 1,
                 "codewhispererSessionId" to responseContext.sessionId,
                 "codewhispererFirstRequestId" to requestContext.latencyContext.firstRequestId,
-                "codewhispererCompletionType" to responseContext.completionType,
+                "codewhispererCompletionType" to CodewhispererCompletionType.Line,
                 "codewhispererLanguage" to requestContext.fileContextInfo.programmingLanguage.toTelemetryType(),
                 "codewhispererTriggerType" to requestContext.triggerTypeInfo.triggerType,
                 "codewhispererAutomatedTriggerType" to requestContext.triggerTypeInfo.automatedTriggerType.telemetryType,
@@ -493,7 +493,17 @@ fun aRecommendationContext(): RecommendationContext {
     val details = mutableListOf<DetailContext>()
     val size = Random.nextInt(1, 5)
     for (i in 1..size) {
-        details.add(DetailContext(aString(), aCompletion(), aCompletion(), listOf(true, false).random(), listOf(true, false).random()))
+        details.add(
+            DetailContext(
+                aString(),
+                aCompletion(),
+                aCompletion(),
+                listOf(true, false).random(),
+                listOf(true, false).random(),
+                aString(),
+                CodewhispererCompletionType.Line
+            )
+        )
     }
 
     return RecommendationContext(
@@ -516,14 +526,14 @@ fun aRecommendationContextAndSessionContext(decisions: List<CodewhispererSuggest
     val details = mutableListOf<DetailContext>()
     decisions.forEach { decision ->
         val toAdd = if (decision == CodewhispererSuggestionState.Empty) {
-            val completion = aCompletion(true, 0, 0)
-            DetailContext(aString(), completion, completion, Random.nextBoolean(), Random.nextBoolean())
+            val completion = aCompletion("", true, 0, 0)
+            DetailContext(aString(), completion, completion, Random.nextBoolean(), Random.nextBoolean(), aString(), CodewhispererCompletionType.Unknown)
         } else if (decision == CodewhispererSuggestionState.Discard) {
             val completion = aCompletion()
-            DetailContext(aString(), completion, completion, true, Random.nextBoolean())
+            DetailContext(aString(), completion, completion, true, Random.nextBoolean(), aString(), CodewhispererCompletionType.Unknown)
         } else {
             val completion = aCompletion()
-            DetailContext(aString(), completion, completion, false, Random.nextBoolean())
+            DetailContext(aString(), completion, completion, false, Random.nextBoolean(), aString(), CodewhispererCompletionType.Unknown)
         }
 
         details.add(toAdd)
@@ -558,7 +568,7 @@ fun aRecommendationContextAndSessionContext(decisions: List<CodewhispererSuggest
     return recommendationContext to sessionContext
 }
 
-fun aCompletion(isEmpty: Boolean = false, referenceCount: Int? = null, importCount: Int? = null): Completion {
+fun aCompletion(content: String? = null, isEmpty: Boolean = false, referenceCount: Int? = null, importCount: Int? = null): Completion {
     val myReferenceCount = referenceCount ?: Random.nextInt(0, 4)
     val myImportCount = importCount ?: Random.nextInt(0, 4)
 
@@ -575,13 +585,13 @@ fun aCompletion(isEmpty: Boolean = false, referenceCount: Int? = null, importCou
     }
 
     return Completion.builder()
-        .content(if (!isEmpty) aString() else "")
+        .content(content ?: if (!isEmpty) aString() else "")
         .references(references)
         .mostRelevantMissingImports(imports)
         .build()
 }
 
-fun aResponseContext(): ResponseContext = ResponseContext(aString(), listOf(CodewhispererCompletionType.Block, CodewhispererCompletionType.Line).random())
+fun aResponseContext(): ResponseContext = ResponseContext(aString())
 
 fun aFileContextInfo(language: CodeWhispererProgrammingLanguage? = null): FileContextInfo {
     val caretContextInfo = CaretContext(aString(), aString(), aString())

@@ -109,23 +109,16 @@ fun VirtualFile.toCodeChunk(path: String): Sequence<Chunk> = sequence {
 }
 
 object CodeWhispererUtil {
-    fun checkCompletionType(
-        results: List<Completion>,
-        noRecommendation: Boolean
-    ): CodewhispererCompletionType {
-        if (noRecommendation) {
-            return CodewhispererCompletionType.Unknown
-        }
-        return if (results[0].content().contains("\n")) {
-            CodewhispererCompletionType.Block
-        } else {
-            CodewhispererCompletionType.Line
+    fun getCompletionType(completion: Completion): CodewhispererCompletionType {
+        val content = completion.content()
+        val nonBlankLines = content.split("\n").count { it.isNotBlank() }
+
+        return when {
+            content.isEmpty() -> CodewhispererCompletionType.Unknown
+            nonBlankLines > 1 -> CodewhispererCompletionType.Block
+            else -> CodewhispererCompletionType.Line
         }
     }
-
-    // return true if every recommendation is empty
-    fun checkEmptyRecommendations(recommendations: List<Completion>): Boolean =
-        recommendations.all { it.content().isEmpty() }
 
     fun notifyWarnCodeWhispererUsageLimit(project: Project? = null) {
         notifyWarn(

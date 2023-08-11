@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
 import java.util.concurrent.TimeUnit
@@ -63,7 +64,8 @@ data class DetailContext(
     val reformatted: Completion,
     val isDiscarded: Boolean,
     val isTruncatedOnRight: Boolean,
-    val rightOverlap: String = ""
+    val rightOverlap: String = "",
+    val completionType: CodewhispererCompletionType,
 )
 
 data class SessionContext(
