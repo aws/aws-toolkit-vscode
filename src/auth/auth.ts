@@ -743,11 +743,21 @@ export class Auth implements AuthService, ConnectionManager {
 
     static #instance: Auth | undefined
     public static get instance() {
-        const devEnvId = getCodeCatalystDevEnvId()
-        const memento =
-            devEnvId !== undefined ? partition(globals.context.globalState, devEnvId) : globals.context.globalState
+        return (this.#instance ??= new Auth(new ProfileStore(getMemento())))
 
-        return (this.#instance ??= new Auth(new ProfileStore(memento)))
+        function getMemento() {
+            if (!vscode.env.remoteName) {
+                return globals.context.globalState
+            }
+
+            const devEnvId = getCodeCatalystDevEnvId()
+
+            if (devEnvId !== undefined) {
+                return partition(globals.context.globalState, devEnvId)
+            }
+
+            return globals.context.workspaceState
+        }
     }
 
     private getSsoProfileLabel(profile: SsoProfile) {
