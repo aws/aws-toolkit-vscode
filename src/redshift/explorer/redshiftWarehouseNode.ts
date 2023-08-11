@@ -1,6 +1,5 @@
-/* eslint-disable header/header */
 /*!
- * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -18,9 +17,9 @@ import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { ConnectionParams, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
-
 import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
+import { getLogger } from '../../shared/logger'
 
 export class StartButtonNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -40,11 +39,13 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public redshiftClient: DefaultRedshiftClient
     public connectionParams: ConnectionParams | undefined
     public newStartButton: { label: string; iconPath: any }
+    private readonly logger = getLogger()
 
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
-        public readonly warehouseType: RedshiftWarehouseType
+        public readonly warehouseType: RedshiftWarehouseType,
+        public readonly connectionWizard?: RedshiftNodeConnectionWizard
     ) {
         super(redshiftWarehouse.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = redshiftWarehouse.name
@@ -54,6 +55,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.name = redshiftWarehouse.name
         this.redshiftClient = parent.redshiftClient
         this.newStartButton = { label: 'Start', iconPath: getIcon('vscode-debug-start') }
+        this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
     }
 
     public setConnectionParams(connectionParams: ConnectionParams) {
@@ -75,21 +77,26 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     private async loadPage(token?: string): Promise<ChildNodePage<AWSTreeNodeBase>> {
         const childNodes: RedshiftDatabaseNode[] = []
         // this.connectionParams cannot null here because loadPage should be called only after the connection wizard runs.
-        const listDatabasesResponse: ListDatabasesResponse = await this.redshiftClient.listDatabases(
-            this.connectionParams!,
-            token
-        )
-        if (listDatabasesResponse.Databases) {
-            childNodes.push(
-                ...listDatabasesResponse.Databases.map(db => {
-                    return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
-                })
+        try {
+            const listDatabasesResponse: ListDatabasesResponse = await this.redshiftClient.listDatabases(
+                this.connectionParams!,
+                token
             )
-        }
+            if (listDatabasesResponse.Databases) {
+                childNodes.push(
+                    ...listDatabasesResponse.Databases.map(db => {
+                        return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
+                    })
+                )
+            }
 
-        return {
-            newContinuationToken: listDatabasesResponse.NextToken,
-            newChildren: childNodes,
+            return {
+                newContinuationToken: listDatabasesResponse.NextToken,
+                newChildren: childNodes,
+            }
+        } catch (error) {
+            this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
+            return Promise.reject(error)
         }
     }
 
@@ -97,29 +104,20 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 this.childLoader.clearChildren()
-                const connectionWizard = new RedshiftNodeConnectionWizard(this)
-                const connectionParams = await connectionWizard.run()
+                const connectionParams = await this.connectionWizard!.run()
                 if (!connectionParams) {
-                    return [
-                        new AWSCommandTreeNode(
-                            this,
-                            localize(
-                                'AWS.redshift.connectionError.retry',
-                                'Unable to get databases, click here to retry'
-                            ),
-                            'aws.refreshAwsExplorerNode',
-                            [this]
-                        ),
-                    ]
+                    return this.getRetryNode()
                 } else {
                     this.connectionParams = connectionParams
-                    this.contextValue = `${this.contextValue}-CONNECTED`
-                    const children = await this.childLoader.getChildren()
-
-                    //Add the startButton
-                    const startButtonNode = new StartButtonNode(this)
-                    children.unshift(startButtonNode)
-                    return children
+                    try {
+                        const childNodes = await this.childLoader.getChildren()
+                        //Add the startButton
+                        const startButtonNode = new StartButtonNode(this)
+                        childNodes.unshift(startButtonNode)
+                        return childNodes
+                    } catch {
+                        return this.getRetryNode()
+                    }
                 }
             },
             getNoChildrenPlaceholderNode: async () =>
@@ -128,6 +126,17 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     localize('AWS.explorerNode.redshiftClient.noDatabases', 'No databases found')
                 ),
         })
+    }
+
+    private getRetryNode(): AWSCommandTreeNode[] {
+        return [
+            new AWSCommandTreeNode(
+                this,
+                localize('AWS.redshift.connectionError.retry', 'Unable to get databases, click here to retry'),
+                'aws.refreshAwsExplorerNode',
+                [this]
+            ),
+        ]
     }
 
     toJSON() {

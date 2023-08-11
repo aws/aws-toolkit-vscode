@@ -1,8 +1,7 @@
 /*!
- * Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-// eslint-disable-next-line header/header
 import * as vscode from 'vscode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
@@ -13,10 +12,11 @@ import { RedshiftTableNode } from './redshiftTableNode'
 import { ConnectionParams } from '../models/models'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
+import { getLogger } from '../../shared/logger'
 
 export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
-
+    private readonly logger = getLogger()
     public constructor(
         public readonly schemaName: string,
         public readonly redshiftClient: DefaultRedshiftClient,
@@ -49,7 +49,7 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
             if (listTablesResponse.Tables) {
                 newChildren.push(
                     ...listTablesResponse.Tables.filter(table => !table.name?.endsWith('_pkey')).map(table => {
-                        return new RedshiftTableNode(table.name || 'UnknownTable')
+                        return new RedshiftTableNode(table.name ?? 'UnknownTable')
                     })
                 )
             }
@@ -58,7 +58,7 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
                 newContinuationToken: listTablesResponse.NextToken,
             }
         } catch (error) {
-            console.error(`Failed to fetch tables for ${this.schemaName}: ${error}`)
+            this.logger.error(`Failed to fetch tables for ${this.schemaName}: ${error}`)
             vscode.window.showErrorMessage(`Failed to fetch tables for ${this.schemaName}: ${error}`)
             return Promise.reject(error)
         }
