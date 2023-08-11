@@ -1,3 +1,11 @@
+## 1.84.0 2023-08-11
+
+- **Bug Fix** misleading error when downloading a Lambda to a workspace without a folder
+- **Bug Fix** CodeWhisperer: Fix in some cases the inline suggestions are not showing in the editor
+- **Bug Fix** Regions quickpick menu shows duplicate "recently used" labels
+- **Feature** CodeWhisperer: Improve file context fetching for Java test files
+- **Feature** IAM Identity Center (SSO): show an error if SSO user is not assigned to an account with a Permission Set
+
 ## 1.83.0 2023-08-03
 
 - **Feature** IAM Identity Center (SSO): log a warning if SSO user is not linked to an account
