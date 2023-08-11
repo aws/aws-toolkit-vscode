@@ -9,6 +9,7 @@ import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import { CodewhispererCompletionType } from '../../../shared/telemetry/telemetry.gen'
 
 describe('telemetryHelper', function () {
     describe('getSuggestionState', function () {
@@ -72,11 +73,20 @@ describe('telemetryHelper', function () {
             const response = [{ content: "print('Hello')" }]
             const requestId = 'test_x'
             const sessionId = 'test_x'
-            telemetryHelper.completionType = 'Line'
             telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const suggestionState = new Map<number, string>([[0, 'Showed']])
-            telemetryHelper.recordUserDecisionTelemetry(requestId, sessionId, response, 0, 'python', 0, suggestionState)
+            const completionTypes = new Map<number, CodewhispererCompletionType>([[0, 'Line']])
+            telemetryHelper.recordUserDecisionTelemetry(
+                requestId,
+                sessionId,
+                response,
+                0,
+                'python',
+                0,
+                completionTypes,
+                suggestionState
+            )
             assertTelemetry({
                 codewhispererRequestId: 'test_x',
                 codewhispererSessionId: 'test_x',

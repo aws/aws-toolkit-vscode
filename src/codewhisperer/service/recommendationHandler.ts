@@ -47,6 +47,7 @@ export class RecommendationHandler {
     public errorCode: string
     public recommendations: Recommendation[]
     private recommendationSuggestionState: Map<number, string>
+    private completionTypes: Map<number, CodewhispererCompletionType>
     public startPos: vscode.Position
     private cancellationToken: vscode.CancellationTokenSource
     public errorMessagePrompt: string
@@ -66,6 +67,7 @@ export class RecommendationHandler {
         this.cancellationToken = new vscode.CancellationTokenSource()
         this.errorMessagePrompt = ''
         this.recommendationSuggestionState = new Map<number, string>()
+        this.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.isGenerateRecommendationInProgress = false
     }
 
@@ -81,6 +83,15 @@ export class RecommendationHandler {
             this.recommendations.length > 0 &&
             this.recommendations.filter(option => option.content.length > 0).length > 0
         )
+    }
+
+    setCompletionType(index: number, recommendation: Recommendation) {
+        const nonBlankLines = recommendation.content.split('\n').filter(line => line.trim() !== '').length
+        this.completionTypes.set(index, nonBlankLines > 1 ? 'Block' : 'Line')
+    }
+
+    getCompletionType(index: number): CodewhispererCompletionType {
+        return this.completionTypes.get(index) || 'Line'
     }
 
     setSuggestionState(index: number, value: string) {
@@ -143,7 +154,6 @@ export class RecommendationHandler {
         let sessionId = ''
         let invocationResult: Result = 'Failed'
         let reason = ''
-        let completionType: CodewhispererCompletionType = 'Line'
         let startTime = 0
         let latency = 0
         let nextToken = ''
@@ -151,6 +161,7 @@ export class RecommendationHandler {
         let req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
         let supplementalContextMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
         let shouldRecordServiceInvocation = false
+        const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
 
         if (pagination) {
             const requestObj = await EditorContext.buildListRecommendationRequest(
@@ -202,11 +213,6 @@ export class RecommendationHandler {
                 TelemetryHelper.instance.triggerType = triggerType
                 TelemetryHelper.instance.CodeWhispererAutomatedtriggerType =
                     autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
-                if (page === 0 && recommendation.length > 0) {
-                    completionType =
-                        recommendation[0].content.search(CodeWhispererConstants.lineBreak) !== -1 ? 'Block' : 'Line'
-                }
-                TelemetryHelper.instance.completionType = completionType
                 requestId = resp?.$response && resp?.$response?.requestId
                 nextToken = resp?.nextToken ? resp?.nextToken : ''
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
@@ -249,7 +255,6 @@ export class RecommendationHandler {
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-            const languageContext = runtimeLanguageContext.getLanguageContext(editor.document.languageId)
             getLogger().verbose(
                 `Request ID: ${requestId}, timestamp(epoch): ${Date.now()}, timezone: ${timezone}, datetime: ${new Date().toLocaleString(
                     [],
@@ -271,21 +276,6 @@ export class RecommendationHandler {
             recommendation.forEach((item, index) => {
                 getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
             })
-            if (shouldRecordServiceInvocation) {
-                TelemetryHelper.instance.recordServiceInvocationTelemetry(
-                    requestId,
-                    sessionId,
-                    this.recommendations.length - 1,
-                    triggerType,
-                    autoTriggerType,
-                    invocationResult,
-                    latency,
-                    this.startPos.line,
-                    languageContext.language,
-                    reason,
-                    supplementalContextMetadata
-                )
-            }
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
             }
@@ -305,12 +295,29 @@ export class RecommendationHandler {
                 ) {
                     this.setSuggestionState(i + this.recommendations.length, 'Discard')
                 }
+                this.setCompletionType(i + this.recommendations.length, r)
             })
             this.recommendations = pagination ? this.recommendations.concat(recommendation) : recommendation
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(editor, typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
             }
         }
+        if (shouldRecordServiceInvocation) {
+            TelemetryHelper.instance.recordServiceInvocationTelemetry(
+                requestId,
+                sessionId,
+                this.recommendations.length - 1,
+                triggerType,
+                autoTriggerType,
+                invocationResult,
+                latency,
+                this.startPos.line,
+                languageContext.language,
+                reason,
+                supplementalContextMetadata
+            )
+        }
+
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && this.recommendations.length === 0 && nextToken === '') {
             TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
@@ -357,6 +364,7 @@ export class RecommendationHandler {
     clearRecommendations() {
         this.recommendations = []
         this.recommendationSuggestionState = new Map<number, string>()
+        this.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.errorCode = ''
         this.requestId = ''
         this.sessionId = ''
@@ -376,6 +384,7 @@ export class RecommendationHandler {
             acceptIndex,
             editor?.document.languageId,
             this.recommendations.length,
+            this.completionTypes,
             this.recommendationSuggestionState,
             this.supplementalContextMetadata
         )
