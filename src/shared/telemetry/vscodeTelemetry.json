@@ -4,7 +4,13 @@
             "name": "ec2ConnectionType",
             "type": "string",
             "allowedValues": ["remoteDesktop", "ssh", "scp", "ssm"],
-            "description": "Ec2 Connection Methods"
+            "description": "EC2 Connection Methods"
+        },
+        {
+            "name": "ec2ConnectionInterface",
+            "type": "string",
+            "allowedValues": ["terminal", "remote-dev"],
+            "description": "EC2 connection Interface"
         },
         {
             "name": "documentFormat",
@@ -235,6 +241,11 @@
         {
             "name": "sam_openConfigUi",
             "description": "Called after opening the SAM Config UI"
+        },
+        {
+            "name": "ec2_connectToInstance",
+            "description": "EC2 Connection Methods",
+            "metadata": [{ "type": "ec2ConnectionType" }, { "type": "ec2ConnectionInterface" }]
         }
     ]
 }

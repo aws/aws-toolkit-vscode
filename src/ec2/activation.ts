@@ -22,6 +22,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         Commands.register('aws.ec2.openTerminal', async (node?: Ec2InstanceNode) => {
             await telemetry.ec2_connectToInstance.run(async span => {
                 span.record({ ec2ConnectionType: 'ssm' })
+                span.record({ ec2ConnectionInterface: 'terminal' })
                 await openTerminal(node)
             })
         }),
@@ -32,7 +33,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
         Commands.register('aws.ec2.openRemoteConnection', async (node?: Ec2Node) => {
             await telemetry.ec2_connectToInstance.run(async span => {
-                span.record({ ec2ConnectionType: 'remoteDesktop' })
+                span.record({ ec2ConnectionType: 'ssm' })
+                span.record({ ec2ConnectionInterface: 'remote-dev' })
                 await openRemoteConnection(node)
             })
             await openRemoteConnection(node)
