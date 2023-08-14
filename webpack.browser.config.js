@@ -5,8 +5,7 @@
 const webpack = require('webpack')
 var { FilerWebpackPlugin } = require('filer/webpack')
 
-const configs = require('./webpack.config')
-const baseConfig = configs.filter(c => c.name === 'main')[0]
+const baseConfig = require('./webpack.base.config')
 
 /** @type WebpackConfig */
 const webConfig = {
