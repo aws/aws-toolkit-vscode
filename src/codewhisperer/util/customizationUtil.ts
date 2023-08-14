@@ -86,9 +86,14 @@ export const baseCustomization = {
 }
 
 export const getSelectedCustomization = (): Customization => {
-    if (!AuthUtil.instance.isValidEnterpriseSsoInUse() || !AuthUtil.instance.conn) {
+    if (
+        !AuthUtil.instance.isCustomizationFeatureEnabled ||
+        !AuthUtil.instance.isValidEnterpriseSsoInUse() ||
+        !AuthUtil.instance.conn
+    ) {
         return baseCustomization
     }
+
     const selectedCustomizationArr =
         globals.context.globalState.get<{ [label: string]: Customization }>(selectedCustomizationKey) || {}
     return selectedCustomizationArr[AuthUtil.instance.conn.label] || baseCustomization
