@@ -19,7 +19,14 @@ import { UriHandler } from './vscode/uriHandler'
 
 type Clock = Pick<
     typeof globalThis,
-    'setTimeout' | 'setImmediate' | 'setInterval' | 'clearTimeout' | 'clearImmediate' | 'clearInterval' | 'Date'
+    | 'setTimeout'
+    | 'setImmediate'
+    | 'setInterval'
+    | 'clearTimeout'
+    | 'clearImmediate'
+    | 'clearInterval'
+    | 'Date'
+    | 'Promise'
 >
 
 /**
@@ -27,7 +34,45 @@ type Clock = Pick<
  * Some properties have to be added manually depending on how they exist on the prototype.
  */
 function copyClock(): Clock {
-    return { ...globalThis, Date, Promise } as Clock
+    const clock: any = {
+        setTimeout: globalThis.setTimeout.bind(globalThis),
+        setInterval: globalThis.setInterval.bind(globalThis),
+        clearTimeout: globalThis.clearTimeout.bind(globalThis),
+        clearInterval: globalThis.clearInterval.bind(globalThis),
+        Date,
+        Promise,
+    }
+
+    const browserAlternatives = getBrowserAlternatives()
+    if (Object.keys(browserAlternatives).length > 0) {
+        console.log('globals: Using browser alternatives for clock functions')
+        Object.assign(clock, browserAlternatives)
+    } else {
+        // In node.js context
+        clock.setImmediate = globalThis.setImmediate.bind(globalThis)
+        clock.clearImmediate = globalThis.clearImmediate.bind(globalThis)
+    }
+
+    return clock
+}
+
+/**
+ * If we are in browser certain functions are not available, so
+ * we create alternatives for them.
+ */
+function getBrowserAlternatives() {
+    const alternatives = {} as any
+    if (globalThis.setImmediate === undefined) {
+        // "A setTimeout() callback with a 0ms delay is very similar to setImmediate()"
+        // https://nodejs.dev/en/learn/understanding-setimmediate/
+        alternatives['setImmediate'] = (callback: (...args: any[]) => void, ...args: any[]) => {
+            return globalThis.setTimeout(callback, 0, ...args)
+        }
+        alternatives['clearImmediate'] = (handle: any) => {
+            globalThis.clearTimeout(handle)
+        }
+    }
+    return alternatives
 }
 
 const globals = { clock: copyClock() } as ToolkitGlobals
