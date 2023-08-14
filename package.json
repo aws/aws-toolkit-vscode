@@ -3584,6 +3584,7 @@
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
+        "buildBrowser": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js --mode production && npm run copyFiles -- --webpacked",
         "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles -- --webpacked",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
@@ -3613,6 +3614,7 @@
         "@types/adm-zip": "^0.4.34",
         "@types/async-lock": "^1.4.0",
         "@types/bytes": "^3.1.0",
+        "@types/circular-dependency-plugin": "^5.0.5",
         "@types/cross-spawn": "^6.0.0",
         "@types/fs-extra": "^9.0.11",
         "@types/glob": "^7.1.1",
@@ -3718,5 +3720,8 @@
         "bracketSpacing": true,
         "arrowParens": "avoid",
         "endOfLine": "lf"
-    }
+    },
+    "workspaces": [
+        "src/browser"
+    ]
 }
