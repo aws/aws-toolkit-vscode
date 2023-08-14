@@ -10,7 +10,7 @@ import * as semver from 'semver'
 import * as crossFile from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
-import { UserGroup } from '../../../codewhisperer/models/constants'
+import { UserGroup, crossFileContextConfig } from '../../../codewhisperer/models/constants'
 import {
     assertTabCount,
     closeAllEditors,
@@ -32,6 +32,18 @@ function shouldRunTheTest(): boolean {
     }
     return !!(semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0'))
 }
+
+describe('crossFileConfig', function () {
+    it('should use 60 code chunks if usergroup is Control', function () {
+        CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.Control
+        assert.strictEqual(crossFileContextConfig.numberOfChunkToFetch, 60)
+    })
+
+    it('should use 1000 code chunks if usergroup is CrossFile', function () {
+        CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.CrossFile
+        assert.strictEqual(crossFileContextConfig.numberOfChunkToFetch, 1000)
+    })
+})
 
 describe('crossFileContextUtil', function () {
     const fakeCancellationToken: vscode.CancellationToken = {

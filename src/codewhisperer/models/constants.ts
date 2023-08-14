@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+
 /**
  * SDK Client
  */
@@ -264,8 +266,8 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export enum UserGroup {
     Classifier = 'Classifier',
-    CrossFile = 'CrossFile',
-    Control = 'Control',
+    CrossFile = 'CodeChunk1000',
+    Control = 'CodeChunk60',
 }
 
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
@@ -273,7 +275,7 @@ export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
 
 export const crossFileContextConfig = {
-    numberOfChunkToFetch: 60,
+    numberOfChunkToFetch: CodeWhispererUserGroupSettings.instance.userGroup === UserGroup.Control ? 60 : 1000,
     topK: 3,
     numberOfLinesEachChunk: 10,
 }
