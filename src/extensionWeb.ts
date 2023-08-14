@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { setInBrowser } from './common/browserUtils'
 
 export async function activate(context: vscode.ExtensionContext) {
-    setInBrowser(true)    
+    setInBrowser(true)
 
     vscode.window.showInformationMessage(
         'AWS Toolkit: Browser Mode Under Development. No features are currently provided',
