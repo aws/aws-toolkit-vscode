@@ -6,7 +6,6 @@
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import winston from 'winston'
-import { ConsoleLogTransport } from './consoleLogTransport'
 import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
@@ -14,6 +13,7 @@ import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
 import { isInBrowser } from '../../common/browserUtils'
 import { SharedFileTransport } from './sharedFileTransport'
+import { ConsoleLogTransport } from './consoleLogTransport'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log

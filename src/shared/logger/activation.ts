@@ -43,6 +43,7 @@ export async function activate(
         {
             logPaths: [logUri.fsPath],
             outputChannels: [chan],
+            useConsoleLog: true,
         },
         extensionContext.subscriptions
     )
@@ -108,6 +109,7 @@ export function makeLogger(
         logPaths?: string[]
         outputChannels?: vscode.OutputChannel[]
         useDebugConsole?: boolean
+        useConsoleLog?: boolean
     },
     disposables?: vscode.Disposable[]
 ): Logger {
@@ -124,6 +126,9 @@ export function makeLogger(
     }
     if (opts.useDebugConsole) {
         logger.logToDebugConsole()
+    }
+    if (opts.useConsoleLog && isInBrowser()) {
+        logger.logToConsole()
     }
 
     if (!opts.staticLogLevel) {
