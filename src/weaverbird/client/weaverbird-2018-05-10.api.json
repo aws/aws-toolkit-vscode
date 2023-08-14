@@ -1,0 +1,53 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2018-05-10",
+        "endpointPrefix": "weaverbirdservice",
+        "jsonVersion": "1.1",
+        "protocol": "rest-json",
+        "serviceFullName": "A beautiful and amazing WeaverbirdService",
+        "serviceId": "Weaverbird",
+        "signatureVersion": "v4",
+        "signingName": "execute-api",
+        "uid": "weaverbird-2018-05-10"
+    },
+    "operations": {
+        "Echo": {
+            "name": "Echo",
+            "http": {
+                "method": "POST",
+                "requestUri": "/echo",
+                "responseCode": 200
+            },
+            "input": { "shape": "EchoInput" },
+            "output": { "shape": "EchoOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        }
+    },
+    "shapes": {
+        "EchoInput": {
+            "type": "structure",
+            "members": {
+                "string": { "shape": "String" }
+            }
+        },
+        "EchoOutput": {
+            "type": "structure",
+            "members": {
+                "string": { "shape": "String" }
+            }
+        },
+        "InvalidInputException": {
+            "type": "structure",
+            "members": {
+                "message": { "shape": "String" }
+            },
+            "error": {
+                "httpStatusCode": 400,
+                "senderFault": true
+            },
+            "exception": true
+        },
+        "String": { "type": "string" }
+    }
+}
