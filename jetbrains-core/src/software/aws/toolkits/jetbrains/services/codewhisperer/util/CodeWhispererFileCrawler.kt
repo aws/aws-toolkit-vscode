@@ -36,10 +36,10 @@ interface FileCrawler {
 
     /**
      * should be invoked at test files e.g. MainTest.java, or test_main.py
-     * @param psiFile psi of the test file we are searching with, e.g. MainTest.java
+     * @param target psi of the test file we are searching with, e.g. MainTest.java
      * @return its source file e.g. Main.java, main.py or most relevant file if any
      */
-    fun listUtgCandidate(psiFile: PsiFile): VirtualFile?
+    fun listUtgCandidate(target: PsiFile): VirtualFile?
 
     /**
      * List files opened in the editors and sorted by file distance @see [CodeWhispererFileCrawler.getFileDistance]
@@ -49,25 +49,25 @@ interface FileCrawler {
      * (3) non-test file which will be determined by [FileCrawler.isTestFile]
      * (4) writable file
      */
-    fun listCrossFileCandidate(psiFile: PsiFile): List<VirtualFile>
+    fun listCrossFileCandidate(target: PsiFile): List<VirtualFile>
 
     /**
      * Determine if the file given is test file or not based on its path and file name
      */
-    fun isTestFile(virtualFile: VirtualFile, project: Project): Boolean
+    fun isTestFile(target: VirtualFile, project: Project): Boolean
 }
 
 class NoOpFileCrawler : FileCrawler {
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
     override fun listFilesUnderProjectRoot(project: Project): List<VirtualFile> = emptyList()
-    override fun listUtgCandidate(psiFile: PsiFile): VirtualFile? = null
+    override fun listUtgCandidate(target: PsiFile): VirtualFile? = null
 
     override fun listFilesWithinSamePackage(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
-    override fun listCrossFileCandidate(psiFile: PsiFile): List<VirtualFile> = emptyList()
+    override fun listCrossFileCandidate(target: PsiFile): List<VirtualFile> = emptyList()
 
-    override fun isTestFile(virtualFile: VirtualFile, project: Project): Boolean = false
+    override fun isTestFile(target: VirtualFile, project: Project): Boolean = false
 }
 
 abstract class CodeWhispererFileCrawler : FileCrawler {
@@ -75,11 +75,11 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
     abstract val dialects: Set<String>
     abstract val testFileNamingPatterns: List<Regex>
 
-    override fun isTestFile(virtualFile: VirtualFile, project: Project): Boolean {
-        val filePath = virtualFile.path
+    override fun isTestFile(target: VirtualFile, project: Project): Boolean {
+        val filePath = target.path
 
         // if file path itself explicitly explains the file is under test sources
-        if (TestSourcesFilter.isTestSources(virtualFile, project) ||
+        if (TestSourcesFilter.isTestSources(target, project) ||
             filePath.contains("""test/""", ignoreCase = true) ||
             filePath.contains("""tst/""", ignoreCase = true) ||
             filePath.contains("""tests/""", ignoreCase = true)
@@ -88,7 +88,7 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         }
 
         // no explicit clue from the file path, use regexes based on naming conventions
-        return testFileNamingPatterns.any { it.matches(virtualFile.name) }
+        return testFileNamingPatterns.any { it.matches(target.name) }
     }
 
     override fun listFilesUnderProjectRoot(project: Project): List<VirtualFile> = project.guessProjectDir()?.let { rootDir ->
@@ -109,14 +109,14 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         }.orEmpty()
     }
 
-    override fun listCrossFileCandidate(psiFile: PsiFile): List<VirtualFile> {
-        val targetFile = psiFile.virtualFile
+    override fun listCrossFileCandidate(target: PsiFile): List<VirtualFile> {
+        val targetFile = target.virtualFile
 
         val openedFiles = runReadAction {
-            FileEditorManager.getInstance(psiFile.project).openFiles.toList().filter {
-                it.name != psiFile.virtualFile.name &&
+            FileEditorManager.getInstance(target.project).openFiles.toList().filter {
+                it.name != target.virtualFile.name &&
                     isSameDialect(it.extension) &&
-                    !isTestFile(it, psiFile.project)
+                    !isTestFile(it, target.project)
             }
         }
 
@@ -129,11 +129,11 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
         return fileToFileDistanceList.sortedBy { it.second }.map { it.first }
     }
 
-    override fun listUtgCandidate(psiFile: PsiFile): VirtualFile? = findSourceFileByName(psiFile) ?: findSourceFileByContent(psiFile)
+    override fun listUtgCandidate(target: PsiFile): VirtualFile? = findSourceFileByName(target) ?: findSourceFileByContent(target)
 
-    abstract fun findSourceFileByName(psiFile: PsiFile): VirtualFile?
+    abstract fun findSourceFileByName(target: PsiFile): VirtualFile?
 
-    abstract fun findSourceFileByContent(psiFile: PsiFile): VirtualFile?
+    abstract fun findSourceFileByContent(target: PsiFile): VirtualFile?
 
     // TODO: may need to update when we enable JS/TS UTG, since we have to factor in .jsx/.tsx combinations
     fun guessSourceFileName(tstFileName: String): String? {
@@ -153,6 +153,12 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
     } ?: false
 
     companion object {
+        // TODO: move to CodeWhispererUtils.kt
+        /**
+         * @param target will be the source of keywords
+         * @param keywordProducer defines how we generate keywords from the target
+         * @return return the file with the highest substring matching from all opened files with the same file extension
+         */
         fun searchRelevantFileInEditors(target: PsiFile, keywordProducer: (psiFile: PsiFile) -> List<String>): VirtualFile? {
             val project = target.project
             val targetElements = keywordProducer(target)
@@ -170,6 +176,7 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
             }
         }
 
+        // TODO: move to CodeWhispererUtils.kt
         /**
          * how many elements in elementsToCheck is contained (as substring) in targetElements
          */
@@ -182,6 +189,7 @@ abstract class CodeWhispererFileCrawler : FileCrawler {
             }
         }
 
+        // TODO: move to CodeWhispererUtils.kt
         /**
          * For [LocalFileSystem](implementation of virtual file system), the path will be an absolute file path with file separator characters replaced
          * by forward slash "/"

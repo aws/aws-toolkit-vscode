@@ -4,10 +4,13 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileCrawler
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.PythonCodeWhispererFileCrawler
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 
 class CodeWhispererPython private constructor() : CodeWhispererProgrammingLanguage() {
     override val languageId = ID
+    override val fileCrawler: FileCrawler = PythonCodeWhispererFileCrawler
 
     override fun toTelemetryType(): CodewhispererLanguage = CodewhispererLanguage.Python
 

@@ -179,6 +179,7 @@ with what features/services are supported.
         <extensionPoint name="devTools.serviceNode" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.DevToolsServiceNode" dynamic="true"/>
         <extensionPoint name="devTools.treeStructure" interface="software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsTreeStructureProvider" dynamic="true"/>
         <extensionPoint name="codewhisperer.programmingLanguage" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage" dynamic="true"/>
+        <extensionPoint name="codewhisperer.classResolver" interface="software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver" dynamic="true"/>
         <extensionPoint name="codewhisperer.importAdder" interface="software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdder" dynamic="true"/>
     </extensionPoints>
 

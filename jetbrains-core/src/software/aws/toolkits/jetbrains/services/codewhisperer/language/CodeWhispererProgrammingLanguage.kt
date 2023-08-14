@@ -3,13 +3,22 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.language
 
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileCrawler
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.NoOpFileCrawler
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 
 /**
+ * Interface defining CodeWhisperer's feature support on language levels, note that the expectation is not aligning with the IDE's behavior. That being said,
+ * on Intellij Community, users are still able to trigger CodeWhisperer service on .js .ts files whereas the IDE doesn't recognize the .js .ts file type.
+ * Specifically, any implementation leveraging JetBrains' language support, for example [PyFile], [ClassOwner] should live in their corresponding module or
+ * extension point otherwise it will result in dependency problem at runtime. For example, JS/TS is only supported in Intellij Ultimate thus it should live in
+ * "Ultimate" module if the implementation is utilizing JetBrains JS/TS APIs.
+ *
  * Any subclass of CodeWhispererProgrammingLanguage should have private constructor
  */
 abstract class CodeWhispererProgrammingLanguage {
     abstract val languageId: String
+    open val fileCrawler: FileCrawler = NoOpFileCrawler()
 
     abstract fun toTelemetryType(): CodewhispererLanguage
 

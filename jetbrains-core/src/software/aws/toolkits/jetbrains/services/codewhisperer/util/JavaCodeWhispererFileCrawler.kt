@@ -9,13 +9,15 @@ import com.intellij.openapi.module.ModuleUtilCore
 import com.intellij.openapi.project.rootManager
 import com.intellij.openapi.vfs.VfsUtil
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiClassOwner
 import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiJavaFile
 import com.intellij.psi.PsiPackage
 import com.intellij.psi.search.GlobalSearchScope
 import kotlinx.coroutines.yield
 import org.jetbrains.jps.model.java.JavaModuleSourceRootTypes
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.ClassResolverKey
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispereJavaClassResolver
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.classresolver.CodeWhispererClassResolver
 
 object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     override val fileExtension: String = "java"
@@ -68,9 +70,9 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     }
 
     // psiFile = "MainTest.java", targetFileName = "Main.java"
-    override fun findSourceFileByName(psiFile: PsiFile): VirtualFile? =
-        guessSourceFileName(psiFile.virtualFile.name)?.let { srcName ->
-            val module = ModuleUtilCore.findModuleForFile(psiFile)
+    override fun findSourceFileByName(target: PsiFile): VirtualFile? =
+        guessSourceFileName(target.virtualFile.name)?.let { srcName ->
+            val module = ModuleUtilCore.findModuleForFile(target)
 
             module?.rootManager?.getSourceRoots(JavaModuleSourceRootTypes.PRODUCTION)?.let { srcRoot ->
                 srcRoot
@@ -83,17 +85,13 @@ object JavaCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
     /**
      * check files in editors and pick one which has most substring matches to the target
      */
-    override fun findSourceFileByContent(psiFile: PsiFile): VirtualFile? = searchRelevantFileInEditors(psiFile) { myPsiFile ->
-        if (myPsiFile !is PsiClassOwner) {
-            return@searchRelevantFileInEditors emptyList()
-        }
+    override fun findSourceFileByContent(target: PsiFile): VirtualFile? = searchRelevantFileInEditors(target) { myPsiFile ->
+        CodeWhispererClassResolver.EP_NAME.findFirstSafe { it is CodeWhispereJavaClassResolver }?.let {
+            val classAndMethods = it.resolveClassAndMembers(myPsiFile)
+            val clazz = classAndMethods[ClassResolverKey.ClassName].orEmpty()
+            val methods = classAndMethods[ClassResolverKey.MethodName].orEmpty()
 
-        val classAndMethod = runReadAction {
-            myPsiFile.classes.mapNotNull { clazz ->
-                listOfNotNull(clazz.name) + clazz.methods.mapNotNull { method -> method.name }
-            }.flatten()
-        }
-
-        classAndMethod
+            clazz + methods
+        }.orEmpty()
     }
 }

@@ -23,11 +23,6 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
-import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.Chunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
@@ -43,20 +38,11 @@ private val contentRootPathProvider = CopyContentRootPathProvider()
 private val codewhispererCodeChunksIndex = GistManager.getInstance()
     .newPsiFileGist("psi to code chunk index", 0, CodeWhispererCodeChunkExternalizer) { psiFile ->
         runBlocking {
-            val fileCrawler = getFileCrawlerForLanguage(psiFile.programmingLanguage())
+            val fileCrawler = psiFile.programmingLanguage().fileCrawler
             val fileProducers = listOf<suspend (PsiFile) -> List<VirtualFile>> { psiFile -> fileCrawler.listCrossFileCandidate(psiFile) }
             FileContextProvider.getInstance(psiFile.project).extractCodeChunksFromFiles(psiFile, fileProducers)
         }
     }
-
-private fun getFileCrawlerForLanguage(programmingLanguage: CodeWhispererProgrammingLanguage) = when (programmingLanguage) {
-    is CodeWhispererJava -> JavaCodeWhispererFileCrawler
-    is CodeWhispererPython -> PythonCodeWhispererFileCrawler
-    is CodeWhispererJavaScript, is CodeWhispererJsx -> JavascriptCodeWhispererFileCrawler
-    is CodeWhispererTypeScript, is CodeWhispererTsx -> TypescriptCodeWhispererFileCrawler
-    else -> NoOpFileCrawler()
-}
-
 private object CodeWhispererCodeChunkExternalizer : DataExternalizer<List<Chunk>> {
     override fun save(out: DataOutput, value: List<Chunk>) {
         out.writeInt(value.size)
@@ -197,7 +183,7 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
         return chunks.take(CodeWhispererConstants.CrossFile.CHUNK_SIZE)
     }
 
-    override fun isTestFile(psiFile: PsiFile) = getFileCrawlerForLanguage(psiFile.programmingLanguage()).isTestFile(psiFile.virtualFile, psiFile.project)
+    override fun isTestFile(psiFile: PsiFile) = psiFile.programmingLanguage().fileCrawler.isTestFile(psiFile.virtualFile, psiFile.project)
 
     @VisibleForTesting
     suspend fun extractSupplementalFileContextForSrc(psiFile: PsiFile, targetContext: FileContextInfo): List<Chunk> {
@@ -250,7 +236,7 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
     fun extractSupplementalFileContextForTst(psiFile: PsiFile, targetContext: FileContextInfo): List<Chunk> {
         if (!targetContext.programmingLanguage.isUTGSupported()) return emptyList()
 
-        val focalFile = getFileCrawlerForLanguage(targetContext.programmingLanguage).listUtgCandidate(psiFile)
+        val focalFile = targetContext.programmingLanguage.fileCrawler.listUtgCandidate(psiFile)
 
         return focalFile?.let { file ->
             runReadAction {

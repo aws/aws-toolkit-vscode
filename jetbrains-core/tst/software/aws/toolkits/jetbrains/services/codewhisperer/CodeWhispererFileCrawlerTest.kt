@@ -22,31 +22,115 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.JavaCodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.JavascriptCodeWhispererFileCrawler
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.PythonCodeWhispererFileCrawler
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.TypescriptCodeWhispererFileCrawler
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.content
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
-open class CodeWhispererFileCrawlerTest(projectRule: CodeInsightTestFixtureRule) {
+// TODO: Make different language file crawler different files and move to language/ folder
+class CodeWhispererFileCrawlerTest {
     @JvmField
     @Rule
-    val projectRule: CodeInsightTestFixtureRule = projectRule
+    val projectRule: CodeInsightTestFixtureRule = CodeInsightTestFixtureRule()
+
+    lateinit var sut: CodeWhispererFileCrawler
 
     lateinit var fixture: CodeInsightTestFixture
     lateinit var project: Project
 
-    open fun setup() {
+    @Before
+    fun setup() {
         fixture = projectRule.fixture
         project = projectRule.project
     }
+
+    @Test
+    fun `searchRelevantFileInEditors should exclude target file itself and files with different file extension`() {
+        val targetFile = fixture.addFileToProject("Foo.java", "I have 10 Foo in total, Foo, Foo, Foo, Foo, Foo, Foo, Foo, Foo, Foo")
+
+        val file0 = fixture.addFileToProject("file0.py", "I have 7 Foo, Foo, Foo, Foo, Foo, Foo, Foo, but I am a pyfile")
+        val file1 = fixture.addFileToProject("File1.java", "I have 4 Foo key words : Foo, Foo, Foo")
+        val file2 = fixture.addFileToProject("File2.java", "I have 2 Foo Foo")
+        val file3 = fixture.addFileToProject("File3.java", "I have only 1 Foo")
+        val file4 = fixture.addFileToProject("File4.java", "bar bar bar, i have a lot of bar")
+
+        runInEdtAndWait {
+            fixture.openFileInEditor(targetFile.virtualFile)
+            fixture.openFileInEditor(file0.virtualFile)
+            fixture.openFileInEditor(file1.virtualFile)
+            fixture.openFileInEditor(file2.virtualFile)
+            fixture.openFileInEditor(file3.virtualFile)
+            fixture.openFileInEditor(file4.virtualFile)
+        }
+
+        listOf(
+            JavaCodeWhispererFileCrawler,
+            PythonCodeWhispererFileCrawler,
+            TypescriptCodeWhispererFileCrawler,
+            JavascriptCodeWhispererFileCrawler
+        ).forEach {
+            sut = it
+
+            val result = CodeWhispererFileCrawler.searchRelevantFileInEditors(targetFile) { psiFile ->
+                psiFile.virtualFile.content().split(" ")
+            }
+            assertThat(result).isEqualTo(file1.virtualFile)
+        }
+    }
+
+    @Test
+    fun `searchKeywordsInOpenedFile is language agnostic`() {
+        sut = JavaCodeWhispererFileCrawler
+
+        val targetFile = fixture.addFileToProject("Foo.ts", "I have 10 Foo in total, Foo, Foo, Foo, Foo, Foo, Foo, Foo, Foo, Foo")
+
+        val file0 = fixture.addFileToProject("file0.java", "I have 7 Foo, Foo, Foo, Foo, Foo, Foo, Foo, but I am a pyfile")
+        val file1 = fixture.addFileToProject("File1.ts", "I have 4 Foo key words : Foo, Foo, Foo")
+        val file2 = fixture.addFileToProject("File2.ts", "I have 2 Foo Foo")
+        val file3 = fixture.addFileToProject("File3.ts", "I have only 1 Foo")
+        val file4 = fixture.addFileToProject("File4.ts", "bar bar bar, i have a lot of bar")
+
+        runInEdtAndWait {
+            fixture.openFileInEditor(targetFile.virtualFile)
+            fixture.openFileInEditor(file0.virtualFile)
+            fixture.openFileInEditor(file1.virtualFile)
+            fixture.openFileInEditor(file2.virtualFile)
+            fixture.openFileInEditor(file3.virtualFile)
+            fixture.openFileInEditor(file4.virtualFile)
+        }
+
+        listOf(
+            JavaCodeWhispererFileCrawler,
+            PythonCodeWhispererFileCrawler,
+            TypescriptCodeWhispererFileCrawler,
+            JavascriptCodeWhispererFileCrawler
+        ).forEach {
+            sut = it
+
+            val result = CodeWhispererFileCrawler.searchRelevantFileInEditors(targetFile) { psiFile ->
+                psiFile.virtualFile.content().split(" ")
+            }
+            assertThat(result).isEqualTo(file1.virtualFile)
+        }
+    }
 }
 
-class JavaCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(JavaCodeInsightTestFixtureRule()) {
+class JavaCodeWhispererFileCrawlerTest {
+    @Rule
+    @JvmField
+    val projectRule: CodeInsightTestFixtureRule = JavaCodeInsightTestFixtureRule()
+
     lateinit var sut: CodeWhispererFileCrawler
 
+    lateinit var project: Project
+    lateinit var fixture: CodeInsightTestFixture
+
     @Before
-    override fun setup() {
-        super.setup()
+    fun setup() {
         sut = JavaCodeWhispererFileCrawler
+
+        project = projectRule.project
+        fixture = projectRule.fixture
     }
 
     @Test
@@ -339,13 +423,22 @@ class JavaCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(JavaCodeIn
     }
 }
 
-class PythonCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(PythonCodeInsightTestFixtureRule()) {
+class PythonCodeWhispererFileCrawlerTest {
+    @JvmField
+    @Rule
+    val projectRule: CodeInsightTestFixtureRule = PythonCodeInsightTestFixtureRule()
+
     lateinit var sut: CodeWhispererFileCrawler
 
+    lateinit var project: Project
+    lateinit var fixture: CodeInsightTestFixture
+
     @Before
-    override fun setup() {
-        super.setup()
+    fun setup() {
         sut = PythonCodeWhispererFileCrawler
+
+        project = projectRule.project
+        fixture = projectRule.fixture
     }
 
     @Test
@@ -457,13 +550,22 @@ class PythonCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(PythonCo
     }
 }
 
-class JsCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(CodeInsightTestFixtureRule()) {
+class JsCodeWhispererFileCrawlerTest {
+    @JvmField
+    @Rule
+    val projectRule: CodeInsightTestFixtureRule = CodeInsightTestFixtureRule()
+
+    lateinit var fixture: CodeInsightTestFixture
+    lateinit var project: Project
+
     lateinit var sut: CodeWhispererFileCrawler
 
     @Before
-    override fun setup() {
-        super.setup()
+    fun setup() {
         sut = JavascriptCodeWhispererFileCrawler
+
+        project = projectRule.project
+        fixture = projectRule.fixture
     }
 
     @Test
@@ -526,13 +628,22 @@ class JsCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(CodeInsightT
     }
 }
 
-class TsCodeWhispererFileCrawlerTest : CodeWhispererFileCrawlerTest(CodeInsightTestFixtureRule()) {
+class TsCodeWhispererFileCrawlerTest {
+    @JvmField
+    @Rule
+    val projectRule: CodeInsightTestFixtureRule = CodeInsightTestFixtureRule()
+
+    lateinit var fixture: CodeInsightTestFixture
+    lateinit var project: Project
+
     lateinit var sut: CodeWhispererFileCrawler
 
     @Before
-    override fun setup() {
-        super.setup()
+    fun setup() {
         sut = TypescriptCodeWhispererFileCrawler
+
+        project = projectRule.project
+        fixture = projectRule.fixture
     }
 
     @Test

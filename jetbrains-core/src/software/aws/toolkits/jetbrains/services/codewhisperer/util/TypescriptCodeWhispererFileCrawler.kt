@@ -16,7 +16,7 @@ object TypescriptCodeWhispererFileCrawler : CodeWhispererFileCrawler() {
 
     override suspend fun listFilesImported(psiFile: PsiFile): List<VirtualFile> = emptyList()
 
-    override fun findSourceFileByName(psiFile: PsiFile): VirtualFile? = null
+    override fun findSourceFileByName(target: PsiFile): VirtualFile? = null
 
-    override fun findSourceFileByContent(psiFile: PsiFile): VirtualFile? = null
+    override fun findSourceFileByContent(target: PsiFile): VirtualFile? = null
 }
