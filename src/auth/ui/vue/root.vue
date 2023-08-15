@@ -38,7 +38,7 @@
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
                     Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName() }}</span
-                    >! Switch between existing connections in the&nbsp;<a
+                    >! See connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
