@@ -218,7 +218,7 @@ export class TelemetryHelper {
         }
     }
 
-    private aggregateUserDecisionByRequest(
+    public aggregateUserDecisionByRequest(
         events: CodewhispererUserDecision[],
         requestId: string,
         sessionId: string,
@@ -254,7 +254,7 @@ export class TelemetryHelper {
         return aggregated
     }
 
-    private sendUserTriggerDecisionTelemetry(
+    public sendUserTriggerDecisionTelemetry(
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
