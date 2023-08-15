@@ -23,6 +23,11 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.Chunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
@@ -43,6 +48,7 @@ private val codewhispererCodeChunksIndex = GistManager.getInstance()
             FileContextProvider.getInstance(psiFile.project).extractCodeChunksFromFiles(psiFile, fileProducers)
         }
     }
+
 private object CodeWhispererCodeChunkExternalizer : DataExternalizer<List<Chunk>> {
     override fun save(out: DataOutput, value: List<Chunk>) {
         out.writeInt(value.size)
@@ -282,7 +288,13 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
             }
 
             return when (language) {
-                is CodeWhispererJava -> true
+                is CodeWhispererJava,
+                is CodeWhispererPython,
+                is CodeWhispererJavaScript,
+                is CodeWhispererTypeScript,
+                is CodeWhispererJsx,
+                is CodeWhispererTsx -> true
+
                 else -> userGroup == CodeWhispererUserGroup.CrossFile
             }
         }
