@@ -17,6 +17,7 @@ import {
 } from '../../../shared/telemetry/telemetry.gen'
 import { Completion } from '../../../codewhisperer/client/codewhispereruserclient'
 
+// TODO: improve and move the following test utils to codewhisperer/testUtils.ts
 function aUserDecision(
     completionType: CodewhispererCompletionType,
     codewhispererSuggestionIndex: number,
