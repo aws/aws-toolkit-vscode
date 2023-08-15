@@ -143,18 +143,15 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
+function shouldFetchCrossFileContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }
 
-    if (languageId === 'java') {
-        return true
-    } else if (supportedLanguageToDialects[languageId] && userGroup === UserGroup.CrossFile) {
-        return true
-    } else {
-        return false
-    }
+    return true
 }
 
 /**

@@ -123,6 +123,8 @@ describe('crossFileContextUtil', function () {
     })
 
     describe('partial support - control group', function () {
+        const fileExtLists: string[] = []
+
         before(async function () {
             this.timeout(60000)
             userGroupSettings.userGroup = UserGroup.Control
@@ -136,25 +138,29 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('should be empty if userGroup is control', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
+        fileExtLists.forEach(fileExt => {
+            it('should be empty if userGroup is control', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.js', tempFolder, { preview: false })
+                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
+                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
-            await assertTabCount(4)
+                await assertTabCount(4)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-            assert.ok(actual !== undefined && actual.length === 0)
+                assert.ok(actual?.length !== undefined && actual.length === 0)
+            })
         })
     })
 
     describe('partial support - crossfile group', function () {
+        const fileExtLists: string[] = []
+
         before(async function () {
             this.timeout(60000)
             userGroupSettings.userGroup = UserGroup.CrossFile
@@ -168,25 +174,29 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('should be non empty if userGroup is crossfile', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
+        fileExtLists.forEach(fileExt => {
+            it('should be non empty if usergroup is Crossfile', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.js', tempFolder, { preview: false })
+                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
+                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
-            await assertTabCount(4)
+                await assertTabCount(4)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-            assert.ok(actual !== undefined && actual.length !== 0)
+                assert.ok(actual?.length !== undefined && actual.length !== 0)
+            })
         })
     })
 
     describe('full support', function () {
+        const fileExtLists = ['java', 'js', 'ts', 'py', 'tsx', 'jsx']
+
         before(async function () {
             this.timeout(60000)
         })
@@ -200,21 +210,23 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('should be non empty', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
+        fileExtLists.forEach(fileExt => {
+            it('should be non empty', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.java', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.java', tempFolder, { preview: false })
+                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
+                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
-            await assertTabCount(4)
+                await assertTabCount(4)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-            assert.ok(actual?.length !== undefined && actual.length !== 0)
+                assert.ok(actual?.length !== undefined && actual.length !== 0)
+            })
         })
     })
 })
