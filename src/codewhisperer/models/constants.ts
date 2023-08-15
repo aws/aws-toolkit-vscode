@@ -264,8 +264,8 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 
 export enum UserGroup {
     Classifier = 'Classifier',
-    CrossFile = 'CodeChunk1000',
-    Control = 'CodeChunk60',
+    CrossFile = 'CrossFile',
+    Control = 'Control',
 }
 
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
