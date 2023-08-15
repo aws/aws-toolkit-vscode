@@ -1,3 +1,8 @@
+# _1.75_ (2023-08-03)
+- **(Feature)** Add support for Lambda runtime Python 3.11
+- **(Bug Fix)** codewhisperer: file context fetching not considering file extension correctly
+- **(Deprecation)** An upcoming release will remove support for JetBrains Gateway version 2023.1 and for for IDEs based on the 2022.2 platform
+
 # _1.74_ (2023-07-25)
 - **(Feature)** Explorer is automatically refreshed with new credentials when they are added to credential file.
 - **(Feature)** Added 2023.2 support

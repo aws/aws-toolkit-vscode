@@ -1,0 +1,11 @@
+{
+  "date" : "2023-08-15",
+  "version" : "1.76",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Improve file context fetching for Python Typescript Javascript source files"
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Improve file context fetching for Java test files"
+  } ]
+}
