@@ -173,13 +173,13 @@ class DefaultCodeWhispererFileContextProvider(private val project: Project) : Fi
                 chunks.addAll(file.toCodeChunk(relativePath))
                 hasUsed.add(file)
                 if (chunks.size > CodeWhispererConstants.CrossFile.CHUNK_SIZE) {
-                    LOG.debug { "finish fetching 60 chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
+                    LOG.debug { "finish fetching ${CodeWhispererConstants.CrossFile.CHUNK_SIZE} chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
                     return chunks.take(CodeWhispererConstants.CrossFile.CHUNK_SIZE)
                 }
             }
         }
 
-        LOG.debug { "finish fetching 60 chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
+        LOG.debug { "finish fetching ${CodeWhispererConstants.CrossFile.CHUNK_SIZE} chunks in ${System.currentTimeMillis() - parseFilesStart} ms" }
         return chunks.take(CodeWhispererConstants.CrossFile.CHUNK_SIZE)
     }
 

@@ -25,6 +25,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCpp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererGo
@@ -38,6 +39,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.DefaultCodeWhispererFileContextProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
 import software.aws.toolkits.jetbrains.utils.rules.HeavyJavaCodeInsightTestFixtureRule
@@ -65,6 +67,18 @@ class CodeWhispererFileContextProviderTest {
         project = projectRule.project
 
         sut = FileContextProvider.getInstance(project) as DefaultCodeWhispererFileContextProvider
+    }
+
+    @Test
+    fun `crossfile configuration`() {
+        val userGroupSetting = mock<CodeWhispererUserGroupSettings>()
+        ApplicationManager.getApplication().replaceService(CodeWhispererUserGroupSettings::class.java, userGroupSetting, disposableRule.disposable)
+
+        whenever(userGroupSetting.getUserGroup()).thenReturn(CodeWhispererUserGroup.Control)
+        assertThat(CodeWhispererConstants.CrossFile.CHUNK_SIZE).isEqualTo(60)
+
+        whenever(userGroupSetting.getUserGroup()).thenReturn(CodeWhispererUserGroup.CrossFile)
+        assertThat(CodeWhispererConstants.CrossFile.CHUNK_SIZE).isEqualTo(1000)
     }
 
     @Test
