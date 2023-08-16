@@ -22,9 +22,35 @@
             "input": { "shape": "EchoInput" },
             "output": { "shape": "EchoOutput" },
             "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GenerateApproach": {
+            "name": "GenerateApproach",
+            "http": {
+                "method": "POST",
+                "requestUri": "/generateApproach",
+                "responseCode": 200
+            },
+            "input": { "shape": "GenerateApproachInput" },
+            "output": { "shape": "GenerateApproachOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GenerateCode": {
+            "name": "GenerateCode",
+            "http": {
+                "method": "POST",
+                "requestUri": "/generateCode",
+                "responseCode": 200
+            },
+            "input": { "shape": "GenerateCodeInput" },
+            "output": { "shape": "GenerateCodeOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
         }
     },
     "shapes": {
+        "DeletedFilesList": {
+            "type": "list",
+            "member": { "shape": "String" }
+        },
         "EchoInput": {
             "type": "structure",
             "members": {
@@ -35,6 +61,49 @@
             "type": "structure",
             "members": {
                 "string": { "shape": "String" }
+            }
+        },
+        "FileMetadata": {
+            "type": "structure",
+            "required": ["filePath", "fileContent"],
+            "members": {
+                "filePath": { "shape": "String" },
+                "fileContent": { "shape": "String" }
+            }
+        },
+        "FileMetadataList": {
+            "type": "list",
+            "member": { "shape": "FileMetadata" }
+        },
+        "GenerateApproachInput": {
+            "type": "structure",
+            "required": ["originalFileContents", "task"],
+            "members": {
+                "originalFileContents": { "shape": "FileMetadataList" },
+                "task": { "shape": "String" }
+            }
+        },
+        "GenerateApproachOutput": {
+            "type": "structure",
+            "members": {
+                "approach": { "shape": "String" },
+                "background": { "shape": "String" }
+            }
+        },
+        "GenerateCodeInput": {
+            "type": "structure",
+            "required": ["originalFileContents", "task", "approach"],
+            "members": {
+                "originalFileContents": { "shape": "FileMetadataList" },
+                "task": { "shape": "String" },
+                "approach": { "shape": "String" }
+            }
+        },
+        "GenerateCodeOutput": {
+            "type": "structure",
+            "members": {
+                "newFileContents": { "shape": "FileMetadataList" },
+                "deletedFiles": { "shape": "DeletedFilesList" }
             }
         },
         "InvalidInputException": {
