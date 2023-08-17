@@ -36,10 +36,10 @@ import {
     createBuilderIdProfile,
     createSsoProfile,
     defaultSsoRegion,
+    isAnySsoConnection,
+    isBaseSsoConnection,
     isBuilderIdConnection,
     isIamConnection,
-    isIdcConnection,
-    isSsoConnection,
 } from './connection'
 import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
@@ -148,7 +148,7 @@ export const createIamItem = () =>
     } as DataQuickPickItem<'iam'>)
 
 export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
-    const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
+    const existingConnections = (await Auth.instance.listConnections()).filter(isAnySsoConnection)
 
     function validateSsoUrl(url: string) {
         const urlFormatError = validateSsoUrlFormat(url)
@@ -573,7 +573,7 @@ export type SsoKind = 'any' | 'codewhisperer'
 /**
  * Returns true if an Identity Center SSO connection exists.
  *
- * @param kind A specific kind of Identity Center connection that must exist.
+ * @param kind A specific kind of Identity Center SSO connection that must exist.
  * @param allConnections func to get all connections that exist
  */
 export async function hasSso(
@@ -591,13 +591,13 @@ async function findSsoConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isIdcConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isBaseSsoConnection(conn) && isValidCodeWhispererConnection(conn)
             }
             break
         case 'any':
-            predicate = isIdcConnection
+            predicate = isBaseSsoConnection
     }
-    return (await allConnections()).filter(predicate).filter(isSsoConnection)
+    return (await allConnections()).filter(predicate).filter(isBaseSsoConnection)
 }
 
 export type BuilderIdKind = 'any' | 'codewhisperer'
@@ -629,7 +629,7 @@ async function findBuilderIdConnections(
         case 'any':
             predicate = isBuilderIdConnection
     }
-    return (await allConnections()).filter(predicate).filter(isSsoConnection)
+    return (await allConnections()).filter(predicate).filter(isAnySsoConnection)
 }
 
 /**
