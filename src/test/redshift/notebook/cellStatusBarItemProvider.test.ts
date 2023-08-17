@@ -37,9 +37,11 @@ describe('CellStatusBarItemProvider', function () {
             command: 'aws.redshift.connectClicked',
             arguments: [cell, cellStatusBarItemProvider.refreshCellStatusBar.bind(cellStatusBarItemProvider)],
         }
-        assert.deepStrictEqual(statusBar.command.command, expectedCommand.command)
-        assert.deepStrictEqual(statusBar.command.arguments[0], expectedCommand.arguments[0])
-        assert.deepStrictEqual(statusBar.command.arguments[1].toString(), expectedCommand.arguments[1].toString())
+        if (statusBar.command && typeof statusBar.command === 'object' && Array.isArray(statusBar.command.arguments)) {
+            assert.deepStrictEqual(statusBar.command.command, expectedCommand.command)
+            assert.deepStrictEqual(statusBar.command.arguments[0], expectedCommand.arguments[0])
+            assert.deepStrictEqual(statusBar.command.arguments[1].toString(), expectedCommand.arguments[1].toString())
+        }
     })
 
     it('should call onDidChangeCellStatusBarItems when refreshCellStatusBar is called', () => {

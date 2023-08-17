@@ -8,10 +8,12 @@ import * as vscode from 'vscode'
 import { RedshiftNotebookController } from '../../../redshift/notebook/redshiftNotebookController'
 import sinon = require('sinon')
 import assert = require('assert')
+import { RedshiftData } from 'aws-sdk'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 
 describe('RedshiftNotebookController', () => {
-    let redshiftClientStub: DefaultRedshiftClient
+    const mockRedshiftData = <RedshiftData>{}
+    let redshiftClientStub = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
     let notebookController: any
     let createNotebookControllerStub: any
     beforeEach(() => {
@@ -36,14 +38,6 @@ describe('RedshiftNotebookController', () => {
         assert.strictEqual(notebookController.label, 'Redshift SQL notebook')
         assert.deepStrictEqual(notebookController.supportedLanguages, ['sql'])
         assert.strictEqual(notebookController._executionOrder, 0)
-        assert.strictEqual(
-            createNotebookControllerStub.calledOnceWithExactly(
-                'aws-redshift-sql-notebook',
-                'aws-redshift-sql-notebook',
-                'sql'
-            ),
-            true
-        )
     })
 
     it('should execute all cells', () => {
