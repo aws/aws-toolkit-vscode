@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "IAM Identity Center (SSO): misleading \"Permission set\" warning for scope-based SSO/IdC connection"
+}
