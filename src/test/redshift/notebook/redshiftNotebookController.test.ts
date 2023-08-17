@@ -13,13 +13,15 @@ import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 
 describe('RedshiftNotebookController', () => {
     const mockRedshiftData = <RedshiftData>{}
-    let redshiftClientStub = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
+    const redshiftClientStub = new DefaultRedshiftClient(
+        'us-east-1',
+        async () => mockRedshiftData,
+        undefined,
+        undefined
+    )
     let notebookController: any
     let createNotebookControllerStub: any
     beforeEach(() => {
-        redshiftClientStub = {
-            executeQuery: sinon.stub(),
-        }
         createNotebookControllerStub = sinon.stub(vscode.notebooks, 'createNotebookController')
         const controllerInstanceValue = {
             supportedLanguages: ['sql'],
