@@ -223,12 +223,16 @@ export class Auth implements AuthService, ConnectionManager {
 
             const stream = toStream(this.store.listProfiles().map(entry => this.getConnectionFromStoreEntry(entry)))
 
+            /** Decides if SSO service should be queried for "linked" IAM roles/credentials for the given SSO connection. */
             const isLinkable = (
                 entry: [string, StoredProfile<Profile>]
-            ): entry is [string, StoredProfile<SsoProfile>] =>
-                entry[1].type === 'sso' &&
-                hasScopes(entry[1], ssoAccountAccessScopes) &&
-                entry[1].metadata.connectionState === 'valid'
+            ): entry is [string, StoredProfile<SsoProfile>] => {
+                const r =
+                    entry[1].type === 'sso' &&
+                    hasScopes(entry[1], ssoAccountAccessScopes) &&
+                    entry[1].metadata.connectionState === 'valid'
+                return r
+            }
 
             const linked = this.store
                 .listProfiles()
@@ -238,8 +242,8 @@ export class Auth implements AuthService, ConnectionManager {
                         loadLinkedProfilesIntoStore(
                             this.store,
                             id,
-                            this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile)),
-                            profile.startUrl
+                            profile,
+                            this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile))
                         )
                     )
                         .catch(err => {
