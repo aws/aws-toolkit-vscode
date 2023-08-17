@@ -40,6 +40,7 @@ import {
     isBaseSsoConnection,
     isBuilderIdConnection,
     isIamConnection,
+    isValidCodeCatalystConnection,
 } from './connection'
 import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
@@ -48,7 +49,6 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
 import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
-import { isValidCodeCatalystConnection } from '../codecatalyst/auth'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
