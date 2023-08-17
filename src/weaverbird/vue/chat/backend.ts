@@ -13,8 +13,6 @@ import { Session } from './session'
 export class WeaverbirdChatWebview extends VueWebview {
     public readonly id = 'configureChat'
     public readonly source = 'src/weaverbird/vue/chat/index.js'
-    public readonly onDidCreateContent = new vscode.EventEmitter<string>()
-    public readonly onDidSubmitPlan = new vscode.EventEmitter<void>()
     public readonly session: Session
 
     public constructor() {

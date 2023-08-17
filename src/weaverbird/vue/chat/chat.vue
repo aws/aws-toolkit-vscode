@@ -31,22 +31,7 @@ export default defineComponent({
         return model
     },
     async created() {
-        const currentSession = await client.getSession()
-        this.$data.history = currentSession.history
-    },
-    mounted() {
-        client.onDidCreateContent(async (content: string) => {
-            // TODO refactor so we aren't duplicating code
-            this.history.push(content)
-            this.isInputDisabled = true
-
-            const serviceResponse = await client.send(content)
-            this.history.push(
-                serviceResponse ?? 'Could not retrieve message from the Weaverbird service. Please try again.'
-            )
-
-            this.isInputDisabled = false
-        })
+        this.$data.history = []
     },
     emits: {},
     // lazily evaluated and cached based on their dependencies
