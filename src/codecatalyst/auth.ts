@@ -16,9 +16,9 @@ import {
     ssoAccountAccessScopes,
     codecatalystScopes,
     SsoConnection,
-    hasScopes,
     Connection,
     isBuilderIdConnection,
+    isValidCodeCatalystConnection,
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
 
@@ -40,8 +40,6 @@ export class CodeCatalystAuthStorage {
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
 const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
-export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
-    isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
