@@ -1,3 +1,9 @@
+## 1.85.0 2023-08-17
+
+- **Bug Fix** IAM Identity Center (SSO): misleading "Permission set" warning for scope-based SSO/IdC connection
+- **Bug Fix** auth: remote workspaces use the global state, showing incorrect profile info
+- **Feature** CodeWhisperer: Improve file context fetching for Python Typescript Javascript source files
+
 ## 1.84.0 2023-08-11
 
 - **Bug Fix** misleading error when downloading a Lambda to a workspace without a folder
