@@ -11,7 +11,6 @@ import { FileMetadata, FileMetadataList } from '../../client/weaverbirdclient'
 
 export class Session {
     public readonly workspaceRoot: string
-    public readonly sourceRoot: string
     private state: 'refinement' | 'codegen'
     private task: string = ''
     private approach: string = ''
@@ -26,7 +25,6 @@ export class Session {
 
     constructor(workspaceRoot: string) {
         this.workspaceRoot = workspaceRoot
-        this.sourceRoot = this.workspaceRoot + '/src'
         this.state = 'refinement'
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
         this.onProgressEvent = this.onProgressEventEmitter.event
