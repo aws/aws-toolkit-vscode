@@ -10,7 +10,6 @@ import * as path from 'path'
 import { FileMetadata, FileMetadataList } from '../../client/weaverbirdclient'
 
 export class Session {
-    public readonly history: string[]
     public readonly workspaceRoot: string
     public readonly sourceRoot: string
     private state: 'refinement' | 'codegen'
@@ -25,13 +24,11 @@ export class Session {
     public onProgressFinishedEventEmitter: vscode.EventEmitter<void>
     public onProgressFinishedEvent: vscode.Event<void>
 
-    constructor(history: string[], workspaceRoot: string) {
-        this.history = history
+    constructor(workspaceRoot: string) {
         this.workspaceRoot = workspaceRoot
         this.sourceRoot = this.workspaceRoot + '/src'
         this.state = 'refinement'
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
-        this.state = 'refinement'
         this.onProgressEvent = this.onProgressEventEmitter.event
 
         this.onProgressFinishedEventEmitter = new vscode.EventEmitter<void>()

@@ -6,32 +6,12 @@
 import * as vscode from 'vscode'
 
 import { registerChatView } from './vue/chat/backend'
-import { Storage } from './storage'
 
 /**
  * Activate Weaverbird functionality for the extension.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const weaverbirdStorage = new Storage()
-
-    // For testing, undefine WeaverbirdSessionStorage everytime
-    weaverbirdStorage.memento.update('WeaverbirdSessionStorage', undefined)
-    await weaverbirdStorage.createSessionStorage()
-
-    const sessionId = await weaverbirdStorage.createSession()
-
-    // Create some default session history
-    await weaverbirdStorage.updateSession(sessionId, {
-        name: 'testing',
-        history: [
-            'some example message from the user',
-            'some example message from the LLM',
-            'some example message from the user',
-            'some example message from the LLM',
-        ],
-    })
-    const currentSession = weaverbirdStorage.getSessionById(weaverbirdStorage.getSessionStorage(), sessionId)
-    const chatView = await registerChatView(context, currentSession.history)
+    const chatView = await registerChatView(context)
 
     context.subscriptions.push(
         vscode.commands.registerCommand('aws.weaverbird.chat.showProgress', () => {
