@@ -91,7 +91,8 @@ export class Session {
                 fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
                 fs.writeFileSync(pathUsed, fileContent as string)
             }
-
+            // so that you can do it again
+            this.state = 'refinement'
             return 'Changes to files done'
         }
     }
