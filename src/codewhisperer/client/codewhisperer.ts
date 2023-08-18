@@ -18,6 +18,7 @@ import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import { CodeWhispererStates } from '../util/codewhispererStates'
+import { getLogger } from '../../shared/logger/logger'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -202,7 +203,8 @@ export class DefaultCodeWhispererClient {
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
             return
         }
-        await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
+        getLogger().debug(`send telemetry event requestID: ${response.$response.requestId}`)
     }
 }
 
