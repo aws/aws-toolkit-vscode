@@ -4,11 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { createWeaverbirdSdkClient } from '../../client/weaverbird'
 import * as fs from 'fs'
 import * as path from 'path'
-import { FileMetadata, FileMetadataList } from '../../client/weaverbirdclient'
 import { getLogger } from '../../../shared/logger/logger'
+import { FileMetadata } from '../../client/weaverbirdclient'
+
+import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 
 export class Session {
     public readonly workspaceRoot: string
@@ -34,6 +35,33 @@ export class Session {
         this.onProgressFinishedEvent = this.onProgressFinishedEventEmitter.event
     }
 
+    async invokeApiGWLambda(arn: string, payload: any): Promise<any> {
+        const truePayload = {
+            // apigateway-style lambda
+            body: JSON.stringify(payload),
+        }
+        const apiGWRes = await this.invokeLambda(arn, truePayload)
+        return JSON.parse(apiGWRes.body)
+    }
+
+    async invokeLambda(arn: string, payload: any): Promise<any> {
+        const client = new LambdaClient({
+            region: 'eu-west-1',
+        })
+
+        const command = new InvokeCommand({
+            FunctionName: arn,
+            Payload: JSON.stringify(payload),
+        })
+
+        console.log(`Invoking ${arn} with payload ${JSON.stringify(payload)}`)
+
+        const { Payload } = await client.send(command)
+        const rawResult = Buffer.from(Payload!).toString()
+        console.log(rawResult)
+        return JSON.parse(rawResult)
+    }
+
     async send(msg: string): Promise<string> {
         try {
             getLogger().info(`Received message from chat view: ${msg}`)
@@ -44,18 +72,29 @@ export class Session {
         }
     }
 
-    async sendUnsafe(msg: string): Promise<string> {
-        const client = await createWeaverbirdSdkClient()
+    async collectFiles(rootPath: string, prefix: string, storage: FileMetadata[]) {
+        const fileList = fs.readdirSync(rootPath)
 
-        const fileList = fs.readdirSync(path.join(this.workspaceRoot, 'src'))
-
-        const files: FileMetadataList = fileList.map(fileName => {
-            const filePath = path.join(this.workspaceRoot, 'src', fileName)
-            return {
-                filePath,
-                fileContent: fs.readFileSync(filePath).toString(),
-            } as FileMetadata
+        fileList.forEach(filePath => {
+            const realPath = path.join(rootPath, filePath)
+            // llms are fine-tuned to use posix path. Don't expect miracles otherwise
+            const posixPath = path.posix.join(prefix, filePath)
+            if (fs.lstatSync(realPath).isDirectory()) {
+                this.collectFiles(realPath, posixPath, storage)
+            } else {
+                storage.push({
+                    filePath: posixPath,
+                    fileContent: fs.readFileSync(realPath).toString(),
+                } as FileMetadata)
+            }
         })
+    }
+
+    async sendUnsafe(msg: string): Promise<string> {
+        //const client = await createWeaverbirdSdkClient();
+
+        const files: FileMetadata[] = []
+        this.collectFiles(path.join(this.workspaceRoot, 'src'), 'src', files)
 
         if (msg.indexOf('WRITE CODE') !== -1) {
             this.state = 'codegen'
@@ -63,35 +102,40 @@ export class Session {
             this.task = msg
         }
         if (this.state === 'refinement') {
-            console.log(
-                JSON.stringify({
-                    task: this.task,
-                    originalFileContents: files,
-                })
+            const payload = {
+                task: this.task,
+                originalFileContents: files,
+            }
+
+            /*
+                const result = (await client.generateApproach(payload).promise())
+            */
+            const result = await this.invokeApiGWLambda(
+                'arn:aws:lambda:eu-west-1:761763482860:function:Weaverbird-Service-person-GenerateApproachLambda47-oNXrEUIDwhLT',
+                payload
             )
-            const result = await client
-                .generateApproach({
-                    task: this.task,
-                    originalFileContents: files,
-                })
-                .promise()
             this.approach = result.approach!
             return `${result.approach}\n`
         } else {
-            const result = await client
-                .generateCode({
-                    task: this.task,
-                    approach: this.approach,
-                    originalFileContents: files,
-                })
-                .promise()
+            const payload = {
+                originalFileContents: files,
+                approach: this.approach,
+                task: this.task,
+            }
+            /*
+                const result = (await client.generateCode(payload).promise())
+            */
+
+            const result = await this.invokeApiGWLambda(
+                'arn:aws:lambda:eu-west-1:761763482860:function:Weaverbird-Service-person-GenerateCodeLambdaCDE418-06HmvoP2624k',
+                payload
+            )
 
             for (const { filePath, fileContent } of result.newFileContents!) {
                 const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
                 fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
                 fs.writeFileSync(pathUsed, fileContent as string)
             }
-            // so that you can do it again
             this.state = 'refinement'
             return 'Changes to files done'
         }

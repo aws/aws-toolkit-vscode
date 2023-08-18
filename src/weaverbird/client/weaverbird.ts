@@ -20,9 +20,9 @@ export async function createWeaverbirdSdkClient(): Promise<WeaverbirdClient> {
         Service,
         {
             apiConfig: apiConfig,
-            region: 'us-west-2',
+            region: 'eu-west-1',
             credentials: await conn.getCredentials(),
-            endpoint: 'https://8id2rzphzj.execute-api.us-west-2.amazonaws.com/gamma',
+            endpoint: 'https://api.noobgam.people.aws.dev',
             onRequestSetup: [
                 req => {
                     console.log(JSON.stringify(req.httpRequest))
