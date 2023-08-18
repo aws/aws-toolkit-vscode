@@ -138,6 +138,11 @@ export default defineComponent({
             // so we'll mark it as loaded as to not block the overall loading
             this.isLoaded.aggregateExplorer = true
         }
+
+        // The created() method is not truly awaited and this causes a
+        // race condition with @auth-connection-updated triggering updateIsAllAuthsLoaded().
+        // So we must do a final update here to ensure the latest values.
+        this.updateIsAllAuthsLoaded()
     },
     computed: {
         credentialsFormState(): CredentialsState {
@@ -149,8 +154,9 @@ export default defineComponent({
     },
     methods: {
         updateIsAllAuthsLoaded() {
-            const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
-            this.isAllAuthsLoaded = !hasUnloaded
+            const allAuthsCount = Object.values(this.isLoaded).length
+            const allLoadedAuths = Object.values(this.isLoaded).filter(val => val)
+            this.isAllAuthsLoaded = allLoadedAuths.length === allAuthsCount
         },
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
             this.isLoaded[args.id] = true
