@@ -23,7 +23,7 @@ import { getLogger } from '../../shared/logger'
 
 export class StartButtonNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
-        super(parent, 'Start', 'aws.redshift.startButtonClicked', [parent])
+        super(parent, 'Start-Querying', 'aws.redshift.startButtonClicked', [parent])
         this.iconPath = getIcon('vscode-debug-start')
     }
     toJSON() {
