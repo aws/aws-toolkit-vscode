@@ -68,13 +68,13 @@ const asyncCollection = Symbol('asyncCollection')
 /**
  * Converts an async generator function to an {@link AsyncCollection}
  *
- * Generation is "lazy", i.e. the generator is not called until a resolving operation:
- *  * Iterating over them using `for await (...)`
- *  * Iterating over them using `.next()`
+ * Generation is "lazy", i.e. the generator is not called until a _resolving operation_:
+ *  * Iterating using `for await (...)`
+ *  * Iterating using `.next()`
  *  * Calling one of the conversion functions `toMap` or `promise`
  *
  * Collections are *immutable* in the sense that any transformation will not consume the underlying generator
- * function. That is, any 'final' operation uses its own contextually bound generator function separate from
+ * function. That is, any "final" operation uses its own contextually bound generator function separate from
  * any predecessor collections.
  */
 export function toCollection<T>(generator: () => AsyncGenerator<T, T | undefined | void>): AsyncCollection<T> {
