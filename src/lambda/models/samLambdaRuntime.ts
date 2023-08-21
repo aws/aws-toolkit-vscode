@@ -49,6 +49,7 @@ export function getNodeMajorVersion(version?: string): number | undefined {
 }
 
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.11',
     'python3.10',
     'python3.9',
     'python3.8',
