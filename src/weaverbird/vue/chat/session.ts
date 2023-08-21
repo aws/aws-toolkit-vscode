@@ -46,7 +46,7 @@ export class Session {
 
     async invokeLambda(arn: string, payload: any): Promise<any> {
         const client = new LambdaClient({
-            region: 'eu-west-1',
+            region: 'us-west-2',
         })
 
         const command = new InvokeCommand({
@@ -111,7 +111,7 @@ export class Session {
                 const result = (await client.generateApproach(payload).promise())
             */
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:eu-west-1:761763482860:function:Weaverbird-Service-person-GenerateApproachLambda47-oNXrEUIDwhLT',
+                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateApproachLambda47-VIjB8vZYS3Iu',
                 payload
             )
             this.approach = result.approach!
@@ -127,7 +127,7 @@ export class Session {
             */
 
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:eu-west-1:761763482860:function:Weaverbird-Service-person-GenerateCodeLambdaCDE418-06HmvoP2624k',
+                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-nXvafUVY7rmw',
                 payload
             )
 
