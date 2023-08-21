@@ -56,7 +56,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             const selectedUri = await vscode.window.showSaveDialog({
                 defaultUri: vscode.Uri.joinPath(workspaceDir),
                 filters: {
-                    ['Redshift SQL Notebook']: ['.notebook'],
+                    ['Redshift SQL Notebook']: ['.rsnb'],
                 },
             })
 
