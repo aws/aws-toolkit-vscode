@@ -12,8 +12,8 @@ import { FileMetadata } from '../../client/weaverbirdclient'
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 
 export class Session {
-    public readonly workspaceRoot: string
-    private state: 'refinement' | 'codegen'
+    private workspaceRoot: string
+    private state: 'refinement' | 'refinement-iteration' | 'codegen'
     private task: string = ''
     private approach: string = ''
 
@@ -98,10 +98,9 @@ export class Session {
 
         if (msg.indexOf('WRITE CODE') !== -1) {
             this.state = 'codegen'
-        } else {
-            this.task = msg
         }
         if (this.state === 'refinement') {
+            this.task = msg
             const payload = {
                 task: this.task,
                 originalFileContents: files,
@@ -111,7 +110,27 @@ export class Session {
                 const result = (await client.generateApproach(payload).promise())
             */
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateApproachLambda47-VIjB8vZYS3Iu',
+                'arn:aws:lambda:us-west-2:567433225113:function:Weaverbird-Service-person-GenerateApproachLambda47-lI7frQaxTwmV',
+                payload
+            )
+
+            // change the state to be refinement-iteration so that the next message from user will invoke iterateApproach lambda
+            this.state = 'refinement-iteration'
+            this.approach = result.approach!
+            return `${result.approach}\n`
+        } else if (this.state === 'refinement-iteration') {
+            const payload = {
+                task: this.task,
+                request: msg,
+                approach: this.approach,
+                originalFileContents: files,
+            }
+
+            /*
+                const result = (await client.iterateApproach(payload).promise())
+            */
+            const result = await this.invokeApiGWLambda(
+                'arn:aws:lambda:us-west-2:567433225113:function:Weaverbird-Service-person-IterateApproachLambda18D-Ytcr2CZ9O0YQ',
                 payload
             )
             this.approach = result.approach!
@@ -127,7 +146,7 @@ export class Session {
             */
 
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-nXvafUVY7rmw',
+                'arn:aws:lambda:us-west-2:567433225113:function:Weaverbird-Service-person-GenerateCodeLambdaCDE418-odVvUUIl2HAo',
                 payload
             )
 
