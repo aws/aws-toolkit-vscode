@@ -46,6 +46,7 @@ describe('recommendationHandler', function () {
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
+            RecommendationHandler.instance.clearRecommendations()
             sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
         })
 
@@ -141,11 +142,10 @@ describe('recommendationHandler', function () {
             assertTelemetry({
                 codewhispererRequestId: 'test_request',
                 codewhispererSessionId: 'test_request',
-                codewhispererLastSuggestionIndex: -1,
+                codewhispererLastSuggestionIndex: 1,
                 codewhispererTriggerType: 'AutoTrigger',
                 codewhispererAutomatedTriggerType: 'Enter',
                 codewhispererImportRecommendationEnabled: true,
-                codewhispererCompletionType: 'Line',
                 result: 'Succeeded',
                 codewhispererLineNumber: 1,
                 codewhispererCursorOffset: 38,
@@ -226,6 +226,51 @@ describe('recommendationHandler', function () {
             const handler = new RecommendationHandler()
             handler.recommendations = [{ content: '' }, { content: '' }]
             assert.ok(!handler.isValidResponse())
+        })
+    })
+
+    describe('setCompletionType/getCompletionType', function () {
+        beforeEach(function () {
+            sinon.restore()
+        })
+
+        it('should set the completion type to block given a multi-line suggestion', function () {
+            const handler = new RecommendationHandler()
+
+            handler.setCompletionType(0, { content: 'test\n\n   \t\r\nanother test' })
+            assert.strictEqual(handler.getCompletionType(0), 'Block')
+
+            handler.setCompletionType(0, { content: 'test\ntest\n' })
+            assert.strictEqual(handler.getCompletionType(0), 'Block')
+
+            handler.setCompletionType(0, { content: '\n   \t\r\ntest\ntest' })
+            assert.strictEqual(handler.getCompletionType(0), 'Block')
+        })
+
+        it('should set the completion type to line given a single-line suggestion', function () {
+            const handler = new RecommendationHandler()
+
+            handler.setCompletionType(0, { content: 'test' })
+            assert.strictEqual(handler.getCompletionType(0), 'Line')
+
+            handler.setCompletionType(0, { content: 'test\r\t   ' })
+            assert.strictEqual(handler.getCompletionType(0), 'Line')
+        })
+
+        it('should set the completion type to line given a multi-line completion but only one-lien of non-blank sequence', function () {
+            const handler = new RecommendationHandler()
+
+            handler.setCompletionType(0, { content: 'test\n\t' })
+            assert.strictEqual(handler.getCompletionType(0), 'Line')
+
+            handler.setCompletionType(0, { content: 'test\n    ' })
+            assert.strictEqual(handler.getCompletionType(0), 'Line')
+
+            handler.setCompletionType(0, { content: 'test\n\r' })
+            assert.strictEqual(handler.getCompletionType(0), 'Line')
+
+            handler.setCompletionType(0, { content: '\n\n\n\ntest' })
+            assert.strictEqual(handler.getCompletionType(0), 'Line')
         })
     })
 })

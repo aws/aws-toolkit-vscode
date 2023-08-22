@@ -40,13 +40,18 @@ export class RedshiftNotebookController {
 
     private async _doExecution(cell: vscode.NotebookCell): Promise<void> {
         const execution = this._controller.createNotebookCellExecution(cell)
-
         execution.executionOrder = ++this._executionOrder
         execution.start(Date.now())
         let success = false
-
         try {
-            const cellOutput = await this.executeCell(cell)
+            // Used  Promise.race to handle both execution and cancellation
+            const resultPromise = this.executeCell(cell)
+            const cancellationPromise = new Promise<vscode.NotebookCellOutput>((_, reject) => {
+                execution.token.onCancellationRequested(() => {
+                    reject(new Error('Cell execution was cancelled.'))
+                })
+            })
+            const cellOutput = await Promise.race([resultPromise, cancellationPromise])
             success = true
             execution.replaceOutput([cellOutput])
         } catch (err: unknown) {

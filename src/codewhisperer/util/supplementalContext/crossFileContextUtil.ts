@@ -60,6 +60,11 @@ export async function fetchSupplementalContextForSrc(
         return shouldProceed === undefined ? undefined : []
     }
 
+    const codeChunksCalculated =
+        CodeWhispererUserGroupSettings.instance.userGroup === UserGroup.Control
+            ? crossFileContextConfig.numberOfChunkToFetch
+            : crossFileContextConfig.numberOfChunkToFetchExperiment
+
     // Step 1: Get relevant cross files to refer
     const relevantCrossFilePaths = await getCrossFileCandidates(editor)
     throwIfCancelled(cancellationToken)
@@ -70,16 +75,16 @@ export async function fetchSupplementalContextForSrc(
     let chunkList: Chunk[] = []
     for (const relevantFile of relevantCrossFilePaths) {
         throwIfCancelled(cancellationToken)
-        const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
+        const chunks: Chunk[] = splitFileToChunks(relevantFile, codeChunksCalculated)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
-        if (chunkList.length >= crossFileContextConfig.numberOfChunkToFetch) {
+        if (chunkList.length >= codeChunksCalculated) {
             break
         }
     }
 
     // it's required since chunkList.push(...) is likely giving us a list of size > 60
-    chunkList = chunkList.slice(0, crossFileContextConfig.numberOfChunkToFetch)
+    chunkList = chunkList.slice(0, codeChunksCalculated)
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
@@ -143,18 +148,15 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
+function shouldFetchCrossFileContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }
 
-    if (languageId === 'java') {
-        return true
-    } else if (supportedLanguageToDialects[languageId] && userGroup === UserGroup.CrossFile) {
-        return true
-    } else {
-        return false
-    }
+    return true
 }
 
 /**

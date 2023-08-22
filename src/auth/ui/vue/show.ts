@@ -69,7 +69,6 @@ export class AuthWebview extends VueWebview {
     }
 
     getCredentialFormatError(key: CredentialsKey, value: string | undefined): string | undefined {
-        getLogger().warn('getCredentialFormatError(): %s %s', key, value)
         return getCredentialFormatError(key, value)
     }
 

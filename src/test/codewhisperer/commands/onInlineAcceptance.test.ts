@@ -67,7 +67,7 @@ describe('onInlineAcceptance', function () {
             RecommendationHandler.instance.recommendations = [{ content: "print('Hello World!')" }]
             RecommendationHandler.instance.setSuggestionState(0, 'Showed')
             TelemetryHelper.instance.triggerType = 'OnDemand'
-            TelemetryHelper.instance.completionType = 'Line'
+            RecommendationHandler.instance.setCompletionType(0, RecommendationHandler.instance.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const globalState = new FakeMemento()
             await onInlineAcceptance(
