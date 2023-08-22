@@ -77,6 +77,12 @@ class SyncServerlessAppAction : AnAction(
                     content = (samExecutable as ExecutableInstance.BadExecutable).validationError
                 )
                 LOG.warn { "Invalid SAM CLI Executable" }
+                SamTelemetry.sync(
+                    project = project,
+                    result = Result.Failed,
+                    syncedResources = SyncedResources.AllResources,
+                    reason = "InvalidSamCli"
+                )
                 return@thenAccept
             }
 
@@ -110,6 +116,12 @@ class SyncServerlessAppAction : AnAction(
                         }
                     )
                 )
+                SamTelemetry.sync(
+                    project = project,
+                    result = Result.Failed,
+                    syncedResources = SyncedResources.AllResources,
+                    reason = "OldSamCliVersion"
+                )
                 return@thenAccept
             }
 
@@ -118,6 +130,12 @@ class SyncServerlessAppAction : AnAction(
             validateTemplateFile(project, templateFile)?.let {
                 notifyError(content = it, project = project)
                 LOG.warn { it }
+                SamTelemetry.sync(
+                    project = project,
+                    result = Result.Failed,
+                    syncedResources = SyncedResources.AllResources,
+                    reason = "UnparseableTemplateFile"
+                )
                 return@thenAccept
             }
 
@@ -190,7 +208,7 @@ class SyncServerlessAppAction : AnAction(
                                             syncedResources = syncedResourceType,
                                             lambdaPackageType = lambdaType,
                                             version = SamCommon.getVersionString(),
-                                            reason = "Docker not available"
+                                            reason = "DockerNotFound"
                                         )
                                         return@runInEdt
                                     }
