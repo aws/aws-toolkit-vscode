@@ -64,11 +64,19 @@ describe('crossFileContextUtil', function () {
             }
 
             it('control group', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
+
                 CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.Control
                 await assertCorrectCodeChunk()
             })
 
             it('treatment group', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
+
                 CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.CrossFile
                 await assertCorrectCodeChunk()
             })
