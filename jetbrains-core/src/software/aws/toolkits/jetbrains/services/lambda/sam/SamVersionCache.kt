@@ -10,6 +10,8 @@ import software.aws.toolkits.jetbrains.core.executables.ExecutableCommon
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
 import software.aws.toolkits.jetbrains.utils.FileInfoCache
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.Result
+import software.aws.toolkits.telemetry.SamTelemetry
 
 object SamVersionCache : FileInfoCache<SemVer>() {
     override fun getFileInfo(path: String): SemVer {
@@ -21,17 +23,25 @@ object SamVersionCache : FileInfoCache<SemVer>() {
         if (process.exitCode != 0) {
             val output = process.stderr.trimEnd()
             if (output.contains(SamCommon.SAM_INVALID_OPTION_SUBSTRING)) {
+                SamTelemetry.info(result = Result.Failed, reason = "SamCliUnexpectedOutput")
                 throw IllegalStateException(message("executableCommon.unexpected_output", SamCommon.SAM_NAME, output))
             }
             throw IllegalStateException(output)
         } else {
             val output = process.stdout.trimEnd()
             if (output.isEmpty()) {
+                SamTelemetry.info(result = Result.Failed, reason = "SamCliNoOutput")
                 throw IllegalStateException(message("executableCommon.empty_info", SamCommon.SAM_NAME))
             }
             val tree = SamCommon.mapper.readTree(output)
             val version = tree.get(SamCommon.SAM_INFO_VERSION_KEY).asText()
-            return SemVer.parseFromText(version) ?: throw IllegalStateException(message("executableCommon.version_parse_error", SamCommon.SAM_NAME, version))
+            val semVerVersion = SemVer.parseFromText(version)
+            if (semVerVersion == null) {
+                SamTelemetry.info(result = Result.Failed, reason = "UndetectableSamCliVersion")
+            } else {
+                SamTelemetry.info(result = Result.Succeeded)
+            }
+            return semVerVersion ?: throw IllegalStateException(message("executableCommon.version_parse_error", SamCommon.SAM_NAME, version))
         }
     }
 }
