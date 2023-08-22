@@ -226,13 +226,14 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
             latency: ${supplementalContext.latency},
         `)
 
+    let logString = ''
     supplementalContext.supplementalContextItems.forEach((context, index) => {
-        getLogger().debug(`
-                -----------------------------------------------
-                Path: ${context.filePath}
-                Score: ${context.score}
-                Chunk: ${index}:${context.content}
-                -----------------------------------------------
-            `)
+        logString += `Chunk ${index}:
+        Path: ${context.filePath}
+        Content: ${index}:${context.content}
+        Score: ${context.score}
+        -----------------------------------------------`
     })
+
+    getLogger().debug(logString)
 }
