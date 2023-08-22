@@ -219,7 +219,7 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         return
     }
 
-    getLogger().verbose(`
+    getLogger().debug(`CodeWhispererSupplementalContext:
             isUtg: ${supplementalContext.isUtg},
             isProcessTimeout: ${supplementalContext.isProcessTimeout},
             contentsLength: ${supplementalContext.contentsLength},
@@ -227,7 +227,7 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         `)
 
     supplementalContext.supplementalContextItems.forEach((context, index) => {
-        getLogger().verbose(`
+        getLogger().debug(`
                 -----------------------------------------------
                 Path: ${context.filePath}
                 Score: ${context.score}

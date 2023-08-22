@@ -23,6 +23,7 @@ import { utgConfig } from '../../models/constants'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
 
 type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
 
@@ -75,6 +76,7 @@ export async function fetchSupplementalContextForTest(
     let crossSourceFile = await findSourceFileByName(editor, languageConfig, cancellationToken)
     if (crossSourceFile) {
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
+        getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
         return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
     }
     throwIfCancelled(cancellationToken)
@@ -82,10 +84,12 @@ export async function fetchSupplementalContextForTest(
     crossSourceFile = await findSourceFileByContent(editor, languageConfig, cancellationToken)
     if (crossSourceFile) {
         // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
+        getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
         return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
     }
 
     // TODO (Metrics): 4. Failure count - when unable to find focal file (supplemental context empty)
+    getLogger().debug(`CodeWhisperer failed to fetch utg context`)
     return []
 }
 
