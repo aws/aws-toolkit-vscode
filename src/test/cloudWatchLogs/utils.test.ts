@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'

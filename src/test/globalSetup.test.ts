@@ -6,9 +6,9 @@
 /**
  * Before/After hooks for all "unit" tests
  */
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import { appendFileSync, mkdirpSync, remove } from 'fs-extra'
 import { join } from 'path'
 import { format } from 'util'

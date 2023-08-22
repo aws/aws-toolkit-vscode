@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'

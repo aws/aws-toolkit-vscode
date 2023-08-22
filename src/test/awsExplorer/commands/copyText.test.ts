@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { TreeItem } from 'vscode'
 import { copyTextCommand } from '../../../awsexplorer/commands/copyText'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'

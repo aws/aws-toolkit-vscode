@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { EnvVarsCredentialsProvider } from '../../../auth/providers/envVarsCredentialsProvider'
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 

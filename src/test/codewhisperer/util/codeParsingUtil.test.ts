@@ -9,7 +9,7 @@ import {
     isTestFile,
     utgLanguageConfigs,
 } from '../../../codewhisperer/util/supplementalContext/codeParsingUtil'
-import * as assert from 'assert'
+import assert from 'assert'
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {

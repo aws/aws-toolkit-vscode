@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { createWizardTester } from '../../shared/wizards/wizardTestUtils'
 import { CreateProfileWizard, ProfileTemplateProvider } from '../../../auth/wizards/createProfile'
 import { processCredentialsTemplate, staticCredentialsTemplate } from '../../../auth/wizards/templates'

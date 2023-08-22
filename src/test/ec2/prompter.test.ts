@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as assert from 'assert'
+import assert from 'assert'
 import { Ec2Prompter, instanceFilter } from '../../ec2/prompter'
 import { Ec2Instance } from '../../shared/clients/ec2Client'
 import { RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'

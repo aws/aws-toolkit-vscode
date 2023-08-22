@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as moment from 'moment'
+import moment from 'moment'
 import * as vscode from 'vscode'
 import { DefaultIamClient } from '../shared/clients/iamClient'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'

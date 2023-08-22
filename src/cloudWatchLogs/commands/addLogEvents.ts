@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as AsyncLock from 'async-lock'
+import AsyncLock from 'async-lock'
 import { getLogger } from '../../shared/logger/logger'
 import { LogDataRegistry } from '../registry/logDataRegistry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'

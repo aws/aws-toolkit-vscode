@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
 import { createQuickPickPrompterTester } from '../../../shared/ui/testUtils'

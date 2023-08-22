@@ -4,7 +4,7 @@
  */
 
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { deleteResource } from '../../../dynamicResources/commands/deleteResource'
 import { DefaultCloudControlClient } from '../../../shared/clients/cloudControlClient'
 import { assertNoErrorMessages, getTestWindow } from '../../shared/vscode/window'

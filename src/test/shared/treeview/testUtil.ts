@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 import { selectFrom, keys } from '../../../shared/utilities/tsUtils'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
 

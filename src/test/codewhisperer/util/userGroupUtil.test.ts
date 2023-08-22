@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import globals from '../../../shared/extensionGlobals'

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 import { anything, deepEqual, instance, mock, verify } from '../utilities/mockito'
 import { YamlExtension } from '../../shared/extensions/yaml'
 import {

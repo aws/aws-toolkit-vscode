@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as assert from 'assert'
-import * as sinon from 'sinon'
+import vscode from 'vscode'
+import assert from 'assert'
+import sinon from 'sinon'
 import * as picker from '../../../shared/ui/picker'
 import {
     createSsmDocumentFromTemplate,
@@ -14,7 +14,7 @@ import {
 import * as ssmDocumentUtil from '../../../ssmDocument/util/util'
 import * as fsUtilities from '../../../shared/filesystemUtilities'
 
-import * as YAML from 'yaml'
+import YAML from 'yaml'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 describe('createDocumentFromTemplate', async function () {
