@@ -189,7 +189,7 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
     const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()
