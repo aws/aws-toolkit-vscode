@@ -1,4 +1,4 @@
 {
-	"type": "Feature",
+	"type": "Bug Fix",
 	"description": "CodeWhisperer: fix error exceed max supplemental context length"
 }
