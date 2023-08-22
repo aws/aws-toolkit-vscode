@@ -3571,7 +3571,7 @@
                 "displayName": "Redshift SQL notebook",
                 "selector": [
                     {
-                        "filenamePattern": "*.rsnb"
+                        "filenamePattern": "*.redshiftnb"
                     }
                 ]
             }
