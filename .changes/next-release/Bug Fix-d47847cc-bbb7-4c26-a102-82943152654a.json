@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "CodeWhisperer: patch java test file name MyClassTests.java will not be captured if file is not living in a test folder"
+	"description": "CodeWhisperer: fix java test file name MyClassTests.java (plural) will not be captured if file is not living in a test folder"
 }
