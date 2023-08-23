@@ -219,9 +219,7 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         return
     }
 
-    let logString = ''
-
-    logString += `CodeWhispererSupplementalContext:
+    let logString = `CodeWhispererSupplementalContext:
     isUtg: ${supplementalContext.isUtg},
     isProcessTimeout: ${supplementalContext.isProcessTimeout},
     contentsLength: ${supplementalContext.contentsLength},
