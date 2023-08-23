@@ -30,6 +30,7 @@ import { CloudFormation } from '../cloudformation/cloudformation'
 import { sleep } from '../utilities/timeoutUtils'
 import { showMessageWithCancel } from '../utilities/messages'
 import { ToolkitError, UnknownError } from '../errors'
+import { SamCliError } from './cli/samCliInvokerUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -159,11 +160,11 @@ async function buildLambdaHandler(
     const failure = err ?? samBuild.failure()
     if (failure) {
         // TODO(sijaden): ask SAM CLI for a way to map exit codes to error codes
-        // We can also scrape the debug output though that won't be as reliable
         if (typeof failure === 'string') {
             throw new ToolkitError(failure, { code: 'BuildFailure' })
         } else {
-            throw ToolkitError.chain(failure, 'Failed to build SAM application', { code: 'BuildFailure' })
+            const msg = `SAM build failed${err instanceof SamCliError ? ': ' + err.message : ''}`
+            throw ToolkitError.chain(err, msg, { code: 'BuildFailure' })
         }
     }
     getLogger('channel').info(localize('AWS.output.building.sam.application.complete', 'Build complete.'))
@@ -222,10 +223,10 @@ async function invokeLambdaHandler(
                 timeout: timer,
                 name: config.name,
             })
-            .catch(e => {
-                const message = localize('AWS.error.during.apig.local', 'Failed to start local API Gateway')
+            .catch(err => {
+                const msg = `SAM local start-api failed${err instanceof SamCliError ? ': ' + err.message : ''}`
 
-                throw ToolkitError.chain(e, message)
+                throw ToolkitError.chain(err, msg)
             })
     } else {
         // 'target=code' or 'target=template'
@@ -253,10 +254,8 @@ async function invokeLambdaHandler(
         try {
             return await command.execute(timer)
         } catch (err) {
-            throw ToolkitError.chain(
-                err,
-                localize('AWS.error.during.sam.local', 'Failed to run SAM application locally')
-            )
+            const msg = `SAM local invoke failed${err instanceof SamCliError ? ': ' + err.message : ''}`
+            throw ToolkitError.chain(err, msg)
         } finally {
             if (config.sam?.buildDir === undefined) {
                 await remove(config.templatePath)
@@ -277,13 +276,6 @@ export async function runLambdaFunction(
     config: SamLaunchRequestArgs,
     onAfterBuild: () => Promise<void>
 ): Promise<SamLaunchRequestArgs> {
-    // Verify if Docker is running
-    const dockerResponse = await new ChildProcess('docker', ['ps'], { logging: 'no' }).run()
-    if (dockerResponse.exitCode !== 0 || dockerResponse.stdout.includes('error during connect')) {
-        throw new ToolkitError('Running AWS SAM projects locally requires Docker. Is it installed and running?', {
-            code: 'NoDocker',
-        })
-    }
     // Switch over to the output channel so the user has feedback that we're getting things ready
     ctx.outputChannel.show(true)
     if (!config.noDebug) {

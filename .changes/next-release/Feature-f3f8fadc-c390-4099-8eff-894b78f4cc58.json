@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Toolkit no longer explicitly checks if Docker is running, instead it lets SAM CLI decide that #3588"
+}
