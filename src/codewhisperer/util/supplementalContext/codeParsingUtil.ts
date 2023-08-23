@@ -19,7 +19,7 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
     // Java regexes are not working efficiently for class or function extraction
     java: {
         extension: '.java',
-        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java)$/,
+        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java|([^/\\]+)Tests\.java)$/,
         functionExtractionPattern:
             /(?:(?:public|private|protected)\s+)(?:static\s+)?(?:[\w<>]+\s+)?(\w+)\s*\([^)]*\)\s*(?:(?:throws\s+\w+)?\s*)[{;]/gm, // TODO: Doesn't work for generice <T> T functions.
         classExtractionPattern: /(?<=^|\n)\s*public\s+class\s+(\w+)/gm, // TODO: Verify these.
