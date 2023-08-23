@@ -17,10 +17,12 @@ import {
     createTestWorkspaceFolder,
     openATextEditorWithText,
     shuffleList,
+    toFile,
 } from '../../testUtil'
 import { areEqual, normalize } from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
 import { getMinVscodeVersion } from '../../../shared/vscode/env'
+import { crossFileContextConfig } from '../../../codewhisperer/models/constants'
 
 const userGroupSettings = CodeWhispererUserGroupSettings.instance
 let tempFolder: string
@@ -40,6 +42,46 @@ describe('crossFileContextUtil', function () {
     }
 
     let mockEditor: vscode.TextEditor
+
+    describe('fetchSupplementalContextForSrc', function () {
+        beforeEach(async function () {
+            tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
+        })
+
+        describe('should fetch 3 chunks and each chunk should contains 10 lines', function () {
+            async function assertCorrectCodeChunk() {
+                await openATextEditorWithText(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
+                const myCurrentEditor = await openATextEditorWithText('', 'TargetFile.java', tempFolder, {
+                    preview: false,
+                })
+                const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+                assert.ok(actual)
+                assert.ok(actual.length === 3)
+
+                assert.strictEqual(actual[0].content.split('\n').length, 10)
+                assert.strictEqual(actual[1].content.split('\n').length, 10)
+                assert.strictEqual(actual[2].content.split('\n').length, 10)
+            }
+
+            it('control group', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
+
+                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.Control
+                await assertCorrectCodeChunk()
+            })
+
+            it('treatment group', async function () {
+                if (!shouldRunTheTest()) {
+                    this.skip()
+                }
+
+                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.CrossFile
+                await assertCorrectCodeChunk()
+            })
+        })
+    })
 
     describe('non supported language should return undefined', function () {
         it('c++', async function () {
@@ -229,4 +271,103 @@ describe('crossFileContextUtil', function () {
             })
         })
     })
+
+    describe('splitFileToChunks', function () {
+        beforeEach(async function () {
+            tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
+        })
+
+        it('should split file to a chunk of 2 lines', function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
+
+            const chunks = crossFile.splitFileToChunks(filePath, 2)
+
+            assert.strictEqual(chunks.length, 4)
+            assert.strictEqual(chunks[0].content, 'line_1\nline_2')
+            assert.strictEqual(chunks[1].content, 'line_3\nline_4')
+            assert.strictEqual(chunks[2].content, 'line_5\nline_6')
+            assert.strictEqual(chunks[3].content, 'line_7')
+        })
+
+        it('should split file to a chunk of 5 lines', function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
+
+            const chunks = crossFile.splitFileToChunks(filePath, 5)
+
+            assert.strictEqual(chunks.length, 2)
+            assert.strictEqual(chunks[0].content, 'line_1\nline_2\nline_3\nline_4\nline_5')
+            assert.strictEqual(chunks[1].content, 'line_6\nline_7')
+        })
+
+        it('codewhisperer crossfile config should use 10 lines', function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            toFile(sampleFileOf60Lines, filePath)
+
+            const chunks = crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
+            assert.strictEqual(chunks.length, 6)
+        })
+    })
 })
+
+const sampleFileOf60Lines = `import java.util.List;
+// we need this comment on purpose because chunk will be trimed right, adding this to avoid trimRight and make assertion easier
+/**
+ * 
+ * 
+ * 
+ * 
+ * 
+ **/
+class Main {
+    public static void main(String[] args) {
+        Calculator calculator = new Calculator();
+        calculator.add(1, 2);
+        calculator.subtract(1, 2);
+        calculator.multiply(1, 2);
+        calculator.divide(1, 2);
+        calculator.remainder(1, 2);
+    }
+}
+//
+class Calculator {
+    public Calculator() {
+        System.out.println("constructor");
+    }
+//
+    public add(int num1, int num2) {
+        System.out.println("add");
+        return num1 + num2;
+    }
+//
+    public subtract(int num1, int num2) {
+        System.out.println("subtract");
+        return num1 - num2;
+    }
+//
+    public multiply(int num1, int num2) {
+        System.out.println("multiply");
+        return num1 * num2;    
+    }
+//
+    public divide(int num1, int num2) {
+        System.out.println("divide");
+        return num1 / num2;
+    }
+//
+    public remainder(int num1, int num2) {
+        System.out.println("remainder");
+        return num1 % num2;
+    }
+//
+    public power(int num1, int num2) {
+        System.out.println("power");
+        return (int) Math.pow(num1, num2);
+    }
+//
+    public squareRoot(int num1) {
+        System.out.println("squareRoot");
+        return (int) Math.sqrt(num1);
+    }
+}`
