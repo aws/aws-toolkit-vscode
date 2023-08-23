@@ -8,6 +8,7 @@ import { createWeaverbirdSdkClient } from '../../client/weaverbird'
 import * as fs from 'fs'
 import * as path from 'path'
 import { FileMetadata, FileMetadataList } from '../../client/weaverbirdclient'
+import { getLogger } from '../../../shared/logger/logger'
 
 export class Session {
     public readonly workspaceRoot: string
@@ -35,10 +36,11 @@ export class Session {
 
     async send(msg: string): Promise<string> {
         try {
+            getLogger().info(`Received message from chat view: ${msg}`)
             return await this.sendUnsafe(msg)
         } catch (e: any) {
-            console.log(e)
-            return `Unexpected error happened`
+            getLogger().error(e)
+            return `Received error: ${e.code} and status code: ${e.statusCode} when trying to send the request to the Weaverbird API`
         }
     }
 
