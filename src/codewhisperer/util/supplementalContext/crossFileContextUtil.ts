@@ -75,7 +75,7 @@ export async function fetchSupplementalContextForSrc(
     let chunkList: Chunk[] = []
     for (const relevantFile of relevantCrossFilePaths) {
         throwIfCancelled(cancellationToken)
-        const chunks: Chunk[] = splitFileToChunks(relevantFile, codeChunksCalculated)
+        const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
         if (chunkList.length >= codeChunksCalculated) {
@@ -189,7 +189,7 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
     const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()
