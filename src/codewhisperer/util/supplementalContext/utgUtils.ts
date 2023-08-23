@@ -24,10 +24,10 @@ import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 
-type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
+const UtgSupportedLanguage = new Set<vscode.TextDocument['languageId']>(['java', 'python'])
 
-function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
-    return languageId in utgLanguageConfigs
+function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): boolean {
+    return UtgSupportedLanguage.has(languageId)
 }
 
 export function shouldFetchUtgContext(

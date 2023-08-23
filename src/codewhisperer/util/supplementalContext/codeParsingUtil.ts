@@ -32,6 +32,37 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
         classExtractionPattern: /^class\s+(\w+)\s*:/gm,
         importStatementRegExp: /from (.*) import.*/,
     },
+    // TODO: NOTE!!!! for the following configuration, [functionExtractionPattern], [classExtractionPattern], [importStatementRegExp] are placeholder and not being tested
+    // TODO: update them when JS/TS UTG are ENABLED
+    // TODO: also need to update the logic to consider dialects file extension e.g. .js & .jsx, .ts & .tsx, for now, .js will only look for .js file but not .jsx
+    typescript: {
+        extension: '.ts',
+        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.ts$/,
+        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
+        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
+        importStatementRegExp: /import\s+([a-zA-Z_])/,
+    },
+    javascript: {
+        extension: '.js',
+        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.js$/,
+        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
+        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
+        importStatementRegExp: /import\s+([a-zA-Z_])/,
+    },
+    typescriptreact: {
+        extension: '.tsx',
+        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.tsx$/,
+        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
+        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
+        importStatementRegExp: /import\s+([a-zA-Z_])/,
+    },
+    javascriptreact: {
+        extension: '.jsx',
+        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.jsx$/,
+        functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
+        classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
+        importStatementRegExp: /import\s+([a-zA-Z_])/,
+    },
 }
 
 export function extractFunctions(fileContent: string, regex: RegExp) {
