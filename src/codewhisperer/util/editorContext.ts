@@ -219,14 +219,14 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         return
     }
 
-    getLogger().debug(`CodeWhispererSupplementalContext:
-            isUtg: ${supplementalContext.isUtg},
-            isProcessTimeout: ${supplementalContext.isProcessTimeout},
-            contentsLength: ${supplementalContext.contentsLength},
-            latency: ${supplementalContext.latency},
-        `)
-
     let logString = ''
+
+    logString += `CodeWhispererSupplementalContext:
+    isUtg: ${supplementalContext.isUtg},
+    isProcessTimeout: ${supplementalContext.isProcessTimeout},
+    contentsLength: ${supplementalContext.contentsLength},
+    latency: ${supplementalContext.latency},
+`
     supplementalContext.supplementalContextItems.forEach((context, index) => {
         logString += `Chunk ${index}:
         Path: ${context.filePath}
