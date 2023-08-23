@@ -79,7 +79,7 @@ export async function isTestFile(
 ): Promise<boolean> {
     const normalizedFilePath = normalize(filePath)
     const pathContainsTest =
-        normalizedFilePath.includes(`tests/`) ||
+        normalizedFilePath.includes('tests/') ||
         normalizedFilePath.includes('test/') ||
         normalizedFilePath.includes('tst/')
     const fileNameMatchTestPatterns = isTestFileByName(normalizedFilePath, languageConfig.languageId)
