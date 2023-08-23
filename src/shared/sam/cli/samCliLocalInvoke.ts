@@ -14,7 +14,7 @@ import { removeAnsi } from '../../utilities/textUtilities'
 import * as vscode from 'vscode'
 import globals from '../../extensionGlobals'
 import { SamCliSettings } from './samCliSettings'
-import { addTelemetryEnvVar } from './samCliInvokerUtils'
+import { addTelemetryEnvVar, collectSamErrors, SamCliError } from './samCliInvokerUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -122,7 +122,13 @@ export class DefaultSamLocalInvokeCommand implements SamLocalInvokeCommand {
                 if (code === 0) {
                     resolve()
                 } else if (code !== 0) {
-                    reject(new Error(`"${samCommandName}" command stopped (error code: ${code})`))
+                    const samErrors = collectSamErrors(result.stderr)
+                    if (samErrors.length > 0) {
+                        const e = new SamCliError(samErrors.join('\n'))
+                        reject(e)
+                    } else {
+                        reject(new Error(`"${samCommandName}" command stopped (error code: ${code})`))
+                    }
                 }
 
                 // Forces debugger to disconnect (sometimes it fails to disconnect on its own)
