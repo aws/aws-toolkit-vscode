@@ -12,14 +12,14 @@ import { FileMetadata } from '../../client/weaverbirdclient'
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 
 export class Session {
-    private workspaceRoot: string
-    private state: 'refinement' | 'refinement-iteration' | 'codegen'
-    private task: string = ''
-    private approach: string = ''
-
     // TODO remake private
     public onProgressEventEmitter: vscode.EventEmitter<string>
     public onProgressEvent: vscode.Event<string>
+
+    public workspaceRoot: string
+    private state: 'refinement' | 'refinement-iteration' | 'codegen' | 'codegen-iteration'
+    private task: string = ''
+    private approach: string = ''
 
     // TODO remake private
     public onProgressFinishedEventEmitter: vscode.EventEmitter<void>
@@ -27,8 +27,8 @@ export class Session {
 
     constructor(workspaceRoot: string) {
         this.workspaceRoot = workspaceRoot
-        this.state = 'refinement'
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
+        this.state = 'refinement'
         this.onProgressEvent = this.onProgressEventEmitter.event
 
         this.onProgressFinishedEventEmitter = new vscode.EventEmitter<void>()
@@ -99,6 +99,14 @@ export class Session {
         if (msg.indexOf('WRITE CODE') !== -1) {
             this.state = 'codegen'
         }
+
+        if (msg === 'CLEAR') {
+            this.state = 'refinement'
+            this.task = ''
+            this.approach = ''
+            return 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
+        }
+
         if (this.state === 'refinement') {
             this.task = msg
             const payload = {
@@ -110,7 +118,7 @@ export class Session {
                 const result = (await client.generateApproach(payload).promise())
             */
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:567433225113:function:Weaverbird-Service-person-GenerateApproachLambda47-lI7frQaxTwmV',
+                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateApproachLambda47-VIjB8vZYS3Iu',
                 payload
             )
 
@@ -130,12 +138,12 @@ export class Session {
                 const result = (await client.iterateApproach(payload).promise())
             */
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:567433225113:function:Weaverbird-Service-person-IterateApproachLambda18D-Ytcr2CZ9O0YQ',
+                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateApproachLambda18D-48KTZ8YLkK70',
                 payload
             )
             this.approach = result.approach!
             return `${result.approach}\n`
-        } else {
+        } else if (this.state === 'codegen') {
             const payload = {
                 originalFileContents: files,
                 approach: this.approach,
@@ -146,7 +154,7 @@ export class Session {
             */
 
             const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:567433225113:function:Weaverbird-Service-person-GenerateCodeLambdaCDE418-odVvUUIl2HAo',
+                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-nXvafUVY7rmw',
                 payload
             )
 
@@ -155,7 +163,29 @@ export class Session {
                 fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
                 fs.writeFileSync(pathUsed, fileContent as string)
             }
-            this.state = 'refinement'
+            this.state = 'codegen-iteration'
+            return 'Changes to files done'
+        } else {
+            const payload = {
+                originalFileContents: files,
+                approach: this.approach,
+                task: this.task,
+                comment: msg,
+            }
+            /*
+                const result = (await client.iterateCode(payload).promise())
+            */
+
+            const result = await this.invokeApiGWLambda(
+                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-Asyx9VdIH3k2',
+                payload
+            )
+
+            for (const { filePath, fileContent } of result.newFileContents!) {
+                const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
+                fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
+                fs.writeFileSync(pathUsed, fileContent as string)
+            }
             return 'Changes to files done'
         }
     }
