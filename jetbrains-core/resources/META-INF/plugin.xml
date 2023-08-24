@@ -393,6 +393,10 @@ with what features/services are supported.
         <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbTableEditorProvider"/>
         <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.services.dynamodb.editor.DynamoDbFileIconProvider"/>
 
+        <!-- Getting Started -->
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedEditorProvider"/>
+        <fileIconProvider order="first" implementation="software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedFileIconProvider"/>
+
         <!-- Open in Console -->
         <referenceProviderType key="commentsReferenceProvider"
                                implementationClass="software.aws.toolkits.jetbrains.services.federation.psireferences.ArnPsiReferenceProvider"/>
