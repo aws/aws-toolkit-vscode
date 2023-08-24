@@ -31,19 +31,35 @@ export class Settings {
     ) {}
 
     /**
-     * Reads a setting, applying the {@link TypeConstructor} if provided.
+     * Gets a setting value, applying the {@link TypeConstructor} if provided.
      *
-     * Note that the absence of a key is indistinguisable from the absence of a value.
-     * That is, `undefined` looks the same across all calls. Any non-existent values are
-     * simply returned as-is without passing through the type cast.
+     * If the read fails or the setting value is invalid (does not conform to `type`):
+     * - `defaultValue` is returned if it was provided
+     * - else an exception is thrown
+     *
+     * @note An unknown setting is indistinguisable from a missing value: both return `undefined`.
+     * Non-existent values are returned as-is without passing through the type cast.
+     *
+     * @param key Setting name
+     * @param type Expected setting type
+     * @param defaultValue Value returned if setting is missing or invalid
      */
     public get(key: string): unknown
     public get<T>(key: string, type: TypeConstructor<T>): T | undefined
     public get<T>(key: string, type: TypeConstructor<T>, defaultValue: T): T
     public get<T>(key: string, type?: TypeConstructor<T>, defaultValue?: T) {
-        const value = this.getConfig().get(key, defaultValue)
+        try {
+            const value = this.getConfig().get(key, defaultValue)
 
-        return !type || value === undefined ? value : cast(value, type)
+            return !type || value === undefined ? value : cast(value, type)
+        } catch (e) {
+            if (arguments.length <= 2) {
+                throw ToolkitError.chain(e, `Failed to read setting "${key}"`)
+            }
+            getLogger().error('settings: failed to read "%s": %s', key, (e as Error).message)
+
+            return defaultValue
+        }
     }
 
     /**
@@ -62,8 +78,8 @@ export class Settings {
             await this.getConfig().update(key, value, this.updateTarget)
 
             return true
-        } catch (error) {
-            getLogger().warn(`Settings: failed to update "${key}": %s`, error)
+        } catch (e) {
+            getLogger().warn('settings: failed to update "%s": %s', key, (e as Error).message)
 
             return false
         }
@@ -151,7 +167,8 @@ export class Settings {
      * The resulting configuration object should not be cached.
      */
     private getConfig(section?: string) {
-        return this.workspace.getConfiguration(section, this.scope)
+        // eslint-disable-next-line no-null/no-null
+        return this.workspace.getConfiguration(section, this.scope ?? null)
     }
 
     /**
@@ -167,7 +184,7 @@ export class Settings {
     static #instance: Settings
 
     /**
-     * A singleton scoped to the global configuration target.
+     * A singleton scoped to the global configuration target and `null` resource.
      */
     public static get instance() {
         return (this.#instance ??= new this())
@@ -223,6 +240,16 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
             return this.config.keys()
         }
 
+        /**
+         * Gets a setting value.
+         *
+         * If the read fails or the setting value is invalid (does not conform to the type defined in package.json):
+         * - `defaultValue` is returned if it was provided
+         * - else an exception is thrown
+         *
+         * @param key Setting name
+         * @param defaultValue Value returned if setting is missing or invalid
+         */
         public get<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             try {
                 return this.getOrThrow(key, defaultValue)
@@ -230,8 +257,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 if (arguments.length === 1) {
                     throw ToolkitError.chain(e, `Failed to read key "${section}.${key}"`)
                 }
-
-                this.logErr(`using default for key "${key}", read failed: %s`, e)
+                this.logErr('failed to read "%s": %s', key, (e as Error).message)
 
                 return defaultValue as Inner[K]
             }
@@ -242,8 +268,8 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 await this.config.update(key, value)
 
                 return true
-            } catch (error) {
-                this.log(`failed to update field "${key}": %s`, error)
+            } catch (e) {
+                this.log('failed to update "%s": %s', key, (e as Error).message)
 
                 return false
             }
@@ -254,8 +280,8 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 await this.config.update(key, undefined)
 
                 return true
-            } catch (error) {
-                this.log(`failed to delete field "${key}": %s`, error)
+            } catch (e) {
+                this.log('failed to delete "%s": %s', key, (e as Error).message)
 
                 return false
             }
@@ -264,8 +290,8 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         public async reset() {
             try {
                 return await this.config.reset()
-            } catch (error) {
-                this.log(`failed to reset settings: %s`, error)
+            } catch (e) {
+                this.log('failed to reset settings: %s', (e as Error).message)
             }
         }
 
@@ -316,7 +342,7 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 }
 
                 for (const key of props.filter(isDifferent)) {
-                    this.log(`key "${key}" changed`)
+                    this.log('key "%s" changed', key)
                     emitter.fire({ key })
                 }
             })
@@ -508,8 +534,8 @@ export class PromptSettings extends Settings.define(
     public async isPromptEnabled(promptName: PromptName): Promise<boolean> {
         try {
             return !this.getOrThrow(promptName, false)
-        } catch (error) {
-            this.log(`prompt check for "${promptName}" failed: %s`, error)
+        } catch (e) {
+            this.log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
             await this.reset()
 
             return true
