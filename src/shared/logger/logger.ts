@@ -108,23 +108,23 @@ export class ConsoleLogger implements Logger {
         return false
     }
     public debug(message: string | Error, ...meta: any[]): number {
-        console.trace(message, meta)
+        console.trace(message, ...meta)
         return 0
     }
     public verbose(message: string | Error, ...meta: any[]): number {
-        console.debug(message, meta)
+        console.debug(message, ...meta)
         return 0
     }
     public info(message: string | Error, ...meta: any[]): number {
-        console.info(message, meta)
+        console.info(message, ...meta)
         return 0
     }
     public warn(message: string | Error, ...meta: any[]): number {
-        console.warn(message, meta)
+        console.warn(message, ...meta)
         return 0
     }
     public error(message: string | Error, ...meta: any[]): number {
-        console.error(message, meta)
+        console.error(message, ...meta)
         return 0
     }
     public getLogById(logID: number, file: Uri): string | undefined {
