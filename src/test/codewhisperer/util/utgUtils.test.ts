@@ -44,3 +44,34 @@ describe('shouldFetchUtgContext', () => {
         assert.strictEqual(utgUtils.shouldFetchUtgContext('c', UserGroup.CrossFile), undefined)
     })
 })
+
+describe('guessSrcFileName', function () {
+    it('java', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClassTest.java', 'java'), 'MyClass.java')
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClassTests.java', 'java'), 'MyClass.java')
+
+        assert.strictEqual(utgUtils.guessSrcFileName('FooTest.java', 'java'), 'Foo.java')
+        assert.strictEqual(utgUtils.guessSrcFileName('FooTests.java', 'java'), 'Foo.java')
+    })
+
+    it('python', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('test_my_class.py', 'python'), 'my_class.py')
+        assert.strictEqual(utgUtils.guessSrcFileName('my_class_test.py', 'python'), 'my_class.py')
+    })
+
+    it('typescript', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.test.ts', 'typescript'), 'MyClass.ts')
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.spec.ts', 'typescript'), 'MyClass.ts')
+
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.test.tsx', 'typescriptreact'), 'MyClass.tsx')
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.spec.tsx', 'typescriptreact'), 'MyClass.tsx')
+    })
+
+    it('javascript', function () {
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.test.js', 'javascript'), 'MyClass.js')
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.spec.js', 'javascript'), 'MyClass.js')
+
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.test.jsx', 'javascriptreact'), 'MyClass.jsx')
+        assert.strictEqual(utgUtils.guessSrcFileName('MyClass.spec.jsx', 'javascriptreact'), 'MyClass.jsx')
+    })
+})

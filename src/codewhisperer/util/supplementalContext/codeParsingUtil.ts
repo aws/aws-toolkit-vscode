@@ -10,7 +10,7 @@ import { normalize } from '../../../shared/utilities/pathUtils'
 
 export interface utgLanguageConfig {
     extension: string
-    testFilenamePattern: RegExp
+    testFilenamePattern: RegExp[]
     functionExtractionPattern: RegExp
     classExtractionPattern: RegExp
     importStatementRegExp: RegExp
@@ -20,7 +20,7 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
     // Java regexes are not working efficiently for class or function extraction
     java: {
         extension: '.java',
-        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java|([^/\\]+)Tests\.java)$/,
+        testFilenamePattern: [/^(.+)Test(\.java)$/, /(.+)Tests(\.java)$/, /Test(.+)(\.java)$/],
         functionExtractionPattern:
             /(?:(?:public|private|protected)\s+)(?:static\s+)?(?:[\w<>]+\s+)?(\w+)\s*\([^)]*\)\s*(?:(?:throws\s+\w+)?\s*)[{;]/gm, // TODO: Doesn't work for generice <T> T functions.
         classExtractionPattern: /(?<=^|\n)\s*public\s+class\s+(\w+)/gm, // TODO: Verify these.
@@ -28,7 +28,7 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
     },
     python: {
         extension: '.py',
-        testFilenamePattern: /(?:test_([^/\\]+)\.py|([^/\\]+)_test\.py)$/,
+        testFilenamePattern: [/^test_(.+)(\.py)$/, /^(.+)_test(\.py)$/],
         functionExtractionPattern: /def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, // Worked fine
         classExtractionPattern: /^class\s+(\w+)\s*:/gm,
         importStatementRegExp: /from (.*) import.*/,
@@ -38,28 +38,28 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
     // TODO: also need to update the logic to consider dialects file extension e.g. .js & .jsx, .ts & .tsx, for now, .js will only look for .js file but not .jsx
     typescript: {
         extension: '.ts',
-        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.ts$/,
+        testFilenamePattern: [/^(.+)\.test(\.ts|\.tsx)$/, /^(.+)\.spec(\.ts|\.tsx)$/],
         functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
         classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
         importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
     javascript: {
         extension: '.js',
-        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.js$/,
+        testFilenamePattern: [/^(.+)\.test(\.js|\.jsx)$/, /^(.+)\.spec(\.js|\.jsx)$/],
         functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
         classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
         importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
     typescriptreact: {
         extension: '.tsx',
-        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.tsx$/,
+        testFilenamePattern: [/^(.+)\.test(\.ts|\.tsx)$/, /^(.+)\.spec(\.ts|\.tsx)$/],
         functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
         classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
         importStatementRegExp: /import\s+([a-zA-Z_])/,
     },
     javascriptreact: {
         extension: '.jsx',
-        testFilenamePattern: /^([^/\\+]+)\.(?:spec|test)\.jsx$/,
+        testFilenamePattern: [/^(.+)\.test(\.js|\.jsx)$/, /^(.+)\.spec(\.js|\.jsx)$/],
         functionExtractionPattern: /(?:export\s+)?function\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+.*/,
         classExtractionPattern: /(?:export\s+)?class\s+([a-zA-Z_][a-zA-Z0-9_]*).*/,
         importStatementRegExp: /import\s+([a-zA-Z_])/,
@@ -138,5 +138,11 @@ function isTestFileByName(filePath: string, language: vscode.TextDocument['langu
 
     const filename = path.basename(filePath)
 
-    return testFilenamePattern.test(filename)
+    for (const pattern of testFilenamePattern) {
+        if (pattern.test(filename)) {
+            return true
+        }
+    }
+
+    return false
 }
