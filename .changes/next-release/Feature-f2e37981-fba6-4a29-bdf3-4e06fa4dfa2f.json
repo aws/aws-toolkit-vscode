@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "SAM template detection now skips directories specified in [user settings](https://code.visualstudio.com/docs/getstarted/settings) `files.exclude`, `search.exclude`, or `files.watcherExclude`. This improves performance on big workspaces and avoids the \"Scanning CloudFormation templates...\" message. [#3510](https://github.com/aws/aws-toolkit-vscode/issues/3510)"
-}
