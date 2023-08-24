@@ -240,8 +240,7 @@ export class RecommendationHandler {
             if (latency === 0) {
                 latency = startTime !== 0 ? performance.now() - startTime : 0
             }
-            getLogger().error('CodeWhisperer Invocation Exception : ', error)
-            getLogger().verbose(`CodeWhisperer Invocation Exception : ${error}`)
+            getLogger().error('CodeWhisperer Invocation Exception : %s', (error as Error).message)
             if (isAwsError(error)) {
                 this.errorMessagePrompt = error.message
                 requestId = error.requestId || ''
