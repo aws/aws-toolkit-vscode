@@ -169,6 +169,30 @@ export function isUntitledScheme(uri: vscode.Uri): boolean {
     return uri.scheme === 'untitled'
 }
 
+/**
+ * Creates a glob pattern that matches all directories specified in `dirs`.
+ *
+ * "/" and "*" chars are trimmed from `dirs` items, and the final glob is defined such that the
+ * directories and their contents are matched any _any_ depth.
+ *
+ * Example: `['foo', '**\/bar/'] => "**\/{foo,bar}/"`
+ */
+export function globDirs(dirs: string[]): string {
+    const excludePatternsStr = dirs.reduce((prev, current) => {
+        // Trim all "*" and "/" chars.
+        // Note that the replace() patterns and order is intentionaly so that "**/*foo*/**" yields "*foo*".
+        const scrubbed = current
+            .replace(/^\**/, '')
+            .replace(/^[/\\]*/, '')
+            .replace(/\**$/, '')
+            .replace(/[/\\]*$/, '')
+        const comma = prev === '' ? '' : ','
+        return `${prev}${comma}${scrubbed}`
+    }, '')
+    const excludePattern = `**/{${excludePatternsStr}}/`
+    return excludePattern
+}
+
 // If the VSCode URI is not a file then return the string representation, otherwise normalize the filesystem path
 export function normalizeVSCodeUri(uri: vscode.Uri): string {
     if (uri.scheme !== 'file') {
