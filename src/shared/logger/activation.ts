@@ -48,7 +48,7 @@ export async function activate(
     )
 
     setLogger(mainLogger)
-    getLogger().error(`log level: ${getLogLevel()}`)
+    getLogger().info(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(
