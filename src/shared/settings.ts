@@ -151,7 +151,8 @@ export class Settings {
      * The resulting configuration object should not be cached.
      */
     private getConfig(section?: string) {
-        return this.workspace.getConfiguration(section, this.scope)
+        // eslint-disable-next-line no-null/no-null
+        return this.workspace.getConfiguration(section, this.scope ?? null)
     }
 
     /**
@@ -167,7 +168,7 @@ export class Settings {
     static #instance: Settings
 
     /**
-     * A singleton scoped to the global configuration target.
+     * A singleton scoped to the global configuration target and `null` resource.
      */
     public static get instance() {
         return (this.#instance ??= new this())
