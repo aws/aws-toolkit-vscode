@@ -219,20 +219,19 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
         return
     }
 
-    getLogger().verbose(`
-            isUtg: ${supplementalContext.isUtg},
-            isProcessTimeout: ${supplementalContext.isProcessTimeout},
-            contentsLength: ${supplementalContext.contentsLength},
-            latency: ${supplementalContext.latency},
-        `)
-
+    let logString = `CodeWhispererSupplementalContext:
+    isUtg: ${supplementalContext.isUtg},
+    isProcessTimeout: ${supplementalContext.isProcessTimeout},
+    contentsLength: ${supplementalContext.contentsLength},
+    latency: ${supplementalContext.latency},
+`
     supplementalContext.supplementalContextItems.forEach((context, index) => {
-        getLogger().verbose(`
-                -----------------------------------------------
-                Path: ${context.filePath}
-                Score: ${context.score}
-                Chunk: ${index}:${context.content}
-                -----------------------------------------------
-            `)
+        logString += `Chunk ${index}:
+        Path: ${context.filePath}
+        Content: ${index}:${context.content}
+        Score: ${context.score}
+        -----------------------------------------------`
     })
+
+    getLogger().debug(logString)
 }
