@@ -26,7 +26,16 @@ describe('CellStatusBarItemProvider', function () {
         cellStatusBarItemProvider = new CellStatusBarItemProvider()
     })
 
-    it('should provide a connected status bar item', () => {
+    it('should provide "Connect" status bar item when cell has no connectionParams', () => {
+        const cell = { metadata: { connectionParams: undefined } }
+        const expectedText = '$(notebook-state-error) Connect'
+        const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, undefined)
+        assert(Array.isArray(result))
+        assert.strictEqual(result.length, 1)
+        assert.strictEqual(result[0].text, expectedText)
+    })
+
+    it('should provide a connected status bar item when cell has connectionParams', () => {
         const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, token)
         assert(Array.isArray(result))
         assert.strictEqual(result.length, 1)
@@ -44,12 +53,12 @@ describe('CellStatusBarItemProvider', function () {
         }
     })
 
-    it('should call onDidChangeCellStatusBarItems when refreshCellStatusBar is called', () => {
-        const cellStatusBar = new CellStatusBarItemProvider()
-        const refreshCellStatusBarSpy = sinon.spy(cellStatusBar, 'refreshCellStatusBar')
-        const emitSpy = sinon.spy(cellStatusBar._onDidChangeCellStatusBarItems, 'fire')
-        cellStatusBar.refreshCellStatusBar()
-        assert(refreshCellStatusBarSpy.calledOnce)
-        assert(emitSpy.calledOnce)
+    it('should fire onDidChangeCellStatusBarItems when refreshCellStatusBar is called', () => {
+        const onDidChangeCellStatusBarItemsSpy = sinon.spy(
+            cellStatusBarItemProvider._onDidChangeCellStatusBarItems,
+            'fire'
+        )
+        cellStatusBarItemProvider.refreshCellStatusBar()
+        assert(onDidChangeCellStatusBarItemsSpy.calledOnce)
     })
 })

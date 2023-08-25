@@ -23,27 +23,41 @@ describe('RedshiftNotebookSerializer', () => {
         assert.strictEqual(notebookData.cells.length, 0)
     })
 
-    it('should correctly serialize a notebook', async () => {
-        const cell1 = new vscode.NotebookCellData(vscode.NotebookCellKind.Code, 'select * from table;', 'SQL')
-        cell1.metadata = {
-            connectionParams: {
-                connectionType: 'Connection 1',
-                database: 'abcd',
-                username: 'xyz',
-                warehouseIdentifier: 'test-cluster',
-                warehouseType: 0,
-            },
+    it('should deserialize NotebookData correctly', async () => {
+        const serializer = new RedshiftNotebookSerializer()
+        const rawNotebookData = {
+            cells: [
+                {
+                    kind: vscode.NotebookCellKind.Code,
+                    language: 'sql',
+                    value: 'select * from table',
+                    metadata: {},
+                },
+            ],
         }
-
-        const notebookData = new vscode.NotebookData([cell1])
+        const rawData = new TextEncoder().encode(JSON.stringify(rawNotebookData))
         const token = new vscode.CancellationTokenSource().token
+        const result = await serializer.deserializeNotebook(rawData, token)
+        assert.strictEqual(result.cells.length, 1)
+        assert.deepStrictEqual(result.cells[0].kind, vscode.NotebookCellKind.Code)
+        assert.deepStrictEqual(result.cells[0].languageId, 'sql')
+        assert.deepStrictEqual(result.cells[0].value, 'select * from table')
+        assert.deepStrictEqual(result.cells[0].metadata, {})
+    })
 
-        const serializedContents = await serializer.serializeNotebook(notebookData, token)
-        const deserializeNotebookData = await serializer.deserializeNotebook(serializedContents, token)
-
-        assert(Array.isArray(deserializeNotebookData.cells))
-        assert.strictEqual(deserializeNotebookData.cells.length, 1)
-        assert.deepStrictEqual(deserializeNotebookData.cells[0], cell1)
+    it('should serialize NotebookData correctly', async () => {
+        const serializer = new RedshiftNotebookSerializer()
+        const notebookData = new vscode.NotebookData([
+            new vscode.NotebookCellData(vscode.NotebookCellKind.Code, 'select * from table;', 'SQL'),
+        ])
+        const token = new vscode.CancellationTokenSource().token
+        const result = await serializer.serializeNotebook(notebookData, token)
+        const decodedResult = new TextDecoder().decode(result)
+        const expectedSerializedData =
+            '{"cells":[{"kind":1,"language":"python","value":"select * from table","metadata":{}}]}'
+        assert.strictEqual(decodedResult, expectedSerializedData)
+        assert(Array.isArray(decodedResult))
+        assert.strictEqual(decodedResult.length, 1)
     })
 
     it('should correctly handle invalid JSOn during deserialization', async () => {
