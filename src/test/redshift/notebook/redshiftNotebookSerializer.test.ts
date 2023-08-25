@@ -54,10 +54,9 @@ describe('RedshiftNotebookSerializer', () => {
         const result = await serializer.serializeNotebook(notebookData, token)
         const decodedResult = new TextDecoder().decode(result)
         const expectedSerializedData =
-            '{"cells":[{"kind":1,"language":"python","value":"select * from table","metadata":{}}]}'
+            '{"cells":[{"kind":2,"language":"SQL","value":"select * from table;","metadata":{}}]}'
         assert.strictEqual(decodedResult, expectedSerializedData)
-        assert(Array.isArray(decodedResult))
-        assert.strictEqual(decodedResult.length, 1)
+        assert.strictEqual(decodedResult.length, 84)
     })
 
     it('should correctly handle invalid JSOn during deserialization', async () => {
