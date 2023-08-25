@@ -24,7 +24,7 @@ telemetryGenerator = "1.0.140"
 testLogger = "3.1.0"
 testRetry = "1.5.2"
 slf4j = "1.7.36"
-sshd = "2.9.2"
+sshd = "2.10.0"
 wiremock = "2.35.0"
 zjsonpatch = "0.4.11"
 
