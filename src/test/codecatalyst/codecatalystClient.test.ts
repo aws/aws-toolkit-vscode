@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import sinon = require('sinon')
 import { toCodeCatalystUrl } from '../../codecatalyst/utils'
 import * as codecatalyst from '../../shared/clients/codecatalystClient'

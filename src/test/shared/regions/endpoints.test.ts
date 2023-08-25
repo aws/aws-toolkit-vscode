@@ -5,7 +5,7 @@
 
 'use strict'
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { loadEndpoints } from '../../../shared/regions/endpoints'
 
 const sampleEndpoints = {

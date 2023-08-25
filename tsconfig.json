@@ -19,7 +19,8 @@
         "lib": ["dom", "es6", "esnext.asynciterable"],
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "jsx": "preserve"
+        "jsx": "preserve",
+        "esModuleInterop": true
     },
     "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }

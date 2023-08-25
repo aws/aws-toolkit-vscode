@@ -4,7 +4,7 @@
  */
 
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { createRepository } from '../../../ecr/commands/createRepository'

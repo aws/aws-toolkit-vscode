@@ -5,7 +5,7 @@
 
 import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
-import * as assert from 'assert'
+import assert from 'assert'
 import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
 
 const comment = 'comment'

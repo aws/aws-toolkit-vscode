@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { inspect } from 'util'
 import { throttle } from 'lodash'
 import { getLogger } from '../shared/logger/logger'
-import * as bytes from 'bytes'
+import bytes from 'bytes'
 
 const defaultReportingIntervalMillis = 250
 
