@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as Transport from 'winston-transport'
+import Transport from 'winston-transport'
 import globals from '../extensionGlobals'
 
 const MESSAGE = Symbol.for('message') // eslint-disable-line @typescript-eslint/naming-convention

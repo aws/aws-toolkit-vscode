@@ -5,7 +5,7 @@
 
 import * as fs from 'fs-extra'
 import * as vscode from 'vscode'
-import * as admZip from 'adm-zip'
+import admZip from 'adm-zip'
 import { existsSync, statSync } from 'fs'
 import { asyncCallWithTimeout } from '../commonUtil'
 import path = require('path')

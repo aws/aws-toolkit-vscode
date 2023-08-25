@@ -23,7 +23,7 @@ import {
     SchemaCodeDownloadWizardResponse,
 } from '../wizards/schemaCodeDownloadWizard'
 
-import * as admZip from 'adm-zip'
+import admZip from 'adm-zip'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 

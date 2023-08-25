@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-import * as moment from 'moment'
+import assert from 'assert'
+import moment from 'moment'
 import { stringOrProp } from '../../../shared/utilities/tsUtils'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { s3DateFormat, S3FileNode } from '../../../s3/explorer/s3FileNode'

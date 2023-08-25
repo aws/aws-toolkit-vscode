@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as assert from 'assert'
+import assert from 'assert'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 import { LicenseUtil } from '../../../codewhisperer/util/licenseUtil'
