@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { AWSError, Request, Service } from 'aws-sdk'
 import { version } from 'vscode'
 import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'

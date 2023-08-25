@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as getCfnDefinition from '../../../stepFunctions/commands/visualizeStateMachine/getStateMachineDefinitionFromCfnTemplate'
 
 import { normalize } from '../../../shared/utilities/pathUtils'

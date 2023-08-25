@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 import { AwsResourceManager, TypeSchema } from '../../../dynamicResources/awsResourceManager'
 import { instance, mock } from 'ts-mockito'
 import { when, verify } from '../../utilities/mockito'

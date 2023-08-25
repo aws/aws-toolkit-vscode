@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AdmZip from 'adm-zip'
+import AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
