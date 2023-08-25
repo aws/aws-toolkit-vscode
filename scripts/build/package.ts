@@ -16,7 +16,7 @@
 // 3. restore the original package.json
 //
 
-import type * as manifest from '../../package.json'
+import type PackageJson from '../../package.json'
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 
@@ -116,7 +116,7 @@ function main() {
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
-            const packageJson: typeof manifest = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+            const packageJson: typeof PackageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix(args.feature)
             const version = packageJson.version
             // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension
