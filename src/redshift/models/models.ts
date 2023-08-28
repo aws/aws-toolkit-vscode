@@ -18,7 +18,6 @@ export class ConnectionParams {
 }
 
 export enum ConnectionType {
-    TemporaryUser = 'Temporary User',
     DatabaseUser = 'Database user',
 }
 
