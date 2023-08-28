@@ -6,7 +6,8 @@ package software.aws.toolkits.jetbrains.core.experiments
 import com.intellij.icons.AllIcons
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.options.SearchableConfigurable
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.bindSelected
+import com.intellij.ui.dsl.builder.panel
 import software.aws.toolkits.core.utils.htmlWrap
 import software.aws.toolkits.resources.message
 
@@ -15,8 +16,13 @@ class ExperimentConfigurable : BoundConfigurable(message("aws.toolkit.experiment
 
     override fun createPanel() = panel {
         row { label(message("aws.toolkit.experimental.description").htmlWrap()).apply { component.icon = AllIcons.General.Warning } }
-        ToolkitExperimentManager.visibleExperiments().forEach {
-            row { checkBox(it.title(), it::isEnabled, it::setState, it.description()) }
+        ToolkitExperimentManager.visibleExperiments().forEach { toolkitExperiment ->
+            row {
+                checkBox(toolkitExperiment.title()).bindSelected(
+                    { toolkitExperiment.isEnabled() },
+                    { if (it) toolkitExperiment.setState(true) else toolkitExperiment.setState(false) }
+                )
+            }.rowComment(toolkitExperiment.description())
         }
     }
 }

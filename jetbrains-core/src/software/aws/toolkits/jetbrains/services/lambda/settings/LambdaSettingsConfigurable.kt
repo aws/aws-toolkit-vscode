@@ -6,7 +6,8 @@ package software.aws.toolkits.jetbrains.services.lambda.settings
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.project.Project
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.bindSelected
+import com.intellij.ui.dsl.builder.panel
 import software.aws.toolkits.jetbrains.settings.LambdaSettings
 import software.aws.toolkits.resources.message
 
@@ -15,11 +16,9 @@ class LambdaSettingsConfigurable(private val project: Project) : BoundConfigurab
     override fun getId() = "aws.lambda"
     override fun createPanel() = panel {
         row {
-            checkBox(
-                message("aws.settings.sam.show_all_gutter_icons"),
-                lambdaSettings::showAllHandlerGutterIcons,
-                message("aws.settings.sam.show_all_gutter_icons_tooltip")
-            )
+            checkBox(message("aws.settings.sam.show_all_gutter_icons"))
+                .bindSelected(lambdaSettings::showAllHandlerGutterIcons)
+                .comment(message("aws.settings.sam.show_all_gutter_icons_tooltip"))
         }
     }
 }
