@@ -11,7 +11,9 @@ import com.intellij.openapi.ui.messages.MessagesService
 import com.intellij.ui.CheckBoxList
 import com.intellij.ui.FilterComponent
 import com.intellij.ui.ListSpeedSearch
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.gridLayout.VerticalAlign
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
@@ -61,18 +63,15 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
             }
         }
         row {
-            cell(isFullWidth = true) {
-                filter(growX, pushX)
-                link(message("aws.settings.dynamic_resources_configurable.suggest_types.prompt")) {
-                    showTypeSuggestionBox()?.let { suggestion ->
-                        submitSuggestion(suggestion)
-                    }
+            cell(filter).resizableColumn().align(Align.FILL)
+            link(message("aws.settings.dynamic_resources_configurable.suggest_types.prompt")) {
+                showTypeSuggestionBox()?.let { suggestion ->
+                    submitSuggestion(suggestion)
                 }
             }
         }
         row {
-            scrollPane(checklist)
-                .constraints(growX, pushX)
+            scrollCell(checklist)
                 .onIsModified { selected != DynamicResourcesSettings.getInstance().selected }
                 .onApply {
                     DynamicResourcesSettings.getInstance().selected = selected
@@ -81,19 +80,22 @@ class DynamicResourcesConfigurable : BoundConfigurable(message("aws.settings.dyn
                 .onReset {
                     selected.replace(DynamicResourcesSettings.getInstance().selected)
                     updateCheckboxList()
-                }
+                }.resizableColumn().align(Align.FILL)
 
-            cell(isVerticalFlow = true) {
+            panel {
                 val sizeGroup = "buttons"
-                button(message("aws.settings.dynamic_resources_configurable.select_all")) {
-                    checklist.toggleAll(true)
-                }.sizeGroup(sizeGroup)
-
-                button(message("aws.settings.dynamic_resources_configurable.clear_all")) {
-                    checklist.toggleAll(false)
-                }.sizeGroup(sizeGroup)
-            }
-        }
+                row {
+                    button(message("aws.settings.dynamic_resources_configurable.select_all")) {
+                        checklist.toggleAll(true)
+                    }.widthGroup(sizeGroup)
+                }
+                row {
+                    button(message("aws.settings.dynamic_resources_configurable.clear_all")) {
+                        checklist.toggleAll(false)
+                    }.widthGroup(sizeGroup)
+                }
+            }.verticalAlign(VerticalAlign.TOP)
+        }.resizableRow()
     }
 
     private fun submitSuggestion(suggestion: String) {

@@ -14,8 +14,8 @@ import com.intellij.openapi.util.Disposer
 import com.intellij.ui.AppIcon
 import com.intellij.ui.components.panels.NonOpaquePanel
 import com.intellij.ui.components.panels.Wrapper
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.layout.applyToComponent
-import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBFont
 import icons.AwsIcons
 import software.aws.toolkits.core.ClientConnectionSettings
@@ -37,8 +37,9 @@ open class SonoLoginOverlay(
         // TODO: pending final UX
         panel {
             row {
-                label(message("code.aws"), JBFont.h2()).applyToComponent {
+                label(message("code.aws")).applyToComponent {
                     icon = AwsIcons.Logos.AWS_SMILE_LARGE
+                    font = JBFont.h2()
                 }
             }
 
@@ -47,7 +48,7 @@ open class SonoLoginOverlay(
             }
 
             row {
-                browserLink("Learn more", CawsEndpoints.ConsoleFactory.marketing())
+                browserLink(message("aws.settings.learn_more"), CawsEndpoints.ConsoleFactory.marketing())
             }
 
             row {
