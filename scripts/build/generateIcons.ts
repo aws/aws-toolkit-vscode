@@ -6,7 +6,7 @@
 import webfont from 'webfont'
 import * as path from 'path'
 import * as fs from 'fs-extra'
-import * as packageJson from '../../package.json'
+import packageJson from '../../package.json'
 
 const fontId = 'aws-toolkit-icons'
 const projectDir = process.cwd()
@@ -164,7 +164,7 @@ ${result.template}
 
     const stylesheetPath = path.join(stylesheetsDir, 'icons.css')
     const cloud9Dest = path.join(iconsDir, 'cloud9', 'generated')
-    const isValidIcon = (i: typeof icons[number]): i is Required<typeof i> => i.data !== undefined
+    const isValidIcon = (i: (typeof icons)[number]): i is Required<typeof i> => i.data !== undefined
 
     await fs.mkdirp(fontsDir)
     await fs.writeFile(dest, result.woff)
