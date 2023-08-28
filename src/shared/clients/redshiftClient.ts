@@ -20,6 +20,8 @@ import {
     ListSchemasResponse,
     ListTablesResponse,
 } from 'aws-sdk/clients/redshiftdata'
+import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
+import { DefaultSecretsManagerClient } from '../clients/secretsManagerClient'
 import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 
@@ -62,6 +64,7 @@ export class DefaultRedshiftClient {
 
     public async listDatabases(connectionParams: ConnectionParams, nextToken?: string): Promise<ListDatabasesResponse> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
+        const secretArn = connectionParams.secret ? await this.getSecretArn(connectionParams.secret) : undefined
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
         const input: RedshiftData.ListDatabasesRequest = {
@@ -70,11 +73,13 @@ export class DefaultRedshiftClient {
             DbUser: warehouseType === RedshiftWarehouseType.PROVISIONED ? connectionParams.username : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
+            SecretArn: secretArn?.ARN,
         }
         return redshiftDataClient.listDatabases(input).promise()
     }
     public async listSchemas(connectionParams: ConnectionParams, nextToken?: string): Promise<ListSchemasResponse> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
+        const secretArn = connectionParams.secret ? await this.getSecretArn(connectionParams.secret) : undefined
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
         const input: RedshiftData.ListSchemasRequest = {
@@ -83,6 +88,7 @@ export class DefaultRedshiftClient {
             DbUser: connectionParams.username,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
+            SecretArn: secretArn?.ARN,
         }
         return redshiftDataClient.listSchemas(input).promise()
     }
@@ -93,6 +99,7 @@ export class DefaultRedshiftClient {
         nextToken?: string
     ): Promise<ListTablesResponse> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
+        const secretArn = connectionParams.secret ? await this.getSecretArn(connectionParams.secret) : undefined
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
         const input: RedshiftData.ListTablesRequest = {
@@ -102,6 +109,7 @@ export class DefaultRedshiftClient {
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             SchemaPattern: schemaName,
             NextToken: nextToken,
+            SecretArn: secretArn?.ARN,
         }
         const ListTablesResponse = redshiftDataClient.listTables(input).promise()
         return ListTablesResponse
@@ -114,6 +122,7 @@ export class DefaultRedshiftClient {
         executionId?: string
     ): Promise<ExecuteQueryResponse> {
         const redshiftData = await this.redshiftDataClientProvider(this.regionCode)
+        const secretArn = connectionParams.secret ? await this.getSecretArn(connectionParams.secret) : undefined
         // if executionId is not passed in, that means that we're executing and retrieving the results of the query for the first time.
         if (!executionId) {
             const execution = await redshiftData
@@ -122,6 +131,7 @@ export class DefaultRedshiftClient {
                     Database: connectionParams.database,
                     Sql: queryToExecute,
                     DbUser: connectionParams.username,
+                    SecretArn: secretArn?.ARN,
                 })
                 .promise()
 
@@ -172,6 +182,11 @@ export class DefaultRedshiftClient {
             }
             return redshiftServerless.getCredentials(getCredentialsRequest).promise()
         }
+    }
+
+    public async getSecretArn(secretId: string): Promise<GetSecretValueResponse> {
+        const secretsManagerClient = new DefaultSecretsManagerClient(this.regionCode)
+        return secretsManagerClient.getSecretValue(secretId)
     }
 }
 

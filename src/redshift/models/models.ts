@@ -13,13 +13,15 @@ export class ConnectionParams {
         public readonly warehouseType: RedshiftWarehouseType,
         public readonly username?: string,
         public readonly region?: Region,
-        public readonly password?: string
+        public readonly password?: string,
+        public readonly secret?: string
     ) {}
 }
 
 export enum ConnectionType {
     TemporaryUser = 'Temporary User',
     DatabaseUser = 'Database user',
+    SecretsManager = 'Secrets Manager',
 }
 
 export enum RedshiftWarehouseType {

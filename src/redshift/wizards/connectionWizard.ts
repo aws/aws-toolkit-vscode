@@ -23,7 +23,8 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
         connectionType?: ConnectionType,
         database?: string,
         username?: string,
-        password?: string
+        password?: string,
+        secret?: string
     ) {
         super({
             initState: {
@@ -31,6 +32,7 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
                 database: database ? database : undefined,
                 username: username ? username : undefined,
                 password: password ? password : undefined,
+                secret: secret ? secret : undefined,
                 warehouseIdentifier: node.name,
                 warehouseType: node.warehouseType,
             },
@@ -48,6 +50,10 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
                 node.warehouseType === RedshiftWarehouseType.PROVISIONED,
             relativeOrder: 3,
         })
+        this.form.secret.bindPrompter(getSecretPrompter, {
+            showWhen: state => state.database !== undefined && state.connectionType === ConnectionType.SecretsManager,
+            relativeOrder: 4,
+        })
     }
 }
 
@@ -59,7 +65,8 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
         warehouseType?: RedshiftWarehouseType,
         connectionType?: ConnectionType | undefined,
         database?: string | undefined,
-        username?: string | undefined
+        username?: string | undefined,
+        secret?: string | undefined
     ) {
         super({
             initState: {
@@ -69,6 +76,7 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 warehouseIdentifier: warehouseIdentifier,
                 region: region,
                 warehouseType: warehouseType,
+                secret: secret,
             },
         })
 
@@ -100,6 +108,11 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 state.connectionType === ConnectionType.DatabaseUser &&
                 state.warehouseType === RedshiftWarehouseType.PROVISIONED,
             relativeOrder: 5,
+        })
+
+        this.form.secret.bindPrompter(getSecretPrompter, {
+            showWhen: state => state.database !== undefined && state.connectionType === ConnectionType.SecretsManager,
+            relativeOrder: 6,
         })
     }
 }
@@ -134,6 +147,17 @@ function getConnectionTypePrompter(): Prompter<ConnectionType> {
     return createQuickPick(items, {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
         buttons: createCommonButtons(),
+    })
+}
+
+function getSecretPrompter(): Prompter<string> {
+    return createInputBox({
+        value: '',
+        title: localize('AWS.redshift.secret', 'Enter a secret name'),
+        buttons: createCommonButtons(),
+        validateInput: value => {
+            return value.trim() ? undefined : localize('AWS.redshift.secretValidation', 'Secret cannot be empty')
+        },
     })
 }
 
