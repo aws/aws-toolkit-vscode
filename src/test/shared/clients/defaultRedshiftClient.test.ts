@@ -33,7 +33,7 @@ describe('DefaultRedshiftClient', function () {
         dbUsername
     )
     const serverlessFederatedParams = new ConnectionParams(
-        ConnectionType.TemporaryUser,
+        ConnectionType.DatabaseUser,
         dbName,
         workgroupName,
         RedshiftWarehouseType.SERVERLESS
