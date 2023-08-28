@@ -102,10 +102,6 @@ with what features/services are supported.
         <xi:fallback/>
     </xi:include>
 
-    <xi:include href="/META-INF/IU-222.xml" xpointer="xpointer(/idea-plugin/*)">
-        <xi:fallback/>
-    </xi:include>
-
     <xi:include href="/META-INF/RD.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
     </xi:include>
