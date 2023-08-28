@@ -26,8 +26,8 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
     private val tabPane = JBTabbedPane()
 
     private val tabComponents = mapOf<String, () -> Component>(
-        EXPLORER_TAB_ID to { ExplorerToolWindow.getInstance(project) },
-        DEVTOOLS_TAB_ID to { DevToolsToolWindow.getInstance(project) }
+        DEVTOOLS_TAB_ID to { DevToolsToolWindow.getInstance(project) },
+        EXPLORER_TAB_ID to { ExplorerToolWindow.getInstance(project) }
     )
 
     init {
