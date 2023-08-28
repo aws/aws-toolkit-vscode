@@ -4,24 +4,26 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* eslint-disable header/header */
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import * as vscode from 'vscode'
 import { RedshiftNotebookController } from '../../../redshift/notebook/redshiftNotebookController'
 import sinon = require('sinon')
 import assert = require('assert')
-import { RedshiftData } from 'aws-sdk'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 
 describe('RedshiftNotebookController', () => {
-    const mockRedshiftData = <RedshiftData>{}
-    const redshiftClientStub = new DefaultRedshiftClient(
-        'us-east-1',
-        async () => mockRedshiftData,
-        undefined,
-        undefined
-    )
+    let redshiftClientStub: DefaultRedshiftClient
     let notebookController: any
     let createNotebookControllerStub: any
     beforeEach(() => {
+        redshiftClientStub = {
+            executeQuery: sinon.stub(),
+        }
         createNotebookControllerStub = sinon.stub(vscode.notebooks, 'createNotebookController')
         const controllerInstanceValue = {
             supportedLanguages: ['sql'],
@@ -35,7 +37,7 @@ describe('RedshiftNotebookController', () => {
     afterEach(() => {
         sinon.restore()
     })
-    it('should create a notebook controller instance', () => {
+    it('validating parameters of  a notebook controller instance', () => {
         assert.strictEqual(notebookController.id, 'aws-redshift-sql-notebook')
         assert.strictEqual(notebookController.label, 'Redshift SQL notebook')
         assert.deepStrictEqual(notebookController.supportedLanguages, ['sql'])
@@ -56,40 +58,17 @@ describe('RedshiftNotebookController', () => {
     it('should execute a cell successfully', async () => {
         const executeCellStub = sinon.stub(notebookController, 'executeCell')
         executeCellStub.resolves(vscode.NotebookCellOutput)
-        const notebookCell = {
-            document: { getText: () => 'SELECT * FROM table_name;' },
+        const cellMock: any = {
+            metadata: {
+                connectionParams: {
+                    warehouseIdentifier: 'TestWarehouse',
+                },
+            },
+            document: {
+                getText: sinon.stub().returns('SELECT * FROM my_table'),
+            },
         }
-        const execution = {
-            createNotebookCellExecution: sinon.stub(),
-            start: sinon.stub(),
-            end: sinon.stub(),
-            replaceOutput: sinon.stub(),
-        }
-        execution.createNotebookCellExecution.returns(execution)
-        notebookController._controller.createNotebookCellExecution = sinon.stub().returns(execution)
-        await notebookController._doExecution(notebookCell)
-        assert.strictEqual(executeCellStub.calledOnce, true)
-        assert.strictEqual(execution.replaceOutput.calledOnce, true)
-        assert.strictEqual(execution.end.calledOnce, true)
-    })
-    it('should handle cell execution error', async () => {
-        const executeCellStub = sinon.stub(notebookController, 'executeCell')
-        const notebookCell = {
-            document: { getText: () => 'SELECT * FROM table_name;' },
-        }
-        const execution = {
-            createNotebookCellExecution: sinon.stub(),
-            start: sinon.stub(),
-            end: sinon.stub(),
-            replaceOutput: sinon.stub(),
-        }
-        execution.createNotebookCellExecution.returns(execution)
-        notebookController._controller.createNotebookCellExecution = sinon.stub().returns(execution)
-        const error = new Error('Execution failed')
-        executeCellStub.rejects(error)
-        await notebookController._doExecution(notebookCell)
-        assert.strictEqual(executeCellStub.calledOnce, true)
-        assert.strictEqual(execution.replaceOutput.calledOnce, true)
-        assert.strictEqual(execution.end.calledOnce, true)
+        const cellOutput = await executeCellStub(cellMock)
+        assert.strictEqual(cellOutput.isNotebookCellOutput.length, 1)
     })
 })

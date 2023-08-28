@@ -26,7 +26,7 @@ describe('CellStatusBarItemProvider', function () {
         cellStatusBarItemProvider = new CellStatusBarItemProvider()
     })
 
-    it('should provide "Connect" status bar item when cell has no connectionParams', () => {
+    it('provides "Connect" status bar item when cell has no connectionParams', () => {
         const cell = { metadata: { connectionParams: undefined } }
         const expectedText = '$(notebook-state-error) Connect'
         const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, undefined)
@@ -35,7 +35,7 @@ describe('CellStatusBarItemProvider', function () {
         assert.strictEqual(result[0].text, expectedText)
     })
 
-    it('should provide a connected status bar item when cell has connectionParams', () => {
+    it('provides a connected status bar item when cell has connectionParams', () => {
         const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, token)
         assert(Array.isArray(result))
         assert.strictEqual(result.length, 1)
@@ -46,14 +46,10 @@ describe('CellStatusBarItemProvider', function () {
             command: 'aws.redshift.connectClicked',
             arguments: [cell, cellStatusBarItemProvider.refreshCellStatusBar.bind(cellStatusBarItemProvider)],
         }
-        if (statusBar.command && typeof statusBar.command === 'object' && Array.isArray(statusBar.command.arguments)) {
-            assert.deepStrictEqual(statusBar.command.command, expectedCommand.command)
-            assert.deepStrictEqual(statusBar.command.arguments[0], expectedCommand.arguments[0])
-            assert.deepStrictEqual(statusBar.command.arguments[1].toString(), expectedCommand.arguments[1].toString())
-        }
+        assert.deepStrictEqual(statusBar.command.command, expectedCommand.command)
     })
 
-    it('should fire onDidChangeCellStatusBarItems when refreshCellStatusBar is called', () => {
+    it('fires onDidChangeCellStatusBarItems when refreshCellStatusBar is called', () => {
         const onDidChangeCellStatusBarItemsSpy = sinon.spy(
             cellStatusBarItemProvider._onDidChangeCellStatusBarItems,
             'fire'

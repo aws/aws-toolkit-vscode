@@ -56,14 +56,12 @@ describe('RedshiftNotebookSerializer', () => {
         const expectedSerializedData =
             '{"cells":[{"kind":2,"language":"SQL","value":"select * from table;","metadata":{}}]}'
         assert.strictEqual(decodedResult, expectedSerializedData)
-        assert.strictEqual(decodedResult.length, 84)
     })
 
     it('should correctly handle invalid JSOn during deserialization', async () => {
         const invalidContents = new TextEncoder().encode('data:{xyz:onk}')
         const token = new vscode.CancellationTokenSource().token
         const notebookData = await serializer.deserializeNotebook(invalidContents, token)
-        assert(Array.isArray(notebookData.cells))
         assert.strictEqual(notebookData.cells.length, 0)
     })
 })
