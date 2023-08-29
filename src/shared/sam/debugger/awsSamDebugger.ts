@@ -64,7 +64,7 @@ import { Runtime, telemetry } from '../../telemetry/telemetry'
 import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../errors'
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
-import { credentialHelpUrl } from '../../constants'
+import { credentialHelpUrl, samTroubleshootingUrl } from '../../constants'
 import { Auth } from '../../../auth/auth'
 import { openUrl } from '../../utilities/vsCodeUtils'
 
@@ -81,6 +81,10 @@ class SamLaunchRequestError extends ToolkitError.named('SamLaunchRequestError') 
     public constructor(message: string, info?: ErrorInformation & { readonly extraButtons?: NotificationButton[] }) {
         super(message, info)
         this.buttons = info?.extraButtons ?? [
+            {
+                label: localize('AWS.generic.message.troubleshooting', 'Troubleshooting'),
+                onClick: () => openUrl(samTroubleshootingUrl),
+            },
             {
                 label: localize('AWS.generic.message.openConfig', 'Open Launch Config'),
                 onClick: openLaunchJsonFile,

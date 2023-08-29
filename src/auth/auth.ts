@@ -17,7 +17,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken } from './sso/model'
+import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -212,9 +212,10 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * This method will gather all AWS accounts/roles that are associated with SSO connections.
+     * Gathers all local profiles plus any AWS accounts/roles associated with SSO ("IAM Identity
+     * Center", "IdC") connections.
      *
-     * Use {@link Auth.listConnections} when you do not want to make extra API calls to the SSO service.
+     * Use {@link Auth.listConnections} to avoid API calls to the SSO service.
      */
     public listAndTraverseConnections(): AsyncCollection<Connection> {
         async function* load(this: Auth) {
@@ -222,21 +223,26 @@ export class Auth implements AuthService, ConnectionManager {
 
             const stream = toStream(this.store.listProfiles().map(entry => this.getConnectionFromStoreEntry(entry)))
 
+            /** Decides if SSO service should be queried for "linked" IAM roles/credentials for the given SSO connection. */
             const isLinkable = (
                 entry: [string, StoredProfile<Profile>]
-            ): entry is [string, StoredProfile<SsoProfile>] =>
-                entry[1].type === 'sso' &&
-                hasScopes(entry[1], ssoAccountAccessScopes) &&
-                entry[1].metadata.connectionState === 'valid'
+            ): entry is [string, StoredProfile<SsoProfile>] => {
+                const r =
+                    entry[1].type === 'sso' &&
+                    hasScopes(entry[1], ssoAccountAccessScopes) &&
+                    entry[1].metadata.connectionState === 'valid'
+                return r
+            }
 
             const linked = this.store
                 .listProfiles()
                 .filter(isLinkable)
-                .map(([id, profile]) =>
-                    toCollection(() =>
+                .map(([id, profile]) => {
+                    return toCollection(() =>
                         loadLinkedProfilesIntoStore(
                             this.store,
                             id,
+                            profile,
                             this.createSsoClient(profile.ssoRegion, this.getTokenProvider(id, profile))
                         )
                     )
@@ -245,7 +251,7 @@ export class Auth implements AuthService, ConnectionManager {
                         })
                         .filter(isNonNullable)
                         .map(entry => this.getConnectionFromStoreEntry(entry))
-                )
+                })
 
             yield* linked.reduce(join, stream)
         }
@@ -741,15 +747,25 @@ export class Auth implements AuthService, ConnectionManager {
 
     static #instance: Auth | undefined
     public static get instance() {
-        const devEnvId = getCodeCatalystDevEnvId()
-        const memento =
-            devEnvId !== undefined ? partition(globals.context.globalState, devEnvId) : globals.context.globalState
+        return (this.#instance ??= new Auth(new ProfileStore(getMemento())))
 
-        return (this.#instance ??= new Auth(new ProfileStore(memento)))
+        function getMemento() {
+            if (!vscode.env.remoteName) {
+                return globals.context.globalState
+            }
+
+            const devEnvId = getCodeCatalystDevEnvId()
+
+            if (devEnvId !== undefined) {
+                return partition(globals.context.globalState, devEnvId)
+            }
+
+            return globals.context.workspaceState
+        }
     }
 
     private getSsoProfileLabel(profile: SsoProfile) {
-        const truncatedUrl = profile.startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? profile.startUrl
+        const truncatedUrl = truncateStartUrl(profile.startUrl)
 
         return profile.startUrl === builderIdStartUrl
             ? localizedText.builderId()

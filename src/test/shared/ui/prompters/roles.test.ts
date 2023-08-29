@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { IAM } from 'aws-sdk'
 import { DefaultIamClient } from '../../../../shared/clients/iamClient'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../testUtils'

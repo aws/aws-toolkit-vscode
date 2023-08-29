@@ -23,7 +23,7 @@ import globals from '../../shared/extensionGlobals'
 import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 import { ImportAdderProvider } from './importAdderProvider'
-import * as AsyncLock from 'async-lock'
+import AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
 import { ClassifierTrigger } from './classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
@@ -49,31 +49,6 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
 
     public clearActiveItemIndex() {
         this.activeItemIndex = undefined
-    }
-
-    private getGhostText(prefix: string, suggestion: string): string {
-        const prefixLines = prefix.split(/\r\n|\r|\n/)
-        const n = prefixLines.length
-        if (n <= 1) {
-            return suggestion
-        }
-        let count = 1
-        for (let i = 0; i < suggestion.length; i++) {
-            if (suggestion[i] === '\n') {
-                count++
-            }
-            if (count === n) {
-                return suggestion.slice(i + 1)
-            }
-        }
-        return ''
-    }
-
-    private getGhostTextStartPos(start: vscode.Position, current: vscode.Position): vscode.Position {
-        if (start.line === current.line) {
-            return start
-        }
-        return new vscode.Position(current.line, 0)
     }
 
     // iterate suggestions and stop at index 0 or index len - 1
@@ -132,8 +107,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             return undefined
         }
         return {
-            insertText: this.getGhostText(prefix, truncatedSuggestion),
-            range: new vscode.Range(this.getGhostTextStartPos(start, end), end),
+            insertText: truncatedSuggestion,
+            range: new vscode.Range(start, end),
             command: {
                 command: 'aws.codeWhisperer.accept',
                 title: 'On acceptance',
@@ -144,7 +119,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     RecommendationHandler.instance.requestId,
                     RecommendationHandler.instance.sessionId,
                     TelemetryHelper.instance.triggerType,
-                    TelemetryHelper.instance.completionType,
+                    RecommendationHandler.instance.getCompletionType(index),
                     runtimeLanguageContext.getLanguageContext(document.languageId).language,
                     r.references,
                 ],
@@ -168,7 +143,14 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             this.activeItemIndex = undefined
             return
         }
-        const start = RecommendationHandler.instance.startPos
+
+        // There's a chance that the startPos is no longer valid in the current document (e.g.
+        // when CodeWhisperer got triggered by 'Enter', the original startPos is with indentation
+        // but then this indentation got removed by VSCode when another new line is inserted,
+        // before the code reaches here). In such case, we need to update the startPos to be a
+        // valid one. Otherwise, inline completion which utilizes this position will function
+        // improperly.
+        const start = document.validatePosition(RecommendationHandler.instance.startPos)
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
@@ -493,7 +475,7 @@ export class InlineCompletionService {
                 codewhispererRequestId: RecommendationHandler.instance.requestId,
                 codewhispererSessionId: RecommendationHandler.instance.sessionId,
                 codewhispererTriggerType: TelemetryHelper.instance.triggerType,
-                codewhispererCompletionType: TelemetryHelper.instance.completionType,
+                codewhispererCompletionType: RecommendationHandler.instance.getCompletionType(0),
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,

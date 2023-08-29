@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AsyncLock from 'async-lock'
+import AsyncLock from 'async-lock'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { AppRunner } from 'aws-sdk'
 import { AppRunnerNode } from './apprunnerNode'

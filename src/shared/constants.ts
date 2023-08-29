@@ -21,6 +21,9 @@ export const samInstallUrl = vscode.Uri.parse(
 export const samUpgradeUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/manage-sam-cli-versions.html#manage-sam-cli-versions-upgrade'
 )
+export const samTroubleshootingUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-troubleshooting.html'
+)
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
 export const documentationUrl: string = isCloud9()

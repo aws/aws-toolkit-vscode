@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import { ToolkitError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
@@ -282,6 +282,20 @@ describe('Auth', function () {
             assert.deepStrictEqual(
                 connections.map(c => c.type),
                 ['sso', 'iam', 'iam', 'iam']
+            )
+        })
+
+        it('shows a user message if SSO connection returned no accounts/roles', async function () {
+            auth.ssoClient.listAccounts.returns(
+                toCollection(async function* () {
+                    yield []
+                })
+            )
+            await auth.createConnection(linkedSsoProfile)
+            await auth.listAndTraverseConnections().promise()
+            assert.strictEqual(
+                getTestWindow().shownMessages[0].message,
+                'IAM Identity Center (d-0123456789) returned no roles. Ensure the user is assigned to an account with a Permission Set.'
             )
         })
 

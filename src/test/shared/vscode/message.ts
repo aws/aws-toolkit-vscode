@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 
 // This is roughly how VS Code models things internally
 export enum SeverityLevel {

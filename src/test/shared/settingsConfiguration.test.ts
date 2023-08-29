@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settings } from '../../shared/settings'
 import { TestSettings } from '../utilities/testSettingsConfiguration'
@@ -72,6 +72,10 @@ describe('Settings', function () {
             assert.throws(() => sut.get(settingKey, String))
             assert.throws(() => sut.get(settingKey, Object))
             assert.throws(() => sut.get(settingKey, Boolean))
+            // Wrong type, but defaultValue was given:
+            assert.deepStrictEqual(sut.get(settingKey, String, ''), '')
+            assert.deepStrictEqual(sut.get(settingKey, Object, {}), {})
+            assert.deepStrictEqual(sut.get(settingKey, Boolean, true), true)
         })
     })
 

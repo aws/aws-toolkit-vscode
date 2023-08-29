@@ -15,6 +15,7 @@ import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -60,6 +61,11 @@ export async function fetchSupplementalContextForSrc(
         return shouldProceed === undefined ? undefined : []
     }
 
+    const codeChunksCalculated =
+        CodeWhispererUserGroupSettings.instance.userGroup === UserGroup.Control
+            ? crossFileContextConfig.numberOfChunkToFetch
+            : crossFileContextConfig.numberOfChunkToFetchExperiment
+
     // Step 1: Get relevant cross files to refer
     const relevantCrossFilePaths = await getCrossFileCandidates(editor)
     throwIfCancelled(cancellationToken)
@@ -73,13 +79,13 @@ export async function fetchSupplementalContextForSrc(
         const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
-        if (chunkList.length >= crossFileContextConfig.numberOfChunkToFetch) {
+        if (chunkList.length >= codeChunksCalculated) {
             break
         }
     }
 
     // it's required since chunkList.push(...) is likely giving us a list of size > 60
-    chunkList = chunkList.slice(0, crossFileContextConfig.numberOfChunkToFetch)
+    chunkList = chunkList.slice(0, codeChunksCalculated)
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
@@ -100,6 +106,7 @@ export async function fetchSupplementalContextForSrc(
     }
 
     // DO NOT send code chunk with empty content
+    getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return supplementalContexts.filter(item => item.content.trim().length !== 0)
 }
 
@@ -143,18 +150,15 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
+function shouldFetchCrossFileContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }
 
-    if (languageId === 'java') {
-        return true
-    } else if (supportedLanguageToDialects[languageId] && userGroup === UserGroup.CrossFile) {
-        return true
-    } else {
-        return false
-    }
+    return true
 }
 
 /**
@@ -187,7 +191,7 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
     const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()
