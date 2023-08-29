@@ -10,19 +10,21 @@ import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { Auth } from '../../auth/auth'
 import { isIamConnection } from '../../auth/connection'
 import { ToolkitError } from '../../shared/errors'
+import { getConfig } from '../config'
 
 export async function createWeaverbirdSdkClient(): Promise<WeaverbirdClient> {
     const conn = Auth.instance.activeConnection
     if (!isIamConnection(conn)) {
         throw new ToolkitError('Connection is not an IAM connection', { code: 'BadConnectionType' })
     }
+    const weaverbirdConfig = await getConfig()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
         {
             apiConfig: apiConfig,
-            region: 'eu-west-1',
+            region: weaverbirdConfig.region,
             credentials: await conn.getCredentials(),
-            endpoint: 'https://api.noobgam.people.aws.dev',
+            endpoint: weaverbirdConfig.endpoint,
             onRequestSetup: [
                 req => {
                     console.log(JSON.stringify(req.httpRequest))

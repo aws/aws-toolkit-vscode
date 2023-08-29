@@ -10,6 +10,7 @@ import { getLogger } from '../../../shared/logger/logger'
 import { FileMetadata } from '../../client/weaverbirdclient'
 
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
+import { getConfig } from '../../config'
 
 export class Session {
     // TODO remake private
@@ -68,7 +69,7 @@ export class Session {
             return await this.sendUnsafe(msg)
         } catch (e: any) {
             getLogger().error(e)
-            return `Received error: ${e.code} and status code: ${e.statusCode} when trying to send the request to the Weaverbird API`
+            return `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`
         }
     }
 
@@ -92,6 +93,7 @@ export class Session {
 
     async sendUnsafe(msg: string): Promise<string> {
         //const client = await createWeaverbirdSdkClient();
+        const config = await getConfig()
 
         const files: FileMetadata[] = []
         this.collectFiles(path.join(this.workspaceRoot, 'src'), 'src', files)
@@ -117,10 +119,7 @@ export class Session {
             /*
                 const result = (await client.generateApproach(payload).promise())
             */
-            const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateApproachLambda47-VIjB8vZYS3Iu',
-                payload
-            )
+            const result = await this.invokeApiGWLambda(config.lambdaArns.approach.generate, payload)
 
             // change the state to be refinement-iteration so that the next message from user will invoke iterateApproach lambda
             this.state = 'refinement-iteration'
@@ -137,10 +136,7 @@ export class Session {
             /*
                 const result = (await client.iterateApproach(payload).promise())
             */
-            const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateApproachLambda18D-48KTZ8YLkK70',
-                payload
-            )
+            const result = await this.invokeApiGWLambda(config.lambdaArns.approach.iterate, payload)
             this.approach = result.approach!
             return `${result.approach}\n`
         } else if (this.state === 'codegen') {
@@ -153,10 +149,7 @@ export class Session {
                 const result = (await client.generateCode(payload).promise())
             */
 
-            const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-nXvafUVY7rmw',
-                payload
-            )
+            const result = await this.invokeApiGWLambda(config.lambdaArns.codegen.generate, payload)
 
             for (const { filePath, fileContent } of result.newFileContents!) {
                 const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
@@ -176,10 +169,7 @@ export class Session {
                 const result = (await client.iterateCode(payload).promise())
             */
 
-            const result = await this.invokeApiGWLambda(
-                'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-Asyx9VdIH3k2',
-                payload
-            )
+            const result = await this.invokeApiGWLambda(config.lambdaArns.codegen.iterate, payload)
 
             for (const { filePath, fileContent } of result.newFileContents!) {
                 const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
