@@ -10,7 +10,6 @@ import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
 import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { TelemetryHelper } from './telemetryHelper'
 import { PromptSettings } from '../../shared/settings'
 import {
     ssoAccountAccessScopes,
@@ -44,6 +43,21 @@ export class AuthUtil {
 
     private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
+    private _isCustomizationFeatureEnabled: boolean = false
+
+    public get isCustomizationFeatureEnabled(): boolean {
+        return this._isCustomizationFeatureEnabled
+    }
+
+    // This boolean controls whether the Select Customization node will be visible. A change to this value
+    // means that the old UX was wrong and must refresh the devTool tree.
+    public set isCustomizationFeatureEnabled(value: boolean) {
+        if (this._isCustomizationFeatureEnabled === value) {
+            return
+        }
+        this._isCustomizationFeatureEnabled = value
+        vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    }
 
     public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
@@ -63,14 +77,12 @@ export class AuthUtil {
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
+                if (!this.isConnectionExpired() && this.usingEnterpriseSSO) {
+                    vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
+                }
             } else {
                 this.usingEnterpriseSSO = false
             }
-            // Reformat the url to remove any trailing '/' and `#`
-            // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
-            TelemetryHelper.instance.startUrl = isSsoConnection(this.conn)
-                ? this.reformatStartUrl(this.conn?.startUrl)
-                : undefined
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -91,6 +103,12 @@ export class AuthUtil {
         return this.secondaryAuth.activeConnection
     }
 
+    public get startUrl(): string | undefined {
+        // Reformat the url to remove any trailing '/' and `#`
+        // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
+        return isSsoConnection(this.conn) ? this.reformatStartUrl(this.conn?.startUrl) : undefined
+    }
+
     public get isUsingSavedConnection() {
         return this.conn !== undefined && this.secondaryAuth.isUsingSavedConnection
     }
@@ -101,6 +119,11 @@ export class AuthUtil {
 
     public isEnterpriseSsoInUse(): boolean {
         return this.conn !== undefined && this.usingEnterpriseSSO
+    }
+
+    // If there is an active SSO connection
+    public isValidEnterpriseSsoInUse(): boolean {
+        return this.isEnterpriseSsoInUse() && !this.isConnectionExpired()
     }
 
     public isBuilderIdInUse(): boolean {

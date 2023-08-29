@@ -27,6 +27,8 @@ import AsyncLock from 'async-lock'
 import { updateInlineLockKey } from '../models/constants'
 import { ClassifierTrigger } from './classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+import { getSelectedCustomization } from '../util/customizationUtil'
+import { codicon, getIcon } from '../../shared/icons'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const lock = new AsyncLock({ maxPending: 1 })
@@ -479,7 +481,7 @@ export class InlineCompletionService {
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - RecommendationHandler.instance.lastInvocationTime,
                 passive: true,
-                credentialStartUrl: TelemetryHelper.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
         }
@@ -487,7 +489,7 @@ export class InlineCompletionService {
 
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
-        this.statusBar.text = ` $(loading~spin)CodeWhisperer`
+        this.statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer`
         this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
@@ -495,7 +497,10 @@ export class InlineCompletionService {
 
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
-        this.statusBar.text = ` $(check)CodeWhisperer`
+        const selectedCustomization = getSelectedCustomization()
+        this.statusBar.text = codicon`${getIcon('vscode-check')} CodeWhisperer${
+            selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
+        }`
         this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
@@ -503,7 +508,7 @@ export class InlineCompletionService {
 
     setCodeWhispererStatusBarDisconnected() {
         this._isPaginationRunning = false
-        this.statusBar.text = ` $(debug-disconnect)CodeWhisperer`
+        this.statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
         this.statusBar.command = 'aws.codeWhisperer.reconnect'
         ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()

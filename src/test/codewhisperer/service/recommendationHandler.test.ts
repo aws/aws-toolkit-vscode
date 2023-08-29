@@ -21,6 +21,7 @@ import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { extensionVersion } from '../../../shared/vscode/env'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -47,7 +48,7 @@ describe('recommendationHandler', function () {
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
             RecommendationHandler.instance.clearRecommendations()
-            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
+            sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
         })
 
         afterEach(function () {

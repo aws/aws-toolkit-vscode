@@ -14,6 +14,9 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+import { getSelectedCustomization } from '../util/customizationUtil'
+import { codeWhispererClient as client } from '../client/codewhisperer'
+import { isAwsError } from '../../shared/errors'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -120,6 +123,7 @@ export class CodeWhispererCodeCoverageTracker {
         }
         const percentCount = ((acceptedTokens / totalTokens) * 100).toFixed(2)
         const percentage = Math.round(parseInt(percentCount))
+        const selectedCustomization = getSelectedCustomization()
         telemetry.codewhisperer_codePercentage.emit({
             codewhispererTotalTokens: totalTokens,
             codewhispererLanguage: this._language,
@@ -127,7 +131,35 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererPercentage: percentage ? percentage : 0,
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+            codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         })
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeCoverageEvent: {
+                        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+                        programmingLanguage: {
+                            languageName: this._language,
+                        },
+                        acceptedCharacterCount: acceptedTokens,
+                        totalCharacterCount: totalTokens,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
     }
 
     private tryStartTimer() {

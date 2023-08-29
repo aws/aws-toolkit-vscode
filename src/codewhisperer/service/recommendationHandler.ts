@@ -31,6 +31,8 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { CodeWhispererSupplementalContext } from '../util/supplementalContext/supplementalContextUtil'
+import { invalidCustomizationMessage } from '../models/constants'
+import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -143,7 +145,8 @@ export class RecommendationHandler {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
-        page: number = 0
+        page: number = 0,
+        retry: boolean = false
     ) {
         if (!editor) {
             return
@@ -199,7 +202,7 @@ export class RecommendationHandler {
                 const resp = await this.getServerResponse(
                     triggerType,
                     config.isManualTriggerEnabled,
-                    page === 0,
+                    page === 0 && !retry,
                     codewhispererPromise
                 )
                 TelemetryHelper.instance.setSdkApiCallEndTime()
@@ -243,12 +246,13 @@ export class RecommendationHandler {
             getLogger().error('CodeWhisperer Invocation Exception : %s', (error as Error).message)
             if (isAwsError(error)) {
                 this.errorMessagePrompt = error.message
+                this.errorCode = error.code
                 requestId = error.requestId || ''
                 errorCode = error.code
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
             } else {
-                errorCode = error as string
+                errorCode = error instanceof Error ? error.message : 'unknown error'
                 reason = error ? String(error) : 'unknown'
                 this.errorMessagePrompt = errorCode
             }
@@ -277,6 +281,27 @@ export class RecommendationHandler {
             })
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.incrementServiceInvocationCount()
+            } else {
+                // TODO: Double-check with service side that this is an AccessDeniedException
+                if (
+                    this.errorMessagePrompt.includes(invalidCustomizationMessage) &&
+                    this.errorCode === 'AccessDeniedException'
+                ) {
+                    getLogger()
+                        .debug(`The selected customization is no longer available. Retrying with the default model.
+                    Failed request id: ${requestId}`)
+                    await switchToBaseCustomizationAndNotify()
+                    await this.getRecommendations(
+                        client,
+                        editor,
+                        triggerType,
+                        config,
+                        autoTriggerType,
+                        pagination,
+                        page,
+                        true
+                    )
+                }
             }
         }
         if (recommendation.length > 0) {

@@ -2,21 +2,23 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AWSError, Service } from 'aws-sdk'
-import apiConfig = require('./service-2.json')
-import userApiConfig = require('./user-service-2.json')
+import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
+import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { isSsoConnection } from '../../auth/connection'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import apiConfig = require('./service-2.json')
+import userApiConfig = require('./user-service-2.json')
+import { CodeWhispererStates } from '../util/codewhispererStates'
+import { getLogger } from '../../shared/logger/logger'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -103,9 +105,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-        TelemetryHelper.instance.setFetchCredentialStartTime()
+        CodeWhispererStates.instance.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
-        TelemetryHelper.instance.setSdkApiCallStartTime()
+        CodeWhispererStates.instance.setSdkApiCallStart()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
@@ -189,6 +191,23 @@ export class DefaultCodeWhispererClient {
             .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
             .promise()
     }
+
+    public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
+        const client = await this.createUserSdkClient()
+        const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
+            client.listAvailableCustomizations(request).promise()
+        return pageableToCollection(requester, {}, 'nextToken').promise()
+    }
+
+    public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
+        if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
+            return
+        }
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
+        getLogger().debug(`send telemetry event requestID: ${response.$response.requestId}`)
+    }
 }
+
+export const codeWhispererClient = new DefaultCodeWhispererClient()
 
 export class CognitoCredentialsError extends Error {}

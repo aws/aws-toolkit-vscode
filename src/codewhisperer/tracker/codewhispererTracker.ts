@@ -9,8 +9,9 @@ import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+import { AuthUtil } from '../util/authUtil'
+// import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -103,9 +104,11 @@ export class CodeWhispererTracker {
                 codewhispererModificationPercentage: percentage ? percentage : 0,
                 codewhispererCompletionType: suggestion.completionType,
                 codewhispererLanguage: suggestion.language,
-                credentialStartUrl: TelemetryHelper.instance.startUrl,
+                credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
+            // Temperary comment out user modification event, need further discussion on how to calculate this metric
+            // TelemetryHelper.instance.sendUserModificationEvent(suggestion, percentage)
         }
     }
 
