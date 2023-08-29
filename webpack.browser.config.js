@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 const webpack = require('webpack')
-var { FilerWebpackPlugin } = require('filer/webpack')
 
 const baseConfig = require('./webpack.base.config')
 
@@ -24,6 +23,7 @@ const webConfig = {
         new webpack.ProvidePlugin({
             process: require.resolve('process/browser'),
             Buffer: ['buffer', 'Buffer'],
+            fs: require.resolve('memfs'),
         }),
         new webpack.EnvironmentPlugin({
             NODE_DEBUG: 'development',
@@ -36,7 +36,8 @@ const webConfig = {
             stream: require.resolve('stream-browserify'),
             os: require.resolve('os-browserify/browser'),
             path: require.resolve('path-browserify'),
-            fs: false,
+            assert: require.resolve('assert'),
+            fs: require.resolve('memfs'),
 
             // *** If one of these modules actually gets used an error will be raised ***
             // You may see something like: "TypeError: path_ignored_0.join is not a function"
