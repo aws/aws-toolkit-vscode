@@ -10,7 +10,7 @@ import com.intellij.openapi.progress.Task
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.SimpleListCellRenderer
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import software.amazon.awssdk.services.ecr.EcrClient
@@ -76,21 +76,15 @@ private class PullFromRepositoryDialog(selectedRepository: Repository, project: 
     }
 
     override fun createCenterPanel() = panel {
-        val sizeGroup = "repoTag"
+        val widthGroup = "repoTag"
         row(message("ecr.repo.label")) {
-            repoSelector()
-                .sizeGroup(sizeGroup)
-                .constraints(grow)
-                .withErrorOnApplyIf(message("loading_resource.still_loading")) { it.isLoading }
-                .withErrorOnApplyIf(message("ecr.repo.not_selected")) { it.selected() == null }
+            cell(repoSelector).widthGroup(widthGroup).apply {
+            }.errorOnApply(message("loading_resource.still_loading")) { it.isLoading }.errorOnApply(message("ecr.repo.not_selected")) { it.selected() == null }
         }
 
         row(message("ecr.push.remoteTag")) {
-            imageSelector()
-                .sizeGroup(sizeGroup)
-                .constraints(grow)
-                .withErrorOnApplyIf(message("loading_resource.still_loading")) { it.isLoading }
-                .withErrorOnApplyIf(message("ecr.image.not_selected")) { it.selected() == null }
+            cell(imageSelector).widthGroup(widthGroup).apply {
+            }.errorOnApply(message("loading_resource.still_loading")) { it.isLoading }.errorOnApply(message("ecr.image.not_selected")) { it.selected() == null }
         }
     }
 
