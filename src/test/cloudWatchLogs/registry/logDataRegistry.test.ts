@@ -8,11 +8,11 @@ import moment from 'moment'
 import * as vscode from 'vscode'
 import {
     LogDataRegistry,
-    CloudWatchLogsAction,
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     CloudWatchLogsResponse,
     CloudWatchLogsData,
+    filterLogEventsFromUri,
 } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
@@ -123,7 +123,7 @@ describe('LogDataRegistry', async function () {
             return events
         }
 
-        async function buildCwlAction(isPage1Empty: boolean): Promise<CloudWatchLogsAction> {
+        async function buildCwlAction(isPage1Empty: boolean): Promise<typeof filterLogEventsFromUri> {
             return async function (
                 logGroupInfo: CloudWatchLogsGroupInfo,
                 parameters: CloudWatchLogsParameters,

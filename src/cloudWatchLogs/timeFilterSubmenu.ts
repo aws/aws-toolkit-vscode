@@ -129,9 +129,11 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
                         // The prepopulated ranges all end in "now".
                         return { start: startTime.valueOf(), end: undefined }
+                    } else {
+                        return undefined
                     }
 
-                    return undefined
+                    break
                 }
                 case 'custom-range': {
                     const resp = await this.createDateBox().prompt()

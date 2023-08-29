@@ -198,8 +198,11 @@ export class SearchPatternPrompter extends InputBoxPrompter {
         } catch (e) {
             // Validation error. Get the progress message from the global map and cancel it.
             const msgTimeout = await Messages.putMessage(msgKey(this.logGroup), '')
-            msgTimeout.cancel()
+            msgTimeout.dispose()
 
+            if (CancellationError.isUserCancelled(e)) {
+                throw e
+            }
             return (e as Error).message
         }
         return undefined
