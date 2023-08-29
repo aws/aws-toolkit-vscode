@@ -9,7 +9,7 @@ import { createURIFromArgs, isLogStreamUri, recordTelemetryFilter } from './clou
 import { prepareDocument } from './commands/searchLogGroup'
 import { getActiveDocumentUri } from './document/logDataDocumentProvider'
 import { CloudWatchLogsData, filterLogEventsFromUri, LogDataRegistry } from './registry/logDataRegistry'
-import { isViewAllEvents, TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
+import { TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
 
 /**
  * Prompts the user for new value for param in logSearch.
@@ -53,8 +53,8 @@ export async function getNewData(
             if (newTimeRange === undefined) {
                 return
             }
-            newData.parameters.startTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.start
-            newData.parameters.endTime = isViewAllEvents(newTimeRange) ? undefined : newTimeRange.end
+            newData.parameters.startTime = newTimeRange.start
+            newData.parameters.endTime = newTimeRange.end
             break
     }
 

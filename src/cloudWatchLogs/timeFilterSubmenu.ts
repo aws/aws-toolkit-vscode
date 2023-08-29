@@ -14,14 +14,10 @@ import { CloudWatchLogsParameters } from './registry/logDataRegistry'
 
 const localize = nls.loadMessageBundle()
 
-export function isViewAllEvents(response: TimeFilterResponse) {
-    return response.start === response.end
-}
-
 export interface TimeFilterResponse {
     // # of miliseconds since january 1, 1970 since thats what API expects.
-    readonly start: number
-    readonly end: number
+    readonly start?: number
+    readonly end?: number
 }
 
 const customRange = Symbol('customRange')
@@ -106,7 +102,7 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
     public createDateBox(): InputBoxPrompter {
         return createInputBox({
-            title: 'Enter custom date range',
+            title: 'Enter custom UTC date range',
             placeholder: 'YYYY/MM/DD-YYYY/MM/DD',
             value: this.formatTimesToDateRange(this.oldData?.startTime, this.oldData?.endTime),
             validateInput: input => this.validateDate(input),
@@ -124,16 +120,18 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
                     const resp = await prompter.prompt()
                     if (resp === customRange) {
                         this.switchState('custom-range')
+                    } else if (resp === 0) {
+                        // "All time".
+                        return { start: undefined, end: undefined }
                     } else if (isValidResponse(resp)) {
-                        const [endTime, startTime] = [new Date(), new Date()]
-                        startTime.setMinutes(endTime.getMinutes() - resp)
+                        const startTime = new Date()
+                        startTime.setMinutes(startTime.getMinutes() - resp)
 
-                        return { start: startTime.valueOf(), end: endTime.valueOf() }
-                    } else {
-                        return undefined
+                        // The prepopulated ranges all end in "now".
+                        return { start: startTime.valueOf(), end: undefined }
                     }
 
-                    break
+                    return undefined
                 }
                 case 'custom-range': {
                     const resp = await this.createDateBox().prompt()
@@ -142,7 +140,6 @@ export class TimeFilterSubmenu extends Prompter<TimeFilterResponse> {
 
                         return { start: startTime.valueOf(), end: endTime.valueOf() }
                     }
-
                     this.switchState('recent-range')
 
                     break

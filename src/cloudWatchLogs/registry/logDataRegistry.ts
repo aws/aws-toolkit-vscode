@@ -63,12 +63,12 @@ export class LogDataRegistry {
      * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
      * @param uri Document URI
      * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
-     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
      */
     public async fetchNextLogEvents(
         uri: vscode.Uri,
         headOrTail: 'head' | 'tail' = 'tail'
     ): Promise<CloudWatchLogsEvent[]> {
+        const isHead = headOrTail === 'head'
         if (!this.isRegistered(uri)) {
             this.registerInitialLog(uri)
         }
@@ -79,8 +79,6 @@ export class LogDataRegistry {
             nextForwardToken: logData.next?.token,
             nextBackwardToken: logData.previous?.token,
         }
-
-        const isHead = headOrTail === 'head'
 
         // We are at the earliest data and trying to go back in time, there is nothing to see.
         // If we don't return now, redundant data will be retrieved.
@@ -131,20 +129,19 @@ export class LogDataRegistry {
             return []
         }
 
-        const newData =
-            headOrTail === 'head'
-                ? (responseData.events ?? []).concat(logData.events)
-                : logData.events.concat(responseData.events ?? [])
+        const newData = isHead
+            ? (responseData.events ?? []).concat(logData.events)
+            : logData.events.concat(responseData.events ?? [])
 
         const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
         // update if no token exists or if the token is updated in the correct direction.
-        if (!logData.previous || headOrTail === 'head') {
+        if (!logData.previous || isHead) {
             const token = responseData.nextBackwardToken
             if (token) {
                 tokens.previous = { token }
             }
         }
-        if (!logData.next || headOrTail === 'tail') {
+        if (!logData.next || !isHead) {
             const token = responseData.nextForwardToken ?? request.nextForwardToken
             if (token) {
                 tokens.next = { token }
@@ -225,7 +222,7 @@ export async function filterLogEventsFromUri(
         cwlParameters.logStreamNames = [logGroupInfo.streamName]
     }
 
-    if (parameters.startTime && parameters.endTime) {
+    if (parameters.startTime) {
         cwlParameters.startTime = parameters.startTime
         cwlParameters.endTime = parameters.endTime
     }
