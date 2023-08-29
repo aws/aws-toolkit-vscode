@@ -62,45 +62,67 @@ describe('RegexValidationForJava', () => {
 })
 
 describe('isTestFile', () => {
+    it('validate by file path', async function () {
+        const langs = new Map<string, string>([
+            ['java', '.java'],
+            ['python', '.py'],
+            ['typescript', '.py'],
+            ['javascript', '.js'],
+            ['typescriptreact', '.tsx'],
+            ['javascriptreact', '.jsx'],
+        ])
+        const testFilePathsWithoutExt = [
+            '/test/MyClass',
+            '/test/my_class',
+            '/tst/MyClass',
+            '/tst/my_class',
+            '/tests/MyClass',
+            '/tests/my_class',
+        ]
+
+        const srcFilePathsWithoutExt = [
+            '/src/MyClass',
+            'MyClass',
+            'foo/bar/MyClass',
+            'foo/my_class',
+            'my_class',
+            'anyFolderOtherThanTest/foo/myClass',
+        ]
+
+        for (const [languageId, ext] of langs) {
+            const testFilePaths = testFilePathsWithoutExt.map(it => it + ext)
+            for (const testFilePath of testFilePaths) {
+                const actual = await isTestFile(testFilePath, { languageId: languageId })
+                assert.strictEqual(actual, true)
+            }
+
+            const srcFilePaths = srcFilePathsWithoutExt.map(it => it + ext)
+            for (const srcFilePath of srcFilePaths) {
+                const actual = await isTestFile(srcFilePath, { languageId: languageId })
+                assert.strictEqual(actual, false)
+            }
+        }
+    })
+
     describe('typescript', function () {
         const language = 'typescript'
 
-        it('isTest by file path should return true', async function () {
-            const filePaths = ['/test/MyClass.ts', '/tst/MyClass.ts', '/tests/MyClass.ts']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, true)
-            }
-        })
-
-        it('isTest by file path should return false', async function () {
-            const filePaths = ['/path/to/MyClass.ts', 'path/to/wrongtesttttfolder/MyClass.ts']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, false)
-            }
-        })
-
-        it('isTest by file name should return true', async function () {
-            const filePaths = [
+        it('validate by file name', async function () {
+            const testFiles = [
                 'MyClass.test.ts',
                 '/path/to/MyClass.test.ts',
                 'MyClass.spec.ts',
                 '/path/to/MyClass.spec.ts',
             ]
 
-            for (const filePath of filePaths) {
+            for (const filePath of testFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, true)
             }
-        })
 
-        it('isTest by file name should return false', async function () {
-            const filePaths = ['MyClass.ts', '/path/to/MyClass.ts', 'MyClass_test.ts', 'test_MyClass.ts']
+            const srcFiles = ['MyClass.ts', '/path/to/MyClass.ts', 'MyClass_test.ts', 'test_MyClass.ts']
 
-            for (const filePath of filePaths) {
+            for (const filePath of srcFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, false)
             }
@@ -110,42 +132,22 @@ describe('isTestFile', () => {
     describe('javascript', function () {
         const language = 'javascript'
 
-        it('isTest by file path should return true', async function () {
-            const filePaths = ['/test/MyClass.js', '/tst/MyClass.js', '/tests/MyClass.js']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, true)
-            }
-        })
-
-        it('isTest by file path should return false', async function () {
-            const filePaths = ['/path/to/MyClass.js', 'path/to/wrongtesttttfolder/MyClass.js']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, false)
-            }
-        })
-
-        it('isTest by file name should return true', async function () {
-            const filePaths = [
+        it('validate by file name', async function () {
+            const testFiles = [
                 'MyClass.test.js',
                 '/path/to/MyClass.test.js',
                 'MyClass.spec.js',
                 '/path/to/MyClass.spec.js',
             ]
 
-            for (const filePath of filePaths) {
+            for (const filePath of testFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, true)
             }
-        })
 
-        it('isTest by file name should return false', async function () {
-            const filePaths = ['MyClass.js', '/path/to/MyClass.js', 'MyClass_test.js', 'test_MyClass.js']
+            const srcFiles = ['MyClass.js', '/path/to/MyClass.js', 'MyClass_test.js', 'test_MyClass.js']
 
-            for (const filePath of filePaths) {
+            for (const filePath of srcFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, false)
             }
@@ -155,42 +157,22 @@ describe('isTestFile', () => {
     describe('tsx', function () {
         const language = 'typescriptreact'
 
-        it('isTest by file path should return true', async function () {
-            const filePaths = ['/test/MyClass.tsx', '/tst/MyClass.tsx', '/tests/MyClass.tsx']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, true)
-            }
-        })
-
-        it('isTest by file path should return false', async function () {
-            const filePaths = ['/path/to/MyClass.tsx', 'path/to/wrongtesttttfolder/MyClass.tsx']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, false)
-            }
-        })
-
-        it('isTest by file name should return true', async function () {
-            const filePaths = [
+        it('validate by file name', async function () {
+            const testFiles = [
                 'MyClass.test.tsx',
                 '/path/to/MyClass.test.tsx',
                 'MyClass.spec.tsx',
                 '/path/to/MyClass.spec.tsx',
             ]
 
-            for (const filePath of filePaths) {
+            for (const filePath of testFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, true)
             }
-        })
 
-        it('isTest by file name should return false', async function () {
-            const filePaths = ['MyClass.tsx', '/path/to/MyClass.tsx', 'MyClass_test.tsx', 'test_MyClass.tsx']
+            const srcFiles = ['MyClass.tsx', '/path/to/MyClass.tsx', 'MyClass_test.tsx', 'test_MyClass.tsx']
 
-            for (const filePath of filePaths) {
+            for (const filePath of srcFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, false)
             }
@@ -200,42 +182,22 @@ describe('isTestFile', () => {
     describe('jsx', function () {
         const language = 'javascriptreact'
 
-        it('isTest by file path should return true', async function () {
-            const filePaths = ['/test/MyClass.jsx', '/tst/MyClass.jsx', '/tests/MyClass.jsx']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, true)
-            }
-        })
-
-        it('isTest by file path should return false', async function () {
-            const filePaths = ['/path/to/MyClass.jsx', 'path/to/wrongtesttttfolder/MyClass.jsx']
-
-            for (const filePath of filePaths) {
-                const result = await isTestFile(filePath, { languageId: language })
-                assert.strictEqual(result, false)
-            }
-        })
-
-        it('isTest by file name should return true', async function () {
-            const filePaths = [
+        it('validate by file name', async function () {
+            const testFiles = [
                 'MyClass.test.jsx',
                 '/path/to/MyClass.test.jsx',
                 'MyClass.spec.jsx',
                 '/path/to/MyClass.spec.jsx',
             ]
 
-            for (const filePath of filePaths) {
+            for (const filePath of testFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, true)
             }
-        })
 
-        it('isTest by file name should return false', async function () {
-            const filePaths = ['MyClass.jsx', '/path/to/MyClass.jsx', 'MyClass_test.jsx', 'test_MyClass.jsx']
+            const srcFiles = ['MyClass.jsx', '/path/to/MyClass.jsx', 'MyClass_test.jsx', 'test_MyClass.jsx']
 
-            for (const filePath of filePaths) {
+            for (const filePath of srcFiles) {
                 const result = await isTestFile(filePath, { languageId: language })
                 assert.strictEqual(result, false)
             }
