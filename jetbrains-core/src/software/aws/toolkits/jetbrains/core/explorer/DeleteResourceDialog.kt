@@ -6,11 +6,11 @@ package software.aws.toolkits.jetbrains.core.explorer
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
-import com.intellij.openapi.ui.panel.ComponentPanelBuilder
 import com.intellij.ui.DocumentAdapter
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBTextField
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.panel
 import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.event.DocumentEvent
@@ -25,24 +25,18 @@ class DeleteResourceDialog(
         emptyText.text = message("delete_resource.confirmation_text")
         accessibleContext.accessibleName = message("general.delete_accessible_name")
     }
+
     private val warningIcon = JBLabel(Messages.getWarningIcon())
     private val component by lazy {
         panel {
             row {
-                warningIcon(grow)
+                cell(warningIcon)
                 label(message("delete_resource.message", resourceType, resourceName))
             }
             row {
-                deleteResourceConfirmation(grow)
+                cell(deleteResourceConfirmation).align(Align.FILL)
             }
-            createNoteOrCommentRow(
-                ComponentPanelBuilder.createCommentComponent(
-                    comment,
-                    true,
-                    -1,
-                    true
-                )
-            ).visible = !comment.isNullOrEmpty()
+            row { }.comment(comment).visible(this@DeleteResourceDialog.comment.isNotBlank())
         }
     }
 

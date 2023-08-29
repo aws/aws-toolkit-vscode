@@ -5,8 +5,8 @@ package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.layout.GrowPolicy
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.panel
 import javax.swing.JComponent
 
 class ViewResourceDialog(project: Project, val resourceType: String, actionTitle: String, checkResourceNameValidity: (resource: String?) -> Boolean) :
@@ -15,7 +15,7 @@ class ViewResourceDialog(project: Project, val resourceType: String, actionTitle
     private val component by lazy {
         panel {
             row("$resourceType:") {
-                textField(::resourceName).growPolicy(GrowPolicy.SHORT_TEXT).withErrorOnApplyIf("$resourceType must be entered") {
+                textField().bindText(::resourceName).errorOnApply("$resourceType must be entered") {
                     it.text.isNullOrBlank() || checkResourceNameValidity(it.text)
                 }
             }
