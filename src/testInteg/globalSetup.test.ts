@@ -6,7 +6,7 @@
 /**
  * Before/After hooks for all integration tests.
  */
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import { VSCODE_EXTENSION_ID } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { WinstonToolkitLogger } from '../shared/logger/winstonToolkitLogger'
