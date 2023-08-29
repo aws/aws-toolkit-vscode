@@ -5,7 +5,7 @@
 
 import { SecretsManager } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { GetSecretValueRequest, GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
+import { ListSecretsRequest, ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 
 export class SecretsManagerClient {
     public constructor(
@@ -16,16 +16,23 @@ export class SecretsManagerClient {
     ) {}
 
     /**
-     * Retrieves the contents of the encrypted fields SecretString or SecretBinary from the secrets manager
-     * @param secretId : the secret name
-     * @returns the secret value response
+     * Lists the secrets that are stored by Secrets Manager
+     * @param filter tagged key filter value
+     * @returns a list of the secrets
      */
-    public async getSecretValue(secretId: string): Promise<GetSecretValueResponse> {
+    public async listSecrets(filter: string): Promise<ListSecretsResponse> {
         const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
-        const request: GetSecretValueRequest = {
-            SecretId: secretId,
+        const request: ListSecretsRequest = {
+            IncludePlannedDeletion: false,
+            Filters: [
+                {
+                    Key: 'tag-key',
+                    Values: [filter],
+                },
+            ],
+            SortOrder: 'desc',
         }
-        return secretsManagerClient.getSecretValue(request).promise()
+        return secretsManagerClient.listSecrets(request).promise()
     }
 }
 

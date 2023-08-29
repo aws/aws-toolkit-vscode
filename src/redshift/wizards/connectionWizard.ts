@@ -11,11 +11,13 @@ import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../mode
 import { RedshiftWarehouseNode } from '../explorer/redshiftWarehouseNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
+import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { ClustersMessage } from 'aws-sdk/clients/redshift'
 import { Prompter } from '../../shared/ui/prompter'
+import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 
 export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
     public constructor(
@@ -50,7 +52,8 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
                 node.warehouseType === RedshiftWarehouseType.PROVISIONED,
             relativeOrder: 3,
         })
-        this.form.secret.bindPrompter(getSecretPrompter, {
+
+        this.form.secret.bindPrompter(state => getSecretPrompter(node.redshiftClient.regionCode), {
             showWhen: state => state.database !== undefined && state.connectionType === ConnectionType.SecretsManager,
             relativeOrder: 4,
         })
@@ -110,7 +113,7 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
             relativeOrder: 5,
         })
 
-        this.form.secret.bindPrompter(getSecretPrompter, {
+        this.form.secret.bindPrompter(state => getSecretPrompter(state.region!.id), {
             showWhen: state => state.database !== undefined && state.connectionType === ConnectionType.SecretsManager,
             relativeOrder: 6,
         })
@@ -147,17 +150,6 @@ function getConnectionTypePrompter(): Prompter<ConnectionType> {
     return createQuickPick(items, {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
         buttons: createCommonButtons(),
-    })
-}
-
-function getSecretPrompter(): Prompter<string> {
-    return createInputBox({
-        value: '',
-        title: localize('AWS.redshift.secret', 'Enter a secret name'),
-        buttons: createCommonButtons(),
-        validateInput: value => {
-            return value.trim() ? undefined : localize('AWS.redshift.secretValidation', 'Secret cannot be empty')
-        },
     })
 }
 
@@ -209,4 +201,27 @@ function getWarehouseIdentifierPrompter(region: string): QuickPickPrompter<strin
         title: localize('AWS.redshift.chooseAWarehousePrompt', 'Choose a warehouse to connect to'),
         buttons: createCommonButtons(),
     })
+}
+
+function getSecretPrompter(region: string): QuickPickPrompter<string> {
+    const secretsManagerClient = new SecretsManagerClient(region)
+    return createQuickPick(fetchSecretList(secretsManagerClient), {
+        title: localize('AWS.redshift.chooseSecretPrompt', 'Choose a secret'),
+        buttons: createCommonButtons(),
+    })
+}
+
+async function* fetchSecretList(secretsManagerClient: SecretsManagerClient) {
+    const secretFilter = 'Redshift'
+    const listSecretsResponse: ListSecretsResponse = await secretsManagerClient.listSecrets(secretFilter)
+    if (listSecretsResponse.SecretList) {
+        for await (const secret of listSecretsResponse.SecretList) {
+            yield [
+                {
+                    label: secret.Name || 'UnknownSecret',
+                    data: secret.ARN || 'UnknownSecret',
+                },
+            ]
+        }
+    }
 }
