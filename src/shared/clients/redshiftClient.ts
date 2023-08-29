@@ -21,7 +21,7 @@ import {
     ListTablesResponse,
 } from 'aws-sdk/clients/redshiftdata'
 import { GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
-import { DefaultSecretsManagerClient } from '../clients/secretsManagerClient'
+import { SecretsManagerClient } from '../clients/secretsManagerClient'
 import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 
@@ -185,7 +185,7 @@ export class DefaultRedshiftClient {
     }
 
     public async getSecretArn(secretId: string): Promise<GetSecretValueResponse> {
-        const secretsManagerClient = new DefaultSecretsManagerClient(this.regionCode)
+        const secretsManagerClient = new SecretsManagerClient(this.regionCode)
         return secretsManagerClient.getSecretValue(secretId)
     }
 }

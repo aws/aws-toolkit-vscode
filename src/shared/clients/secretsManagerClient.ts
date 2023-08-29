@@ -7,7 +7,7 @@ import { SecretsManager } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { GetSecretValueRequest, GetSecretValueResponse } from 'aws-sdk/clients/secretsmanager'
 
-export class DefaultSecretsManagerClient {
+export class SecretsManagerClient {
     public constructor(
         public readonly regionCode: string,
         private readonly secretsManagerClientProvider: (
