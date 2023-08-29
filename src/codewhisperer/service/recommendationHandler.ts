@@ -376,6 +376,9 @@ export class RecommendationHandler {
      * Emits telemetry reflecting user decision for current recommendation.
      */
     reportUserDecisionOfRecommendation(editor: vscode.TextEditor | undefined, acceptIndex: number) {
+        if (this.sessionId === '' || this.requestId === '') {
+            return
+        }
         TelemetryHelper.instance.recordUserDecisionTelemetry(
             this.requestId,
             this.sessionId,

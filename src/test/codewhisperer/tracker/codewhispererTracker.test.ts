@@ -13,6 +13,7 @@ import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { extensionVersion } from '../../../shared/vscode/env'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhispererTracker', function () {
     describe('enqueue', function () {
@@ -98,7 +99,7 @@ describe('codewhispererTracker', function () {
             })
 
             const testStartUrl = 'testStartUrl'
-            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
+            sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const suggestion = createAcceptedSuggestionEntry()
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userModification')
             await CodeWhispererTracker.getTracker().emitTelemetryOnSuggestion(suggestion)
