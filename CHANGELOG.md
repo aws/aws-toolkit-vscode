@@ -1,3 +1,7 @@
+# _1.76_ (2023-08-15)
+- **(Feature)** CodeWhisperer: Improve file context fetching for Python Typescript Javascript source files
+- **(Feature)** CodeWhisperer: Improve file context fetching for Java test files
+
 # _1.75_ (2023-08-03)
 - **(Feature)** Add support for Lambda runtime Python 3.11
 - **(Bug Fix)** codewhisperer: file context fetching not considering file extension correctly
