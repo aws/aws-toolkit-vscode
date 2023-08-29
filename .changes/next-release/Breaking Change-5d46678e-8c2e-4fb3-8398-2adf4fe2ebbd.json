@@ -1,0 +1,4 @@
+{
+	"type": "Breaking Change",
+	"description": "Minimum required VS Code version is now 1.68"
+}
