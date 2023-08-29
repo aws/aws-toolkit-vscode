@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as moment from 'moment'
+import moment from 'moment'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { IotClient, IotCertificate } from '../../shared/clients/iotClient'
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { deleteLambda } from '../../../lambda/commands/deleteLambda'
 import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 import { getTestWindow } from '../../shared/vscode/window'

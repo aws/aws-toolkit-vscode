@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import * as moment from 'moment'
+import moment from 'moment'
 import * as picker from '../../shared/ui/picker'
 import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'

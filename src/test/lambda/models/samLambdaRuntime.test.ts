@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
     compareSamLambdaRuntime,
@@ -74,6 +74,7 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -84,6 +85,7 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -102,6 +104,7 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -119,6 +122,7 @@ describe('runtimes', function () {
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',

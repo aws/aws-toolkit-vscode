@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as Transport from 'winston-transport'
+import Transport from 'winston-transport'
 import globals from '../extensionGlobals'
 
 export const MESSAGE = Symbol.for('message') // eslint-disable-line @typescript-eslint/naming-convention

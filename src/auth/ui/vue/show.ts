@@ -44,7 +44,6 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 
-const logger = getLogger()
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
@@ -70,7 +69,6 @@ export class AuthWebview extends VueWebview {
     }
 
     getCredentialFormatError(key: CredentialsKey, value: string | undefined): string | undefined {
-        getLogger().warn('getCredentialFormatError(): %s %s', key, value)
         return getCredentialFormatError(key, value)
     }
 
@@ -92,7 +90,7 @@ export class AuthWebview extends VueWebview {
     }
 
     /**
-     * Returns true if any credentials are found, even ones associated with an sso
+     * Returns true if any credentials are found, including those discovered from SSO service API.
      */
     async isCredentialExists(): Promise<boolean> {
         return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
@@ -238,7 +236,7 @@ export class AuthWebview extends VueWebview {
                 return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
             }
 
-            logger.error('Failed to setup.', e)
+            getLogger().error('AuthWebview: Failed to setup: %s', (e as Error).message)
             return { id: 'defaultFailure', text: 'Failed to setup.' }
         }
     }

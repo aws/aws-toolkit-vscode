@@ -393,13 +393,14 @@ export class ExtensionUserActivity implements vscode.Disposable {
 
         if (customEvents) {
             customEvents.forEach(event =>
-                this.register(event(() => {
-                    throttledEmit(event)
-                }))
+                this.register(
+                    event(() => {
+                        throttledEmit(event)
+                    })
+                )
             )
-        }
-        else {
-            this.registerAllEvents(throttledEmit)            
+        } else {
+            this.registerAllEvents(throttledEmit)
         }
 
         this.disposables.push(this.activityEvent)
@@ -410,48 +411,58 @@ export class ExtensionUserActivity implements vscode.Disposable {
      */
     private registerAllEvents(throttledEmit: (e: vscode.Event<any>) => any) {
         this.activityEvents.forEach(event =>
-            this.register(event(() => {
-                throttledEmit(event)
-            }))
+            this.register(
+                event(() => {
+                    throttledEmit(event)
+                })
+            )
         )
 
         /** ---- Events with edge cases ---- */
-        this.register(vscode.window.onDidChangeWindowState(e => {
-            if ((e as any).active === false) {
-                return
-            }
-            throttledEmit(vscode.window.onDidChangeWindowState)
-        }))
+        this.register(
+            vscode.window.onDidChangeWindowState(e => {
+                if ((e as any).active === false) {
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeWindowState)
+            })
+        )
 
-        this.register(vscode.workspace.onDidChangeTextDocument(e => {
-            // Our extension may change a file in the background (eg: log file)
-            const uriOfDocumentUserIsEditing = vscode.window.activeTextEditor?.document?.uri
-            if (!uriOfDocumentUserIsEditing) {
-                // User was not editing any file themselves
-                return
-            }
-            if (uriOfDocumentUserIsEditing !== e.document.uri) {
-                // File changed was not the one the user was actively working on
-                return
-            }
-            throttledEmit(vscode.workspace.onDidChangeTextDocument)
-        }))
+        this.register(
+            vscode.workspace.onDidChangeTextDocument(e => {
+                // Our extension may change a file in the background (eg: log file)
+                const uriOfDocumentUserIsEditing = vscode.window.activeTextEditor?.document?.uri
+                if (!uriOfDocumentUserIsEditing) {
+                    // User was not editing any file themselves
+                    return
+                }
+                if (uriOfDocumentUserIsEditing !== e.document.uri) {
+                    // File changed was not the one the user was actively working on
+                    return
+                }
+                throttledEmit(vscode.workspace.onDidChangeTextDocument)
+            })
+        )
 
-        this.register(vscode.window.onDidChangeTextEditorSelection(e => {
-            if(e.textEditor.document.uri.scheme === 'output') {
-                // Ignore `output` scheme as text editors from output panel autoscroll
-                return
-            }
-            throttledEmit(vscode.window.onDidChangeTextEditorSelection)
-        }))
+        this.register(
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                if (e.textEditor.document.uri.scheme === 'output') {
+                    // Ignore `output` scheme as text editors from output panel autoscroll
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTextEditorSelection)
+            })
+        )
 
-        this.register(vscode.window.onDidChangeTextEditorVisibleRanges(e => {
-            if(e.textEditor.document.uri.scheme === 'output') {
-                // Ignore `output` scheme as text editors from output panel autoscroll
-                return
-            }
-            throttledEmit(vscode.window.onDidChangeTextEditorVisibleRanges)
-        }))
+        this.register(
+            vscode.window.onDidChangeTextEditorVisibleRanges(e => {
+                if (e.textEditor.document.uri.scheme === 'output') {
+                    // Ignore `output` scheme as text editors from output panel autoscroll
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTextEditorVisibleRanges)
+            })
+        )
     }
 
     private activityEvents: vscode.Event<any>[] = [

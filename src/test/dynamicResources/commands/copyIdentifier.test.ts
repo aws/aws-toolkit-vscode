@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { copyIdentifier } from '../../../dynamicResources/commands/copyIdentifier'
 import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { assertNoErrorMessages } from '../../shared/vscode/window'

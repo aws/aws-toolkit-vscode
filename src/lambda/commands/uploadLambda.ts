@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 
 const localize = nls.loadMessageBundle()
 
-import * as AdmZip from 'adm-zip'
+import AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'

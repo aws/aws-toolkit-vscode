@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import { WizardForm } from '../../../shared/wizards/wizardForm'
 import { SimplePrompter } from '../ui/prompter.test'

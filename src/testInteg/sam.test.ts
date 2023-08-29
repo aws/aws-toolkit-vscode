@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
@@ -120,6 +120,16 @@ const scenarios: TestScenario[] = [
         vscodeMinimum: '1.78.0',
     },
     {
+        runtime: 'python3.11',
+        displayName: 'python 3.11 (ZIP)',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
         runtime: 'java8',
         displayName: 'java8 (Gradle ZIP)',
         path: 'HelloWorldFunction/src/main/java/helloworld/App.java',
@@ -223,6 +233,17 @@ const scenarios: TestScenario[] = [
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
         baseImage: 'amazon/python3.10-base',
+        path: 'hello_world/app.py',
+        debugSessionType: 'python',
+        language: 'python',
+        dependencyManager: 'pip',
+        // https://github.com/microsoft/vscode-python/blob/main/package.json
+        vscodeMinimum: '1.78.0',
+    },
+    {
+        runtime: 'python3.11',
+        displayName: 'python 3.11 (ZIP)',
+        baseImage: 'amazon/python3.11-base',
         path: 'hello_world/app.py',
         debugSessionType: 'python',
         language: 'python',

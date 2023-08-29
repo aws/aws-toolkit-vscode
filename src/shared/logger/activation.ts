@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as moment from 'moment'
+import moment from 'moment'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
@@ -48,7 +48,7 @@ export async function activate(
     )
 
     setLogger(mainLogger)
-    getLogger().error(`log level: ${getLogLevel()}`)
+    getLogger().info(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(

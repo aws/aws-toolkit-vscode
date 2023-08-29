@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'

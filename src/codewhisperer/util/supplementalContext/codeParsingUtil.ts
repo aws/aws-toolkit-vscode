@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import path = require('path')
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 export interface utgLanguageConfig {
     extension: string
@@ -19,7 +20,7 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
     // Java regexes are not working efficiently for class or function extraction
     java: {
         extension: '.java',
-        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java)$/,
+        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java|([^/\\]+)Tests\.java)$/,
         functionExtractionPattern:
             /(?:(?:public|private|protected)\s+)(?:static\s+)?(?:[\w<>]+\s+)?(\w+)\s*\([^)]*\)\s*(?:(?:throws\s+\w+)?\s*)[{;]/gm, // TODO: Doesn't work for generice <T> T functions.
         classExtractionPattern: /(?<=^|\n)\s*public\s+class\s+(\w+)/gm, // TODO: Verify these.
@@ -76,8 +77,12 @@ export async function isTestFile(
         fileContent?: string
     }
 ): Promise<boolean> {
-    const pathContainsTest = filePath.includes(`tests/`) || filePath.includes('test/') || filePath.includes('tst/')
-    const fileNameMatchTestPatterns = isTestFileByName(filePath, languageConfig.languageId)
+    const normalizedFilePath = normalize(filePath)
+    const pathContainsTest =
+        normalizedFilePath.includes('tests/') ||
+        normalizedFilePath.includes('test/') ||
+        normalizedFilePath.includes('tst/')
+    const fileNameMatchTestPatterns = isTestFileByName(normalizedFilePath, languageConfig.languageId)
 
     if (pathContainsTest || fileNameMatchTestPatterns) {
         return true

@@ -4,7 +4,7 @@
  */
 
 import { IAM } from 'aws-sdk'
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import { DefaultIamClient, IamClient } from '../../../shared/clients/iamClient'
 

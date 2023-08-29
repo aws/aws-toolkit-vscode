@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { DocumentItemNodeWriteable } from '../../../ssmDocument/explorer/documentItemNodeWriteable'
 import { SsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { deleteDocument } from '../../../ssmDocument/commands/deleteDocument'
