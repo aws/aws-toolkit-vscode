@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 
 // The Scheme name of the Memory Files.
-const _SCHEME = 'inmemoryfile'
+export const weaverbirdScheme = 'inmemoryfile'
 
 export function registerMemoryFileProvider({ subscriptions }: vscode.ExtensionContext) {
     const myProvider = new (class implements vscode.TextDocumentContentProvider {
@@ -18,10 +18,10 @@ export function registerMemoryFileProvider({ subscriptions }: vscode.ExtensionCo
         }
     })()
     // Register the provider using the Scheme name defined above
-    subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(_SCHEME, myProvider))
+    subscriptions.push(vscode.workspace.registerTextDocumentContentProvider(weaverbirdScheme, myProvider))
 }
 
-class MemoryFileManagement {
+export class MemoryFileManagement {
     private static _documents: { [key: string]: MemoryFile } = {}
 
     public static getDocument(uri: vscode.Uri): MemoryFile | null {
@@ -51,7 +51,7 @@ export class MemoryFile {
 
     // Read files using the memoryfileProvider
     constructor(path: string) {
-        this.uri = vscode.Uri.from({ scheme: _SCHEME, path: path })
+        this.uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: path })
     }
 
     public write(strContent: string) {
