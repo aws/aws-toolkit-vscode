@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
 import assert from 'assert'
+import * as fs from 'fs'
 import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as vscode from 'vscode'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
 import { MockOutputChannel } from '../../mockOutputChannel'
-import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 /**
  * Disposes the logger then waits for the write streams to flush. The `expected` and `unexpected` arrays just look
@@ -23,32 +23,33 @@ async function checkFile(
     expected: string[],
     unexpected: string[] = []
 ): Promise<void> {
-    const check = new Promise<void>((resolve, reject) => {
-        const watcher = fs.watch(path.dirname(logPath), {}, (_, name) => {
-            if (name === path.basename(logPath)) {
-                checkText()
-            }
-        })
+    const check = new Promise<void>(async (resolve, reject) => {
+        // Timeout if we wait too long for file to exist
+        setTimeout(() => reject(new Error('Timed out waiting for log message')), 10_000)
 
-        function checkText() {
-            const contents = fs.readFileSync(logPath)
-            const errorMsg = unexpected
-                .filter(t => contents.includes(t))
-                .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
+        // Wait for file to exist
+        while (!fs.existsSync(logPath)) {
+            await sleep(200)
+        }
+        const contents = fs.readFileSync(logPath)
 
-            if (errorMsg) {
-                watcher.close()
-                return reject(new Error(errorMsg))
-            }
-
-            expected = expected.filter(t => !contents.includes(t))
-            if (expected.length === 0) {
-                watcher.close()
-                resolve()
-            }
+        // Error if unexpected messages are in the log file
+        const explicitUnexpectedMessages = unexpected
+            .filter(t => contents.includes(t))
+            .reduce((a, b) => a + `Unexpected message in log: ${b}\n`, '')
+        if (explicitUnexpectedMessages) {
+            return reject(new Error(explicitUnexpectedMessages))
         }
 
-        setTimeout(() => reject(new Error('Timed out waiting for log message')), 10000)
+        // Error if any of the expected messages are not in the log file
+        const expectedMessagesNotInLogFile = expected.filter(t => !contents.includes(t))
+        if (expectedMessagesNotInLogFile.length > 0) {
+            reject(
+                new Error(expectedMessagesNotInLogFile.reduce((a, b) => a + `Unexpected message in log: ${b}\n`, ''))
+            )
+        }
+
+        resolve()
     })
 
     return logger.dispose().then(() => check)
