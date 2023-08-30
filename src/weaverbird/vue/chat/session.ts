@@ -12,6 +12,8 @@ import { FileMetadata } from '../../client/weaverbirdclient'
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 import { getConfig } from '../../config'
 import { MemoryFile } from '../../memoryFile'
+import { defaultLlmConfig } from './constants'
+import { LLMConfig } from './types'
 
 export interface UserInteraction {
     origin: 'user' | 'ai'
@@ -36,6 +38,7 @@ export class Session {
     private state: 'refinement' | 'refinement-iteration' | 'codegen' | 'mockcodegen' | 'codegen-iteration'
     private task: string = ''
     private approach: string = ''
+    private llmConfig = defaultLlmConfig
 
     // TODO remake private
     public onProgressFinishedEventEmitter: vscode.EventEmitter<void>
@@ -90,6 +93,10 @@ export class Session {
                 content: `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`,
             }
         }
+    }
+
+    public setLLMConfig(config: LLMConfig) {
+        this.llmConfig = config
     }
 
     async collectFiles(rootPath: string, prefix: string, storage: FileMetadata[]) {
@@ -157,6 +164,7 @@ export class Session {
             const payload = {
                 task: this.task,
                 originalFileContents: files,
+                config: this.llmConfig,
             }
 
             /*
@@ -179,6 +187,7 @@ export class Session {
                 request: msg,
                 approach: this.approach,
                 originalFileContents: files,
+                config: this.llmConfig,
             }
 
             /*
@@ -201,6 +210,7 @@ export class Session {
                     originalFileContents: '',
                     approach: this.approach,
                     task: this.task,
+                    config: this.llmConfig,
                 }
                 const codegenResult = await this.invokeApiGWLambda(config.lambdaArns.codegen.generate, payload)
                 result.newFileContents.push(...codegenResult.newFileContents)
@@ -249,6 +259,7 @@ export class Session {
                 approach: this.approach,
                 task: this.task,
                 comment: msg,
+                config: this.llmConfig,
             }
             /*
                 const result = (await client.iterateCode(payload).promise())

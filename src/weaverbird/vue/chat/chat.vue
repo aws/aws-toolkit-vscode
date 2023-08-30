@@ -1,4 +1,52 @@
 <template>
+    <details>
+        <summary>Config</summary>
+
+        <div class="config-holder">
+            <label> Temperature </label>
+            <input
+                ref="temperature-input"
+                type="number"
+                v-model="llmConfig.temperature"
+                min="0"
+                max="1"
+                v-bind:step="0.1"
+                @input="onConfigChanged"
+            />
+        </div>
+        <div class="config-holder">
+            <label> Model </label>
+            <select name="model" id="model" v-model="llmConfig.model" @change="onConfigChanged()">
+                <option value="claude-2">Claude V2</option>
+            </select>
+        </div>
+        <div class="config-holder">
+            <label> Max tokens </label>
+            <input
+                ref="max-tokens-input"
+                type="number"
+                v-model="llmConfig.maxTokensToSample"
+                min="1000"
+                max="50000"
+                v-bind:step="1000"
+                @input="onConfigChanged"
+            />
+        </div>
+
+        <div class="config-holder">
+            <label> Debate rounds </label>
+            <input
+                ref="debate-rounds-input"
+                type="number"
+                v-model="llmConfig.debateRounds"
+                min="1"
+                max="5"
+                v-bind:step="1"
+                @input="onConfigChanged"
+            />
+        </div>
+    </details>
+
     <div>
         <div v-for="interaction in history">
             <div
@@ -30,11 +78,13 @@ import { WebviewClientFactory } from '../../../webviews/client'
 import { WeaverbirdChatWebview } from './backend'
 import type { Interaction } from './session'
 import type { MemoryFile } from '../../memoryFile'
+import { defaultLlmConfig } from './constants'
 
 const client = WebviewClientFactory.create<WeaverbirdChatWebview>()
 
 const model = {
     history: [] as Interaction[],
+    llmConfig: defaultLlmConfig,
     message: '',
     isInputDisabled: false,
     client,
@@ -91,6 +141,9 @@ export default defineComponent({
 
         acceptChanges(files: MemoryFile[]) {
             client.acceptChanges(files)
+        },
+        onConfigChanged() {
+            client.setLLMConfig(this.llmConfig)
         },
     },
 })
@@ -166,5 +219,27 @@ input {
 
 button {
     flex: 0 0 auto;
+}
+
+.config-holder {
+    display: inline-block;
+    width: 100%;
+    margin: 2px;
+    align-items: center;
+}
+.config-holder label {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.config-holder input {
+    max-width: 40%;
+    float: right;
+    vertical-align: middle;
+}
+.config-holder select {
+    max-width: 40%;
+    float: right;
+    vertical-align: middle;
 }
 </style>
