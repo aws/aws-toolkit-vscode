@@ -11,6 +11,20 @@ import { FileMetadata } from '../../client/weaverbirdclient'
 
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda'
 import { getConfig } from '../../config'
+import { MemoryFile } from '../../memoryFile'
+
+export interface UserInteraction {
+    origin: 'user' | 'ai'
+    type: 'message'
+    content: string
+}
+export interface CodeGenInteraction {
+    origin: 'ai'
+    type: 'codegen'
+    content: MemoryFile[]
+    status?: 'accepted' | 'rejected'
+}
+export type Interaction = UserInteraction | CodeGenInteraction
 
 export class Session {
     // TODO remake private
@@ -18,7 +32,8 @@ export class Session {
     public onProgressEvent: vscode.Event<string>
 
     public workspaceRoot: string
-    private state: 'refinement' | 'refinement-iteration' | 'codegen' | 'codegen-iteration'
+    // `mockcodegen` is introduced temporarily to bypass the LLM for testing the FE alone
+    private state: 'refinement' | 'refinement-iteration' | 'codegen' | 'mockcodegen' | 'codegen-iteration'
     private task: string = ''
     private approach: string = ''
 
@@ -63,13 +78,17 @@ export class Session {
         return JSON.parse(rawResult)
     }
 
-    async send(msg: string): Promise<string> {
+    async send(msg: string): Promise<Interaction | Interaction[]> {
         try {
             getLogger().info(`Received message from chat view: ${msg}`)
             return await this.sendUnsafe(msg)
         } catch (e: any) {
             getLogger().error(e)
-            return `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`
+            return {
+                origin: 'ai',
+                type: 'message',
+                content: `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`,
+            }
         }
     }
 
@@ -91,7 +110,21 @@ export class Session {
         })
     }
 
-    async sendUnsafe(msg: string): Promise<string> {
+    // used for reading the mocked files from workspace
+    readFilesRecursive(rootPath: string, results: string[] = []) {
+        const fileList = fs.readdirSync(rootPath)
+        for (const file of fileList) {
+            const name = `${rootPath}/${file}`
+            if (fs.statSync(name).isDirectory()) {
+                this.readFilesRecursive(name, results)
+            } else {
+                results.push(name)
+            }
+        }
+        return results
+    }
+
+    async sendUnsafe(msg: string): Promise<Interaction | Interaction[]> {
         //const client = await createWeaverbirdSdkClient();
         const config = await getConfig()
 
@@ -101,12 +134,22 @@ export class Session {
         if (msg.indexOf('WRITE CODE') !== -1) {
             this.state = 'codegen'
         }
+        // The `MOCK CODE` command is added temporarily to bypass the LLM
+        if (msg.indexOf('MOCK CODE') !== -1) {
+            this.state = 'mockcodegen'
+        }
 
         if (msg === 'CLEAR') {
             this.state = 'refinement'
             this.task = ''
             this.approach = ''
-            return 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
+            const message =
+                'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
+            return {
+                origin: 'ai',
+                type: 'message',
+                content: message,
+            }
         }
 
         if (this.state === 'refinement') {
@@ -124,7 +167,12 @@ export class Session {
             // change the state to be refinement-iteration so that the next message from user will invoke iterateApproach lambda
             this.state = 'refinement-iteration'
             this.approach = result.approach!
-            return `${result.approach}\n`
+            const message = `${result.approach}\n`
+            return {
+                origin: 'ai',
+                type: 'message',
+                content: message,
+            }
         } else if (this.state === 'refinement-iteration') {
             const payload = {
                 task: this.task,
@@ -138,26 +186,63 @@ export class Session {
             */
             const result = await this.invokeApiGWLambda(config.lambdaArns.approach.iterate, payload)
             this.approach = result.approach!
-            return `${result.approach}\n`
-        } else if (this.state === 'codegen') {
-            const payload = {
-                originalFileContents: files,
-                approach: this.approach,
-                task: this.task,
+            const message = `${result.approach}\n`
+            return {
+                origin: 'ai',
+                type: 'message',
+                content: message,
             }
-            /*
-                const result = (await client.generateCode(payload).promise())
-            */
+        } else if (this.state === 'codegen' || this.state === 'mockcodegen') {
+            const result: { newFileContents: { filePath: string; fileContent: string }[] } = {
+                newFileContents: [],
+            }
+            if (this.state === 'codegen') {
+                const payload = {
+                    originalFileContents: '',
+                    approach: this.approach,
+                    task: this.task,
+                }
+                const codegenResult = await this.invokeApiGWLambda(config.lambdaArns.codegen.generate, payload)
+                result.newFileContents.push(...codegenResult.newFileContents)
+            } else {
+                // in a `mockcodegen` state, we should read from the `mock-data` folder and output
+                // every file retrieved in the same shape the LLM would
+                const mockedFilesDir = path.join(this.workspaceRoot, './mock-data')
+                if (fs.existsSync(mockedFilesDir)) {
+                    const mockedFiles = this.readFilesRecursive(mockedFilesDir)
+                    for (const mockedFilePath of mockedFiles) {
+                        const mockedFileContent = fs.readFileSync(mockedFilePath)
+                        const correctedFilePath = vscode.workspace
+                            .asRelativePath(mockedFilePath)
+                            .replace('mock-data', '.')
+                        result.newFileContents.push({
+                            filePath: correctedFilePath,
+                            fileContent: mockedFileContent.toString(),
+                        })
+                    }
+                }
+            }
 
-            const result = await this.invokeApiGWLambda(config.lambdaArns.codegen.generate, payload)
-
+            const files = []
             for (const { filePath, fileContent } of result.newFileContents!) {
-                const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
-                fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
-                fs.writeFileSync(pathUsed, fileContent as string)
+                // create the in-memory document
+                const memfile = MemoryFile.createDocument(filePath)
+                memfile.write(fileContent)
+                files.push(memfile)
             }
             this.state = 'codegen-iteration'
-            return 'Changes to files done'
+            return [
+                {
+                    origin: 'ai',
+                    type: 'message',
+                    content: 'Changes to files done. Please review:',
+                },
+                {
+                    origin: 'ai',
+                    type: 'codegen',
+                    content: files,
+                },
+            ]
         } else {
             const payload = {
                 originalFileContents: files,
@@ -176,7 +261,7 @@ export class Session {
                 fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
                 fs.writeFileSync(pathUsed, fileContent as string)
             }
-            return 'Changes to files done'
+            return { origin: 'ai', type: 'message', content: 'Changes to files done' }
         }
     }
 }

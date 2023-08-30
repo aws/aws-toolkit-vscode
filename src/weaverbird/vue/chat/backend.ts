@@ -6,7 +6,10 @@
 import * as vscode from 'vscode'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { Session } from './session'
+import { Interaction, Session } from './session'
+import { MemoryFile } from '../../memoryFile'
+import * as path from 'path'
+import * as fs from 'fs'
 
 // const localize = nls.loadMessageBundle()
 
@@ -14,6 +17,7 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly id = 'configureChat'
     public readonly source = 'src/weaverbird/vue/chat/index.js'
     public readonly session: Session
+    public readonly workspaceRoot: string
 
     public constructor() {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
@@ -26,6 +30,7 @@ export class WeaverbirdChatWebview extends VueWebview {
         }
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath
+        this.workspaceRoot = workspaceRoot
         this.session = new Session(workspaceRoot)
     }
 
@@ -35,10 +40,31 @@ export class WeaverbirdChatWebview extends VueWebview {
     }
 
     // Instrument the client sending here
-    public async send(msg: string): Promise<string | undefined> {
+    public async send(msg: string): Promise<Interaction | Interaction[] | undefined> {
         console.log(msg)
         const result = await this.session.send(msg)
         return result
+    }
+
+    public displayDiff(file: MemoryFile) {
+        const emptyFile = new MemoryFile('empty')
+        const fileName = path.basename(file.uri.path)
+        const originalFileUri = vscode.Uri.file(path.join(this.workspaceRoot, file.uri.path))
+        const originalFileExists = fs.existsSync(originalFileUri.fsPath)
+        const leftFileUri = originalFileExists ? originalFileUri : emptyFile.uri
+        const newFileUri = vscode.Uri.from(file.uri)
+        const title = originalFileExists ? `${fileName} ↔ ${fileName}` : `${fileName} (created)`
+
+        vscode.commands.executeCommand('vscode.diff', leftFileUri, newFileUri, title)
+    }
+
+    public acceptChanges(files: MemoryFile[]) {
+        for (const file of files) {
+            const filePath = file.uri.path
+            const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
+            fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
+            fs.writeFileSync(pathUsed, file.content)
+        }
     }
 }
 
