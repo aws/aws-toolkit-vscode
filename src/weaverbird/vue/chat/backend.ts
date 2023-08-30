@@ -10,6 +10,7 @@ import { Interaction, Session } from './session'
 import { MemoryFile } from '../../memoryFile'
 import * as path from 'path'
 import * as fs from 'fs'
+import { LLMConfig } from './types'
 
 // const localize = nls.loadMessageBundle()
 
@@ -65,6 +66,9 @@ export class WeaverbirdChatWebview extends VueWebview {
             fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
             fs.writeFileSync(pathUsed, file.content)
         }
+    }
+    public setLLMConfig(config: LLMConfig) {
+        this.session.setLLMConfig(config)
     }
 }
 
