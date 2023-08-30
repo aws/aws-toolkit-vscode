@@ -16,7 +16,7 @@ import {
 } from '../registry/logDataRegistry'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { isValidResponse, isWizardControl, Wizard, WIZARD_RETRY } from '../../shared/wizards/wizard'
-import { createURIFromArgs, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
+import { createURIFromArgs, msgKey, parseCloudWatchLogsUri, recordTelemetryFilter } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
@@ -28,6 +28,7 @@ import { truncate } from '../../shared/utilities/textUtilities'
 import { createBackButton, createExitButton, createHelpButton } from '../../shared/ui/buttons'
 import { PromptResult } from '../../shared/ui/prompter'
 import { ToolkitError } from '../../shared/errors'
+import { Messages } from '../../shared/utilities/messages'
 
 const localize = nls.loadMessageBundle()
 
@@ -192,9 +193,13 @@ export class SearchPatternPrompter extends InputBoxPrompter {
                     limit: 1,
                 },
                 undefined,
-                true
+                false
             )
         } catch (e) {
+            // Validation error. Get the progress message from the global map and cancel it.
+            const msgTimeout = await Messages.putMessage(msgKey(this.logGroup), '')
+            msgTimeout.cancel()
+
             return (e as Error).message
         }
         return undefined
