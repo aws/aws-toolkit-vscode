@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 
 // The Scheme name of the Memory Files.
-export const weaverbirdScheme = 'inmemoryfile'
+export const weaverbirdScheme = 'aws-weaverbird'
 
 export function registerMemoryFileProvider({ subscriptions }: vscode.ExtensionContext) {
     const myProvider = new (class implements vscode.TextDocumentContentProvider {
