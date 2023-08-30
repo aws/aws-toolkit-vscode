@@ -7,7 +7,6 @@ import moment from 'moment'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { setLogger } from './logger'
 import { logOutputChannel } from './outputChannel'
@@ -18,6 +17,7 @@ import { Settings } from '../settings'
 import { Logging } from './commands'
 import { SystemUtilities } from '../systemUtilities'
 import { resolvePath } from '../utilities/pathUtils'
+import { isInBrowser } from '../../common/browserUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -161,6 +161,11 @@ function makeLogFilename(): string {
  * Watches for renames on the log file and notifies the user.
  */
 async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
+    if (isInBrowser()) {
+        getLogger().debug(`Not watching log file since we are in Browser.`)
+        return { dispose: () => {} }
+    }
+
     const exists = await waitUntil(() => SystemUtilities.fileExists(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
@@ -172,6 +177,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
     // TODO: fs.watch() has many problems, consider instead:
     //   - https://github.com/paulmillr/chokidar
     //   - https://www.npmjs.com/package/fb-watchman
+    const fs = await import('fs')
     const watcher = fs.watch(logFile.fsPath, async eventType => {
         if (checking || eventType !== 'rename') {
             return
