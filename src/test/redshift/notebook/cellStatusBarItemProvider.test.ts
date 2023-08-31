@@ -12,7 +12,6 @@ describe('CellStatusBarItemProvider', function () {
     let cell: any
     let token: any
     let cellStatusBarItemProvider: any
-    let getIconStub: any
 
     beforeEach(() => {
         cell = {
@@ -24,12 +23,6 @@ describe('CellStatusBarItemProvider', function () {
         }
         token = new vscode.CancellationTokenSource().token
         cellStatusBarItemProvider = new CellStatusBarItemProvider()
-        getIconStub = sinon.stub(vscode, 'window').get(() => ({
-            createStatusBarItem: () => ({
-                show: sinon.stub,
-                hide: sinon.stub,
-            }),
-        }))
     })
 
     this.afterEach(() => {
