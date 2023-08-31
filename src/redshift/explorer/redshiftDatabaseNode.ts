@@ -14,6 +14,7 @@ import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
@@ -65,6 +66,8 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
             this.logger.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
             vscode.window.showErrorMessage(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
             return Promise.reject(error)
+        } finally {
+            telemetry.redshift_listingAPI.emit()
         }
     }
 

@@ -20,6 +20,7 @@ import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { getLogger } from '../../shared/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class StartButtonNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -97,6 +98,8 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         } catch (error) {
             this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
             return Promise.reject(error)
+        } finally {
+            telemetry.redshift_listingAPI.emit()
         }
     }
 

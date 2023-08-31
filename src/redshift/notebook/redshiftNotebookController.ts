@@ -8,6 +8,7 @@ import * as vscode from 'vscode'
 import { DefaultRedshiftClient, ExecuteQueryResponse } from '../../shared/clients/redshiftClient'
 import { ConnectionParams } from '../models/models'
 import { RedshiftData } from 'aws-sdk'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class RedshiftNotebookController {
     readonly id = 'aws-redshift-sql-notebook'
@@ -88,6 +89,7 @@ export class RedshiftNotebookController {
             executionId = result.executionId
             columnMetadata = result.statementResultResponse.ColumnMetadata
             records.push(...result.statementResultResponse.Records)
+            telemetry.redshift_executeQuery.emit()
         } while (nextToken)
 
         if (columnMetadata) {
