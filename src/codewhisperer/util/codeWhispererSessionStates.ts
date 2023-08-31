@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
 export class CodeWhispererSessionStates {
     static #instance: CodeWhispererSessionStates
 
