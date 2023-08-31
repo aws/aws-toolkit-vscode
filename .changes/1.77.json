@@ -1,0 +1,11 @@
+{
+  "date" : "2023-08-29",
+  "version" : "1.77",
+  "entries" : [ {
+    "type" : "removal",
+    "description" : "Removed support for 2022.2.x IDEs"
+  }, {
+    "type" : "removal",
+    "description" : "Removed support for Gateway 2023.1"
+  } ]
+}
