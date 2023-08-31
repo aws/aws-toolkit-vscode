@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { getLogger } from '.'
+import { FileSystemCommon } from '../../srcShared/fs'
+
+const fs = FileSystemCommon.instance
 
 const defaultCleanupParams = {
     maxLogs: 100,
@@ -18,20 +20,20 @@ const defaultCleanupParams = {
  * Deletes the older logs when there are too many or are using too much space.
  */
 export async function cleanLogFiles(logDir: string, params = defaultCleanupParams): Promise<void> {
-    let files = await fs.readdir(logDir)
+    let files = await readdir(logDir)
 
     if (files.length > params.maxLogs) {
         await deleteOldLogFiles(logDir, files, params.maxKeptLogs)
-        files = await fs.readdir(logDir)
+        files = await readdir(logDir)
     }
 
     let dirSize = 0
-    const oversizedFiles = []
+    const oversizedFiles: string[] = []
     for (const log of files) {
         const logFullPath = path.join(logDir, log)
         let logSize: number = 0
         try {
-            logSize = (await fs.stat(logFullPath)).size
+            logSize = (await fs.stat(logFullPath))!.size
         } catch (e) {
             getLogger().error('cleanLogFiles: fs.stat() failed on file "%s": %s', logFullPath, (e as Error).message)
         }
@@ -43,11 +45,19 @@ export async function cleanLogFiles(logDir: string, params = defaultCleanupParam
     // remove any single files over 100MB
     if (oversizedFiles.length) {
         await deleteOldLogFiles(logDir, oversizedFiles, 0)
-        files = await fs.readdir(logDir)
+        files = await readdir(logDir)
     }
     if (dirSize > params.maxFileSize) {
         await deleteOldLogFiles(logDir, files, params.minKeptLogs)
     }
+}
+
+/**
+ * Convenience function to get only the file name
+ * from the readdir() call. 
+ */
+async function readdir(dir: string): Promise<string[]> {
+    return (await fs.readdir(dir)).map(f => f[0])
 }
 
 /**
@@ -63,7 +73,7 @@ async function deleteOldLogFiles(logDir: string, files: string[], keepLatest: nu
         )
         for (const file of files) {
             try {
-                await fs.unlink(path.join(logDir, file))
+                await fs.delete(path.join(logDir, file))
             } catch (error) {
                 getLogger().error('cleanLogFiles: Failed to delete file: %s', file, (error as Error).message)
             }
