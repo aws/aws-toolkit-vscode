@@ -571,35 +571,6 @@ export class TelemetryHelper {
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
     }
-
-    public sendUserModificationEvent(suggestion: AcceptedSuggestionEntry, percentage: number) {
-        client
-            .sendTelemetryEvent({
-                telemetryEvent: {
-                    userModificationEvent: {
-                        sessionId: suggestion.sessionId ? suggestion.sessionId : 'undefined',
-                        requestId: suggestion.requestId ? suggestion.requestId : 'undefined',
-                        programmingLanguage: { languageName: suggestion.language },
-                        modificationPercentage: percentage,
-                        timestamp: new Date(Date.now()),
-                    },
-                },
-            })
-            .then()
-            .catch(error => {
-                let requestId: string | undefined
-                if (isAwsError(error)) {
-                    requestId = error.requestId
-                }
-
-                getLogger().debug(
-                    `Failed to sendUserModificationEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
-                        error.message
-                    }`
-                )
-            })
-    }
-
     public sendCodeScanEvent(languageId: string, jobId: string) {
         getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
         client
