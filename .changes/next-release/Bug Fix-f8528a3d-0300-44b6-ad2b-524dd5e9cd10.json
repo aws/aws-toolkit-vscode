@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CloudWatch Logs: \"View Full Log Stream\" is limited to 1000 events instead of the `aws.cwl.limit` user setting"
+}
