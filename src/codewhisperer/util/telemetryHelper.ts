@@ -27,7 +27,6 @@ import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { AuthUtil } from './authUtil'
 import { CodeWhispererSessionStates } from './codeWhispererSessionStates'
-import { AcceptedSuggestionEntry } from '../models/model'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 
