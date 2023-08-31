@@ -70,6 +70,7 @@ export class DefaultRedshiftClient {
             DbUser: warehouseType === RedshiftWarehouseType.PROVISIONED ? connectionParams.username : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
+            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
         }
         return redshiftDataClient.listDatabases(input).promise()
     }
@@ -83,6 +84,7 @@ export class DefaultRedshiftClient {
             DbUser: connectionParams.username,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
+            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
         }
         return redshiftDataClient.listSchemas(input).promise()
     }
@@ -102,6 +104,7 @@ export class DefaultRedshiftClient {
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             SchemaPattern: schemaName,
             NextToken: nextToken,
+            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
         }
         const ListTablesResponse = redshiftDataClient.listTables(input).promise()
         return ListTablesResponse
@@ -122,6 +125,7 @@ export class DefaultRedshiftClient {
                     Database: connectionParams.database,
                     Sql: queryToExecute,
                     DbUser: connectionParams.username,
+                    SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
                 })
                 .promise()
 
