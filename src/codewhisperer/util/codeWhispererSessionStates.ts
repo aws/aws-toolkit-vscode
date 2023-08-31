@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export class CodeWhispererStates {
-    static #instance: CodeWhispererStates
+export class CodeWhispererSessionStates {
+    static #instance: CodeWhispererSessionStates
 
     // Some other variables for client component latency
     fetchCredentialStartTime = 0
@@ -12,7 +12,7 @@ export class CodeWhispererStates {
     invokeSuggestionStartTime = 0
 
     public static get instance() {
-        return (this.#instance ??= new CodeWhispererStates())
+        return (this.#instance ??= new CodeWhispererSessionStates())
     }
 
     setFetchCredentialStart() {
