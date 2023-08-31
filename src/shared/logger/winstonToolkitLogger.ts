@@ -5,7 +5,7 @@
 
 import { normalize } from 'path'
 import * as vscode from 'vscode'
-import * as winston from 'winston'
+import winston from 'winston'
 import { ConsoleLogTransport } from './consoleLogTransport'
 import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
