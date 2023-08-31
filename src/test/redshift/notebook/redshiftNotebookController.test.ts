@@ -15,15 +15,16 @@ import { RedshiftNotebookController } from '../../../redshift/notebook/redshiftN
 import sinon = require('sinon')
 import assert = require('assert')
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
+import { RedshiftData } from 'aws-sdk'
 
 describe('RedshiftNotebookController', () => {
-    let redshiftClientStub: DefaultRedshiftClient
+    const mockRedshiftData = <RedshiftData>{}
+    const redshiftClient = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
     let notebookController: any
     let createNotebookControllerStub: any
+    let executeQueryStub: sinon.SinonStub
     beforeEach(() => {
-        redshiftClientStub = {
-            executeQuery: sinon.stub(),
-        }
+        redshiftClient.executeQuery = executeQueryStub
         createNotebookControllerStub = sinon.stub(vscode.notebooks, 'createNotebookController')
         const controllerInstanceValue = {
             supportedLanguages: ['sql'],
@@ -32,7 +33,7 @@ describe('RedshiftNotebookController', () => {
             dispose: sinon.stub,
         }
         createNotebookControllerStub.returns(controllerInstanceValue)
-        notebookController = new RedshiftNotebookController(redshiftClientStub)
+        notebookController = new RedshiftNotebookController(redshiftClient)
     })
     afterEach(() => {
         sinon.restore()

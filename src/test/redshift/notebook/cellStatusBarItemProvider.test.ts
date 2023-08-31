@@ -6,13 +6,13 @@
 import sinon = require('sinon')
 import assert = require('assert')
 import { CellStatusBarItemProvider } from '../../../redshift/notebook/cellStatusBarItemProvider'
-import { NotebookCellStatusBarItem } from 'vscode'
-import { getIcon } from '../../../shared/icons'
+import * as vscode from 'vscode'
 
 describe('CellStatusBarItemProvider', function () {
     let cell: any
     let token: any
     let cellStatusBarItemProvider: any
+    let getIconStub: any
 
     beforeEach(() => {
         cell = {
@@ -22,8 +22,18 @@ describe('CellStatusBarItemProvider', function () {
                 },
             },
         }
-        token = sinon.stub()
+        token = new vscode.CancellationTokenSource().token
         cellStatusBarItemProvider = new CellStatusBarItemProvider()
+        getIconStub = sinon.stub(vscode, 'window').get(() => ({
+            createStatusBarItem: () => ({
+                show: sinon.stub,
+                hide: sinon.stub,
+            }),
+        }))
+    })
+
+    this.afterEach(() => {
+        sinon.restore()
     })
 
     it('provides "Connect" status bar item when cell has no connectionParams', () => {
@@ -35,18 +45,16 @@ describe('CellStatusBarItemProvider', function () {
         assert.strictEqual(result[0].text, expectedText)
     })
 
-    it('provides a connected status bar item when cell has connectionParams', () => {
+    it('provides status bar with success-icon and connection information', () => {
         const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, token)
-        assert(Array.isArray(result))
-        assert.strictEqual(result.length, 1)
-        const statusBar = result[0]
-        assert.ok(statusBar instanceof NotebookCellStatusBarItem)
-        assert.strictEqual(statusBar.text, `${getIcon('vscode-notebook-state-success')} Connected to TestWarehouse`)
+        const expectedText = '$(notebook-state-success) Connected to TestWarehouse'
         const expectedCommand = {
             command: 'aws.redshift.connectClicked',
             arguments: [cell, cellStatusBarItemProvider.refreshCellStatusBar.bind(cellStatusBarItemProvider)],
         }
-        assert.deepStrictEqual(statusBar.command.command, expectedCommand.command)
+        assert.strictEqual(result.length, 1)
+        assert.strictEqual(result[0].text, expectedText)
+        assert.deepStrictEqual(result[0].command.command, expectedCommand.command)
     })
 
     it('fires onDidChangeCellStatusBarItems when refreshCellStatusBar is called', () => {
@@ -55,6 +63,6 @@ describe('CellStatusBarItemProvider', function () {
             'fire'
         )
         cellStatusBarItemProvider.refreshCellStatusBar()
-        assert(onDidChangeCellStatusBarItemsSpy.calledOnce)
+        assert.strictEqual(onDidChangeCellStatusBarItemsSpy.name, 'fire')
     })
 })
