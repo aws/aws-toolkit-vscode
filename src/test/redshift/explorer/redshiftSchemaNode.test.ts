@@ -23,7 +23,7 @@ describe('RedshiftSchemaNode', function () {
         undefined
     )
     const connectionParams = new ConnectionParams(
-        ConnectionType.TemporaryUser,
+        ConnectionType.DatabaseUser,
         'testDb1',
         'warehouseId',
         RedshiftWarehouseType.PROVISIONED

@@ -42,7 +42,7 @@ describe('redshiftWarehouseNode', function () {
         const expectedResponse = { Databases: ['testDb1'] } as ListDatabasesResponse
         const expectedResponseWithNextToken = { Databases: ['testDb1'], NextToken: 'next' } as ListDatabasesResponse
         const connectionParams = new ConnectionParams(
-            ConnectionType.TemporaryUser,
+            ConnectionType.DatabaseUser,
             'testDb1',
             'warehouseId',
             RedshiftWarehouseType.PROVISIONED

@@ -45,26 +45,10 @@ describe('redshiftNodeConnectionWizard', async function () {
         testWizard.username.assertShowFirst()
     })
 
-    it('shows only database as input for provisionedNode and temp user connection type', function () {
-        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
-        testWizard.connectionType.assertShowFirst()
-        testWizard.connectionType.applyInput(ConnectionType.TemporaryUser)
-        testWizard.database.assertShowFirst()
-        testWizard.username.assertDoesNotShow()
-    })
-
     it('shows only database as input for serverlessNode and database username connection type', function () {
         const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
         testWizard.connectionType.assertShowFirst()
         testWizard.connectionType.applyInput(ConnectionType.DatabaseUser)
-        testWizard.database.assertShowFirst()
-        testWizard.username.assertDoesNotShow()
-    })
-
-    it('shows only database as input for serverlessNode and temp user connection type', function () {
-        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
-        testWizard.connectionType.assertShowFirst()
-        testWizard.connectionType.applyInput(ConnectionType.TemporaryUser)
         testWizard.database.assertShowFirst()
         testWizard.username.assertDoesNotShow()
     })
@@ -85,20 +69,6 @@ describe('NotebookConnectionWizard', async () => {
         testWizard.database.applyInput('testDB')
         testWizard.username.assertShowFirst()
         testWizard.username.applyInput('testUser')
-        testWizard.warehouseType.assertDoesNotShow()
-    })
-
-    it('shows all steps for temp user connection type', function () {
-        const testWizard = createWizardTester(new NotebookConnectionWizard(mockRegionProvider))
-        testWizard.region.assertShowFirst()
-        testWizard.region.applyInput({ id: 'US East - 1', name: 'us-east-1' })
-        testWizard.warehouseIdentifier.assertShowFirst()
-        testWizard.warehouseIdentifier.applyInput('testCluster')
-        testWizard.connectionType.assertShowFirst()
-        testWizard.connectionType.applyInput(ConnectionType.TemporaryUser)
-        testWizard.database.assertShowFirst()
-        testWizard.database.applyInput('testDB')
-        testWizard.username.assertDoesNotShow()
         testWizard.warehouseType.assertDoesNotShow()
     })
 })
