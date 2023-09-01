@@ -12,7 +12,7 @@ import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
 import { telemetry, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
 import { FileSystemCommon } from '../../srcShared/fs'
 
-/** Saves the current "aws-cwl:" document. */
+/** Prompts the user to select a file location to save the currently visible "aws-cwl:" document to. */
 export async function saveCurrentLogDataContent(): Promise<void> {
     let result: Result = 'Succeeded'
     let resourceType: CloudWatchResourceType = 'logStream' // Default to stream if it fails to find URI
