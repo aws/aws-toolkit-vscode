@@ -7,7 +7,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.Messages
 import com.intellij.ui.components.JBLabel
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.panel
 import software.aws.toolkits.resources.message
 import javax.swing.Action
 import javax.swing.JComponent
@@ -18,8 +18,8 @@ class TaskRoleNotFoundWarningDialog(project: Project) : DialogWrapper(project) {
     private val component by lazy {
         panel {
             row {
-                warningIcon(grow)
-                warningMessage(grow).also { it.component.setCopyable(true) }
+                cell(warningIcon)
+                cell(warningMessage).also { it.component.setCopyable(true) }
             }
         }
     }
