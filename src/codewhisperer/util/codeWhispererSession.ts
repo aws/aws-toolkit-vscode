@@ -6,7 +6,7 @@
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export class CodeWhispererSession {
-    static #instance: CodeWhispererSessionStates
+    static #instance: CodeWhispererSession
 
     // Some other variables for client component latency
     fetchCredentialStartTime = 0
@@ -14,7 +14,7 @@ export class CodeWhispererSession {
     invokeSuggestionStartTime = 0
 
     public static get instance() {
-        return (this.#instance ??= new CodeWhispererSessionStates())
+        return (this.#instance ??= new CodeWhispererSession())
     }
 
     setFetchCredentialStart() {

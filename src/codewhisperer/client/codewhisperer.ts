@@ -16,7 +16,7 @@ import { PromiseResult } from 'aws-sdk/lib/request'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { isSsoConnection } from '../../auth/connection'
-import { CodeWhispererSessionStates } from '../util/codeWhispererSessionStates'
+import { CodeWhispererSession } from '../util/codeWhispererSession'
 import { SendTelemetryEventRequest } from './codewhispereruserclient'
 import { getLogger } from '../../shared/logger'
 
@@ -105,9 +105,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-        CodeWhispererSessionStates.instance.setFetchCredentialStart()
+        CodeWhispererSession.instance.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
-        CodeWhispererSessionStates.instance.setSdkApiCallStart()
+        CodeWhispererSession.instance.setSdkApiCallStart()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {

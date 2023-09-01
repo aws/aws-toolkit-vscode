@@ -26,7 +26,7 @@ import { CodeWhispererSettings } from './codewhispererSettings'
 import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { AuthUtil } from './authUtil'
-import { CodeWhispererSessionStates } from './codeWhispererSessionStates'
+import { CodeWhispererSession } from './codeWhispererSession'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 
@@ -330,8 +330,7 @@ export class TelemetryHelper {
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds:
-                            this.firstSuggestionShowTime -
-                            CodeWhispererSessionStates.instance.invokeSuggestionStartTime,
+                            this.firstSuggestionShowTime - CodeWhispererSession.instance.invokeSuggestionStartTime,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: this.suggestionReferenceNumber,
                         generatedLine: this.generatedLines,
@@ -497,10 +496,10 @@ export class TelemetryHelper {
     }
 
     public resetClientComponentLatencyTime() {
-        CodeWhispererSessionStates.instance.invokeSuggestionStartTime = 0
-        CodeWhispererSessionStates.instance.sdkApiCallStartTime = 0
+        CodeWhispererSession.instance.invokeSuggestionStartTime = 0
+        CodeWhispererSession.instance.sdkApiCallStartTime = 0
         this.sdkApiCallEndTime = 0
-        CodeWhispererSessionStates.instance.fetchCredentialStartTime = 0
+        CodeWhispererSession.instance.fetchCredentialStartTime = 0
         this.firstSuggestionShowTime = 0
         this.allPaginationEndTime = 0
         this.firstResponseRequestId = ''
@@ -510,11 +509,11 @@ export class TelemetryHelper {
     /** This method is assumed to be invoked first at the start of execution **/
     public setInvokeSuggestionStartTime() {
         this.resetClientComponentLatencyTime()
-        CodeWhispererSessionStates.instance.invokeSuggestionStartTime = performance.now()
+        CodeWhispererSession.instance.invokeSuggestionStartTime = performance.now()
     }
 
     public setSdkApiCallEndTime() {
-        if (this.sdkApiCallEndTime === 0 && CodeWhispererSessionStates.instance.sdkApiCallStartTime !== 0) {
+        if (this.sdkApiCallEndTime === 0 && CodeWhispererSession.instance.sdkApiCallStartTime !== 0) {
             this.sdkApiCallEndTime = performance.now()
         }
     }
@@ -551,18 +550,18 @@ export class TelemetryHelper {
             codewhispererRequestId: this.firstResponseRequestId,
             codewhispererSessionId: this.sessionId,
             codewhispererFirstCompletionLatency:
-                this.sdkApiCallEndTime - CodeWhispererSessionStates.instance.sdkApiCallStartTime,
+                this.sdkApiCallEndTime - CodeWhispererSession.instance.sdkApiCallStartTime,
             codewhispererEndToEndLatency:
-                this.firstSuggestionShowTime - CodeWhispererSessionStates.instance.invokeSuggestionStartTime,
+                this.firstSuggestionShowTime - CodeWhispererSession.instance.invokeSuggestionStartTime,
             codewhispererAllCompletionsLatency:
-                this.allPaginationEndTime - CodeWhispererSessionStates.instance.sdkApiCallStartTime,
+                this.allPaginationEndTime - CodeWhispererSession.instance.sdkApiCallStartTime,
             codewhispererPostprocessingLatency: this.firstSuggestionShowTime - this.sdkApiCallEndTime,
             codewhispererCredentialFetchingLatency:
-                CodeWhispererSessionStates.instance.sdkApiCallStartTime -
-                CodeWhispererSessionStates.instance.fetchCredentialStartTime,
+                CodeWhispererSession.instance.sdkApiCallStartTime -
+                CodeWhispererSession.instance.fetchCredentialStartTime,
             codewhispererPreprocessingLatency:
-                CodeWhispererSessionStates.instance.fetchCredentialStartTime -
-                CodeWhispererSessionStates.instance.invokeSuggestionStartTime,
+                CodeWhispererSession.instance.fetchCredentialStartTime -
+                CodeWhispererSession.instance.invokeSuggestionStartTime,
             codewhispererCompletionType: 'Line',
             codewhispererTriggerType: this.triggerType,
             codewhispererLanguage: runtimeLanguageContext.getLanguageContext(languageId).language,
