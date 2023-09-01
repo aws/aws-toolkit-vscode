@@ -54,7 +54,7 @@ export async function cleanLogFiles(logDir: string, params = defaultCleanupParam
 
 /**
  * Convenience function to get only the file name
- * from the readdir() call. 
+ * from the readdir() call.
  */
 async function readdir(dir: string): Promise<string[]> {
     return (await fs.readdir(dir)).map(f => f[0])
