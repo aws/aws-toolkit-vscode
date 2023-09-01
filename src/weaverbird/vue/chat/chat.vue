@@ -98,6 +98,12 @@ export default defineComponent({
     async created() {
         this.$data.history = []
     },
+    mounted() {
+        client.onAddToHistory((interactions: Interaction[]) => {
+            this.history.push(...interactions)
+            return null
+        })
+    },
     emits: {},
     // lazily evaluated and cached based on their dependencies
     // only gets recomputed once it's dependencies change

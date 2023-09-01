@@ -19,6 +19,7 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly source = 'src/weaverbird/vue/chat/index.js'
     public readonly session: Session
     public readonly workspaceRoot: string
+    public readonly onAddToHistory: vscode.EventEmitter<Interaction[]>
 
     public constructor() {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
@@ -32,7 +33,8 @@ export class WeaverbirdChatWebview extends VueWebview {
 
         const workspaceRoot = workspaceFolders[0].uri.fsPath
         this.workspaceRoot = workspaceRoot
-        this.session = new Session(workspaceRoot)
+        this.onAddToHistory = new vscode.EventEmitter<Interaction[]>()
+        this.session = new Session(workspaceRoot, this.onAddToHistory)
     }
 
     public async getSession(): Promise<Session> {
