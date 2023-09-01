@@ -88,7 +88,7 @@ describe('LogDataDocumentProvider', async function () {
     })
 
     it('provides content if it exists', async function () {
-        await registry.fetchNextLogEvents(getLogsUri)
+        await registry.fetchNextLogEvents(getLogsUri, false)
 
         const result = provider.provideTextDocumentContent(getLogsUri)
         const expected = `                             \t${getLogEventsMessage}\n`
@@ -96,7 +96,7 @@ describe('LogDataDocumentProvider', async function () {
     })
 
     it('throws error on attempt to get content from non-cwl uri', async function () {
-        await registry.fetchNextLogEvents(getLogsUri)
+        await registry.fetchNextLogEvents(getLogsUri, true)
 
         const emptyUri = vscode.Uri.parse(`${CLOUDWATCH_LOGS_SCHEME}:has:Not`)
         assert.throws(() => provider.provideTextDocumentContent(emptyUri), {
@@ -159,7 +159,7 @@ describe('LogDataDocumentProvider', async function () {
 
         before(async () => {
             registry.registerInitialLog(logStreamNameUri, getLogEventsFromMultipleStreams)
-            await registry.fetchNextLogEvents(logStreamNameUri)
+            await registry.fetchNextLogEvents(logStreamNameUri, true)
             provider.provideTextDocumentContent(logStreamNameUri)
         })
 

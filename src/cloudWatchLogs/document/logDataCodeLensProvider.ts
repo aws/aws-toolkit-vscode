@@ -11,6 +11,7 @@ import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { LogDataRegistry } from '../registry/logDataRegistry'
 import { isLogStreamUri } from '../cloudWatchLogsUtils'
 
+/** Provides the "Load newer/older events..." codelenses. */
 export class LogDataCodeLensProvider implements vscode.CodeLensProvider {
     public constructor(private readonly registry: LogDataRegistry) {}
 

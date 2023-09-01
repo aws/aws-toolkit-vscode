@@ -59,69 +59,111 @@ export class LogDataRegistry {
         return this.getRegisteredLog(uri).events
     }
 
+    /** Gets adjusted start/end times for extending existing search results. */
+    private getStartEnd(logData: CloudWatchLogsData, direction: 'head' | 'tail', isSearch: boolean) {
+        const r = {
+            startTime: logData.parameters.startTime,
+            endTime: logData.parameters.endTime,
+        }
+        const evStart = logData.events[0]?.timestamp
+        const evEnd = logData.events[logData.events.length - 1]?.timestamp
+        const startStr = evStart ? new Date(evStart).toUTCString() : 'none'
+        const endStr = evEnd ? new Date(evEnd).toUTCString() : 'none'
+        getLogger().debug('cloudwatch logs: eventsStart: "%s", eventsEnd: "%s"', startStr, endStr)
+        if (isSearch) {
+            // Update start/end parameters, choose intuitive range based on previously chosen range
+            // (fall back: extend by 1 day).
+            const oneDay = 1000 * 60 * 60 * 24
+            const delta = r.endTime && r.startTime ? r.endTime - r.startTime : oneDay
+            if (direction === 'head') {
+                r.endTime = (r.startTime && (!evStart || r.startTime < evStart) ? r.startTime : evStart) ?? Date.now()
+                r.startTime = r.endTime - delta
+            } else {
+                r.startTime = (r.endTime && (!evEnd || r.endTime > evEnd) ? r.endTime : evEnd) ?? Date.now()
+                r.endTime = r.startTime + delta
+            }
+        }
+        return r
+    }
+
     /**
-     * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
-     * @param uri Document URI
-     * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
+     * Fetches the next ("tail") or previous ("head") events batch for a log stream or log group
+     * search, and adds them to the registry.
+     *
+     * Not "thread safe": multiple simultaneous requests to the same URI will have a data race.
+     *
+     * @param uri Document that presents the log stream or search results.
+     * @param isNew If true, the existing document for `uri` will be cleared before loading results. If false, results are appended/prepended to the existing document.
+     * @param direction `'head'` gets events before `logData.previous.token` (or before the oldest event, if extending existing _search_ results), `'tail'` gets events from `logData.next.token` (or after the newest event, if extending existing _search_ results).
      */
     public async fetchNextLogEvents(
         uri: vscode.Uri,
-        headOrTail: 'head' | 'tail' = 'tail'
+        isNew: boolean,
+        direction: 'head' | 'tail' = 'tail'
     ): Promise<CloudWatchLogsEvent[]> {
-        const isHead = headOrTail === 'head'
+        const isHead = direction === 'head'
+
         if (!this.isRegistered(uri)) {
             this.registerInitialLog(uri)
         }
 
+        // Get existing data. It will be modified in various ways below (not "thread safe", thanks to the "registry").
         const logData = this.getRegisteredLog(uri)
         const request: CloudWatchLogsResponse = {
             events: [],
             nextForwardToken: logData.next?.token,
             nextBackwardToken: logData.previous?.token,
         }
+        // Is this a filter request or a full (unfiltered) log stream?
+        const isSearch = !logData.logGroupInfo.streamName
 
-        // We are at the earliest data and trying to go back in time, there is nothing to see.
-        // If we don't return now, redundant data will be retrieved.
-        if (isHead && logData.previous?.token === undefined) {
+        if (!isSearch && isHead && logData.previous?.token === undefined) {
+            // If we don't return now, redundant data will be retrieved.
             return []
         }
 
-        const responseData = await logData.retrieveLogsFunction(
+        // For search results ("Load newer/older..."): adjust the start/end "window".
+        const oldRange = { startTime: logData.parameters.startTime, endTime: logData.parameters.endTime }
+        const startEnd = isNew ? logData.parameters : this.getStartEnd(logData, direction, isSearch)
+        logData.parameters.startTime = startEnd.startTime
+        logData.parameters.endTime = startEnd.endTime
+
+        const response = await logData.retrieveLogsFunction(
             logData.logGroupInfo,
             logData.parameters,
             isHead ? request.nextBackwardToken : request.nextForwardToken
         )
 
-        if (!responseData) {
-            return []
-        }
+        // For search results: before storing (setLogData), expand the range to the maximum
+        // start/end so that the "window" covers all results batches in the document.
+        logData.parameters.startTime = logData.parameters.startTime
+            ? Math.min(oldRange.startTime ?? Number.MAX_VALUE, logData.parameters.startTime)
+            : undefined
+        logData.parameters.endTime = logData.parameters.endTime
+            ? Math.max(oldRange.endTime ?? 0, logData.parameters.endTime)
+            : undefined
 
-        const newData = isHead
-            ? (responseData.events ?? []).concat(logData.events)
-            : logData.events.concat(responseData.events ?? [])
+        // Replace (if "new") or extend existing results.
+        logData.events = isNew
+            ? response.events
+            : isHead
+            ? (response.events ?? []).concat(logData.events)
+            : logData.events.concat(response.events ?? [])
 
-        const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
-        // update if no token exists or if the token is updated in the correct direction.
-        if (!logData.previous || isHead) {
-            const token = responseData.nextBackwardToken
-            if (token) {
-                tokens.previous = { token }
-            }
+        // Update tokens on the existing logData entry.
+        if ((!logData.previous || isHead) && response.nextBackwardToken) {
+            logData.previous = { token: response.nextBackwardToken }
         }
         if (!logData.next || !isHead) {
-            const token = responseData.nextForwardToken ?? request.nextForwardToken
+            const token = response.nextForwardToken ?? request.nextForwardToken
             if (token) {
-                tokens.next = { token }
+                logData.next = { token: token }
             }
         }
-        this.setLogData(uri, {
-            ...logData,
-            ...tokens,
-            events: newData,
-        })
+        this.setLogData(uri, logData)
 
         this._onDidChange.fire(uri)
-        return newData
+        return logData.events
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {

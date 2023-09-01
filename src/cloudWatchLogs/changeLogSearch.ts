@@ -19,7 +19,7 @@ import { TimeFilterResponse, TimeFilterSubmenu } from './timeFilterSubmenu'
  * @returns Undefined if cancelled and the newData otherwise.
  */
 
-export async function getNewData(
+export async function promptForSearchParam(
     param: 'filterPattern' | 'timeFilter',
     oldData: CloudWatchLogsData
 ): Promise<CloudWatchLogsData | undefined> {
@@ -69,10 +69,11 @@ export async function getNewData(
     return newData
 }
 
-export async function changeLogSearchParams(
-    registry: LogDataRegistry,
-    param: 'filterPattern' | 'timeFilter'
-): Promise<void> {
+/**
+ * Shows a wizard where the user can revise the time or pattern of an existing
+ * log group search and update the search results.
+ */
+export async function updateLogSearch(registry: LogDataRegistry, param: 'filterPattern' | 'timeFilter'): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async span => {
         const oldUri = getActiveDocumentUri(registry)
         span.record({
@@ -87,7 +88,7 @@ export async function changeLogSearchParams(
         }
 
         const oldData = registry.getRegisteredLog(oldUri)
-        const newData = await getNewData(param, oldData)
+        const newData = await promptForSearchParam(param, oldData)
         span.record({
             cloudWatchResourceType: isLogStreamUri(oldUri) ? 'logStream' : 'logGroup',
             hasTimeFilter: !!oldData.parameters.startTime || param === 'timeFilter',
@@ -99,6 +100,6 @@ export async function changeLogSearchParams(
         }
 
         const newUri = createURIFromArgs(newData.logGroupInfo, newData.parameters)
-        await prepareDocument(newUri, newData, registry)
+        await prepareDocument(newUri, registry, false)
     })
 }
