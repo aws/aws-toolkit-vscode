@@ -64,6 +64,6 @@ describe('RedshiftNotebookSerializer', () => {
         const invalidContents = new TextEncoder().encode('data:{xyz:onk}')
         const token = new vscode.CancellationTokenSource().token
         const notebookData = await serializer.deserializeNotebook(invalidContents, token)
-        assert.strictEqual(notebookData.cells.length, 0)
+        assert.strictEqual(notebookData.cells, [])
     })
 })
