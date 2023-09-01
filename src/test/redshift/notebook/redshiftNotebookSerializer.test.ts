@@ -19,8 +19,7 @@ describe('RedshiftNotebookSerializer', () => {
         const contents = new TextEncoder().encode(JSON.stringify({ cells: [] }))
         const token = new vscode.CancellationTokenSource().token
         const notebookData = await serializer.deserializeNotebook(contents, token)
-        assert(Array.isArray(notebookData.cells))
-        assert.strictEqual(notebookData.cells.length, 0)
+        assert.deepStrictEqual(notebookData.cells, [])
     })
 
     it('should deserialize NotebookData correctly', async () => {
