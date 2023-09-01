@@ -52,6 +52,26 @@ describe('redshiftNodeConnectionWizard', async function () {
         testWizard.database.assertShowFirst()
         testWizard.username.assertDoesNotShow()
     })
+
+    it('shows all steps for provisionedNode and secrets manager connection type', function () {
+        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
+        testWizard.connectionType.assertShowFirst()
+        testWizard.connectionType.applyInput(ConnectionType.SecretsManager)
+        testWizard.database.assertShowFirst()
+        testWizard.database.applyInput('testDB')
+        testWizard.secret.assertShowFirst()
+        testWizard.secret.applyInput('SecretTest')
+    })
+
+    it('shows all steps for serverlessNode and secrets manager connection type', function () {
+        const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
+        testWizard.connectionType.assertShowFirst()
+        testWizard.connectionType.applyInput(ConnectionType.SecretsManager)
+        testWizard.database.assertShowFirst()
+        testWizard.database.applyInput('testDB')
+        testWizard.secret.assertShowFirst()
+        testWizard.secret.applyInput('SecretTest')
+    })
 })
 
 describe('NotebookConnectionWizard', async () => {
@@ -69,6 +89,20 @@ describe('NotebookConnectionWizard', async () => {
         testWizard.database.applyInput('testDB')
         testWizard.username.assertShowFirst()
         testWizard.username.applyInput('testUser')
+        testWizard.warehouseType.assertDoesNotShow()
+    })
+
+    it('shows all steps for secrets manager connection type', function () {
+        const testWizard = createWizardTester(new NotebookConnectionWizard(mockRegionProvider))
+        testWizard.region.assertShowFirst()
+        testWizard.region.applyInput({ id: 'US East - 1', name: 'us-east-1' })
+        testWizard.warehouseIdentifier.assertShowFirst()
+        testWizard.warehouseIdentifier.applyInput('testCluster')
+        testWizard.connectionType.assertShowFirst()
+        testWizard.connectionType.applyInput(ConnectionType.SecretsManager)
+        testWizard.database.assertShowFirst()
+        testWizard.database.applyInput('testDB')
+        testWizard.secret.applyInput('SecretTest')
         testWizard.warehouseType.assertDoesNotShow()
     })
 })
