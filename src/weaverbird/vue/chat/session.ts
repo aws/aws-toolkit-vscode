@@ -94,12 +94,12 @@ export class Session {
 
     async generateCode() {
         const config = await getConfig()
-        while (this.state == 'codegen') {
+        for (let pollingIteration = 0; pollingIteration < 60 && this.state == 'codegen'; ++pollingIteration) {
             const payload = {
                 generationId: this.generationId,
             }
             const codegenResult = await this.invokeApiGWLambda(config.lambdaArns.codegen.getResults, payload)
-            getLogger().info(`Received response: ${JSON.stringify(codegenResult)}`)
+            getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
             if (codegenResult.status == 'ready') {
                 const result: { newFileContents: { filePath: string; fileContent: string }[] } = codegenResult.result
                 const files = []

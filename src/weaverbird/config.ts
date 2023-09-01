@@ -26,7 +26,6 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
         (cachedConfig = await (async () => {
             const appConfigFormatVersion = 2
             const config = process.env.WEAVERBIRD_CONFIG
-            console.log(config)
             // const _betaConfig = {
             //     endpoint: 'https://pehp5nezwj.execute-api.us-west-2.amazonaws.com/beta',
             //     region: 'us-west-2',
