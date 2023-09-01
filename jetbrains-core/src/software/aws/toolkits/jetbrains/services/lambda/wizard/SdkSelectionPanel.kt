@@ -13,10 +13,13 @@ import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ErrorLabel
 import com.intellij.ui.components.panels.Wrapper
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.BottomGap
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ThrowableRunnable
 import software.aws.toolkits.core.lambda.LambdaRuntime
 import software.aws.toolkits.jetbrains.services.lambda.RuntimeGroup
+import software.aws.toolkits.resources.message
 import javax.swing.JComponent
 import javax.swing.JLabel
 
@@ -67,7 +70,7 @@ class SdkSelectionPanel : WizardFragment {
 
     override fun updateUi(projectLocation: TextFieldWithBrowseButton?, runtimeGroup: RuntimeGroup?, template: SamProjectTemplate?) {
         if (runtimeGroup == null) {
-            component.setContent(ErrorLabel("No runtime selected"))
+            component.setContent(ErrorLabel(message("sam.init.sdk.runtime.not.selected")))
             return
         }
 
@@ -76,8 +79,8 @@ class SdkSelectionPanel : WizardFragment {
                 panel {
                     it?.let {
                         row(it.sdkSelectionLabel()) {
-                            it.sdkSelectionPanel()(grow)
-                        }
+                            cell(it.sdkSelectionPanel()).align(AlignX.FILL)
+                        }.bottomGap(BottomGap.MEDIUM)
                     }
                 }
             )
