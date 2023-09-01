@@ -26,7 +26,6 @@ export async function activate(context: vscode.ExtensionContext) {
         { modal: false }
     )
 
-    // Disabling for now since this has webpack issues that will be fixed in future commits:
     const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit')
     await activateLogger(context, toolkitOutputChannel)
 }

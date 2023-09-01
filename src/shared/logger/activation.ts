@@ -127,7 +127,7 @@ export function makeLogger(
     if (opts.useDebugConsole) {
         logger.logToDebugConsole()
     }
-    if (opts.useConsoleLog && isInBrowser()) {
+    if (opts.useConsoleLog) {
         logger.logToConsole()
     }
 
