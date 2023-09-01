@@ -1,3 +1,8 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import sinon = require('sinon')
 import assert = require('assert')
 import { CellStatusBarItemProvider } from '../../../redshift/notebook/cellStatusBarItemProvider'
