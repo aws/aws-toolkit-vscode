@@ -35,21 +35,31 @@ export class Session {
 
     public workspaceRoot: string
     // `mockcodegen` is introduced temporarily to bypass the LLM for testing the FE alone
-    private state: 'refinement' | 'refinement-iteration' | 'codegen' | 'mockcodegen' | 'codegen-iteration'
+    private state:
+        | 'refinement'
+        | 'refinement-iteration'
+        | 'codegen'
+        | 'codegen-done'
+        | 'mockcodegen'
+        | 'codegen-iteration'
     private task: string = ''
+    private generationId: string = ''
     private approach: string = ''
     private llmConfig = defaultLlmConfig
+
+    public onAddToHistory: vscode.EventEmitter<Interaction[]>
 
     // TODO remake private
     public onProgressFinishedEventEmitter: vscode.EventEmitter<void>
     public onProgressFinishedEvent: vscode.Event<void>
 
-    constructor(workspaceRoot: string) {
+    constructor(workspaceRoot: string, onAddToHistory: vscode.EventEmitter<Interaction[]>) {
         this.workspaceRoot = workspaceRoot
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
         this.state = 'refinement'
         this.onProgressEvent = this.onProgressEventEmitter.event
 
+        this.onAddToHistory = onAddToHistory
         this.onProgressFinishedEventEmitter = new vscode.EventEmitter<void>()
         this.onProgressFinishedEvent = this.onProgressFinishedEventEmitter.event
     }
@@ -64,8 +74,9 @@ export class Session {
     }
 
     async invokeLambda(arn: string, payload: any): Promise<any> {
+        const config = await getConfig()
         const client = new LambdaClient({
-            region: 'us-west-2',
+            region: config.region,
         })
 
         const command = new InvokeCommand({
@@ -79,6 +90,42 @@ export class Session {
         const rawResult = Buffer.from(Payload!).toString()
         console.log(rawResult)
         return JSON.parse(rawResult)
+    }
+
+    async generateCode() {
+        const config = await getConfig()
+        for (let pollingIteration = 0; pollingIteration < 60 && this.state == 'codegen'; ++pollingIteration) {
+            const payload = {
+                generationId: this.generationId,
+            }
+            const codegenResult = await this.invokeApiGWLambda(config.lambdaArns.codegen.getResults, payload)
+            getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
+            if (codegenResult.status == 'ready') {
+                const result: { newFileContents: { filePath: string; fileContent: string }[] } = codegenResult.result
+                const files = []
+                for (const { filePath, fileContent } of result.newFileContents!) {
+                    // create the in-memory document
+                    const memfile = MemoryFile.createDocument(filePath)
+                    memfile.write(fileContent)
+                    files.push(memfile)
+                }
+                this.onAddToHistory.fire([
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Changes to files done. Please review:',
+                    },
+                    {
+                        origin: 'ai',
+                        type: 'codegen',
+                        content: files,
+                    },
+                ])
+                this.state = 'codegen-done'
+            } else {
+                await new Promise(f => setTimeout(f, 10000))
+            }
+        }
     }
 
     async send(msg: string): Promise<Interaction | Interaction[]> {
@@ -201,35 +248,40 @@ export class Session {
                 type: 'message',
                 content: message,
             }
-        } else if (this.state === 'codegen' || this.state === 'mockcodegen') {
+        } else if (this.state === 'codegen') {
+            const payload = {
+                originalFileContents: files,
+                approach: this.approach,
+                task: this.task,
+                config: this.llmConfig,
+            }
+
+            const codegenStartResult = await this.invokeApiGWLambda(config.lambdaArns.codegen.generate, payload)
+            this.generationId = codegenStartResult.generationId
+            this.generateCode().catch(x => {
+                getLogger().error(`Failed to generate code`)
+            })
+            return {
+                origin: 'ai',
+                type: 'message',
+                content: 'Code generation started\n',
+            }
+        } else if (this.state === 'mockcodegen') {
             const result: { newFileContents: { filePath: string; fileContent: string }[] } = {
                 newFileContents: [],
             }
-            if (this.state === 'codegen') {
-                const payload = {
-                    originalFileContents: '',
-                    approach: this.approach,
-                    task: this.task,
-                    config: this.llmConfig,
-                }
-                const codegenResult = await this.invokeApiGWLambda(config.lambdaArns.codegen.generate, payload)
-                result.newFileContents.push(...codegenResult.newFileContents)
-            } else {
-                // in a `mockcodegen` state, we should read from the `mock-data` folder and output
-                // every file retrieved in the same shape the LLM would
-                const mockedFilesDir = path.join(this.workspaceRoot, './mock-data')
-                if (fs.existsSync(mockedFilesDir)) {
-                    const mockedFiles = this.readFilesRecursive(mockedFilesDir)
-                    for (const mockedFilePath of mockedFiles) {
-                        const mockedFileContent = fs.readFileSync(mockedFilePath)
-                        const correctedFilePath = vscode.workspace
-                            .asRelativePath(mockedFilePath)
-                            .replace('mock-data', '.')
-                        result.newFileContents.push({
-                            filePath: correctedFilePath,
-                            fileContent: mockedFileContent.toString(),
-                        })
-                    }
+            // in a `mockcodegen` state, we should read from the `mock-data` folder and output
+            // every file retrieved in the same shape the LLM would
+            const mockedFilesDir = path.join(this.workspaceRoot, './mock-data')
+            if (fs.existsSync(mockedFilesDir)) {
+                const mockedFiles = this.readFilesRecursive(mockedFilesDir)
+                for (const mockedFilePath of mockedFiles) {
+                    const mockedFileContent = fs.readFileSync(mockedFilePath)
+                    const correctedFilePath = vscode.workspace.asRelativePath(mockedFilePath).replace('mock-data', '.')
+                    result.newFileContents.push({
+                        filePath: correctedFilePath,
+                        fileContent: mockedFileContent.toString(),
+                    })
                 }
             }
 

@@ -13,6 +13,7 @@ interface LocalResolvedConfig {
         }
         codegen: {
             generate: string
+            getResults: string
             iterate: string
         }
     }
@@ -23,7 +24,7 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
     return (
         cachedConfig ??
         (cachedConfig = await (async () => {
-            const appConfigFormatVersion = 1
+            const appConfigFormatVersion = 2
             const config = process.env.WEAVERBIRD_CONFIG
             // const _betaConfig = {
             //     endpoint: 'https://pehp5nezwj.execute-api.us-west-2.amazonaws.com/beta',
@@ -40,6 +41,8 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
             //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-XXqmVJOB85DZ:live',
             //             iterate:
             //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-nvZ0wa8hAqfE:live',
+            //             getResults:
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GetCodeGenerationLambdaB-Gg6ZiJCfJ9sG:live',
             //         },
             //     },
             // }
@@ -58,6 +61,8 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                             'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-nXvafUVY7rmw:live',
                         iterate:
                             'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-Asyx9VdIH3k2:live',
+                        getResults:
+                            'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GetCodeGenerationLambdaB-Gg6ZiJCfJ9sG:live',
                     },
                 },
             }
@@ -89,6 +94,9 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                             iterate:
                                 (parsedConfig.lambdaArns?.codegen?.iterate as string) ??
                                 defaultConfig.lambdaArns.codegen.iterate,
+                            getResults:
+                                (parsedConfig.lambdaArns?.codegen?.getResults as string) ??
+                                defaultConfig.lambdaArns.codegen.getResults,
                         },
                     },
                 }
