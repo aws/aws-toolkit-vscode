@@ -5,16 +5,17 @@ package software.aws.toolkits.jetbrains.core.gettingstarted.editor
 
 import com.intellij.openapi.fileEditor.FileEditor
 import com.intellij.openapi.fileEditor.FileEditorState
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 
-class GettingStartedEditor(private val file: VirtualFile) : UserDataHolderBase(), FileEditor {
+class GettingStartedEditor(private val project: Project, private val file: VirtualFile) : UserDataHolderBase(), FileEditor {
     override fun dispose() {
     }
 
-    override fun getComponent(): JComponent = GettingStartedPanel()
+    override fun getComponent(): JComponent = GettingStartedPanel(project)
 
     override fun getFile(): VirtualFile = file
 

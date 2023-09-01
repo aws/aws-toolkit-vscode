@@ -12,7 +12,7 @@ import com.intellij.openapi.vfs.VirtualFile
 class GettingStartedEditorProvider : FileEditorProvider, DumbAware {
     override fun accept(project: Project, file: VirtualFile) = file is GettingStartedVirtualFile
 
-    override fun createEditor(project: Project, file: VirtualFile) = GettingStartedEditor(file)
+    override fun createEditor(project: Project, file: VirtualFile) = GettingStartedEditor(project, file)
 
     override fun getEditorTypeId() = EDITOR_TYPE
 
