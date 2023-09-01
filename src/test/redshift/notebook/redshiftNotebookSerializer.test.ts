@@ -1,9 +1,3 @@
-/* eslint-disable header/header */
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import { RedshiftNotebookSerializer } from '../../../redshift/notebook/redshiftNotebookSerializer'
 import * as vscode from 'vscode'
 import assert = require('assert')
