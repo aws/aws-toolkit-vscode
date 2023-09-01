@@ -56,7 +56,6 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                             'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateApproachLambda47-VIjB8vZYS3Iu:live',
                         iterate:
                             'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateApproachLambda18D-48KTZ8YLkK70:live',
-                        getResults: '',
                     },
                     codegen: {
                         generate:
