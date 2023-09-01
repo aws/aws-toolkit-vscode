@@ -38,8 +38,8 @@ export class Session {
     private state:
         | 'refinement'
         | 'refinement-iteration'
-        | 'codegen-not-started'
         | 'codegen'
+        | 'codegen-done'
         | 'mockcodegen'
         | 'codegen-iteration'
     private task: string = ''
@@ -93,9 +93,8 @@ export class Session {
     }
 
     async generateCode() {
-        this.state = 'codegen'
         const config = await getConfig()
-        while (true) {
+        while (this.state == 'codegen') {
             const payload = {
                 generationId: this.generationId,
             }
@@ -122,8 +121,7 @@ export class Session {
                         content: files,
                     },
                 ])
-                this.state = 'codegen-iteration'
-                break
+                this.state = 'codegen-done'
             } else {
                 await new Promise(f => setTimeout(f, 5000))
             }
@@ -188,7 +186,7 @@ export class Session {
         this.collectFiles(path.join(this.workspaceRoot, 'src'), 'src', files)
 
         if (msg.indexOf('WRITE CODE') !== -1) {
-            this.state = 'codegen-not-started'
+            this.state = 'codegen'
         }
         // The `MOCK CODE` command is added temporarily to bypass the LLM
         if (msg.indexOf('MOCK CODE') !== -1) {
@@ -250,7 +248,7 @@ export class Session {
                 type: 'message',
                 content: message,
             }
-        } else if (this.state === 'codegen-not-started') {
+        } else if (this.state === 'codegen') {
             const payload = {
                 originalFileContents: files,
                 approach: this.approach,
