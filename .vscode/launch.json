@@ -24,7 +24,7 @@
             "preLaunchTask": "watch"
         },
         {
-            "name": "Extension (web)",
+            "name": "Extension (browser)",
             "type": "pwa-extensionHost",
             "debugWebWorkerHost": true,
             "request": "launch",

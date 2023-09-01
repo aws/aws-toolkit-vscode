@@ -68,6 +68,14 @@ export async function createTestWorkspaceFolder(name?: string): Promise<vscode.W
     }
 }
 
+export async function createTestFile(fileName: string): Promise<vscode.Uri> {
+    const tempFolder = await makeTemporaryToolkitFolder()
+    testTempDirs.push(tempFolder) // ensures this is deleted at the end
+    const tempFilePath = path.join(tempFolder, fileName)
+    fs.writeFileSync(tempFilePath, '')
+    return vscode.Uri.file(tempFilePath)
+}
+
 export async function deleteTestTempDirs(): Promise<void> {
     let failed = 0
     for (const s of testTempDirs) {
