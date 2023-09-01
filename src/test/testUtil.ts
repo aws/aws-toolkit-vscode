@@ -226,7 +226,7 @@ export const assertTelemetryCurried =
  * the document must match exactly to the text editor at some point, otherwise this
  * function will timeout.
  */
-export async function assertTextEditorContains(contents: string): Promise<void | never> {
+export async function assertTextEditorContains(contents: string, exact: boolean = true): Promise<void | never> {
     const editor = await waitUntil(
         async () => {
             if (vscode.window.activeTextEditor?.document.getText() === contents) {
@@ -244,7 +244,11 @@ export async function assertTextEditorContains(contents: string): Promise<void |
         const actual = vscode.window.activeTextEditor.document
         const documentName = actual.uri.toString(true)
         const message = `Document "${documentName}" contained "${actual.getText()}", expected: "${contents}"`
-        assert.strictEqual(actual.getText(), contents, message)
+        if (exact) {
+            assert.strictEqual(actual.getText(), contents, message)
+        } else {
+            assert(actual.getText().includes(contents), message)
+        }
     }
 }
 

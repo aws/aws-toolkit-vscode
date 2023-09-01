@@ -10,6 +10,7 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { Messages } from '../../shared/utilities/messages'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { Settings } from '../../shared/settings'
 // TODO: Add debug logging statements
 
 /** Uri as a string */
@@ -20,8 +21,14 @@ export type UriString = string
 export class LogDataRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
+    static #instance: LogDataRegistry
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
     public constructor(
-        public readonly configuration: CloudWatchLogsSettings,
+        public readonly configuration: CloudWatchLogsSettings = new CloudWatchLogsSettings(Settings.instance),
         private readonly registry: Map<UriString, CloudWatchLogsData> = new Map()
     ) {}
 
