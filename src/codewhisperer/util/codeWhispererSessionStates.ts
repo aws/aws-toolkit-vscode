@@ -5,7 +5,7 @@
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
-export class CodeWhispererSessionStates {
+export class CodeWhispererSession {
     static #instance: CodeWhispererSessionStates
 
     // Some other variables for client component latency
