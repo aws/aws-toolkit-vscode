@@ -27,13 +27,14 @@ import com.intellij.ui.components.JBRadioButton
 import com.intellij.ui.components.fields.ExtendableTextComponent
 import com.intellij.ui.components.fields.ExtendableTextField
 import com.intellij.ui.dsl.builder.COLUMNS_MEDIUM
+import com.intellij.ui.dsl.builder.bindItem
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.toMutableProperty
-import com.intellij.ui.layout.GrowPolicy
+import com.intellij.ui.dsl.builder.toNullableProperty
 import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.listCellRenderer
-import com.intellij.ui.layout.panel
 import com.intellij.ui.layout.selected
 import com.intellij.util.text.nullize
 import kotlinx.coroutines.Deferred
@@ -68,7 +69,6 @@ import software.aws.toolkits.telemetry.EcrTelemetry
 import software.aws.toolkits.telemetry.Result
 import javax.swing.JTextField
 import javax.swing.plaf.basic.BasicComboBoxEditor
-import com.intellij.ui.dsl.builder.panel as panelv2
 
 class PushToRepositoryAction : EcrDockerAction() {
     override fun actionPerformed(selected: EcrRepositoryNode, e: AnActionEvent) {
@@ -157,7 +157,7 @@ internal class PushToEcrDialog(
         }
     }
 
-    override fun createCenterPanel() = panelv2 {
+    override fun createCenterPanel() = panel {
         // valid tag is ascii letters, numbers, underscores, periods, or dashes
         // https://docs.docker.com/engine/reference/commandline/tag/#extended-description
         val validTagRegex = "[a-zA-Z0-9_.-]{1,128}".toRegex()
@@ -203,54 +203,46 @@ internal class PushToEcrDialog(
 
     private fun localImageSelectorPanel() = panel {
         row(message("ecr.push.source")) {
-            // property binding syntax causes kotlin compiler error for some reason
             comboBox(
                 localImageRepoTags,
-                { localImage },
-                { ::localImage.set(it) },
                 listCellRenderer { value, _, _ ->
                     text = value.tag ?: value.imageId.take(15)
                 }
-            )
+            ).bindItem(::localImage.toNullableProperty())
                 .applyToComponent { ComboboxSpeedSearch(this) }
-                .growPolicy(GrowPolicy.MEDIUM_TEXT)
-                .withErrorOnApplyIf(message("ecr.image.not_selected")) { it.selected() == null }
+                .errorOnApply(message("ecr.image.not_selected")) { it.selected() == null }
+                .columns(30) // The size of the entire dialog is doubling if specific columns are not set for this component
         }
     }
 
     private fun dockerfileConfigurationSelectorPanel() = panel {
         row(message("ecr.dockerfile.configuration.label")) {
-            cell {
-                val model = CollectionComboBoxModel<DockerRunConfiguration>()
-                rebuildRunConfigurationComboBoxModel(model)
-                comboBox(
-                    model,
-                    { runConfiguration },
-                    { ::runConfiguration.set(it) },
-                    listCellRenderer { value, _, _ ->
-                        icon = value.icon
-                        text = value.name
-                    }
-                )
-                    .applyToComponent {
-                        // TODO: how do we render both the Docker icon and action items correctly?
-                        isEditable = true
-                        editor = object : BasicComboBoxEditor.UIResource() {
-                            override fun createEditorComponent(): JTextField {
-                                val textField = ExtendableTextField()
-                                textField.isEditable = false
+            val model = CollectionComboBoxModel<DockerRunConfiguration>()
+            rebuildRunConfigurationComboBoxModel(model)
+            comboBox(
+                model,
+                listCellRenderer { value, _, _ ->
+                    icon = value.icon
+                    text = value.name
+                }
+            ).bindItem(::runConfiguration.toNullableProperty())
+                .applyToComponent {
+                    // TODO: how do we render both the Docker icon and action items correctly?
+                    isEditable = true
+                    editor = object : BasicComboBoxEditor.UIResource() {
+                        override fun createEditorComponent(): JTextField {
+                            val textField = ExtendableTextField()
+                            textField.isEditable = false
 
-                                buildDockerfileActions(model, textField)
-                                textField.border = null
+                            buildDockerfileActions(model, textField)
+                            textField.border = null
 
-                                return textField
-                            }
+                            return textField
                         }
                     }
-                    .growPolicy(GrowPolicy.MEDIUM_TEXT)
-                    .withErrorOnApplyIf(message("ecr.dockerfile.configuration.invalid")) { it.selected() == null }
-                    .withErrorOnApplyIf(message("ecr.dockerfile.configuration.invalid_server")) { it.selected()?.serverName == null }
-            }
+                }
+                .errorOnApply(message("ecr.dockerfile.configuration.invalid")) { it.selected() == null }
+                .errorOnApply(message("ecr.dockerfile.configuration.invalid_server")) { it.selected()?.serverName == null }
         }
     }
 
