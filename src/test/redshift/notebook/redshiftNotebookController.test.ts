@@ -1,14 +1,3 @@
-/* eslint-disable header/header */
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
-/* eslint-disable header/header */
-/*!
- * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
 
 import * as vscode from 'vscode'
 import { RedshiftNotebookController } from '../../../redshift/notebook/redshiftNotebookController'
