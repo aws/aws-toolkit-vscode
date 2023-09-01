@@ -123,7 +123,7 @@ export class Session {
                 ])
                 this.state = 'codegen-done'
             } else {
-                await new Promise(f => setTimeout(f, 5000))
+                await new Promise(f => setTimeout(f, 10000))
             }
         }
     }
