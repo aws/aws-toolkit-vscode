@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-interface LocalResolvedConfig {
+export interface LocalResolvedConfig {
     endpoint: string
     region: string
     lambdaArns: {
@@ -62,7 +62,7 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                         iterate:
                             'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-Asyx9VdIH3k2:live',
                         getResults:
-                            'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GetCodeGenerationLambdaB-Gg6ZiJCfJ9sG:live',
+                            'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GetCodeGenerationLambdaB-3W5Wr1TtVHcr:live',
                     },
                 },
             }
