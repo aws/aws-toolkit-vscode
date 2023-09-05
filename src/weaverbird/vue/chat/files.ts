@@ -6,9 +6,10 @@
 import * as vscode from 'vscode'
 import { FileMetadata } from '../../client/weaverbirdclient'
 import { SystemUtilities } from '../../../shared/systemUtilities'
+import { getExcludePattern } from '../../../shared/fs/watchedFiles'
 
 export async function collectFiles(rootPath: string): Promise<FileMetadata[]> {
-    const files = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'))
+    const files = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'), getExcludePattern())
 
     const storage = []
     for (const file of files) {
