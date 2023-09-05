@@ -48,7 +48,7 @@ export class Session {
     ) {
         this.workspaceRoot = workspaceRoot
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
-        this.lambdaClient = new DefaultLambdaClient('us-west-2')
+        this.lambdaClient = new DefaultLambdaClient(backendConfig.region)
         this.backendConfig = backendConfig
         this.state = new RefinementState(this.getSessionStateConfig(), '')
         this.onProgressEvent = this.onProgressEventEmitter.event
