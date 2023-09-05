@@ -3,38 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
-import * as path from 'path'
+import * as vscode from 'vscode'
 import { FileMetadata } from '../../client/weaverbirdclient'
+import { SystemUtilities } from '../../../shared/systemUtilities'
 
-export async function collectFiles(rootPath: string, prefix: string, storage: FileMetadata[]) {
-    const fileList = fs.readdirSync(rootPath)
+export async function collectFiles(rootPath: string): Promise<FileMetadata[]> {
+    const files = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'))
 
-    fileList.forEach(filePath => {
-        const realPath = path.join(rootPath, filePath)
-        // llms are fine-tuned to use posix path. Don't expect miracles otherwise
-        const posixPath = path.posix.join(prefix, filePath)
-        if (fs.lstatSync(realPath).isDirectory()) {
-            collectFiles(realPath, posixPath, storage)
-        } else {
-            storage.push({
-                filePath: posixPath,
-                fileContent: fs.readFileSync(realPath).toString(),
-            } as FileMetadata)
-        }
-    })
-}
-
-// used for reading the mocked files from workspace
-export function readFilesRecursive(rootPath: string, results: string[] = []) {
-    const fileList = fs.readdirSync(rootPath)
-    for (const file of fileList) {
-        const name = `${rootPath}/${file}`
-        if (fs.statSync(name).isDirectory()) {
-            readFilesRecursive(name, results)
-        } else {
-            results.push(name)
-        }
+    const storage = []
+    for (const file of files) {
+        const fileContent = await SystemUtilities.readFile(file)
+        storage.push({
+            // The LLM doesn't need absolute paths, only relative from the project
+            filePath: file.fsPath.replace(rootPath, 'src'),
+            fileContent: fileContent,
+        })
     }
-    return results
+    return storage
 }

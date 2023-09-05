@@ -4,16 +4,18 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as path from 'path'
 
 import { LocalResolvedConfig } from '../../config'
 import { MemoryFile } from '../../memoryFile'
 import { LLMConfig } from './types'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { readFilesRecursive } from './files'
+import { collectFiles } from './files'
 import { FileMetadata } from '../../client/weaverbirdclient'
 import { getLogger } from '../../../shared/logger'
+import { FileSystemCommon } from '../../../srcShared/fs'
+
+const fs = FileSystemCommon.instance
 
 export interface UserInteraction {
     origin: 'user' | 'ai'
@@ -250,21 +252,22 @@ export class MockCodeGenState implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const newFileContents: NewFileContents = []
+        let newFileContents: NewFileContents = []
 
         // in a `mockcodegen` state, we should read from the `mock-data` folder and output
         // every file retrieved in the same shape the LLM would
         const mockedFilesDir = path.join(this.config.workspaceRoot, './mock-data')
-        if (fs.existsSync(mockedFilesDir)) {
-            const mockedFiles = readFilesRecursive(mockedFilesDir)
-            for (const mockedFilePath of mockedFiles) {
-                const mockedFileContent = fs.readFileSync(mockedFilePath)
-                const correctedFilePath = vscode.workspace.asRelativePath(mockedFilePath).replace('mock-data', '.')
-                newFileContents.push({
-                    filePath: correctedFilePath,
-                    fileContent: mockedFileContent.toString(),
-                })
+        try {
+            const mockDirectoryExists = await fs.stat(mockedFilesDir)
+            if (mockDirectoryExists) {
+                const files = await collectFiles(mockedFilesDir)
+                newFileContents = files.map(f => ({
+                    filePath: f.filePath.replace('mock-data', '.'),
+                    fileContent: f.fileContent,
+                }))
             }
+        } catch (e) {
+            getLogger().error('Unable to use mock code generation: %O', e)
         }
 
         return {
@@ -294,8 +297,8 @@ class CodeGenIterationState implements SessionState {
 
         for (const { filePath, fileContent } of response.newFileContents!) {
             const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
-            fs.mkdirSync(path.dirname(pathUsed), { recursive: true })
-            fs.writeFileSync(pathUsed, fileContent as string)
+            await fs.mkdir(path.dirname(pathUsed))
+            await fs.writeFile(pathUsed, fileContent as string)
         }
 
         return {

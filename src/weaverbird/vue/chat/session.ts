@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger/logger'
-import { FileMetadata } from '../../client/weaverbirdclient'
 
 import { LocalResolvedConfig } from '../../config'
 import { defaultLlmConfig } from './constants'
@@ -88,8 +87,7 @@ export class Session {
     async sendUnsafe(msg: string): Promise<Interaction | Interaction[]> {
         const sessionStageConfig = this.getSessionStateConfig()
 
-        const files: FileMetadata[] = []
-        collectFiles(path.join(this.workspaceRoot, 'src'), 'src', files)
+        const files = await collectFiles(path.join(this.workspaceRoot, 'src'))
 
         if (msg.indexOf('WRITE CODE') !== -1) {
             this.state = new CodeGenState(sessionStageConfig, this.approach, this.onAddToHistory)
