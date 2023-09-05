@@ -89,6 +89,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                         return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
                     })
                 )
+                telemetry.redshift_listDatabases.emit()
             }
 
             return {
@@ -98,8 +99,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         } catch (error) {
             this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
             return Promise.reject(error)
-        } finally {
-            telemetry.redshift_listingAPI.emit()
         }
     }
 

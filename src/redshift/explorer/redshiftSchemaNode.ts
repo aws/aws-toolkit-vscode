@@ -53,6 +53,7 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
                         return new RedshiftTableNode(table.name ?? 'UnknownTable')
                     })
                 )
+                telemetry.redshift_listTables.emit()
             }
             return {
                 newChildren: newChildren,
@@ -62,8 +63,6 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
             this.logger.error(`Failed to fetch tables for ${this.schemaName}: ${error}`)
             vscode.window.showErrorMessage(`Failed to fetch tables for ${this.schemaName}: ${error}`)
             return Promise.reject(error)
-        } finally {
-            telemetry.redshift_listingAPI.emit()
         }
     }
 

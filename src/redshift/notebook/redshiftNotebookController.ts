@@ -62,6 +62,9 @@ export class RedshiftNotebookController {
             success = false
         } finally {
             execution.end(success, Date.now())
+            if (success === true) {
+                telemetry.redshift_executeQuery.emit()
+            }
         }
     }
 
@@ -89,7 +92,6 @@ export class RedshiftNotebookController {
             executionId = result.executionId
             columnMetadata = result.statementResultResponse.ColumnMetadata
             records.push(...result.statementResultResponse.Records)
-            telemetry.redshift_executeQuery.emit()
         } while (nextToken)
 
         if (columnMetadata) {

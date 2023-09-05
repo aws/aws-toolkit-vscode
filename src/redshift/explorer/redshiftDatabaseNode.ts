@@ -57,6 +57,7 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
                         return new RedshiftSchemaNode(schema, this.redshiftClient, this.connectionParams)
                     })
                 )
+                telemetry.redshift_listSchemas.emit()
             }
             return {
                 newChildren: newChildren,
@@ -66,8 +67,6 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
             this.logger.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
             vscode.window.showErrorMessage(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
             return Promise.reject(error)
-        } finally {
-            telemetry.redshift_listingAPI.emit()
         }
     }
 

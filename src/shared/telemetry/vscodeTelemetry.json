@@ -225,8 +225,16 @@
             "description": "Called when redshift query is executed"
         },
         {
-            "name": "redshift_listingAPI",
-            "description": "Called when redshift listDatabases, listSchemas, listTables API is called"
+            "name": "redshift_listDatabases",
+            "description": "Emitted when redshift listDatabases API is called"
+        },
+        {
+            "name": "redshift_listSchemas",
+            "description": "Emitted when redshift listSchemas API is called"
+        },
+        {
+            "name": "redshift_listTables",
+            "description": "Emitted when redshift listTables API is called"
         },
         {
             "name": "sam_attachDebugger",
