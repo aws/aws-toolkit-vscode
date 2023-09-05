@@ -62,7 +62,7 @@ export async function fetchSupplementalContext(
                     supplementalContextItems: value,
                     contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
                     latency: performance.now() - timesBeforeFetching,
-                    strategy: value[0].strategy,
+                    strategy: value[0].strategy ? value[0].strategy : 'Empty',
                 }
             } else {
                 return undefined
