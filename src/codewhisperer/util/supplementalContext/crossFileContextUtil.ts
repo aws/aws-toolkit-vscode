@@ -17,6 +17,8 @@ import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 
+export type CrossFileStrategy = 'openTabs+bm25'
+
 type CrossFileSupportedLanguage =
     | 'java'
     | 'python'
@@ -101,6 +103,7 @@ export async function fetchSupplementalContextForSrc(
         supplementalContexts.push({
             filePath: chunk.fileName,
             content: chunk.nextContent,
+            strategy: 'openTabs+bm25',
             score: chunk.score,
         })
     }

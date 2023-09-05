@@ -27,6 +27,8 @@ import { getLogger } from '../../../shared/logger/logger'
 
 type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
 
+export type UtgStrategy = 'byName' | 'byContent'
+
 function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
     return languageId in utgLanguageConfigs
 }
@@ -77,7 +79,7 @@ export async function fetchSupplementalContextForTest(
     if (crossSourceFile) {
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
-        return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
+        return generateSupplementalContextFromFocalFile(crossSourceFile, 'byName', cancellationToken)
     }
     throwIfCancelled(cancellationToken)
 
@@ -85,7 +87,7 @@ export async function fetchSupplementalContextForTest(
     if (crossSourceFile) {
         // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
-        return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
+        return generateSupplementalContextFromFocalFile(crossSourceFile, 'byContent', cancellationToken)
     }
 
     // TODO (Metrics): 4. Failure count - when unable to find focal file (supplemental context empty)
@@ -95,6 +97,7 @@ export async function fetchSupplementalContextForTest(
 
 function generateSupplementalContextFromFocalFile(
     filePath: string,
+    strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
 ): CodeWhispererSupplementalContextItem[] {
     const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')
@@ -107,6 +110,7 @@ function generateSupplementalContextFromFocalFile(
     return [
         {
             filePath: filePath,
+            strategy: strategy,
             content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
         },
     ]

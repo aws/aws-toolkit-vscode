@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fetchSupplementalContextForTest } from './utgUtils'
-import { fetchSupplementalContextForSrc } from './crossFileContextUtil'
+import { UtgStrategy, fetchSupplementalContextForTest } from './utgUtils'
+import { CrossFileStrategy, fetchSupplementalContextForSrc } from './crossFileContextUtil'
 import { isTestFile } from './codeParsingUtil'
 import { DependencyGraphFactory } from '../dependencyGraph/dependencyGraphFactory'
 import * as vscode from 'vscode'
@@ -14,17 +14,21 @@ import { getLogger } from '../../../shared/logger/logger'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
     supplementalContextItems: CodeWhispererSupplementalContextItem[]
     contentsLength: number
     latency: number
+    strategy: SupplementalContextStrategy
 }
 
 export interface CodeWhispererSupplementalContextItem {
     content: string
     filePath: string
+    strategy: SupplementalContextStrategy
     score?: number
 }
 
@@ -58,6 +62,7 @@ export async function fetchSupplementalContext(
                     supplementalContextItems: value,
                     contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
                     latency: performance.now() - timesBeforeFetching,
+                    strategy: value[0].strategy,
                 }
             } else {
                 return undefined
@@ -71,6 +76,7 @@ export async function fetchSupplementalContext(
                     supplementalContextItems: [],
                     contentsLength: 0,
                     latency: performance.now() - timesBeforeFetching,
+                    strategy: 'Empty',
                 }
             } else {
                 getLogger().error(
