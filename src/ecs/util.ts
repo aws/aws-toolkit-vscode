@@ -8,7 +8,6 @@ import globals from '../shared/extensionGlobals'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as vscode from 'vscode'
 import { EcsClient } from '../shared/clients/ecsClient'
 import { IamClient } from '../shared/clients/iamClient'
 import { ToolkitError } from '../shared/errors'
@@ -18,6 +17,7 @@ import { TaskDefinition } from 'aws-sdk/clients/ecs'
 import { getLogger } from '../shared/logger'
 import { SSM } from 'aws-sdk'
 import { fromExtensionManifest } from '../shared/settings'
+import { ecsTaskPermissionsUrl } from '../shared/constants'
 
 interface EcsTaskIdentifer {
     readonly task: string
@@ -25,11 +25,9 @@ interface EcsTaskIdentifer {
     readonly container: string
 }
 
-const permissionsDocumentation = vscode.Uri.parse(
-    'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using',
-    true
-)
-
+/**
+ * See also: https://github.com/aws-containers/amazon-ecs-exec-checker
+ */
 export async function checkPermissionsForSsm(
     client: IamClient,
     task: Pick<TaskDefinition, 'taskRoleArn'>
@@ -37,10 +35,11 @@ export async function checkPermissionsForSsm(
     if (!task.taskRoleArn) {
         throw new ToolkitError('Containers must have a task role ARN', {
             code: 'NoTaskRoleArn',
-            documentationUri: permissionsDocumentation,
+            documentationUri: ecsTaskPermissionsUrl,
         })
     }
 
+    // https://github.com/aws-containers/amazon-ecs-exec-checker/blob/b1d163bd95c5b6f915e2bb3ad810e6f2aecae985/check-ecs-exec.sh#L536-L539
     const deniedActions = await client.getDeniedActions({
         PolicySourceArn: task.taskRoleArn,
         ActionNames: [
@@ -52,14 +51,18 @@ export async function checkPermissionsForSsm(
     })
 
     if (deniedActions.length !== 0) {
+        const deniedMsg = deniedActions.map(o => o.EvalActionName).join(', ')
         const message = localize(
             'AWS.command.ecs.runCommandInContainer.missingPermissions',
-            'Insufficient permissions to execute command. Configure a task role as described in the documentation.'
+            'Insufficient permissions to execute command, ensure the [task role is configured]({0}). Task role {1} is not authorized to perform: {2}',
+            ecsTaskPermissionsUrl.toString(),
+            task.taskRoleArn,
+            deniedMsg
         )
 
         throw new ToolkitError(message, {
             code: 'MissingPermissions',
-            documentationUri: permissionsDocumentation,
+            documentationUri: ecsTaskPermissionsUrl,
             details: { deniedActions: deniedActions.map(a => a.EvalActionName) },
         })
     }
