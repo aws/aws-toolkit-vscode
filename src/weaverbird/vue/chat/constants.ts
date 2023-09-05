@@ -10,5 +10,5 @@ export const defaultLlmConfig: LLMConfig = {
     generationFlow: 'lambda',
     maxTokensToSample: 50000,
     temperature: 0.0,
-    debateRounds: 1,
+    debateRounds: 2,
 }
