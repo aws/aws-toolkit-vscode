@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import { Ec2ParentNode } from '../../../ec2/explorer/ec2ParentNode'
 import { Ec2Client, Ec2Instance } from '../../../shared/clients/ec2Client'

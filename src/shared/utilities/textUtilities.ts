@@ -5,7 +5,7 @@
 
 import * as crypto from 'crypto'
 import * as fs from 'fs'
-import * as moment from 'moment'
+import moment from 'moment'
 import { default as stripAnsi } from 'strip-ansi'
 import { isCloud9 } from '../extensionUtilities'
 import { getLogger } from '../logger'

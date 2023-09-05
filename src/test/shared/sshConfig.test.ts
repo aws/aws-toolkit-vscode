@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
 import * as vscode from 'vscode'

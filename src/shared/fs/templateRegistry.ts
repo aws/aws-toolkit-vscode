@@ -113,7 +113,10 @@ export class AsyncCloudFormationTemplateRegistry {
             this.setupProgressMessage = vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
-                    title: localize('AWS.codelens.waitingForTemplateRegistry', 'Scanning CloudFormation templates...'),
+                    title: localize(
+                        'AWS.codelens.waitingForTemplateRegistry',
+                        'Scanning CloudFormation templates... (except paths configured in [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
+                    ),
                     cancellable: true,
                 },
                 async (progress, token) => {

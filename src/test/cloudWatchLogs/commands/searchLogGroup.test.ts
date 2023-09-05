@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { createSearchPatternPrompter, SearchLogGroupWizard } from '../../../cloudWatchLogs/commands/searchLogGroup'
 import { CloudWatchLogsGroupInfo, CloudWatchLogsParameters } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../../../cloudWatchLogs/timeFilterSubmenu'

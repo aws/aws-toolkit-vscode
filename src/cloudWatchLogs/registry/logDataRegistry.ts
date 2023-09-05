@@ -5,11 +5,12 @@
 
 import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, createURIFromArgs } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, msgKey } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { Messages } from '../../shared/utilities/messages'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { Settings } from '../../shared/settings'
 // TODO: Add debug logging statements
 
 /** Uri as a string */
@@ -20,8 +21,14 @@ export type UriString = string
 export class LogDataRegistry {
     private readonly _onDidChange: vscode.EventEmitter<vscode.Uri> = new vscode.EventEmitter<vscode.Uri>()
 
+    static #instance: LogDataRegistry
+
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
     public constructor(
-        public readonly configuration: CloudWatchLogsSettings,
+        public readonly configuration: CloudWatchLogsSettings = new CloudWatchLogsSettings(Settings.instance),
         private readonly registry: Map<UriString, CloudWatchLogsData> = new Map()
     ) {}
 
@@ -78,9 +85,13 @@ export class LogDataRegistry {
         // We are at the earliest data and trying to go back in time, there is nothing to see.
         // If we don't return now, redundant data will be retrieved.
         if (isHead && logData.previous?.token === undefined) {
-            const msgId = uriToKey(uri)
             // show something so the user doesn't think nothing happened.
-            await Messages.putMessage(msgId, `Loading from: '${logData.logGroupInfo.groupName}'`, undefined, 500)
+            await Messages.putMessage(
+                msgKey(logData.logGroupInfo),
+                `Loading from: '${logData.logGroupInfo.groupName}'`,
+                undefined,
+                500
+            )
             return []
         }
 
@@ -108,8 +119,10 @@ export class LogDataRegistry {
             return last
         }
 
-        const msgId = uriToKey(uri)
-        const msgTimeout = await Messages.putMessage(msgId, `Loading from: '${logData.logGroupInfo.groupName}'`)
+        const msgTimeout = await Messages.putMessage(
+            msgKey(logData.logGroupInfo),
+            `Loading from: '${logData.logGroupInfo.groupName}'`
+        )
         const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
             msgTimeout.dispose()
         })
@@ -232,8 +245,7 @@ export async function filterLogEventsFromUri(
         delete cwlParameters.logStreamNames
     }
 
-    const msgId = uriToKey(createURIFromArgs(logGroupInfo, parameters))
-    const msgTimeout = await Messages.putMessage(msgId, `Loading from: '${logGroupInfo.groupName}'`, {
+    const msgTimeout = await Messages.putMessage(msgKey(logGroupInfo), `Loading from: '${logGroupInfo.groupName}'`, {
         message: logGroupInfo.streamName ?? '',
     })
 

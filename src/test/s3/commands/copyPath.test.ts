@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { copyPathCommand } from '../../../s3/commands/copyPath'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
 import { S3Client } from '../../../shared/clients/s3Client'

@@ -46,6 +46,17 @@ export function uriToKey(uri: vscode.Uri): string {
 }
 
 /**
+ * Creates a message key from region + loggroup + logstream.
+ *
+ * Intentionally _ignores_ query parameters, so that the validation step can use the same progress
+ * message as the actual log group search. That results in a more fluid UX.
+ */
+export function msgKey(logGroupInfo: CloudWatchLogsGroupInfo): string {
+    const uri = createURIFromArgs(logGroupInfo, {})
+    return uri.toString()
+}
+
+/**
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { createStubInstance, SinonStubbedInstance, stub, SinonStub } from 'sinon'
 import { copyLambdaUrl, createLambdaFuncUrlPrompter, noLambdaFuncMessage } from '../../../lambda/commands/copyLambdaUrl'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'

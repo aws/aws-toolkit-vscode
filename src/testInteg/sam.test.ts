@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
@@ -82,33 +82,6 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
-    // {
-    //     runtime: 'python3.7',
-    //     displayName: 'python3.7 (ZIP)',
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    //     vscodeMinimum: '1.50.0',
-    // },
-    // {
-    //     runtime: 'python3.8',
-    //     displayName: 'python3.8 (ZIP)',
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    //     vscodeMinimum: '1.50.0',
-    // },
-    // TODO: Add Python3.9 support to integration test hosts
-    // {
-    //     runtime: 'python3.9',
-    //     displayName: 'python3.9 (ZIP)',
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    // },
     {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
@@ -117,7 +90,7 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
         // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        vscodeMinimum: '1.77.0',
     },
     {
         runtime: 'python3.11',
@@ -166,7 +139,6 @@ const scenarios: TestScenario[] = [
     //     // https://github.com/golang/vscode-go/blob/master/package.json
     //     vscodeMinimum: '1.67.0',
     // },
-    // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 
     // images
     {
@@ -199,36 +171,6 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'npm',
         vscodeMinimum: '1.50.0',
     },
-    // {
-    //     runtime: 'python3.7',
-    //     displayName: 'python3.7 (Image)',
-    //     baseImage: `amazon/python3.7-base`,
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    //     vscodeMinimum: '1.50.0',
-    // },
-    // {
-    //     runtime: 'python3.8',
-    //     displayName: 'python3.8 (Image)',
-    //     baseImage: `amazon/python3.8-base`,
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    //     vscodeMinimum: '1.50.0',
-    // },
-    // TODO: Add Python3.9 support to integration test hosts
-    // {
-    //     runtime: 'python3.9',
-    //     displayName: 'python3.9 (Image)',
-    //     baseImage: `amazon/python3.9-base`,
-    //     path: 'hello_world/app.py',
-    //     debugSessionType: 'python',
-    //     language: 'python',
-    //     dependencyManager: 'pip',
-    // },
     {
         runtime: 'python3.10',
         displayName: 'python 3.10 (ZIP)',
@@ -238,7 +180,7 @@ const scenarios: TestScenario[] = [
         language: 'python',
         dependencyManager: 'pip',
         // https://github.com/microsoft/vscode-python/blob/main/package.json
-        vscodeMinimum: '1.78.0',
+        vscodeMinimum: '1.77.0',
     },
     {
         runtime: 'python3.11',
@@ -292,7 +234,6 @@ const scenarios: TestScenario[] = [
         dependencyManager: 'maven',
         vscodeMinimum: '1.50.0',
     },
-    // { runtime: 'dotnetcore3.1', path: 'src/HelloWorld/Function.cs', debugSessionType: 'coreclr', language: 'csharp' },
 ]
 
 async function openSamAppFile(applicationPath: string): Promise<vscode.Uri> {

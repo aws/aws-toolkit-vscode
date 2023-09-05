@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { assertTelemetryCurried } from '../../testUtil'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'

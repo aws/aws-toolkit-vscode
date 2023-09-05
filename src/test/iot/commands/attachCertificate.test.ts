@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Iot } from 'aws-sdk'
 import { attachCertificateCommand, CertGen } from '../../../iot/commands/attachCertificate'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'

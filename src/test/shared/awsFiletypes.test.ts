@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 import * as path from 'path'
 import globals from '../../shared/extensionGlobals'
 import * as sysutil from '../../shared/systemUtilities'

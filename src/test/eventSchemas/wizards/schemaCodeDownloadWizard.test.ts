@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Set } from 'immutable'
 import * as path from 'path'
 import * as vscode from 'vscode'

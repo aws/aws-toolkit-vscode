@@ -1,3 +1,20 @@
+## 1.87.0 2023-08-31
+
+- **Breaking Change** Minimum required VS Code version is now 1.68
+- **Bug Fix** CloudWatch Logs: "Search Log Group" shows multiple progress popups
+- **Bug Fix** CloudWatch Logs: "View Full Log Stream" is limited to 1000 events instead of the `aws.cwl.limit` user setting
+- **Feature** Telemetry setting description includes a details link
+
+## 1.86.0 2023-08-24
+
+- **Bug Fix** CodeWhisperer: Fix test file supplemental context not working as expected on OS not using '/' as file path separator
+- **Bug Fix** CodeWhisperer sometimes fails on big files
+- **Bug Fix** CodeWhisperer: fix java test file name MyClassTests.java (plural) will not be captured if file is not living in a test folder
+- **Feature** SAM: create, run and debug Python 3.11 Lambdas #3753
+- **Feature** SAM run/debug detects and displays SAM CLI errors, so you spend less time inspecting the Output
+- **Feature** SAM template detection now skips directories specified in [user settings](https://code.visualstudio.com/docs/getstarted/settings) `files.exclude`, `search.exclude`, or `files.watcherExclude`. This improves performance on big workspaces and avoids the "Scanning CloudFormation templates..." message. [#3510](https://github.com/aws/aws-toolkit-vscode/issues/3510)
+- **Feature** Toolkit no longer explicitly checks if Docker is running, instead it lets SAM CLI decide that #3588
+
 ## 1.85.0 2023-08-17
 
 - **Bug Fix** IAM Identity Center (SSO): misleading "Permission set" warning for scope-based SSO/IdC connection

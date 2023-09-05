@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { contextValueCloudwatchLog, LogGroupNode } from '../../../cloudWatchLogs/explorer/logGroupNode'
 import { CloudWatchLogsNode } from '../../../cloudWatchLogs/explorer/cloudWatchLogsNode'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'

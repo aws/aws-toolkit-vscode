@@ -4,7 +4,7 @@
  */
 
 import * as child_process from 'child_process'
-import * as manifest from '../../package.json'
+import packageJson from '../../package.json'
 import { downloadAndUnzipVSCode, resolveCliArgsFromVSCodeExecutablePath } from '@vscode/test-electron'
 import { join, resolve } from 'path'
 import { runTests } from '@vscode/test-electron'
@@ -108,7 +108,7 @@ export async function getCliArgsToDisableExtensions(
 }
 
 export function getMinVsCodeVersion(): string {
-    const vsCodeVersion = manifest.engines.vscode
+    const vsCodeVersion = packageJson.engines.vscode
 
     // We assume that we specify a minium, so it matches ^<number>, so remove ^'s
     const sanitizedVersion = vsCodeVersion.replace('^', '')

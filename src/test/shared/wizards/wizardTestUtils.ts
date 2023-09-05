@@ -4,7 +4,7 @@
  */
 
 import * as _ from 'lodash'
-import * as assert from 'assert'
+import assert from 'assert'
 import { ExpandWithObject } from '../../../shared/utilities/tsUtils'
 import { Wizard } from '../../../shared/wizards/wizard'
 import { WizardForm } from '../../../shared/wizards/wizardForm'

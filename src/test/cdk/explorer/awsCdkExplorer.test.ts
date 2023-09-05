@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as detectCdkProjects from '../../../cdk/explorer/detectCdkProjects'

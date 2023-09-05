@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeWhisperer: Fix test file supplemental context not working as expected on OS not using '/' as file path separator"
-}
