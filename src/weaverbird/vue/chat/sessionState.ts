@@ -30,11 +30,15 @@ export interface CodeGenInteraction {
 
 export type Interaction = UserInteraction | CodeGenInteraction
 
+export interface SessionStateInteraction {
+    nextState: SessionState | undefined
+    interactions: Interaction[]
+}
+
 export interface SessionState {
     approach: string
     tokenSource: vscode.CancellationTokenSource
-    interact(action: SessionStateAction): Promise<Interaction[]>
-    next(): SessionState | undefined
+    interact(action: SessionStateAction): Promise<SessionStateInteraction>
 }
 
 export interface SessionStateConfig {
@@ -75,7 +79,7 @@ export class RefinementState implements SessionState {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async interact(action: SessionStateAction): Promise<Interaction[]> {
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload = {
             task: action.task,
             originalFileContents: action.files,
@@ -90,17 +94,16 @@ export class RefinementState implements SessionState {
 
         this.approach = response.background
 
-        return [
-            {
-                origin: 'ai',
-                type: 'message',
-                content: `${this.approach}\n`,
-            },
-        ]
-    }
-
-    next(): SessionState {
-        return new RefinementIterationState(this.config, this.approach)
+        return {
+            nextState: new RefinementIterationState(this.config, this.approach),
+            interactions: [
+                {
+                    origin: 'ai',
+                    type: 'message',
+                    content: `${this.approach}\n`,
+                },
+            ],
+        }
     }
 }
 
@@ -111,7 +114,7 @@ class RefinementIterationState implements SessionState {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async interact(action: SessionStateAction): Promise<Interaction[]> {
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload = {
             task: action.task,
             request: action.msg,
@@ -128,17 +131,16 @@ class RefinementIterationState implements SessionState {
 
         this.approach = response.approach
 
-        return [
-            {
-                origin: 'ai',
-                type: 'message',
-                content: `${this.approach}\n`,
-            },
-        ]
-    }
-
-    next(): SessionState | undefined {
-        return undefined
+        return {
+            nextState: undefined,
+            interactions: [
+                {
+                    origin: 'ai',
+                    type: 'message',
+                    content: `${this.approach}\n`,
+                },
+            ],
+        }
     }
 }
 
@@ -178,7 +180,7 @@ export class CodeGenState implements SessionState {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async interact(action: SessionStateAction): Promise<Interaction[]> {
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload = {
             originalFileContents: action.files,
             approach: this.approach,
@@ -206,7 +208,10 @@ export class CodeGenState implements SessionState {
             getLogger().error(`Failed to generate code`)
         })
 
-        return []
+        return {
+            nextState: new CodeGenIterationState(this.config, this.approach),
+            interactions: [],
+        }
     }
 
     private async generateCode(generationId: string) {
@@ -235,10 +240,6 @@ export class CodeGenState implements SessionState {
             }
         }
     }
-
-    next(): SessionState | undefined {
-        return new CodeGenIterationState(this.config, this.approach)
-    }
 }
 
 export class MockCodeGenState implements SessionState {
@@ -248,7 +249,7 @@ export class MockCodeGenState implements SessionState {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async interact(action: SessionStateAction): Promise<Interaction[]> {
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const newFileContents: NewFileContents = []
 
         // in a `mockcodegen` state, we should read from the `mock-data` folder and output
@@ -266,11 +267,10 @@ export class MockCodeGenState implements SessionState {
             }
         }
 
-        return createChanges(newFileContents)
-    }
-
-    next(): SessionState | undefined {
-        return new CodeGenIterationState(this.config, this.approach)
+        return {
+            nextState: new CodeGenIterationState(this.config, this.approach),
+            interactions: await createChanges(newFileContents),
+        }
     }
 }
 
@@ -281,7 +281,7 @@ class CodeGenIterationState implements SessionState {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async interact(action: SessionStateAction): Promise<Interaction[]> {
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload = {
             originalFileContents: action.files,
             approach: this.approach,
@@ -298,10 +298,9 @@ class CodeGenIterationState implements SessionState {
             fs.writeFileSync(pathUsed, fileContent as string)
         }
 
-        return [{ origin: 'ai', type: 'message', content: 'Changes to files done' }]
-    }
-
-    next(): SessionState | undefined {
-        return undefined
+        return {
+            nextState: undefined,
+            interactions: [{ origin: 'ai', type: 'message', content: 'Changes to files done' }],
+        }
     }
 }

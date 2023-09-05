@@ -123,8 +123,7 @@ export class Session {
             msg,
         })
 
-        const nextState = this.state.next()
-        if (nextState) {
+        if (resp.nextState) {
             // Approach may have been changed after the interaction
             const newApproach = this.state.approach
 
@@ -132,13 +131,13 @@ export class Session {
             this.state.tokenSource.cancel()
 
             // Move to the next state
-            this.state = nextState
+            this.state = resp.nextState
 
             // If approach was changed then we need to set it in the next state and this state
             this.state.approach = newApproach
             this.approach = newApproach
         }
 
-        return resp
+        return resp.interactions
     }
 }
