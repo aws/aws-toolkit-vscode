@@ -35,7 +35,7 @@ const CURRENT_TELEMETRY_NOTICE_VERSION = 2 // eslint-disable-line @typescript-es
  */
 export async function activate(extensionContext: vscode.ExtensionContext, awsContext: AwsContext, settings: Settings) {
     const config = new TelemetryConfig(settings)
-    globals.telemetry = new DefaultTelemetryService(extensionContext, awsContext, getComputeRegion())
+    globals.telemetry = await DefaultTelemetryService.create(extensionContext, awsContext, getComputeRegion())
 
     try {
         globals.telemetry.telemetryEnabled = config.isEnabled()

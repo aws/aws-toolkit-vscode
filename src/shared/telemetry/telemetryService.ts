@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs'
-import { writeFile } from 'fs-extra'
 import * as path from 'path'
 import { ExtensionContext } from 'vscode'
 import { AwsContext } from '../awsContext'
@@ -21,6 +19,9 @@ import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 import { getClientId } from './util'
 import { telemetry } from './telemetry'
+import { FileSystemCommon } from '../../srcShared/fs'
+
+const fs = FileSystemCommon.instance
 
 export type TelemetryService = ClassToInterfaceType<DefaultTelemetryService>
 
@@ -46,18 +47,16 @@ export class DefaultTelemetryService {
      */
     private _endOfCache: MetricDatum | undefined
 
-    public constructor(
+    /**
+     * Use {@link create}() to create an instance of this class.  
+     */
+    protected constructor(
         private readonly context: ExtensionContext,
         private readonly awsContext: AwsContext,
         private readonly computeRegion?: string,
         publisher?: TelemetryPublisher
     ) {
-        const persistPath = context.globalStorageUri.fsPath
-        this.persistFilePath = path.join(persistPath, 'telemetryCache')
-
-        if (!fs.existsSync(persistPath)) {
-            fs.mkdirSync(persistPath)
-        }
+        this.persistFilePath = path.join(context.globalStorageUri.fsPath, 'telemetryCache')
 
         this.startTime = new globals.clock.Date()
 
@@ -69,13 +68,27 @@ export class DefaultTelemetryService {
         }
     }
 
+    /**
+     * This exists since we need to first ensure the global storage
+     * path exists before creating the instance.
+     */
+    static async create(
+        context: ExtensionContext,
+        awsContext: AwsContext,
+        computeRegion?: string,
+        publisher?: TelemetryPublisher
+    ) {
+        await DefaultTelemetryService.ensureGlobalStorageExists(context)
+        return new DefaultTelemetryService(context, awsContext, computeRegion, publisher)
+    }
+
     public get logger(): TelemetryLogger {
         return this._telemetryLogger
     }
 
     public async start(): Promise<void> {
         // TODO: `readEventsFromCache` should be async
-        this._eventQueue.push(...DefaultTelemetryService.readEventsFromCache(this.persistFilePath))
+        this._eventQueue.push(...(await DefaultTelemetryService.readEventsFromCache(this.persistFilePath)))
         this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
         telemetry.session_start.emit()
         this.startTimer()
@@ -96,7 +109,7 @@ export class DefaultTelemetryService {
             telemetry.session_end.emit({ value: currTime.getTime() - this.startTime.getTime() })
 
             try {
-                await writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
+                await fs.writeFile(this.persistFilePath, JSON.stringify(this._eventQueue))
             } catch {}
         }
     }
@@ -147,6 +160,17 @@ export class DefaultTelemetryService {
 
     public clearRecords(): void {
         this._eventQueue.length = 0
+    }
+
+    /**
+     * This ensures the folder, where we will store things like telemetry cache, exists.
+     * 
+     * VSCode provides the URI of the folder, but it is not guaranteed to exist.
+     */
+    private static async ensureGlobalStorageExists(context: ExtensionContext): Promise<void> { 
+        if (!fs.fileExists(context.globalStorageUri)) {
+            await fs.mkdir(context.globalStorageUri)
+        }
     }
 
     private async flushRecords(): Promise<void> {
@@ -254,14 +278,14 @@ export class DefaultTelemetryService {
         return event
     }
 
-    private static readEventsFromCache(cachePath: string): MetricDatum[] {
+    private static async readEventsFromCache(cachePath: string): Promise<MetricDatum[]> {
         try {
-            if (!fs.existsSync(cachePath)) {
+            if ((await fs.fileExists(cachePath)) === false) {
                 getLogger().info(`telemetry cache not found: '${cachePath}'`)
 
                 return []
             }
-            const input = JSON.parse(fs.readFileSync(cachePath, 'utf-8'))
+            const input = JSON.parse(await fs.readFileAsString(cachePath))
             const events = filterTelemetryCacheEvents(input)
 
             return events

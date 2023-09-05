@@ -44,8 +44,8 @@ describe('DefaultTelemetryService', function () {
     let service: DefaultTelemetryService
     let logger: TelemetryLogger
 
-    function initService(awsContext = new FakeAwsContext()): DefaultTelemetryService {
-        const newService = new DefaultTelemetryService(mockContext, awsContext, undefined, mockPublisher)
+    async function initService(awsContext = new FakeAwsContext()): Promise<DefaultTelemetryService> {
+        const newService = await DefaultTelemetryService.create(mockContext, awsContext, undefined, mockPublisher)
         newService.flushPeriod = testFlushPeriod
         newService.telemetryEnabled = true
 
@@ -64,7 +64,7 @@ describe('DefaultTelemetryService', function () {
     beforeEach(async function () {
         mockContext = await FakeExtensionContext.create()
         mockPublisher = new FakeTelemetryPublisher()
-        service = initService()
+        service = await initService()
         logger = service.logger
         clock = installFakeClock()
     })
@@ -170,7 +170,7 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events automatically inject the active account id into the metadata', async function () {
-        service = initService(makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials))
+        service = await initService(makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials))
         logger = service.logger
         service.record(fakeMetric({ metricName: 'name' }))
 
@@ -195,7 +195,7 @@ describe('DefaultTelemetryService', function () {
     })
 
     it('events created with a bad active account produce metadata mentioning the bad account', async function () {
-        service = initService({ getCredentialAccountId: () => 'this is bad!' } as unknown as FakeAwsContext)
+        service = await initService({ getCredentialAccountId: () => 'this is bad!' } as unknown as FakeAwsContext)
         logger = service.logger
 
         service.record(fakeMetric({ metricName: 'name' }))
