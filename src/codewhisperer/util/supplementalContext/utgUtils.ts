@@ -175,16 +175,19 @@ export function guessSrcFileName(
         return undefined
     }
 
-    try {
-        for (const pattern of languageConfig.testFilenamePattern) {
+    for (const pattern of languageConfig.testFilenamePattern) {
+        try {
             const match = testFileName.match(pattern)
             if (match) {
                 return match[1] + match[2]
             }
+        } catch (err) {
+            if (err instanceof Error) {
+                getLogger().debug(
+                    `codewhisperer: error while guessing source file name from file ${testFileName} and pattern ${pattern}: ${err.message}`
+                )
+            }
         }
-    } catch (err) {
-        getLogger().debug(`codewhisperer: error while guessing source file name from file ${testFileName}: ${err}`)
-        return undefined
     }
 
     return undefined
