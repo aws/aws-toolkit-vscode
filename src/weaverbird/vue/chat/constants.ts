@@ -7,7 +7,8 @@ import { LLMConfig } from './types'
 
 export const defaultLlmConfig: LLMConfig = {
     model: 'claude-2',
+    generationFlow: 'lambda',
     maxTokensToSample: 50000,
     temperature: 0.0,
-    debateRounds: 2,
+    debateRounds: 1,
 }
