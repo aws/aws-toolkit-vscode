@@ -7,15 +7,11 @@ import * as vscode from 'vscode'
 import { setInBrowser } from './common/browserUtils'
 import { activate as activateLogger } from './shared/logger/activation'
 import { initializeComputeRegion } from './shared/extensionUtilities'
-
 import { activate as activateTelemetry } from './shared/telemetry/activation'
 import { getLogger } from './shared/logger'
 import { DefaultAwsContext } from './shared/awsContext'
 import { Settings } from './shared/settings'
 import globals, { initialize } from './shared/extensionGlobals'
-
-import { TelemetryService } from './shared/telemetry/telemetryService'
-import { TelemetryLogger } from './shared/telemetry/telemetryLogger'
 import { initializeManifestPaths } from './extensionShared'
 import { RegionProvider, defaultRegion } from './shared/regions/regionProvider'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
@@ -23,32 +19,24 @@ import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 export async function activate(context: vscode.ExtensionContext) {
     setInBrowser(true) // THIS MUST ALWAYS BE FIRST
 
-    // This is temporary and required for the logger to run.
-    // It assumes the following exists and uses it during execution.
-    globals.telemetry = {
-        record: (event: any, awsContext?: any) => {},
-    } as TelemetryService & { logger: TelemetryLogger }
-
-    // Setup the logger
-    const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit')
-    await activateLogger(context, toolkitOutputChannel)
-
-    await initializeComputeRegion()
-    initialize(context)
-    initializeManifestPaths(context)
-
     vscode.window.showInformationMessage(
-        'AWS Toolkit: Browser Mode Under Development. No features are currently provided',
-        { modal: false }
+        'AWS Toolkit: Browser Mode Under Development. No features are currently provided'
     )
 
     try {
+        setupGlobalStubs()
+
+        // Setup the logger
+        const toolkitOutputChannel = vscode.window.createOutputChannel('AWS Toolkit')
+        await activateLogger(context, toolkitOutputChannel)
+
+        await initializeComputeRegion()
+        initialize(context)
+        initializeManifestPaths(context)
+
         const awsContext = new DefaultAwsContext()
         globals.awsContext = awsContext
 
-        globals.regionProvider = {
-            guessDefaultRegion: () => defaultRegion,
-        } as RegionProvider
         globals.sdkClientBuilder = new DefaultAWSClientBuilder(awsContext)
 
         const settings = Settings.instance
@@ -60,9 +48,31 @@ export async function activate(context: vscode.ExtensionContext) {
         if (stacktrace !== undefined && stacktrace.length > 40) {
             stacktrace.length = 40
         }
-        getLogger('channel').error('error')
+        getLogger().error('Failed to activate extension in Browser', error)
         throw error
     }
+}
+
+/**
+ * Since we are still incrementally enabling certain functionality
+ * in the browser, certain global variables will not have been set
+ * and functionality we enabled will not work.
+ *
+ * This function sets up the minimum-required stubs for the necessary
+ * variables to get things working.
+ *
+ * If needed we can eventually create the real implementations instead
+ * of stubbing.
+ */
+function setupGlobalStubs() {
+    // This is required for telemetry to run.
+    // The default region is arbitrary for now.
+    // We didn't create an actual instance since it
+    // will require non-trivial work to get the creation
+    // of the instance in the browser working.
+    globals.regionProvider = {
+        guessDefaultRegion: () => defaultRegion,
+    } as RegionProvider
 }
 
 export async function deactivate() {}
