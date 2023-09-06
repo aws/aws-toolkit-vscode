@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as fs from 'fs-extra'
-import { join } from 'path'
+import vscode from 'vscode'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { Logger } from '../../../shared/logger'
 import { makeLogger } from '../../../shared/logger/activation'
@@ -17,7 +17,8 @@ describe('makeLogger', function () {
 
     before(async function () {
         tempFolder = await makeTemporaryToolkitFolder()
-        testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [join(tempFolder, 'log.txt')] })
+        const logPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), 'log.txt')
+        testLogger = makeLogger({ staticLogLevel: 'debug', logPaths: [logPath] })
     })
 
     after(async function () {
