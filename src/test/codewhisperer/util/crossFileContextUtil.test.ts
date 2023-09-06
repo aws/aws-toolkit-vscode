@@ -46,7 +46,7 @@ describe('crossFileContextUtil', function () {
                 })
                 const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
                 assert.ok(actual)
-                assert.ok(actual.length === 3)
+                assert.ok(actual.supplementalContextItems.length === 3)
 
                 assert.strictEqual(actual[0].content.split('\n').length, 10)
                 assert.strictEqual(actual[1].content.split('\n').length, 10)
@@ -169,7 +169,10 @@ describe('crossFileContextUtil', function () {
 
                 const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-                assert.ok(actual?.length !== undefined && actual.length === 0)
+                assert.ok(
+                    actual?.supplementalContextItems.length !== undefined &&
+                        actual.supplementalContextItems.length === 0
+                )
             })
         })
     })
@@ -201,7 +204,10 @@ describe('crossFileContextUtil', function () {
 
                 const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-                assert.ok(actual?.length !== undefined && actual.length !== 0)
+                assert.ok(
+                    actual?.supplementalContextItems.length !== undefined &&
+                        actual.supplementalContextItems.length !== 0
+                )
             })
         })
     })
@@ -233,7 +239,10 @@ describe('crossFileContextUtil', function () {
 
                 const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-                assert.ok(actual?.length !== undefined && actual.length !== 0)
+                assert.ok(
+                    actual?.supplementalContextItems.length !== undefined &&
+                        actual.supplementalContextItems.length !== 0
+                )
             })
         })
     })
