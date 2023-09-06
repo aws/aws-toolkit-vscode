@@ -62,49 +62,48 @@ export class RedshiftNotebookController {
             success = false
         } finally {
             execution.end(success, Date.now())
-            if (success === true) {
-                telemetry.redshift_executeQuery.emit()
-            }
         }
     }
 
     private async executeCell(cell: vscode.NotebookCell): Promise<vscode.NotebookCellOutput> {
-        const connectionParams = cell.metadata.connectionParams as ConnectionParams
+        return telemetry.redshift_executeQuery.run(async () => {
+            const connectionParams = cell.metadata.connectionParams as ConnectionParams
 
-        // This handles cases where the users had connected to the database with the wizard in a previous session and they opened and closed the editor
-        if (!this.redshiftClient && connectionParams) {
-            this.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
-        }
-
-        let executionId: string | undefined
-        let columnMetadata: RedshiftData.ColumnMetadataList | undefined
-        const records: RedshiftData.SqlRecords = []
-        let nextToken: string | undefined
-        // get all the pages of the result
-        do {
-            const result: ExecuteQueryResponse = await this.redshiftClient!.executeQuery(
-                connectionParams,
-                cell.document.getText(),
-                nextToken,
-                executionId
-            )
-            nextToken = result.statementResultResponse.NextToken
-            executionId = result.executionId
-            columnMetadata = result.statementResultResponse.ColumnMetadata
-            records.push(...result.statementResultResponse.Records)
-        } while (nextToken)
-
-        if (columnMetadata) {
-            const columnNames: string[] = columnMetadata.map(column => column.name || 'UnknownColumnName')
-            if (columnNames) {
-                const htmlTable = this.getAsTable(columnNames, records)
-                return new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(htmlTable, 'text/html')])
-            } else {
-                throw Error('Column metadata did not contain column names')
+            // This handles cases where the users had connected to the database with the wizard in a previous session and they opened and closed the editor
+            if (!this.redshiftClient && connectionParams) {
+                this.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
             }
-        } else {
-            throw Error('Result did not contain column metadata')
-        }
+
+            let executionId: string | undefined
+            let columnMetadata: RedshiftData.ColumnMetadataList | undefined
+            const records: RedshiftData.SqlRecords = []
+            let nextToken: string | undefined
+            // get all the pages of the result
+            do {
+                const result: ExecuteQueryResponse = await this.redshiftClient!.executeQuery(
+                    connectionParams,
+                    cell.document.getText(),
+                    nextToken,
+                    executionId
+                )
+                nextToken = result.statementResultResponse.NextToken
+                executionId = result.executionId
+                columnMetadata = result.statementResultResponse.ColumnMetadata
+                records.push(...result.statementResultResponse.Records)
+            } while (nextToken)
+
+            if (columnMetadata) {
+                const columnNames: string[] = columnMetadata.map(column => column.name || 'UnknownColumnName')
+                if (columnNames) {
+                    const htmlTable = this.getAsTable(columnNames, records)
+                    return new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(htmlTable, 'text/html')])
+                } else {
+                    throw Error('Column metadata did not contain column names')
+                }
+            } else {
+                throw Error('Result did not contain column metadata')
+            }
+        })
     }
 
     public getAsTable(columns: string[], records: RedshiftData.SqlRecords) {

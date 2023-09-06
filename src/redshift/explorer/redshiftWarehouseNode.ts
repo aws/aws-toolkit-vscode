@@ -76,30 +76,31 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     }
 
     private async loadPage(token?: string): Promise<ChildNodePage<AWSTreeNodeBase>> {
-        const childNodes: RedshiftDatabaseNode[] = []
-        // this.connectionParams cannot null here because loadPage should be called only after the connection wizard runs.
-        try {
-            const listDatabasesResponse: ListDatabasesResponse = await this.redshiftClient.listDatabases(
-                this.connectionParams!,
-                token
-            )
-            if (listDatabasesResponse.Databases) {
-                childNodes.push(
-                    ...listDatabasesResponse.Databases.map(db => {
-                        return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
-                    })
+        return telemetry.redshift_listDatabases.run(async () => {
+            const childNodes: RedshiftDatabaseNode[] = []
+            // this.connectionParams cannot null here because loadPage should be called only after the connection wizard runs.
+            try {
+                const listDatabasesResponse: ListDatabasesResponse = await this.redshiftClient.listDatabases(
+                    this.connectionParams!,
+                    token
                 )
-                telemetry.redshift_listDatabases.emit()
-            }
+                if (listDatabasesResponse.Databases) {
+                    childNodes.push(
+                        ...listDatabasesResponse.Databases.map(db => {
+                            return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)
+                        })
+                    )
+                }
 
-            return {
-                newContinuationToken: listDatabasesResponse.NextToken,
-                newChildren: childNodes,
+                return {
+                    newContinuationToken: listDatabasesResponse.NextToken,
+                    newChildren: childNodes,
+                }
+            } catch (error) {
+                this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
+                return Promise.reject(error)
             }
-        } catch (error) {
-            this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
-            return Promise.reject(error)
-        }
+        })
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

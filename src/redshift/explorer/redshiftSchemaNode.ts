@@ -40,30 +40,31 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
     }
 
     private async loadPage(token?: string): Promise<ChildNodePage<RedshiftTableNode>> {
-        const newChildren: RedshiftTableNode[] = []
-        try {
-            const listTablesResponse = await this.redshiftClient.listTables(
-                this.connectionParams,
-                this.schemaName,
-                token
-            )
-            if (listTablesResponse.Tables) {
-                newChildren.push(
-                    ...listTablesResponse.Tables.filter(table => !table.name?.endsWith('_pkey')).map(table => {
-                        return new RedshiftTableNode(table.name ?? 'UnknownTable')
-                    })
+        return telemetry.redshift_listTables.run(async () => {
+            const newChildren: RedshiftTableNode[] = []
+            try {
+                const listTablesResponse = await this.redshiftClient.listTables(
+                    this.connectionParams,
+                    this.schemaName,
+                    token
                 )
-                telemetry.redshift_listTables.emit()
+                if (listTablesResponse.Tables) {
+                    newChildren.push(
+                        ...listTablesResponse.Tables.filter(table => !table.name?.endsWith('_pkey')).map(table => {
+                            return new RedshiftTableNode(table.name ?? 'UnknownTable')
+                        })
+                    )
+                }
+                return {
+                    newChildren: newChildren,
+                    newContinuationToken: listTablesResponse.NextToken,
+                }
+            } catch (error) {
+                this.logger.error(`Failed to fetch tables for ${this.schemaName}: ${error}`)
+                vscode.window.showErrorMessage(`Failed to fetch tables for ${this.schemaName}: ${error}`)
+                return Promise.reject(error)
             }
-            return {
-                newChildren: newChildren,
-                newContinuationToken: listTablesResponse.NextToken,
-            }
-        } catch (error) {
-            this.logger.error(`Failed to fetch tables for ${this.schemaName}: ${error}`)
-            vscode.window.showErrorMessage(`Failed to fetch tables for ${this.schemaName}: ${error}`)
-            return Promise.reject(error)
-        }
+        })
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

@@ -226,15 +226,15 @@
         },
         {
             "name": "redshift_listDatabases",
-            "description": "Emitted when redshift listDatabases API is called"
+            "description": "Called when redshift listDatabases API is called"
         },
         {
             "name": "redshift_listSchemas",
-            "description": "Emitted when redshift listSchemas API is called"
+            "description": "Called when redshift listSchemas API is called"
         },
         {
             "name": "redshift_listTables",
-            "description": "Emitted when redshift listTables API is called"
+            "description": "Called when redshift listTables API is called"
         },
         {
             "name": "sam_attachDebugger",
