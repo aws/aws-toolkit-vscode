@@ -169,10 +169,7 @@ describe('crossFileContextUtil', function () {
 
                 const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-                assert.ok(
-                    actual?.supplementalContextItems.length !== undefined &&
-                        actual.supplementalContextItems.length === 0
-                )
+                assert.ok(actual && actual.supplementalContextItems.length === 0)
             })
         })
     })
@@ -204,10 +201,7 @@ describe('crossFileContextUtil', function () {
 
                 const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-                assert.ok(
-                    actual?.supplementalContextItems.length !== undefined &&
-                        actual.supplementalContextItems.length !== 0
-                )
+                assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
         })
     })
@@ -239,10 +233,7 @@ describe('crossFileContextUtil', function () {
 
                 const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-                assert.ok(
-                    actual?.supplementalContextItems.length !== undefined &&
-                        actual.supplementalContextItems.length !== 0
-                )
+                assert.ok(actual && actual.supplementalContextItems.length !== 0)
             })
         })
     })
