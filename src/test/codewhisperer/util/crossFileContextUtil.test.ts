@@ -48,9 +48,9 @@ describe('crossFileContextUtil', function () {
                 assert.ok(actual)
                 assert.ok(actual.supplementalContextItems.length === 3)
 
-                assert.strictEqual(actual[0].content.split('\n').length, 10)
-                assert.strictEqual(actual[1].content.split('\n').length, 10)
-                assert.strictEqual(actual[2].content.split('\n').length, 10)
+                assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
+                assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
+                assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
             }
 
             it('control group', async function () {
