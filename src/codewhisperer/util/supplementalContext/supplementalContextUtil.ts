@@ -28,7 +28,6 @@ export interface CodeWhispererSupplementalContext {
 export interface CodeWhispererSupplementalContextItem {
     content: string
     filePath: string
-    strategy: SupplementalContextStrategy
     score?: number
 }
 

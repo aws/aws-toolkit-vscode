@@ -108,7 +108,6 @@ export async function fetchSupplementalContextForSrc(
         supplementalContexts.push({
             filePath: chunk.fileName,
             content: chunk.nextContent,
-            strategy: 'OpenTabs_BM25',
             score: chunk.score,
         })
     }
