@@ -9,9 +9,12 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.CollectionComboBoxModel
-import com.intellij.ui.layout.GrowPolicy
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.bindItem
+import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.toNullableProperty
 import com.intellij.ui.layout.applyToComponent
-import com.intellij.ui.layout.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.plugins.terminal.TerminalTabState
@@ -23,10 +26,12 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.core.map
 import software.aws.toolkits.jetbrains.services.ecs.ContainerDetails
 import software.aws.toolkits.jetbrains.services.ecs.resources.EcsResources
-import software.aws.toolkits.jetbrains.ui.resourceSelector
+import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.utils.notifyError
+import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.EcsExecuteCommandType
 import software.aws.toolkits.telemetry.EcsTelemetry
@@ -45,6 +50,10 @@ class OpenShellInContainerDialog(
     var task: String? = null
     var shell: String = ""
 
+    val taskList = ResourceSelector.builder().resource(
+        EcsResources.listTasks(container.service.clusterArn(), container.service.serviceArn()).map { it }
+    ).awsConnection(project).build()
+
     init {
         super.init()
         title = message("ecs.execute_command_run_command_in_shell")
@@ -53,18 +62,22 @@ class OpenShellInContainerDialog(
 
     override fun createCenterPanel(): JComponent = panel {
         row(message("ecs.execute_command_task.label")) {
-            resourceSelector(
-                EcsResources.listTasks(container.service.clusterArn(), container.service.serviceArn()),
-                connectionSettings,
-                ::task
-            ).constraints(growX, pushX)
-                .growPolicy(GrowPolicy.MEDIUM_TEXT)
-                .withErrorOnApplyIf(message("ecs.execute_command_task_comboBox_empty")) { it.selected().isNullOrEmpty() }
+            cell(taskList)
+                .bindItem(::task.toNullableProperty())
+                .errorOnApply(message("ecs.execute_command_task_comboBox_empty")) {
+                    it.selected().isNullOrEmpty()
+                }.columns(30)
         }
         row(message("ecs.execute_command_shell.label")) {
-            comboBox(shellOption, ::shell).constraints(grow)
-                .withErrorOnApplyIf(message("ecs.execute_command_shell_comboBox_empty")) { it.editor.item.toString().isBlank() }
+            comboBox(shellOption)
+                .bindItem({ shell }, {
+                    if (it != null) {
+                        shell = it
+                    }
+                })
+                .errorOnApply(message("ecs.execute_command_shell_comboBox_empty")) { it.editor.item.toString().isBlank() }
                 .applyToComponent { isEditable = true }
+                .align(AlignX.FILL)
         }
     }
 
