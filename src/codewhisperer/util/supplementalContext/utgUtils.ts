@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -25,10 +24,10 @@ import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
 
-type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
+const UtgSupportedLanguage = new Set<vscode.TextDocument['languageId']>(['java', 'python'])
 
-function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
-    return languageId in utgLanguageConfigs
+function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): boolean {
+    return UtgSupportedLanguage.has(languageId)
 }
 
 export function shouldFetchUtgContext(
@@ -167,68 +166,72 @@ async function getRelevantUtgFiles(editor: vscode.TextEditor): Promise<string[]>
     })
 }
 
+export function guessSrcFileName(
+    testFileName: string,
+    languageId: vscode.TextDocument['languageId']
+): string | undefined {
+    const languageConfig = utgLanguageConfigs[languageId]
+    if (!languageConfig) {
+        return undefined
+    }
+
+    for (const pattern of languageConfig.testFilenamePattern) {
+        try {
+            const match = testFileName.match(pattern)
+            if (match) {
+                return match[1] + match[2]
+            }
+        } catch (err) {
+            if (err instanceof Error) {
+                getLogger().debug(
+                    `codewhisperer: error while guessing source file name from file ${testFileName} and pattern ${pattern}: ${err.message}`
+                )
+            }
+        }
+    }
+
+    return undefined
+}
+
 async function findSourceFileByName(
     editor: vscode.TextEditor,
     languageConfig: utgLanguageConfig,
     cancellationToken: vscode.CancellationToken
 ): Promise<string | undefined> {
-    const uri = editor.document.uri
-    const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
-    const projectPath = workspaceFolder ? workspaceFolder.uri.fsPath : path.dirname(uri.fsPath)
+    const filePath = editor.document.uri.fsPath
+
     const testFileName = path.basename(editor.document.fileName)
+    const sourceFileName = guessSrcFileName(testFileName, editor.document.languageId)
 
-    let basenameSuffix = testFileName
-    const match = testFileName.match(languageConfig.testFilenamePattern)
-    if (match) {
-        basenameSuffix = match[1] || match[2]
+    if (!sourceFileName) {
+        return undefined
     }
 
-    throwIfCancelled(cancellationToken)
+    const folders = vscode.workspace.workspaceFolders
 
-    // Assuming the convention of using similar path structure for test and src files.
-    const dirPath = path.dirname(editor.document.uri.fsPath)
-    let newPath = ''
-    const lastIndexTest = dirPath.lastIndexOf('/test/')
-    const lastIndexTst = dirPath.lastIndexOf('/tst/')
-    // This is a faster way on the assumption that source file and test file will follow similar path structure.
-    if (lastIndexTest > 0) {
-        newPath = dirPath.substring(0, lastIndexTest) + '/src/' + dirPath.substring(lastIndexTest + 5)
-    } else if (lastIndexTst > 0) {
-        newPath = dirPath.substring(0, lastIndexTst) + '/src/' + dirPath.substring(lastIndexTst + 4)
-    }
-    newPath = path.join(newPath, basenameSuffix + languageConfig.extension)
-    // TODO: Add metrics here, as we are not able to find the source file by name.
-    if (fs.existsSync(newPath)) {
-        return newPath
-    }
+    if (folders) {
+        try {
+            for (const folder of folders) {
+                if (!filePath.includes(`${folder.name}/`)) {
+                    continue
+                }
 
-    throwIfCancelled(cancellationToken)
-
-    // TODO: vscode.workspace.findFiles is preferred but doesn't seems to be working for now.
-    // TODO: Enable this later.
-    //const sourceFiles =
-    //    await vscode.workspace.findFiles(`${projectPath}/**/${basenameSuffix}${languageConfig.extension}`);
-    const sourceFiles = await globPromise(`${projectPath}/**/${basenameSuffix}${languageConfig.extension}`)
-
-    throwIfCancelled(cancellationToken)
-
-    if (sourceFiles.length > 0) {
-        return sourceFiles[0]
-    }
-    return undefined
-}
-
-// TODO: Replace this by vscode.workspace.findFiles
-function globPromise(pattern: string): Promise<string[]> {
-    return new Promise<string[]>((resolve, reject) => {
-        glob(pattern, (err, files) => {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(files)
+                const pattern = new vscode.RelativePattern(folder, `**/${sourceFileName}`)
+                const myFiles = await vscode.workspace.findFiles(pattern)
+                if (myFiles) {
+                    return myFiles[0].fsPath
+                }
             }
-        })
-    })
+        } catch (err) {
+            getLogger().debug(
+                `codewhisperer: UTG running into error while searching file ${sourceFileName}, errorMessage: ${err}`
+            )
+        }
+
+        return undefined
+    }
+
+    return undefined
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {
