@@ -6,11 +6,13 @@
 import * as vscode from 'vscode'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
-import { Interaction, Session } from './session'
+import { Session } from './session'
 import { MemoryFile } from '../../memoryFile'
 import * as path from 'path'
 import * as fs from 'fs'
 import { LLMConfig } from './types'
+import { LocalResolvedConfig, getConfig } from '../../config'
+import { Interaction } from './sessionState'
 
 // const localize = nls.loadMessageBundle()
 
@@ -21,7 +23,7 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly workspaceRoot: string
     public readonly onAddToHistory: vscode.EventEmitter<Interaction[]>
 
-    public constructor() {
+    public constructor(backendConfig: LocalResolvedConfig) {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
         super()
 
@@ -34,7 +36,7 @@ export class WeaverbirdChatWebview extends VueWebview {
         const workspaceRoot = workspaceFolders[0].uri.fsPath
         this.workspaceRoot = workspaceRoot
         this.onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-        this.session = new Session(workspaceRoot, this.onAddToHistory)
+        this.session = new Session(workspaceRoot, this.onAddToHistory, backendConfig)
     }
 
     public async getSession(): Promise<Session> {
@@ -78,7 +80,8 @@ const View = VueWebview.compileView(WeaverbirdChatWebview)
 let activeView: InstanceType<typeof View> | undefined
 
 export async function registerChatView(ctx: vscode.ExtensionContext): Promise<WeaverbirdChatWebview> {
-    activeView ??= new View(ctx)
+    const backendConfig = await getConfig()
+    activeView ??= new View(ctx, backendConfig)
     activeView.register({
         title: 'Weaverbird Chat',
     })
