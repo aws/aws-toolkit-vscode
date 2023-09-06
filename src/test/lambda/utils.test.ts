@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { getLambdaDetails } from '../../lambda/utils'
 
 describe('lambda utils', async function () {

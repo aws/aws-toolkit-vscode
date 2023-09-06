@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { deleteThingCommand } from '../../../iot/commands/deleteThing'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'

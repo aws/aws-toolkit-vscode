@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as assert from 'assert'
-import * as sinon from 'sinon'
+import vscode from 'vscode'
+import assert from 'assert'
+import sinon from 'sinon'
 import { codewhispererNode } from '../../../codewhisperer/explorer/codewhispererNode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 

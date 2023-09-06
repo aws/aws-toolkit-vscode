@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { runtimeLanguageContext, RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'

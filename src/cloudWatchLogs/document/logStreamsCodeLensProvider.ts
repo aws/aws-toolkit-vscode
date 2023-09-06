@@ -6,7 +6,12 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { CloudWatchLogsGroupInfo, LogDataRegistry } from '../registry/logDataRegistry'
-import { createURIFromArgs, isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
+import {
+    CloudWatchLogsSettings,
+    createURIFromArgs,
+    isLogStreamUri,
+    parseCloudWatchLogsUri,
+} from '../cloudWatchLogsUtils'
 import { LogDataDocumentProvider } from './logDataDocumentProvider'
 
 type IdWithLine = { streamId: string; lineNum: number }
@@ -57,7 +62,9 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     }
 
     createLogStreamCodeLens(logGroupInfo: CloudWatchLogsGroupInfo, idWithLine: IdWithLine): vscode.CodeLens {
-        const streamUri = createURIFromArgs({ ...logGroupInfo, streamName: idWithLine.streamId }, { limit: 1000 })
+        const settings = new CloudWatchLogsSettings()
+        const limit = settings.get('limit', 1000)
+        const streamUri = createURIFromArgs({ ...logGroupInfo, streamName: idWithLine.streamId }, { limit: limit })
         const cmd: vscode.Command = {
             command: 'aws.loadLogStreamFile',
             arguments: [streamUri, this.registry],

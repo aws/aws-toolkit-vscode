@@ -340,11 +340,9 @@ export function getToolkitEnvironmentDetails(): string {
 /**
  * Returns the Cloud9 compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9.
  */
-export async function initializeComputeRegion(
-    metadata: Ec2MetadataClient = new DefaultEc2MetadataClient(),
-    isC9: boolean = isCloud9()
-): Promise<void> {
+export async function initializeComputeRegion(metadata?: Ec2MetadataClient, isC9: boolean = isCloud9()): Promise<void> {
     if (isC9) {
+        metadata ??= new DefaultEc2MetadataClient()
         try {
             const identity = await metadata.getInstanceIdentity()
             computeRegion = identity.region || 'unknown'

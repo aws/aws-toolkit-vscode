@@ -6,7 +6,7 @@
 import globals from '../../../shared/extensionGlobals'
 
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { Commands } from '../../../shared/vscode/commands2'

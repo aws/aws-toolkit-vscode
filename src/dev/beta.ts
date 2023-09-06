@@ -6,7 +6,7 @@
 import * as path from 'path'
 import * as nls from 'vscode-nls'
 import * as vscode from 'vscode'
-import * as AdmZip from 'adm-zip'
+import AdmZip from 'adm-zip'
 import got from 'got'
 import globals from '../shared/extensionGlobals'
 import { getLogger } from '../shared/logger'

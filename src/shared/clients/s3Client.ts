@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as _ from 'lodash'
+import _ from 'lodash'
 import { AWSError, S3 } from 'aws-sdk'
 import { inspect } from 'util'
 import { getLogger } from '../logger'

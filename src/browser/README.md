@@ -1,5 +1,7 @@
 # Browser
 
+This folder should only contain code which must run in the Browser.
+
 For the AWS VS Code Toolkit extension to work in the browser (eg: [vscode.dev](https://vscode.dev/)), we
 need to ensure that certain functionality which may have previously only been able to
 run in a desktop environment can additionally run in a browser environment.

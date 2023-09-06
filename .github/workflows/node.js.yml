@@ -22,7 +22,7 @@ jobs:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v3
               with:
@@ -64,7 +64,7 @@ jobs:
             VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v3
               with:
@@ -93,7 +93,7 @@ jobs:
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
             - name: Use Node.js ${{ matrix.node-version }}
               uses: actions/setup-node@v3
               with:

@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-import * as vscode from 'vscode'
-import * as sinon from 'sinon'
-import * as fs from 'fs'
+import assert from 'assert'
+import vscode from 'vscode'
+import sinon from 'sinon'
+import fs from 'fs'
 import { PythonDependencyGraph } from '../../../../codewhisperer/util/dependencyGraph/pythonDependencyGraph'
 import { getTestWorkspaceFolder } from '../../../../testInteg/integrationTestsUtilities'
 import { join } from 'path'
