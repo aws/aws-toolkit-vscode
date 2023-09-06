@@ -8,8 +8,21 @@ updates:
       target-branch: 'master' # Avoid updates to "staging".
       schedule:
           interval: 'daily'
-    # Check for updates to GitHub Actions every week
+      groups:
+          aws-sdk:
+              dependency-type: 'production'
+              patterns:
+                  - '@aws-sdk/*'
+          vscode-lsp:
+              dependency-type: 'production'
+              patterns:
+                  - 'vscode-lang*'
     - package-ecosystem: 'github-actions'
       directory: '/'
+      target-branch: 'master' # Avoid updates to "staging".
       schedule:
-          interval: 'weekly'
+          interval: 'daily'
+      groups:
+          github-actions:
+              patterns:
+                  - '*'
