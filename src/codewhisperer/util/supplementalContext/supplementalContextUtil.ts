@@ -45,7 +45,9 @@ export async function fetchSupplementalContext(
         fileContent: editor.document.getText(),
     })
 
-    let supplementalContextPromise: Promise<CodeWhispererSupplementalContextItem[] | undefined>
+    let supplementalContextPromise: Promise<
+        Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined
+    >
 
     if (isUtg) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
@@ -59,10 +61,10 @@ export async function fetchSupplementalContext(
                 return {
                     isUtg: isUtg,
                     isProcessTimeout: false,
-                    supplementalContextItems: value,
-                    contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
+                    supplementalContextItems: value.supplementalContextItems,
+                    contentsLength: value.supplementalContextItems.reduce((acc, curr) => acc + curr.content.length, 0),
                     latency: performance.now() - timesBeforeFetching,
-                    strategy: value[0].strategy ? value[0].strategy : 'Empty',
+                    strategy: value.strategy,
                 }
             } else {
                 return undefined

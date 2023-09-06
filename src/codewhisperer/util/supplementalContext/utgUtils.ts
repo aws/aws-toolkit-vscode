@@ -18,7 +18,7 @@ import {
 import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
@@ -27,7 +27,7 @@ import { getLogger } from '../../../shared/logger/logger'
 
 type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
 
-export type UtgStrategy = 'byName' | 'byContent'
+export type UtgStrategy = 'ByName' | 'ByContent'
 
 function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
     return languageId in utgLanguageConfigs
@@ -60,14 +60,14 @@ export function shouldFetchUtgContext(
 export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
-): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const shouldProceed = shouldFetchUtgContext(
         editor.document.languageId,
         CodeWhispererUserGroupSettings.instance.userGroup
     )
 
     if (!shouldProceed) {
-        return shouldProceed === undefined ? undefined : []
+        return shouldProceed === undefined ? undefined : { supplementalContextItems: [], strategy: 'Empty' }
     }
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
@@ -79,7 +79,14 @@ export async function fetchSupplementalContextForTest(
     if (crossSourceFile) {
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
-        return generateSupplementalContextFromFocalFile(crossSourceFile, 'byName', cancellationToken)
+        return {
+            supplementalContextItems: generateSupplementalContextFromFocalFile(
+                crossSourceFile,
+                'ByName',
+                cancellationToken
+            ),
+            strategy: 'ByName',
+        }
     }
     throwIfCancelled(cancellationToken)
 
@@ -87,12 +94,22 @@ export async function fetchSupplementalContextForTest(
     if (crossSourceFile) {
         // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
         getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
-        return generateSupplementalContextFromFocalFile(crossSourceFile, 'byContent', cancellationToken)
+        return {
+            supplementalContextItems: generateSupplementalContextFromFocalFile(
+                crossSourceFile,
+                'ByContent',
+                cancellationToken
+            ),
+            strategy: 'ByContent',
+        }
     }
 
     // TODO (Metrics): 4. Failure count - when unable to find focal file (supplemental context empty)
     getLogger().debug(`CodeWhisperer failed to fetch utg context`)
-    return []
+    return {
+        supplementalContextItems: [],
+        strategy: 'Empty',
+    }
 }
 
 function generateSupplementalContextFromFocalFile(
