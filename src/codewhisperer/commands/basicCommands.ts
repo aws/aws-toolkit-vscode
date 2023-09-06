@@ -19,6 +19,7 @@ import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { createGettingStartedNode } from '../explorer/codewhispererChildrenNodes'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -48,7 +49,7 @@ export const enableCodeSuggestions = Commands.declare(
             context.extensionContext.globalState
         )
         if (!hasShownWelcomeMsgBefore) {
-            showCodeWhispererWelcomeMessage(context)
+            vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
             await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
         }
         if (!isCloud9()) {
@@ -131,14 +132,6 @@ export const updateReferenceLog = Commands.declare(
         ReferenceLogViewProvider.instance.update()
     }
 )
-
-async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<void> {
-    const filePath = isCloud9()
-        ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
-        : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
-    const readmeUri = vscode.Uri.file(filePath)
-    await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
-}
 
 export const refreshStatusBar = Commands.declare(
     { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },

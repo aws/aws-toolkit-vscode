@@ -4,6 +4,7 @@
  */
 
 import { AuthCommandDeclarations } from '../../auth/commands'
+import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -88,3 +89,16 @@ export const createFreeTierLimitMetNode = () => {
         description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
     })
 }
+
+/* 
+createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
+onClick on this "Learn" Node will open the Getting Started Page of CodeWhisperer.
+*/
+
+export const createGettingStartedNode = () =>
+    CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
+        .build('codewhispererDeveloperTools')
+        .asTreeNode({
+            label: localize('AWS.explorerNode.codewhispererGettingStartedNode.label', 'Learn'),
+            iconPath: getIcon('aws-codewhisperer-learn'),
+        })

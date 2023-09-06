@@ -41,7 +41,7 @@ import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { InlineCompletionService } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
@@ -49,6 +49,8 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
+import { submitFeedback } from '../feedback/vue/submitFeedback'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -63,6 +65,12 @@ export async function activate(context: ExtContext): Promise<void> {
     if (isCloud9()) {
         await enableDefaultConfigCloud9()
     }
+
+    registerCommandsWithVSCode(
+        context.extensionContext,
+        CodeWhispererCommandDeclarations.instance,
+        new CodeWhispererCommandBackend(context.extensionContext)
+    )
 
     /**
      * CodeWhisperer security panel
@@ -129,6 +137,10 @@ export async function activate(context: ExtContext): Promise<void> {
                         }
                     })
             }
+        }),
+        //  Feedback for CodeWhisperer
+        Commands.register({ id: 'aws.submitFeedbackCW', autoconnect: false }, async () => {
+            await submitFeedback(context, 'CodeWhisperer')
         }),
         /**
          * Open Configuration

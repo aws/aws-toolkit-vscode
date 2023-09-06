@@ -13,6 +13,7 @@ import {
     createSsoSignIn,
     createLearnMore,
     createFreeTierLimitMetNode,
+    createGettingStartedNode,
 } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
 
 describe('codewhisperer children nodes', function () {
@@ -48,6 +49,12 @@ describe('codewhisperer children nodes', function () {
         const node = createSsoSignIn()
 
         assert.strictEqual(node.resource.id, 'aws.auth.manageConnections')
+    })
+
+    it('should build showGettingStartedPage command node', function () {
+        const node = createGettingStartedNode()
+
+        assert.strictEqual(node.resource.id, 'aws.codeWhisperer.gettingStarted')
     })
 
     it('should build showLearnMore command node', function () {

@@ -14,6 +14,7 @@ import {
     createSsoSignIn,
     createFreeTierLimitMetNode,
     createReconnectNode,
+    createGettingStartedNode,
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
@@ -88,6 +89,7 @@ export class CodeWhispererNode implements RootNode {
                     createAutoSuggestionsNode(autoTriggerEnabled),
                     createSecurityScanNode(),
                     createOpenReferenceLogNode(),
+                    createGettingStartedNode(), // "Learn" Node : Getting Started Page for CodeWhisperer
                 ]
             }
         }

@@ -59,11 +59,54 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-const Panel = VueWebview.compilePanel(FeedbackWebview)
+export class FeedbackCWWebview extends VueWebview {
+    public readonly id = 'submitFeedbackCW'
+    public readonly source = 'src/codewhisperer/vue/feedback/index.js'
+
+    public constructor(private readonly telemetry: TelemetryService) {
+        super()
+    }
+
+    public async submit(message: FeedbackMessage): Promise<string | void> {
+        const logger = getLogger()
+
+        if (!message.sentiment) {
+            return 'Choose a reaction (smile/frown)'
+        }
+
+        try {
+            await this.telemetry.postFeedback({
+                comment: message.comment,
+                sentiment: message.sentiment,
+            })
+        } catch (err) {
+            const errorMessage = (err as Error).message || 'Failed to submit feedback'
+            logger.error(`feedback failed: "${message.sentiment}": ${errorMessage}`)
+
+            telemetry.feedback_result.emit({ result: 'Failed' })
+
+            return errorMessage
+        }
+
+        logger.info(`feedback sent: "${message.sentiment}"`)
+
+        telemetry.feedback_result.emit({ result: 'Succeeded' })
+
+        this.dispose()
+
+        vscode.window.showInformationMessage(
+            localize('AWS.message.info.submitFeedback.success', 'Thanks for the feedback!')
+        )
+    }
+}
 
 let activeWebview: VueWebviewPanel | undefined
 
-export async function submitFeedback(context: ExtContext) {
+export async function submitFeedback(context: ExtContext, feedbackName: string) {
+    const Panel =
+        feedbackName === 'CodeWhisperer'
+            ? VueWebview.compilePanel(FeedbackCWWebview)
+            : VueWebview.compilePanel(FeedbackWebview)
     activeWebview ??= new Panel(context.extensionContext, globals.telemetry)
 
     const webviewPanel = await activeWebview.show({

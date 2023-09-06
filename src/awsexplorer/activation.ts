@@ -120,7 +120,7 @@ async function registerAwsExplorerCommands(
             }
         }),
         Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
-            await submitFeedback(context)
+            await submitFeedback(context, 'AWSToolkit')
         }),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
