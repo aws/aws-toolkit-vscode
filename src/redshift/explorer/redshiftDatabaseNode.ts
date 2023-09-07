@@ -14,6 +14,7 @@ import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
@@ -43,29 +44,31 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
     }
 
     private async loadPage(token?: string): Promise<ChildNodePage<RedshiftSchemaNode>> {
-        const newChildren: RedshiftSchemaNode[] = []
-        try {
-            // this ensures that when listing schemas (thereafter, when we list tables) we maintain the database name for which we're listing schemas/tables.
-            if (this.connectionParams.database !== this.databaseName) {
-                this.connectionParams.database = this.databaseName
+        return telemetry.redshift_listSchemas.run(async () => {
+            const newChildren: RedshiftSchemaNode[] = []
+            try {
+                // this ensures that when listing schemas (thereafter, when we list tables) we maintain the database name for which we're listing schemas/tables.
+                if (this.connectionParams.database !== this.databaseName) {
+                    this.connectionParams.database = this.databaseName
+                }
+                const listSchemaResponse = await this.redshiftClient.listSchemas(this.connectionParams, token)
+                if (listSchemaResponse.Schemas) {
+                    newChildren.push(
+                        ...listSchemaResponse.Schemas.map(schema => {
+                            return new RedshiftSchemaNode(schema, this.redshiftClient, this.connectionParams)
+                        })
+                    )
+                }
+                return {
+                    newChildren: newChildren,
+                    newContinuationToken: listSchemaResponse.NextToken,
+                }
+            } catch (error) {
+                this.logger.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
+                vscode.window.showErrorMessage(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
+                return Promise.reject(error)
             }
-            const listSchemaResponse = await this.redshiftClient.listSchemas(this.connectionParams, token)
-            if (listSchemaResponse.Schemas) {
-                newChildren.push(
-                    ...listSchemaResponse.Schemas.map(schema => {
-                        return new RedshiftSchemaNode(schema, this.redshiftClient, this.connectionParams)
-                    })
-                )
-            }
-            return {
-                newChildren: newChildren,
-                newContinuationToken: listSchemaResponse.NextToken,
-            }
-        } catch (error) {
-            this.logger.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
-            vscode.window.showErrorMessage(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
-            return Promise.reject(error)
-        }
+        })
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {

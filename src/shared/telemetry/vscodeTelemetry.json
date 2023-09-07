@@ -221,6 +221,22 @@
             "description": "Called when refreshing the CDK explorer"
         },
         {
+            "name": "redshift_executeQuery",
+            "description": "Called when redshift query is executed"
+        },
+        {
+            "name": "redshift_listDatabases",
+            "description": "Called when redshift listDatabases API is called"
+        },
+        {
+            "name": "redshift_listSchemas",
+            "description": "Called when redshift listSchemas API is called"
+        },
+        {
+            "name": "redshift_listTables",
+            "description": "Called when redshift listTables API is called"
+        },
+        {
             "name": "sam_attachDebugger",
             "description": "Called after trying to attach a debugger to a local sam invoke",
             "metadata": [
