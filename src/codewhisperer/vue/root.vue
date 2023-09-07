@@ -122,14 +122,5 @@ export default defineComponent({
         ScanCode,
         GenerateSuggestionTab,
     },
-    data() {
-        return {}
-    },
-    mounted() {
-        this.show()
-    },
-    methods: {
-        show() {},
-    },
 })
 </script>

@@ -7,7 +7,7 @@ import { anything, deepEqual, instance, mock, verify, when } from '../../utiliti
 import { TelemetryService } from '../../../shared/telemetry/telemetryService'
 
 import * as assert from 'assert'
-import { FeedbackWebview, FeedbackCWWebview } from '../../../feedback/vue/submitFeedback'
+import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
 
 const comment = 'comment'
 const sentiment = 'Positive'
@@ -21,7 +21,7 @@ describe('submitFeedbackListener', function () {
     })
 
     it('submits feedback, disposes, and shows message on success', async function () {
-        const webview = new FeedbackWebview(instance(mockTelemetry))
+        const webview = new FeedbackWebview(instance(mockTelemetry), 'AWS Toolkit')
         await webview.submit(message)
 
         verify(mockTelemetry.postFeedback(deepEqual({ comment: comment, sentiment: sentiment }))).once()
@@ -33,7 +33,7 @@ describe('submitFeedbackListener', function () {
 
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
 
-        const webview = new FeedbackWebview(instance(mockTelemetry))
+        const webview = new FeedbackWebview(instance(mockTelemetry), 'AWS Toolkit')
         const result = await webview.submit(message)
 
         assert.strictEqual(result, error)
@@ -48,7 +48,7 @@ describe('submitFeedbackCWListener', function () {
     })
 
     it('submits feedback, disposes, and shows message on success', async function () {
-        const webview = new FeedbackCWWebview(instance(mockTelemetry))
+        const webview = new FeedbackWebview(instance(mockTelemetry), 'CodeWhisperer')
         await webview.submit(message)
 
         verify(mockTelemetry.postFeedback(deepEqual({ comment: comment, sentiment: sentiment }))).once()
@@ -60,7 +60,7 @@ describe('submitFeedbackCWListener', function () {
 
         when(mockTelemetry.postFeedback(anything())).thenThrow(new Error(error))
 
-        const webview = new FeedbackCWWebview(instance(mockTelemetry))
+        const webview = new FeedbackWebview(instance(mockTelemetry), 'CodeWhisperer')
         const result = await webview.submit(message)
 
         assert.strictEqual(result, error)

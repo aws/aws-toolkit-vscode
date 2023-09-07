@@ -50,7 +50,6 @@ import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
-import { submitFeedback } from '../feedback/vue/submitFeedback'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -137,10 +136,6 @@ export async function activate(context: ExtContext): Promise<void> {
                         }
                     })
             }
-        }),
-        //  Feedback for CodeWhisperer
-        Commands.register({ id: 'aws.submitFeedbackCW', autoconnect: false }, async () => {
-            await submitFeedback(context, 'CodeWhisperer')
         }),
         /**
          * Open Configuration

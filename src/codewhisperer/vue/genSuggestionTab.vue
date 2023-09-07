@@ -298,17 +298,29 @@ export default defineComponent({
     extends: TelemetryClient,
     data() {
         return {
-            activeTab: 0,
+            activeTab: parseInt(sessionStorage.getItem('activeTab') || '0'),
             osState: '',
             tabs: [
                 {
                     label: 'Python',
                     tableData: [
                         {
-                            column1: 'pythonAuto',
-                            column2: 'pythonManual',
-                            column3: 'pythonComments',
-                            column4: 'pythonUnit',
+                            column1: [
+                                'CodeWhisperer_Python_Example1.py',
+                                `# Allow CodeWhisperer to make recommendations as you type.${'\n'}${'\n'}# TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                            ],
+                            column2: [
+                                'CodeWhisperer_Python_Example2.py',
+                                `# Force CodeWhisperer make a recommendation.${'\n'}${'\n'}# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                            ],
+                            column3: [
+                                'CodeWhisperer_Python_Example3.py',
+                                `# Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}# TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                            ],
+                            column4: [
+                                'CodeWhisperer_Python_Example4.py',
+                                `# CodeWhisperer can help generate unit tests.${'\n'}${'\n'}# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}from unittest import TestCase${'\n'}${'\n'}# Function to sum two numbers.${'\n'}def sum(x, y):${'\n'}    return x + y${'\n'}${'\n'}class TestSum(TestCase):${'\n'}    # test the sum method with integers`,
+                            ],
                         },
                     ],
                 },
@@ -316,26 +328,56 @@ export default defineComponent({
                     label: 'JavaScript',
                     tableData: [
                         {
-                            column1: 'javaScriptAuto',
-                            column2: 'javaScriptManual',
-                            column3: 'javaScriptComments',
-                            column4: 'javaScriptUnit',
+                            column1: [
+                                'CodeWhisperer_JS_Example1.js',
+                                `// Allow CodeWhisperer to make recommendations as you type.${'\n'}// TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                            ],
+                            column2: [
+                                'CodeWhisperer_JS_Example2.js',
+                                `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column3: [
+                                'CodeWhisperer_JS_Example3.js',
+                                `// Force CodeWhisperer make a recommendation.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column4: [
+                                'CodeWhisperer_JS_Example4.js',
+                                `// CodeWhisperer can help generate unit tests.${'\n'}${'\n'}// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}const sum = (x, y) => x + y${'\n'}${'\n'}// Write a test case for the sum function.`,
+                            ],
                         },
                     ],
                 },
                 {
                     label: 'C#',
-                    tableData: [{ column1: 'C#Auto', column2: 'C#Manual', column3: 'C#Comments', column4: 'C#Unit' }],
+                    tableData: [
+                        {
+                            column1: [
+                                'CodeWhisperer_C_Example1.cs',
+                                `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column2: [
+                                'CodeWhisperer_C_Example2.cs',
+                                `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column3: [
+                                'CodeWhisperer_C_Example3.cs',
+                                `// Force CodeWhisperer make a recommendation.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column4: [
+                                'CodeWhisperer_C_Example4.cs',
+                                `// CodeWhisperer can help generate unit tests.${'\n'}${'\n'}// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}int sum(int x, int y) {${'\n'}    return x + y;${'\n'}}${'\n'}// Write a test case for the sum function.`,
+                            ],
+                        },
+                    ],
                 },
             ],
         }
     },
     mounted() {
-        //Excecuted only once
         this.showOS()
     },
     methods: {
-        onClick(names: string) {
+        onClick(names: string[]) {
             client.emitUiClick('cw_GenerateSuggestions_TryExample')
             client.openFile(names)
         },
@@ -345,7 +387,7 @@ export default defineComponent({
         activeTabFunction(index: number) {
             client.emitUiClick('cw_GenerateSuggestions_Tab')
             this.activeTab = index
-            console.log(this.activeTab)
+            sessionStorage.setItem('activeTab', index.toString())
         },
     },
 })

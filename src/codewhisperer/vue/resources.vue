@@ -77,6 +77,7 @@
                         letter-spacing: 0em;
                         text-align: left;
                         color: #cccccc;
+                        cursor: pointer;
                     "
                     @click="onClick"
                 >

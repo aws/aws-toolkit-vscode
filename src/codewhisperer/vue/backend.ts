@@ -15,158 +15,41 @@ export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
     public readonly source = 'src/codewhisperer/vue/index.js'
 
-    //TODO: Prefill the sandbox files with the Predefined code
-    codeInsertedPythonManual = false
-    codeInsertedPythonAuto = false
-    codeInsertedPythonUnit = false
-    codeInsertedPythonComments = false
-
-    codeInsertedJSManual = false
-    codeInsertedJSAuto = false
-    codeInsertedJSUnit = false
-    codeInsertedJSComments = false
-
-    codeInsertedCManual = false
-    codeInsertedCAuto = false
-    codeInsertedCUnit = false
-    codeInsertedCComments = false
-
-    async openNewTab(setting: vscode.Uri, predefinedCode: string): Promise<void> {
-        vscode.workspace.openTextDocument(setting).then((a: vscode.TextDocument) => {
+    //This function opens the new created Documents in a new editor tab
+    async openNewEditorTab(fileName: vscode.Uri, defaultCode: string): Promise<void> {
+        vscode.workspace.openTextDocument(fileName).then((a: vscode.TextDocument) => {
             vscode.window.showTextDocument(a, 1, false).then(e => {
                 e.edit(edit => {
-                    edit.insert(new vscode.Position(0, 0), predefinedCode)
+                    edit.insert(new vscode.Position(0, 0), defaultCode)
                 })
             })
         })
     }
 
-    async openFile(name: string): Promise<void> {
-        if (name === 'pythonAuto') {
-            if (!this.codeInsertedPythonAuto) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example1.py')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedPythonAuto = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedPythonAuto = false
-            })
-        } else if (name === 'pythonManual') {
-            if (!this.codeInsertedPythonManual) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example2.py')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedPythonManual = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedPythonManual = false
-            })
-        } else if (name === 'pythonComments') {
-            if (!this.codeInsertedPythonComments) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example3.py')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedPythonComments = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedPythonComments = false
-            })
-        } else if (name === 'pythonUnit') {
-            if (!this.codeInsertedPythonUnit) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example4.py')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedPythonUnit = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedPythonUnit = false
-            })
-        } else if (name === 'javaScriptAuto') {
-            if (!this.codeInsertedJSAuto) {
-                const predefinedCode = `//////////////////////////////////////////// ${'\n'}// Try CodeWhisperer in this sandbox file // ${'\n'}//////////////////////////////////////////// ${'\n'}//${'\n'}// ====== Generate your first code suggestion ====== ${'\n'}// TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}// You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}// Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example1.js')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedJSAuto = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedJSAuto = false
-            })
-        } else if (name === 'javaScriptManual') {
-            if (!this.codeInsertedJSManual) {
-                const predefinedCode = `//////////////////////////////////////////// ${'\n'}// Try CodeWhisperer in this sandbox file // ${'\n'}//////////////////////////////////////////// ${'\n'}//${'\n'}// ====== Generate your first code suggestion ====== ${'\n'}// TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}// You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}// Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example2.js')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedJSManual = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedJSManual = false
-            })
-        } else if (name === 'javaScriptComments') {
-            if (!this.codeInsertedJSComments) {
-                const predefinedCode = `//////////////////////////////////////////// ${'\n'}// Try CodeWhisperer in this sandbox file // ${'\n'}//////////////////////////////////////////// ${'\n'}//${'\n'}// ====== Generate your first code suggestion ====== ${'\n'}// TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}// You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}// Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example3.js')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedJSComments = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedJSComments = false
-            })
-        } else if (name === 'javaScriptUnit') {
-            if (!this.codeInsertedJSUnit) {
-                const predefinedCode = `//////////////////////////////////////////// ${'\n'}// Try CodeWhisperer in this sandbox file // ${'\n'}//////////////////////////////////////////// ${'\n'}//${'\n'}// ====== Generate your first code suggestion ====== ${'\n'}// TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}// You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}// Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example4.js')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedJSUnit = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedJSUnit = false
-            })
-        } else if (name === 'C#Auto') {
-            if (!this.codeInsertedCAuto) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example1.cs')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedCAuto = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedCAuto = false
-            })
-        } else if (name === 'C#Manual') {
-            if (!this.codeInsertedCManual) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example2.cs')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedCManual = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedCManual = false
-            })
-        } else if (name === 'C#Comments') {
-            if (!this.codeInsertedCComments) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example3.cs')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedCComments = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedCComments = false
-            })
-        } else if (name === 'C#Unit') {
-            if (!this.codeInsertedCUnit) {
-                const predefinedCode = `############################################ ${'\n'} # Try CodeWhisperer in this sandbox file # ${'\n'}############################################ ${'\n'}#${'\n'}# ====== Generate your first code suggestion ====== ${'\n'}# TODO: Prompt Amazon CodeWhisperer to generate a code suggestion for you. ${'\n'}# You can use the following code to generate a suggestion:"Function to upload a file to S3."${'\n'}${'\n'}# Function to upload a file to S3`
-                const setting: vscode.Uri = vscode.Uri.parse('untitled:CodeWhisperer_Example4.cs')
-                this.openNewTab(setting, predefinedCode)
-            }
-            this.codeInsertedCUnit = true
-            vscode.workspace.onDidCloseTextDocument(e => {
-                this.codeInsertedCUnit = false
-            })
+    //This function opens the document in the editor with the predefined code in it
+    async openFile(name: string[]): Promise<void> {
+        // let document: vscode.TextDocument | undefined = undefined
+
+        const fileName = name[0]
+        const fileContent = name[1]
+
+        const existingDocument = vscode.workspace.textDocuments.find(
+            doc =>
+                doc.uri.toString() === `untitled:${fileName}` ||
+                doc.uri.toString() ===
+                    vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, fileName).toString()
+        )
+
+        if (existingDocument) {
+            vscode.window.showTextDocument(existingDocument, vscode.ViewColumn.Active)
         } else {
-            vscode.window.showInformationMessage('This feature is not yet supported')
+            //         const fileUri = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, fileName)
+            const fileNameUri = vscode.Uri.parse(`untitled:${fileName}`)
+            this.openNewEditorTab(fileNameUri, fileContent)
         }
     }
 
+    //This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
     public getOSType() {
         const platform = os.platform()
         if (platform === 'win32') {
@@ -178,12 +61,14 @@ export class CodeWhispererWebview extends VueWebview {
         }
     }
 
+    //This function opens the Keyboard shortcuts in VSCode
     async openShortCuts(): Promise<void> {
         vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
     }
 
+    //This function opens the Feedback CW page in the webview
     async openFeedBack(): Promise<void> {
-        vscode.commands.executeCommand('aws.submitFeedbackCW')
+        vscode.commands.executeCommand('aws.submitFeedback', 'CodeWhisperer')
     }
 
     //         ------   Telemetry   ------
@@ -205,7 +90,7 @@ export class CodeWhispererWebview extends VueWebview {
     }
 }
 
-//List of all events that are emitted from the webview
+//List of all events that are emitted from the webview of CodeWhisperer
 export type CodeWhispererUiClick =
     | 'cw_Resources_Documentation'
     | 'cw_Resources_Feedback'
@@ -221,6 +106,7 @@ let subscriptions: vscode.Disposable[] | undefined
 
 export type CodeWhispererSource = 'codewhispererDeveloperTools'
 
+// This function is called when the extension is activated : Webview of CodeWhisperer
 export async function showCodeWhispererWebview(
     ctx: vscode.ExtensionContext,
     source: CodeWhispererSource
