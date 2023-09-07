@@ -54,6 +54,7 @@ interface SessionStateAction {
     task: string
     files: FileMetadata[]
     msg?: string
+    onAddToHistory: vscode.EventEmitter<Interaction[]>
 }
 
 type NewFileContents = { filePath: string; fileContent: string }[]
@@ -133,8 +134,16 @@ class RefinementIterationState implements SessionState {
 
         this.approach = response.approach
 
+        if (action.msg && action.msg.indexOf('WRITE CODE') !== -1) {
+            return new CodeGenState(this.config, this.approach).interact(action)
+        }
+
+        if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
+            return new MockCodeGenState(this.config, this.approach).interact(action)
+        }
+
         return {
-            nextState: undefined,
+            nextState: new RefinementIterationState(this.config, this.approach),
             interactions: [
                 {
                     origin: 'ai',
@@ -174,11 +183,7 @@ export class CodeGenState implements SessionState {
 
     public tokenSource: vscode.CancellationTokenSource
 
-    constructor(
-        public config: SessionStateConfig,
-        public approach: string,
-        private onAddToHistory: vscode.EventEmitter<Interaction[]>
-    ) {
+    constructor(public config: SessionStateConfig, public approach: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -198,7 +203,7 @@ export class CodeGenState implements SessionState {
 
         const genId = response.generationId
 
-        this.onAddToHistory.fire([
+        action.onAddToHistory.fire([
             {
                 origin: 'ai',
                 type: 'message',
@@ -206,7 +211,7 @@ export class CodeGenState implements SessionState {
             },
         ])
 
-        await this.generateCode(genId).catch(x => {
+        await this.generateCode(action.onAddToHistory, genId).catch(x => {
             getLogger().error(`Failed to generate code`)
         })
 
@@ -216,7 +221,7 @@ export class CodeGenState implements SessionState {
         }
     }
 
-    private async generateCode(generationId: string) {
+    private async generateCode(onAddToHistory: vscode.EventEmitter<Interaction[]>, generationId: string) {
         for (
             let pollingIteration = 0;
             pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
@@ -235,7 +240,7 @@ export class CodeGenState implements SessionState {
 
             if (codegenResult.status == 'ready') {
                 const changes = await createChanges(codegenResult.result.newFileContents)
-                this.onAddToHistory.fire(changes)
+                onAddToHistory.fire(changes)
                 return
             } else {
                 await new Promise(f => setTimeout(f, 10000))
