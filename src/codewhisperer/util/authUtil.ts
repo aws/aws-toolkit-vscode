@@ -24,6 +24,7 @@ import {
     isSsoConnection,
     isBuilderIdConnection,
 } from '../../auth/connection'
+import { getLogger } from '../../shared/logger'
 
 export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
@@ -181,15 +182,25 @@ export class AuthUtil {
     }
 
     public isConnectionValid(): boolean {
-        return this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
+        const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
+        getLogger().debug(`Connection is valid = ${connectionValid}, 
+                            connection is undefined = ${this.conn === undefined},
+                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired}`)
+        return connectionValid
     }
 
     public isConnectionExpired(): boolean {
-        return (
+        const connectionExpired =
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererConnection(this.conn)
-        )
+        getLogger().debug(`Connection expired = ${connectionExpired},
+                           secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
+                           connection is undefined = ${this.conn === undefined}`)
+        if (this.conn) {
+            getLogger().debug(`isValidCodeWhispererConnection = ${isValidCodeWhispererConnection(this.conn)}`)
+        }
+        return connectionExpired
     }
 
     public async reauthenticate() {
