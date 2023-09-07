@@ -161,7 +161,7 @@ abstract class AbstractSsmCommandExecutor(private val region: AwsRegion, protect
 
     private fun newSshCommand() = SsmCommandLineFactory(ssmTarget, startSsh(), region).sshCommand()
 
-    fun proxyCommand() = SsmCommandLineFactory(ssmTarget, startSsh(), region).generateProxyCommand()
+    fun proxyCommand() = SsmCommandLineFactory(ssmTarget, startSsh(), region).proxyCommand()
 
     private companion object {
         private val LOG = getLogger<AbstractSsmCommandExecutor>()

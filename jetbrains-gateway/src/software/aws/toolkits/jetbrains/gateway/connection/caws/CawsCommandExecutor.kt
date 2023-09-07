@@ -15,7 +15,7 @@ class CawsCommandExecutor(
     ssmTarget: String,
     private val spaceName: String,
     private val projectName: String
-) : AbstractSsmCommandExecutor(REGION, ssmTarget) {
+) : AbstractSsmCommandExecutor(AwsRegion.GLOBAL, ssmTarget) {
     override fun startSsh(): StartSessionResponse =
         startSession {
             it.sessionConfiguration { session ->
@@ -48,10 +48,5 @@ class CawsCommandExecutor(
             streamUrl = session.accessDetails().streamUrl(),
             tokenValue = session.accessDetails().tokenValue()
         )
-    }
-
-    companion object {
-        // TODO: devWorkspace APIs are only in us-west-2 at the moment
-        private val REGION = AwsRegion("us-west-2", "us-west-2", "aws")
     }
 }

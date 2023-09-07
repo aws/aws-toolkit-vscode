@@ -3,10 +3,11 @@
 
 package software.aws.toolkits.jetbrains.gateway.connection
 
+import com.intellij.execution.CommandLineUtil
+import com.intellij.execution.Platform
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.openapi.util.SystemInfo
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.tools.ToolManager
 import software.aws.toolkits.jetbrains.services.ssm.SsmPlugin
 
@@ -23,56 +24,59 @@ class SsmCommandLineFactory(
     private val ssmTarget: String,
     private val sessionParameters: StartSessionResponse,
     private val region: AwsRegion,
-    private val overrideSsmPlugin: String? = null,
-    private val overrideWindowsWrapper: String? = null
+    private val overrideSsmPlugin: String? = null
 ) {
     fun sshCommand(): SshCommandLine {
         val command = SshCommandLine(ssmTarget)
-        val proxyCommand = generateProxyCommand()
-        command.addSshOption("-o", "ProxyCommand=${proxyCommand.commandString}")
+        command.addSshOption("-o", "ProxyCommand=${proxyCommand()}")
         command.addSshOption("-o", "ServerAliveInterval=60")
-        command.withEnvironment(proxyCommand.environment)
 
         return command
     }
 
     fun scpCommand(remotePath: String, recursive: Boolean = false): ScpCommandLine {
         val command = ScpCommandLine(ssmTarget, remotePath, recursive)
-        val proxyCommand = generateProxyCommand()
-        command.addSshOption("-o", "ProxyCommand=${proxyCommand.commandString}")
-        command.withEnvironment(proxyCommand.environment)
+        command.addSshOption("-o", "ProxyCommand=${proxyCommand()}")
 
         return command
     }
 
+    /**
+     * This returns a GeneralCommandLine is meant to be executed directly.
+     * Use [proxyCommand] instead if you need a value for the SSH "ProxyCommand" property
+     */
     fun rawCommand(): GeneralCommandLine = generateProxyCommand().let {
         GeneralCommandLine(it.exePath)
-            .withEnvironment(it.environment)
-            .apply {
-                if (it.args != null) {
-                    withParameters(it.args)
-                }
-            }
+            .withParameters(it.args)
     }
 
     inner class ProxyCommand(
         val exePath: String,
-        val ssmPayload: String? = null,
-        val environment: Map<String, String> = emptyMap()
-    ) {
-        val commandString by lazy {
+        val args: List<String>
+    )
+
+    /**
+     * This is meant to be passed directly as a value into the SSH "ProxyCommand" property
+     * Use [rawCommand] instead for command execution
+     */
+    fun proxyCommand(): String {
+        val rawCommand = rawCommand()
+
+        return if (SystemInfo.isWindows) {
+            // see [GeneralCommandLine.getPreparedCommandLine]
+            CommandLineUtil.toCommandLine(rawCommand.exePath, rawCommand.parametersList.list, Platform.current()).joinToString(separator = " ")
+        } else {
+            // on *nix, the quoting on getPreparedCommandLine is not quite correct since the arguments aren't being passed directly to execv
             buildString {
-                append(exePath)
-                if (ssmPayload != null) {
-                    append(""" '$ssmPayload' ${region.id} StartSession""")
+                append(rawCommand.exePath)
+                rawCommand.parametersList.list.forEach {
+                    append(" '$it'")
                 }
             }
         }
-
-        val args = ssmPayload?.let { listOf(it, region.id, "StartSession") }
     }
 
-    fun generateProxyCommand(): ProxyCommand {
+    private fun generateProxyCommand(): ProxyCommand {
         val ssmPluginJson = """
             {
             "streamUrl":"${sessionParameters.streamUrl}", 
@@ -84,21 +88,9 @@ class SsmCommandLineFactory(
         val ssmPath = overrideSsmPlugin
             ?: ToolManager.getInstance().getOrInstallTool(SsmPlugin).path.toAbsolutePath().toString()
 
-        return if (SystemInfo.isWindows) {
-            ProxyCommand(
-                exePath = overrideWindowsWrapper
-                    ?: AwsToolkit.pluginPath().resolve("gateway-resources").resolve("caws-proxy-command.bat").toAbsolutePath().toString(),
-                environment = mapOf(
-                    "sessionManagerExe" to ssmPath,
-                    "sessionManagerJson" to '"' + ssmPluginJson.replace("\"", "\\\"") + '"',
-                    "region" to region.id
-                )
-            )
-        } else {
-            ProxyCommand(
-                exePath = ssmPath,
-                ssmPayload = ssmPluginJson
-            )
-        }
+        return ProxyCommand(
+            ssmPath,
+            listOf(ssmPluginJson, region.id, "StartSession")
+        )
     }
 }

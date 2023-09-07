@@ -32,6 +32,8 @@ class StartBackendV2(
     override val stepName: String = message("gateway.connection.workflow.start_ide")
 
     override fun execute(context: Context, stepEmitter: StepEmitter, ignoreCancellation: Boolean) {
+        stepEmitter.emitMessageLine("Waiting for IDE to start on Dev Environment. See Gateway logs for details.", false)
+
         val creds = RemoteCredentialsHolder().apply {
             setHost("${CawsSshConnectionConfigModifier.HOST_PREFIX}${identifier.friendlyString}")
         }

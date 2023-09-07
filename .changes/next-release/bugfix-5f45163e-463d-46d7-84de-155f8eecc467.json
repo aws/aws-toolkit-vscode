@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix 'not recognzied as an ... command' when connecting to CodeCatalyst Dev Environments on Windows"
+}
