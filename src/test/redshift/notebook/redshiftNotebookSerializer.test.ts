@@ -37,10 +37,15 @@ describe('RedshiftNotebookSerializer', () => {
         const token = new vscode.CancellationTokenSource().token
         const result = await serializer.deserializeNotebook(rawData, token)
         assert.strictEqual(result.cells.length, 1)
-        assert.deepStrictEqual(result.cells[0].kind, vscode.NotebookCellKind.Code)
-        assert.deepStrictEqual(result.cells[0].languageId, 'sql')
-        assert.deepStrictEqual(result.cells[0].value, 'select * from table')
-        assert.deepStrictEqual(result.cells[0].metadata, {})
+        const actualResultCopy = JSON.parse(JSON.stringify(result.cells[0]))
+        delete actualResultCopy.metadata.mt
+        assert.deepStrictEqual(actualResultCopy, {
+            kind: vscode.NotebookCellKind.Code,
+            value: 'select * from table',
+            languageId: 'sql',
+            outputs: [],
+            metadata: {},
+        })
     })
 
     it('should serialize NotebookData correctly', async () => {
