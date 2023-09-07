@@ -40,14 +40,13 @@ class SsmCommandLineTest {
             "target",
             StartSessionResponse("session", "stream", "token"),
             AwsRegion.GLOBAL,
-            overrideSsmPlugin = "session manager plugin",
-            overrideWindowsWrapper = "session manager plugin"
+            overrideSsmPlugin = "session manager plugin"
         ).sshCommand()
 
         if (SystemInfo.isWindows) {
             assertThat(sut.constructCommandLine().commandLineString).matches(
                 """
-                (.*)?-o "ProxyCommand=session manager plugin"(.*)?
+                (.*)?-o "ProxyCommand=session manager plugin (.*)?"(.*)?
                 """.trimIndent().toPattern()
             )
         } else {
@@ -65,7 +64,7 @@ class SsmCommandLineTest {
         val sut = sutFactory.sshCommand()
         assertThat(sut.constructCommandLine().commandLineString).matches(
             """
-            $prefix -o "ProxyCommand=session-manager-plugin '\{\\"streamUrl\\":\\"stream\\",\\"tokenValue\\":\\"token\\",\\"sessionId\\":\\"session\\"}' aws-global StartSession" -o ServerAliveInterval=60
+            $prefix -o "ProxyCommand=session-manager-plugin '\{\\"streamUrl\\":\\"stream\\",\\"tokenValue\\":\\"token\\",\\"sessionId\\":\\"session\\"}' 'aws-global' 'StartSession'" -o ServerAliveInterval=60
             """.trimIndent().toPattern()
         )
     }
@@ -76,18 +75,9 @@ class SsmCommandLineTest {
         val sut = sutFactory.sshCommand()
         assertThat(sut.constructCommandLine().commandLineString).matches(
             """
-            $prefix -o ProxyCommand=(.*)?caws-proxy-command.bat -o ServerAliveInterval=60
+            $prefix -o "ProxyCommand=session-manager-plugin \\"\{\\\\"streamUrl\\\\":\\\\"stream\\\\",\\\\"tokenValue\\\\":\\\\"token\\\\",\\\\"sessionId\\\\":\\\\"session\\\\"}\\" aws-global StartSession" -o ServerAliveInterval=60
             """.trimIndent().toPattern()
         )
-
-        assertThat(sut.constructCommandLine().effectiveEnvironment)
-            .containsAllEntriesOf(
-                mapOf(
-                    "sessionManagerExe" to "session-manager-plugin",
-                    "sessionManagerJson" to """"{\"streamUrl\":\"stream\",\"tokenValue\":\"token\",\"sessionId\":\"session\"}"""",
-                    "region" to "aws-global"
-                )
-            )
     }
 
     @Test
@@ -98,7 +88,7 @@ class SsmCommandLineTest {
 
         assertThat(sut.constructCommandLine().commandLineString).matches(
             """
-            $prefix -o "ProxyCommand=session-manager-plugin '\{\\"streamUrl\\":\\"stream\\",\\"tokenValue\\":\\"token\\",\\"sessionId\\":\\"session\\"}' aws-global StartSession" localPath target:remote
+            $prefix -o "ProxyCommand=session-manager-plugin '\{\\"streamUrl\\":\\"stream\\",\\"tokenValue\\":\\"token\\",\\"sessionId\\":\\"session\\"}' 'aws-global' 'StartSession'" localPath target:remote
             """.trimIndent().toPattern()
         )
     }
@@ -111,17 +101,8 @@ class SsmCommandLineTest {
 
         assertThat(sut.constructCommandLine().commandLineString).matches(
             """
-            $prefix -o ProxyCommand=(.*)?caws-proxy-command.bat localPath target:remote
+            $prefix-o "ProxyCommand=session-manager-plugin \\"\{\\\\"streamUrl\\\\":\\\\"stream\\\\",\\\\"tokenValue\\\\":\\\\"token\\\\",\\\\"sessionId\\\\":\\\\"session\\\\"}\\" aws-global StartSession" localPath target:remote
             """.trimIndent().toPattern()
         )
-
-        assertThat(sut.constructCommandLine().effectiveEnvironment)
-            .containsAllEntriesOf(
-                mapOf(
-                    "sessionManagerExe" to "session-manager-plugin",
-                    "sessionManagerJson" to """"{\"streamUrl\":\"stream\",\"tokenValue\":\"token\",\"sessionId\":\"session\"}"""",
-                    "region" to "aws-global"
-                )
-            )
     }
 }

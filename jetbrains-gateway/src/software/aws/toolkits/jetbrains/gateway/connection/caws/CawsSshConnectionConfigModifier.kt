@@ -9,6 +9,7 @@ import com.intellij.ssh.config.SshConnectionConfigService
 import com.intellij.ssh.config.SshProxyConfig
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
+import software.aws.toolkits.jetbrains.gateway.connection.AbstractSsmCommandExecutor
 
 class CawsSshConnectionConfigModifier : SshConnectionConfigService.Modifier {
     override fun modify(initialHost: String, connectionConfig: SshConnectionConfig): SshConnectionConfig {
@@ -24,13 +25,16 @@ class CawsSshConnectionConfigModifier : SshConnectionConfigService.Modifier {
             projectName = project
         )
 
-        return connectionConfig.copy(
-            proxyConfig = SshProxyConfig.Command(executor.proxyCommand().commandString),
-            hostKeyVerifier = PromiscuousSshHostKeyVerifier
-        )
+        return modify(executor, connectionConfig)
     }
 
     companion object {
         const val HOST_PREFIX = "aws.codecatalyst:"
+
+        fun modify(executor: AbstractSsmCommandExecutor, connectionConfig: SshConnectionConfig): SshConnectionConfig =
+            connectionConfig.copy(
+                proxyConfig = SshProxyConfig.Command(executor.proxyCommand()),
+                hostKeyVerifier = PromiscuousSshHostKeyVerifier
+            )
     }
 }
