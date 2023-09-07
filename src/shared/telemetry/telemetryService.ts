@@ -48,7 +48,7 @@ export class DefaultTelemetryService {
     private _endOfCache: MetricDatum | undefined
 
     /**
-     * Use {@link create}() to create an instance of this class.  
+     * Use {@link create}() to create an instance of this class.
      */
     protected constructor(
         private readonly context: ExtensionContext,
@@ -91,14 +91,11 @@ export class DefaultTelemetryService {
         this._eventQueue.push(...(await DefaultTelemetryService.readEventsFromCache(this.persistFilePath)))
         this._endOfCache = this._eventQueue[this._eventQueue.length - 1]
         telemetry.session_start.emit()
-        this.startTimer()
+        this.startFlushInterval()
     }
 
     public async shutdown(): Promise<void> {
-        if (this._timer !== undefined) {
-            globals.clock.clearTimeout(this._timer)
-            this._timer = undefined
-        }
+        this.clearTimer()
 
         // Only write events to disk at shutdown time if:
         //   1. telemetry is enabled
@@ -164,10 +161,10 @@ export class DefaultTelemetryService {
 
     /**
      * This ensures the folder, where we will store things like telemetry cache, exists.
-     * 
+     *
      * VSCode provides the URI of the folder, but it is not guaranteed to exist.
      */
-    private static async ensureGlobalStorageExists(context: ExtensionContext): Promise<void> { 
+    private static async ensureGlobalStorageExists(context: ExtensionContext): Promise<void> {
         if (!fs.fileExists(context.globalStorageUri)) {
             await fs.mkdir(context.globalStorageUri)
         }
@@ -186,12 +183,22 @@ export class DefaultTelemetryService {
         }
     }
 
-    private startTimer(): void {
-        // The timer is not reset until after the flush as completed
+    /** Flushes the telemetry records every `_flushPeriod` milliseconds. */
+    private startFlushInterval(): void {
+        this.clearTimer()
         this._timer = globals.clock.setTimeout(async () => {
             await this.flushRecords()
-            this._timer?.refresh()
+            // Resets timer after the flush as completed
+            this.startFlushInterval()
         }, this._flushPeriod)
+    }
+
+    /** Clears the timer used to flush the telemetry records. */
+    private clearTimer(): void {
+        if (this._timer !== undefined) {
+            globals.clock.clearTimeout(this._timer)
+            this._timer = undefined
+        }
     }
 
     private async createDefaultPublisher(): Promise<TelemetryPublisher | undefined> {

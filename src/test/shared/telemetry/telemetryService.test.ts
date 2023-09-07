@@ -169,6 +169,31 @@ describe('DefaultTelemetryService', function () {
         assert.strictEqual(mockPublisher.queue.length, 2)
     })
 
+    it('flushes over multiple intervals', async function () {
+        stubGlobal()
+        await service.start()
+
+        // First interval
+        service.record(fakeMetric({ value: 10 }))
+        service.record(fakeMetric({ value: 11 }))
+        await clock.tickAsync(testFlushPeriod)
+
+        // Second interval
+        service.record(fakeMetric({ value: 20 }))
+        service.record(fakeMetric({ value: 21 }))
+        await clock.tickAsync(testFlushPeriod)
+
+        // Third interval
+        service.record(fakeMetric({ value: 30 }))
+        service.record(fakeMetric({ value: 31 }))
+        await clock.tickAsync(testFlushPeriod)
+
+        await service.shutdown()
+
+        assert.strictEqual(mockPublisher.flushCount, 3)
+        assert.strictEqual(mockPublisher.queue.length, 7)
+    })
+
     it('events automatically inject the active account id into the metadata', async function () {
         service = await initService(makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials))
         logger = service.logger
