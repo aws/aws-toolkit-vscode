@@ -5,7 +5,10 @@ package software.aws.toolkits.jetbrains.services.dynamodb.editor
 
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.HideableDecorator
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.bindItem
+import com.intellij.ui.dsl.builder.panel
+import com.intellij.ui.dsl.builder.toNullableProperty
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.services.dynamodb.Index
@@ -25,7 +28,7 @@ class SearchPanel(private val tableInfo: TableInfo, initialSearchType: SearchTyp
     private val queryScanPanel: DialogPanel = panel {
         row {
             label(message("dynamodb.viewer.search.index.label"))
-            comboBox(searchIndexModel, ::searchIndex, IndexRenderer(searchIndexModel)).constraints(growX, pushX)
+            comboBox(searchIndexModel, IndexRenderer(searchIndexModel)).bindItem(::searchIndex.toNullableProperty()).align(AlignX.FILL)
         }
 
         row {
