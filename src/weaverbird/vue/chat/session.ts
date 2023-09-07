@@ -12,14 +12,7 @@ import { defaultLlmConfig } from './constants'
 import { LLMConfig } from './types'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from './files'
-import {
-    SessionState,
-    SessionStateConfig,
-    RefinementState,
-    CodeGenState,
-    MockCodeGenState,
-    Interaction,
-} from './sessionState'
+import { SessionState, SessionStateConfig, RefinementState, Interaction } from './sessionState'
 
 export class Session {
     // TODO remake private
@@ -89,14 +82,6 @@ export class Session {
 
         const files = await collectFiles(path.join(this.workspaceRoot, 'src'))
 
-        if (msg.indexOf('WRITE CODE') !== -1) {
-            this.state = new CodeGenState(sessionStageConfig, this.approach, this.onAddToHistory)
-        }
-        // The `MOCK CODE` command is added temporarily to bypass the LLM
-        if (msg.indexOf('MOCK CODE') !== -1) {
-            this.state = new MockCodeGenState(sessionStageConfig, this.approach)
-        }
-
         if (msg === 'CLEAR') {
             this.task = ''
             this.approach = ''
@@ -119,6 +104,7 @@ export class Session {
             files,
             task: this.task,
             msg,
+            onAddToHistory: this.onAddToHistory,
         })
 
         if (resp.nextState) {
