@@ -45,6 +45,14 @@
                 @input="onConfigChanged"
             />
         </div>
+        <div class="config-holder">
+            <label> Code generation flow </label>
+            <select name="model" id="model" v-model="llmConfig.generationFlow" @change="onConfigChanged()">
+                <option value="fargate">Fargate</option>
+                <option value="lambda">Lambda</option>
+                <option value="stepFunction">Step function</option>
+            </select>
+        </div>
     </details>
 
     <div>

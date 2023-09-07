@@ -8,4 +8,5 @@ export interface LLMConfig {
     maxTokensToSample: number
     temperature: number
     debateRounds: number
+    generationFlow: 'fargate' | 'lambda' | 'stepFunction'
 }
