@@ -67,14 +67,13 @@ export class CodeWhispererNode implements RootNode {
     public getChildren() {
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
-
+        if (AuthUtil.instance.isConnectionExpired()) {
+            return [createReconnectNode(), createLearnMore()]
+        }
         if (!AuthUtil.instance.isConnected()) {
             return [createSsoSignIn(), createLearnMore()]
         }
-
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnectNode(), createLearnMore()]
-        } else if (this._showFreeTierLimitReachedNode) {
+        if (this._showFreeTierLimitReachedNode) {
             if (isCloud9()) {
                 return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
             } else {
