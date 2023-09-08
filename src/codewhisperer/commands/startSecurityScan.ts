@@ -29,9 +29,9 @@ import { statSync } from 'fs'
 import { getFileExt } from '../util/commonUtil'
 import { getDirSize } from '../../shared/filesystemUtilities'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { AuthUtil } from '../util/authUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -81,7 +81,7 @@ export async function startSecurityScan(
         codeScanServiceInvocationsDuration: 0,
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
-        credentialStartUrl: TelemetryHelper.instance.startUrl,
+        credentialStartUrl: AuthUtil.instance.startUrl,
     }
     try {
         getLogger().verbose(`Starting security scan `)

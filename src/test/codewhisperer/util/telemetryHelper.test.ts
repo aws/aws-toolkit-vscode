@@ -136,7 +136,7 @@ describe('telemetryHelper', function () {
                 ])
             )
 
-            sut.sendUserTriggerDecisionTelemetry()
+            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -170,7 +170,7 @@ describe('telemetryHelper', function () {
                 ])
             )
 
-            sut.sendUserTriggerDecisionTelemetry()
+            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -204,7 +204,7 @@ describe('telemetryHelper', function () {
                 ])
             )
 
-            sut.sendUserTriggerDecisionTelemetry()
+            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
