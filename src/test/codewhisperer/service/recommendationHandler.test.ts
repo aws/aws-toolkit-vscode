@@ -133,6 +133,7 @@ describe('recommendationHandler', function () {
                 supplementalContextItems: [],
                 contentsLength: 100,
                 latency: 0,
+                strategy: 'Empty',
             })
             sinon.stub(performance, 'now').returns(0.0)
             handler.startPos = new vscode.Position(1, 0)

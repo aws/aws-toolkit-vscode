@@ -96,6 +96,7 @@ export async function buildListRecommendationRequest(
                   isProcessTimeout: supplementalContexts.isProcessTimeout,
                   contentsLength: supplementalContexts.contentsLength,
                   latency: supplementalContexts.latency,
+                  strategy: supplementalContexts.strategy,
               }
             : undefined
 
@@ -150,6 +151,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
             isProcessTimeout: supplementalContexts.isProcessTimeout,
             contentsLength: supplementalContexts.contentsLength,
             latency: supplementalContexts.latency,
+            strategy: supplementalContexts.strategy,
         }
     }
 
