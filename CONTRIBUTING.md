@@ -160,6 +160,19 @@ To run a single test in VSCode, do any one of:
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
 
+### Debug failing integration tests
+
+-   Check for recent changes in each of these projects:
+    -   https://github.com/microsoft/vscode-python (releases)
+    -   https://github.com/aws/aws-sam-cli/releases
+    -   https://github.com/aws/aws-sam-cli-app-templates/ (`master` branch, not releases!)
+
+### Browser Support
+
+Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
+
+[See documentation here](./src/browser/README.md).
+
 ### Coverage report
 
 You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:

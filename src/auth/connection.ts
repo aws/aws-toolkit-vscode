@@ -18,7 +18,6 @@ const warnOnce = onceChanged((s: string, url: string) => {
     showMessageWithUrl(s, url, undefined, 'error')
 })
 
-export const ssoScope = 'sso:account:access'
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
@@ -256,13 +255,14 @@ export async function loadIamProfilesIntoStore(store: ProfileStore, manager: Cre
 }
 
 /**
- * Fetches profiles from the given SSO ("IAM Identity Center", "IdC") connection.
+ * Gets credentials profiles constructed from roles ("Permission Sets") discovered from the given
+ * SSO ("IAM Identity Center", "IdC") connection.
  */
 export async function* loadLinkedProfilesIntoStore(
     store: ProfileStore,
-    source: SsoConnection['id'],
-    client: SsoClient,
-    startUrl: string
+    sourceId: SsoConnection['id'],
+    ssoProfile: StoredProfile<SsoProfile>,
+    client: SsoClient
 ) {
     const accounts = new Set<string>()
     const found = new Set<Connection['id']>()
@@ -278,7 +278,7 @@ export async function* loadLinkedProfilesIntoStore(
 
     for await (const info of stream) {
         const name = `${info.roleName}-${info.accountId}`
-        const id = `sso:${source}#${name}`
+        const id = `sso:${sourceId}#${name}`
         found.add(id)
 
         if (store.getProfile(id) !== undefined) {
@@ -289,7 +289,7 @@ export async function* loadLinkedProfilesIntoStore(
             name,
             type: 'iam',
             subtype: 'linked',
-            ssoSession: source,
+            ssoSession: sourceId,
             ssoRoleName: info.roleName,
             ssoAccountId: info.accountId,
         })
@@ -297,13 +297,13 @@ export async function* loadLinkedProfilesIntoStore(
         yield [id, profile] as const
     }
 
-    const isBuilderId = startUrl === builderIdStartUrl // Special case.
-    if (!isBuilderId && (accounts.size === 0 || found.size === 0)) {
-        const name = truncateStartUrl(startUrl)
-        // Possible causes:
-        // - SSO org has no "Permission sets"
+    /** Does `ssoProfile` have scopes other than "sso:account:access"? */
+    const hasScopes = !!ssoProfile.scopes?.some(s => !ssoAccountAccessScopes.includes(s))
+    if (!hasScopes && (accounts.size === 0 || found.size === 0)) {
+        // SSO user has no OIDC scopes nor IAM roles. Possible causes:
         // - user is not an "Assigned user" in any account in the SSO org
-        // - user is an "Assigned user" but no "Permission sets"
+        // - SSO org has no "Permission sets"
+        const name = truncateStartUrl(ssoProfile.startUrl)
         if (accounts.size === 0) {
             getLogger().warn('auth: SSO org (%s) returned no accounts', name)
         } else if (found.size === 0) {
@@ -317,7 +317,12 @@ export async function* loadLinkedProfilesIntoStore(
 
     // Clean-up stale references in case the user no longer has access
     for (const [id, profile] of store.listProfiles()) {
-        if (profile.type === 'iam' && profile.subtype === 'linked' && profile.ssoSession === source && !found.has(id)) {
+        if (
+            profile.type === 'iam' &&
+            profile.subtype === 'linked' &&
+            profile.ssoSession === sourceId &&
+            !found.has(id)
+        ) {
             await store.deleteProfile(id)
         }
     }

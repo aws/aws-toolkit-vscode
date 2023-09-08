@@ -28,6 +28,10 @@ requests or any positive contribution. See [CONTRIBUTING.md](CONTRIBUTING.md).
     contains full instructions for using the Toolkit.
 -   See other [AWS SDKs and Tools](https://docs.aws.amazon.com/sdkref/latest/guide/overview.html).
 
+## Frequently Asked Questions (FAQ) / Troubleshooting
+
+[Go to page.](./docs/faq-credentials.md)
+
 ## Feedback
 
 We want your feedback!

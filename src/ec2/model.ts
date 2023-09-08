@@ -251,7 +251,7 @@ export class Ec2ConnectionManager {
         })
     }
 
-    protected async getRemoteUser(instanceId: string) {
+    public async getRemoteUser(instanceId: string) {
         const osName = await this.ssmClient.getTargetPlatformName(instanceId)
         if (osName === 'Amazon Linux') {
             return 'ec2-user'
