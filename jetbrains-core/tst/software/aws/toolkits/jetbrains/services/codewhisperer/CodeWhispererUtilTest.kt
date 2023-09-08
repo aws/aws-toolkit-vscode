@@ -3,13 +3,23 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
+import com.intellij.openapi.util.SimpleModificationTracker
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.ssooidc.SsoOidcClient
+import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.region.MockRegionProviderRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.toCodeChunk
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -19,10 +29,46 @@ class CodeWhispererUtilTest {
     @Rule
     val projectRule = JavaCodeInsightTestFixtureRule()
 
+    @JvmField
+    @Rule
+    val clientManager = MockClientManagerRule()
+
+    @JvmField
+    @Rule
+    val regionProvider = MockRegionProviderRule()
+
     lateinit var fixture: CodeInsightTestFixture
 
     @Before
     fun setup() {
+        regionProvider.addRegion(Region.US_EAST_1)
+        fixture = projectRule.fixture
+
+        clientManager.create<SsoOidcClient>()
+    }
+
+    @Test
+    fun `checkIfIdentityCenterLogin will execute callback if the connection is IamIdentityCenter`() {
+        val modificationTracker = SimpleModificationTracker()
+        val oldCount = modificationTracker.modificationCount
+
+        val ssoConn = ManagedBearerSsoConnection(startUrl = "fake url", region = "us-east-1", scopes = CODEWHISPERER_SCOPES)
+        runIfIamIdentityCenterConnection(ssoConn) { modificationTracker.incModificationCount() }
+
+        val newCount = modificationTracker.modificationCount
+        assertThat(newCount).isEqualTo(oldCount + 1L)
+    }
+
+    @Test
+    fun `checkIfIdentityCenterLogin will return null if the connection is not IamIdentityCenter`() {
+        val modificationTracker = SimpleModificationTracker()
+        val oldCount = modificationTracker.modificationCount
+
+        val builderIdConn = ManagedBearerSsoConnection(startUrl = SONO_URL, region = SONO_REGION, scopes = CODEWHISPERER_SCOPES)
+        runIfIamIdentityCenterConnection(builderIdConn) { modificationTracker.incModificationCount() }
+
+        val newCount = modificationTracker.modificationCount
+        assertThat(newCount).isEqualTo(oldCount)
         fixture = projectRule.fixture
     }
 

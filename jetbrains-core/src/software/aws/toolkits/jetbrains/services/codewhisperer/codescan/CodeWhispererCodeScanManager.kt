@@ -42,6 +42,7 @@ import kotlinx.coroutines.time.withTimeout
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.codewhisperer.model.CodeWhispererException
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.amazon.awssdk.services.codewhispererruntime.model.ThrottlingException
 import software.aws.toolkits.core.utils.WaiterTimeoutException
 import software.aws.toolkits.core.utils.debug
@@ -56,9 +57,13 @@ import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanDocumentListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.listeners.CodeWhispererCodeScanEditorMouseMotionListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.sessionconfig.CodeScanSessionConfig
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.overlaps
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererColorUtil.INACTIVE_TEXT_COLOR
@@ -66,6 +71,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIamIdentityCenterConnection
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.Result
 import java.time.Duration
@@ -138,6 +144,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
 
         // Prepare for a code scan
         beforeCodeScan()
+
         // launch code scan coroutine
         codeScanJob = launchCodeScanCoroutine()
     }
@@ -166,10 +173,13 @@ class CodeWhispererCodeScanManager(val project: Project) {
         var codeScanResponseContext = defaultCodeScanResponseContext()
         var getProjectSize: Deferred<Long?> = async { null }
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
+        var codeScanJobId: String? = null
+        var language: CodeWhispererProgrammingLanguage = CodeWhispererUnknownLanguage.INSTANCE
         try {
             val file = FileEditorManager.getInstance(project).selectedEditor?.file
                 ?: noFileOpenError()
             val codeScanSessionConfig = CodeScanSessionConfig.create(file, project)
+            language = codeScanSessionConfig.getSelectedFile().programmingLanguage()
             withTimeout(Duration.ofSeconds(codeScanSessionConfig.overallJobTimeoutInSeconds())) {
                 // 1. Generate truncation (zip files) based on the current editor.
                 LOG.debug { "Creating context truncation for file ${file.path}" }
@@ -177,6 +187,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 val session = CodeWhispererCodeScanSession(sessionContext)
                 val codeScanResponse = session.run()
                 codeScanResponseContext = codeScanResponse.responseContext
+                codeScanJobId = codeScanResponseContext.codeScanJobId
                 when (codeScanResponse) {
                     is CodeScanResponse.Success -> {
                         val issues = codeScanResponse.issues
@@ -213,6 +224,7 @@ class CodeWhispererCodeScanManager(val project: Project) {
                 CodeWhispererTelemetryService.getInstance().sendSecurityScanEvent(
                     CodeScanTelemetryEvent(codeScanResponseContext, duration, codeScanStatus, getProjectSize.await()?.toDouble(), connection)
                 )
+                sendCodeScanTelemetryToServiceAPI(project, language, codeScanJobId)
             }
         }
     }
@@ -385,6 +397,25 @@ class CodeWhispererCodeScanManager(val project: Project) {
     private fun afterCodeScan() {
         isCodeScanInProgress.set(false)
         project.refreshDevToolTree()
+    }
+
+    private fun sendCodeScanTelemetryToServiceAPI(
+        project: Project,
+        programmingLanguage: CodeWhispererProgrammingLanguage,
+        codeScanJobId: String?
+    ) {
+        runIfIamIdentityCenterConnection(project) {
+            try {
+                val response = CodeWhispererClientAdaptor.getInstance(project)
+                    .sendCodeScanTelemetry(programmingLanguage, codeScanJobId)
+                LOG.debug { "Successfully sent code scan telemetry. RequestId: ${response.responseMetadata().requestId()}" }
+            } catch (e: Exception) {
+                val requestId = if (e is CodeWhispererRuntimeException) e.requestId() else null
+                LOG.debug {
+                    "Failed to send code scan telemetry. RequestId: $requestId, ErrorMessage: ${e.message}"
+                }
+            }
+        }
     }
 
     /**

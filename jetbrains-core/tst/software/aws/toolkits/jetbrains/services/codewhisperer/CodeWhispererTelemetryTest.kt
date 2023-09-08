@@ -126,7 +126,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
 
     @Test
     fun `test accepting recommendation will send user modification events with 1 accepted other unseen`() {
-        val trackerSpy = spy(CodeWhispererUserModificationTracker(projectRule.project))
+        val trackerSpy = spy(CodeWhispererUserModificationTracker.getInstance(projectRule.project))
         val userGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup()
         projectRule.project.replaceService(CodeWhispererUserModificationTracker::class.java, trackerSpy, disposableRule.disposable)
 
@@ -470,7 +470,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, exploreManagerMock, disposableRule.disposable)
         val project = projectRule.project
         val fixture = projectRule.fixture
-        val tracker = CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE)
+        val tracker = CodeWhispererCodeCoverageTracker.getInstance(project, CodeWhispererPython.INSTANCE)
         assertThat(tracker.isTrackerActive()).isFalse
         runInEdtAndWait {
             WriteCommandAction.runWriteCommandAction(project) {
@@ -527,7 +527,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
             }
         }
 
-        CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
+        CodeWhispererCodeCoverageTracker.getInstance(project, CodeWhispererPython.INSTANCE).dispose()
 
         val acceptedTokensSize = pythonResponse.completions()[0].content().length - deletedTokenByUser
         val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length - deletedTokenByUser
@@ -574,7 +574,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 fixture.editor.document.deleteString(currentOffset - 1, currentOffset)
             }
             // use dispose() to force tracker to emit telemetry
-            CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
+            CodeWhispererCodeCoverageTracker.getInstance(project, CodeWhispererPython.INSTANCE).dispose()
         }
 
         val acceptedTokensSize = pythonResponse.completions()[0].content().length
@@ -622,7 +622,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         }
 
         // use dispose() to force tracker to emit telemetry
-        CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
+        CodeWhispererCodeCoverageTracker.getInstance(project, CodeWhispererPython.INSTANCE).dispose()
 
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -669,7 +669,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         withCodeWhispererServiceInvokedAndWait {
             popupManagerSpy.popupComponents.acceptButton.doClick()
         }
-        CodeWhispererCodeCoverageTracker.getInstance(CodeWhispererPython.INSTANCE).dispose()
+        CodeWhispererCodeCoverageTracker.getInstance(project, CodeWhispererPython.INSTANCE).dispose()
 
         val acceptedTokensSize = "x, y):\n    return x + y".length
         val totalTokensSize = "$pythonTestLeftContext(".length + acceptedTokensSize
