@@ -1,3 +1,7 @@
+# _1.77_ (2023-08-29)
+- **(Removal)** Removed support for 2022.2.x IDEs
+- **(Removal)** Removed support for Gateway 2023.1
+
 # _1.76_ (2023-08-15)
 - **(Feature)** CodeWhisperer: Improve file context fetching for Python Typescript Javascript source files
 - **(Feature)** CodeWhisperer: Improve file context fetching for Java test files
