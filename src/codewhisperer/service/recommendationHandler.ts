@@ -307,7 +307,7 @@ export class RecommendationHandler {
                 }
             })
             this.recommendations = pagination ? this.recommendations.concat(recommendation) : recommendation
-            if (isInlineCompletionEnabled()) {
+            if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(editor, typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
             }
         }
@@ -327,6 +327,10 @@ export class RecommendationHandler {
             this.nextToken = nextToken
             this.errorCode = errorCode
         }
+    }
+
+    hasAtLeastOneValidSuggestion(editor: vscode.TextEditor, typedPrefix: string): boolean {
+        return this.recommendations.some(r => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
     }
 
     cancelPaginatedRequest() {

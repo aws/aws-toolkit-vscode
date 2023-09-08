@@ -1,0 +1,26 @@
+{
+	"date": "2023-08-11",
+	"version": "1.84.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "misleading error when downloading a Lambda to a workspace without a folder"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Fix in some cases the inline suggestions are not showing in the editor"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Regions quickpick menu shows duplicate \"recently used\" labels"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve file context fetching for Java test files"
+		},
+		{
+			"type": "Feature",
+			"description": "IAM Identity Center (SSO): show an error if SSO user is not assigned to an account with a Permission Set"
+		}
+	]
+}
