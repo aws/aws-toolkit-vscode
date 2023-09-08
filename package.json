@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.86.0-SNAPSHOT",
+    "version": "1.87.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -2200,7 +2200,7 @@
             {
                 "command": "aws.ec2.copyInstanceId",
                 "title": "%AWS.command.ec2.copyInstanceId%",
-                "category": "%AWS.title",
+                "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3685,7 +3685,7 @@
         "json-schema-to-typescript": "^13.0.2",
         "marked": "^5.0.4",
         "mocha": "^10.1.0",
-        "mocha-junit-reporter": "^2.2.0",
+        "mocha-junit-reporter": "^2.2.1",
         "mocha-multi-reporters": "^1.5.1",
         "nyc": "^15.1.0",
         "prettier": "^2.8.8",

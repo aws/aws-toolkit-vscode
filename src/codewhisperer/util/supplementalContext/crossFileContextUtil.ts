@@ -15,6 +15,7 @@ import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -75,7 +76,7 @@ export async function fetchSupplementalContextForSrc(
     let chunkList: Chunk[] = []
     for (const relevantFile of relevantCrossFilePaths) {
         throwIfCancelled(cancellationToken)
-        const chunks: Chunk[] = splitFileToChunks(relevantFile, codeChunksCalculated)
+        const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
         if (chunkList.length >= codeChunksCalculated) {
@@ -105,6 +106,7 @@ export async function fetchSupplementalContextForSrc(
     }
 
     // DO NOT send code chunk with empty content
+    getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
     return supplementalContexts.filter(item => item.content.trim().length !== 0)
 }
 
@@ -189,7 +191,7 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
     const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()

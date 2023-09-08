@@ -374,10 +374,6 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
     getIcon('aws-cloudwatch-log-stream')
     ```
 
-### Beta artifacts
-
-The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
-
 ### VSCode Marketplace
 
 The [marketplace page](https://marketplace.visualstudio.com/itemdetails?itemName=AmazonWebServices.aws-toolkit-vscode)
@@ -392,21 +388,9 @@ Note therefore:
 2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
    `master`). Changes to other branches won't affect the marketplace page.
 
-## Using new vscode APIs
+### Importing icons from other projects
 
-The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
-is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
-
-But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
-
-1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
-2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
-
-Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
-
-## Importing icons from other open source repos
-
-If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
+If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps ([example: #227](https://github.com/aws/aws-toolkit-vscode/pull/227)):
 
 1. Use a separate location in this repo for every repo/organization where images are sourced from. See `resources/icons/vscode` as an example.
 1. Copy the source repo's licence into this destination location's LICENSE.txt file
@@ -422,7 +406,39 @@ If you are contribuing visual assets from other open source repos, the source re
 
 1. Add an entry [here](docs/icons.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
 
-[PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
+## Using new vscode APIs
+
+The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
+is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+
+But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
+
+1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
+2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
+
+Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
+
+## Preview Releases and Experiments
+
+There are several ways to make pre-production changes available on a "preview" or "experimental" basis:
+
+-   **Experimental features:** settings defined in [aws.experiments](https://github.com/aws/aws-toolkit-vscode/blob/4dcee33931693380739eaa5d44e92fa4545a9666/package.json#L228-L241)
+    are available in the vscode settings UI so that customers **can discover and enable them.**
+    This mechanism is intended for non-production features which are ready for
+    early access / preview feedback from interested customers.
+-   **Developer-only features:** the `aws.dev.forceDevMode` setting can be used as
+    a condition to enable features only for users who have
+    `"aws.dev.forceDevMode": true` in their settings. These features are intended
+    to be part of the mainline branch, but are _not_ presented to customers in the
+    VSCode settings UI. Example: [EC2 commands were gated on `aws.isDevMode`](https://github.com/aws/aws-toolkit-vscode/blob/4dcee33931693380739eaa5d44e92fa4545a9666/package.json#L1115-L1126)
+    so the functionality could be merged to mainline while it was under development.
+-   **Beta artifacts:** For a "private beta" launch, `src/dev/beta.ts` contains
+    logic to check a hardcoded, stable URL serving the latest `.vsix` build for
+    the private beta. The hardcoded URL defined in [`dev/config.ts:betaUrl`](https://github.com/aws/aws-toolkit-vscode/blob/d9c27234c0732b021d07e184a865213d6efde8ec/src/dev/config.ts#L9)
+    also forces the Toolkit to declare version `1.999.0` (since "private beta"
+    has no semver and would conflict with the VSCode marketplace version,
+    causing unwanted auto-updating by VSCode). Beta builds of the Toolkit
+    automatically query the URL once per session per day.
 
 ## Code of Conduct
 
