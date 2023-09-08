@@ -149,7 +149,7 @@ class SetupAuthenticationDialog(
 
             wrappers[tab]?.addToTop(
                 BorderLayoutPanel().apply {
-                    add(JLabel(notice.message), BorderLayout.CENTER)
+                    add(JLabel(notice.message + "\u00a0"), BorderLayout.CENTER)
                     add(BrowserLink(message("gettingstarted.setup.learnmore"), notice.learnMore), BorderLayout.EAST)
 
                     background = when (notice.type) {
@@ -158,9 +158,14 @@ class SetupAuthenticationDialog(
                     }
 
                     val defaultInsets = if (ExperimentalUI.isNewUI()) JBInsets.create(9, 16) else JBInsets.create(5, 10)
+                    val borderColor = when (notice.type) {
+                        SetupAuthenticationNotice.NoticeType.WARNING -> JBUI.CurrentTheme.NotificationWarning.borderColor()
+                        SetupAuthenticationNotice.NoticeType.ERROR -> JBUI.CurrentTheme.NotificationError.borderColor()
+                    }
+
                     border = BorderFactory.createCompoundBorder(
                         // outside border
-                        BorderFactory.createMatteBorder(0, 0, 1, 0, JBUI.CurrentTheme.NotificationWarning.borderColor()),
+                        BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor),
                         // inside border
                         // helper util not available in JBUI until 232
                         // https://github.com/JetBrains/intellij-community/blob/222/platform/platform-api/src/com/intellij/ui/EditorNotificationPanel.java#L135-L136
@@ -407,6 +412,38 @@ fun rolePopupFromConnection(project: Project, connection: AwsBearerTokenConnecti
         }
     }
 }
+
+fun requestCredentialsForCodeWhisperer(project: Project) =
+    SetupAuthenticationDialog(
+        project,
+        tabSettings = mapOf(
+            SetupAuthenticationTabs.IDENTITY_CENTER to AuthenticationTabSettings(
+                disabled = false,
+                notice = SetupAuthenticationNotice(
+                    SetupAuthenticationNotice.NoticeType.WARNING,
+                    message("gettingstarted.setup.codewhisperer.use_builder_id"),
+                    "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
+                )
+            ),
+            SetupAuthenticationTabs.BUILDER_ID to AuthenticationTabSettings(
+                disabled = false,
+                notice = SetupAuthenticationNotice(
+                    SetupAuthenticationNotice.NoticeType.WARNING,
+                    message("gettingstarted.setup.codewhisperer.use_identity_center"),
+                    "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
+                )
+            ),
+            SetupAuthenticationTabs.IAM_LONG_LIVED to AuthenticationTabSettings(
+                disabled = true,
+                notice = SetupAuthenticationNotice(
+                    SetupAuthenticationNotice.NoticeType.ERROR,
+                    message("gettingstarted.setup.codewhisperer.no_iam"),
+                    "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
+                )
+            )
+        ),
+        promptForIdcPermissionSet = false
+    ).showAndGet()
 
 fun requestCredentialsForExplorer(project: Project) =
     SetupAuthenticationDialog(
