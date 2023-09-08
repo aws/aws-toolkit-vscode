@@ -11,7 +11,12 @@ import * as path from 'path'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
-import { getComputeRegion, initializeComputeRegion, mostRecentVersionKey } from '../../shared/extensionUtilities'
+import {
+    ExtensionUserActivity,
+    getComputeRegion,
+    initializeComputeRegion,
+    mostRecentVersionKey,
+} from '../../shared/extensionUtilities'
 import {
     createQuickStartWebview,
     isDifferentVersion,
@@ -22,6 +27,7 @@ import * as filesystemUtilities from '../../shared/filesystemUtilities'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
+import { sleep } from '../../shared/utilities/timeoutUtils'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
@@ -183,4 +189,52 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
     it('handles invalid endpoint or invalid response', async function () {
         await assert.rejects(metadataService.invoke('/bogus/path'))
     })
+})
+
+describe('ExtensionUserActivity', function () {
+    let count: number
+
+    function onEventTriggered() {
+        count++
+    }
+
+    before(function () {
+        count = 0
+    })
+
+    it('triggers twice when multiple user activities are fired in separate intervals', async function () {
+        // IMPORTANT: This may be flaky in CI, so we may need to increase the intervals for more tolerance
+        const throttleDelay = 200
+        const eventsFirst = [delayedFiringEvent(100), delayedFiringEvent(101), delayedFiringEvent(102)]
+        const eventsSecond = [
+            delayedFiringEvent(250),
+            delayedFiringEvent(251),
+            delayedFiringEvent(251),
+            delayedFiringEvent(252),
+        ]
+        const waitFor = 500 // some additional buffer to make sure everything triggers
+
+        const instance = ExtensionUserActivity.instance(throttleDelay, [...eventsFirst, ...eventsSecond])
+        instance.onUserActivity(onEventTriggered)
+        await sleep(waitFor)
+
+        assert.strictEqual(count, 2)
+    })
+
+    it('gives the same instance if the throttle delay is the same', function () {
+        const instance1 = ExtensionUserActivity.instance(100)
+        const instance2 = ExtensionUserActivity.instance(100)
+        const instance3 = ExtensionUserActivity.instance(200)
+        const instance4 = ExtensionUserActivity.instance(200)
+
+        assert.strictEqual(instance1, instance2)
+        assert.strictEqual(instance3, instance4)
+        assert.notStrictEqual(instance1, instance3)
+    })
+
+    function delayedFiringEvent(fireInMillis: number): vscode.Event<any> {
+        const event = new vscode.EventEmitter<void>()
+        setTimeout(() => event.fire(), fireInMillis)
+        return event.event
+    }
 })

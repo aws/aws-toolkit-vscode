@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit (Mynah Beta)",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.80.0",
+    "version": "1.82.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -1326,6 +1326,11 @@
                     "command": "aws.codecatalyst.removeConnection",
                     "when": "viewItem == awsCodeCatalystNodeSaved",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.ec2.connectToInstance",
+                    "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
                 },
                 {
                     "command": "aws.ecr.createRepository",
