@@ -224,9 +224,6 @@ export class RecommendationHandler {
                 requestId = resp?.$response && resp?.$response?.requestId
                 nextToken = resp?.nextToken ? resp?.nextToken : ''
                 sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
-                if (page == 0) {
-                    console.log(`start sessionId: ${sessionId}`)
-                }
                 TelemetryHelper.instance.setFirstResponseRequestId(requestId)
                 if (page === 0) {
                     TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
@@ -350,9 +347,6 @@ export class RecommendationHandler {
                 )
             }
             if (!this.hasAtLeastOneValidSuggestion(editor, typedPrefix)) {
-                console.log(
-                    `none suggestions in session ${session.sessionId} is valid, clear the inline completion states`
-                )
                 this.reportUserDecisionOfRecommendation(editor, -1)
             }
         }
@@ -397,7 +391,6 @@ export class RecommendationHandler {
 
     async clearInlineCompletionStates(editor: vscode.TextEditor | undefined) {
         try {
-            console.log('states are cleared')
             vsCodeState.isCodeWhispererEditing = false
             ReferenceInlineProvider.instance.removeInlineReference()
             ImportAdderProvider.instance.clear()
@@ -531,7 +524,6 @@ export class RecommendationHandler {
 
     async showRecommendation(indexShift: number, noSuggestionVisible: boolean = false) {
         await lock.acquire(updateInlineLockKey, async () => {
-            console.log(`indexShift: ${indexShift}`)
             const inlineCompletionProvider = new CWInlineCompletionItemProvider(
                 this.inlineCompletionProvider?.getActiveItemIndex,
                 indexShift,

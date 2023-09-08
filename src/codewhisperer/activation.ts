@@ -262,7 +262,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 /**
                  * CodeWhisperer security panel dynamic handling
                  */
-                vscode.window.activeTextEditor?.selection
                 if (e.document === vscode.window.activeTextEditor?.document) {
                     disposeSecurityDiagnostic(e)
                 }

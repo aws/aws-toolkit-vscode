@@ -148,7 +148,6 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         const start = document.validatePosition(this.startPos)
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
-        console.log(`iteratingIndexes: ${iteratingIndexes}`)
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
         const matchedCount = session.recommendations.filter(
             r => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
@@ -160,11 +159,6 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                 continue
             }
             this.activeItemIndex = i
-            console.log(`current active item index: ${this.getActiveItemIndex}`)
-            // session.recommendations.forEach((x, i) => {
-            //     console.log(`${i}: \n ${x.content}\n`)
-            // })
-            console.log(`-----------------------------`)
             session.setSuggestionState(i, 'Showed')
             ReferenceInlineProvider.instance.setInlineReference(this.startPos.line, r.content, r.references)
             ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)

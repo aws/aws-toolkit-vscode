@@ -73,16 +73,13 @@ export class InlineCompletionService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
-        console.log('check if pagination is running')
         if (
             vsCodeState.isCodeWhispererEditing ||
             this._isPaginationRunning ||
             RecommendationHandler.instance.isSuggestionVisible()
         ) {
-            console.log('blocked by current invocation')
             return
         }
-        console.log('enter new invocation')
         this.setCodeWhispererStatusBarLoading()
         if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
             ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
@@ -102,7 +99,6 @@ export class InlineCompletionService {
         try {
             let page = 0
             while (page < this.maxPage) {
-                console.log
                 await RecommendationHandler.instance.getRecommendations(
                     client,
                     editor,
@@ -148,7 +144,6 @@ export class InlineCompletionService {
 
     setCodeWhispererStatusBarOk() {
         this._isPaginationRunning = false
-        console.log(`end sessionId: ${session.sessionId}`)
         this.statusBar.text = ` $(check)CodeWhisperer`
         this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
