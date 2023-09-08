@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.87.0-SNAPSHOT",
+    "version": "1.89.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -13,7 +13,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
-        "vscode": "^1.65.0"
+        "vscode": "^1.68.0"
     },
     "icon": "resources/marketplace/aws-icon-256x256.png",
     "bugs": {
@@ -3609,13 +3609,13 @@
     },
     "scripts": {
         "prepare": "ts-node ./scripts/build/prepare.ts",
-        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
-        "buildBrowser": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js --mode production && npm run copyFiles -- --webpacked",
-        "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles -- --webpacked",
+        "buildBrowser": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js --mode production && npm run copyFiles",
+        "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
@@ -3666,6 +3666,7 @@
         "@types/uuid": "^9.0.1",
         "@types/vscode": "^1.65.0",
         "@types/vscode-webview": "^1.57.1",
+        "@types/webpack-env": "^1.18.1",
         "@types/xml2js": "^0.4.11",
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
@@ -3721,7 +3722,7 @@
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
-        "amazon-states-language-service": "^1.10.0",
+        "amazon-states-language-service": "^1.11.0",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1384.0",
         "aws-ssm-document-language-service": "^1.0.0",

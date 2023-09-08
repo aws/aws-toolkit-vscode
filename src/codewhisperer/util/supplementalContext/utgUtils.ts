@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as glob from 'glob'
+import glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'

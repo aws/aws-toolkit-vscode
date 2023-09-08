@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { TreeItem, Command, TreeItemCollapsibleState, EventEmitter } from 'vscode'
 import { loadMoreCommand, ResourceTreeNode } from '../../../shared/treeview/resource'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'

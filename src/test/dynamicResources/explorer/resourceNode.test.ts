@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { ResourceTypeNode } from '../../../dynamicResources/explorer/nodes/resourceTypeNode'
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'
 

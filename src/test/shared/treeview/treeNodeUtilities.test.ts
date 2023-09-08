@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { compareTreeItems, makeChildrenNodes } from '../../../shared/treeview/utils'
 import { assertNodeListOnlyHasErrorNode } from '../../utilities/explorerNodeAssertions'

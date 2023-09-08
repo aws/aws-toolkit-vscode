@@ -1,3 +1,15 @@
+## 1.88.0 2023-09-07
+
+- **Feature** ECS: "Insufficient permissions" message shows more details about missing permissions
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.11. This new version adds Fail State fields ErrorPath and CausePath, and on Retriers MaxDelaySeconds and JitterStrategy.
+
+## 1.87.0 2023-08-31
+
+- **Breaking Change** Minimum required VS Code version is now 1.68
+- **Bug Fix** CloudWatch Logs: "Search Log Group" shows multiple progress popups
+- **Bug Fix** CloudWatch Logs: "View Full Log Stream" is limited to 1000 events instead of the `aws.cwl.limit` user setting
+- **Feature** Telemetry setting description includes a details link
+
 ## 1.86.0 2023-08-24
 
 - **Bug Fix** CodeWhisperer: Fix test file supplemental context not working as expected on OS not using '/' as file path separator

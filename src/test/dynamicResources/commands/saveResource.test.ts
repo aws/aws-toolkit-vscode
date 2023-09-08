@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { instance, mock, when, verify, anything, deepEqual } from 'ts-mockito'
 import { createResource, updateResource } from '../../../dynamicResources/commands/saveResource'
 import { AddOperation } from 'fast-json-patch'

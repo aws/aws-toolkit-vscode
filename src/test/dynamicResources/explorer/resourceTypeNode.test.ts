@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 import { anything } from 'ts-mockito'
 import { ResourcesNode } from '../../../dynamicResources/explorer/nodes/resourcesNode'
 import { ResourceNode } from '../../../dynamicResources/explorer/nodes/resourceNode'

@@ -95,6 +95,7 @@ async function copy(task: CopyTask): Promise<void> {
 ;(async () => {
     const args = process.argv.slice(2)
 
+    // To use this something like: "npm run copyFiles -- --webpacked"
     if (args.includes('--webpacked')) {
         tasks.push(...webpackedTasks)
     }
