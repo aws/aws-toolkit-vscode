@@ -70,9 +70,7 @@ export const mochaHooks = {
         // to be minimally intrusive and as close to the real thing as possible.
         globalSandbox.replace(vscode, 'window', getTestWindow())
         openExternalStub = globalSandbox.stub(vscode.env, 'openExternal')
-        openExternalStub.rejects(
-            new Error('No return value has been set. Use `getOpenExternalStub().resolves` to set one.')
-        )
+        openExternalStub.returns(undefined as any) // Detected in afterEach() below.
 
         // Wraps the test function to bubble up errors that occurred in events from `TestWindow`
         if (this.currentTest?.fn) {
@@ -88,6 +86,14 @@ export const mochaHooks = {
         await testUtil.closeAllEditors()
     },
     afterEach(this: Mocha.Context) {
+        if (openExternalStub.called && openExternalStub.returned(sinon.match.typeOf('undefined'))) {
+            throw new Error(
+                `Test called openExternal(${
+                    getOpenExternalStub().args[0]
+                }) without first configuring getOpenExternalStub().resolves().`
+            )
+        }
+
         // Prevent other tests from using the same TestLogger instance
         teardownTestLogger(this.currentTest?.fullTitle() as string)
         testLogger = undefined
