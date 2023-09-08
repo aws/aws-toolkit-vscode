@@ -14,6 +14,8 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+import { codeWhispererClient as client } from '../client/codewhisperer'
+import { isAwsError } from '../../shared/errors'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -128,6 +130,32 @@ export class CodeWhispererCodeCoverageTracker {
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeCoverageEvent: {
+                        programmingLanguage: {
+                            languageName: this._language,
+                        },
+                        acceptedCharacterCount: acceptedTokens,
+                        totalCharacterCount: totalTokens,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
     }
 
     private tryStartTimer() {
