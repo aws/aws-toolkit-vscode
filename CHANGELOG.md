@@ -1,3 +1,8 @@
+## 1.88.0 2023-09-07
+
+- **Feature** ECS: "Insufficient permissions" message shows more details about missing permissions
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.11. This new version adds Fail State fields ErrorPath and CausePath, and on Retriers MaxDelaySeconds and JitterStrategy.
+
 ## 1.87.0 2023-08-31
 
 - **Breaking Change** Minimum required VS Code version is now 1.68
