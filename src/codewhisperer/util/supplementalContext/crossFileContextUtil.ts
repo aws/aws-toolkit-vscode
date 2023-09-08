@@ -10,12 +10,14 @@ import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
 import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
+
+export type CrossFileStrategy = 'OpenTabs_BM25'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -51,14 +53,19 @@ interface Chunk {
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
-): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const shouldProceed = shouldFetchCrossFileContext(
         editor.document.languageId,
         CodeWhispererUserGroupSettings.instance.userGroup
     )
 
     if (!shouldProceed) {
-        return shouldProceed === undefined ? undefined : []
+        return shouldProceed === undefined
+            ? undefined
+            : {
+                  supplementalContextItems: [],
+                  strategy: 'Empty',
+              }
     }
 
     const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
@@ -104,7 +111,10 @@ export async function fetchSupplementalContextForSrc(
 
     // DO NOT send code chunk with empty content
     getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
-    return supplementalContexts.filter(item => item.content.trim().length !== 0)
+    return {
+        supplementalContextItems: supplementalContexts.filter(item => item.content.trim().length !== 0),
+        strategy: 'OpenTabs_BM25',
+    }
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
