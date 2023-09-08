@@ -1,3 +1,7 @@
+## 1.89.0 2023-09-08
+
+- **Bug Fix** CodeWhisperer: show "Reconnect" instead of "Start" for expired connections to make reconnecting easier
+
 ## 1.88.0 2023-09-07
 
 - **Feature** ECS: "Insufficient permissions" message shows more details about missing permissions
