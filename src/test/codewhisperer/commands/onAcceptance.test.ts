@@ -17,6 +17,8 @@ import globals from '../../../shared/extensionGlobals'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -79,16 +81,16 @@ describe('onAcceptance', function () {
             })
 
             const testStartUrl = 'testStartUrl'
-            sinon.stub(TelemetryHelper.instance, 'startUrl').value(testStartUrl)
+            sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
             RecommendationHandler.instance.requestId = 'test'
-            RecommendationHandler.instance.sessionId = 'test'
-            RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
+            session.sessionId = 'test'
+            session.startPos = new vscode.Position(1, 0)
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
-            RecommendationHandler.instance.recommendations = [{ content: "print('Hello World!')" }]
-            RecommendationHandler.instance.setSuggestionState(0, 'Showed')
+            session.recommendations = [{ content: "print('Hello World!')" }]
+            session.setSuggestionState(0, 'Showed')
             TelemetryHelper.instance.triggerType = 'OnDemand'
-            RecommendationHandler.instance.setCompletionType(0, RecommendationHandler.instance.recommendations[0])
+            session.setCompletionType(0, session.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(

@@ -363,6 +363,7 @@ describe('codewhispererCodecoverageTracker', function () {
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
             }
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         afterEach(function () {
