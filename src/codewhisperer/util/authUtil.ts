@@ -85,6 +85,7 @@ export class AuthUtil {
         return this.secondaryAuth.activeConnection
     }
 
+    // TODO: move this to the shared auth.ts
     public get startUrl(): string | undefined {
         // Reformat the url to remove any trailing '/' and `#`
         // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start

@@ -210,6 +210,7 @@ export class TelemetryHelper {
             this.sessionDecisions.push(aggregatedEvent)
         }
 
+        // TODO: use a ternary for this
         let acceptedRecommendationContent
         if (acceptIndex != -1 && recommendations[acceptIndex] != undefined) {
             acceptedRecommendationContent = recommendations[acceptIndex].content

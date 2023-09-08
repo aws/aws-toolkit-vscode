@@ -65,4 +65,5 @@ class CodeWhispererSession {
     }
 }
 
+// TODO: convert this to a function call
 export const session = CodeWhispererSession.instance
