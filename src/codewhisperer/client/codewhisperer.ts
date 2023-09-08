@@ -197,7 +197,7 @@ export class DefaultCodeWhispererClient {
             return
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
-        getLogger().debug(`send telemetry event requestID: ${response.$response.requestId}`)
+        getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
     }
 }
 
