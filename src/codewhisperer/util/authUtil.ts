@@ -183,7 +183,7 @@ export class AuthUtil {
 
     public isConnectionValid(): boolean {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
-        getLogger().debug(`Connection is valid = ${connectionValid}, 
+        getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
                             connection is undefined = ${this.conn === undefined},
                             secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired}`)
         return connectionValid
@@ -194,11 +194,13 @@ export class AuthUtil {
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererConnection(this.conn)
-        getLogger().debug(`Connection expired = ${connectionExpired},
+        getLogger().debug(`codewhisperer: Connection expired = ${connectionExpired},
                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
                            connection is undefined = ${this.conn === undefined}`)
         if (this.conn) {
-            getLogger().debug(`isValidCodeWhispererConnection = ${isValidCodeWhispererConnection(this.conn)}`)
+            getLogger().debug(
+                `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererConnection(this.conn)}`
+            )
         }
         return connectionExpired
     }
