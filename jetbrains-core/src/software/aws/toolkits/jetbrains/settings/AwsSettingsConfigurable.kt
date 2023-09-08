@@ -1,5 +1,6 @@
-// Copyright 2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+
 package software.aws.toolkits.jetbrains.settings
 
 import com.intellij.ide.BrowserUtil
@@ -10,15 +11,12 @@ import com.intellij.openapi.options.ConfigurationException
 import com.intellij.openapi.options.SearchableConfigurable
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
-import com.intellij.openapi.util.Comparing
 import com.intellij.openapi.util.text.StringUtil
-import com.intellij.ui.IdeBorderFactory
-import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBCheckBox
 import com.intellij.ui.components.JBTextField
-import com.intellij.util.ui.SwingHelper
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.panel
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance
-import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.BadExecutable
 import software.aws.toolkits.jetbrains.core.executables.ExecutableInstance.ExecutableWithPath
 import software.aws.toolkits.jetbrains.core.executables.ExecutableManager
 import software.aws.toolkits.jetbrains.core.executables.ExecutableType
@@ -30,50 +28,52 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.CompletionException
 import javax.swing.JComponent
-import javax.swing.JPanel
 
 class AwsSettingsConfigurable : SearchableConfigurable {
-    private lateinit var panel: JPanel
-    private lateinit var samHelp: JComponent
-    private lateinit var serverlessSettings: JPanel
-    private lateinit var applicationLevelSettings: JPanel
-    private lateinit var defaultRegionHandling: ComboBox<UseAwsCredentialRegion>
-    private lateinit var profilesNotification: ComboBox<ProfilesNotification>
-    lateinit var samExecutablePath: TextFieldWithBrowseButton
-        private set
-    lateinit var enableTelemetry: JBCheckBox
-        private set
     private val samExecutableInstance: SamExecutable
         get() = ExecutableType.getExecutable(SamExecutable::class.java)
-    private val samTextboxInput: String?
-        get() = StringUtil.nullize(samExecutablePath.text.trim { it <= ' ' })
+    val samExecutablePath: TextFieldWithBrowseButton = createCliConfigurationElement(samExecutableInstance, SAM)
 
-    override fun createComponent(): JComponent = panel
+    private val defaultRegionHandling: ComboBox<UseAwsCredentialRegion> = ComboBox(UseAwsCredentialRegion.values())
+    private val profilesNotification: ComboBox<ProfilesNotification> = ComboBox(ProfilesNotification.values())
 
-    private fun createUIComponents() {
-        samHelp = createHelpLink(HelpIds.SAM_CLI_INSTALL)
-        samExecutablePath = createCliConfigurationElement(samExecutableInstance, SAM)
-        defaultRegionHandling = ComboBox(UseAwsCredentialRegion.values())
-        profilesNotification = ComboBox(ProfilesNotification.values())
+    val enableTelemetry: JBCheckBox = JBCheckBox()
+    override fun createComponent(): JComponent = panel {
+        group(message("aws.settings.serverless_label")) {
+            row {
+                label(message("aws.settings.sam.location"))
+                // samExecutablePath = createCliConfigurationElement(samExecutableInstance, SAM)
+                cell(samExecutablePath).align(AlignX.FILL).resizableColumn()
+                browserLink(message("aws.settings.learn_more"), HelpIds.SAM_CLI_INSTALL.url)
+            }
+        }
+        group(message("aws.settings.global_label")) {
+            row {
+                label(message("settings.credentials.prompt_for_default_region_switch.setting_label"))
+                cell(defaultRegionHandling).resizableColumn().align(AlignX.FILL).applyToComponent {
+                    this.selectedItem = AwsSettings.getInstance().useDefaultCredentialRegion ?: UseAwsCredentialRegion.Never
+                }
+            }
+            row {
+                label(message("settings.profiles.label"))
+                cell(profilesNotification).resizableColumn().align(AlignX.FILL).applyToComponent {
+                    this.selectedItem = AwsSettings.getInstance().profilesNotification ?: ProfilesNotification.Always
+                }
+            }
+
+            row {
+                cell(enableTelemetry).applyToComponent { this.isSelected = AwsSettings.getInstance().isTelemetryEnabled }
+                text(message("aws.settings.telemetry.option") + " <a>${message("general.details")}</a>") {
+                    BrowserUtil.open("https://docs.aws.amazon.com/sdkref/latest/guide/support-maint-idetoolkits.html")
+                }
+            }
+        }
     }
 
-    init {
-        applicationLevelSettings.border = IdeBorderFactory.createTitledBorder(message("aws.settings.global_label"))
-        serverlessSettings.border = IdeBorderFactory.createTitledBorder(message("aws.settings.serverless_label"))
-        SwingHelper.setPreferredWidth(samExecutablePath, panel.width)
-    }
-
-    override fun getId(): String = "aws"
-    override fun getDisplayName(): String = message("aws.settings.title")
-
-    override fun isModified(): Boolean {
-        val awsSettings = AwsSettings.getInstance()
-        return samTextboxInput != getSavedExecutablePath(samExecutableInstance, false) ||
-            isModified(enableTelemetry, awsSettings.isTelemetryEnabled) ||
-            // isModified for ComboBoxes is removed from 2021.3
-            !Comparing.equal(defaultRegionHandling.selectedItem, awsSettings.useDefaultCredentialRegion) ||
-            !Comparing.equal(profilesNotification.selectedItem, awsSettings.profilesNotification)
-    }
+    override fun isModified(): Boolean = getSamPathWithoutSpaces() != getSavedExecutablePath(samExecutableInstance, false) ||
+        defaultRegionHandling.selectedItem != AwsSettings.getInstance().useDefaultCredentialRegion ||
+        profilesNotification.selectedItem != AwsSettings.getInstance().profilesNotification ||
+        enableTelemetry.isSelected != AwsSettings.getInstance().isTelemetryEnabled
 
     override fun apply() {
         validateAndSaveCliSettings(
@@ -81,7 +81,7 @@ class AwsSettingsConfigurable : SearchableConfigurable {
             "sam",
             samExecutableInstance,
             getSavedExecutablePath(samExecutableInstance, false),
-            samTextboxInput
+            getSamPathWithoutSpaces()
         )
         saveAwsSettings()
     }
@@ -94,7 +94,9 @@ class AwsSettingsConfigurable : SearchableConfigurable {
         profilesNotification.selectedItem = awsSettings.profilesNotification
     }
 
-    private fun createHelpLink(helpId: HelpIds): JComponent = ActionLink(message("aws.settings.learn_more")) { BrowserUtil.browse(helpId.url) }
+    override fun getDisplayName(): String = message("aws.settings.title")
+
+    override fun getId(): String = "aws"
 
     private fun createCliConfigurationElement(executableType: ExecutableType<*>, cliName: String): TextFieldWithBrowseButton {
         val autoDetectPath = getSavedExecutablePath(executableType, true)
@@ -176,20 +178,21 @@ class AwsSettingsConfigurable : SearchableConfigurable {
             throw ConfigurationException(message("aws.settings.executables.executable_invalid", executableName, currentInput))
         }
         val instance = ExecutableManager.getInstance().validateExecutablePath(executableType, path)
-        if (instance is BadExecutable) {
+        if (instance is ExecutableInstance.BadExecutable) {
             throw ConfigurationException(instance.validationError)
         }
 
         // We have validated so now we can set
         ExecutableManager.getInstance().setExecutablePath(executableType, path)
     }
-
     private fun saveAwsSettings() {
         val awsSettings = AwsSettings.getInstance()
         awsSettings.isTelemetryEnabled = enableTelemetry.isSelected
         awsSettings.useDefaultCredentialRegion = defaultRegionHandling.selectedItem as? UseAwsCredentialRegion ?: UseAwsCredentialRegion.Never
         awsSettings.profilesNotification = profilesNotification.selectedItem as? ProfilesNotification ?: ProfilesNotification.Always
     }
+
+    private fun getSamPathWithoutSpaces() = StringUtil.nullize(samExecutablePath.text.trim { it <= ' ' })
 
     companion object {
         private const val SAM = "sam"
