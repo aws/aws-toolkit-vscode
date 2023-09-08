@@ -76,6 +76,34 @@ export async function createTestFile(fileName: string): Promise<vscode.Uri> {
     return vscode.Uri.file(tempFilePath)
 }
 
+/**
+ * Creates a temporary workspace with test files in it.
+ *
+ * @param n number of temporary test files to create in the workspace
+ * @param opts allows to pass options to have a custom fileName and/or file content and also to add a file with an exclusion pattern from src/shared/fs/watchedFiles.ts
+ * @returns the path to the workspace folder
+ */
+export async function createTestWorkspace(
+    n: number,
+    opts: { fileNamePrefix?: string; fileContent?: string }
+): Promise<vscode.WorkspaceFolder> {
+    const workspace = await createTestWorkspaceFolder()
+
+    if (n <= 0) {
+        throw new Error('test file numbers cannot be less or equal to zero')
+    }
+
+    const fileNamePrefix = opts?.fileNamePrefix ?? 'test-file-'
+    const fileContent = opts?.fileContent ?? ''
+
+    do {
+        const tempFilePath = path.join(workspace.uri.fsPath, `${fileNamePrefix}${n}`)
+        fs.writeFileSync(tempFilePath, fileContent)
+    } while (--n > 0)
+
+    return workspace
+}
+
 export async function deleteTestTempDirs(): Promise<void> {
     let failed = 0
     for (const s of testTempDirs) {

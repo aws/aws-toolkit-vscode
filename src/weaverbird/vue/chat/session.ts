@@ -11,7 +11,7 @@ import { LocalResolvedConfig } from '../../config'
 import { defaultLlmConfig } from './constants'
 import { LLMConfig } from './types'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
-import { collectFiles } from './files'
+import { collectFiles } from '../../files'
 import { SessionState, SessionStateConfig, RefinementState, Interaction } from './sessionState'
 
 export class Session {
