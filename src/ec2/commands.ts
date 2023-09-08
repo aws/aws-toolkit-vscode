@@ -6,6 +6,7 @@
 import { Ec2InstanceNode } from './explorer/ec2InstanceNode'
 import { Ec2Node } from './explorer/ec2ParentNode'
 import { Ec2ConnectionManager } from './model'
+import { copyToClipboard } from '../shared/utilities/messages'
 import { promptUserForEc2Selection } from './prompter'
 
 export async function openTerminal(node?: Ec2Node) {
@@ -19,4 +20,8 @@ export async function openRemoteConnection(node?: Ec2Node) {
     const selection = node instanceof Ec2InstanceNode ? node.toSelection() : await promptUserForEc2Selection()
     //const connectionManager = new Ec2ConnectionManager(selection.region)
     console.log(selection)
+}
+
+export async function copyInstanceId(instanceId: string): Promise<void> {
+    await copyToClipboard(instanceId, 'Id')
 }

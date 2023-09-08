@@ -28,6 +28,7 @@ import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
+import globals from '../../shared/extensionGlobals'
 
 describe('extensionUtilities', function () {
     describe('safeGet', function () {
@@ -205,32 +206,25 @@ describe('ExtensionUserActivity', function () {
     })
 
     it('triggers twice when multiple user activities are fired in separate intervals', async function () {
-        const throttleDelay = 2000
-        const middleOfInterval = Math.floor(throttleDelay / 2)
-        const waitFor = throttleDelay * 3 // delay * (2 event intervals + test buffer)
+        const throttleDelay = 500
 
-        const eventsFirst = [
-            delayedFiringEvent(middleOfInterval + 1),
-            delayedFiringEvent(middleOfInterval + 2),
-            delayedFiringEvent(middleOfInterval + 3),
-            delayedFiringEvent(middleOfInterval + 4),
-        ]
-        const eventsSecond = [
-            delayedFiringEvent(throttleDelay + middleOfInterval + 1),
-            delayedFiringEvent(throttleDelay + middleOfInterval + 2),
-            delayedFiringEvent(throttleDelay + middleOfInterval + 2),
-            delayedFiringEvent(throttleDelay + middleOfInterval + 3),
-        ]
+        const firstInvervalMillisUntilFire = [100, 101, 102, 103]
 
-        const instance = new ExtensionUserActivity(throttleDelay, [...eventsFirst, ...eventsSecond])
+        const secondIntervalStart = firstInvervalMillisUntilFire[0] + throttleDelay + 1
+        const secondIntervalMillisUntilFire = [
+            secondIntervalStart + 200,
+            secondIntervalStart + 201,
+            secondIntervalStart + 201,
+            secondIntervalStart + 202,
+        ]
+        const instance = new ExtensionUserActivity(throttleDelay, [
+            ...firstInvervalMillisUntilFire.map(delayedTriggeredEvent),
+            ...secondIntervalMillisUntilFire.map(delayedTriggeredEvent),
+        ])
         instance.onUserActivity(onEventTriggered)
-        await sleep(waitFor)
+        await sleep(secondIntervalStart + throttleDelay + 1)
 
-        assert.strictEqual(
-            count,
-            2,
-            'This may be flaky in CI, so we may need to increase the intervals for better tolerance'
-        )
+        assert.strictEqual(count, 2, 'May be flaky in CI, increase timings to improve reliability.')
     })
 
     describe('does not fire user activity events in specific scenarios', function () {
@@ -352,9 +346,9 @@ describe('ExtensionUserActivity', function () {
         }
     })
 
-    function delayedFiringEvent(fireInMillis: number): vscode.Event<any> {
+    function delayedTriggeredEvent(millisUntilFire: number): vscode.Event<any> {
         const event = new vscode.EventEmitter<void>()
-        setTimeout(() => event.fire(), fireInMillis)
+        globals.clock.setTimeout(() => event.fire(), millisUntilFire)
         return event.event
     }
 })

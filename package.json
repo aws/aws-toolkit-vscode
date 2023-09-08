@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit (Mynah Beta)",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.83.0-SNAPSHOT",
+    "version": "1.84.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -52,6 +52,7 @@
         "onCommand:aws.codeWhisperer.accept"
     ],
     "main": "./dist/src/main",
+    "browser": "./dist/src/extensionWeb",
     "contributes": {
         "configuration": {
             "type": "object",
@@ -1433,6 +1434,11 @@
                     "group": "1@2"
                 },
                 {
+                    "command": "aws.ec2.copyInstanceId",
+                    "when": "view == aws.explorer && viewItem == awsEc2Node",
+                    "group": "2@0"
+                },
+                {
                     "command": "aws.ecr.copyTagUri",
                     "when": "view == aws.explorer && viewItem == awsEcrTagNode",
                     "group": "2@1"
@@ -1619,12 +1625,12 @@
                 },
                 {
                     "command": "aws.copyName",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsEc2Node)/",
                     "group": "2@1"
                 },
                 {
                     "command": "aws.copyArn",
-                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode)/",
+                    "when": "view == aws.explorer && viewItem =~ /^(awsRegionFunctionNode|awsRegionFunctionNodeDownloadable|awsCloudFormationFunctionNode|awsStateMachineNode|awsCloudFormationNode|awsCloudWatchLogNode|awsS3BucketNode|awsS3FolderNode|awsS3FileNode|awsApiGatewayNode|awsEcrRepositoryNode|awsIotThingNode)$|^(awsAppRunnerServiceNode|awsEcsServiceNode|awsIotCertificateNode|awsIotPolicyNode|awsIotPolicyVersionNode|awsMdeInstanceNode|awsEc2Node)/",
                     "group": "2@2"
                 },
                 {
@@ -2099,6 +2105,16 @@
                 "command": "aws.ec2.openRemoteConnection",
                 "title": "%AWS.command.ec2.openRemoteConnection%",
                 "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.copyInstanceId",
+                "title": "%AWS.command.ec2.copyInstanceId%",
+                "category": "%AWS.title",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3567,6 +3583,7 @@
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
         "@vscode/test-electron": "^2.3.3",
+        "@vscode/vsce": "^2.19.0",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
@@ -3594,7 +3611,6 @@
         "ts-mockito": "^2.5.0",
         "ts-node": "^10.9.1",
         "umd-compat-loader": "^2.1.2",
-        "vsce": "^2.6.3",
         "vscode-nls-dev": "^4.0.4",
         "vue-loader": "^17.2.2",
         "vue-style-loader": "^4.1.3",

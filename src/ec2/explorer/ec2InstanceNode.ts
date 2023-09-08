@@ -19,6 +19,7 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     ) {
         super('')
         this.update(instance)
+        this.id = this.InstanceId
     }
 
     public update(newInstance: Ec2Instance) {

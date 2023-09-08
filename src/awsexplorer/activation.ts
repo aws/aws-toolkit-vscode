@@ -19,8 +19,7 @@ import { downloadStateMachineDefinition } from '../stepFunctions/commands/downlo
 import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
-import { copyArnCommand } from './commands/copyArn'
-import { copyNameCommand } from './commands/copyName'
+import { copyTextCommand } from './commands/copyText'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
@@ -157,8 +156,8 @@ async function registerAwsExplorerCommands(
                     isPreviewAndRender: true,
                 })
         ),
-        Commands.register('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node)),
-        Commands.register('aws.copyName', async (node: AWSResourceNode) => await copyNameCommand(node)),
+        Commands.register('aws.copyArn', async (node: AWSResourceNode) => await copyTextCommand(node, 'ARN')),
+        Commands.register('aws.copyName', async (node: AWSResourceNode) => await copyTextCommand(node, 'name')),
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         }),
