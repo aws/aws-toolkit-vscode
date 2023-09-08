@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit (Mynah Beta)",
     "description": "Including support for CodeWhisperer, CodeCatalyst, Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.82.0-SNAPSHOT",
+    "version": "1.83.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -251,7 +251,8 @@
                 "aws.codeWhisperer.shareCodeWhispererContentWithAWS": {
                     "type": "boolean",
                     "markdownDescription": "%AWS.configuration.description.codewhisperer.shareCodeWhispererContentWithAWS%",
-                    "default": true
+                    "default": true,
+                    "scope": "application"
                 },
                 "aws.codeWhisperer.javaCompilationOutput": {
                     "type": "string",
@@ -1116,7 +1117,11 @@
                     "command": "aws.auth.manageConnections"
                 },
                 {
-                    "command": "aws.ec2.connectToInstance",
+                    "command": "aws.ec2.openRemoteConnection",
+                    "when": "aws.isDevMode"
+                },
+                {
+                    "command": "aws.ec2.openTerminal",
                     "when": "aws.isDevMode"
                 },
                 {
@@ -1328,8 +1333,13 @@
                     "group": "inline@1"
                 },
                 {
-                    "command": "aws.ec2.connectToInstance",
+                    "command": "aws.ec2.openTerminal",
                     "group": "0@1",
+                    "when": "viewItem == awsEc2Node"
+                },
+                {
+                    "command": "aws.ec2.openTerminal",
+                    "group": "inline@1",
                     "when": "viewItem == awsEc2Node"
                 },
                 {
@@ -2075,8 +2085,19 @@
                 }
             },
             {
-                "command": "aws.ec2.connectToInstance",
-                "title": "%AWS.command.ec2.connectToInstance%",
+                "command": "aws.ec2.openTerminal",
+                "title": "%AWS.command.ec2.openTerminal%",
+                "icon": "$(terminal-view-icon)",
+                "category": "%AWS.title%",
+                "cloud9": {
+                    "cn": {
+                        "category": "%AWS.title.cn%"
+                    }
+                }
+            },
+            {
+                "command": "aws.ec2.openRemoteConnection",
+                "title": "%AWS.command.ec2.openRemoteConnection%",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3541,7 +3562,7 @@
         "@types/uuid": "^9.0.1",
         "@types/vscode": "^1.65.0",
         "@types/vscode-webview": "^1.57.1",
-        "@types/xml2js": "^0.4.8",
+        "@types/xml2js": "^0.4.11",
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
@@ -3556,7 +3577,7 @@
         "eslint-plugin-no-null": "^1.0.2",
         "glob": "^7.1.7",
         "husky": "^7.0.2",
-        "json-schema-to-typescript": "^12.0.0",
+        "json-schema-to-typescript": "^13.0.2",
         "marked": "^5.0.4",
         "mocha": "^10.1.0",
         "mocha-junit-reporter": "^2.2.0",
