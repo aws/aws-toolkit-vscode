@@ -7,7 +7,7 @@
  * SDK Client
  */
 
-export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/'
 
 export const region = 'us-east-1'
 

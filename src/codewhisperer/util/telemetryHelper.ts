@@ -26,9 +26,9 @@ import { CodeWhispererSettings } from './codewhispererSettings'
 import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { AuthUtil } from './authUtil'
-import { CodeWhispererSession } from './codeWhispererSession'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
+import { session } from './codeWhispererSession'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -51,7 +51,6 @@ export class TelemetryHelper {
     private firstSuggestionShowTime = 0
     private allPaginationEndTime = 0
     private firstResponseRequestId = ''
-    private sessionId = ''
     // variables for user trigger decision
     // these will be cleared after a invocation session
     private sessionDecisions: CodewhispererUserTriggerDecision[] = []
@@ -75,7 +74,6 @@ export class TelemetryHelper {
         this.triggerType = 'OnDemand'
         this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
         this.cursorOffset = 0
-        this.sessionId = ''
     }
 
     static #instance: TelemetryHelper
@@ -318,6 +316,13 @@ export class TelemetryHelper {
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
         this.lastTriggerDecisionTime = performance.now()
+
+        // When we send a userTriggerDecision of Empty or Discard, we set the time users see the first
+        // suggestion to be now.
+        let e2eLatency = this.firstSuggestionShowTime - session.invokeSuggestionStartTime
+        if (e2eLatency < 0) {
+            e2eLatency = performance.now() - session.invokeSuggestionStartTime
+        }
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -329,8 +334,7 @@ export class TelemetryHelper {
                         },
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
-                        recommendationLatencyMilliseconds:
-                            this.firstSuggestionShowTime - CodeWhispererSession.instance.invokeSuggestionStartTime,
+                        recommendationLatencyMilliseconds: e2eLatency,
                         timestamp: new Date(Date.now()),
                         suggestionReferenceCount: this.suggestionReferenceNumber,
                         generatedLine: this.generatedLines,
@@ -496,24 +500,23 @@ export class TelemetryHelper {
     }
 
     public resetClientComponentLatencyTime() {
-        CodeWhispererSession.instance.invokeSuggestionStartTime = 0
-        CodeWhispererSession.instance.sdkApiCallStartTime = 0
+        session.invokeSuggestionStartTime = 0
+        session.sdkApiCallStartTime = 0
         this.sdkApiCallEndTime = 0
-        CodeWhispererSession.instance.fetchCredentialStartTime = 0
+        session.fetchCredentialStartTime = 0
         this.firstSuggestionShowTime = 0
         this.allPaginationEndTime = 0
         this.firstResponseRequestId = ''
-        this.sessionId = ''
     }
 
     /** This method is assumed to be invoked first at the start of execution **/
     public setInvokeSuggestionStartTime() {
         this.resetClientComponentLatencyTime()
-        CodeWhispererSession.instance.invokeSuggestionStartTime = performance.now()
+        session.invokeSuggestionStartTime = performance.now()
     }
 
     public setSdkApiCallEndTime() {
-        if (this.sdkApiCallEndTime === 0 && CodeWhispererSession.instance.sdkApiCallStartTime !== 0) {
+        if (this.sdkApiCallEndTime === 0 && session.sdkApiCallStartTime !== 0) {
             this.sdkApiCallEndTime = performance.now()
         }
     }
@@ -536,10 +539,6 @@ export class TelemetryHelper {
         }
     }
 
-    public setSessionId(sessionId: string) {
-        this.sessionId = sessionId
-    }
-
     // report client component latency after all pagination call finish
     // and at least one suggestion is shown to the user
     public tryRecordClientComponentLatency(languageId: string) {
@@ -548,20 +547,13 @@ export class TelemetryHelper {
         }
         telemetry.codewhisperer_clientComponentLatency.emit({
             codewhispererRequestId: this.firstResponseRequestId,
-            codewhispererSessionId: this.sessionId,
-            codewhispererFirstCompletionLatency:
-                this.sdkApiCallEndTime - CodeWhispererSession.instance.sdkApiCallStartTime,
-            codewhispererEndToEndLatency:
-                this.firstSuggestionShowTime - CodeWhispererSession.instance.invokeSuggestionStartTime,
-            codewhispererAllCompletionsLatency:
-                this.allPaginationEndTime - CodeWhispererSession.instance.sdkApiCallStartTime,
+            codewhispererSessionId: session.sessionId,
+            codewhispererFirstCompletionLatency: this.sdkApiCallEndTime - session.sdkApiCallStartTime,
+            codewhispererEndToEndLatency: this.firstSuggestionShowTime - session.invokeSuggestionStartTime,
+            codewhispererAllCompletionsLatency: this.allPaginationEndTime - session.sdkApiCallStartTime,
             codewhispererPostprocessingLatency: this.firstSuggestionShowTime - this.sdkApiCallEndTime,
-            codewhispererCredentialFetchingLatency:
-                CodeWhispererSession.instance.sdkApiCallStartTime -
-                CodeWhispererSession.instance.fetchCredentialStartTime,
-            codewhispererPreprocessingLatency:
-                CodeWhispererSession.instance.fetchCredentialStartTime -
-                CodeWhispererSession.instance.invokeSuggestionStartTime,
+            codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
+            codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
             codewhispererCompletionType: 'Line',
             codewhispererTriggerType: this.triggerType,
             codewhispererLanguage: runtimeLanguageContext.getLanguageContext(languageId).language,

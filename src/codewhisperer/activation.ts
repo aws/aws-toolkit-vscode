@@ -177,7 +177,6 @@ export async function activate(context: ExtContext): Promise<void> {
                 return
             }
             RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
-            RecommendationHandler.instance.clearRecommendations()
         }),
 
         vscode.languages.registerHoverProvider(
@@ -251,18 +250,19 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(async editor => {
-                await InlineCompletionService.instance.onEditorChange()
+                await RecommendationHandler.instance.onEditorChange()
             }),
             vscode.window.onDidChangeWindowState(async e => {
-                await InlineCompletionService.instance.onFocusChange()
+                await RecommendationHandler.instance.onFocusChange()
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
-                await InlineCompletionService.instance.onCursorChange(e)
+                await RecommendationHandler.instance.onCursorChange(e)
             }),
             vscode.workspace.onDidChangeTextDocument(async e => {
                 /**
                  * CodeWhisperer security panel dynamic handling
                  */
+                vscode.window.activeTextEditor?.selection
                 if (e.document === vscode.window.activeTextEditor?.document) {
                     disposeSecurityDiagnostic(e)
                 }
@@ -295,7 +295,7 @@ export async function activate(context: ExtContext): Promise<void> {
                      * Then this event can be processed by our code.
                      */
                     await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                    if (!InlineCompletionService.instance.isSuggestionVisible()) {
+                    if (!RecommendationHandler.instance.isSuggestionVisible()) {
                         await KeyStrokeHandler.instance.processKeyStroke(
                             e,
                             vscode.window.activeTextEditor,
@@ -390,13 +390,7 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    if (isCloud9()) {
-        RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
-        RecommendationHandler.instance.clearRecommendations()
-    }
-    if (isInlineCompletionEnabled()) {
-        await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
-    }
+    RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
     CodeWhispererTracker.getTracker().shutdown()
 }
 

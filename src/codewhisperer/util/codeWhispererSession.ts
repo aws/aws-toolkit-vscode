@@ -3,10 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { CodewhispererCompletionType } from '../../shared/telemetry/telemetry.gen'
+import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
+import { Position } from 'vscode'
+import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
+
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
-export class CodeWhispererSession {
+class CodeWhispererSession {
     static #instance: CodeWhispererSession
+
+    // Per-session states
+    sessionId = ''
+    startPos = new Position(0, 0)
+    requestContext: {
+        request: ListRecommendationsRequest | GenerateRecommendationsRequest
+        supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+    } = { request: {} as any, supplementalMetadata: {} as any }
+
+    // Various states of recommendations
+    recommendations: Recommendation[] = []
+    suggestionStates = new Map<number, string>()
+    completionTypes = new Map<number, CodewhispererCompletionType>()
 
     // Some other variables for client component latency
     fetchCredentialStartTime = 0
@@ -28,4 +46,23 @@ export class CodeWhispererSession {
             this.sdkApiCallStartTime = performance.now()
         }
     }
+
+    setSuggestionState(index: number, value: string) {
+        this.suggestionStates.set(index, value)
+    }
+
+    getSuggestionState(index: number): string | undefined {
+        return this.suggestionStates.get(index)
+    }
+
+    setCompletionType(index: number, recommendation: Recommendation) {
+        const nonBlankLines = recommendation.content.split('\n').filter(line => line.trim() !== '').length
+        this.completionTypes.set(index, nonBlankLines > 1 ? 'Block' : 'Line')
+    }
+
+    getCompletionType(index: number): CodewhispererCompletionType {
+        return this.completionTypes.get(index) || 'Line'
+    }
 }
+
+export const session = CodeWhispererSession.instance
