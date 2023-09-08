@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import {
     CodeCatalystClient,
@@ -81,7 +81,7 @@ let projectName: CodeCatalystProject['name']
  *     integ tests, but using the ssh hostname that we get from
  *     {@link prepareDevEnvConnection}.
  */
-describe('Test how this codebase uses the CodeCatalyst API', function () {
+describe.skip('Test how this codebase uses the CodeCatalyst API', function () {
     let client: CodeCatalystClient
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview

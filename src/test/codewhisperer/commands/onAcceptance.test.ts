@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { onAcceptance } from '../../../codewhisperer/commands/onAcceptance'
@@ -88,7 +88,7 @@ describe('onAcceptance', function () {
             RecommendationHandler.instance.recommendations = [{ content: "print('Hello World!')" }]
             RecommendationHandler.instance.setSuggestionState(0, 'Showed')
             TelemetryHelper.instance.triggerType = 'OnDemand'
-            TelemetryHelper.instance.completionType = 'Line'
+            RecommendationHandler.instance.setCompletionType(0, RecommendationHandler.instance.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(

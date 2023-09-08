@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'

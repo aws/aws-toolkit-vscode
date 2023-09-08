@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-import * as fs from 'fs-extra'
-import * as sinon from 'sinon'
+import assert from 'assert'
+import fs from 'fs-extra'
+import sinon from 'sinon'
 import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../auth/providers/credentials'
 import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'

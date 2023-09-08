@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { ManagedUpload } from 'aws-sdk/clients/s3'
 import * as vscode from 'vscode'
 import { S3FileProvider, S3FileViewerManager } from '../../../s3/fileViewerManager'

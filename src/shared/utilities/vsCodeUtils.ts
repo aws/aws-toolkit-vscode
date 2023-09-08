@@ -8,75 +8,13 @@ import * as nls from 'vscode-nls'
 import { getIdeProperties } from '../extensionUtilities'
 import * as pathutils from './pathUtils'
 import { getLogger } from '../logger/logger'
-import { CancellationError, Timeout, waitTimeout, waitUntil } from './timeoutUtils'
+import { CancellationError, Timeout, waitTimeout } from './timeoutUtils'
 import { telemetry } from '../telemetry/telemetry'
 import * as semver from 'semver'
 import { isNonNullable } from './tsUtils'
-import globals from '../extensionGlobals'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
-
-/**
- * Executes the close all editors command and waits for all visible editors to disappear
- */
-export async function closeAllEditors() {
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors')
-
-    // The output channel counts as an editor, but you can't really close that...
-    const noVisibleEditor: boolean | undefined = await waitUntil(
-        async () => {
-            const visibleEditors = vscode.window.visibleTextEditors.filter(
-                editor => !editor.document.fileName.includes('extension-output') // Output channels are named with the prefix 'extension-output'
-            )
-
-            return visibleEditors.length === 0
-        },
-        {
-            timeout: 2500, // Arbitrary values. Should succeed except when VS Code is lagging heavily.
-            interval: 250,
-            truthy: true,
-        }
-    )
-
-    if (!noVisibleEditor) {
-        throw new Error(
-            `Editor "${
-                vscode.window.activeTextEditor!.document.fileName
-            }" was still open after executing "closeAllEditors"`
-        )
-    }
-}
-
-/**
- * Class to get info about the extension being first used
- */
-export class ExtensionUse {
-    private readonly isExtensionFirstUseKey = 'isExtensionFirstUse'
-
-    // The result of if is first use for the remainder of the extension session.
-    // This will reset on next startup.
-    private isFirstUseCurrentSession: boolean | undefined
-
-    isFirstUse(state: vscode.Memento = globals.context.globalState): boolean {
-        if (this.isFirstUseCurrentSession !== undefined) {
-            return this.isFirstUseCurrentSession
-        }
-
-        this.isFirstUseCurrentSession = state.get(this.isExtensionFirstUseKey, true)
-
-        // Update state, so next time it is not first use
-        state.update(this.isExtensionFirstUseKey, false)
-
-        return this.isFirstUseCurrentSession
-    }
-
-    static #instance: ExtensionUse
-
-    static get instance(): ExtensionUse {
-        return (this.#instance ??= new ExtensionUse())
-    }
-}
 
 /**
  * Checks if an extension is installed and active.
@@ -229,6 +167,30 @@ export function promisifyThenable<T>(thenable: Thenable<T>): Promise<T> {
 
 export function isUntitledScheme(uri: vscode.Uri): boolean {
     return uri.scheme === 'untitled'
+}
+
+/**
+ * Creates a glob pattern that matches all directories specified in `dirs`.
+ *
+ * "/" and "*" chars are trimmed from `dirs` items, and the final glob is defined such that the
+ * directories and their contents are matched any _any_ depth.
+ *
+ * Example: `['foo', '**\/bar/'] => "**\/{foo,bar}/"`
+ */
+export function globDirs(dirs: string[]): string {
+    const excludePatternsStr = dirs.reduce((prev, current) => {
+        // Trim all "*" and "/" chars.
+        // Note that the replace() patterns and order is intentionaly so that "**/*foo*/**" yields "*foo*".
+        const scrubbed = current
+            .replace(/^\**/, '')
+            .replace(/^[/\\]*/, '')
+            .replace(/\**$/, '')
+            .replace(/[/\\]*$/, '')
+        const comma = prev === '' ? '' : ','
+        return `${prev}${comma}${scrubbed}`
+    }, '')
+    const excludePattern = `**/{${excludePatternsStr}}/`
+    return excludePattern
 }
 
 // If the VSCode URI is not a file then return the string representation, otherwise normalize the filesystem path

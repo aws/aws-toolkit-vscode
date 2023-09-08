@@ -79,14 +79,14 @@ export function memoize<T, U extends any[]>(fn: (...args: U) => T): (...args: U)
 
 /**
  * Prevents a function from executing until {@link delay} milliseconds have passed
- * since the last invocation. Omitting {@link delay} will throttle the function for
+ * since the last invocation. Omitting {@link delay} will not execute the function for
  * a single event loop.
  *
- * Multiple calls made during the throttle window will receive references to the
+ * Multiple calls made during the debounce window will receive references to the
  * same Promise similar to {@link shared}. The window will also be 'rolled', delaying
  * the execution by another {@link delay} milliseconds.
  */
-export function throttle<T>(cb: () => T | Promise<T>, delay: number = 0): () => Promise<T> {
+export function debounce<T>(cb: () => T | Promise<T>, delay: number = 0): () => Promise<T> {
     let timer: NodeJS.Timeout | undefined
     let promise: Promise<T> | undefined
 

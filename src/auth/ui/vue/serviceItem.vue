@@ -127,7 +127,7 @@ export default defineComponent({
  */
 
 const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; description: string }>> = {
-    resourceExplorer: {
+    awsExplorer: {
         title: 'AWS Explorer: View, modify, and deploy AWS Resources',
         description: 'Work with S3, CloudWatch, and more.',
     },
@@ -136,8 +136,8 @@ const staticServiceItemProps: Readonly<Record<ServiceItemId, { title: string; de
         description: 'Build applications faster with your AI coding companion.',
     },
     codecatalyst: {
-        title: 'CodeCatalyst: Launch cloud-based Dev Environments',
-        description: 'Spark a faster planning, development, and delivery lifecycle on AWS.',
+        title: 'CodeCatalyst: Launch CodeCatalyst Dev Environments',
+        description: 'Spend more time coding and less time managing development environments.',
     },
 }
 
@@ -156,7 +156,7 @@ export class ServiceItemsState {
      *
      * Note the default unlocked service(s) are pre-defined here.
      */
-    private readonly unlockedServices: Set<ServiceItemId> = new Set(['resourceExplorer'])
+    private readonly unlockedServices: Set<ServiceItemId> = new Set([])
 
     private currentlySelected?: ServiceItemId = undefined
 

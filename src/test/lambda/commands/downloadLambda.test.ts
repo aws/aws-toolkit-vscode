@@ -4,7 +4,7 @@
  */
 
 import { openLambdaFile } from '../../../lambda/commands/downloadLambda'
-import * as assert from 'assert'
+import assert from 'assert'
 
 describe('downloadLambda', async function () {
     describe('openLambdaFile', async function () {

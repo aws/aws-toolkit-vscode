@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { SsmDocumentNode } from '../../../ssmDocument/explorer/ssmDocumentNode'
 import { DocumentTypeNode } from '../../../ssmDocument/explorer/documentTypeNode'
 import { DEFAULT_TEST_REGION_CODE } from '../../shared/regions/testUtil'

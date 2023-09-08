@@ -34,7 +34,22 @@ export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
     'nodejs14.x',
     'nodejs12.x',
 ])
+export function getNodeMajorVersion(version?: string): number | undefined {
+    if (!version) {
+        return undefined
+    }
+
+    const match = version.match(/^nodejs(\d+)\./)
+
+    if (match) {
+        return Number(match[1])
+    } else {
+        return undefined
+    }
+}
+
 export const pythonRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
+    'python3.11',
     'python3.10',
     'python3.9',
     'python3.8',

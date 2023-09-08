@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { AWSError, Request, Service } from 'aws-sdk'
 import { version } from 'vscode'
 import { AWSClientBuilder, DefaultAWSClientBuilder } from '../../shared/awsClientBuilder'
@@ -84,7 +84,7 @@ describe('DefaultAwsClientBuilder', function () {
         })
 
         describe('request listeners', function () {
-            type WithConfig = Parameters<typeof builder['createAwsService']>[1] & { apiConfig: Record<string, any> }
+            type WithConfig = Parameters<(typeof builder)['createAwsService']>[1] & { apiConfig: Record<string, any> }
 
             it('calls listener with correct type', async function () {
                 const service = await builder.createAwsService(Service, {

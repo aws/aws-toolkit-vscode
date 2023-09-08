@@ -7,7 +7,7 @@
 import { DefaultMynahSearchClient } from '../client/mynah'
 import { NavigationTabItems, Query, SearchSuggestion } from '../models/model'
 import * as mynahClient from '../client/mynah'
-import * as sanitize from 'sanitize-html'
+import sanitize from 'sanitize-html'
 import * as vs from 'vscode'
 import { ApiDocsSearchResponse, ApiDocsSuggestion, SearchResponse } from '../client/mynahclient'
 

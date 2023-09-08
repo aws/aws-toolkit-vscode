@@ -312,10 +312,13 @@ export function isAsyncIterable(obj: any): obj is AsyncIterable<unknown> {
  * based off a 'mark' (the paginated token field) and a `prop` which is an
  * Accumulable property on the response interface.
  *
- * @param requester Asynchronous function to make the API requests with
- * @param request Initial request to apply to the API calls
- * @param mark A property name of the paginated token field shared by the input/output shapes
- * @param prop A property name of an 'Accumulable' field in the output shape
+ * Note: aws-sdk-js-v3 provides service-specific paginateXX() functions:
+ * https://aws.amazon.com/blogs/developer/pagination-using-async-iterators-in-modular-aws-sdk-for-javascript/
+ *
+ * @param requester Asynchronous function to make the API requests with.
+ * @param request Initial request to apply to the API calls.
+ * @param mark Property name (ex: "nextToken") of the paginated token field shared by the input/output shapes.
+ * @param prop Property name (ex: "items") of an "Accumulable" field in the output shape.
  * @returns An {@link AsyncCollection} resolving to the type described by the `prop` field
  */
 export function pageableToCollection<
@@ -508,4 +511,3 @@ export function createCollectionFromPages<T>(...pages: T[]): AsyncCollection<T> 
         return pages[pages.length - 1]
     })
 }
-

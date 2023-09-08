@@ -1,3 +1,63 @@
+## 1.88.0 2023-09-07
+
+- **Feature** ECS: "Insufficient permissions" message shows more details about missing permissions
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.11. This new version adds Fail State fields ErrorPath and CausePath, and on Retriers MaxDelaySeconds and JitterStrategy.
+
+## 1.87.0 2023-08-31
+
+- **Breaking Change** Minimum required VS Code version is now 1.68
+- **Bug Fix** CloudWatch Logs: "Search Log Group" shows multiple progress popups
+- **Bug Fix** CloudWatch Logs: "View Full Log Stream" is limited to 1000 events instead of the `aws.cwl.limit` user setting
+- **Feature** Telemetry setting description includes a details link
+
+## 1.86.0 2023-08-24
+
+- **Bug Fix** CodeWhisperer: Fix test file supplemental context not working as expected on OS not using '/' as file path separator
+- **Bug Fix** CodeWhisperer sometimes fails on big files
+- **Bug Fix** CodeWhisperer: fix java test file name MyClassTests.java (plural) will not be captured if file is not living in a test folder
+- **Feature** SAM: create, run and debug Python 3.11 Lambdas #3753
+- **Feature** SAM run/debug detects and displays SAM CLI errors, so you spend less time inspecting the Output
+- **Feature** SAM template detection now skips directories specified in [user settings](https://code.visualstudio.com/docs/getstarted/settings) `files.exclude`, `search.exclude`, or `files.watcherExclude`. This improves performance on big workspaces and avoids the "Scanning CloudFormation templates..." message. [#3510](https://github.com/aws/aws-toolkit-vscode/issues/3510)
+- **Feature** Toolkit no longer explicitly checks if Docker is running, instead it lets SAM CLI decide that #3588
+
+## 1.85.0 2023-08-17
+
+- **Bug Fix** IAM Identity Center (SSO): misleading "Permission set" warning for scope-based SSO/IdC connection
+- **Bug Fix** auth: remote workspaces use the global state, showing incorrect profile info
+- **Feature** CodeWhisperer: Improve file context fetching for Python Typescript Javascript source files
+
+## 1.84.0 2023-08-11
+
+- **Bug Fix** misleading error when downloading a Lambda to a workspace without a folder
+- **Bug Fix** CodeWhisperer: Fix in some cases the inline suggestions are not showing in the editor
+- **Bug Fix** Regions quickpick menu shows duplicate "recently used" labels
+- **Feature** CodeWhisperer: Improve file context fetching for Java test files
+- **Feature** IAM Identity Center (SSO): show an error if SSO user is not assigned to an account with a Permission Set
+
+## 1.83.0 2023-08-03
+
+- **Feature** IAM Identity Center (SSO): log a warning if SSO user is not linked to an account
+
+## 1.82.0 2023-07-26
+
+- **Bug Fix** CodeWhisperer: issue with fetching enhanced file context
+- **Bug Fix** User setting for "Share CodeWhisperer Content With AWS" was not reflected in workspace-level settings
+- **Feature** CodeWhisperer: Improve Java suggestion quality with enhanced file context fetching
+- **Feature** Lambda "Download" action now expects ".mjs" extension for Node18+ lambdas
+
+## 1.81.0 2023-07-13
+
+- **Bug Fix** codewhisperer: improper request format when sending empty supplemental context
+- **Feature** CodeWhisperer: Improve suggestion quality with enhanced file context fetching
+
+## 1.80.0 2023-07-05
+
+- **Bug Fix** Fix function that determined who was a first time user
+
+## 1.79.0 2023-06-30
+
+- **Feature** New Add Connection workflow
+
 ## 1.78.0 2023-06-27
 
 - **Bug Fix** ECS: tasks from unrelated task definitions are shown in the "Open Terminal..." command

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as moment from 'moment'
+import moment from 'moment'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../shared/constants'
 import { CloudWatchLogsEvent, CloudWatchLogsGroupInfo } from '../registry/logDataRegistry'
 

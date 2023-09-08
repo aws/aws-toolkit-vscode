@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import {
@@ -117,6 +117,7 @@ describe('createConnectionPrompter', function () {
     })
 
     it('shows an option to go to documentation when no connections are available', async function () {
+        getOpenExternalStub().resolves(true)
         const tester = makeTester([])
         tester.assertItems(['No connections found'])
         tester.acceptItem('No connections found')

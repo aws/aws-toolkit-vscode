@@ -7,29 +7,25 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as fs from 'fs-extra'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { isLogStreamUri, parseCloudWatchLogsUri } from '../cloudWatchLogsUtils'
-import { LogDataRegistry } from '../registry/logDataRegistry'
 import { telemetry, CloudWatchResourceType, Result } from '../../shared/telemetry/telemetry'
-import { generateTextFromLogEvents } from '../document/textContent'
+import { FileSystemCommon } from '../../srcShared/fs'
 
-export async function saveCurrentLogDataContent(uri: vscode.Uri | undefined, registry: LogDataRegistry): Promise<void> {
+/** Prompts the user to select a file location to save the currently visible "aws-cwl:" document to. */
+export async function saveCurrentLogDataContent(): Promise<void> {
     let result: Result = 'Succeeded'
     let resourceType: CloudWatchResourceType = 'logStream' // Default to stream if it fails to find URI
 
     try {
+        // Get URI from active editor.
+        const uri = vscode.window.activeTextEditor?.document.uri
         if (!uri) {
-            // No URI = used command palette as entrypoint, attempt to get URI from active editor
-            // should work correctly under any normal circumstances since the action only appears in command palette when the editor is a CloudWatch Logs editor
-            uri = vscode.window.activeTextEditor?.document.uri
-            if (!uri) {
-                throw new Error()
-            }
+            throw new Error()
         }
+
         resourceType = isLogStreamUri(uri) ? 'logStream' : 'logGroup'
-        const cachedLogEvents = registry.fetchCachedLogEvents(uri)
-        const content: string = generateTextFromLogEvents(cachedLogEvents, { timestamps: true }).text
+        const content = vscode.window.activeTextEditor?.document.getText()
         const workspaceDir = vscode.workspace.workspaceFolders
             ? vscode.workspace.workspaceFolders[0].uri
             : vscode.Uri.file(SystemUtilities.getHomeDirectory())
@@ -47,10 +43,9 @@ export async function saveCurrentLogDataContent(uri: vscode.Uri | undefined, reg
             },
         })
 
-        if (selectedUri) {
+        if (selectedUri && content) {
             try {
-                await fs.writeFile(selectedUri.fsPath, content)
-                // TODO: Open file and close virtual doc? Is this possible?
+                await FileSystemCommon.instance.writeFile(selectedUri, content)
             } catch (e) {
                 result = 'Failed'
                 const err = e as Error

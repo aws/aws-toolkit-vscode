@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
-import * as moment from 'moment'
+import moment from 'moment'
 import { LOCALIZED_DATE_FORMAT } from '../../../shared/constants'
 import { stringOrProp } from '../../../shared/utilities/tsUtils'
 

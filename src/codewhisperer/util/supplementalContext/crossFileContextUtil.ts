@@ -5,15 +5,42 @@
 
 import * as vscode from 'vscode'
 import * as fs from 'fs-extra'
-import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
+import path = require('path')
 import { BM25Document, BM25Okapi } from './rankBm25'
-import { isRelevant } from './editorFilesUtil'
 import { ToolkitError } from '../../../shared/errors'
-import { crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
+import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
+import { isTestFile } from './codeParsingUtil'
+import { getFileDistance } from '../../../shared/filesystemUtilities'
+import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
 
-const crossFileLanguageConfigs = ['java']
+type CrossFileSupportedLanguage =
+    | 'java'
+    | 'python'
+    | 'javascript'
+    | 'typescript'
+    | 'javascriptreact'
+    | 'typescriptreact'
+
+// TODO: ugly, can we make it prettier? like we have to manually type 'java', 'javascriptreact' which is error prone
+// TODO: Move to another config file or constants file
+// Supported language to its corresponding file ext
+const supportedLanguageToDialects: Readonly<Record<CrossFileSupportedLanguage, Set<string>>> = {
+    java: new Set<string>(['.java']),
+    python: new Set<string>(['.py']),
+    javascript: new Set<string>(['.js', '.jsx']),
+    javascriptreact: new Set<string>(['.js', '.jsx']),
+    typescript: new Set<string>(['.ts', '.tsx']),
+    typescriptreact: new Set<string>(['.ts', '.tsx']),
+}
+
+function isCrossFileSupported(languageId: string): languageId is CrossFileSupportedLanguage {
+    return Object.keys(supportedLanguageToDialects).includes(languageId)
+}
+
 interface Chunk {
     fileName: string
     content: string
@@ -23,16 +50,23 @@ interface Chunk {
 
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
-    dependencyGraph: DependencyGraph,
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
-    if (crossFileLanguageConfigs.includes(editor.document.languageId) === false) {
-        return undefined
+    const shouldProceed = shouldFetchCrossFileContext(
+        editor.document.languageId,
+        CodeWhispererUserGroupSettings.instance.userGroup
+    )
+
+    if (!shouldProceed) {
+        return shouldProceed === undefined ? undefined : []
     }
 
+    const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
+
     // Step 1: Get relevant cross files to refer
-    const relevantCrossFilePaths = await getRelevantCrossFiles(editor, dependencyGraph)
+    const relevantCrossFilePaths = await getCrossFileCandidates(editor)
     throwIfCancelled(cancellationToken)
+
     // Step 2: Split files to chunks with upper bound on chunkCount
     // We restrict the total number of chunks to improve on latency.
     // Chunk linking is required as we want to pass the next chunk value for matched chunk.
@@ -42,13 +76,13 @@ export async function fetchSupplementalContextForSrc(
         const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
-        if (chunkList.length >= crossFileContextConfig.numberOfChunkToFetch) {
+        if (chunkList.length >= codeChunksCalculated) {
             break
         }
     }
 
     // it's required since chunkList.push(...) is likely giving us a list of size > 60
-    chunkList = chunkList.slice(0, crossFileContextConfig.numberOfChunkToFetch)
+    chunkList = chunkList.slice(0, codeChunksCalculated)
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
@@ -68,7 +102,9 @@ export async function fetchSupplementalContextForSrc(
         })
     }
 
-    return supplementalContexts
+    // DO NOT send code chunk with empty content
+    getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
+    return supplementalContexts.filter(item => item.content.trim().length !== 0)
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
@@ -105,6 +141,24 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
 }
 
 /**
+ * Util to decide if we need to fetch crossfile context since CodeWhisperer CrossFile Context feature is gated by userGroup and language level
+ * @param languageId: VSCode language Identifier
+ * @param userGroup: CodeWhisperer user group settings, refer to userGroupUtil.ts
+ * @returns specifically returning undefined if the langueage is not supported,
+ * otherwise true/false depending on if the language is fully supported or not belonging to the user group
+ */
+function shouldFetchCrossFileContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
+    if (!isCrossFileSupported(languageId)) {
+        return undefined
+    }
+
+    return true
+}
+
+/**
  * This linking is required from science experimentations to pass the next contnet chunk
  * when a given chunk context passes the match in BM25.
  * Special handling is needed for last(its next points to its own) and first chunk
@@ -134,7 +188,7 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
     const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()
@@ -149,30 +203,42 @@ function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
 }
 
 /**
- * This function will return relevant cross files for the given editor file
+ * This function will return relevant cross files sorted by file distance for the given editor file
  * by referencing open files, imported files and same package files.
  */
-async function getRelevantCrossFiles(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<string[]> {
-    return getOpenFilesInWindow().filter(file => {
-        return isRelevant(editor.document.fileName, file, editor.document.languageId)
+export async function getCrossFileCandidates(editor: vscode.TextEditor): Promise<string[]> {
+    const targetFile = editor.document.uri.fsPath
+    const language = editor.document.languageId as CrossFileSupportedLanguage
+    const dialects = supportedLanguageToDialects[language]
+
+    /**
+     * Consider a file which
+     * 1. is different from the target
+     * 2. has the same file extension or it's one of the dialect of target file (e.g .js vs. .jsx)
+     * 3. is not a test file
+     */
+    const unsortedCandidates = await getOpenFilesInWindow(async candidateFile => {
+        return (
+            targetFile !== candidateFile &&
+            (path.extname(targetFile) === path.extname(candidateFile) ||
+                (dialects && dialects.has(path.extname(candidateFile)))) &&
+            !(await isTestFile(candidateFile, { languageId: language }))
+        )
     })
-}
 
-function getOpenFilesInWindow(): string[] {
-    const filesOpenedInEditor: string[] = []
-
-    try {
-        const tabArrays = vscode.window.tabGroups.all
-        tabArrays.forEach(tabArray => {
-            tabArray.tabs.forEach(tab => {
-                filesOpenedInEditor.push((tab.input as any).uri.path)
-            })
+    return unsortedCandidates
+        .map(candidate => {
+            return {
+                file: candidate,
+                fileDistance: getFileDistance(targetFile, candidate),
+            }
         })
-    } catch (e) {
-        // Older versions of VSC do not have the tab API
-    }
-
-    return filesOpenedInEditor
+        .sort((file1, file2) => {
+            return file1.fileDistance - file2.fileDistance
+        })
+        .map(fileToDistance => {
+            return fileToDistance.file
+        })
 }
 
 function throwIfCancelled(token: vscode.CancellationToken): void | never {

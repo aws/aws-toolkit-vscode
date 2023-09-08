@@ -5,13 +5,15 @@
 
 import { normalize } from 'path'
 import * as vscode from 'vscode'
-import * as winston from 'winston'
-import { ConsoleLogTransport } from './consoleLogTransport'
+import winston from 'winston'
 import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
 import { formatError, ToolkitError, UnknownError } from '../errors'
+import { isInBrowser } from '../../common/browserUtils'
+import { SharedFileTransport } from './sharedFileTransport'
+import { ConsoleLogTransport } from './consoleLogTransport'
 
 // Need to limit how many logs are actually tracked
 // LRU cache would work well, currently it just dumps the least recently added log
@@ -57,7 +59,13 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public logToFile(logPath: string): void {
-        const fileTransport: winston.transport = new winston.transports.File({ filename: logPath })
+        let fileTransport: winston.transport
+        if (isInBrowser()) {
+            fileTransport = new SharedFileTransport({ logFile: vscode.Uri.file(logPath) })
+        } else {
+            fileTransport = new winston.transports.File({ filename: logPath })
+        }
+
         const fileUri: vscode.Uri = vscode.Uri.file(normalize(logPath))
         fileTransport.on('logged', (obj: any) => this.parseLogObject(fileUri, obj))
         this.logger.add(fileTransport)

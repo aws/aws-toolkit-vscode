@@ -4,10 +4,11 @@
  */
 
 import * as vscode from 'vscode'
-import got from 'got'
+import got, { HTTPError } from 'got'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger/logger'
 import { getCodeCatalystDevEnvId } from '../vscode/env'
+import { ExtensionUserActivity } from '../extensionUtilities'
 
 const environmentAuthToken = '__MDE_ENV_API_AUTHORIZATION_TOKEN'
 const environmentEndpoint = 'http://127.0.0.1:1339'
@@ -103,6 +104,126 @@ export class DevEnvClient implements vscode.Disposable {
         // `Authorization` _should_ have two parameters (RFC 7235), MDE should probably fix that
         headers: { Authorization: this.authToken },
     })
+
+    /**
+     * WARNING: You should use {@link DevEnvActivity} unless you have a reason not to.
+     */
+    async updateActivity(timestamp: number = Date.now()): Promise<number> {
+        await this.got.put('activity', { json: { timestamp: timestamp.toString() } })
+        return timestamp
+    }
+
+    /**
+     * WARNING: You should use {@link DevEnvActivity} unless you have a reason not to.
+     */
+    async getActivity(): Promise<number | undefined> {
+        const response = await this.got<GetActivityResponse>('activity')
+        return response.body.timestamp ? parseInt(response.body.timestamp) : undefined
+    }
+}
+
+/**
+ * This allows you to easily work with Dev Env user activity timestamps.
+ *
+ * An activity is a timestamp that the server uses to
+ * determine when the user was last active.
+ */
+export class DevEnvActivity implements vscode.Disposable {
+    private activityUpdatedEmitter = new vscode.EventEmitter<number>()
+    private ideActivityListener: vscode.Disposable | undefined
+    /** The last known activity timestamp, but there could be a newer one on the server. */
+    private lastLocalActivity: number | undefined
+    private extensionUserActivity: ExtensionUserActivity
+
+    static readonly activityUpdateDelay = 10_000
+
+    /**
+     * Returns an instance if the activity mechanism is confirmed to be working.
+     */
+    static async instanceIfActivityTrackingEnabled(
+        client: DevEnvClient,
+        extensionUserActivity?: ExtensionUserActivity
+    ): Promise<DevEnvActivity | undefined> {
+        try {
+            await client.getActivity()
+        } catch (e) {
+            const error = e instanceof HTTPError ? e.response.body : e
+            getLogger().error(`DevEnvActivity: Activity API failed:%s`, error)
+            return undefined
+        }
+
+        return new DevEnvActivity(client, extensionUserActivity)
+    }
+
+    private constructor(private readonly client: DevEnvClient, extensionUserActivity?: ExtensionUserActivity) {
+        this.extensionUserActivity =
+            extensionUserActivity ?? new ExtensionUserActivity(DevEnvActivity.activityUpdateDelay)
+    }
+
+    /** Send activity timestamp to the Dev Env */
+    async sendActivityUpdate(timestamp: number = Date.now()): Promise<number> {
+        await this.client.updateActivity()
+        this.lastLocalActivity = timestamp
+        this.activityUpdatedEmitter.fire(timestamp)
+        return timestamp
+    }
+
+    /** Get the latest activity timestamp from the Dev Env */
+    async getLatestActivity(): Promise<number | undefined> {
+        const lastServerActivity = await this.client.getActivity()
+
+        // A single Dev Env can have multiple clients connected to it.
+        // So if one client updates the timestamp, it will be different from what the
+        // other clients assumed the last activity was.
+        if (lastServerActivity && lastServerActivity !== this.lastLocalActivity) {
+            this.activityUpdatedEmitter.fire(lastServerActivity)
+        }
+
+        this.lastLocalActivity = lastServerActivity
+        return this.lastLocalActivity
+    }
+
+    /** true, if the latest activity on the server is different from what this client has as the latest */
+    async isLocalActivityStale(): Promise<boolean> {
+        return (await this.getLatestActivity()) !== this.lastLocalActivity
+    }
+
+    /** Runs the given callback when the activity is updated */
+    onActivityUpdate(callback: (timestamp: number) => any) {
+        this.updateActivityOnIdeActivity()
+        this.activityUpdatedEmitter.event(callback)
+    }
+
+    /** Stops sending activity timestamps to the dev env on user ide activity. */
+    stopUpdatingActivityOnIdeActivity() {
+        this.ideActivityListener?.dispose()
+        this.ideActivityListener = undefined
+    }
+
+    /**
+     * Sends an activity timestamp to Dev Env when there is user activity, throttled to once every {@link DevEnvActivity.activityUpdateDelay}.
+     */
+    private updateActivityOnIdeActivity() {
+        if (this.ideActivityListener) {
+            return
+        }
+
+        this.ideActivityListener = this.extensionUserActivity.onUserActivity(async () => {
+            await this.sendActivityUpdate()
+        })
+    }
+
+    dispose() {
+        this.stopUpdatingActivityOnIdeActivity()
+    }
+}
+
+export interface GetActivityResponse {
+    timestamp?: string
+}
+
+export interface UpdateActivityRequest {
+    timestamp?: string
 }
 
 export interface GetStatusResponse {

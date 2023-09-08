@@ -3,12 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 import * as vscodeUtil from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
+import { getExcludePattern } from '../../../shared/fs/watchedFiles'
 
 describe('vscodeUtils', async function () {
     it('activateExtension(), isExtensionActive()', async function () {
@@ -21,6 +20,17 @@ describe('vscodeUtils', async function () {
 
         await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
         assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
+    })
+
+    it('globDirs()', async function () {
+        const input = ['foo', '**/bar/**', '*baz*', '**/*with.star*/**', '/zub', 'zim/', '/zoo/']
+        assert.deepStrictEqual(vscodeUtil.globDirs(input), '**/{foo,bar,baz,*with.star*,zub,zim,zoo}/')
+    })
+
+    it('watchedFiles.getExcludePattern()', async function () {
+        // If vscode defaults change in the future, just update this test.
+        // We intentionally want visibility into real-world defaults.
+        assert.match(getExcludePattern(), /node_modules,bower_components,\*\.code-search,/)
     })
 })
 
@@ -99,26 +109,5 @@ describe('buildMissingExtensionMessage()', function () {
             message,
             `${feat} requires the ${extName} extension (\'${extId}\') to be installed and enabled.`
         )
-    })
-})
-
-describe('ExtensionUse.isFirstUse()', function () {
-    let fakeState: vscode.Memento
-    let instance: ExtensionUse
-
-    beforeEach(async function () {
-        fakeState = (await FakeExtensionContext.create()).globalState
-        instance = new ExtensionUse()
-    })
-
-    it('is true only on first startup', function () {
-        assert.strictEqual(instance.isFirstUse(fakeState), true, 'Failed on first call.')
-        assert.strictEqual(instance.isFirstUse(fakeState), true, 'Failed on second call.')
-
-        // Mimic new extension startup, since a new instance
-        // is created on each load of the extension.
-        const secondInstance = new ExtensionUse()
-
-        assert.strictEqual(secondInstance.isFirstUse(fakeState), false, 'Failed on new startup.')
     })
 })
