@@ -75,6 +75,7 @@ describe('createRolePrompter', function () {
     })
 
     it('can open documentation', async function () {
+        getOpenExternalStub().resolves(true)
         tester.pressButton('View Toolkit Documentation')
         tester.addCallback(() => assert.ok(getOpenExternalStub().calledWith(helpUri)))
         tester.hide()

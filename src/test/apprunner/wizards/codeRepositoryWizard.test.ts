@@ -117,6 +117,7 @@ describe('createConnectionPrompter', function () {
     })
 
     it('shows an option to go to documentation when no connections are available', async function () {
+        getOpenExternalStub().resolves(true)
         const tester = makeTester([])
         tester.assertItems(['No connections found'])
         tester.acceptItem('No connections found')

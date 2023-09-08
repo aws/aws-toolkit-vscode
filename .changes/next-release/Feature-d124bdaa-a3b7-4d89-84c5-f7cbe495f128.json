@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Step Functions: Upgrade amazon-states-language-service to 1.11. This new version adds Fail State fields ErrorPath and CausePath, and on Retriers MaxDelaySeconds and JitterStrategy."
-}
