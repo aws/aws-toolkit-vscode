@@ -14,7 +14,6 @@ import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisp
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
-import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 
 describe('inlineCompletionService', function () {
     beforeEach(function () {
