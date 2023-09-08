@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.observable.properties.PropertyGraph
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
@@ -33,9 +34,13 @@ import software.amazon.awssdk.services.sso.model.RoleInfo
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.ui.AsyncComboBox
 import software.aws.toolkits.jetbrains.utils.ui.selected
@@ -55,9 +60,10 @@ data class SetupAuthenticationDialogState(
     val selectedTab = graph.property(SetupAuthenticationTabs.IDENTITY_CENTER)
 
     data class IdentityCenterTabState(
+        var profileName: String = "",
         var startUrl: String = "",
         var region: AwsRegion = AwsRegionProvider.getInstance().defaultRegion(),
-        var roleInfo: RoleInfo? = null
+        var rolePopupState: IdcRolePopupState = IdcRolePopupState()
     )
 
     // has no state yet
@@ -224,7 +230,7 @@ class SetupAuthenticationDialog(
         when (selectedTab()) {
             SetupAuthenticationTabs.IDENTITY_CENTER -> {
                 val scopes = if (promptForIdcPermissionSet) {
-                    (scopes + "sso:account:access").toSet().toList()
+                    (scopes + IDENTITY_CENTER_ROLE_ACCESS_SCOPE).toSet().toList()
                 } else {
                     scopes
                 }
@@ -234,14 +240,14 @@ class SetupAuthenticationDialog(
                     return
                 }
 
-                object : DialogWrapper(project) {
-                    init {
-                        title = message("gettingstarted.setup.idc.role.title")
-                        init()
-                    }
+                val rolePopup = IdcRolePopup(project, state.idcTabState.region.id, tokenProvider)
 
-                    override fun createCenterPanel() = idcRolePopup(tokenProvider)
-                }.show()
+                // not using showAndGet() because it throws in test mode
+                rolePopup.show()
+                if (!rolePopup.isOK) {
+                    // don't close window if role is needed but was not confirmed
+                    return
+                }
             }
 
             SetupAuthenticationTabs.BUILDER_ID -> {
@@ -259,6 +265,13 @@ class SetupAuthenticationDialog(
         ?: error("Could not determine selected tab")
 
     private fun idcTab() = panel {
+        row(message("gettingstarted.setup.iam.profile")) {
+            textField()
+                .comment(message("gettingstarted.setup.idc.profile.comment"))
+                .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                .bindText(state.idcTabState::profileName)
+        }
+
         row(message("gettingstarted.setup.idc.startUrl")) {
             textField()
                 .comment(message("gettingstarted.setup.idc.startUrl.comment"))
@@ -273,42 +286,6 @@ class SetupAuthenticationDialog(
                 SimpleListCellRenderer.create("null") { it.displayName }
             ).bindItem(state.idcTabState::region.toNullableProperty())
                 .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
-        }
-    }
-
-    private fun idcRolePopup(tokenProvider: SdkTokenProvider) = panel {
-        row {
-            label(message("gettingstarted.setup.idc.roleLabel"))
-        }
-
-        row {
-            val combo = AsyncComboBox<RoleInfo> { label, value, _ ->
-                value ?: return@AsyncComboBox
-                label.text = "${value.roleName()} (${value.accountId()})"
-            }
-            Disposer.register(myDisposable, combo)
-            combo.proposeModelUpdate { model ->
-                val token = tokenProvider.resolveToken().token()
-                val client = AwsClientManager.getInstance().createUnmanagedClient<SsoClient>(
-                    AnonymousCredentialsProvider.create(),
-                    Region.of(state.idcTabState.region.id)
-                )
-
-                client.listAccounts { it.accessToken(token) }
-                    .accountList()
-                    .flatMap { account ->
-                        client.listAccountRoles {
-                            it.accessToken(token)
-                            it.accountId(account.accountId())
-                        }.roleList()
-                    }.forEach {
-                        model.addElement(it)
-                    }
-            }
-
-            cell(combo)
-                .align(AlignX.FILL)
-                .bindItem(state.idcTabState::roleInfo.toNullableProperty())
         }
     }
 
@@ -359,3 +336,90 @@ class SetupAuthenticationDialog(
         }
     }
 }
+
+data class IdcRolePopupState(
+    var roleInfo: RoleInfo? = null
+)
+
+class IdcRolePopup(
+    project: Project,
+    private val region: String,
+    private val tokenProvider: SdkTokenProvider,
+    val state: IdcRolePopupState = IdcRolePopupState()
+) : DialogWrapper(project) {
+    init {
+        title = message("gettingstarted.setup.idc.role.title")
+        init()
+    }
+
+    override fun createCenterPanel() = panel {
+        row {
+            label(message("gettingstarted.setup.idc.roleLabel"))
+        }
+
+        row {
+            val combo = AsyncComboBox<RoleInfo> { label, value, _ ->
+                value ?: return@AsyncComboBox
+                label.text = "${value.roleName()} (${value.accountId()})"
+            }
+
+            Disposer.register(myDisposable, combo)
+            combo.proposeModelUpdate { model ->
+                val token = tokenProvider.resolveToken().token()
+                val client = AwsClientManager.getInstance().createUnmanagedClient<SsoClient>(
+                    AnonymousCredentialsProvider.create(),
+                    Region.of(region)
+                )
+
+                client.listAccounts { it.accessToken(token) }
+                    .accountList()
+                    .flatMap { account ->
+                        client.listAccountRoles {
+                            it.accessToken(token)
+                            it.accountId(account.accountId())
+                        }.roleList()
+                    }.forEach {
+                        model.addElement(it)
+                    }
+            }
+
+            cell(combo)
+                .align(AlignX.FILL)
+                .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
+                .bindItem(state::roleInfo.toNullableProperty())
+        }
+    }
+}
+
+fun rolePopupFromConnection(project: Project, connection: AwsBearerTokenConnection) {
+    runInEdt {
+        if (connection.isSono()) {
+            requestCredentialsForExplorer(project)
+        } else {
+            val tokenProvider = if (connection is BearerSsoConnection && !connection.scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)) {
+                loginSso(project, connection.startUrl, connection.region, connection.scopes + IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
+            } else {
+                connection.getConnectionSettings().tokenProvider
+            }
+
+            IdcRolePopup(project, connection.region, tokenProvider)
+                .show()
+        }
+    }
+}
+
+fun requestCredentialsForExplorer(project: Project) =
+    SetupAuthenticationDialog(
+        project,
+        tabSettings = mapOf(
+            SetupAuthenticationTabs.BUILDER_ID to AuthenticationTabSettings(
+                disabled = true,
+                notice = SetupAuthenticationNotice(
+                    SetupAuthenticationNotice.NoticeType.ERROR,
+                    message("gettingstarted.setup.explorer.no_builder_id"),
+                    "https://docs.aws.amazon.com/signin/latest/userguide/differences-aws_builder_id.html"
+                )
+            )
+        ),
+        promptForIdcPermissionSet = true
+    ).show()

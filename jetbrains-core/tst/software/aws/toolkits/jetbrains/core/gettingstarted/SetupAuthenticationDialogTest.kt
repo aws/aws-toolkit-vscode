@@ -105,7 +105,7 @@ class SetupAuthenticationDialogTest {
                 .performValidateAll()
 
             assertThat(validation).satisfies {
-                assertThat(it).hasSize(1)
+                assertThat(it).hasSize(2)
                 assertThat(it).allSatisfy { error ->
                     assertThat(error.message).contains("Must not be empty")
                 }

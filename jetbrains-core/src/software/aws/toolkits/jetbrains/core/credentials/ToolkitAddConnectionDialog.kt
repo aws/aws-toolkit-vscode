@@ -36,6 +36,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.ToolkitPlaces
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.help.HelpIds
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
@@ -56,6 +57,7 @@ data class ConnectionDialogCustomizer(
     val errorMsg: String? = null
 )
 
+@Deprecated("Point users to 'Getting Started' or use SetupAuthenticationDialog.kt directly")
 open class ToolkitAddConnectionDialog(
     private val project: Project,
     private val customizer: ConnectionDialogCustomizer? = null,
@@ -147,7 +149,7 @@ open class ToolkitAddConnectionDialog(
                     error("User should not perform Identity Center login with AWS Builder ID url")
                 }
 
-                val scopes = customizer?.scopes?.nullize() ?: listOf("sso:account:access")
+                val scopes = customizer?.scopes?.nullize() ?: listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
 
                 LOG.info { "Try to fetch credential with: $modal" }
 

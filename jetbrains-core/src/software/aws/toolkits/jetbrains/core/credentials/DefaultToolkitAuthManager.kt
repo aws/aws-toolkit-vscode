@@ -126,7 +126,7 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
             )
         }
 
-        is DiskSsoSessionProfile -> DiskSsoSessionConnection(sessionProfileName = profile.profileName, region = profile.ssoRegion)
+        is DiskSsoSessionProfile -> DiskSsoSessionConnection(sessionProfileName = profile.profileName, startUrl = profile.startUrl, region = profile.ssoRegion)
     }
 
     companion object {

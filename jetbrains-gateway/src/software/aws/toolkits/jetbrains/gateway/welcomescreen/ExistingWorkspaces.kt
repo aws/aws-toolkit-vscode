@@ -47,7 +47,7 @@ class ExistingWorkspaces(
 
         val space = CawsSpaceTracker.getInstance().lastSpaceName()
         if (space == null || space !in spaces) {
-            return InfoPanel()
+            return infoPanel()
                 .addLine(message("caws.workspace.details.select_org"))
                 .addAction(message("general.get_started")) {
                     BrowserLauncher.instance.browse(CawsEndpoints.ConsoleFactory.baseUrl())
@@ -62,7 +62,7 @@ class ExistingWorkspaces(
             if (workspaces.workspaces().isNotEmpty() || workspaces.codeRepos().isNotEmpty()) {
                 WorkspaceListPanel(workspaces, client, setContentCallback, { startLoading() }, lifetime)
             } else {
-                InfoPanel()
+                infoPanel()
                     .addLine(message("caws.information_panel"))
                     .addLine(message("caws.information.panel"))
                     .addAction(message("general.refresh")) { lifetime.launchOnUi { startLoading() } }

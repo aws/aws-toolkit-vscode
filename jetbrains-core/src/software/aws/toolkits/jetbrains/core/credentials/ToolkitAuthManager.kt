@@ -39,6 +39,9 @@ interface AwsCredentialConnection : ToolkitConnection {
 }
 
 interface AwsBearerTokenConnection : ToolkitConnection {
+    val startUrl: String
+    val region: String
+
     override fun getConnectionSettings(): TokenConnectionSettings
 }
 
@@ -56,6 +59,7 @@ data class ManagedSsoProfile(
 
 data class DiskSsoSessionProfile(
     var profileName: String = "",
+    var startUrl: String = "",
     var ssoRegion: String = ""
 ) : AuthProfile
 
