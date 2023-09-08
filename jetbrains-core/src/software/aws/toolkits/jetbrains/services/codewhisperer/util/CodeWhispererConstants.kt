@@ -7,8 +7,6 @@ import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import software.amazon.awssdk.regions.Region
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import java.awt.Font
 import java.text.SimpleDateFormat
 import java.time.format.DateTimeFormatter
@@ -79,8 +77,7 @@ object CodeWhispererConstants {
     }
 
     object CrossFile {
-        val CHUNK_SIZE
-            get() = if (CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.Control) 60 else 1000
+        const val CHUNK_SIZE = 60
     }
 
     object Utg {

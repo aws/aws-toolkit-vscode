@@ -78,7 +78,7 @@ class CodeWhispererFileContextProviderTest {
         assertThat(CodeWhispererConstants.CrossFile.CHUNK_SIZE).isEqualTo(60)
 
         whenever(userGroupSetting.getUserGroup()).thenReturn(CodeWhispererUserGroup.CrossFile)
-        assertThat(CodeWhispererConstants.CrossFile.CHUNK_SIZE).isEqualTo(1000)
+        assertThat(CodeWhispererConstants.CrossFile.CHUNK_SIZE).isEqualTo(60)
     }
 
     @Test
