@@ -1,3 +1,7 @@
+## 1.79.0 2023-06-30
+
+- **Feature** New Add Connection workflow
+
 ## 1.78.0 2023-06-27
 
 - **Bug Fix** ECS: tasks from unrelated task definitions are shown in the "Open Terminal..." command

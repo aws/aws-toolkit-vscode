@@ -1,9 +1,10 @@
 {
     "types": [
         {
-            "name": "codewhispererUserGroup",
+            "name": "ec2ConnectionType",
             "type": "string",
-            "description": "The user group identifier we assign to the customer and it should be unique identifier across different IDE platforms, i.e. Classifier, CrossFile etc."
+            "allowedValues": ["remoteDesktop", "ssh", "scp", "ssm"],
+            "description": "Ec2 Connection Methods"
         },
         {
             "name": "documentFormat",

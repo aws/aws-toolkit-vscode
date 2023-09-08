@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
-import { showAuthWebview } from './ui/vue/show'
+import { AuthSource, showAuthWebview } from './ui/vue/show'
 import { ServiceItemId, isServiceItemId } from './ui/vue/types'
 import { showConnectionsPageCommand } from './utils'
 
@@ -14,13 +14,17 @@ import { showConnectionsPageCommand } from './utils'
 export class AuthCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext) {}
 
-    public showConnectionsPage(serviceToShow?: ServiceItemId) {
+    public showConnectionsPage(source: AuthSource, serviceToShow?: ServiceItemId) {
         // Edge case where called by vscode UI and non ServiceItemId object
         // is passed in.
+        if (typeof source !== 'string') {
+            source = 'unknown'
+        }
+
         if (!isServiceItemId(serviceToShow)) {
             serviceToShow = undefined
         }
-        return showAuthWebview(this.extContext, serviceToShow)
+        return showAuthWebview(this.extContext, source, serviceToShow)
     }
 }
 

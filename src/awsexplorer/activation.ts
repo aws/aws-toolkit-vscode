@@ -71,11 +71,7 @@ export async function activate(args: {
             awsExplorer.refresh()
 
             if (credentialsChangedEvent.profileName) {
-                await checkExplorerForDefaultRegion(
-                    credentialsChangedEvent.profileName,
-                    args.regionProvider,
-                    awsExplorer
-                )
+                await checkExplorerForDefaultRegion(args.regionProvider, awsExplorer)
             }
         })
     )
