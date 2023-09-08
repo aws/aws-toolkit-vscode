@@ -61,10 +61,7 @@ export async function fetchSupplementalContextForSrc(
         return shouldProceed === undefined ? undefined : []
     }
 
-    const codeChunksCalculated =
-        CodeWhispererUserGroupSettings.instance.userGroup === UserGroup.Control
-            ? crossFileContextConfig.numberOfChunkToFetch
-            : crossFileContextConfig.numberOfChunkToFetchExperiment
+    const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
     const relevantCrossFilePaths = await getCrossFileCandidates(editor)
