@@ -27,10 +27,7 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
         const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
-        RecommendationHandler.instance.reportUserDecisionOfRecommendation(
-            acceptanceEntry.editor,
-            acceptanceEntry.acceptIndex
-        )
+
         // codewhisperer will be doing editing while formatting.
         // formatting should not trigger consoals auto trigger
         vsCodeState.isCodeWhispererEditing = true
@@ -85,6 +82,9 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
         }
     }
 
-    // at the end of recommendation acceptance, clear recommendations.
-    RecommendationHandler.instance.clearRecommendations()
+    // at the end of recommendation acceptance, report user decisions and clear recommendations.
+    RecommendationHandler.instance.reportUserDecisionOfRecommendation(
+        acceptanceEntry.editor,
+        acceptanceEntry.acceptIndex
+    )
 }

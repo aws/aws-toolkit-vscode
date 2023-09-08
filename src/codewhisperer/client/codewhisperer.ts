@@ -15,8 +15,10 @@ import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { isSsoConnection } from '../../auth/connection'
+import { session } from '../util/codeWhispererSession'
+import { SendTelemetryEventRequest } from './codewhispereruserclient'
+import { getLogger } from '../../shared/logger'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -103,9 +105,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-        TelemetryHelper.instance.setFetchCredentialStartTime()
+        session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
-        TelemetryHelper.instance.setSdkApiCallStartTime()
+        session.setSdkApiCallStart()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
@@ -189,6 +191,16 @@ export class DefaultCodeWhispererClient {
             .listCodeScanFindings(request as CodeWhispererClient.ListCodeScanFindingsRequest)
             .promise()
     }
+
+    public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
+        if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
+            return
+        }
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
+        getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
+    }
 }
+
+export const codeWhispererClient = new DefaultCodeWhispererClient()
 
 export class CognitoCredentialsError extends Error {}
