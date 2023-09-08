@@ -16,10 +16,13 @@ import software.amazon.awssdk.services.codewhisperer.model.GetCodeScanResponse
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsRequest
 import software.amazon.awssdk.services.codewhisperer.model.ListCodeScanFindingsResponse
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
+import software.amazon.awssdk.services.codewhispererruntime.model.CompletionType
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.SuggestionState
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -31,8 +34,15 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.transform
+import software.aws.toolkits.telemetry.CodewhispererCompletionType
+import software.aws.toolkits.telemetry.CodewhispererSuggestionState
+import java.time.Instant
+import java.util.concurrent.TimeUnit
 import kotlin.reflect.KProperty0
 import kotlin.reflect.jvm.isAccessible
 
@@ -64,11 +74,40 @@ interface CodeWhispererClientAdaptor : Disposable {
         isSigv4: Boolean = shouldUseSigv4Client(project)
     ): ListCodeScanFindingsResponse
 
+    fun putUserTriggerDecisionTelemetry(
+        requestContext: RequestContext,
+        responseContext: ResponseContext,
+        completionType: CodewhispererCompletionType,
+        suggestionState: CodewhispererSuggestionState,
+        suggestionReferenceCount: Int,
+        lineCount: Int
+    ): SendTelemetryEventResponse
+
+    fun putCodePercentageTelemetry(
+        language: CodeWhispererProgrammingLanguage,
+        acceptedTokenCount: Int,
+        totalTokenCount: Int
+    ): SendTelemetryEventResponse
+
+    fun sendUserModificationTelemetry(
+        sessionId: String,
+        requestId: String,
+        language: CodeWhispererProgrammingLanguage,
+        modificationPercentage: Double
+    ): SendTelemetryEventResponse
+
+    fun sendCodeScanTelemetry(
+        language: CodeWhispererProgrammingLanguage,
+        codeScanJobId: String?
+    ): SendTelemetryEventResponse
+
     companion object {
         fun getInstance(project: Project): CodeWhispererClientAdaptor = project.service()
 
         private fun shouldUseSigv4Client(project: Project) =
             CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project) == CodeWhispererLoginType.Accountless
+
+        const val INVALID_CODESCANJOBID = "Invalid_CodeScanJobID"
     }
 }
 
@@ -139,6 +178,91 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
             bearerClient().listCodeAnalysisFindings(request.transform()).transform()
         }
 
+    override fun putUserTriggerDecisionTelemetry(
+        requestContext: RequestContext,
+        responseContext: ResponseContext,
+        completionType: CodewhispererCompletionType,
+        suggestionState: CodewhispererSuggestionState,
+        suggestionReferenceCount: Int,
+        lineCount: Int
+    ): SendTelemetryEventResponse {
+        val fileContext = requestContext.fileContextInfo
+        val programmingLanguage = fileContext.programmingLanguage
+        var e2eLatency = requestContext.latencyContext.getCodeWhispererEndToEndLatency()
+
+        // When we send a userTriggerDecision of Empty or Discard, we set the time users see the first
+        // suggestion to be now.
+        if (e2eLatency < 0) {
+            e2eLatency = TimeUnit.NANOSECONDS.toMillis(
+                System.nanoTime() - requestContext.latencyContext.codewhispererEndToEndStart
+            ).toDouble()
+        }
+        return bearerClient().sendTelemetryEvent { requestBuilder ->
+            requestBuilder.telemetryEvent { telemetryEventBuilder ->
+                telemetryEventBuilder.userTriggerDecisionEvent {
+                    it.requestId(requestContext.latencyContext.firstRequestId)
+                    it.completionType(completionType.toCodeWhispererSdkType())
+                    it.programmingLanguage { builder -> builder.languageName(programmingLanguage.languageId) }
+                    it.sessionId(responseContext.sessionId)
+                    it.recommendationLatencyMilliseconds(e2eLatency)
+                    it.suggestionState(suggestionState.toCodeWhispererSdkType())
+                    it.timestamp(Instant.now())
+                    it.suggestionReferenceCount(suggestionReferenceCount)
+                    it.generatedLine(lineCount)
+                }
+            }
+        }
+    }
+
+    override fun putCodePercentageTelemetry(
+        language: CodeWhispererProgrammingLanguage,
+        acceptedTokenCount: Int,
+        totalTokenCount: Int
+    ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.codeCoverageEvent {
+                it.programmingLanguage { languageBuilder -> languageBuilder.languageName(language.languageId) }
+                it.acceptedCharacterCount(acceptedTokenCount)
+                it.totalCharacterCount(totalTokenCount)
+                it.timestamp(Instant.now())
+            }
+        }
+    }
+
+    override fun sendUserModificationTelemetry(
+        sessionId: String,
+        requestId: String,
+        language: CodeWhispererProgrammingLanguage,
+        modificationPercentage: Double
+    ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.userModificationEvent {
+                it.sessionId(sessionId)
+                it.requestId(requestId)
+                it.programmingLanguage { languageBuilder ->
+                    languageBuilder.languageName(language.languageId)
+                }
+                it.modificationPercentage(modificationPercentage)
+                it.timestamp(Instant.now())
+            }
+        }
+    }
+
+    override fun sendCodeScanTelemetry(
+        language: CodeWhispererProgrammingLanguage,
+        codeScanJobId: String?
+    ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
+        requestBuilder.telemetryEvent { telemetryEventBuilder ->
+            telemetryEventBuilder.codeScanEvent {
+                it.programmingLanguage { languageBuilder ->
+                    languageBuilder.languageName(language.languageId)
+                }
+                it.codeScanJobId(if (codeScanJobId.isNullOrEmpty()) CodeWhispererClientAdaptor.INVALID_CODESCANJOBID else codeScanJobId)
+                it.timestamp(Instant.now())
+            }
+        }
+    }
+
     override fun dispose() {
         if (this::mySigv4Client.isLazyInitialized) {
             mySigv4Client.close()
@@ -183,4 +307,18 @@ class MockCodeWhispererClientAdaptor(override val project: Project) : CodeWhispe
     override fun getBearerClient(oldProviderIdToRemove: String): CodeWhispererRuntimeClient = project.awsClient()
 
     override fun dispose() {}
+}
+
+private fun CodewhispererSuggestionState.toCodeWhispererSdkType() = when {
+    this == CodewhispererSuggestionState.Accept -> SuggestionState.ACCEPT
+    this == CodewhispererSuggestionState.Reject -> SuggestionState.REJECT
+    this == CodewhispererSuggestionState.Empty -> SuggestionState.EMPTY
+    this == CodewhispererSuggestionState.Discard -> SuggestionState.DISCARD
+    else -> SuggestionState.UNKNOWN_TO_SDK_VERSION
+}
+
+private fun CodewhispererCompletionType.toCodeWhispererSdkType() = when {
+    this == CodewhispererCompletionType.Line -> CompletionType.LINE
+    this == CodewhispererCompletionType.Block -> CompletionType.BLOCK
+    else -> CompletionType.UNKNOWN_TO_SDK_VERSION
 }

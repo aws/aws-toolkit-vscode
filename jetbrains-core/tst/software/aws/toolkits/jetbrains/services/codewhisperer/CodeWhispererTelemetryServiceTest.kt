@@ -19,9 +19,12 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.Import
@@ -31,6 +34,13 @@ import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.AwsToolkit
+import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
+import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
@@ -237,12 +247,22 @@ class CodeWhispererTelemetryServiceTest {
         val recommendationContext = aRecommendationContext()
         val popupShownDuration = Duration.ofSeconds(Random.nextLong(0, 30))
         val suggestionState = CodewhispererSuggestionState.Reject
+        val suggestionReferenceCount = Random.nextInt(2)
+        val lineCount = Random.nextInt(0, 100)
 
         val expectedTotalImportCount = recommendationContext.details.fold(0) { grandTotal, detail ->
             grandTotal + detail.recommendation.mostRelevantMissingImports().size
         }
 
-        sut.sendUserTriggerDecisionEvent(requestContext, responseContext, recommendationContext, suggestionState, popupShownDuration)
+        sut.sendUserTriggerDecisionEvent(
+            requestContext,
+            responseContext,
+            recommendationContext,
+            suggestionState,
+            popupShownDuration,
+            suggestionReferenceCount,
+            lineCount
+        )
 
         argumentCaptor<MetricEvent>().apply {
             verify(batcher, atLeastOnce()).enqueue(capture())
@@ -280,7 +300,7 @@ class CodeWhispererTelemetryServiceTest {
 
     @Test
     fun `sendUserDecisionEventForAll will send userDecision event for all suggestions`() {
-        doNothing().whenever(sut).sendUserTriggerDecisionEvent(any(), any(), any(), any(), any())
+        doNothing().whenever(sut).sendUserTriggerDecisionEvent(any(), any(), any(), any(), any(), any(), any())
         val eventCount = mutableMapOf<CodewhispererSuggestionState, Int>()
         var totalEventCount = 0
         val requestContext = aRequestContext(projectRule.project)
@@ -424,6 +444,148 @@ class CodeWhispererTelemetryServiceTest {
             CodewhispererPreviousSuggestionState.Reject
         )
         assertThat(decisionQueue).hasSize(3)
+    }
+
+    @Test
+    fun `should invoke putTelemetryEvent when sending userTriggerDecision for pro tier users and optin data sharing`() {
+        val project = projectRule.project
+
+        val mockClient = spy(MockCodeWhispererClientAdaptor(project))
+        project.replaceService(
+            CodeWhispererClientAdaptor::class.java,
+            mockClient,
+            disposableRule.disposable
+        )
+
+        ApplicationManager.getApplication().replaceService(
+            CodeWhispererExplorerActionManager::class.java,
+            mock { on { checkActiveCodeWhispererConnectionType(any()) } doReturn CodeWhispererLoginType.SSO },
+            disposableRule.disposable
+        )
+
+        AwsSettings.getInstance().isTelemetryEnabled = true
+
+        val mockSsoConnection = mock<ManagedBearerSsoConnection> {
+            on { this.startUrl } doReturn "fake sso url"
+        }
+
+        project.replaceService(
+            ToolkitConnectionManager::class.java,
+            mock { on { activeConnectionForFeature(eq(CodeWhispererConnection.getInstance())) } doReturn mockSsoConnection },
+            disposableRule.disposable
+        )
+        assertThat(AwsSettings.getInstance().isTelemetryEnabled).isTrue
+
+        val requestContext = aRequestContext(project)
+        val responseContext = aResponseContext()
+        val recommendationContext = aRecommendationContext()
+        val suggestionState = CodewhispererSuggestionState.Accept
+        val duration = Duration.ofSeconds(1)
+        val suggestionReferenceCount = 1
+        val lineCount = 30
+
+        sut.sendUserTriggerDecisionEvent(
+            requestContext,
+            responseContext,
+            recommendationContext,
+            suggestionState,
+            duration,
+            suggestionReferenceCount,
+            lineCount
+        )
+
+        val completionType = if (recommendationContext.details.any {
+                it.completionType == CodewhispererCompletionType.Block
+            }
+        ) {
+            CodewhispererCompletionType.Block
+        } else CodewhispererCompletionType.Line
+
+        verify(mockClient).putUserTriggerDecisionTelemetry(
+            eq(requestContext),
+            eq(responseContext),
+            eq(completionType),
+            eq(suggestionState),
+            eq(suggestionReferenceCount),
+            eq(lineCount),
+        )
+    }
+
+    @Test
+    fun `should not invoke putTelemetryEvent if opt out telemetry`() {
+        val project = projectRule.project
+
+        val mockClient = mock<CodeWhispererClientAdaptor>()
+        project.replaceService(
+            CodeWhispererClientAdaptor::class.java,
+            mockClient,
+            disposableRule.disposable
+        )
+
+        val mockStatesManager = mock<CodeWhispererExplorerActionManager>()
+        ApplicationManager.getApplication().replaceService(
+            CodeWhispererExplorerActionManager::class.java,
+            mockStatesManager,
+            disposableRule.disposable
+        )
+
+        fun configureMock(isProTier: Boolean, isTelemetryEnabled: Boolean) {
+            if (isProTier) {
+                whenever(mockStatesManager.checkActiveCodeWhispererConnectionType(any())).doReturn(CodeWhispererLoginType.SSO)
+            } else {
+                whenever(mockStatesManager.checkActiveCodeWhispererConnectionType(any())).doReturn(CodeWhispererLoginType.Sono)
+            }
+
+            AwsSettings.getInstance().isTelemetryEnabled = isTelemetryEnabled
+        }
+
+        // case 1
+        configureMock(isProTier = true, isTelemetryEnabled = false)
+        sut.sendUserTriggerDecisionEvent(
+            aRequestContext(project),
+            aResponseContext(),
+            aRecommendationContext(),
+            CodewhispererSuggestionState.Accept,
+            Duration.ofSeconds(
+                1
+            ),
+            1,
+            50
+        )
+
+        verifyNoInteractions(mockClient)
+
+        // case 2
+        configureMock(isProTier = false, isTelemetryEnabled = true)
+        sut.sendUserTriggerDecisionEvent(
+            aRequestContext(project),
+            aResponseContext(),
+            aRecommendationContext(),
+            CodewhispererSuggestionState.Accept,
+            Duration.ofSeconds(
+                1
+            ),
+            1,
+            50,
+        )
+
+        verifyNoInteractions(mockClient)
+
+        // case 3
+        configureMock(isProTier = false, isTelemetryEnabled = false)
+        sut.sendUserTriggerDecisionEvent(
+            aRequestContext(project),
+            aResponseContext(),
+            aRecommendationContext(),
+            CodewhispererSuggestionState.Accept,
+            Duration.ofSeconds(
+                1
+            ),
+            1,
+            50
+        )
+
+        verifyNoInteractions(mockClient)
     }
 }
 

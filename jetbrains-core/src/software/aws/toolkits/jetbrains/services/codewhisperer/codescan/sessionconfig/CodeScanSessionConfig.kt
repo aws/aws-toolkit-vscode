@@ -55,6 +55,8 @@ sealed class CodeScanSessionConfig(
 
     open fun getImportedFiles(file: VirtualFile, includedSourceFiles: Set<String>): List<String> = listOf()
 
+    open fun getSelectedFile(): VirtualFile = selectedFile
+
     open fun createPayload(): Payload {
         // Fail fast if the selected file size is greater than the payload limit.
         if (selectedFile.length > getPayloadLimitInBytes()) {

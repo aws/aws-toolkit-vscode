@@ -27,7 +27,7 @@ class CodeWhispererEditorListener : EditorFactoryListener {
                         override fun documentChanged(event: DocumentEvent) {
                             if (!isCodeWhispererEnabled(project)) return
                             CodeWhispererInvocationStatus.getInstance().documentChanged()
-                            CodeWhispererCodeCoverageTracker.getInstance(language).apply {
+                            CodeWhispererCodeCoverageTracker.getInstance(project, language).apply {
                                 activateTrackerIfNotActive()
                                 documentChanged(event)
                             }

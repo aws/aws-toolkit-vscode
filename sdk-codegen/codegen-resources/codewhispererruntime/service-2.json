@@ -92,6 +92,22 @@
                 {"shape":"AccessDeniedException"}
             ]
         },
+        "SendTelemetryEvent":{
+            "name":"SendTelemetryEvent",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"SendTelemetryEventRequest"},
+            "output":{"shape":"SendTelemetryEventResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ],
+            "idempotent":true
+        },
         "StartCodeAnalysis":{
             "name":"StartCodeAnalysis",
             "http":{
@@ -134,6 +150,12 @@
                 "BuiltJars"
             ]
         },
+        "Base64EncodedPaginationToken":{
+            "type":"string",
+            "max":2048,
+            "min":1,
+            "pattern":"(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
+        },
         "CodeAnalysisFindingsSchema":{
             "type":"string",
             "enum":["codeanalysis/findings/1.0"]
@@ -145,6 +167,39 @@
                 "Pending",
                 "Failed"
             ]
+        },
+        "CodeCoverageEvent":{
+            "type":"structure",
+            "required":[
+                "programmingLanguage",
+                "acceptedCharacterCount",
+                "totalCharacterCount",
+                "timestamp"
+            ],
+            "members":{
+                "programmingLanguage":{"shape":"ProgrammingLanguage"},
+                "acceptedCharacterCount":{"shape":"Integer"},
+                "totalCharacterCount":{"shape":"Integer"},
+                "timestamp":{"shape":"Timestamp"}
+            }
+        },
+        "CodeScanEvent":{
+            "type":"structure",
+            "required":[
+                "programmingLanguage",
+                "codeScanJobId",
+                "timestamp"
+            ],
+            "members":{
+                "programmingLanguage":{"shape":"ProgrammingLanguage"},
+                "codeScanJobId":{"shape":"CodeScanJobId"},
+                "timestamp":{"shape":"Timestamp"}
+            }
+        },
+        "CodeScanJobId":{
+            "type":"string",
+            "max":128,
+            "min":1
         },
         "Completion":{
             "type":"structure",
@@ -160,6 +215,13 @@
             "max":5120,
             "min":1,
             "sensitive":true
+        },
+        "CompletionType":{
+            "type":"string",
+            "enum":[
+                "BLOCK",
+                "LINE"
+            ]
         },
         "Completions":{
             "type":"list",
@@ -200,6 +262,10 @@
                 "kmsKeyArn":{"shape":"ResourceArn"}
             }
         },
+        "Double":{
+            "type":"double",
+            "box":true
+        },
         "FileContext":{
             "type":"structure",
             "required":[
@@ -232,47 +298,15 @@
             "min":0,
             "sensitive":true
         },
-        "SupplementalContext": {
-            "type": "structure",
-            "required": ["filePath", "content"],
-            "members": {
-                "filePath": {
-                    "shape": "SupplementalContextFilePathString"
-                },
-                "content": {
-                    "shape": "SupplementalContextContentString"
-                }
-            }
-        },
-        "SupplementalContextFilePathString": {
-            "type": "string",
-            "max": 1024,
-            "min": 1,
-            "sensitive": true
-        },
-        "SupplementalContextContentString": {
-            "type": "string",
-            "max": 5120,
-            "min": 0,
-            "sensitive": true
-        },
-        "SupplementalContextList": {
-            "type": "list",
-            "member": {
-                "shape": "SupplementalContext"
-            },
-            "max": 10,
-            "min": 0
-        },
         "GenerateCompletionsRequest":{
             "type":"structure",
             "required":["fileContext"],
             "members":{
                 "fileContext":{"shape":"FileContext"},
-                "supplementalContexts": {"shape": "SupplementalContextList"},
                 "maxResults":{"shape":"GenerateCompletionsRequestMaxResultsInteger"},
                 "nextToken":{"shape":"GenerateCompletionsRequestNextTokenString"},
-                "referenceTrackerConfiguration":{"shape":"ReferenceTrackerConfiguration"}
+                "referenceTrackerConfiguration":{"shape":"ReferenceTrackerConfiguration"},
+                "supplementalContexts":{"shape":"SupplementalContextList"}
             }
         },
         "GenerateCompletionsRequestMaxResultsInteger":{
@@ -314,6 +348,11 @@
                 "errorMessage":{"shape":"String"}
             }
         },
+        "IdempotencyToken":{
+            "type":"string",
+            "max":256,
+            "min":1
+        },
         "Import":{
             "type":"structure",
             "members":{
@@ -331,6 +370,10 @@
             "member":{"shape":"Import"},
             "max":10,
             "min":0
+        },
+        "Integer":{
+            "type":"integer",
+            "box":true
         },
         "InternalServerException":{
             "type":"structure",
@@ -448,6 +491,22 @@
             },
             "exception":true
         },
+        "SendTelemetryEventRequest":{
+            "type":"structure",
+            "required":["telemetryEvent"],
+            "members":{
+                "clientToken":{
+                    "shape":"IdempotencyToken",
+                    "idempotencyToken":true
+                },
+                "telemetryEvent":{"shape":"TelemetryEvent"}
+            }
+        },
+        "SendTelemetryEventResponse":{
+            "type":"structure",
+            "members":{
+            }
+        },
         "Span":{
             "type":"structure",
             "members":{
@@ -503,6 +562,54 @@
             "min":1
         },
         "String":{"type":"string"},
+        "SuggestionState":{
+            "type":"string",
+            "enum":[
+                "ACCEPT",
+                "REJECT",
+                "DISCARD",
+                "EMPTY"
+            ]
+        },
+        "SupplementalContext":{
+            "type":"structure",
+            "required":[
+                "filePath",
+                "content"
+            ],
+            "members":{
+                "filePath":{"shape":"SupplementalContextFilePathString"},
+                "content":{"shape":"SupplementalContextContentString"}
+            }
+        },
+        "SupplementalContextContentString":{
+            "type":"string",
+            "max":10240,
+            "min":1,
+            "sensitive":true
+        },
+        "SupplementalContextFilePathString":{
+            "type":"string",
+            "max":1024,
+            "min":1,
+            "sensitive":true
+        },
+        "SupplementalContextList":{
+            "type":"list",
+            "member":{"shape":"SupplementalContext"},
+            "max":5,
+            "min":0
+        },
+        "TelemetryEvent":{
+            "type":"structure",
+            "members":{
+                "userTriggerDecisionEvent":{"shape":"UserTriggerDecisionEvent"},
+                "codeCoverageEvent":{"shape":"CodeCoverageEvent"},
+                "userModificationEvent":{"shape":"UserModificationEvent"},
+                "codeScanEvent":{"shape":"CodeScanEvent"}
+            },
+            "union":true
+        },
         "ThrottlingException":{
             "type":"structure",
             "required":["message"],
@@ -512,10 +619,56 @@
             "exception":true,
             "retryable":{"throttling":false}
         },
+        "Timestamp":{"type":"timestamp"},
+        "UUID":{
+            "type":"string",
+            "max":36,
+            "min":36
+        },
         "UploadId":{
             "type":"string",
             "max":128,
             "min":1
+        },
+        "UserModificationEvent":{
+            "type":"structure",
+            "required":[
+                "sessionId",
+                "requestId",
+                "programmingLanguage",
+                "modificationPercentage",
+                "timestamp"
+            ],
+            "members":{
+                "sessionId":{"shape":"UUID"},
+                "requestId":{"shape":"UUID"},
+                "programmingLanguage":{"shape":"ProgrammingLanguage"},
+                "modificationPercentage":{"shape":"Double"},
+                "timestamp":{"shape":"Timestamp"}
+            }
+        },
+        "UserTriggerDecisionEvent":{
+            "type":"structure",
+            "required":[
+                "sessionId",
+                "requestId",
+                "programmingLanguage",
+                "completionType",
+                "suggestionState",
+                "recommendationLatencyMilliseconds",
+                "timestamp"
+            ],
+            "members":{
+                "sessionId":{"shape":"UUID"},
+                "requestId":{"shape":"UUID"},
+                "programmingLanguage":{"shape":"ProgrammingLanguage"},
+                "completionType":{"shape":"CompletionType"},
+                "suggestionState":{"shape":"SuggestionState"},
+                "recommendationLatencyMilliseconds":{"shape":"Double"},
+                "timestamp":{"shape":"Timestamp"},
+                "suggestionReferenceCount":{"shape":"Integer"},
+                "generatedLine":{"shape":"Integer"}
+            }
         },
         "ValidationException":{
             "type":"structure",
