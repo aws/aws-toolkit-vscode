@@ -274,7 +274,6 @@ export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental 
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
-    numberOfChunkToFetchExperiment: 1000,
     topK: 3,
     numberOfLinesEachChunk: 10,
 }
