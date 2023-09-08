@@ -10,6 +10,7 @@ import { getCompletionItems, getCompletionItem, getLabel } from '../../../codewh
 import { createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { Recommendation } from '../../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
+import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('completionProviderService', function () {
     beforeEach(function () {
@@ -34,9 +35,9 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItem', function () {
         it('should return targetCompletionItem given input', function () {
-            RecommendationHandler.instance.startPos = new vscode.Position(0, 0)
+            session.startPos = new vscode.Position(0, 0)
             RecommendationHandler.instance.requestId = 'mock_requestId_getCompletionItem'
-            RecommendationHandler.instance.sessionId = 'mock_sessionId_getCompletionItem'
+            session.sessionId = 'mock_sessionId_getCompletionItem'
             const mockPosition = new vscode.Position(0, 1)
             const mockRecommendationDetail: Recommendation = {
                 content: "\n\t\tconsole.log('Hello world!');\n\t}",
@@ -90,7 +91,7 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItems', function () {
         it('should return completion items for each non-empty recommendation', async function () {
-            RecommendationHandler.instance.recommendations = [
+            session.recommendations = [
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
                 { content: '\nvar a = 10' },
             ]
@@ -101,7 +102,7 @@ describe('completionProviderService', function () {
         })
 
         it('should return empty completion items when recommendation is empty', async function () {
-            RecommendationHandler.instance.recommendations = []
+            session.recommendations = []
             const mockPosition = new vscode.Position(14, 83)
             const mockDocument = createMockDocument()
             const actual = getCompletionItems(mockDocument, mockPosition)
