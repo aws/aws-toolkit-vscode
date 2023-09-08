@@ -17,6 +17,7 @@ import path = require('path')
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import { ArtifactMap, CreateUploadUrlRequest, CreateUploadUrlResponse } from '../client/codewhispereruserclient'
 import { Truncation } from '../util/dependencyGraph/dependencyGraph'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 export async function listScanResults(
     client: DefaultCodeWhispererClient,
@@ -131,6 +132,7 @@ export async function createScanJob(
     }
     const resp = await client.createCodeScan(req)
     getLogger().verbose(`Request id: ${resp.$response.requestId}`)
+    TelemetryHelper.instance.sendCodeScanEvent(languageId, resp.$response.requestId)
     return resp
 }
 

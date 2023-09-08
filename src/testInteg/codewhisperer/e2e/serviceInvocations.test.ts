@@ -19,6 +19,7 @@ import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandle
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
+import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
@@ -44,7 +45,7 @@ describe('CodeWhisperer service invocation', async function () {
     it('manual trigger returns valid recommendation response', async function () {
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const sessionIdBefore = RecommendationHandler.instance.sessionId
+        const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestIdBefore.length === 0)
@@ -55,7 +56,7 @@ describe('CodeWhisperer service invocation', async function () {
         await invokeRecommendation(mockEditor, client, config)
 
         const requestId = RecommendationHandler.instance.requestId
-        const sessionId = RecommendationHandler.instance.sessionId
+        const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestId.length > 0)
@@ -66,7 +67,7 @@ describe('CodeWhisperer service invocation', async function () {
     it('auto trigger returns valid recommendation response', async function () {
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const sessionIdBefore = RecommendationHandler.instance.sessionId
+        const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestIdBefore.length === 0)
@@ -86,7 +87,7 @@ describe('CodeWhisperer service invocation', async function () {
         await sleep(5000)
 
         const requestId = RecommendationHandler.instance.requestId
-        const sessionId = RecommendationHandler.instance.sessionId
+        const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestId.length > 0)
@@ -101,7 +102,7 @@ describe('CodeWhisperer service invocation', async function () {
 
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const sessionIdBefore = RecommendationHandler.instance.sessionId
+        const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestIdBefore.length === 0)
@@ -113,7 +114,7 @@ describe('CodeWhisperer service invocation', async function () {
         await invokeRecommendation(editor, client, config)
 
         const requestId = RecommendationHandler.instance.requestId
-        const sessionId = RecommendationHandler.instance.sessionId
+        const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestId.length === 0)
