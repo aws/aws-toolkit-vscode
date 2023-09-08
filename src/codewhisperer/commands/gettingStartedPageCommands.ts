@@ -10,10 +10,10 @@ import { showCodeWhispererWebview, CodeWhispererSource } from '../vue/backend'
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
 export class CodeWhispererCommandBackend {
-    constructor(private readonly extContext: vscode.ExtensionContext) {}
+    constructor(private readonly extContext: vscode.ExtensionContext, private start: string) {}
 
     public showGettingStartedPage(source: CodeWhispererSource) {
-        return showCodeWhispererWebview(this.extContext, source)
+        return showCodeWhispererWebview(this.extContext, source, this.start)
     }
 }
 /**
@@ -25,9 +25,6 @@ export class CodeWhispererCommandDeclarations implements CommandDeclarations<Cod
     static get instance(): CodeWhispererCommandDeclarations {
         return (this.#instance ??= new CodeWhispererCommandDeclarations())
     }
-
-    private constructor() {}
-
     public readonly declared = {
         showGettingStartedPage: Commands.from(CodeWhispererCommandBackend).declareShowGettingStartedPage(
             'aws.codeWhisperer.gettingStarted'

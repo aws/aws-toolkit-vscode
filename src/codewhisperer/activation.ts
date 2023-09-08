@@ -50,7 +50,7 @@ import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
-
+import { get } from './commands/basicCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -65,10 +65,16 @@ export async function activate(context: ExtContext): Promise<void> {
         await enableDefaultConfigCloud9()
     }
 
+    //This logic is to show the Getting Started Page only once for the first time SignIn Users
+    let start = ''
+    const hasShownWelcomeMsgBefore = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
+    if (!hasShownWelcomeMsgBefore) {
+        start = 'startUpOnly'
+    }
     registerCommandsWithVSCode(
         context.extensionContext,
         CodeWhispererCommandDeclarations.instance,
-        new CodeWhispererCommandBackend(context.extensionContext)
+        new CodeWhispererCommandBackend(context.extensionContext, start)
     )
 
     /**

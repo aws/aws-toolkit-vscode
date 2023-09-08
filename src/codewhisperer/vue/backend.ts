@@ -15,6 +15,15 @@ export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
     public readonly source = 'src/codewhisperer/vue/index.js'
 
+    public constructor(private readonly start: string) {
+        super()
+    }
+    //This function is called when the extension is activated to check whether is it the first time the user is using the extension or not
+    public async showAtStartUp(): Promise<string | void> {
+        return this.start
+    }
+
+    // private override  context?: vscode.ExtensionContext
     //This function opens the new created Documents in a new editor tab
     async openNewEditorTab(fileName: vscode.Uri, defaultCode: string): Promise<void> {
         vscode.workspace.openTextDocument(fileName).then((a: vscode.TextDocument) => {
@@ -29,17 +38,14 @@ export class CodeWhispererWebview extends VueWebview {
     //This function opens the document in the editor with the predefined code in it
     async openFile(name: string[]): Promise<void> {
         // let document: vscode.TextDocument | undefined = undefined
-
         const fileName = name[0]
         const fileContent = name[1]
-
         const existingDocument = vscode.workspace.textDocuments.find(
             doc =>
                 doc.uri.toString() === `untitled:${fileName}` ||
                 doc.uri.toString() ===
                     vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, fileName).toString()
         )
-
         if (existingDocument) {
             vscode.window.showTextDocument(existingDocument, vscode.ViewColumn.Active)
         } else {
@@ -109,9 +115,10 @@ export type CodeWhispererSource = 'codewhispererDeveloperTools'
 // This function is called when the extension is activated : Webview of CodeWhisperer
 export async function showCodeWhispererWebview(
     ctx: vscode.ExtensionContext,
-    source: CodeWhispererSource
+    source: CodeWhispererSource,
+    start: string
 ): Promise<void> {
-    activePanel ??= new Panel(ctx)
+    activePanel ??= new Panel(ctx, start) // "start" Parameter is passed to the constructor of CodeWhispererWebview to seperate the user experience from first time user to regualr signIn user
     activePanel.server.setSource(source)
 
     const webview = await activePanel!.show({

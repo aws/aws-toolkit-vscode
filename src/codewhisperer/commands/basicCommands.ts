@@ -48,6 +48,7 @@ export const enableCodeSuggestions = Commands.declare(
             CodeWhispererConstants.welcomeMessageKey,
             context.extensionContext.globalState
         )
+        // Show Getting Started Page for first time SignIn Users
         if (!hasShownWelcomeMsgBefore) {
             vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
             await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)

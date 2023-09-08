@@ -4,7 +4,11 @@
         <!-- Header -->
         <div id="header" style="display: flex; flex-direction: column">
             <!-- Banner -->
-            <div id="bannerContainer" style="padding-left: 30px; background-color: #0a4265">
+            <div
+                v-if="showAtStartUpOnly === 'startUpOnly'"
+                id="bannerContainer"
+                style="padding-left: 30px; background-color: #0a4265"
+            >
                 <div
                     id="banner"
                     style="display: flex; height: 48px; justify-content: left; align-items: center; gap: 10px"
@@ -113,6 +117,10 @@ import Resources from './resources.vue'
 import Shortcuts from './shortcuts.vue'
 import ScanCode from './scanCode.vue'
 import GenerateSuggestionTab from './genSuggestionTab.vue'
+import { CodeWhispererWebview } from './backend'
+import { WebviewClientFactory } from '../../webviews/client'
+
+const client = WebviewClientFactory.create<CodeWhispererWebview>()
 
 export default defineComponent({
     name: 'Getting_Started',
@@ -121,6 +129,26 @@ export default defineComponent({
         Shortcuts,
         ScanCode,
         GenerateSuggestionTab,
+    },
+    data() {
+        return {
+            showAtStartUpOnly: '',
+        }
+    },
+    created() {
+        this.showAtStartUp()
+    },
+    updated() {
+        this.showAtStartUp()
+    },
+    methods: {
+        //Triggered only for the first time
+        async showAtStartUp() {
+            const showAt = await client.showAtStartUp()
+            if (typeof showAt === 'string') {
+                this.showAtStartUpOnly = showAt
+            }
+        },
     },
 })
 </script>
