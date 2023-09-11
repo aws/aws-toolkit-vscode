@@ -95,7 +95,7 @@ export class RefinementState implements SessionState {
             payload
         )
 
-        this.approach = response.background
+        this.approach = response.approach
 
         return {
             nextState: new RefinementIterationState(this.config, this.approach),
