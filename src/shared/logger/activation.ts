@@ -43,7 +43,7 @@ export async function activate(
         {
             logPaths: [logUri.fsPath],
             outputChannels: [chan],
-            useConsoleLog: true,
+            useConsoleLog: isInBrowser(),
         },
         extensionContext.subscriptions
     )
@@ -100,7 +100,8 @@ export async function activate(
  * @param opts.staticLogLevel Static log level, overriding config value. Will persist overridden config value even if the config value changes.
  * @param opts.logPaths Array of paths to output log entries to
  * @param opts.outputChannels Array of output channels to log entries to
- * @param opts.useDebugConsole If true, outputs log entries to currently-active debug console. As per VS Code API, cannot specify a debug console in particular.
+ * @param opts.useDebugConsole If true, outputs log entries to `vscode.debug.activeDebugConsole`
+ * @param opts.useConsoleLog If true, outputs log entries to the nodejs or browser devtools console.
  * @param disposables Array of disposables to add a subscription to
  */
 export function makeLogger(
