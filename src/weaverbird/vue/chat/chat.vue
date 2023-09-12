@@ -84,9 +84,8 @@ import CodeCompare from './code-compare.vue'
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { WeaverbirdChatWebview } from './backend'
-import type { Interaction } from './session'
-import type { MemoryFile } from '../../memoryFile'
-import { defaultLlmConfig } from './constants'
+import type { Interaction } from './sessionState'
+import { defaultLlmConfig } from '../../constants'
 
 const client = WebviewClientFactory.create<WeaverbirdChatWebview>()
 
@@ -147,14 +146,6 @@ export default defineComponent({
             else this.history.push(serviceResponse)
 
             this.isInputDisabled = false
-        },
-
-        displayFileDiff(file: MemoryFile) {
-            client.displayDiff(file)
-        },
-
-        acceptChanges(files: MemoryFile[]) {
-            client.acceptChanges(files)
         },
         onConfigChanged() {
             client.setLLMConfig(this.llmConfig)
