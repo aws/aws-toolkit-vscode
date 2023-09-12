@@ -5,26 +5,18 @@
 
 import assert from 'assert'
 import { TreeNode, fileListToTree } from '../../../../weaverbird/vue/file-tree/helpers'
-import { MemoryFile } from '../../../../weaverbird/memoryFile'
 
 describe('file-tree helper', function () {
     describe('fileListToTree', function () {
         it('should create changes from no folder', function () {
             const firstFilePath = 'foo.js'
-            const firstMemFile = MemoryFile.createDocument(firstFilePath)
 
-            const treeList = fileListToTree([
-                {
-                    data: firstMemFile,
-                    path: firstFilePath,
-                },
-            ])
+            const treeList = fileListToTree([firstFilePath])
             assert.deepStrictEqual(treeList, {
                 name: 'Changes',
                 type: 'folder',
                 children: [
                     {
-                        data: firstMemFile,
                         filePath: firstFilePath,
                         name: 'foo.js',
                         type: 'file',
@@ -34,24 +26,23 @@ describe('file-tree helper', function () {
         })
 
         it('should create changes from paths with dots in them', function () {
-            const firstFilePath = 'src/../foo.js'
-            const firstMemFile = MemoryFile.createDocument(firstFilePath)
+            const firstFilePath = 'src/./foo.js'
 
-            const treeList = fileListToTree([
-                {
-                    data: firstMemFile,
-                    path: firstFilePath,
-                },
-            ])
+            const treeList = fileListToTree([firstFilePath])
             assert.deepStrictEqual(treeList, {
                 name: 'Changes',
                 type: 'folder',
                 children: [
                     {
-                        data: firstMemFile,
-                        filePath: firstFilePath,
-                        name: '..',
-                        type: 'file',
+                        name: 'src',
+                        type: 'folder',
+                        children: [
+                            {
+                                name: 'foo.js',
+                                type: 'file',
+                                filePath: 'src/foo.js',
+                            },
+                        ],
                     },
                 ],
             } as TreeNode)
@@ -59,21 +50,9 @@ describe('file-tree helper', function () {
 
         it('should create changes from multiple folders', function () {
             const firstFilePath = 'project/src/foo.js'
-            const firstMemFile = MemoryFile.createDocument(firstFilePath)
-
             const secondFilePath = 'project/src/fi.js'
-            const secondMemFile = MemoryFile.createDocument(secondFilePath)
 
-            const treeList = fileListToTree([
-                {
-                    data: firstMemFile,
-                    path: firstFilePath,
-                },
-                {
-                    data: secondMemFile,
-                    path: secondFilePath,
-                },
-            ])
+            const treeList = fileListToTree([firstFilePath, secondFilePath])
             assert.deepStrictEqual(treeList, {
                 name: 'Changes',
                 type: 'folder',
@@ -87,13 +66,11 @@ describe('file-tree helper', function () {
                                 type: 'folder',
                                 children: [
                                     {
-                                        data: firstMemFile,
                                         filePath: firstFilePath,
                                         name: 'foo.js',
                                         type: 'file',
                                     },
                                     {
-                                        data: secondMemFile,
                                         filePath: secondFilePath,
                                         name: 'fi.js',
                                         type: 'file',
