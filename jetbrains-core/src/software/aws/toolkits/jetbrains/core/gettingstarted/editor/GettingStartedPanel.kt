@@ -22,6 +22,7 @@ import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.components.BorderLayoutPanel
 import icons.AwsIcons
+import software.aws.toolkits.jetbrains.core.gettingstarted.SetupAuthenticationDialog
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.BULLET_PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_TITLE_FONT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_WIDTH
@@ -71,7 +72,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                     ) {
                         row {
                             // CodeWhisperer panel
-                            cell(CodeWhispererPanel())
+                            cell(CodeWhispererPanel(project))
                             // Resource Explorer Panel
                             cell(ResourceExplorerPanel())
                             // CodeCatalyst Panel
@@ -144,7 +145,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
             border = IdeBorderFactory.createRoundedBorder().apply {
                 setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PanelConstants.PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
+                preferredSize = Dimension(PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
             }
         }
     }
@@ -200,12 +201,12 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
             border = IdeBorderFactory.createRoundedBorder().apply {
                 setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PanelConstants.PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
+                preferredSize = Dimension(PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
             }
         }
     }
 
-    class CodeWhispererPanel : BorderLayoutPanel() {
+    class CodeWhispererPanel(val project: Project) : BorderLayoutPanel() {
         init {
             addToCenter(
                 panel {
@@ -245,7 +246,13 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                             label(message("codewhisperer.gettingstarted.panel.licence_comment")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
                         }
                         row {
-                            browserLink(message("aws.onboarding.getstarted.panel.login_with_iam"), url = CODEWHISPERER_LEARN_MORE_URI)
+                            text(message("aws.onboarding.getstarted.panel.login_with_iam")) {
+                                try {
+                                    SetupAuthenticationDialog(project).show()
+                                } catch (e: Exception) {
+                                    throw Exception("Unable to pop up the IAM Identity Center Authentication Dialog")
+                                }
+                            }
                         }
                     }
                 }
@@ -253,7 +260,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
             border = IdeBorderFactory.createRoundedBorder().apply {
                 setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PanelConstants.PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
+                preferredSize = Dimension(PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
             }
         }
     }
