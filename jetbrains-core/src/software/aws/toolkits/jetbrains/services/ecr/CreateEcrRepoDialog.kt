@@ -8,7 +8,8 @@ import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.panel
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.ecr.EcrClient
 import software.aws.toolkits.jetbrains.core.explorer.refreshAwsTree
@@ -28,15 +29,16 @@ class CreateEcrRepoDialog(
 
     private val panel = panel {
         row(message("general.name.label")) {
-            textField(::repoName)
+            textField()
                 .focused()
-                .withValidationOnApply {
+                .validationOnApply {
                     if (it.text.isBlank()) {
                         error(message("ecr.create.repo.validation.empty"))
                     } else {
                         null
                     }
                 }
+                .bindText(::repoName)
         }
     }
 

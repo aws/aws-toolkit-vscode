@@ -5,7 +5,9 @@ package software.aws.toolkits.jetbrains.services.iam
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
-import com.intellij.ui.layout.panel
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.panel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import software.amazon.awssdk.services.iam.IamClient
@@ -33,13 +35,13 @@ class CreateIamServiceRoleDialog(
         // make the width the widest string. Columns don't map entirely to text width (since text is variable width) but it looks better
         val size = max(serviceUri.length, managedPolicyName.length)
         row(message("iam.create.role.name.label")) {
-            textField(::name, size).withErrorOnApplyIf(message("iam.create.role.missing.role.name")) { it.text.isNullOrBlank() }
+            textField().bindText(::name).columns(size).errorOnApply(message("iam.create.role.missing.role.name")) { it.text.isNullOrBlank() }
         }
         row(message("iam.create.role.managed_policies")) {
-            textField({ managedPolicyName }, {}, size).apply { component.isEditable = false }
+            textField().bindText({ managedPolicyName }, {}).columns(size).apply { component.isEditable = false }
         }
         row(message("iam.create.role.trust.editor.name")) {
-            textField({ serviceUri }, {}, size).apply { component.isEditable = false }
+            textField().bindText({ serviceUri }, {}).columns(size).apply { component.isEditable = false }
         }
     }
 

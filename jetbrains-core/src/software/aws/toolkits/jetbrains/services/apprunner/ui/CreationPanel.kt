@@ -7,9 +7,15 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.JBRadioButton
-import com.intellij.ui.layout.GrowPolicy
+import com.intellij.ui.dsl.builder.Align
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.BottomGap
+import com.intellij.ui.dsl.builder.bindIntText
+import com.intellij.ui.dsl.builder.bindItem
+import com.intellij.ui.dsl.builder.bindText
+import com.intellij.ui.dsl.builder.columns
+import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.layout.or
-import com.intellij.ui.layout.panel
 import com.intellij.ui.layout.selected
 import software.amazon.awssdk.services.apprunner.model.ConnectionSummary
 import software.amazon.awssdk.services.apprunner.model.Runtime
@@ -25,7 +31,6 @@ import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
 import software.aws.toolkits.jetbrains.ui.intTextField
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
-import software.aws.toolkits.jetbrains.utils.ui.contextualHelp
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.jetbrains.utils.ui.visibleIf
@@ -90,20 +95,23 @@ class CreationPanel(private val project: Project, ecrUri: String? = null) {
 
     val imagePanel = panel {
         row(message("apprunner.creation.panel.image.uri")) {
-            textField(::containerUri)
+            textField()
                 .apply { component.emptyText.text = "111111111111.dkr.ecr.us-east-1.amazonaws.com/name:tag" }
-                .withErrorOnApplyIf(message("apprunner.creation.panel.image.uri.missing")) { it.text.isBlank() }
-                .constraints(pushX)
+                .bindText(::containerUri)
+                .errorOnApply(message("apprunner.creation.panel.image.uri.missing")) { it.text.isBlank() }
+                .align(AlignX.FILL)
         }
 
         row(message("apprunner.creation.panel.start_command")) {
-            textField({ startCommand ?: "" }, { startCommand = it })
+            textField()
                 .apply { component.toolTipText = message("apprunner.creation.panel.start_command.image.tooltip") }
-                .constraints(pushX)
+                .bindText({ startCommand ?: "" }, { startCommand = it })
+                .align(AlignX.FILL)
         }
 
         row(message("apprunner.creation.panel.port")) {
-            intTextField(::port, range = IntRange(1, 65535))
+            intTextField(range = IntRange(1, 65535)).bindIntText(::port)
+                .align(AlignX.FILL)
         }
 
         row {
@@ -120,10 +128,10 @@ class CreationPanel(private val project: Project, ecrUri: String? = null) {
                     selectedItem { it.name == APPRUNNER_ECR_DEFAULT_ROLE_NAME }
                     toolTipText = message("apprunner.creation.panel.image.access_role.tooltip")
                 }
-            ecrPolicy(grow)
-                .growPolicy(GrowPolicy.MEDIUM_TEXT)
-                .withErrorOnApplyIf(message("apprunner.creation.panel.image.access_role.missing")) { it.selected() == null }
+            cell(ecrPolicy)
+                .errorOnApply(message("apprunner.creation.panel.image.access_role.missing")) { it.selected() == null && ecr.isSelected }
                 .visibleIf(ecr.selected)
+                .columns(40)
             button(message("general.create_button")) {
                 val iamRoleDialog = CreateIamServiceRoleDialog(
                     project,
@@ -142,128 +150,126 @@ class CreationPanel(private val project: Project, ecrUri: String? = null) {
         }
         row {
             label(message("apprunner.creation.panel.cpu"))
-            comboBox(DefaultComboBoxModel(CreationPanel.cpuValues.toTypedArray()), { cpu }, { it?.let { cpu = it } })
-                .withErrorOnApplyIf(message("apprunner.creation.panel.cpu.missing")) { it.selected() == null }
-                .constraints(pushX, growX)
+            comboBox(DefaultComboBoxModel(CreationPanel.cpuValues.toTypedArray())).bindItem({ cpu }, { it?.let { cpu = it } }).errorOnApply(
+                message("apprunner.creation.panel.cpu.missing")
+            ) { it.selected() == null }
             label(message("apprunner.creation.panel.memory"))
-            comboBox(DefaultComboBoxModel(CreationPanel.memoryValues.toTypedArray()), { memory }, { it?.let { memory = it } })
-                .withErrorOnApplyIf(message("apprunner.creation.panel.memory.missing")) { it.selected() == null }
-                .constraints(pushX, growX)
+            comboBox(DefaultComboBoxModel(CreationPanel.memoryValues.toTypedArray())).bindItem({ memory }, { it?.let { memory = it } })
+                .errorOnApply(message("apprunner.creation.panel.memory.missing")) { it.selected() == null }
         }
     }
 
     val repoSettings = panel {
         row(message("apprunner.creation.panel.repository.runtime")) {
-            comboBox(DefaultComboBoxModel(Runtime.knownValues().toTypedArray()), { runtime }, { runtime = it })
+            comboBox(DefaultComboBoxModel(Runtime.knownValues().toTypedArray())).bindItem({ runtime }, { runtime = it })
                 .apply {
                     component.toolTipText = message("apprunner.creation.panel.repository.runtime.tooltip")
                     component.renderer = SimpleListCellRenderer.create("") { it?.toString()?.toHumanReadable() }
                 }
-                .withErrorOnApplyIf(message("apprunner.creation.panel.repository.runtime.missing")) { it.selected() == null }
-                .constraints(pushX, growX)
+                .errorOnApply(message("apprunner.creation.panel.repository.runtime.missing")) { it.selected() == null }
+                .columns(35)
+
             label(message("apprunner.creation.panel.port"))
-            intTextField(::port, range = IntRange(1, 65535))
+            intTextField(range = IntRange(1, 65535)).bindIntText(::port)
         }
         row(message("apprunner.creation.panel.repository.build_command")) {
-            textField(::buildCommand)
+            textField().bindText(::buildCommand)
                 .apply { component.toolTipText = message("apprunner.creation.panel.repository.build_command.tooltip") }
-                .withErrorOnApplyIf(message("apprunner.creation.panel.repository.build_command.missing")) { it.text.isBlank() }
-                .constraints(pushX, growX)
+                .errorOnApply(message("apprunner.creation.panel.repository.build_command.missing")) { it.text.isBlank() }
+                .resizableColumn()
+                .align(Align.FILL)
         }
         row(message("apprunner.creation.panel.start_command")) {
-            textField({ startCommand ?: "" }, { startCommand = it })
+            textField().bindText({ startCommand ?: "" }, { startCommand = it })
                 .apply { component.toolTipText = message("apprunner.creation.panel.start_command.repo.tooltip") }
-                .withErrorOnApplyIf(message("apprunner.creation.panel.start_command.missing")) { it.text.isBlank() }
-                .constraints(pushX, growX)
-        }.largeGapAfter()
+                .errorOnApply(message("apprunner.creation.panel.start_command.missing")) { it.text.isBlank() }
+                .resizableColumn()
+                .align(Align.FILL)
+        }.bottomGap(BottomGap.MEDIUM)
     }
 
     val repoPanel = panel {
-        row(message("apprunner.creation.panel.repository.connection")) {
-            cell(isFullWidth = true) {
-                connection = ResourceSelector.builder()
-                    .resource { AppRunnerResources.LIST_CONNECTIONS }
-                    .customRenderer(SimpleListCellRenderer.create("") { "${it.connectionName()} (${it.providerTypeAsString().toHumanReadable()})" })
-                    .awsConnection(project)
-                    .build()
-                connection(growX, pushX)
-                    .withErrorOnApplyIf(message("apprunner.creation.panel.repository.connection.missing")) { it.isLoading || it.selected() == null }
-                contextualHelp(message("apprunner.creation.panel.repository.connection.help"))
-            }
-        }
+        row {
+            label(message("apprunner.creation.panel.repository.connection"))
+            connection = ResourceSelector.builder()
+                .resource { AppRunnerResources.LIST_CONNECTIONS }
+                .customRenderer(SimpleListCellRenderer.create("") { "${it.connectionName()} (${it.providerTypeAsString().toHumanReadable()})" })
+                .awsConnection(project)
+                .build()
+            cell(connection)
+                .errorOnApply(message("apprunner.creation.panel.repository.connection.missing")) { it.isLoading || it.selected() == null }
+                .resizableColumn()
+                .align(Align.FILL)
+        }.contextHelp(message("apprunner.creation.panel.repository.connection.help"))
         row {
             label(message("apprunner.creation.panel.repository.url")).apply {
                 component.toolTipText = message("apprunner.creation.panel.repository.url.tooltip")
             }
-            textField(::repository, columns = 20).constraints(growX)
+            textField().bindText(::repository).columns(20)
             label(message("apprunner.creation.panel.repository.branch"))
-            textField(::branch, columns = 15).constraints(growX)
+            textField().bindText(::branch).columns(15)
         }
-        row(message("apprunner.creation.panel.repository.configuration")) {
-            buttonGroup {
-                cell(isFullWidth = true) {
-                    repoConfigFromSettings()
-                    repoConfigFromFile()
-                }
+        buttonsGroup {
+            row(message("apprunner.creation.panel.repository.configuration")) {
+                cell(repoConfigFromSettings)
+                cell(repoConfigFromFile)
             }
         }
+
         row {
-            repoSettings(growX)
+            cell(repoSettings)
                 .installOnParent { repoConfigFromSettings.isSelected }
                 .visibleIf(repoConfigFromSettings.selected)
         }
         row {
             label(message("apprunner.creation.panel.cpu"))
-            comboBox(DefaultComboBoxModel(CreationPanel.cpuValues.toTypedArray()), { cpu }, { it?.let { cpu = it } })
-                .withErrorOnApplyIf(message("apprunner.creation.panel.cpu.missing")) { it.selected() == null }
-                .constraints(pushX, growX)
+            comboBox(DefaultComboBoxModel(CreationPanel.cpuValues.toTypedArray())).bindItem({ cpu }, { it?.let { cpu = it } })
+                .errorOnApply(message("apprunner.creation.panel.cpu.missing")) { it.selected() == null }
+                .resizableColumn().align(Align.FILL)
             label(message("apprunner.creation.panel.memory"))
-            comboBox(DefaultComboBoxModel(CreationPanel.memoryValues.toTypedArray()), { memory }, { it?.let { memory = it } })
-                .withErrorOnApplyIf(message("apprunner.creation.panel.memory.missing")) { it.selected() == null }
-                .constraints(pushX, growX)
+            comboBox(DefaultComboBoxModel(CreationPanel.memoryValues.toTypedArray())).bindItem({ memory }, { it?.let { memory = it } })
+                .errorOnApply(message("apprunner.creation.panel.memory.missing")) { it.selected() == null }
         }
     }
 
     val component: DialogPanel = panel {
         row(message("apprunner.creation.panel.name")) {
-            textField(::name)
-                .withErrorOnApplyIf(message("apprunner.creation.panel.name.missing")) { it.text.isNullOrBlank() }
-                .constraints(pushX)
+            textField().bindText(::name)
+                .errorOnApply(message("apprunner.creation.panel.name.missing")) { it.text.isNullOrBlank() }
+                .columns(40)
         }
-        row(message("apprunner.creation.panel.source")) {
-            buttonGroup {
-                cell {
-                    ecr()
-                    ecrPublic()
-                    repo()
-                }
+        buttonsGroup {
+            row(message("apprunner.creation.panel.source")) {
+                cell(ecr)
+                cell(ecrPublic)
+                cell(repo)
             }
         }
-        row(message("apprunner.creation.panel.deployment")) {
+
+        buttonsGroup {
             // ECR public disables selecting deployment options
-            buttonGroup {
-                cell {
-                    manualDeployment()
-                    automaticDeployment()
-                }
+            row(message("apprunner.creation.panel.deployment")) {
+                cell(manualDeployment)
+                cell(automaticDeployment)
             }
         }.visibleIf(ecr.selected.or(repo.selected))
-        row {
-            subRowIndent = 0
-            cell(isFullWidth = true) {
-                // TODO HACK making this flow right means we don't have issues with weird spacing above or
-                // to the left
-                repoPanel(grow)
-                    .installOnParent { repo.isSelected }
-                    .visibleIf(repo.selected)
 
-                imagePanel(grow)
-                    .installOnParent { ecr.isSelected || ecrPublic.isSelected }
-                    .visibleIf(ecr.selected.or(ecrPublic.selected))
-            }
+        row {
+            cell(repoPanel)
+                .installOnParent { repo.isSelected }
+                .visibleIf(repo.selected)
+                .resizableColumn()
+                .align(Align.FILL)
+
+            cell(imagePanel)
+                .installOnParent { ecr.isSelected || ecrPublic.isSelected }
+                .visibleIf(ecr.selected.or(ecrPublic.selected))
+                .resizableColumn()
+                .align(Align.FILL)
         }
         row(message("apprunner.creation.panel.environment")) {
-            environmentVariables(growX)
+            cell(environmentVariables)
+                .resizableColumn().align(Align.FILL)
         }
     }
 }
