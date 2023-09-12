@@ -6,6 +6,8 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as os from 'os'
 import * as vscode from 'vscode'
+import * as fs from 'fs'
+import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
 
@@ -23,36 +25,36 @@ export class CodeWhispererWebview extends VueWebview {
         return this.start
     }
 
-    // private override  context?: vscode.ExtensionContext
-    //This function opens the new created Documents in a new editor tab
-    async openNewEditorTab(fileName: vscode.Uri, defaultCode: string): Promise<void> {
-        vscode.workspace.openTextDocument(fileName).then((a: vscode.TextDocument) => {
-            vscode.window.showTextDocument(a, 1, false).then(e => {
-                e.edit(edit => {
-                    edit.insert(new vscode.Position(0, 0), defaultCode)
-                })
-            })
-        })
+    private isFileSaved: boolean = false
+    private getLocalFilePath(fileName: string): string {
+        const workspaceFolder = vscode.workspace.workspaceFolders![0]
+        return path.join(workspaceFolder.uri.fsPath, fileName)
     }
 
-    //This function opens the document in the editor with the predefined code in it
+    // This function opens Python/JavaScript/C# file in the editor.
     async openFile(name: string[]): Promise<void> {
-        // let document: vscode.TextDocument | undefined = undefined
         const fileName = name[0]
         const fileContent = name[1]
-        const existingDocument = vscode.workspace.textDocuments.find(
-            doc =>
-                doc.uri.toString() === `untitled:${fileName}` ||
-                doc.uri.toString() ===
-                    vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, fileName).toString()
-        )
-        if (existingDocument) {
-            vscode.window.showTextDocument(existingDocument, vscode.ViewColumn.Active)
+
+        const localFilePath = this.getLocalFilePath(fileName)
+
+        if (fs.existsSync(localFilePath) && this.isFileSaved) {
+            const fileUri = vscode.Uri.file(localFilePath)
+            vscode.workspace.openTextDocument(fileUri).then(doc => {
+                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+            })
         } else {
-            //         const fileUri = vscode.Uri.joinPath(vscode.workspace.workspaceFolders![0].uri, fileName)
-            const fileNameUri = vscode.Uri.parse(`untitled:${fileName}`)
-            this.openNewEditorTab(fileNameUri, fileContent)
+            this.saveFileLocally(localFilePath, fileContent)
         }
+    }
+
+    // This function saves and open the file in the editor.
+    private async saveFileLocally(localFilePath: string, fileContent: string): Promise<void> {
+        await fs.promises.writeFile(localFilePath, fileContent)
+        this.isFileSaved = true
+        vscode.workspace.openTextDocument(localFilePath).then(doc => {
+            vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+        })
     }
 
     //This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
@@ -72,13 +74,12 @@ export class CodeWhispererWebview extends VueWebview {
         vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
     }
 
-    //This function opens the Feedback CW page in the webview
+    //This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
         vscode.commands.executeCommand('aws.submitFeedback', 'CodeWhisperer')
     }
 
-    //         ------   Telemetry   ------
-
+    //------Telemetry------
     /** This represents the cause for the webview to open, whether a certain button was clicked or it opened automatically */
     #codeWhispererSource?: CodeWhispererSource
 
@@ -100,6 +101,7 @@ export class CodeWhispererWebview extends VueWebview {
 export type CodeWhispererUiClick =
     | 'cw_Resources_Documentation'
     | 'cw_Resources_Feedback'
+    | 'cw_Resources_Workshop'
     | 'cw_Shortcuts_KeyboardShortcutsEditor'
     | 'cw_ScanCode_LearnMore'
     | 'cw_GenerateSuggestions_LearnMore'
@@ -122,7 +124,7 @@ export async function showCodeWhispererWebview(
     activePanel.server.setSource(source)
 
     const webview = await activePanel!.show({
-        title: localize('AWS.view.gettingStartedPage.title', `Learn how to CodeWhisperer`),
+        title: localize('AWS.view.gettingStartedPage.title', `Getting Started with CodeWhisperer`),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
     })
 

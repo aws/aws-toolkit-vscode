@@ -27,11 +27,10 @@
                                 <div
                                     style="
                                         padding-left: 5px;
-                                        padding-right: 5px;
+                                        padding-right: 10px;
                                         padding-top: 2px;
                                         font-family: SF Pro;
                                         text-align: center;
-                                        color: #ffffff;
                                         align-items: center;
                                         justify-content: center;
                                         font-size: 18px;
@@ -54,12 +53,11 @@
                                 <div
                                     style="
                                         padding-left: 5px;
-                                        padding-right: 5px;
+                                        padding-right: 10px;
                                         padding-top: 2px;
                                         font-family: SF Pro;
                                         text-align: center;
                                         align-items: center;
-                                        color: #ffffff;
                                         justify-content: center;
                                         font-size: 18px;
                                         font-weight: 400;
@@ -83,7 +81,7 @@
         <div
             style="
                 margin-top: 20px;
-                margin-bottom: 40px;
+                margin-bottom: 30px;
                 font-family: SF Pro Text;
                 font-size: 13px;
                 font-weight: 400;
@@ -154,8 +152,8 @@ export default defineComponent({
 </script>
 <style>
 table tr,
-table td {
-    border: none;
+td {
+    border: 1px solid #454545;
 }
 
 td {
@@ -169,12 +167,6 @@ td {
     letter-spacing: 0em;
     text-align: left;
     height: 26px;
-    color: #adadad;
-}
-
-tr:nth-child(odd) {
-    background-color: #252525;
-    color: #adadad;
 }
 
 #col2 {
@@ -185,5 +177,6 @@ tr:nth-child(odd) {
     font-size: 13px;
     line-height: 19.5px;
     font-weight: 400;
+    color: #ffffff;
 }
 </style>

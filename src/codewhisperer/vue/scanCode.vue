@@ -10,7 +10,6 @@
                     line-height: 24px;
                     letter-spacing: 0em;
                     text-align: left;
-                    color: #bababa;
                     padding-bottom: 10px;
                 "
             >
@@ -18,13 +17,13 @@
             </div>
             <div
                 style="
-                    color: #cccccc;
                     font-family: SF Pro;
                     font-size: 14px;
                     font-weight: 510;
                     line-height: 21px;
                     letter-spacing: 0em;
                     text-align: left;
+                    padding-bottom: 5px;
                 "
             >
                 You can also ask CodeWhisperer to scan your code to detect hard-to-find vulnerabilities, and get code

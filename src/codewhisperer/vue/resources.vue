@@ -1,15 +1,14 @@
 <!-- This Vue File provides Documentation and Feedback for CodeWhisperer-->
 <template>
-    <div>
+    <div style="padding-top: 40px; padding-left: 20px">
         <div
             style="
                 font-family: SF Pro;
-                font-size: 14px;
+                font-size: 24px;
                 font-weight: 860;
                 line-height: 24px;
                 letter-spacing: 0em;
                 text-align: left;
-                color: #bababa;
                 padding-top: 5px;
                 padding-right: 5px;
             "
@@ -42,7 +41,7 @@
                             line-height: 21px;
                             letter-spacing: 0em;
                             text-align: left;
-                            color: #cccccc;
+                            color: var(--vscode-descriptionForeground);
                             text-decoration: none;
                             cursor: pointer;
                         "
@@ -76,7 +75,7 @@
                         line-height: 21px;
                         letter-spacing: 0em;
                         text-align: left;
-                        color: #cccccc;
+                        color: var(--vscode-descriptionForeground);
                         cursor: pointer;
                     "
                     @click="onClick"
