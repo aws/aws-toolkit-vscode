@@ -73,9 +73,10 @@ describe('inlineCompletionService', function () {
             ]
             ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
             session.recommendations = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
+            session.language = 'python'
 
             assert.ok(session.recommendations.length > 0)
-            await RecommendationHandler.instance.clearInlineCompletionStates(createMockTextEditor())
+            await RecommendationHandler.instance.clearInlineCompletionStates()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
             assert.strictEqual(session.recommendations.length, 0)
         })
