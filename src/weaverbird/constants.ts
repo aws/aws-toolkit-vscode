@@ -12,3 +12,6 @@ export const defaultLlmConfig: LLMConfig = {
     temperature: 0.0,
     debateRounds: 2,
 }
+
+// The Scheme name of the virtual documents.
+export const weaverbirdScheme = 'aws-weaverbird'

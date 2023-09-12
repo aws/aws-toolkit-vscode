@@ -4,10 +4,7 @@
         <div v-else-if="interaction.status === 'rejected'">You have rejected these changes. Ohnoes :(</div>
         <div v-else>
             The following files have changed:
-            <FileTree
-                :treeNode="fileListToTree(interaction.content.map(item => ({ data: item, path: item.uri.path })))"
-                :on-file-clicked="displayFileDiff"
-            />
+            <FileTree :treeNode="fileListToTree(interaction.content)" :on-file-clicked="displayFileDiff" />
             <button class="button-primary" @click="acceptChanges">👍 Accept and insert code</button>
             <button :disabled="true" class="button-warning">♻ Iterate with comments</button>
             <button class="button-secondary" @click="rejectChanges">👎 This isn't what I expected</button>
@@ -17,8 +14,8 @@
 
 <script setup lang="ts">
 import FileTree from '../file-tree/file-tree.vue'
-import { CodeGenInteraction } from './session'
 import { fileListToTree } from '../file-tree/helpers'
+import { CodeGenInteraction } from './sessionState'
 
 interface Props {
     interaction: CodeGenInteraction
@@ -29,7 +26,6 @@ defineProps<Props>()
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { MemoryFile } from '../../memoryFile'
 import { ClassToProtocol } from '../../../webviews/main'
 import { WebviewClient } from '../../../webviews/client'
 import { WeaverbirdChatWebview } from './backend'
@@ -45,8 +41,8 @@ export default defineComponent({
     emits: {},
     watch: {},
     methods: {
-        displayFileDiff(file: MemoryFile) {
-            this.client.displayDiff(file)
+        displayFileDiff(filePath: string) {
+            this.client.displayDiff(filePath)
         },
 
         acceptChanges() {

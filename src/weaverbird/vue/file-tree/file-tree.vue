@@ -10,7 +10,7 @@
             </div>
         </div>
         <div v-else>
-            <li class="file" @click="fileClicked(treeNode)">
+            <li class="file" @click="fileClicked(treeNode as FileNode)">
                 <span class="icon icon-lg icon-vscode-file" style="color: #ffffff"></span>
                 {{ treeNode.name }}
             </li>
@@ -19,10 +19,9 @@
 </template>
 
 <script setup lang="ts">
-import { MemoryFile } from '../../memoryFile'
 import type { FileNode, TreeNode } from '../file-tree/helpers'
 
-defineProps<{ treeNode: TreeNode; onFileClicked: (memFile: MemoryFile) => void }>()
+defineProps<{ treeNode: TreeNode; onFileClicked: (filePath: string) => void }>()
 </script>
 
 <script lang="ts">
@@ -31,7 +30,7 @@ import { defineComponent } from 'vue'
 export default defineComponent({
     methods: {
         fileClicked(fileNode: FileNode) {
-            this.onFileClicked(fileNode.data)
+            this.onFileClicked(fileNode.filePath)
         },
     },
 })

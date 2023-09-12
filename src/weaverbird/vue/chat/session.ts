@@ -8,11 +8,12 @@ import * as path from 'path'
 import { getLogger } from '../../../shared/logger/logger'
 
 import { LocalResolvedConfig } from '../../config'
-import { defaultLlmConfig } from './constants'
-import { LLMConfig } from './types'
+import { defaultLlmConfig } from '../../constants'
+import { LLMConfig } from '../../types'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
 import { SessionState, SessionStateConfig, RefinementState, Interaction } from './sessionState'
+import { VirualFileSystem } from '../../../shared/virtualFilesystem'
 
 export class Session {
     // TODO remake private
@@ -26,6 +27,7 @@ export class Session {
     private llmConfig = defaultLlmConfig
     private lambdaClient: LambdaClient
     private backendConfig: LocalResolvedConfig
+    private fs: VirualFileSystem
 
     public onAddToHistory: vscode.EventEmitter<Interaction[]>
 
@@ -36,12 +38,14 @@ export class Session {
     constructor(
         workspaceRoot: string,
         onAddToHistory: vscode.EventEmitter<Interaction[]>,
-        backendConfig: LocalResolvedConfig
+        backendConfig: LocalResolvedConfig,
+        fs: VirualFileSystem
     ) {
         this.workspaceRoot = workspaceRoot
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()
         this.lambdaClient = new DefaultLambdaClient(backendConfig.region)
         this.backendConfig = backendConfig
+        this.fs = fs
         this.state = new RefinementState(this.getSessionStateConfig(), '')
         this.onProgressEvent = this.onProgressEventEmitter.event
 
@@ -105,6 +109,7 @@ export class Session {
             task: this.task,
             msg,
             onAddToHistory: this.onAddToHistory,
+            fs: this.fs,
         })
 
         if (resp.nextState) {

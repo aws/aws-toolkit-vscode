@@ -3,23 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MemoryFile } from '../../memoryFile'
-
 export type TreeNode = FolderNode | FileNode
-export type FileNode = { name: string; type: 'file'; filePath: string; data: MemoryFile }
+export type FileNode = { name: string; type: 'file'; filePath: string }
 export type FolderNode = { name: string; type: 'folder'; children: (FolderNode | FileNode)[] }
 
 /*
  * Converts a list of file Paths into a tree
  *
- * @input: The list of `{ data: MemoryFile, path: string }`
+ * @input: The list of `{ path: string }`
  * Example Input: [
  *   {
- *      data: { content: "console.log('Hello world');", uri: { path: "hello.js" } },
  *      path: "project/src/hello.js",
  *   },
  *   {
- *      data: { content: "console.log('Goodbye, world');", uri: { path: "goodbye.js" } },
  *      path: "project/src/goodbye.js",
  *   }
  * ]
@@ -35,20 +31,20 @@ export type FolderNode = { name: string; type: 'folder'; children: (FolderNode |
  *          name: 'src',
  *          type: 'folder',
  *          children: [
- *              { name: 'hello.js', type: 'file', filePath: 'project/src/hello.js', data: MemoryFile }
- *              { name: 'goodbye.js', type: 'file', filePath: 'project/src/goodbye.js', data: MemoryFile }
+ *              { name: 'hello.js', type: 'file', filePath: 'project/src/hello.js' }
+ *              { name: 'goodbye.js', type: 'file', filePath: 'project/src/goodbye.js' }
  *          ]
  *      }]
  *  }]
  * }
  */
-export const fileListToTree = (fileList: { data: MemoryFile; path: string }[]): TreeNode => {
+export const fileListToTree = (filePaths: string[]): TreeNode => {
     return (
-        fileList
+        filePaths
             // split file path by folder. ignore dot folders
-            .map(item => ({ ...item, path: item.path.split('/').filter(item => item && item !== '.') }))
+            .map(path => path.split('/').filter(item => item && item !== '.'))
             .reduce(
-                (acc, { data, path }) => {
+                (acc, path) => {
                     // pointer to keep track of the current tree node
                     let currentNode = acc
                     for (let i = 0; i < path.length; i++) {
@@ -60,7 +56,6 @@ export const fileListToTree = (fileList: { data: MemoryFile; path: string }[]): 
                                 type: 'file',
                                 name: fileOrFolder,
                                 filePath: path.join('/'),
-                                data,
                             })
                             break
                         } else {

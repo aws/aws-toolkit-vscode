@@ -7,13 +7,15 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 
 import { LocalResolvedConfig } from '../../config'
-import { MemoryFile } from '../../memoryFile'
-import { LLMConfig } from './types'
+import { LLMConfig } from '../../types'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
 import { FileMetadata } from '../../client/weaverbirdclient'
 import { getLogger } from '../../../shared/logger'
 import { FileSystemCommon } from '../../../srcShared/fs'
+import { VirualFileSystem } from '../../../shared/virtualFilesystem'
+import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
+import { weaverbirdScheme } from '../../constants'
 
 const fs = FileSystemCommon.instance
 
@@ -26,7 +28,7 @@ export interface UserInteraction {
 export interface CodeGenInteraction {
     origin: 'ai'
     type: 'codegen'
-    content: MemoryFile[]
+    content: string[]
     status?: 'accepted' | 'rejected'
 }
 
@@ -55,6 +57,7 @@ interface SessionStateAction {
     files: FileMetadata[]
     msg?: string
     onAddToHistory: vscode.EventEmitter<Interaction[]>
+    fs: VirualFileSystem
 }
 
 type NewFileContents = { filePath: string; fileContent: string }[]
@@ -155,13 +158,14 @@ class RefinementIterationState implements SessionState {
     }
 }
 
-async function createChanges(newFileContents: NewFileContents): Promise<Interaction[]> {
-    const files: MemoryFile[] = []
+async function createChanges(fs: VirualFileSystem, newFileContents: NewFileContents): Promise<Interaction[]> {
+    const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
-        // create the in-memory document
-        const memfile = MemoryFile.createDocument(filePath)
-        memfile.write(fileContent)
-        files.push(memfile)
+        const encoder = new TextEncoder()
+        const contents = encoder.encode(fileContent)
+        const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
+        fs.registerProvider(uri, new VirtualMemoryFile(contents))
+        filePaths.push(filePath)
     }
 
     return [
@@ -173,7 +177,7 @@ async function createChanges(newFileContents: NewFileContents): Promise<Interact
         {
             origin: 'ai',
             type: 'codegen',
-            content: files,
+            content: filePaths,
         },
     ]
 }
@@ -211,7 +215,7 @@ export class CodeGenState implements SessionState {
             },
         ])
 
-        await this.generateCode(action.onAddToHistory, genId).catch(x => {
+        await this.generateCode(action.fs, action.onAddToHistory, genId).catch(x => {
             getLogger().error(`Failed to generate code`)
         })
 
@@ -221,7 +225,11 @@ export class CodeGenState implements SessionState {
         }
     }
 
-    private async generateCode(onAddToHistory: vscode.EventEmitter<Interaction[]>, generationId: string) {
+    private async generateCode(
+        fs: VirualFileSystem,
+        onAddToHistory: vscode.EventEmitter<Interaction[]>,
+        generationId: string
+    ) {
         for (
             let pollingIteration = 0;
             pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
@@ -239,7 +247,7 @@ export class CodeGenState implements SessionState {
             getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
 
             if (codegenResult.status == 'ready') {
-                const changes = await createChanges(codegenResult.result.newFileContents)
+                const changes = await createChanges(fs, codegenResult.result.newFileContents)
                 onAddToHistory.fire(changes)
                 return
             } else {
@@ -267,7 +275,7 @@ export class MockCodeGenState implements SessionState {
             if (mockDirectoryExists) {
                 const files = await collectFiles(mockedFilesDir)
                 newFileContents = files.map(f => ({
-                    filePath: f.filePath.replace('mock-data', '.'),
+                    filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,
                 }))
             }
@@ -277,7 +285,7 @@ export class MockCodeGenState implements SessionState {
 
         return {
             nextState: new CodeGenIterationState(this.config, this.approach),
-            interactions: await createChanges(newFileContents),
+            interactions: await createChanges(action.fs, newFileContents),
         }
     }
 }
