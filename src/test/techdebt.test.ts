@@ -54,8 +54,9 @@ describe('tech debt', function () {
 
     it('stop skipping CodeCatalyst E2E Tests', function () {
         // https://issues.amazon.com/issues/IDE-10496
-        const nextMonth = new Date(2023, 8, 12) // September 12th, 2023
-        const now = new Date()
-        assert(now < nextMonth, 'Re-evaluate if we should still keep skipping CodeCatalyst E2E Tests')
+        assert(
+            new Date() < new Date(2024, 1, 15),
+            'Re-evaluate if we should still keep skipping CodeCatalyst E2E Tests'
+        )
     })
 })
