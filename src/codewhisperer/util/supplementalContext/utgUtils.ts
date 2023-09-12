@@ -127,7 +127,7 @@ function generateSupplementalContextFromFocalFile(
     return [
         {
             filePath: filePath,
-            content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
+            content: fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
         },
     ]
 }
