@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 
 import { registerChatView } from './vue/chat/backend'
-import { VirualFileSystem } from '../shared/virtualFilesystem'
+import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import { getLogger } from '../shared/logger/logger'
 import { weaverbirdScheme } from './constants'
 import { VirtualMemoryFile } from '../shared/virtualMemoryFile'
@@ -15,7 +15,7 @@ import { VirtualMemoryFile } from '../shared/virtualMemoryFile'
  * Activate Weaverbird functionality for the extension.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    const fs = new VirualFileSystem()
+    const fs = new VirtualFileSystem()
 
     // Register an empty weaverbird file that's used when a new file is being added by the LLM
     fs.registerProvider(

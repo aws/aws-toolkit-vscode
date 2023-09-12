@@ -13,7 +13,7 @@ import { LLMConfig } from '../../types'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
 import { SessionState, SessionStateConfig, RefinementState, Interaction } from './sessionState'
-import { VirualFileSystem } from '../../../shared/virtualFilesystem'
+import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 
 export class Session {
     // TODO remake private
@@ -27,7 +27,7 @@ export class Session {
     private llmConfig = defaultLlmConfig
     private lambdaClient: LambdaClient
     private backendConfig: LocalResolvedConfig
-    private fs: VirualFileSystem
+    private fs: VirtualFileSystem
 
     public onAddToHistory: vscode.EventEmitter<Interaction[]>
 
@@ -39,7 +39,7 @@ export class Session {
         workspaceRoot: string,
         onAddToHistory: vscode.EventEmitter<Interaction[]>,
         backendConfig: LocalResolvedConfig,
-        fs: VirualFileSystem
+        fs: VirtualFileSystem
     ) {
         this.workspaceRoot = workspaceRoot
         this.onProgressEventEmitter = new vscode.EventEmitter<string>()

@@ -9,7 +9,7 @@ import { ExtContext } from '../shared/extensions'
 import { createCommonButtons } from '../shared/ui/buttons'
 import { createQuickPick } from '../shared/ui/pickerPrompter'
 import { DevSettings } from '../shared/settings'
-import { FileProvider, VirualFileSystem } from '../shared/virtualFilesystem'
+import { FileProvider, VirtualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 import { createInputBox } from '../shared/ui/inputPrompter'
 import { Wizard } from '../shared/wizards/wizard'
@@ -178,7 +178,7 @@ interface Tab {
 class ObjectEditor {
     private static readonly scheme = 'aws-dev'
 
-    private readonly fs = new VirualFileSystem()
+    private readonly fs = new VirtualFileSystem()
     private readonly tabs: Map<string, Tab> = new Map()
 
     public constructor(private readonly context: vscode.ExtensionContext) {

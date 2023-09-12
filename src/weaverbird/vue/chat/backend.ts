@@ -12,7 +12,7 @@ import * as fs from 'fs'
 import { LLMConfig } from '../../types'
 import { LocalResolvedConfig, getConfig } from '../../config'
 import { Interaction } from './sessionState'
-import { VirualFileSystem } from '../../../shared/virtualFilesystem'
+import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { weaverbirdScheme } from '../../constants'
 
 // const localize = nls.loadMessageBundle()
@@ -23,9 +23,9 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly session: Session
     public readonly workspaceRoot: string
     public readonly onAddToHistory: vscode.EventEmitter<Interaction[]>
-    private readonly fs: VirualFileSystem
+    private readonly fs: VirtualFileSystem
 
-    public constructor(backendConfig: LocalResolvedConfig, fs: VirualFileSystem) {
+    public constructor(backendConfig: LocalResolvedConfig, fs: VirtualFileSystem) {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
         super()
 
@@ -89,7 +89,7 @@ let activeView: InstanceType<typeof View> | undefined
 
 export async function registerChatView(
     ctx: vscode.ExtensionContext,
-    fs: VirualFileSystem
+    fs: VirtualFileSystem
 ): Promise<WeaverbirdChatWebview> {
     const backendConfig = await getConfig()
     activeView ??= new View(ctx, backendConfig, fs)

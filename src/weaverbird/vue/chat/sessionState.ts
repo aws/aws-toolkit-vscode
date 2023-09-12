@@ -13,7 +13,7 @@ import { collectFiles } from '../../files'
 import { FileMetadata } from '../../client/weaverbirdclient'
 import { getLogger } from '../../../shared/logger'
 import { FileSystemCommon } from '../../../srcShared/fs'
-import { VirualFileSystem } from '../../../shared/virtualFilesystem'
+import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
 import { weaverbirdScheme } from '../../constants'
 
@@ -57,7 +57,7 @@ interface SessionStateAction {
     files: FileMetadata[]
     msg?: string
     onAddToHistory: vscode.EventEmitter<Interaction[]>
-    fs: VirualFileSystem
+    fs: VirtualFileSystem
 }
 
 type NewFileContents = { filePath: string; fileContent: string }[]
@@ -158,7 +158,7 @@ class RefinementIterationState implements SessionState {
     }
 }
 
-async function createChanges(fs: VirualFileSystem, newFileContents: NewFileContents): Promise<Interaction[]> {
+async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileContents): Promise<Interaction[]> {
     const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
         const encoder = new TextEncoder()
@@ -226,7 +226,7 @@ export class CodeGenState implements SessionState {
     }
 
     private async generateCode(
-        fs: VirualFileSystem,
+        fs: VirtualFileSystem,
         onAddToHistory: vscode.EventEmitter<Interaction[]>,
         generationId: string
     ) {
