@@ -21,6 +21,13 @@ interface normalizedCoefficients {
     readonly lenRight: number
     readonly lineDiff: number
 }
+
+interface normalizedCoefficientsExp {
+    readonly lineNum: number
+    readonly lenLeftCur: number
+    readonly lenLeftPrev: number
+    readonly lenRight: number
+}
 /*
  uses ML classifier to determine if user input should trigger CWSPR service
  */
@@ -45,6 +52,7 @@ export class ClassifierTrigger {
 
     // ML classifier trigger threshold
     private triggerThreshold = 0.4
+    private triggerThresholdExp = 0.43
 
     // ML classifier coefficients
     // os coefficient
@@ -54,10 +62,22 @@ export class ClassifierTrigger {
         'Windows 10': 0.276541,
         'Windows 7': 0.033465,
     }
+
+    private osCoefficientMapExp: Readonly<Record<string, number>> = {
+        'Mac OS X': -0.0501,
+        'Windows 10': 0.1411,
+        Windows: 0.1182,
+        win32: 0.1058,
+    }
     // trigger type coefficient
     private triggerTypeCoefficientMap: Readonly<Record<string, number>> = {
         SpecialCharacters: 0.062397,
         Enter: 0.207027,
+    }
+
+    private triggerTypeCoefficientMapExp: Readonly<Record<string, number>> = {
+        SpecialCharacters: 0.025,
+        Enter: 0.2241,
     }
 
     private languageCoefficientMap: Readonly<Record<string, number>> = {
@@ -69,20 +89,56 @@ export class ClassifierTrigger {
         jsx: -0.361063,
     }
 
+    private languageCoefficientMapExp: Readonly<Record<string, number>> = {
+        java: -0.2286,
+        javascript: -0.3701,
+        python: -0.2029,
+        typescript: -0.492,
+        tsx: -0.492,
+        jsx: -0.3701,
+        shell: -0.4533,
+        ruby: -0.4498,
+        sql: -0.4419,
+        rust: -0.364,
+        kotlin: -0.3344,
+        php: -0.2521,
+        csharp: -0.248,
+        go: -0.196,
+        scala: -0.1886,
+        cpp: -0.1161,
+    }
+
     // other metadata coefficient
     private lineNumCoefficient = 2.450734
     private cursorOffsetCoefficient = -1.999804
     private lengthOfLeftCurrentCoefficient = -1.01031
     private lengthOfLeftPrevCoefficient = 0.409877
-    private lengthofRightCoefficient = -0.425973
+    private lengthOfRightCoefficient = -0.425973
     private lineDiffCoefficient = 0.376956
     private prevDecisionAcceptCoefficient = 1.223303
     private prevDecisionRejectCoefficient = -0.150684
     private prevDecisionOtherCoefficient = -0.0093
     private ideVscode = -0.13566
 
+    private lineNumCoefficientExp = 0.066
+    private lengthOfLeftCurrentCoefficientExp = -1.217
+    private lengthOfLeftPrevCoefficientExp = 0.3403
+    private lengthOfRightCoefficientExp = -0.3354
+    private prevDecisionAcceptCoefficientExp = 0.616
+    private prevDecisionRejectCoefficientExp = -0.1266
+    private prevDecisionOtherCoefficientExp = 0
+    private ideVscodeExp = -0.1705
+    private lengthLeft0To5Exp = -0.9889
+    private lengthLeft5To10Exp = -0.5842
+    private lengthLeft10To20Exp = -0.5162
+    private lengthLeft20To30Exp = -0.329
+    private lengthLeft30To40Exp = -0.1525
+    private lengthLeft40To50Exp = -0.0812
+
     // intercept of logistic regression classifier
     private intercept = -0.04756079
+
+    private interceptExp = 0.14018218
 
     private maxx: normalizedCoefficients = {
         cursor: 84716.0,
@@ -93,6 +149,13 @@ export class ClassifierTrigger {
         lineDiff: 270.0,
     }
 
+    private maxxExp: normalizedCoefficientsExp = {
+        lineNum: 4335.0,
+        lenLeftCur: 157.0,
+        lenLeftPrev: 173.0,
+        lenRight: 10239.0,
+    }
+
     private minn: normalizedCoefficients = {
         cursor: 1.0,
         lineNum: 0.0,
@@ -100,6 +163,13 @@ export class ClassifierTrigger {
         lenLeftPrev: 0.0,
         lenRight: 0.0,
         lineDiff: -28336.0,
+    }
+
+    private minnExp: normalizedCoefficientsExp = {
+        lineNum: 0.0,
+        lenLeftCur: 0.0,
+        lenLeftPrev: 0.0,
+        lenRight: 0.0,
     }
     // character and keywords coefficient
     private charCoefficient: Readonly<Record<string, number>> = {
@@ -324,19 +394,371 @@ export class ClassifierTrigger {
         '~': -0.290281,
     }
 
+    private charCoefficientExp: Readonly<Record<string, number>> = {
+        true: -1.6948,
+        false: -1.4366,
+        throw: 1.0439,
+        elif: 1.0115,
+        '6': -0.972,
+        pass: -0.9688,
+        '8': -0.9349,
+        '5': -0.9332,
+        static: -0.9325,
+        '0': -0.9184,
+        False: -0.8644,
+        None: -0.8633,
+        True: -0.8559,
+        null: -0.839,
+        any: -0.8165,
+        except: 0.8086,
+        '7': -0.7957,
+        '1': -0.7845,
+        nil: -0.7811,
+        async: -0.7767,
+        break: -0.7731,
+        '4': -0.7477,
+        end: -0.7141,
+        '/': -0.7045,
+        '(': 0.6662,
+        switch: 0.6539,
+        '2': -0.651,
+        '9': -0.6462,
+        catch: 0.6222,
+        '\\': -0.6198,
+        ';': -0.6126,
+        continue: -0.6103,
+        foreach: 0.6026,
+        private: -0.5876,
+        final: -0.5823,
+        case: 0.5748,
+        float: -0.5673,
+        for: 0.5592,
+        this: 0.549,
+        '3': -0.5424,
+        '@': 0.5399,
+        list: 0.5331,
+        await: -0.5247,
+        ']': -0.5212,
+        struct: -0.5109,
+        or: 0.5054,
+        try: -0.4872,
+        let: -0.4863,
+        AS: 0.4804,
+        val: -0.4602,
+        map: 0.4598,
+        ': ': 0.4588,
+        auto: -0.4562,
+        delete: 0.4511,
+        print: 0.4486,
+        export: -0.4452,
+        ')': -0.4422,
+        readonly: -0.4408,
+        new: 0.4236,
+        $: 0.4197,
+        implements: 0.4044,
+        W: 0.3999,
+        with: 0.3867,
+        void: -0.3861,
+        '=': 0.3784,
+        q: 0.3696,
+        using: 0.3695,
+        boolean: -0.3687,
+        namespace: -0.3659,
+        const: -0.3654,
+        ' ': 0.3627,
+        array: 0.3601,
+        '*': -0.3529,
+        mut: -0.3512,
+        '#': 0.3477,
+        range: 0.3442,
+        p: 0.3366,
+        h: 0.3311,
+        require: 0.3299,
+        o: 0.3248,
+        local: 0.3203,
+        import: -0.3179,
+        '{': 0.3109,
+        i: 0.3106,
+        params: 0.3016,
+        c: 0.3006,
+        extern: -0.2991,
+        f: 0.2977,
+        '}': -0.2956,
+        r: 0.29,
+        if: 0.289,
+        u: 0.2885,
+        public: -0.2876,
+        '>': -0.2833,
+        package: 0.2789,
+        raise: 0.273,
+        AND: -0.2714,
+        loop: 0.2686,
+        a: 0.2663,
+        ref: 0.2598,
+        abstract: -0.2419,
+        n: 0.24,
+        '+': -0.236,
+        e: 0.2345,
+        impl: 0.2337,
+        E: 0.2309,
+        int: -0.2305,
+        SELECT: -0.2297,
+        ON: 0.2291,
+        t: 0.2255,
+        then: 0.223,
+        m: 0.221,
+        virtual: -0.2206,
+        module: 0.2199,
+        global: -0.2178,
+        C: 0.2145,
+        in: 0.214,
+        mod: 0.2127,
+        j: 0.2106,
+        R: 0.2065,
+        w: 0.2045,
+        isset: 0.2024,
+        var: -0.2017,
+        s: 0.1994,
+        func: 0.1974,
+        echo: 0.196,
+        select: -0.1946,
+        assert: 0.1941,
+        del: 0.1911,
+        exit: -0.1889,
+        uint: -0.1835,
+        as: 0.183,
+        source: -0.1805,
+        double: -0.1799,
+        l: 0.1794,
+        class: -0.1747,
+        WHERE: -0.1707,
+        d: 0.1704,
+        include: 0.1698,
+        IF: -0.1693,
+        FROM: 0.1673,
+        '^': -0.1644,
+        S: 0.1631,
+        '|': 0.1594,
+        v: 0.1589,
+        object: 0.1587,
+        debugger: -0.1567,
+        b: 0.1567,
+        P: 0.1554,
+        y: 0.155,
+        empty: 0.1504,
+        '[': 0.1502,
+        where: -0.1499,
+        '.': 0.1473,
+        lambda: 0.1473,
+        operator: 0.1454,
+        JOIN: 0.1448,
+        else: -0.1438,
+        N: 0.143,
+        super: 0.1426,
+        extends: 0.1422,
+        unset: 0.1418,
+        g: 0.1381,
+        bool: -0.138,
+        long: -0.1377,
+        K: 0.1374,
+        undef: -0.1365,
+        internal: -0.1316,
+        CASE: 0.1314,
+        typeof: 0.1295,
+        F: 0.1289,
+        event: 0.1283,
+        Z: -0.1276,
+        finally: 0.1269,
+        z: -0.126,
+        do: -0.1239,
+        from: 0.1228,
+        constructor: 0.12,
+        '!': 0.118,
+        '&': 0.1168,
+        "'": 0.1162,
+        OR: 0.1152,
+        '<': 0.1135,
+        typedef: 0.113,
+        '`': 0.1123,
+        number: -0.1099,
+        Y: 0.1094,
+        '?': 0.1086,
+        DISTINCT: -0.1079,
+        A: 0.1046,
+        next: 0.1034,
+        B: 0.1,
+        pub: -0.0994,
+        M: 0.0993,
+        when: 0.0986,
+        short: -0.0985,
+        elseif: 0.0908,
+        move: 0.0905,
+        UPDATE: 0.0897,
+        register: -0.0897,
+        IS: 0.0881,
+        done: -0.0881,
+        inline: -0.0878,
+        trait: -0.0874,
+        mutable: 0.0865,
+        _: 0.0854,
+        Q: 0.0846,
+        X: 0.0837,
+        NOT: -0.0832,
+        type: 0.0827,
+        INTO: 0.0825,
+        function: -0.0812,
+        not: -0.0807,
+        endif: 0.0781,
+        x: 0.0778,
+        END: 0.0772,
+        IN: 0.0769,
+        NULL: 0.0748,
+        fi: -0.073,
+        D: 0.0716,
+        keyof: 0.0713,
+        crate: -0.0707,
+        while: 0.0702,
+        dyn: -0.0698,
+        '%': -0.0688,
+        BEGIN: 0.0681,
+        self: -0.068,
+        string: 0.068,
+        bigint: -0.0678,
+        H: 0.0668,
+        WHEN: 0.0664,
+        delegate: -0.065,
+        fixed: 0.0647,
+        instanceof: 0.064,
+        unique: 0.0631,
+        '~': 0.0611,
+        elsif: 0.0605,
+        interface: -0.0587,
+        signed: -0.0587,
+        USING: -0.0571,
+        override: -0.0569,
+        I: 0.0566,
+        begin: -0.0564,
+        rescue: 0.0563,
+        defer: -0.0546,
+        default: -0.0532,
+        J: -0.0529,
+        O: 0.0512,
+        include_once: -0.0507,
+        until: -0.0506,
+        unsafe: -0.0473,
+        alias: -0.047,
+        yield: 0.0466,
+        template: 0.0431,
+        enum: 0.0429,
+        protected: -0.0412,
+        asm: -0.0411,
+        die: 0.041,
+        GET: -0.0403,
+        RETURN: -0.0394,
+        HAVING: 0.0386,
+        char: 0.0379,
+        AVG: 0.0378,
+        FOR: -0.0371,
+        RETURNING: -0.0368,
+        VALUES: 0.0367,
+        native: -0.0366,
+        PROCEDURE: -0.0356,
+        chan: -0.0354,
+        T: -0.0349,
+        FUNCTION: -0.0347,
+        '"': 0.0341,
+        typename: 0.0341,
+        stackalloc: -0.034,
+        shift: 0.0328,
+        throws: 0.0318,
+        and: 0.0312,
+        G: -0.0311,
+        L: 0.0309,
+        THEN: -0.0288,
+        LIMIT: -0.0284,
+        ELSE: 0.0283,
+        V: -0.0271,
+        decimal: -0.0269,
+        LIKE: -0.0261,
+        unless: -0.026,
+        asserts: 0.025,
+        fn: -0.0248,
+        checked: 0.0245,
+        byte: 0.0241,
+        redo: 0.0225,
+        reinterpret_cast: 0.0223,
+        wchar_t: 0.022,
+        INDEX: 0.0219,
+        def: 0.0217,
+        return: 0.0209,
+        transient: -0.0206,
+        FETCH: 0.0202,
+        exec: -0.0192,
+        sealed: -0.0192,
+        U: 0.0187,
+        eval: -0.0185,
+        explicit: -0.0183,
+        __LINE__: 0.018,
+        typeid: -0.0179,
+        MAX: 0.0174,
+        synchronized: -0.0161,
+        REFERENCES: -0.0155,
+        friend: 0.0154,
+        never: -0.0153,
+        require_once: -0.0152,
+        FIRST: -0.015,
+        DECLARE: -0.0142,
+        out: -0.0137,
+        symbol: -0.012,
+        fallthrough: 0.0117,
+        ',': 0.0111,
+        union: 0.0109,
+        '-': 0.0109,
+        use: 0.0103,
+        k: -0.0102,
+        sizeof: 0.0083,
+        base: 0.0065,
+        OPEN: 0.0064,
+        SUM: 0.0062,
+        implicit: -0.0059,
+        declare: 0.0057,
+        clone: -0.0057,
+        retry: -0.0057,
+        UNION: -0.0055,
+        go: -0.0051,
+        CLOSE: 0.0046,
+        ensure: -0.0046,
+        lock: 0.0045,
+        esac: -0.0029,
+        match: 0.0027,
+        COUNT: 0.0026,
+        unsigned: -0.0024,
+        BETWEEN: -0.0024,
+        is: -0.0023,
+        SET: -0.0022,
+        SIGNAL: 0.0015,
+        infer: -0.0014,
+        VIEW: 0.0013,
+        goto: -0.0003,
+        CALL: -0.0002,
+    }
+
     public setLastInvocationLineNumber(lineNumber: number) {
         this.lastInvocationLineNumber = lineNumber
     }
 
-    public isClassifierEnabled(): boolean {
+    public isClassifierExpEnabled(): boolean {
         return CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.Classifier
     }
 
     public getThreshold() {
-        return this.triggerThreshold
+        return this.isClassifierExpEnabled() ? this.triggerThresholdExp : this.triggerThreshold
     }
 
     public shouldInvokeClassifier(language: string) {
+        if (this.isClassifierExpEnabled()) {
+            return true
+        }
         const mappedLanguage = runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(language)
         return this.isSupportedLanguage(mappedLanguage)
     }
@@ -397,6 +819,78 @@ export class ClassifierTrigger {
         return shouldTrigger
     }
 
+    private calculateResultForExperimentGroup(
+        triggerType: string | undefined,
+        os: string,
+        char: string,
+        leftContext: string,
+        rightContext: string,
+        language: ProgrammingLanguage,
+        lineNum: number
+    ) {
+        const leftContextLines = leftContext.split(/\r?\n/)
+        const leftContextAtCurrentLine = leftContextLines[leftContextLines.length - 1]
+        const tokens = leftContextAtCurrentLine.trim().split(' ')
+        const keyword = tokens[tokens.length - 1]
+        const lengthOfLeftCurrent = leftContextLines[leftContextLines.length - 1].length
+        const lengthOfLeftPrev = leftContextLines[leftContextLines.length - 2]?.length ?? 0
+        const lengthOfRight = rightContext.trim().length
+
+        const triggerTypeCoefficient: number = this.triggerTypeCoefficientMapExp[triggerType || ''] ?? 0
+        const osCoefficient: number = this.osCoefficientMapExp[os] ?? 0
+        const charCoefficient: number = this.charCoefficientExp[char] ?? 0
+        const keyWordCoefficient: number = this.charCoefficientExp[keyword] ?? 0
+        const ideCoefficient = this.ideVscodeExp
+
+        const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
+        const languageCoefficient = this.languageCoefficientMapExp[language.languageName] ?? 0
+
+        let previousDecisionCoefficient = 0
+        if (previousDecision === 'Accept') {
+            previousDecisionCoefficient = this.prevDecisionAcceptCoefficientExp
+        } else if (previousDecision === 'Reject') {
+            previousDecisionCoefficient = this.prevDecisionRejectCoefficientExp
+        } else if (previousDecision === 'Discard' || previousDecision === 'Empty') {
+            previousDecisionCoefficient = this.prevDecisionOtherCoefficientExp
+        }
+
+        let leftContextLengthCoefficient = 0
+        if (leftContext.length >= 0 && leftContext.length < 5) {
+            leftContextLengthCoefficient = this.lengthLeft0To5Exp
+        } else if (leftContext.length >= 5 && leftContext.length < 10) {
+            leftContextLengthCoefficient = this.lengthLeft5To10Exp
+        } else if (leftContext.length >= 10 && leftContext.length < 20) {
+            leftContextLengthCoefficient = this.lengthLeft10To20Exp
+        } else if (leftContext.length >= 20 && leftContext.length < 30) {
+            leftContextLengthCoefficient = this.lengthLeft20To30Exp
+        } else if (leftContext.length >= 30 && leftContext.length < 40) {
+            leftContextLengthCoefficient = this.lengthLeft30To40Exp
+        } else if (leftContext.length >= 40 && leftContext.length < 50) {
+            leftContextLengthCoefficient = this.lengthLeft40To50Exp
+        }
+
+        const result =
+            (this.lengthOfRightCoefficientExp * (lengthOfRight - this.minnExp.lenRight)) /
+                (this.maxxExp.lenRight - this.minnExp.lenRight) +
+            (this.lengthOfLeftCurrentCoefficientExp * (lengthOfLeftCurrent - this.minnExp.lenLeftCur)) /
+                (this.maxxExp.lenLeftCur - this.minnExp.lenLeftCur) +
+            (this.lengthOfLeftPrevCoefficientExp * (lengthOfLeftPrev - this.minnExp.lenLeftPrev)) /
+                (this.maxxExp.lenLeftPrev - this.minnExp.lenLeftPrev) +
+            (this.lineNumCoefficientExp * (lineNum - this.minnExp.lineNum)) /
+                (this.maxxExp.lineNum - this.minnExp.lineNum) +
+            osCoefficient +
+            triggerTypeCoefficient +
+            charCoefficient +
+            keyWordCoefficient +
+            ideCoefficient +
+            this.interceptExp +
+            previousDecisionCoefficient +
+            languageCoefficient +
+            leftContextLengthCoefficient
+
+        return sigmoid(result)
+    }
+
     private getClassifierResult(
         leftContext: string,
         rightContext: string,
@@ -407,13 +901,25 @@ export class ClassifierTrigger {
         cursorOffset: number,
         language: ProgrammingLanguage
     ): number {
+        const isExpGroup = this.isClassifierExpEnabled()
+        if (isExpGroup) {
+            return this.calculateResultForExperimentGroup(
+                triggerType,
+                os,
+                char,
+                leftContext,
+                rightContext,
+                language,
+                lineNum
+            )
+        }
         const leftContextLines = leftContext.split(/\r?\n/)
         const leftContextAtCurrentLine = leftContextLines[leftContextLines.length - 1]
         const tokens = leftContextAtCurrentLine.trim().split(' ')
         const keyword = tokens[tokens.length - 1]
         const lengthOfLeftCurrent = leftContextLines[leftContextLines.length - 1].length
         const lengthOfLeftPrev = leftContextLines[leftContextLines.length - 2]?.length ?? 0
-        const lengthofRight = rightContext.trim().length
+        const lengthOfRight = rightContext.trim().length
 
         const triggerTypeCoefficient: number = this.triggerTypeCoefficientMap[triggerType || ''] ?? 0
         const osCoefficient: number = this.osCoefficientMap[os] ?? 0
@@ -436,7 +942,7 @@ export class ClassifierTrigger {
         const ideCoefficient = this.ideVscode
 
         const result =
-            (this.lengthofRightCoefficient * (lengthofRight - this.minn.lenRight)) /
+            (this.lengthOfRightCoefficient * (lengthOfRight - this.minn.lenRight)) /
                 (this.maxx.lenRight - this.minn.lenRight) +
             (this.lengthOfLeftCurrentCoefficient * (lengthOfLeftCurrent - this.minn.lenLeftCur)) /
                 (this.maxx.lenLeftCur - this.minn.lenLeftCur) +
