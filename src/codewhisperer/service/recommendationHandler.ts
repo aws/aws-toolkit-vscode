@@ -25,7 +25,6 @@ import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
     CodewhispererTriggerType,
-    Result,
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
@@ -144,16 +143,15 @@ export class RecommendationHandler {
         pagination: boolean = true,
         page: number = 0
     ): Promise<GetRecommendationsResponse> {
-        let invocationResult: Result = 'Failed'
-        let errorMessage = undefined
+        let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
+        let errorMessage: string | undefined = undefined
 
         if (!editor) {
-            return {
+            return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
-            }
+            })
         }
-
         let recommendations: RecommendationsList = []
         let requestId = ''
         let sessionId = ''
@@ -201,11 +199,12 @@ export class RecommendationHandler {
                 )
                 const languageName = request.fileContext.programmingLanguage.languageName
                 if (!runtimeLanguageContext.isLanguageSupported(languageName)) {
-                    return {
-                        result: invocationResult,
-                        errorMessage: `${languageName} is currently not supported by CodeWhisperer`,
-                    }
+                    errorMessage = `${languageName} is currently not supported by CodeWhisperer`
                 }
+                return Promise.resolve<GetRecommendationsResponse>({
+                    result: invocationResult,
+                    errorMessage: errorMessage,
+                })
             }
         }
 
@@ -301,10 +300,10 @@ export class RecommendationHandler {
         }
 
         if (this.isCancellationRequested()) {
-            return {
+            return Promise.resolve<GetRecommendationsResponse>({
                 result: invocationResult,
                 errorMessage: errorMessage,
-            }
+            })
         }
 
         const typedPrefix = editor.document
@@ -325,7 +324,7 @@ export class RecommendationHandler {
                 session.setCompletionType(recommendationIndex, r)
             })
             session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
-            if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(editor, typedPrefix)) {
+            if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
             }
         }
@@ -346,17 +345,17 @@ export class RecommendationHandler {
                     session.requestContext.supplementalMetadata
                 )
             }
-            if (!this.hasAtLeastOneValidSuggestion(editor, typedPrefix)) {
+            if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this.reportUserDecisions(-1)
             }
         }
-        return {
+        return Promise.resolve<GetRecommendationsResponse>({
             result: invocationResult,
             errorMessage: errorMessage,
-        }
+        })
     }
 
-    hasAtLeastOneValidSuggestion(editor: vscode.TextEditor, typedPrefix: string): boolean {
+    hasAtLeastOneValidSuggestion(typedPrefix: string): boolean {
         return session.recommendations.some(r => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
     }
 

@@ -75,6 +75,10 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const client = new codewhispererClient.DefaultCodeWhispererClient()
 
+    // Service initialization
+    ReferenceInlineProvider.instance
+    ImportAdderProvider.instance
+
     context.extensionContext.subscriptions.push(
         /**
          * Configuration change
@@ -279,9 +283,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
                 /**
                  * Handle this keystroke event only when
-                 * 2. It is not a backspace
-                 * 3. It is not caused by CodeWhisperer editing
-                 * 4. It is not from undo/redo.
+                 * 1. It is not a backspace
+                 * 2. It is not caused by CodeWhisperer editing
+                 * 3. It is not from undo/redo.
                  */
                 if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
                     return

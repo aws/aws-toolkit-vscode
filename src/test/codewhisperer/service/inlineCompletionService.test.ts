@@ -41,7 +41,10 @@ describe('inlineCompletionService', function () {
 
         it('should call checkAndResetCancellationTokens before showing inline and next token to be null', async function () {
             const mockEditor = createMockTextEditor()
-            sinon.stub(RecommendationHandler.instance, 'getRecommendations').resolves()
+            sinon.stub(RecommendationHandler.instance, 'getRecommendations').resolves({
+                result: 'Succeeded',
+                errorMessage: undefined,
+            })
             const checkAndResetCancellationTokensStub = sinon.stub(
                 RecommendationHandler.instance,
                 'checkAndResetCancellationTokens'
