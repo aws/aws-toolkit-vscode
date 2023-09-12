@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.gettingstarted.editor
 
+import com.intellij.icons.AllIcons
 import com.intellij.ide.ui.laf.darcula.ui.DarculaButtonUI
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -30,6 +31,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
+import javax.swing.Icon
 
 class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
     init {
@@ -297,7 +299,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         serviceTitleMap[panelTitle]?.forEach { bullet ->
                             row {
-                                text(bullet.icon)
+                                icon(bullet.icon)
                                 panel {
                                     row(bullet.titleName) {
                                     }.rowComment(bullet.comment)
@@ -322,8 +324,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         const val AWS_TOOLKIT_DOC = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html"
         const val GITHUB_LINK = "https://github.com/aws/aws-toolkit-jetbrains"
         const val SHARE_FEEDBACK_LINK = "FeedbackDialog"
-        const val COMMIT_ICON = "<icon src='AllIcons.General.InspectionsOK'/>&nbsp;"
-        const val CANCEL_ICON = "<icon src='AllIcons.CodeWithMe.CwmTerminate'/>&nbsp;"
+        val COMMIT_ICON = AllIcons.General.InspectionsOK
+        val CANCEL_ICON = AllIcons.Ide.Notification.Close
         val TEXT_FONTCOLOR = UIUtil.getLabelForeground()
         val TITLE_TEXT_FONTCOLOR = UIUtil.getLabelTextForeground()
         val PANEL_TITLE_FONT = JBFont.h2().asBold()
@@ -333,7 +335,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
     }
 
     data class BulletAuthPanel(
-        val icon: String,
+        val icon: Icon,
         val titleName: String,
         val comment: String,
         val enable: Boolean = true
