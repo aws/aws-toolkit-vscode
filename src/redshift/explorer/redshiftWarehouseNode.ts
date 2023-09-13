@@ -84,7 +84,8 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     this.connectionParams!,
                     token
                 )
-                if (listDatabasesResponse.Databases) {
+
+                if (listDatabasesResponse.Databases?.sort()) {
                     childNodes.push(
                         ...listDatabasesResponse.Databases.map(db => {
                             return new RedshiftDatabaseNode(db, this.redshiftClient, this.connectionParams!)

@@ -52,7 +52,7 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
                     this.connectionParams.database = this.databaseName
                 }
                 const listSchemaResponse = await this.redshiftClient.listSchemas(this.connectionParams, token)
-                if (listSchemaResponse.Schemas) {
+                if (listSchemaResponse.Schemas?.sort()) {
                     newChildren.push(
                         ...listSchemaResponse.Schemas.map(schema => {
                             return new RedshiftSchemaNode(schema, this.redshiftClient, this.connectionParams)
