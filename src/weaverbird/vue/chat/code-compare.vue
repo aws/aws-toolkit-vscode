@@ -41,13 +41,13 @@ export default defineComponent({
     emits: {},
     watch: {},
     methods: {
-        displayFileDiff(filePath: string) {
-            this.client.displayDiff(filePath)
+        async displayFileDiff(filePath: string) {
+            await this.client.displayDiff(filePath)
         },
 
-        acceptChanges() {
+        async acceptChanges() {
             this.interaction.status = 'accepted'
-            this.client.acceptChanges(this.interaction.content)
+            await this.client.acceptChanges(this.interaction.content)
         },
 
         rejectChanges() {

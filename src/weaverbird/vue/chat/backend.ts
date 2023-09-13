@@ -8,14 +8,15 @@ import * as vscode from 'vscode'
 import { VueWebview } from '../../../webviews/main'
 import { Session } from './session'
 import * as path from 'path'
-import * as fs from 'fs'
 import { LLMConfig } from '../../types'
 import { LocalResolvedConfig, getConfig } from '../../config'
 import { Interaction } from './sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { weaverbirdScheme } from '../../constants'
+import { FileSystemCommon } from '../../../srcShared/fs'
 
 // const localize = nls.loadMessageBundle()
+const fs = FileSystemCommon.instance
 
 export class WeaverbirdChatWebview extends VueWebview {
     public readonly id = 'configureChat'
@@ -23,7 +24,7 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly session: Session
     public readonly workspaceRoot: string
     public readonly onAddToHistory: vscode.EventEmitter<Interaction[]>
-    private readonly fs: VirtualFileSystem
+    private readonly virtualFs: VirtualFileSystem
 
     public constructor(backendConfig: LocalResolvedConfig, fs: VirtualFileSystem) {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
@@ -39,7 +40,7 @@ export class WeaverbirdChatWebview extends VueWebview {
         this.workspaceRoot = workspaceRoot
         this.onAddToHistory = new vscode.EventEmitter<Interaction[]>()
         this.session = new Session(workspaceRoot, this.onAddToHistory, backendConfig, fs)
-        this.fs = fs
+        this.virtualFs = fs
     }
 
     public async getSession(): Promise<Session> {
@@ -54,11 +55,11 @@ export class WeaverbirdChatWebview extends VueWebview {
         return result
     }
 
-    public displayDiff(filePath: string) {
+    public async displayDiff(filePath: string) {
         const emptyFile = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty' })
         const fileName = path.basename(filePath)
         const originalFileUri = vscode.Uri.file(path.join(this.workspaceRoot, filePath))
-        const originalFileExists = fs.existsSync(originalFileUri.fsPath)
+        const originalFileExists = await fs.fileExists(originalFileUri)
         const leftFileUri = originalFileExists ? originalFileUri : emptyFile
         const newFileUri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
         const title = originalFileExists ? `${fileName} ↔ ${fileName}` : `${fileName} (created)`
@@ -71,11 +72,11 @@ export class WeaverbirdChatWebview extends VueWebview {
             const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
 
             const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
-            const content = await this.fs.readFile(uri)
+            const content = await this.virtualFs.readFile(uri)
             const decodedContent = new TextDecoder().decode(content)
 
-            fs.mkdirSync(path.dirname(absolutePath), { recursive: true })
-            fs.writeFileSync(absolutePath, decodedContent)
+            await fs.mkdir(path.dirname(absolutePath))
+            await fs.writeFile(absolutePath, decodedContent)
         }
     }
 
