@@ -829,7 +829,11 @@ export class ClassifierTrigger {
         const leftContextLines = leftContext.split(/\r?\n/)
         const leftContextAtCurrentLine = leftContextLines[leftContextLines.length - 1]
         const tokens = leftContextAtCurrentLine.trim().split(' ')
-        const keyword = tokens[tokens.length - 1]
+        let keyword = ''
+        const lastToken = tokens[tokens.length - 1]
+        if (lastToken && lastToken.length > 1) {
+            keyword = lastToken
+        }
         const lengthOfLeftCurrent = leftContextLines[leftContextLines.length - 1].length
         const lengthOfLeftPrev = leftContextLines[leftContextLines.length - 2]?.length ?? 0
         const lengthOfRight = rightContext.trim().length
@@ -914,7 +918,11 @@ export class ClassifierTrigger {
         const leftContextLines = leftContext.split(/\r?\n/)
         const leftContextAtCurrentLine = leftContextLines[leftContextLines.length - 1]
         const tokens = leftContextAtCurrentLine.trim().split(' ')
-        const keyword = tokens[tokens.length - 1]
+        let keyword = ''
+        const lastToken = tokens[tokens.length - 1]
+        if (lastToken && lastToken.length > 1) {
+            keyword = lastToken
+        }
         const lengthOfLeftCurrent = leftContextLines[leftContextLines.length - 1].length
         const lengthOfLeftPrev = leftContextLines[leftContextLines.length - 2]?.length ?? 0
         const lengthOfRight = rightContext.trim().length
