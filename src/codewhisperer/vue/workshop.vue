@@ -1,45 +1,10 @@
-<!-- This Vue File provides Users to navigate to the AWS CodeWhisperer Workshop-->
+<!-- This Vue File provides Users to navigate to the AWS CodeWhisperer Workshop -->
 <template>
-    <div
-        style="
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            background-color: #3a3d41;
-            width: 304px;
-            border-radius: 10px;
-        "
-    >
-        <div
-            style="
-                display: flex;
-                color: #bababa;
-                font-family: SF Pro;
-                font-size: 24px;
-                font-weight: 860;
-                line-height: 24px;
-                letter-spacing: 0em;
-                text-align: left;
-                padding-bottom: 5px;
-            "
-        >
-            Workshop
-        </div>
-        <div
-            style="
-                font-family: SF Pro;
-                color: #cccccc;
-                font-size: 14px;
-                font-weight: 510;
-                line-height: 20px;
-                letter-spacing: 0em;
-                text-align: left;
-            "
-        >
-            Learn how to get the best recommendations with prompt engineering
-        </div>
-        <div style="display: flex; padding-top: 10px">
-            <div style="display: flex; position: relative">
+    <div class="workshop">
+        <div class="workshopTitle">Workshop</div>
+        <div class="workshopDescription">Learn how to get the best recommendations with prompt engineering</div>
+        <div class="workshopDiv">
+            <div class="workshopImage">
                 <svg
                     width="268"
                     height="52"
@@ -78,21 +43,10 @@
                 </svg>
             </div>
             <a
-                href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/10-python/03-01-basics"
-                class="button"
-                style="
-                    width: 90px;
-                    height: 26px;
-                    /* gap: 10px;  */
-                    background-color: #3a3d41;
-                    color: #ffffff;
-                    position: absolute;
-                    transform: translate(+185%, +50%);
-                    cursor: pointer;
-                    z-index: 1;
-                "
-                v-on:click="emitUiClick('cw_Resources_Workshop')"
-                ><div style="padding-top: 4px; text-align: center">Get Started</div></a
+                href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/01-introduction"
+                class="getStartedButton"
+                @click="emitUiClick('cw_Resources_Workshop')"
+                ><div class="getStartedText">Get Started</div></a
             >
         </div>
     </div>
@@ -106,4 +60,56 @@ export default defineComponent({
     extends: TelemetryClient,
 })
 </script>
-<style></style>
+<style>
+.workshop {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    background-color: #3a3d41;
+    width: 304px;
+    border-radius: 10px;
+}
+.workshopTitle {
+    display: flex;
+    color: #bababa;
+    font-family: SF Pro;
+    font-size: 24px;
+    font-weight: 860;
+    line-height: 24px;
+    letter-spacing: 0em;
+    text-align: left;
+    padding-bottom: 5px;
+}
+.workshopDescription {
+    font-family: SF Pro;
+    color: #cccccc;
+    font-size: 14px;
+    font-weight: 510;
+    line-height: 20px;
+    letter-spacing: 0em;
+    text-align: left;
+}
+.workshopDiv {
+    display: flex;
+    padding-top: 10px;
+}
+.workshopImage {
+    display: flex;
+    position: relative;
+}
+.getStartedButton {
+    width: 90px;
+    height: 26px;
+    background-color: #3a3d41;
+    color: #ffffff;
+    position: absolute;
+    text-decoration: none;
+    transform: translate(+185%, +50%);
+    cursor: pointer;
+    z-index: 1;
+}
+.getStartedText {
+    padding-top: 4px;
+    text-align: center;
+}
+</style>

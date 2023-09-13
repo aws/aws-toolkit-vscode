@@ -10,7 +10,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
-
+import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class CodeWhispererWebview extends VueWebview {
@@ -27,8 +27,8 @@ export class CodeWhispererWebview extends VueWebview {
 
     private isFileSaved: boolean = false
     private getLocalFilePath(fileName: string): string {
-        const workspaceFolder = vscode.workspace.workspaceFolders![0]
-        return path.join(workspaceFolder.uri.fsPath, fileName)
+        //This will store the files in the global storage path of VSCode
+        return path.join(globals.context.globalStoragePath, fileName)
     }
 
     // This function opens Python/JavaScript/C# file in the editor.

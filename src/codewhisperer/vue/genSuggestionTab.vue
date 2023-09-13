@@ -1,54 +1,30 @@
 <!-- This Vue File provides Sandbox files for experimenting CodeWhisperer and generating code suggestions -->
 <template>
-    <div style="display: flex; flex-direction: column; margin-bottom: 25px">
-        <!--Tab Heading-->
-        <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px">
-            <div
-                style="
-                    font-family: SF Pro;
-                    font-size: 24px;
-                    font-weight: 860;
-                    line-height: 24px;
-                    letter-spacing: 0em;
-                    text-align: left;
-                "
-            >
-                Generate suggestions with examples
-            </div>
-            <div
-                style="
-                    font-family: SF Pro;
-                    font-size: 14px;
-                    font-weight: 510;
-                    line-height: 21px;
-                    letter-spacing: 0em;
-                    text-align: left;
-                "
-            >
+    <div class="generateSuggestionDiv">
+        <div class="generateSuggestionHeaderDiv">
+            <div class="generateSuggestionHeader">Generate suggestions with examples</div>
+            <div class="generateSuggestionDescription">
                 CodeWhisperer supports 15 programming languages, including Python, JavaScript, and C#.
                 <a
+                    class="generateSuggestionLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
-                    v-on:click="emitUiClick('cw_GenerateSuggestions_LearnMore')"
-                >
-                    Learn more</a
+                    @click="emitUiClick('cw_GenerateSuggestions_LearnMore')"
+                    >Learn more</a
                 >
             </div>
         </div>
-        <!--Tab Component-->
+        <!-- Tab -->
         <div>
-            <div class="tabs" style="margin-top: 10px; height: 33px">
+            <div class="generateSuggestionTabHeader">
                 <div
+                    class="generateSuggestionTab"
                     v-for="(tab, index) in tabs"
                     :key="index"
-                    class="tab"
                     :class="{ active: activeTab === index }"
                     @click="activeTabFunction(index)"
                 >
                     <div>
-                        <div
-                            style="display: flex; justify-items: center; align-items: center; padding-right: 5px"
-                            v-if="tab.label === 'Python'"
-                        >
+                        <div class="generateSuggestionTabIcon" v-if="tab.label === 'Python'">
                             <svg
                                 width="16"
                                 height="16"
@@ -74,10 +50,7 @@
                                 </defs>
                             </svg>
                         </div>
-                        <div
-                            style="display: flex; justify-items: center; padding-right: 5px; align-items: center"
-                            v-else-if="tab.label === 'JavaScript'"
-                        >
+                        <div class="generateSuggestionTabIcon" v-else-if="tab.label === 'JavaScript'">
                             <svg
                                 width="16"
                                 height="17"
@@ -91,10 +64,7 @@
                                 />
                             </svg>
                         </div>
-                        <div
-                            style="display: flex; padding-right: 3px; justify-items: center; padding-bottom: 2px"
-                            v-else-if="tab.label === 'C#'"
-                        >
+                        <div class="generateSuggestionTabIconC" v-else-if="tab.label === 'C#'">
                             <svg
                                 width="16"
                                 height="12"
@@ -114,225 +84,28 @@
             </div>
             <table>
                 <tbody v-for="(row, index) in tabs[activeTab].tableData" :key="index">
-                    <tr>
-                        <div
-                            style="
-                                display: flex;
-                                flex-direction: row;
-                                gap: 10px;
-                                padding-left: 20px;
-                                padding-right: 25px;
-                                padding-top: 15px;
-                                padding-bottom: 15px;
-                                align-items: center;
-                                justify-content: space-between;
-                            "
-                        >
-                            <div
-                                style="
-                                    font-family: SF Pro Text;
-                                    font-size: 14px;
-                                    font-weight: 350;
-                                    line-height: 17px;
-                                    text-align: left;
-                                "
-                            >
-                                Generate recommendations as you type
-                            </div>
-                            <button
-                                v-on:click="onClick(row.column1)"
-                                style="
-                                    width: 93px;
-                                    height: 26px;
-                                    gap: 10px;
-                                    background-color: #3a3d41;
-                                    font-size: 12px;
-                                    font-family: SF Pro Text;
-                                    font-weight: 350;
-                                    text-align: center;
-                                    padding: 5px;
-                                "
-                            >
-                                Try Example
-                            </button>
-                        </div>
-                    </tr>
-                    <tr>
-                        <div
-                            style="
-                                display: flex;
-                                height: 26px;
-                                flex-direction: row;
-                                gap: 10px;
-                                padding-left: 20px;
-                                padding-right: 25px;
-                                padding-top: 15px;
-                                padding-bottom: 15px;
-                                align-items: center;
-                                justify-content: space-between;
-                            "
-                        >
-                            <div
-                                style="
-                                    font-family: SF Pro Text;
-                                    font-size: 14px;
-                                    font-weight: 350;
-                                    line-height: 17px;
-                                    text-align: left;
-                                    display: flex;
-                                    flex-direction: row;
-                                    justify-content: center;
-                                    align-items: center;
-                                "
-                            >
-                                Manual force CodeWhisperer to offer a suggestion using
-
-                                <div
-                                    v-if="osState === 'Mac'"
-                                    style="display: flex; flex-direction: row; padding-left: 10px"
-                                >
-                                    <div id="col2">Option</div>
-                                    <div
-                                        style="
-                                            padding-left: 5px;
-                                            padding-right: 10px;
-                                            padding-top: 4px;
-                                            font-family: SF Pro;
-                                            text-align: center;
-                                            align-items: center;
-                                            justify-content: center;
-                                            font-size: 18px;
-                                            font-weight: 350;
-                                        "
-                                    >
-                                        +
+                    <tr
+                        v-for="(column, columnIndex) in [row.column1, row.column2, row.column3, row.column4]"
+                        :key="columnIndex"
+                    >
+                        <div class="generateSuggestionTabRow">
+                            <div class="generateSuggestionTabRowLabel">
+                                <template v-if="columnIndex === 0"> Generate recommendations as you type </template>
+                                <template v-else-if="columnIndex === 1">
+                                    Manual force CodeWhisperer to offer a suggestion using
+                                    <div class="generateSuggestionTabMachine">
+                                        <div class="col2" v-if="osState === 'Mac'">Option</div>
+                                        <div class="col2" v-else>Alt</div>
+                                        <div class="generateSuggestionTabMachineText">+</div>
+                                        <div class="col2">C</div>
                                     </div>
-                                    <div id="col2">C</div>
-                                </div>
-                                <div v-else style="display: flex; flex-direction: row; padding-left: 10px">
-                                    <div id="col2">Alt</div>
-                                    <div
-                                        style="
-                                            padding-left: 5px;
-                                            padding-right: 10px;
-                                            padding-top: 4px;
-                                            font-family: SF Pro;
-                                            text-align: center;
-                                            align-items: center;
-                                            justify-content: center;
-                                            font-size: 18px;
-                                            font-weight: 350;
-                                        "
-                                    >
-                                        +
-                                    </div>
-                                    <div id="col2">C</div>
-                                </div>
+                                </template>
+                                <template v-else-if="columnIndex === 2">
+                                    Interact with CodeWhisperer use comments
+                                </template>
+                                <template v-else> Generate unit test </template>
                             </div>
-                            <button
-                                v-on:click="onClick(row.column2)"
-                                style="
-                                    width: 93px;
-                                    height: 26px;
-                                    gap: 10px;
-                                    background-color: #3a3d41;
-                                    font-size: 12px;
-                                    font-family: SF Pro Text;
-                                    font-weight: 350;
-                                    text-align: center;
-                                    padding: 5px;
-                                "
-                            >
-                                Try Example
-                            </button>
-                        </div>
-                    </tr>
-                    <tr>
-                        <div
-                            style="
-                                display: flex;
-                                height: 26px;
-                                flex-direction: row;
-                                gap: 10px;
-                                padding-left: 20px;
-                                padding-right: 25px;
-                                padding-top: 15px;
-                                padding-bottom: 15px;
-                                align-items: center;
-                                justify-content: space-between;
-                            "
-                        >
-                            <div
-                                style="
-                                    font-family: SF Pro Text;
-                                    font-size: 14px;
-                                    font-weight: 350;
-                                    line-height: 17px;
-                                    text-align: left;
-                                "
-                            >
-                                Interact with CodeWhisperer use comments
-                            </div>
-                            <button
-                                v-on:click="onClick(row.column3)"
-                                style="
-                                    width: 93px;
-                                    height: 26px;
-                                    gap: 10px;
-                                    background-color: #3a3d41;
-                                    font-size: 12px;
-                                    font-family: SF Pro Text;
-                                    font-weight: 350;
-                                    text-align: center;
-                                    padding: 5px;
-                                "
-                            >
-                                Try Example
-                            </button>
-                        </div>
-                    </tr>
-                    <tr>
-                        <div
-                            style="
-                                display: flex;
-                                flex-direction: row;
-                                height: 26px;
-                                gap: 10px;
-                                padding-left: 20px;
-                                padding-right: 25px;
-                                padding-top: 15px;
-                                padding-bottom: 15px;
-                                align-items: center;
-                                justify-content: space-between;
-                            "
-                        >
-                            <div
-                                style="
-                                    font-family: SF Pro Text;
-                                    font-size: 14px;
-                                    font-weight: 350;
-                                    line-height: 17px;
-                                    text-align: left;
-                                "
-                            >
-                                Generate unit test
-                            </div>
-                            <button
-                                v-on:click="onClick(row.column4)"
-                                style="
-                                    width: 93px;
-                                    height: 26px;
-                                    gap: 10px;
-                                    background-color: #3a3d41;
-                                    font-size: 12px;
-                                    font-family: SF Pro Text;
-                                    font-weight: 350;
-                                    text-align: center;
-                                    padding: 5px;
-                                "
-                            >
-                                Try Example
-                            </button>
+                            <div class="tryExample" @click="onClick(column)">Try Example</div>
                         </div>
                     </tr>
                 </tbody>
@@ -449,17 +222,44 @@ export default defineComponent({
 </script>
 
 <style>
-a {
+.generateSuggestionDiv {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 25px;
+}
+.generateSuggestionHeaderDiv {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 15px;
+}
+.generateSuggestionHeader {
+    font-family: SF Pro;
+    font-size: 24px;
+    font-weight: 860;
+    line-height: 24px;
+    letter-spacing: 0em;
+    text-align: left;
+}
+.generateSuggestionDescription {
+    font-family: SF Pro;
+    font-size: 14px;
+    font-weight: 510;
+    line-height: 21px;
+    letter-spacing: 0em;
+    text-align: left;
+}
+.generateSuggestionLearnMore {
     text-decoration: none;
     cursor: pointer;
     color: #2470b3;
 }
-
-.tabs {
+.generateSuggestionTabHeader {
     display: flex;
+    margin-top: 10px;
+    height: 33px;
 }
-
-.tab {
+.generateSuggestionTab {
     width: 102px;
     height: 32px;
     border-radius: 30px;
@@ -476,11 +276,60 @@ a {
     justify-content: center;
     margin-right: 10px;
 }
-
-.tab.active {
+.generateSuggestionTab.active {
     border: 1px solid #3592c4;
 }
-
+.generateSuggestionTabIcon {
+    display: flex;
+    justify-items: center;
+    align-items: center;
+    padding-right: 5px;
+}
+.generateSuggestionTabIconC {
+    display: flex;
+    padding-right: 3px;
+    justify-items: center;
+    padding-bottom: 2px;
+}
+.generateSuggestionTabRow {
+    display: flex;
+    flex-direction: row;
+    height: 26px;
+    gap: 10px;
+    padding-left: 20px;
+    padding-right: 25px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+    align-items: center;
+    justify-content: space-between;
+}
+.generateSuggestionTabRowLabel {
+    font-family: SF Pro Text;
+    font-size: 14px;
+    font-weight: 350;
+    line-height: 17px;
+    text-align: left;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+.generateSuggestionTabMachine {
+    display: flex;
+    flex-direction: row;
+    padding-left: 10px;
+}
+.generateSuggestionTabMachineText {
+    padding-left: 5px;
+    padding-right: 10px;
+    padding-top: 4px;
+    font-family: SF Pro;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 350;
+}
 table {
     margin-top: 10px;
     border-collapse: collapse;
@@ -488,13 +337,25 @@ table {
     border: 1px solid #454545;
 }
 
-#col2 {
+.col2 {
     border: 1px solid #555353;
-    background: linear-gradient(0deg, #3d3d3d, #3d3d3d), linear-gradient(0deg, #555353, #555353);
     border-radius: 3px;
     width: fit-content;
     padding: 2px 10px;
-    color: #ffffff;
+    background-color: var(--vscode-sideBar-background);
     margin-right: 5px;
+}
+
+.tryExample {
+    cursor: pointer;
+    width: 93px;
+    height: 22px;
+    background-color: var(--vscode-sideBar-background);
+    font-size: 12px;
+    font-family: SF Pro Text;
+    font-weight: 350;
+    text-align: center;
+    padding-top: 8px;
+    border: 1px solid #555353;
 }
 </style>

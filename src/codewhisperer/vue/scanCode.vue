@@ -1,40 +1,19 @@
 <!-- This Vue File provides instructions to Scan Code-->
 <template>
-    <div style="display: flex; flex-direction: column; margin-bottom: 25px; margin-top: 25px; gap: 12px">
+    <div class="codeScan">
         <div>
-            <div
-                style="
-                    font-family: SF Pro;
-                    font-size: 24px;
-                    font-weight: 700;
-                    line-height: 24px;
-                    letter-spacing: 0em;
-                    text-align: left;
-                    padding-bottom: 10px;
-                "
-            >
-                Scan code to detect vulnerabilities
-            </div>
-            <div
-                style="
-                    font-family: SF Pro;
-                    font-size: 14px;
-                    font-weight: 510;
-                    line-height: 21px;
-                    letter-spacing: 0em;
-                    text-align: left;
-                    padding-bottom: 5px;
-                "
-            >
+            <div class="codeScanTitle">Scan code to detect vulnerabilities</div>
+            <div class="codeScanDescription">
                 You can also ask CodeWhisperer to scan your code to detect hard-to-find vulnerabilities, and get code
                 suggestions to remediate them immediately.
                 <a
+                    class="codeScanLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html"
                     v-on:click="emitUiClick('cw_ScanCode_LearnMore')"
                     >Learn more
                 </a>
             </div>
-            <div style="margin-top: 10px">
+            <div class="codeScanImage">
                 <svg
                     width="730"
                     height="153"
@@ -66,14 +45,41 @@ import TelemetryClient from '../../codewhisperer/vue/telemetry.vue'
 
 export default defineComponent({
     name: 'ScanCode',
-    components: {},
     extends: TelemetryClient,
 })
 </script>
 <style>
-a {
+.codeScan {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 25px;
+    margin-top: 25px;
+    gap: 12px;
+}
+.codeScanTitle {
+    font-family: SF Pro;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: 0em;
+    text-align: left;
+    padding-bottom: 10px;
+}
+.codeScanDescription {
+    font-family: SF Pro;
+    font-size: 14px;
+    font-weight: 510;
+    line-height: 21px;
+    letter-spacing: 0em;
+    text-align: left;
+    padding-bottom: 5px;
+}
+.codeScanLearnMore {
     text-decoration: none;
     cursor: pointer;
     color: #2470b3;
+}
+.codeScanImage {
+    margin-top: 10px;
 }
 </style>

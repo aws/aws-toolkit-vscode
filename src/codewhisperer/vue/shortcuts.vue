@@ -1,75 +1,23 @@
 <!-- This Vue File provides Shortcuts for CodeWhisperer actions-->
 <template>
-    <div style="margin-top: 25px">
-        <div
-            style="
-                font-family: SF Pro;
-                font-size: 24px;
-                font-weight: 700;
-                line-height: 24px;
-                letter-spacing: 0em;
-                text-align: left;
-                padding-bottom: 10px;
-            "
-        >
-            Shortcuts (Default)
-        </div>
+    <div class="shortcutsDiv">
+        <div class="shortcutsTitle">Shortcuts (Default)</div>
         <div>
-            <table style="border-collapse: collapse; border: 1px solid #454545; width: 40%">
+            <table class="shortcutsTable">
                 <tbody>
                     <tr v-for="row in tableData" :key="row.id">
                         <td>{{ row.column1 }}</td>
                         <td>
-                            <div v-if="row.id === 2 && osState === 'Mac'" style="display: flex; flex-direction: row">
-                                <div id="col2">
-                                    {{ row.column2 }}
+                            <div class="tableDiv" v-if="row.id === 2">
+                                <div class="col2">
+                                    {{ osState === 'Mac' ? row.column2 : row.column4 }}
                                 </div>
-                                <div
-                                    style="
-                                        padding-left: 5px;
-                                        padding-right: 10px;
-                                        padding-top: 2px;
-                                        font-family: SF Pro;
-                                        text-align: center;
-                                        align-items: center;
-                                        justify-content: center;
-                                        font-size: 18px;
-                                        font-weight: 400;
-                                    "
-                                >
-                                    +
-                                </div>
-                                <div id="col2">
+                                <div class="tableException">+</div>
+                                <div class="col2">
                                     {{ row.column3 }}
                                 </div>
                             </div>
-                            <div
-                                v-else-if="row.id === 2 && osState !== 'Mac'"
-                                style="display: flex; flex-direction: row"
-                            >
-                                <div id="col2">
-                                    {{ row.column4 }}
-                                </div>
-                                <div
-                                    style="
-                                        padding-left: 5px;
-                                        padding-right: 10px;
-                                        padding-top: 2px;
-                                        font-family: SF Pro;
-                                        text-align: center;
-                                        align-items: center;
-                                        justify-content: center;
-                                        font-size: 18px;
-                                        font-weight: 400;
-                                    "
-                                >
-                                    +
-                                </div>
-                                <div id="col2">
-                                    {{ row.column3 }}
-                                </div>
-                            </div>
-                            <div v-else id="col2">
+                            <div v-else class="col2">
                                 {{ row.column2 }}
                             </div>
                         </td>
@@ -78,19 +26,7 @@
             </table>
         </div>
 
-        <div
-            style="
-                margin-top: 20px;
-                margin-bottom: 30px;
-                font-family: SF Pro Text;
-                font-size: 13px;
-                font-weight: 400;
-                line-height: 23px;
-                letter-spacing: 0em;
-                text-align: left;
-                height: 20px;
-            "
-        >
+        <div class="shortcutsEditor">
             You can customize CodeWhisperer Keyboard shortcut in
             <a href="#" @click="onClick">Keyboard Shortcuts Editor</a>.
         </div>
@@ -151,11 +87,53 @@ export default defineComponent({
 })
 </script>
 <style>
+.shortcutsDiv {
+    margin-top: 25px;
+}
+.shortcutsTitle {
+    font-family: SF Pro;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 24px;
+    letter-spacing: 0em;
+    text-align: left;
+    padding-bottom: 10px;
+}
+.shortcutsTable {
+    border-collapse: collapse;
+    border: 1px solid #454545;
+    width: 40%;
+}
+.tableDiv {
+    display: flex;
+    flex-direction: row;
+}
+.tableException {
+    padding-left: 5px;
+    padding-right: 10px;
+    padding-top: 2px;
+    font-family: SF Pro;
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 400;
+}
+.shortcutsEditor {
+    margin-top: 20px;
+    margin-bottom: 30px;
+    font-family: SF Pro Text;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 23px;
+    letter-spacing: 0em;
+    text-align: left;
+    height: 20px;
+}
 table tr,
 td {
     border: 1px solid #454545;
 }
-
 td {
     padding-left: 15px;
     padding-top: 5px;
@@ -168,8 +146,7 @@ td {
     text-align: left;
     height: 26px;
 }
-
-#col2 {
+.col2 {
     border: 1px solid #555353;
     border-radius: 3px;
     width: fit-content;
@@ -177,6 +154,6 @@ td {
     font-size: 13px;
     line-height: 19.5px;
     font-weight: 400;
-    color: #ffffff;
+    background-color: var(--vscode-sideBar-background);
 }
 </style>
