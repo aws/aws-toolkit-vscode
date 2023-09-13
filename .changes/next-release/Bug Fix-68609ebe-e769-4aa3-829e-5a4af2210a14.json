@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "CodeCatalyst: \"Open CodeCatalyst Dev Environment\" may fail to connect from a new Windows system"
+}
