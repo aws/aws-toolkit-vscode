@@ -28,7 +28,7 @@ abstract class CodeWhispererProgrammingLanguage {
 
     open fun isImportAdderSupported(): Boolean = false
 
-    open fun isClassifierSupported(): Boolean = false
+    open fun isClassifierSupported(): Boolean = true
 
     open fun isAllClassifier(): Boolean = false
 
