@@ -361,7 +361,7 @@ export class TelemetryHelper {
     }
 
     public getLastTriggerDecisionForClassifier() {
-        if (this.lastTriggerDecisionTime && Date.now() - this.lastTriggerDecisionTime <= 2 * 60 * 1000) {
+        if (this.lastTriggerDecisionTime && performance.now() - this.lastTriggerDecisionTime <= 2 * 60 * 1000) {
             return this.prevTriggerDecision
         }
     }
