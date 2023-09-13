@@ -49,8 +49,9 @@ export const fileListToTree = (filePaths: string[]): TreeNode => {
                     let currentNode = acc
                     for (let i = 0; i < path.length; i++) {
                         const fileOrFolder = path[i]
-                        // since dot folders were ignored, a file is identified by having an extension separated by a dot
-                        if (fileOrFolder.includes('.')) {
+                        // we can assume the leaf of each branch is a file. the LLM doesn't generate
+                        // empty folder changes
+                        if (i === path.length - 1) {
                             // the parent of a file is always a folder
                             ;(currentNode as FolderNode).children.push({
                                 type: 'file',

@@ -1,12 +1,14 @@
 <template>
     <ul>
         <div v-if="treeNode.type === 'folder'">
-            <li class="folder">
+            <li class="folder" @click="toggleFolderCollapse()">
                 <span class="icon icon-lg icon-vscode-folder" style="color: #ffffff"></span>
                 {{ treeNode.name }}
             </li>
-            <div v-for="child in treeNode.children">
-                <file-tree :treeNode="child" :on-file-clicked="onFileClicked" />
+            <div v-show="!collapsed">
+                <div v-for="child in treeNode.children">
+                    <file-tree :treeNode="child" :on-file-clicked="onFileClicked" />
+                </div>
             </div>
         </div>
         <div v-else>
@@ -28,9 +30,15 @@ defineProps<{ treeNode: TreeNode; onFileClicked: (filePath: string) => void }>()
 import { defineComponent } from 'vue'
 
 export default defineComponent({
+    data() {
+        return { collapsed: false }
+    },
     methods: {
         fileClicked(fileNode: FileNode) {
             this.onFileClicked(fileNode.filePath)
+        },
+        toggleFolderCollapse() {
+            this.collapsed = !this.collapsed
         },
     },
 })
@@ -52,5 +60,9 @@ li {
 
 .file:hover {
     background-color: var(--vscode-editor-hoverHighlightBackground);
+}
+
+.folder {
+    cursor: pointer;
 }
 </style>

@@ -4,10 +4,18 @@
         <div v-else-if="interaction.status === 'rejected'">You have rejected these changes. Ohnoes :(</div>
         <div v-else>
             The following files have changed:
-            <FileTree :treeNode="fileListToTree(interaction.content)" :on-file-clicked="displayFileDiff" />
-            <button class="button-primary" @click="acceptChanges">👍 Accept and insert code</button>
-            <button :disabled="true" class="button-warning">♻ Iterate with comments</button>
-            <button class="button-secondary" @click="rejectChanges">👎 This isn't what I expected</button>
+            <FileTree
+                :treeNode="fileListToTree(interaction.content)"
+                :on-file-clicked="displayFileDiff"
+            />
+            <div v-if="interaction.status === 'iterating'">
+                We are still discussing these changes. Let's keep them here for now.
+            </div>
+            <div v-else>
+                <button class="button-primary" @click="acceptChanges">👍 Accept and insert code</button>
+                <button class="button-warning" @click="iterateWithComments">♻ Iterate with comments</button>
+                <button class="button-secondary" @click="rejectChanges">👎 This isn't what I expected</button>
+            </div>
         </div>
     </div>
 </template>
@@ -48,6 +56,10 @@ export default defineComponent({
         async acceptChanges() {
             this.interaction.status = 'accepted'
             await this.client.acceptChanges(this.interaction.content)
+        },
+
+        iterateWithComments() {
+            this.interaction.status = 'iterating'
         },
 
         rejectChanges() {

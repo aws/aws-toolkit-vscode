@@ -29,7 +29,7 @@ export interface CodeGenInteraction {
     origin: 'ai'
     type: 'codegen'
     content: string[]
-    status?: 'accepted' | 'rejected'
+    status?: 'accepted' | 'rejected' | 'iterating'
 }
 
 export type Interaction = UserInteraction | CodeGenInteraction
@@ -182,13 +182,46 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
     ]
 }
 
-export class CodeGenState implements SessionState {
+abstract class CodeGenBase {
     private pollCount = 60
+    tokenSource: vscode.CancellationTokenSource
 
-    public tokenSource: vscode.CancellationTokenSource
-
-    constructor(public config: SessionStateConfig, public approach: string) {
+    constructor(protected config: SessionStateConfig) {
         this.tokenSource = new vscode.CancellationTokenSource()
+    }
+
+    async generateCode(params: {
+        arn: string
+        fs: VirtualFileSystem
+        onAddToHistory: vscode.EventEmitter<Interaction[]>
+        generationId: string
+    }) {
+        for (
+            let pollingIteration = 0;
+            pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
+            ++pollingIteration
+        ) {
+            const payload = {
+                generationId: params.generationId,
+            }
+
+            const codegenResult = await invoke(this.config.client, params.arn, payload)
+            getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
+
+            if (codegenResult.status == 'ready') {
+                const changes = await createChanges(params.fs, codegenResult.result.newFileContents)
+                params.onAddToHistory.fire(changes)
+                return codegenResult.result.newFileContents
+            } else {
+                await new Promise(f => setTimeout(f, 10000))
+            }
+        }
+    }
+}
+
+export class CodeGenState extends CodeGenBase implements SessionState {
+    constructor(config: SessionStateConfig, public approach: string) {
+        super(config)
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -215,44 +248,21 @@ export class CodeGenState implements SessionState {
             },
         ])
 
-        await this.generateCode(action.fs, action.onAddToHistory, genId).catch(x => {
+        const newFileContents = await this.generateCode({
+            arn: this.config.backendConfig.lambdaArns.codegen.getResults,
+            fs: action.fs,
+            onAddToHistory: action.onAddToHistory,
+            generationId: genId,
+        }).catch(_ => {
             getLogger().error(`Failed to generate code`)
+            return []
         })
 
+        const nextState = new CodeGenIterationState(this.config, this.approach, newFileContents)
+
         return {
-            nextState: new CodeGenIterationState(this.config, this.approach),
+            nextState,
             interactions: [],
-        }
-    }
-
-    private async generateCode(
-        fs: VirtualFileSystem,
-        onAddToHistory: vscode.EventEmitter<Interaction[]>,
-        generationId: string
-    ) {
-        for (
-            let pollingIteration = 0;
-            pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
-            ++pollingIteration
-        ) {
-            const payload = {
-                generationId,
-            }
-
-            const codegenResult = await invoke(
-                this.config.client,
-                this.config.backendConfig.lambdaArns.codegen.getResults,
-                payload
-            )
-            getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
-
-            if (codegenResult.status == 'ready') {
-                const changes = await createChanges(fs, codegenResult.result.newFileContents)
-                onAddToHistory.fire(changes)
-                return
-            } else {
-                await new Promise(f => setTimeout(f, 10000))
-            }
         }
     }
 }
@@ -284,38 +294,61 @@ export class MockCodeGenState implements SessionState {
         }
 
         return {
-            nextState: new CodeGenIterationState(this.config, this.approach),
+            nextState: new CodeGenIterationState(this.config, this.approach, newFileContents),
             interactions: await createChanges(action.fs, newFileContents),
         }
     }
 }
 
-class CodeGenIterationState implements SessionState {
-    public tokenSource: vscode.CancellationTokenSource
-
-    constructor(private config: SessionStateConfig, public approach: string) {
-        this.tokenSource = new vscode.CancellationTokenSource()
+class CodeGenIterationState extends CodeGenBase implements SessionState {
+    constructor(config: SessionStateConfig, public approach: string, private newFileContents: FileMetadata[]) {
+        super(config)
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        const fileContents = [...this.newFileContents].concat(
+            ...action.files.filter(
+                originalFile => !this.newFileContents.some(newFile => newFile.filePath === originalFile.filePath)
+            )
+        )
         const payload = {
-            originalFileContents: action.files,
+            originalFileContents: fileContents,
             approach: this.approach,
             task: action.task,
             comment: action.msg,
             config: this.config.llmConfig,
         }
 
-        const response = await invoke(this.config.client, this.config.backendConfig.lambdaArns.codegen.iterate, payload)
+        const response = await invoke(
+            this.config.client,
+            // going to the `generate` lambda here because the `iterate` one doesn't work on a
+            // task/poll-results strategy yet
+            this.config.backendConfig.lambdaArns.codegen.generate,
+            payload
+        )
 
-        for (const { filePath, fileContent } of response.newFileContents!) {
-            const pathUsed = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
-            await fs.mkdir(path.dirname(pathUsed))
-            await fs.writeFile(pathUsed, fileContent as string)
-        }
+        const genId = response.generationId
+
+        action.onAddToHistory.fire([
+            {
+                origin: 'ai',
+                type: 'message',
+                content: 'Code generation started\n',
+            },
+        ])
+
+        this.newFileContents = await this.generateCode({
+            arn: this.config.backendConfig.lambdaArns.codegen.getResults,
+            fs: action.fs,
+            onAddToHistory: action.onAddToHistory,
+            generationId: genId,
+        }).catch(_ => {
+            getLogger().error(`Failed to generate code`)
+            return []
+        })
 
         return {
-            nextState: undefined,
+            nextState: this,
             interactions: [{ origin: 'ai', type: 'message', content: 'Changes to files done' }],
         }
     }
