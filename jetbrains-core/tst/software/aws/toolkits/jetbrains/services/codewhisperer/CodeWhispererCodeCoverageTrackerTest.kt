@@ -61,6 +61,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeCove
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererCodeCoverageTracker
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_SECONDS_IN_MINUTE
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CrossFileStrategy
 import software.aws.toolkits.jetbrains.services.telemetry.NoOpPublisher
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -153,7 +154,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             mock(),
             mock(),
             FileContextInfo(mock(), pythonFileName, CodeWhispererPython.INSTANCE),
-            SupplementalContextInfo(false, emptyList(), 0, ""),
+            SupplementalContextInfo(isUtg = false, contents = emptyList(), targetFileName = "", strategy = CrossFileStrategy.Empty, latency = 0L),
             null,
             mock()
         )

@@ -62,6 +62,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.CodeWhispererTelemetryService
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CrossFileStrategy
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.UtgStrategy
 import software.aws.toolkits.jetbrains.services.telemetry.NoOpPublisher
 import software.aws.toolkits.jetbrains.services.telemetry.TelemetryService
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -647,7 +649,8 @@ fun aSupplementalContextInfo(myContents: List<Chunk>? = null, myIsUtg: Boolean? 
         isUtg = myIsUtg ?: isUtg,
         latency = myLatency ?: latency,
         contents = myContents ?: contents,
-        targetFileName = aString()
+        targetFileName = aString(),
+        strategy = if (myIsUtg ?: isUtg) UtgStrategy.ByName else CrossFileStrategy.OpenTabsBM25
     )
 }
 

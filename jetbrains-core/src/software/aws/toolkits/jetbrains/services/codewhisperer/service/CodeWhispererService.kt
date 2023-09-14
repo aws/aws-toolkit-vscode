@@ -68,7 +68,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.notifyErrorCodeWhispererUsageLimit
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.promptReAuth
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CrossFileStrategy
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.UtgStrategy
 import software.aws.toolkits.jetbrains.utils.isInjectedText
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
@@ -534,7 +536,8 @@ class CodeWhispererService {
                         isUtg = isTstFile,
                         contents = emptyList(),
                         latency = System.currentTimeMillis() - startFetchingTimestamp,
-                        targetFileName = fileContext.filename
+                        targetFileName = fileContext.filename,
+                        strategy = if (isTstFile) UtgStrategy.Empty else CrossFileStrategy.Empty
                     )
                 } else {
                     LOG.debug { "Run into unexpected error when fetching supplemental context, error: ${e.message}" }

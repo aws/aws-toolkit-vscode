@@ -7,6 +7,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.editor.VisualPosition
 import com.intellij.openapi.editor.markup.RangeHighlighter
 import com.intellij.openapi.ui.popup.JBPopup
+import com.intellij.openapi.vfs.VirtualFile
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsResponse
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
@@ -16,6 +17,9 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CrossFileStrategy
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.SupplementalContextStrategy
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.UtgStrategy
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
 import software.aws.toolkits.telemetry.Result
@@ -26,6 +30,11 @@ data class Chunk(
     val path: String,
     val nextChunk: String = "",
     val score: Double = 0.0
+)
+
+data class ListUtgCandidateResult(
+    val vfile: VirtualFile?,
+    val strategy: UtgStrategy
 )
 
 data class CaretContext(val leftFileContext: String, val rightFileContext: String, val leftContextOnCurrentLine: String = "")
@@ -39,8 +48,9 @@ data class FileContextInfo(
 data class SupplementalContextInfo(
     val isUtg: Boolean,
     val contents: List<Chunk>,
-    val latency: Long,
-    val targetFileName: String
+    val targetFileName: String,
+    val strategy: SupplementalContextStrategy,
+    val latency: Long = 0L,
 ) {
     val contentLength: Int
         get() = contents.fold(0) { acc, chunk ->
@@ -49,6 +59,24 @@ data class SupplementalContextInfo(
 
     val isProcessTimeout: Boolean
         get() = latency > CodeWhispererConstants.SUPPLEMENTAL_CONTEXT_TIMEOUT
+
+    companion object {
+        fun emptyCrossFileContextInfo(targetFileName: String): SupplementalContextInfo = SupplementalContextInfo(
+            isUtg = false,
+            contents = emptyList(),
+            targetFileName = targetFileName,
+            strategy = CrossFileStrategy.Empty,
+            latency = 0L
+        )
+
+        fun emptyUtgFileContextInfo(targetFileName: String): SupplementalContextInfo = SupplementalContextInfo(
+            isUtg = true,
+            contents = emptyList(),
+            targetFileName = targetFileName,
+            strategy = UtgStrategy.Empty,
+            latency = 0L
+        )
+    }
 }
 
 data class RecommendationContext(
