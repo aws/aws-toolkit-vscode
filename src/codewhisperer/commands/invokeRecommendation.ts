@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { vsCodeState, ConfigurationEntry } from '../models/model'
+import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -64,8 +64,9 @@ export async function invokeRecommendation(
         vsCodeState.isIntelliSenseActive = false
         RecommendationHandler.instance.isGenerateRecommendationInProgress = true
         try {
+            let response: GetRecommendationsResponse
             if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                await RecommendationHandler.instance.getRecommendations(
+                response = await RecommendationHandler.instance.getRecommendations(
                     client,
                     editor,
                     'OnDemand',
@@ -77,7 +78,7 @@ export async function invokeRecommendation(
                 if (AuthUtil.instance.isConnectionExpired()) {
                     await AuthUtil.instance.showReauthenticatePrompt()
                 }
-                await RecommendationHandler.instance.getRecommendations(
+                response = await RecommendationHandler.instance.getRecommendations(
                     client,
                     editor,
                     'OnDemand',
@@ -86,7 +87,7 @@ export async function invokeRecommendation(
                     true
                 )
             }
-            if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true)) {
+            if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true, response)) {
                 await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                     vsCodeState.isIntelliSenseActive = true
                 })
