@@ -129,9 +129,6 @@ export async function onInlineAcceptance(
             )
         }
 
-        RecommendationHandler.instance.reportUserDecisionOfRecommendation(
-            acceptanceEntry.editor,
-            acceptanceEntry.acceptIndex
-        )
+        RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
     }
 }

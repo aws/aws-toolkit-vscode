@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { vsCodeState, ConfigurationEntry } from '../models/model'
+import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
@@ -27,7 +27,7 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
  */
 export class KeyStrokeHandler {
     /**
-     * Speical character which automated triggers codewhisperer
+     * Special character which automated triggers codewhisperer
      */
     public specialChar: string
     /**
@@ -142,7 +142,6 @@ export class KeyStrokeHandler {
                 this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
             }
         } catch (error) {
-            getLogger().error('Automated Trigger Exception : ', error)
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
         }
     }
@@ -166,8 +165,9 @@ export class KeyStrokeHandler {
             vsCodeState.isIntelliSenseActive = false
             RecommendationHandler.instance.isGenerateRecommendationInProgress = true
             try {
+                let response: GetRecommendationsResponse
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                    await RecommendationHandler.instance.getRecommendations(
+                    response = await RecommendationHandler.instance.getRecommendations(
                         client,
                         editor,
                         'AutoTrigger',
@@ -179,7 +179,7 @@ export class KeyStrokeHandler {
                     if (AuthUtil.instance.isConnectionExpired()) {
                         await AuthUtil.instance.showReauthenticatePrompt()
                     }
-                    await RecommendationHandler.instance.getRecommendations(
+                    response = await RecommendationHandler.instance.getRecommendations(
                         client,
                         editor,
                         'AutoTrigger',
@@ -188,7 +188,7 @@ export class KeyStrokeHandler {
                         true
                     )
                 }
-                if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false)) {
+                if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false, response)) {
                     await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
                         vsCodeState.isIntelliSenseActive = true
                     })

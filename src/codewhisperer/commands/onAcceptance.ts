@@ -83,8 +83,5 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
     }
 
     // at the end of recommendation acceptance, report user decisions and clear recommendations.
-    RecommendationHandler.instance.reportUserDecisionOfRecommendation(
-        acceptanceEntry.editor,
-        acceptanceEntry.acceptIndex
-    )
+    RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
 }
