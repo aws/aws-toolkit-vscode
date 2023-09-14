@@ -64,8 +64,6 @@ export class TelemetryHelper {
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
-    private suggestionReferenceNumber = 0
-    private generatedLines = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
@@ -196,7 +194,7 @@ export class TelemetryHelper {
         })
 
         //aggregate suggestion references count
-        this.getAggregatedSuggestionReferenceCount(events)
+        const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
 
         // aggregate user decision events at requestId level
         const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
@@ -218,7 +216,12 @@ export class TelemetryHelper {
             (this.lastRequestId && this.lastRequestId === requestId) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
-            this.sendUserTriggerDecisionTelemetry(sessionId, acceptedRecommendationContent, supplementalContextMetadata)
+            this.sendUserTriggerDecisionTelemetry(
+                sessionId,
+                acceptedRecommendationContent,
+                referenceCount,
+                supplementalContextMetadata
+            )
         }
     }
 
@@ -261,6 +264,7 @@ export class TelemetryHelper {
     public sendUserTriggerDecisionTelemetry(
         sessionId: string,
         acceptedRecommendationContent: string,
+        referenceCount: number,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         // the user trigger decision will aggregate information from request level user decisions within one session
@@ -274,6 +278,8 @@ export class TelemetryHelper {
         const language = this.sessionDecisions[0].codewhispererLanguage
         const aggregatedCompletionType = this.getAggregatedCompletionType(this.sessionDecisions)
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
+        const generatedLines =
+            acceptedRecommendationContent.trim() === '' ? 0 : acceptedRecommendationContent.split('\n').length
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: this.sessionDecisions[0].codewhispererSessionId,
             codewhispererFirstRequestId: this.sessionDecisions[0].codewhispererFirstRequestId,
@@ -333,8 +339,8 @@ export class TelemetryHelper {
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
                         recommendationLatencyMilliseconds: e2eLatency,
                         timestamp: new Date(Date.now()),
-                        suggestionReferenceCount: this.suggestionReferenceNumber,
-                        generatedLine: this.generatedLines,
+                        suggestionReferenceCount: referenceCount,
+                        generatedLine: generatedLines,
                     },
                 },
             })
@@ -465,10 +471,10 @@ export class TelemetryHelper {
     ) {
         for (const event of events) {
             if (event.codewhispererSuggestionReferenceCount != 0) {
-                this.suggestionReferenceNumber = 1
-                return
+                return 1
             }
         }
+        return 0
     }
 
     public getSuggestionState(
