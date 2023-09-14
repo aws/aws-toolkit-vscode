@@ -275,6 +275,7 @@ class CodeWhispererTelemetryService {
             codewhispererSupplementalContextIsUtg = supplementalContext?.isUtg,
             codewhispererSupplementalContextLength = supplementalContext?.contentLength,
             codewhispererSupplementalContextTimeout = supplementalContext?.isProcessTimeout,
+            codewhispererSupplementalContextStrategyId = supplementalContext?.strategy.toString(),
             codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
         )
     }

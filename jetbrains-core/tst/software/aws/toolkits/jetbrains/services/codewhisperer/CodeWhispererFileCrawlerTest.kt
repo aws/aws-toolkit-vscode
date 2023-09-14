@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.util.JavaCodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.JavascriptCodeWhispererFileCrawler
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.PythonCodeWhispererFileCrawler
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.TypescriptCodeWhispererFileCrawler
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.UtgStrategy
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.content
 import software.aws.toolkits.jetbrains.utils.rules.CodeInsightTestFixtureRule
 import software.aws.toolkits.jetbrains.utils.rules.JavaCodeInsightTestFixtureRule
@@ -341,7 +342,8 @@ class JavaCodeWhispererFileCrawlerTest {
 
                 val actual = sut.listUtgCandidate(tstPsi)
 
-                assertThat(actual).isNotNull.isEqualTo(mainPsi.virtualFile)
+                assertThat(actual.vfile).isNotNull.isEqualTo(mainPsi.virtualFile)
+                assertThat(actual.strategy).isNotNull.isEqualTo(UtgStrategy.ByName)
             }
         }
 
@@ -392,7 +394,8 @@ class JavaCodeWhispererFileCrawlerTest {
             val actual = sut.listUtgCandidate(tstPsi)
 
             assertThat(openedFiles).isEqualTo(5)
-            assertThat(actual).isNotNull.isEqualTo(mainPsi.virtualFile)
+            assertThat(actual.vfile).isNotNull.isEqualTo(mainPsi.virtualFile)
+            assertThat(actual.strategy).isNotNull.isEqualTo(UtgStrategy.ByContent)
         }
     }
 
@@ -491,7 +494,8 @@ class PythonCodeWhispererFileCrawlerTest {
         runInEdtAndWait {
             fixture.openFileInEditor(tstPsi.virtualFile)
             val actual = sut.listUtgCandidate(tstPsi)
-            assertThat(actual).isNotNull.isEqualTo(mainPsi.virtualFile)
+            assertThat(actual.vfile).isNotNull.isEqualTo(mainPsi.virtualFile)
+            assertThat(actual.strategy).isNotNull.isEqualTo(UtgStrategy.ByName)
         }
     }
 
@@ -534,7 +538,8 @@ class PythonCodeWhispererFileCrawlerTest {
             val actual = sut.listUtgCandidate(tstPsi)
 
             assertThat(openedFiles).isEqualTo(5)
-            assertThat(actual).isNotNull.isEqualTo(mainPsi.virtualFile)
+            assertThat(actual.vfile).isNotNull.isEqualTo(mainPsi.virtualFile)
+            assertThat(actual.strategy).isNotNull.isEqualTo(UtgStrategy.ByContent)
         }
     }
 
