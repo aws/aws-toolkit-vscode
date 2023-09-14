@@ -43,14 +43,14 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
             relativeOrder: 1,
         })
         this.form.database.bindPrompter(getDatabasePrompter, {
-            relativeOrder: 2,
+            relativeOrder: 3,
         })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
                 state.database !== undefined &&
                 state.connectionType === ConnectionType.DatabaseUser &&
                 node.warehouseType === RedshiftWarehouseType.PROVISIONED,
-            relativeOrder: 3,
+            relativeOrder: 2,
         })
 
         this.form.secret.bindPrompter(state => getSecretPrompter(node.redshiftClient.regionCode), {
@@ -125,6 +125,7 @@ function getUsernamePrompter(): Prompter<string> {
         value: '',
         title: localize('AWS.redshift.username', 'Enter a username'),
         buttons: createCommonButtons(),
+        placeholder: 'Enter Username',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.usernameValidation', 'Username cannot be empty')
         },
@@ -136,6 +137,7 @@ function getDatabasePrompter(): Prompter<string> {
         value: '',
         title: localize('AWS.redshift.database', 'Enter a database'),
         buttons: createCommonButtons(),
+        placeholder: 'Enter Database Name',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.databaseValidation', 'Database cannot be empty')
         },
@@ -150,6 +152,7 @@ function getConnectionTypePrompter(): Prompter<ConnectionType> {
     return createQuickPick(items, {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
         buttons: createCommonButtons(),
+        placeholder: 'Select Connection Type',
     })
 }
 
@@ -200,6 +203,7 @@ function getWarehouseIdentifierPrompter(region: string): QuickPickPrompter<strin
     return createQuickPick(fetchWarehouses(redshiftClient), {
         title: localize('AWS.redshift.chooseAWarehousePrompt', 'Choose a warehouse to connect to'),
         buttons: createCommonButtons(),
+        placeholder: 'Choose a warehouse to connect to',
     })
 }
 
@@ -208,6 +212,7 @@ function getSecretPrompter(region: string): QuickPickPrompter<string> {
     return createQuickPick(fetchSecretList(secretsManagerClient), {
         title: localize('AWS.redshift.chooseSecretPrompt', 'Choose a secret'),
         buttons: createCommonButtons(),
+        placeholder: 'Choose a secret',
     })
 }
 
