@@ -11,12 +11,14 @@ import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
+import { session } from '../../codewhisperer/util/codeWhispererSession'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
+    session.language = 'python'
 }
 
 export function createMockDocument(

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { ConfigurationEntry, vsCodeState } from '../models/model'
+import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { RecommendationHandler } from './recommendationHandler'
@@ -15,6 +15,7 @@ import { AuthUtil } from '../util/authUtil'
 import { shared } from '../../shared/utilities/functionUtils'
 import { ClassifierTrigger } from './classifierTrigger'
 import { session } from '../util/codeWhispererSession'
+import { noSuggestions } from '../models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -80,6 +81,10 @@ export class InlineCompletionService {
         ) {
             return
         }
+
+        // Call report user decisions once to report recommendations leftover from last invocation.
+        RecommendationHandler.instance.reportUserDecisions(-1)
+
         this.setCodeWhispererStatusBarLoading()
         if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
             ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
@@ -96,10 +101,14 @@ export class InlineCompletionService {
         TelemetryHelper.instance.setInvocationStartTime(performance.now())
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         RecommendationHandler.instance.documentUri = editor.document.uri
+        let response: GetRecommendationsResponse = {
+            result: 'Failed',
+            errorMessage: undefined,
+        }
         try {
             let page = 0
             while (page < this.maxPage) {
-                await RecommendationHandler.instance.getRecommendations(
+                response = await RecommendationHandler.instance.getRecommendations(
                     client,
                     editor,
                     triggerType,
@@ -109,8 +118,8 @@ export class InlineCompletionService {
                     page
                 )
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
-                    // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-                    // vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+                    RecommendationHandler.instance.reportUserDecisions(-1)
+                    vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
                     TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
@@ -125,13 +134,9 @@ export class InlineCompletionService {
         }
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         if (triggerType === 'OnDemand' && session.recommendations.length === 0) {
-            if (RecommendationHandler.instance.errorMessagePrompt !== '') {
-                showTimedMessage(RecommendationHandler.instance.errorMessagePrompt, 2000)
-            } else {
-                showTimedMessage(CodeWhispererConstants.noSuggestions, 2000)
-            }
+            showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
-        TelemetryHelper.instance.tryRecordClientComponentLatency(editor.document.languageId)
+        TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 
     setCodeWhispererStatusBarLoading() {
