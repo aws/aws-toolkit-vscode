@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../shared/logger/logger'
+
 export interface LocalResolvedConfig {
     endpoint: string
     region: string
@@ -26,6 +28,7 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
         (cachedConfig = await (async () => {
             const appConfigFormatVersion = 2
             const config = process.env.WEAVERBIRD_CONFIG
+
             // const _betaConfig = {
             //     endpoint: 'https://pehp5nezwj.execute-api.us-west-2.amazonaws.com/beta',
             //     region: 'us-west-2',
@@ -71,9 +74,9 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                 const parsedConfig = JSON.parse(config ?? `{ "version": ${appConfigFormatVersion}}`)
                 const localConfigVersion = Number.parseInt(parsedConfig.version)
                 if (isNaN(localConfigVersion) || localConfigVersion !== appConfigFormatVersion) {
-                    throw new Error(
-                        `Invalid config version, required ${appConfigFormatVersion}, found ${localConfigVersion}`
-                    )
+                    const errorMessage = `Invalid config version, required ${appConfigFormatVersion}, found ${localConfigVersion}`
+                    getLogger().error(errorMessage)
+                    throw new Error(errorMessage)
                 }
                 return {
                     endpoint: (parsedConfig.endpoint as string) ?? defaultConfig.endpoint,

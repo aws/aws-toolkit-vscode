@@ -72,7 +72,7 @@ export class Session {
         this.llmConfig = config
     }
 
-    private getSessionStateConfig(): SessionStateConfig {
+    private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
         return {
             client: this.lambdaClient,
             llmConfig: this.llmConfig,

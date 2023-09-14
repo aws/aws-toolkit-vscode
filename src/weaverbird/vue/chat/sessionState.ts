@@ -10,12 +10,23 @@ import { LocalResolvedConfig } from '../../config'
 import { LLMConfig } from '../../types'
 import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
-import { FileMetadata } from '../../client/weaverbirdclient'
+import {
+    FileMetadata,
+    GenerateApproachInput,
+    GenerateApproachOutput,
+    GenerateCodeInput,
+    GenerateCodeOutput,
+    GetCodeGenerationResultInput,
+    GetCodeGenerationResultOutput,
+    IterateApproachInput,
+    IterateApproachOutput,
+} from '../../client/weaverbirdclient'
 import { getLogger } from '../../../shared/logger'
 import { FileSystemCommon } from '../../../srcShared/fs'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
 import { weaverbirdScheme } from '../../constants'
+import { ToolkitError } from '../../../shared/errors'
 
 const fs = FileSystemCommon.instance
 
@@ -50,6 +61,7 @@ export interface SessionStateConfig {
     llmConfig: LLMConfig
     workspaceRoot: string
     backendConfig: LocalResolvedConfig
+    conversationId: string
 }
 
 interface SessionStateAction {
@@ -62,7 +74,7 @@ interface SessionStateAction {
 
 type NewFileContents = { filePath: string; fileContent: string }[]
 
-async function invoke(client: LambdaClient, arn: string, payload: unknown) {
+async function invoke<TInput, TOutput>(client: LambdaClient, arn: string, payload: TInput): Promise<TOutput> {
     try {
         const response = await client.invoke(
             arn,
@@ -72,16 +84,20 @@ async function invoke(client: LambdaClient, arn: string, payload: unknown) {
         )
         const rawResult = response.Payload!.toString()
         const result = JSON.parse(rawResult)
-        return JSON.parse(result.body)
+        if (result.statusCode != 200) {
+            throw new ToolkitError(`Server error(${result.statusCode}): ${result.body}`)
+        }
+        return JSON.parse(result.body) as TOutput
     } catch (e) {
-        console.log(e)
+        getLogger().error("Server side error", e);
+        throw (e instanceof ToolkitError) ? e : ToolkitError.chain(e, "Server side error")
     }
 }
 
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
 
-    constructor(private config: SessionStateConfig, public approach: string) {
+    constructor(private config: Omit<SessionStateConfig, 'conversationId'>, public approach: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -92,16 +108,23 @@ export class RefinementState implements SessionState {
             config: this.config.llmConfig,
         }
 
-        const response = await invoke(
+        const response = await invoke<GenerateApproachInput, GenerateApproachOutput>(
             this.config.client,
             this.config.backendConfig.lambdaArns.approach.generate,
             payload
         )
 
-        this.approach = response.approach
+        this.approach =
+            response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
 
         return {
-            nextState: new RefinementIterationState(this.config, this.approach),
+            nextState: new RefinementIterationState(
+                {
+                    ...this.config,
+                    conversationId: response.conversationId,
+                },
+                this.approach
+            ),
             interactions: [
                 {
                     origin: 'ai',
@@ -121,22 +144,6 @@ class RefinementIterationState implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const payload = {
-            task: action.task,
-            request: action.msg,
-            approach: this.approach,
-            originalFileContents: action.files,
-            config: this.config.llmConfig,
-        }
-
-        const response = await invoke(
-            this.config.client,
-            this.config.backendConfig.lambdaArns.approach.iterate,
-            payload
-        )
-
-        this.approach = response.approach
-
         if (action.msg && action.msg.indexOf('WRITE CODE') !== -1) {
             return new CodeGenState(this.config, this.approach).interact(action)
         }
@@ -144,6 +151,24 @@ class RefinementIterationState implements SessionState {
         if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
             return new MockCodeGenState(this.config, this.approach).interact(action)
         }
+
+        const payload: IterateApproachInput = {
+            task: action.task,
+            request: action.msg ?? '',
+            approach: this.approach,
+            originalFileContents: action.files,
+            config: this.config.llmConfig,
+            conversationId: this.config.conversationId,
+        }
+
+        const response = await invoke<IterateApproachInput, IterateApproachOutput>(
+            this.config.client,
+            this.config.backendConfig.lambdaArns.approach.iterate,
+            payload
+        )
+
+        this.approach =
+            response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
 
         return {
             nextState: new RefinementIterationState(this.config, this.approach),
@@ -191,9 +216,9 @@ abstract class CodeGenBase {
     }
 
     async generateCode(params: {
-        arn: string
-        fs: VirtualFileSystem
-        onAddToHistory: vscode.EventEmitter<Interaction[]>
+        getResultLambdaArn: string,
+        fs: VirtualFileSystem,
+        onAddToHistory: vscode.EventEmitter<Interaction[]>,
         generationId: string
     }) {
         for (
@@ -201,21 +226,65 @@ abstract class CodeGenBase {
             pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
             ++pollingIteration
         ) {
-            const payload = {
+            const payload: GetCodeGenerationResultInput = {
                 generationId: params.generationId,
+                conversationId: this.config.conversationId,
             }
 
-            const codegenResult = await invoke(this.config.client, params.arn, payload)
+            const codegenResult = await invoke<GetCodeGenerationResultInput, GetCodeGenerationResultOutput>(
+                this.config.client,
+                params.getResultLambdaArn,
+                payload
+            )
             getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
 
-            if (codegenResult.status == 'ready') {
-                const changes = await createChanges(params.fs, codegenResult.result.newFileContents)
-                params.onAddToHistory.fire(changes)
-                return codegenResult.result.newFileContents
-            } else {
-                await new Promise(f => setTimeout(f, 10000))
+            switch (codegenResult.codeGenerationStatus) {
+                case 'ready': {
+                    const newFiles = codegenResult.result?.newFileContents ?? [];
+                    const changes = await createChanges(params.fs, newFiles)
+                    params.onAddToHistory.fire(changes)
+                    return newFiles;
+                }
+                case 'in-progress': {
+                    await new Promise(f => setTimeout(f, 10000))
+                    break
+                }
+                case 'failed': {
+                    getLogger().error('Failed to generate code')
+                    params.onAddToHistory.fire([
+                        {
+                            origin: 'ai',
+                            type: 'message',
+                            content: 'Code generation failed\n',
+                        },
+                    ])
+                    return [];
+                }
+                default: {
+                    const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`;
+                    getLogger().error(errorMessage);
+                    params.onAddToHistory.fire([
+                        {
+                            origin: 'ai',
+                            type: 'message',
+                            content: errorMessage,
+                        },
+                    ])
+                    return [];
+                }
             }
         }
+        // still in progress
+        const errorMessage = `Code generation did not finish withing the expected time :(`;
+        getLogger().error(errorMessage);
+        params.onAddToHistory.fire([
+            {
+                origin: 'ai',
+                type: 'message',
+                content: errorMessage,
+            },
+        ])
+        return [];
     }
 }
 
@@ -225,14 +294,15 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const payload = {
+        const payload: GenerateCodeInput = {
             originalFileContents: action.files,
             approach: this.approach,
             task: action.task,
             config: this.config.llmConfig,
+            conversationId: this.config.conversationId,
         }
 
-        const response = await invoke(
+        const response = await invoke<GenerateCodeInput, GenerateCodeOutput>(
             this.config.client,
             this.config.backendConfig.lambdaArns.codegen.generate,
             payload
@@ -249,7 +319,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         ])
 
         const newFileContents = await this.generateCode({
-            arn: this.config.backendConfig.lambdaArns.codegen.getResults,
+            getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
             fs: action.fs,
             onAddToHistory: action.onAddToHistory,
             generationId: genId,
@@ -265,6 +335,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
             interactions: [],
         }
     }
+
 }
 
 export class MockCodeGenState implements SessionState {
@@ -311,15 +382,16 @@ class CodeGenIterationState extends CodeGenBase implements SessionState {
                 originalFile => !this.newFileContents.some(newFile => newFile.filePath === originalFile.filePath)
             )
         )
-        const payload = {
+        const payload: GenerateCodeInput = {
             originalFileContents: fileContents,
             approach: this.approach,
             task: action.task,
-            comment: action.msg,
+            //comment: action.msg ?? '',
             config: this.config.llmConfig,
+            conversationId: this.config.conversationId,
         }
 
-        const response = await invoke(
+        const response = await invoke<GenerateCodeInput, GenerateCodeOutput>(
             this.config.client,
             // going to the `generate` lambda here because the `iterate` one doesn't work on a
             // task/poll-results strategy yet
@@ -338,7 +410,7 @@ class CodeGenIterationState extends CodeGenBase implements SessionState {
         ])
 
         this.newFileContents = await this.generateCode({
-            arn: this.config.backendConfig.lambdaArns.codegen.getResults,
+            getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
             fs: action.fs,
             onAddToHistory: action.onAddToHistory,
             generationId: genId,

@@ -41,3 +41,7 @@ resources/css/icons.css
 # Python
 **/__pycache__
 **/context.txt
+
+# local configuration
+.local.env
+*.config.local.json
