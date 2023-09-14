@@ -14,6 +14,7 @@ import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoade
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { getIcon } from '../../shared/icons'
 
 export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
@@ -25,6 +26,8 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
     ) {
         super(schemaName, vscode.TreeItemCollapsibleState.Collapsed)
         this.contextValue = 'awsRedshiftSchemaNode'
+        this.tooltip = schemaName
+        this.iconPath = getIcon('aws-redshift-schema')
     }
 
     public async loadMoreChildren(): Promise<void> {
