@@ -8,6 +8,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { Recommendation } from '../client/codewhisperer'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { findLineToInsertImportStatement } from '../util/importAdderUtil'
+import { application } from '../util/codeWhispererApplication'
 
 /**
  * ImportAdderProvider
@@ -26,6 +27,12 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
     private readonly supportedLanguages: string[] = ['java', 'javascript', 'javascriptreact', 'python']
 
     static #instance: ImportAdderProvider
+
+    constructor() {
+        application().clearCodeWhispererUIListener(_ => {
+            this.clear()
+        })
+    }
 
     public static get instance() {
         return (this.#instance ??= new this())

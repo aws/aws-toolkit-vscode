@@ -9,6 +9,7 @@ import { getLogger } from '../../shared/logger'
 import { References } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
+import { application } from '../util/codeWhispererApplication'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -22,7 +23,11 @@ export class ReferenceInlineProvider implements vscode.CodeLensProvider {
     private _onDidChangeCodeLenses: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidChangeCodeLenses: vscode.Event<void> = this._onDidChangeCodeLenses.event
 
-    constructor() {}
+    constructor() {
+        application().clearCodeWhispererUIListener(_ => {
+            this.removeInlineReference()
+        })
+    }
 
     static #instance: ReferenceInlineProvider
 

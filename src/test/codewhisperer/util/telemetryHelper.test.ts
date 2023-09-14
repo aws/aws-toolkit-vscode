@@ -115,6 +115,7 @@ describe('telemetryHelper', function () {
         let sut: TelemetryHelper
 
         beforeEach(function () {
+            resetCodeWhispererGlobalVariables()
             sut = new TelemetryHelper()
             sut.sessionInvocations.push(aServiceInvocation())
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
@@ -126,7 +127,6 @@ describe('telemetryHelper', function () {
                 'aFakeSessionId',
                 [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
                 0,
-                'python',
                 0,
                 new Map([
                     [0, 'Line'],
@@ -160,7 +160,6 @@ describe('telemetryHelper', function () {
                 'aFakeSessionId',
                 [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
                 3,
-                'python',
                 0,
                 new Map([
                     [0, 'Line'],
@@ -194,7 +193,6 @@ describe('telemetryHelper', function () {
                 'aFakeSessionId',
                 [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
                 -1,
-                'python',
                 0,
                 new Map([
                     [0, 'Line'],
@@ -293,7 +291,6 @@ describe('telemetryHelper', function () {
                 sessionId,
                 response,
                 0,
-                'python',
                 0,
                 completionTypes,
                 suggestionState
