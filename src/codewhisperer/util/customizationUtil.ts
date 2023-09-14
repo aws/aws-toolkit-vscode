@@ -22,7 +22,13 @@ import { Customization, ResourceArn } from '../client/codewhispereruserclient'
 import { codicon, getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger'
 import { showMessageWithUrl } from '../../shared/utilities/messages'
+import { parse } from '@aws-sdk/util-arn-parser'
 
+/**
+ *
+ * @param availableCustomizations
+ * @returns customization diff of availableCustomizations vs. persisted customizations
+ */
 export const getNewCustomizations = (availableCustomizations: Customization[]) => {
     const persistedCustomizations = getPersistedCustomizations()
     return availableCustomizations.filter(c => !persistedCustomizations.map(p => p.arn).includes(c.arn))
@@ -168,7 +174,10 @@ const createCustomizationItems = async () => {
     const availableCustomizations = await getAvailableCustomizationsList()
 
     // Order matters
+    // 1. read the old snapshot of customizations
     const persistedCustomizations = getPersistedCustomizations()
+
+    // 2. update the customizations snapshot with the latest
     await setPersistedCustomizations(availableCustomizations)
 
     const selectedCustomization = getSelectedCustomization()
@@ -193,8 +202,28 @@ const createCustomizationItems = async () => {
     }
 
     const persistedArns = persistedCustomizations.map(c => c.arn)
+    const customizationNameToCount = availableCustomizations.reduce((map, customization) => {
+        if (customization.name) {
+            map.set(customization.name, (map.get(customization.name) || 0) + 1)
+        }
+
+        return map
+    }, new Map<string, number>())
+
     items.push(createBaseCustomizationItem())
-    items.push(...availableCustomizations.map(c => createCustomizationItem(c, persistedArns)))
+    items.push(
+        ...availableCustomizations.map(c => {
+            let shouldPrefixAccountId = false
+            if (c.name) {
+                const cnt = customizationNameToCount.get(c.name) || 0
+                if (cnt > 1) {
+                    shouldPrefixAccountId = true
+                }
+            }
+
+            return createCustomizationItem(c, persistedArns, shouldPrefixAccountId)
+        })
+    )
     return items
 }
 
@@ -218,11 +247,22 @@ const createBaseCustomizationItem = () => {
     } as DataQuickPickItem<string>
 }
 
-const createCustomizationItem = (customization: Customization, persistedArns: (ResourceArn | undefined)[]) => {
+const createCustomizationItem = (
+    customization: Customization,
+    persistedArns: (ResourceArn | undefined)[],
+    shouldPrefixAccountId: boolean
+) => {
+    const accountId = parse(customization.arn).accountId
+    const displayedName = customization.name
+        ? shouldPrefixAccountId
+            ? accountId
+                ? `${customization.name} (${accountId})`
+                : `${customization.name}`
+            : customization.name
+        : 'unknown'
+
     const isNewCustomization = !persistedArns.includes(customization.arn)
-    const label = codicon`${getIcon('vscode-circuit-board')} ${
-        customization.name !== undefined ? customization.name : 'unknown'
-    }`
+    const label = codicon`${getIcon('vscode-circuit-board')} ${displayedName}`
     const selectedArn = getSelectedCustomization().arn
     return {
         label: label,
