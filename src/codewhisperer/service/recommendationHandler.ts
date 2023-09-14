@@ -230,8 +230,6 @@ export class RecommendationHandler {
             }
             invocationResult = 'Succeeded'
             TelemetryHelper.instance.triggerType = triggerType
-            TelemetryHelper.instance.CodeWhispererAutomatedtriggerType =
-                autoTriggerType === undefined ? 'KeyStrokeCount' : autoTriggerType
             requestId = resp?.$response && resp?.$response?.requestId
             nextToken = resp?.nextToken ? resp?.nextToken : ''
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']

@@ -37,10 +37,7 @@ export class TelemetryHelper {
      * Trigger type for getting CodeWhisperer recommendation
      */
     public triggerType: CodewhispererTriggerType
-    /**
-     * Auto Trigger Type for getting event of Automated Trigger
-     */
-    public CodeWhispererAutomatedtriggerType: CodewhispererAutomatedTriggerType
+
     /**
      * the cursor offset location at invocation time
      */
@@ -72,7 +69,6 @@ export class TelemetryHelper {
 
     constructor() {
         this.triggerType = 'OnDemand'
-        this.CodeWhispererAutomatedtriggerType = 'KeyStrokeCount'
         this.cursorOffset = 0
     }
 
