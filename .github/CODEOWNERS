@@ -1,3 +1,4 @@
 * @aws/aws-ides-team
 src/codewhisperer/ @aws/codewhisperer-team
 src/weaverbird/ @aws/earlybird
+src/mynah/ @aws/aws-mynah

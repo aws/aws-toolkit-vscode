@@ -1,0 +1,92 @@
+// TODO Should be removed after the new api for docs provided
+:root {
+    --mynah-max-api-doc-height: calc(var(--mynah-sizing-8) * 7);
+    --mynah-max-api-doc-showmore-height: var(--mynah-sizing-8);
+}
+$maxAPIDocHeight: var(--mynah-max-api-doc-height);
+$maxAPIDocShowMoreHeight: var(--mynah-max-api-doc-showmore-height);
+.mynah-card-body {
+    display: inline-flex;
+    flex-flow: column;
+    .amzn-mynah-docs-showmore-toggle {
+        display: none;
+        & ~ .amzn-mynah-docs-body {
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+            & > label {
+                position: absolute;
+                top: max(calc(100% - $maxAPIDocShowMoreHeight), calc($maxAPIDocHeight - $maxAPIDocShowMoreHeight));
+                left: 0;
+                box-sizing: border-box;
+                display: flex;
+                flex-flow: row nowrap;
+                justify-content: center;
+                align-items: center;
+                height: $maxAPIDocShowMoreHeight;
+                width: 100%;
+                // border-top: 1px solid var(--mynah-color-border-default);
+                z-index: 999;
+                cursor: pointer;
+                > i.mynah-icon {
+                    height: var(--mynah-sizing-6);
+                    width: var(--mynah-sizing-6);
+                }
+                > i.mynah-icon-down-open {
+                    display: inline-flex;
+                }
+                > i.mynah-icon-up-open {
+                    display: none;
+                }
+            }
+            & > label + div {
+                max-height: calc($maxAPIDocHeight - $maxAPIDocShowMoreHeight);
+                margin-bottom: $maxAPIDocShowMoreHeight;
+                overflow: hidden;
+            }
+        }
+        &:not(:checked) ~ .amzn-mynah-docs-body {
+            max-height: $maxAPIDocHeight;
+        }
+        &:checked ~ .amzn-mynah-docs-body {
+            & > label {
+                > i.mynah-icon-down-open {
+                    display: none;
+                }
+                > i.mynah-icon-up-open {
+                    display: inline-flex;
+                }
+                & + div {
+                    max-height: initial;
+                }
+            }
+        }
+    }
+    .amzn-mynah-frequently-used-fqns-panel {
+        position: relative;
+        margin-top: var(--mynah-sizing-2) !important;
+        border: 1px solid var(--mynah-color-status-warning);
+        border-radius: var(--mynah-button-radius);
+        padding: var(--mynah-sizing-2);
+        display: flex;
+        flex-flow: column nowrap;
+        gap: var(--mynah-sizing-2);
+        order: 1000;
+        &:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-color: var(--mynah-color-status-warning);
+            opacity: 0.015;
+            pointer-events: none;
+        }
+        > span:last-child {
+            display: inline-flex;
+            flex-flow: row wrap;
+            gap: var(--mynah-sizing-2);
+        }
+    }
+}

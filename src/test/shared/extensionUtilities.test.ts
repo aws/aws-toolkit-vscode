@@ -217,7 +217,6 @@ describe('ExtensionUserActivity', function () {
             secondIntervalStart + 201,
             secondIntervalStart + 202,
         ]
-
         const instance = new ExtensionUserActivity(throttleDelay, [
             ...firstInvervalMillisUntilFire.map(delayedTriggeredEvent),
             ...secondIntervalMillisUntilFire.map(delayedTriggeredEvent),
