@@ -601,6 +601,12 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         devEnv: GetDevEnvironmentRequest,
         status: DevEnvironment['status'][]
     ): Promise<void> {
+        /**
+         * It currently takes a long time for a dev env to stop (currently >1 minute). So
+         * for this special case, we increase the time of interval that we check it has stopped.
+         */
+        const intervalToCheck = status.includes('STOPPED') ? 20_000 : 5000
+
         const result = await waitUntil(
             async function () {
                 const devEnvData = await client.getDevEnvironment({
@@ -611,7 +617,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
                 return status.includes(devEnvData.status)
             },
             {
-                interval: 1000,
+                interval: intervalToCheck,
                 timeout: 120000,
             }
         )
