@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
+import software.aws.toolkits.jetbrains.core.credentials.SsoSessionConfigurationManager
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
@@ -58,7 +59,6 @@ data class SetupAuthenticationDialogState(
 ) {
     private val graph = PropertyGraph()
     val selectedTab = graph.property(SetupAuthenticationTabs.IDENTITY_CENTER)
-
     data class IdentityCenterTabState(
         var profileName: String = "",
         var startUrl: String = "",
@@ -231,21 +231,20 @@ class SetupAuthenticationDialog(
         }
 
         applyFields()
-
+        val scopesList = if (promptForIdcPermissionSet) {
+            (scopes + IDENTITY_CENTER_ROLE_ACCESS_SCOPE).toSet().toList()
+        } else {
+            scopes
+        }
         when (selectedTab()) {
             SetupAuthenticationTabs.IDENTITY_CENTER -> {
-                val scopes = if (promptForIdcPermissionSet) {
-                    (scopes + IDENTITY_CENTER_ROLE_ACCESS_SCOPE).toSet().toList()
-                } else {
-                    scopes
-                }
                 val tokenProvider = loginSso(project, state.idcTabState.startUrl, state.idcTabState.region.id, scopes)
 
                 if (!promptForIdcPermissionSet) {
                     return
                 }
 
-                val rolePopup = IdcRolePopup(project, state.idcTabState.region.id, tokenProvider)
+                val rolePopup = IdcRolePopup(project, state.idcTabState.region.id, tokenProvider, state.idcTabState.rolePopupState)
 
                 // not using showAndGet() because it throws in test mode
                 rolePopup.show()
@@ -262,6 +261,15 @@ class SetupAuthenticationDialog(
             SetupAuthenticationTabs.IAM_LONG_LIVED -> {
             }
         }
+
+        SsoSessionConfigurationManager().updateSsoSessionProfileToConfigFile(
+            state.idcTabState.profileName,
+            state.idcTabState.region.id,
+            state.idcTabState.startUrl,
+            scopesList,
+            state.idcTabState.rolePopupState.roleInfo?.accountId().orEmpty(),
+            state.idcTabState.rolePopupState.roleInfo?.roleName().orEmpty()
+        )
 
         close(OK_EXIT_CODE)
     }
@@ -350,7 +358,7 @@ class IdcRolePopup(
     project: Project,
     private val region: String,
     private val tokenProvider: SdkTokenProvider,
-    val state: IdcRolePopupState = IdcRolePopupState()
+    val state: IdcRolePopupState
 ) : DialogWrapper(project) {
     init {
         title = message("gettingstarted.setup.idc.role.title")
@@ -366,6 +374,10 @@ class IdcRolePopup(
             val combo = AsyncComboBox<RoleInfo> { label, value, _ ->
                 value ?: return@AsyncComboBox
                 label.text = "${value.roleName()} (${value.accountId()})"
+                state.roleInfo = RoleInfo.builder()
+                    .roleName(value.roleName())
+                    .accountId(value.accountId())
+                    .build()
             }
 
             Disposer.register(myDisposable, combo)
@@ -407,7 +419,7 @@ fun rolePopupFromConnection(project: Project, connection: AwsBearerTokenConnecti
                 connection.getConnectionSettings().tokenProvider
             }
 
-            IdcRolePopup(project, connection.region, tokenProvider)
+            IdcRolePopup(project, connection.region, tokenProvider, state = IdcRolePopupState(null))
                 .show()
         }
     }

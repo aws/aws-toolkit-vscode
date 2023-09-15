@@ -18,7 +18,7 @@ class ManagedBearerSsoConnection(
     override val scopes: List<String>,
 ) : BearerSsoConnection, Disposable {
     override val id: String = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
-    override val label: String = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
+    override val label: String = ToolkitBearerTokenProvider.ssoDisplayName(startUrl, region)
 
     private val provider =
         tokenConnection(

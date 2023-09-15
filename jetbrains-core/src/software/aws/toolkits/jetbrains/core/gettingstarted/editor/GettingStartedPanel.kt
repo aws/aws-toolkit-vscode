@@ -248,7 +248,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         row {
                             text(message("aws.onboarding.getstarted.panel.login_with_iam")) {
                                 try {
-                                    SetupAuthenticationDialog(project).show()
+                                    SetupAuthenticationDialog(project, promptForIdcPermissionSet = true).show()
                                 } catch (e: Exception) {
                                     throw Exception("Unable to pop up the IAM Identity Center Authentication Dialog")
                                 }

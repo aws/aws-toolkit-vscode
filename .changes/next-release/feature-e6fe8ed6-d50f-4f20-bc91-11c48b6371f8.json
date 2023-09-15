@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "auth: support `sso_session` for profiles in AWS shared ini files"
+}
