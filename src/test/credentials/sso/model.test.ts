@@ -4,10 +4,8 @@
  */
 
 import assert from 'assert'
-import * as vscode from 'vscode'
-import { openSsoPortalLink } from '../../../auth/sso/model'
+import { openSsoPortalLink, proceedToBrowser } from '../../../auth/sso/model'
 import { assertTelemetry } from '../../testUtil'
-import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -19,16 +17,16 @@ describe('openSsoPortalLink', function () {
     const userCode = 'user-code'
     const verificationUri = 'https://example.com/'
     async function runFlow(...actions: ('open' | 'help' | 'cancel')[]) {
-        const copyCode = /copy code/i
+        const confirmCode = /Confirm Code for/
         const waitForMessage = async (): Promise<void> =>
             getTestWindow()
-                .waitForMessage(copyCode)
+                .waitForMessage(confirmCode)
                 .then(m => {
                     assert.ok(m.detail?.includes(userCode), 'Expected message to show the user verification code')
 
                     const action = actions.shift()
                     if (action === 'open') {
-                        m.selectItem(copyCode)
+                        m.selectItem(proceedToBrowser)
                     } else if (action === 'help') {
                         m.selectItem(/help/i)
                         return waitForMessage()
@@ -40,22 +38,11 @@ describe('openSsoPortalLink', function () {
         await Promise.all([waitForMessage(), openSsoPortalLink('', { verificationUri, userCode })])
     }
 
-    it('copies to the clipboard and opens a link when selecting the open URL option', async function () {
+    it('opens a "confirm code" link when selecting the open URL option', async function () {
         await runFlow('open')
         assert.ok(getOpenExternalStub().calledOnce)
-        assert.strictEqual(getOpenExternalStub().args[0].toString(), verificationUri)
-        assert.strictEqual(await vscode.env.clipboard.readText(), userCode)
+        assert.strictEqual(getOpenExternalStub().args[0].toString(), `${verificationUri}?user_code%3D${userCode}`)
         assertTelemetry('aws_loginWithBrowser', { result: 'Succeeded' })
-    })
-
-    it('does not copy code to clipboard or opens links if the user cancels', async function () {
-        // This isn't mocked/stubbed so it'll clear the test runners clipboard
-        await vscode.env.clipboard.writeText('')
-        const result = await runFlow('cancel').catch(e => e)
-        assert.ok(getOpenExternalStub().notCalled)
-        assert.ok(result instanceof CancellationError)
-        assert.strictEqual(await vscode.env.clipboard.readText(), '')
-        assertTelemetry('aws_loginWithBrowser', { result: 'Cancelled', reason: 'user' })
     })
 
     it('continues to show the notification if the user selects help', async function () {
