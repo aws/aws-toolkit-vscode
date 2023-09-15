@@ -246,7 +246,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
     }
 
     @Test
-    fun `test tracker is listening to document changes and increment totalTokens - delete code`() {
+    fun `test tracker is listening to document changes and increment totalTokens - delete code should not affect`() {
         val pythonTracker = TestCodePercentageTracker(
             project,
             TOTAL_SECONDS_IN_MINUTE,
@@ -265,7 +265,7 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             }
         }
 
-        assertThat(pythonTracker.totalTokensSize).isEqualTo(pythonTestLeftContext.length - 3)
+        assertThat(pythonTracker.totalTokensSize).isEqualTo(pythonTestLeftContext.length)
     }
 
     @Test

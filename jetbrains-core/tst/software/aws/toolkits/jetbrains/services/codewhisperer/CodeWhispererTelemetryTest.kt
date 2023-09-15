@@ -530,7 +530,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         CodeWhispererCodeCoverageTracker.getInstance(project, CodeWhispererPython.INSTANCE).dispose()
 
         val acceptedTokensSize = pythonResponse.completions()[0].content().length - deletedTokenByUser
-        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length - deletedTokenByUser
+        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length
 
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
@@ -578,7 +578,7 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
         }
 
         val acceptedTokensSize = pythonResponse.completions()[0].content().length
-        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length + anotherCodeSnippet.length - 1
+        val totalTokensSize = pythonTestLeftContext.length + pythonResponse.completions()[0].content().length + anotherCodeSnippet.length
 
         val metricCaptor = argumentCaptor<MetricEvent>()
         verify(batcher, atLeastOnce()).enqueue(metricCaptor.capture())
