@@ -14,7 +14,7 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import {
     asyncCallWithTimeout,
     isInlineCompletionEnabled,
@@ -106,9 +106,14 @@ export class RecommendationHandler {
         isFirstPaginationCall: boolean,
         promise: Promise<any>
     ): Promise<any> {
-        const timeoutMessage = isCloud9() ? `Generate recommendation timeout.` : `List recommendation timeout`
+        const timeoutMessage =
+            isCloud9() || isSageMaker() ? `Generate recommendation timeout.` : `List recommendation timeout`
         try {
-            if (isManualTriggerOn && triggerType === 'OnDemand' && (isCloud9() || isFirstPaginationCall)) {
+            if (
+                isManualTriggerOn &&
+                triggerType === 'OnDemand' &&
+                (isCloud9() || isSageMaker() || isFirstPaginationCall)
+            ) {
                 return vscode.window.withProgress(
                     {
                         location: vscode.ProgressLocation.Notification,
@@ -141,7 +146,8 @@ export class RecommendationHandler {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
-        page: number = 0
+        page: number = 0,
+        isSM: boolean = isSageMaker()
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
@@ -212,9 +218,8 @@ export class RecommendationHandler {
             startTime = performance.now()
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
-            const codewhispererPromise = pagination
-                ? client.listRecommendations(mappedReq)
-                : client.generateRecommendations(mappedReq)
+            const codewhispererPromise =
+                pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(
                 triggerType,
                 config.isManualTriggerEnabled,
