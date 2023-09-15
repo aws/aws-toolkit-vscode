@@ -52,6 +52,12 @@
         </div>
         <!-- Body -->
         <div class="body">
+            <!-- Additional Resources-->
+            <div class="resources">
+                <Shortcuts />
+                <Workshop />
+                <Resources />
+            </div>
             <!-- Functionality -->
             <div class="bodySubDiv">
                 <GenerateSuggestionTab />
@@ -62,18 +68,6 @@
                     </svg>
                 </div>
                 <ScanCode />
-                <!-- Break Line -->
-                <div class="breakLine">
-                    <svg width="100%" height="2" viewBox="0 0 744 2" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 1H744" stroke="#2F2F2F" />
-                    </svg>
-                </div>
-                <Shortcuts />
-            </div>
-            <!-- Resources -->
-            <div class="resources">
-                <Workshop />
-                <Resources />
             </div>
         </div>
     </div>
@@ -143,7 +137,7 @@ export default defineComponent({
 }
 .bannerDescription {
     color: #f5f5f5;
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 350;
     text-align: left;
@@ -155,7 +149,7 @@ export default defineComponent({
     align-items: center;
     padding-top: 25px;
     padding-bottom: 30px;
-    padding-left: 30px;
+    padding-left: 60px;
 }
 .titleDiv {
     display: flex;
@@ -165,7 +159,7 @@ export default defineComponent({
     padding-bottom: 10px;
 }
 .titleHeader {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 24px;
     font-weight: 860;
     line-height: 12px;
@@ -173,7 +167,7 @@ export default defineComponent({
     text-align: left;
 }
 .titleSubHeader {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 400;
     padding-top: 10px;
@@ -184,23 +178,31 @@ export default defineComponent({
 .body {
     display: flex;
     flex-direction: row;
-    padding-left: 30px;
-    gap: 80px;
+    height: auto;
+    margin-left: 5%;
+    margin-right: 5%;
+    margin-bottom: 5%;
 }
 .bodySubDiv {
     display: flex;
     flex-direction: column;
-    width: 75%;
+    width: 70%;
+    height: auto;
+    margin-left: 5%;
+    justify-items: start;
+    align-items: start;
 }
 .breakLine {
     display: flex;
+    width: 100%;
     background: #2f2f2f;
-    border: 1px solid #2f2f2f;
 }
 .resources {
+    width: 30%;
     display: flex;
     flex-direction: column;
-    width: 25%;
-    align-self: start;
+    gap: 20px;
+    justify-content: start;
+    align-items: start;
 }
 </style>

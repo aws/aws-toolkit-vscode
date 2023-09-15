@@ -19,7 +19,7 @@
                     >
                 </div>
             </div>
-            <div class="FeedbackDiv">
+            <div class="DocumentationDiv">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                         d="M13.5067 0.973333L13.9867 1.50667V10.52L13.5067 11H6.73333L3.85333 13.88L3 13.5067V11H0.493333L0.0133333 10.52V1.50667L0.493333 0.973333H13.5067ZM13.0267 9.98667V1.98667H1.02667V9.98667H3.48L4.01333 10.52V12.28L6.14667 10.1467L6.52 9.98667H13.0267Z"
@@ -41,7 +41,6 @@ const client = WebviewClientFactory.create<CodeWhispererWebview>()
 
 export default defineComponent({
     name: 'Resources',
-    components: {},
     extends: TelemetryClient,
     data() {
         return {
@@ -58,17 +57,18 @@ export default defineComponent({
 </script>
 <style>
 .resourcesDiv {
-    padding-top: 40px;
-    padding-left: 20px;
+    border: 1px solid #424750;
+    padding: 20px;
+    border-radius: 10px;
+    width: 70%;
 }
 .resourcesTitle {
-    font-family: SF Pro;
-    font-size: 24px;
-    font-weight: 860;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: Verdana;
     line-height: 24px;
     letter-spacing: 0em;
     text-align: left;
-    padding-top: 5px;
     padding-right: 5px;
 }
 .DocumentationDiv {
@@ -80,26 +80,23 @@ export default defineComponent({
     gap: 10px;
 }
 .DocumentationLink {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 510;
     line-height: 21px;
     letter-spacing: 0em;
     text-align: left;
     color: var(--vscode-descriptionForeground);
-    text-decoration: none;
     cursor: pointer;
+    text-decoration: none;
 }
-.FeedbackDiv {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding-top: 10px;
-    padding-right: 10px;
-    gap: 10px;
+.DocumentationLink:hover {
+    text-decoration: none;
+    color: var(--vscode-descriptionForeground);
 }
+
 .FeedbackPageLink {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 510;
     line-height: 21px;

@@ -4,7 +4,7 @@
         <div class="generateSuggestionHeaderDiv">
             <div class="generateSuggestionHeader">Generate suggestions with examples</div>
             <div class="generateSuggestionDescription">
-                CodeWhisperer supports 15 programming languages, including Python, JavaScript, and C#.
+                CodeWhisperer supports 15 programming languages, including TypeScript, JavaScript, Python, Java, and C#.
                 <a
                     class="generateSuggestionLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
@@ -50,7 +50,21 @@
                                 </defs>
                             </svg>
                         </div>
-                        <div class="generateSuggestionTabIcon" v-else-if="tab.label === 'JavaScript'">
+                        <div class="generateSuggestionTabIcon" v-else-if="tab.label === 'TypeScript'">
+                            <svg
+                                width="16"
+                                height="10"
+                                viewBox="0 0 16 10"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M3.86751 9.59094V1.41199H0.899447V0.283857H8.20544V1.41199H5.23738V9.59094H3.86751ZM11.2839 5.17243C10.5497 4.89487 10.017 4.55912 9.68569 4.16517C9.35442 3.77122 9.18878 3.2743 9.18878 2.67442C9.18878 2.17303 9.31413 1.72984 9.56482 1.34484C9.81552 0.950887 10.1737 0.641994 10.6392 0.418159C11.1138 0.194323 11.6689 0.0824056 12.3046 0.0824056C13.1104 0.0824056 13.9386 0.243567 14.7891 0.56589V1.65373C13.8849 1.37618 13.088 1.2374 12.3986 1.2374C11.8166 1.2374 11.3645 1.35827 11.0421 1.60001C10.7288 1.8328 10.5721 2.16855 10.5721 2.60727C10.5721 2.96541 10.6795 3.25192 10.8944 3.4668C11.1093 3.67273 11.5077 3.88313 12.0897 4.09802L13.3118 4.55464C14.0371 4.82324 14.5564 5.15004 14.8697 5.53504C15.1921 5.91108 15.3532 6.39905 15.3532 6.99893C15.3532 7.85845 15.0443 8.54339 14.4265 9.05374C13.8177 9.56408 12.994 9.81925 11.9554 9.81925C10.9257 9.81925 10.0304 9.63571 9.26936 9.26862V8.19421C10.2095 8.50758 11.0959 8.66426 11.9285 8.66426C12.5642 8.66426 13.0611 8.52548 13.4193 8.24793C13.7864 7.97037 13.9699 7.59433 13.9699 7.1198C13.9699 6.78852 13.8625 6.51544 13.6476 6.30056C13.4417 6.07672 13.088 5.86632 12.5866 5.66934L11.2839 5.17243Z"
+                                    fill="#00A1C9"
+                                />
+                            </svg>
+                        </div>
+                        <div class="generateSuggestionTabIconC" v-else-if="tab.label === 'JavaScript'">
                             <svg
                                 width="16"
                                 height="17"
@@ -61,6 +75,20 @@
                                 <path
                                     d="M2.27098 10.9804C2.72698 11.1324 3.17898 11.2084 3.62698 11.2084C4.12298 11.2084 4.47898 11.0844 4.69498 10.8364C4.91098 10.5804 5.01898 10.1644 5.01898 9.58838V3.72038H6.24298V9.56438C6.24298 11.3484 5.40698 12.2404 3.73498 12.2404C3.26298 12.2404 2.77498 12.1364 2.27098 11.9284V10.9804ZM9.76527 8.08838C9.10927 7.84038 8.63327 7.54038 8.33727 7.18838C8.04127 6.83638 7.89327 6.39238 7.89327 5.85638C7.89327 5.40838 8.00527 5.01238 8.22927 4.66838C8.45327 4.31638 8.77327 4.04038 9.18927 3.84038C9.61327 3.64038 10.1093 3.54038 10.6773 3.54038C11.3973 3.54038 12.1373 3.68438 12.8973 3.97238V4.94438C12.0893 4.69638 11.3773 4.57238 10.7613 4.57238C10.2413 4.57238 9.83727 4.68038 9.54927 4.89638C9.26927 5.10438 9.12927 5.40438 9.12927 5.79638C9.12927 6.11638 9.22527 6.37238 9.41727 6.56438C9.60927 6.74838 9.96527 6.93638 10.4853 7.12838L11.5773 7.53638C12.2253 7.77638 12.6893 8.06838 12.9693 8.41238C13.2573 8.74838 13.4013 9.18438 13.4013 9.72038C13.4013 10.4884 13.1253 11.1004 12.5733 11.5564C12.0293 12.0124 11.2933 12.2404 10.3653 12.2404C9.44527 12.2404 8.64527 12.0764 7.96527 11.7484V10.7884C8.80527 11.0684 9.59727 11.2084 10.3413 11.2084C10.9093 11.2084 11.3533 11.0844 11.6733 10.8364C12.0013 10.5884 12.1653 10.2524 12.1653 9.82838C12.1653 9.53238 12.0693 9.28838 11.8773 9.09638C11.6933 8.89638 11.3773 8.70838 10.9293 8.53238L9.76527 8.08838Z"
                                     fill="#EE9D28"
+                                />
+                            </svg>
+                        </div>
+                        <div class="generateSuggestionTabIcon" v-else-if="tab.label === 'Java'">
+                            <svg
+                                width="10"
+                                height="10"
+                                viewBox="0 0 6 10"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M0.801499 8.40909C1.31184 8.57921 1.81771 8.66426 2.3191 8.66426C2.87422 8.66426 3.27264 8.52548 3.51439 8.24793C3.75613 7.96142 3.877 7.49584 3.877 6.85119V0.283857H5.24687V6.82433C5.24687 8.82095 4.31124 9.81925 2.43998 9.81925C1.91172 9.81925 1.36556 9.70286 0.801499 9.47007V8.40909Z"
+                                    fill="#D13212"
                                 />
                             </svg>
                         </div>
@@ -82,34 +110,39 @@
                     <div>{{ tab.label }}</div>
                 </div>
             </div>
-            <table>
-                <tbody v-for="(row, index) in tabs[activeTab].tableData" :key="index">
-                    <tr
-                        v-for="(column, columnIndex) in [row.column1, row.column2, row.column3, row.column4]"
-                        :key="columnIndex"
-                    >
-                        <div class="generateSuggestionTabRow">
-                            <div class="generateSuggestionTabRowLabel">
-                                <template v-if="columnIndex === 0"> Generate recommendations as you type </template>
-                                <template v-else-if="columnIndex === 1">
-                                    Manual force CodeWhisperer to offer a suggestion using
-                                    <div class="generateSuggestionTabMachine">
-                                        <div class="col2" v-if="osState === 'Mac'">Option</div>
-                                        <div class="col2" v-else>Alt</div>
-                                        <div class="generateSuggestionTabMachineText">+</div>
-                                        <div class="col2">C</div>
-                                    </div>
-                                </template>
-                                <template v-else-if="columnIndex === 2">
-                                    Interact with CodeWhisperer use comments
-                                </template>
-                                <template v-else> Generate unit test </template>
-                            </div>
-                            <div class="tryExample" @click="onClick(column)">Try Example</div>
+
+            <div class="tableDivSub" v-for="(row, index) in tabs[activeTab].tableData" :key="index">
+                <div
+                    v-for="(column, columnIndex) in [row.column1, row.column2, row.column3, row.column4, row.column5]"
+                    :key="columnIndex"
+                >
+                    <div class="generateSuggestionTabRow">
+                        <div class="generateSuggestionTabRowLabel">
+                            <template v-if="columnIndex === 0"> Generate Recommendations as you type </template>
+                            <template v-else-if="columnIndex === 1">
+                                Generate Recommendations Manually Using
+                                <div class="generateSuggestionTabMachine">
+                                    <div class="col2" v-if="osState === 'Mac'">Option</div>
+                                    <div class="col2" v-else>Alt</div>
+                                    <div class="generateSuggestionTabMachineText">+</div>
+                                    <div class="col2">C</div>
+                                </div>
+                            </template>
+                            <template v-else-if="columnIndex === 2">
+                                Interact with CodeWhisperer Using Comments
+                            </template>
+                            <template v-else-if="columnIndex === 3"> Generate Unit Test Cases </template>
+                            <template v-else>
+                                Navigate Between Suggestions Using the
+                                <div class="generateSuggestionTabMachine">
+                                    <div class="col2">Left / Right Arrows</div>
+                                </div></template
+                            >
                         </div>
-                    </tr>
-                </tbody>
-            </table>
+                        <button class="tryExample" @click="onClick(column)">Try Example</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </template>
@@ -130,24 +163,28 @@ export default defineComponent({
             osState: '',
             tabs: [
                 {
-                    label: 'Python',
+                    label: 'TypeScript',
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_Python_Example1.py',
-                                `# Allow CodeWhisperer to make recommendations as you type.${'\n'}${'\n'}# TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                'CodeWhisperer_Example1.ts',
+                                `// Allow CodeWhisperer to make recommendations as you type.${'\n'}// TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}const fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_Python_Example2.py',
-                                `# Force CodeWhisperer make a recommendation.${'\n'}${'\n'}# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_Example2.ts',
+                                `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column3: [
-                                'CodeWhisperer_Python_Example3.py',
-                                `# Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}# TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_Example3.ts',
+                                `// Force CodeWhisperer make a recommendation.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_Python_Example4.py',
-                                `# CodeWhisperer can help generate unit tests.${'\n'}${'\n'}# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}from unittest import TestCase${'\n'}${'\n'}# Function to sum two numbers.${'\n'}def sum(x, y):${'\n'}    return x + y${'\n'}${'\n'}class TestSum(TestCase):${'\n'}    # test the sum method with integers`,
+                                'CodeWhisperer_Example4.ts',
+                                `// CodeWhisperer can help generate unit tests.${'\n'}${'\n'}// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}function sum(a: number, b: number): number {${'\n'}  return a + b${'\n'}}${'\n'}${'\n'}// Write a test case for the sum function.`,
+                            ],
+                            column5: [
+                                'CodeWhisperer_Example5.ts',
+                                `// Navigate Between Recommendations Using the Left/Right Arrows.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                         },
                     ],
@@ -157,20 +194,78 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_JS_Example1.js',
+                                'CodeWhisperer_Example1.js',
                                 `// Allow CodeWhisperer to make recommendations as you type.${'\n'}// TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_JS_Example2.js',
+                                'CodeWhisperer_Example2.js',
                                 `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column3: [
-                                'CodeWhisperer_JS_Example3.js',
+                                'CodeWhisperer_Example3.js',
                                 `// Force CodeWhisperer make a recommendation.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_JS_Example4.js',
+                                'CodeWhisperer_Example4.js',
                                 `// CodeWhisperer can help generate unit tests.${'\n'}${'\n'}// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}const sum = (x, y) => x + y${'\n'}${'\n'}// Write a test case for the sum function.`,
+                            ],
+                            column5: [
+                                'CodeWhisperer_Example5.js',
+                                `// Navigate Between Recommendations Using the Left/Right Arrows.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                        },
+                    ],
+                },
+                {
+                    label: 'Python',
+                    tableData: [
+                        {
+                            column1: [
+                                'CodeWhisperer_Example1.py',
+                                `# Allow CodeWhisperer to make recommendations as you type.${'\n'}${'\n'}# TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                            ],
+                            column2: [
+                                'CodeWhisperer_Example2.py',
+                                `# Force CodeWhisperer make a recommendation.${'\n'}${'\n'}# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                            ],
+                            column3: [
+                                'CodeWhisperer_Example3.py',
+                                `# Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}# TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                            ],
+                            column4: [
+                                'CodeWhisperer_Example4.py',
+                                `# CodeWhisperer can help generate unit tests.${'\n'}${'\n'}# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}from unittest import TestCase${'\n'}${'\n'}# Function to sum two numbers.${'\n'}def sum(x, y):${'\n'}    return x + y${'\n'}${'\n'}class TestSum(TestCase):${'\n'}    # test the sum method with integers`,
+                            ],
+                            column5: [
+                                'CodeWhisperer_Example5.py',
+                                `# Navigate Between Recommendations Using the Left/Right Arrows.${'\n'}${'\n'}# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                            ],
+                        },
+                    ],
+                },
+                {
+                    label: 'Java',
+                    tableData: [
+                        {
+                            column1: [
+                                'CodeWhisperer_Example1.java',
+                                `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column2: [
+                                'CodeWhisperer_Example2.java',
+                                `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column3: [
+                                'CodeWhisperer_Example3.java',
+                                `// Force CodeWhisperer make a recommendation.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                            ],
+                            column4: [
+                                'CodeWhisperer_Example4.java',
+                                `// CodeWhisperer can help generate unit tests.${'\n'}${'\n'}// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to calculate sum of two numbers.${'\n'}public class Calculator${'\n'}{${'\n'}  public int Add(int a, int b)${'\n'}  {${'\n'}    return a + b;${'\n'}  }${'\n'}}${'\n'}${'\n'}// Write a test case for the above function.`,
+                            ],
+                            column5: [
+                                'CodeWhisperer_Example5.java',
+                                `// Navigate Between Recommendations Using the Left/Right Arrows.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                         },
                     ],
@@ -180,20 +275,24 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_C_Example1.cs',
+                                'CodeWhisperer_Example1.cs',
                                 `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column2: [
-                                'CodeWhisperer_C_Example2.cs',
+                                'CodeWhisperer_Example2.cs',
                                 `// Allow CodeWhisperer to make recommendations using comments.${'\n'}${'\n'}// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column3: [
-                                'CodeWhisperer_C_Example3.cs',
+                                'CodeWhisperer_Example3.cs',
                                 `// Force CodeWhisperer make a recommendation.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_C_Example4.cs',
+                                'CodeWhisperer_Example4.cs',
                                 `// CodeWhisperer can help generate unit tests.${'\n'}${'\n'}// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to calculate sum of two numbers.${'\n'}public class Calculator${'\n'}{${'\n'}  public int Add(int a, int b)${'\n'}  {${'\n'}    return a + b;${'\n'}  }${'\n'}}${'\n'}${'\n'}// Write a test case for the above function.`,
+                            ],
+                            column5: [
+                                'CodeWhisperer_Example5.cs',
+                                `// Navigate Between Recommendations Using the Left/Right Arrows.${'\n'}${'\n'}// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                         },
                     ],
@@ -220,12 +319,14 @@ export default defineComponent({
     },
 })
 </script>
-
 <style>
 .generateSuggestionDiv {
+    width: 95%;
+    margin-right: 5%;
+    height: auto;
     display: flex;
     flex-direction: column;
-    margin-bottom: 25px;
+    margin-bottom: 40px;
 }
 .generateSuggestionHeaderDiv {
     display: flex;
@@ -234,7 +335,7 @@ export default defineComponent({
     margin-bottom: 15px;
 }
 .generateSuggestionHeader {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 24px;
     font-weight: 860;
     line-height: 24px;
@@ -242,14 +343,16 @@ export default defineComponent({
     text-align: left;
 }
 .generateSuggestionDescription {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 510;
     line-height: 21px;
+    padding-top: 10px;
     letter-spacing: 0em;
     text-align: left;
 }
 .generateSuggestionLearnMore {
+    font-size: 14px;
     text-decoration: none;
     cursor: pointer;
     color: #2470b3;
@@ -257,24 +360,29 @@ export default defineComponent({
 .generateSuggestionTabHeader {
     display: flex;
     margin-top: 10px;
-    height: 33px;
+    margin-bottom: 15px;
+    margin-left: 20px;
+    gap: 15px;
+    width: auto;
+    height: auto;
 }
 .generateSuggestionTab {
-    width: 102px;
+    width: auto;
     height: 32px;
-    border-radius: 30px;
-    border: 1px;
+    border-radius: 34px;
+    padding-left: 15px;
+    padding-right: 15px;
+    border: 1.12px;
     cursor: pointer;
     display: flex;
-    font-family: SF Pro Text;
-    font-size: 13px;
+    font-family: Verdana;
+    font-size: 14px;
     font-weight: 700;
-    line-height: 16px;
+    line-height: 16.7px;
     letter-spacing: 0em;
     text-align: left;
     align-items: center;
     justify-content: center;
-    margin-right: 10px;
 }
 .generateSuggestionTab.active {
     border: 1px solid #3592c4;
@@ -289,14 +397,13 @@ export default defineComponent({
     display: flex;
     padding-right: 3px;
     justify-items: center;
-    padding-bottom: 2px;
 }
 .generateSuggestionTabRow {
     display: flex;
     flex-direction: row;
     height: 26px;
     gap: 10px;
-    padding-left: 20px;
+    padding-left: 10px;
     padding-right: 25px;
     padding-top: 15px;
     padding-bottom: 15px;
@@ -304,7 +411,7 @@ export default defineComponent({
     justify-content: space-between;
 }
 .generateSuggestionTabRowLabel {
-    font-family: SF Pro Text;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 350;
     line-height: 17px;
@@ -323,18 +430,19 @@ export default defineComponent({
     padding-left: 5px;
     padding-right: 10px;
     padding-top: 4px;
-    font-family: SF Pro;
+    font-family: Verdana;
     text-align: center;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     font-weight: 350;
 }
-table {
+.tableDivSub {
     margin-top: 10px;
     border-collapse: collapse;
     width: 100%;
-    border: 1px solid #454545;
+    border-radius: 8px;
+    border: 1.12px solid #424750;
 }
 
 .col2 {
@@ -342,20 +450,23 @@ table {
     border-radius: 3px;
     width: fit-content;
     padding: 2px 10px;
-    background-color: var(--vscode-sideBar-background);
     margin-right: 5px;
+    color: #ffffff;
+    background: linear-gradient(0deg, #3d3d3d, #3d3d3d), linear-gradient(0deg, #555353, #555353);
+    font-family: Verdana;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 19px;
+    letter-spacing: 0em;
+    text-align: left;
+    justify-content: center;
+    justify-items: center;
+    align-items: center;
 }
-
 .tryExample {
-    cursor: pointer;
-    width: 93px;
-    height: 22px;
-    background-color: var(--vscode-sideBar-background);
-    font-size: 12px;
-    font-family: SF Pro Text;
-    font-weight: 350;
-    text-align: center;
-    padding-top: 8px;
-    border: 1px solid #555353;
+    justify-content: end;
+    height: fit-content;
+    width: fit-content;
+    padding: 6.7 12.3;
 }
 </style>

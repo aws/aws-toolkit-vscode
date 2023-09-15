@@ -9,13 +9,13 @@
                 <a
                     class="codeScanLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html"
-                    v-on:click="emitUiClick('cw_ScanCode_LearnMore')"
+                    @click="emitUiClick('cw_ScanCode_LearnMore')"
                     >Learn more
                 </a>
             </div>
             <div class="codeScanImage">
                 <svg
-                    width="730"
+                    width="100%"
                     height="153"
                     viewBox="0 0 730 153"
                     fill="none"
@@ -50,36 +50,45 @@ export default defineComponent({
 </script>
 <style>
 .codeScan {
+    width: 95%;
+    height: auto;
     display: flex;
     flex-direction: column;
-    margin-bottom: 25px;
-    margin-top: 25px;
-    gap: 12px;
+    justify-content: start;
+    align-items: start;
+    margin-top: 40px;
+    margin-left: 0;
 }
 .codeScanTitle {
-    font-family: SF Pro;
+    font-family: Verdana;
     font-size: 24px;
-    font-weight: 700;
-    line-height: 24px;
+    font-weight: 860;
+    line-height: 27px;
     letter-spacing: 0em;
     text-align: left;
     padding-bottom: 10px;
 }
 .codeScanDescription {
-    font-family: SF Pro;
+    width: 90%;
+    height: auto;
+    font-family: Verdana;
     font-size: 14px;
     font-weight: 510;
     line-height: 21px;
     letter-spacing: 0em;
     text-align: left;
+    padding-top: 10px;
     padding-bottom: 5px;
 }
 .codeScanLearnMore {
+    height: auto;
+    font-family: Verdana;
     text-decoration: none;
     cursor: pointer;
     color: #2470b3;
 }
 .codeScanImage {
     margin-top: 10px;
+    display: inline-block;
 }
 </style>
