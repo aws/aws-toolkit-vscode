@@ -14,11 +14,7 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-<<<<<<< HEAD
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-=======
 import { isCloud9, isSageMaker, hasVendedIamCredentials } from '../../shared/extensionUtilities'
->>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
 import {
     asyncCallWithTimeout,
     isInlineCompletionEnabled,
@@ -110,23 +106,14 @@ export class RecommendationHandler {
         isFirstPaginationCall: boolean,
         promise: Promise<any>
     ): Promise<any> {
-<<<<<<< HEAD
-        const timeoutMessage =
-            isCloud9() || isSageMaker() ? `Generate recommendation timeout.` : `List recommendation timeout`
-=======
         const timeoutMessage = hasVendedIamCredentials()
             ? `Generate recommendation timeout.`
             : `List recommendation timeout`
->>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
         try {
             if (
                 isManualTriggerOn &&
                 triggerType === 'OnDemand' &&
-<<<<<<< HEAD
-                (isCloud9() || isSageMaker() || isFirstPaginationCall)
-=======
                 (hasVendedIamCredentials() || isFirstPaginationCall)
->>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
             ) {
                 return vscode.window.withProgress(
                     {

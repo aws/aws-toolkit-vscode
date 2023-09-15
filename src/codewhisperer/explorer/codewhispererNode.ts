@@ -17,11 +17,7 @@ import {
 } from './codewhispererChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
-<<<<<<< HEAD
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
-=======
 import { hasVendedIamCredentials } from '../../shared/extensionUtilities'
->>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 
@@ -82,21 +78,13 @@ export class CodeWhispererNode implements RootNode {
             return [createSsoSignIn(), createLearnMore()]
         }
         if (this._showFreeTierLimitReachedNode) {
-<<<<<<< HEAD
-            if (isCloud9() || isSageMaker()) {
-=======
             if (hasVendedIamCredentials()) {
->>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
                 return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
             } else {
                 return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
             }
         } else {
-<<<<<<< HEAD
-            if (isCloud9() || isSageMaker()) {
-=======
             if (hasVendedIamCredentials()) {
->>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
                 return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
             } else {
                 return [
