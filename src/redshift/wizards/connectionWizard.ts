@@ -61,6 +61,7 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
 }
 
 export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
+    static readonly SERVERLESSPREFIX = 'Serverless:'
     public constructor(
         regionProvider: RegionProvider,
         region?: Region | undefined,
@@ -98,9 +99,19 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
         })
 
         this.form.warehouseType.setDefault(state => {
-            return state.warehouseIdentifier?.toLowerCase().startsWith('serverless')
-                ? RedshiftWarehouseType.SERVERLESS
-                : RedshiftWarehouseType.PROVISIONED
+            if (!state.warehouseType && state.warehouseIdentifier) {
+                if (state.warehouseIdentifier?.startsWith(NotebookConnectionWizard.SERVERLESSPREFIX)) {
+                    state.warehouseType = RedshiftWarehouseType.SERVERLESS
+                    state.warehouseIdentifier = state.warehouseIdentifier.replace(
+                        NotebookConnectionWizard.SERVERLESSPREFIX,
+                        ''
+                    )
+                    return RedshiftWarehouseType.SERVERLESS
+                } else {
+                    state.warehouseType = RedshiftWarehouseType.PROVISIONED
+                    return RedshiftWarehouseType.PROVISIONED
+                }
+            }
         })
 
         this.form.connectionType.bindPrompter(getConnectionTypePrompter, { relativeOrder: 3 })
@@ -187,8 +198,12 @@ async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
                 for await (const workgroup of serverlessResponse.workgroups) {
                     yield [
                         {
-                            label: workgroup.workgroupName || 'UnknownServerlessWorkgroup',
-                            data: workgroup.workgroupName || 'UnknownServerlessWorkgroup',
+                            label: `${NotebookConnectionWizard.SERVERLESSPREFIX} ${
+                                workgroup.workgroupName ?? 'UnknownServerlessWorkgroup'
+                            }`,
+                            data: `${NotebookConnectionWizard.SERVERLESSPREFIX}${
+                                workgroup.workgroupName ?? 'UnknownServerlessWorkgroup'
+                            }`,
                         },
                     ]
                 }

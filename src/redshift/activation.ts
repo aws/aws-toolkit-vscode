@@ -36,7 +36,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             if (!connectionParams) {
                 return
             }
-            outputChannel.appendLine(`Redshift: connected to ${connectionParams.warehouseIdentifier}`)
+            outputChannel.appendLine(`Redshift: saved connection to: ${connectionParams.warehouseIdentifier}`)
             redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
             const edit = new vscode.WorkspaceEdit()
             //NotebookEdit is  only available for engine version > 1.68.0
