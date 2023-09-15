@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "IAM Identity Center (SSO): When signing in, verify the device code matches instead of pasting it"
+}
