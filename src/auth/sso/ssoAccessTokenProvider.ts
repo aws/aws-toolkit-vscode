@@ -234,7 +234,7 @@ async function pollForTokenWithProgress<T>(
         {
             title: localize(
                 'AWS.auth.loginWithBrowser.messageDetail',
-                'Login page opened in browser. When prompted, provide this code: {0}',
+                'Confirm code "{0}" in the login page opened in your web browser.',
                 authorization.userCode
             ),
             cancellable: true,
