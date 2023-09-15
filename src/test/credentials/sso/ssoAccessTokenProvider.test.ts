@@ -12,7 +12,7 @@ import { getCache } from '../../../auth/sso/cache'
 
 import { instance, mock, when, anything, reset } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ClientRegistration, SsoToken } from '../../../auth/sso/model'
+import { ClientRegistration, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
@@ -189,7 +189,7 @@ describe('SsoAccessTokenProvider', function () {
     describe('createToken', function () {
         beforeEach(function () {
             getTestWindow().onDidShowMessage(m => {
-                if (m.items[0]?.title.match(/copy code/i)) {
+                if (m.items[0]?.title.match(proceedToBrowser)) {
                     m.items[0].select()
                 }
             })
