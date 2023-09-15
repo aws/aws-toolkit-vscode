@@ -3666,9 +3666,9 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
+        "@aws-sdk/types": "^3.13.1",
         "@aws-toolkits/telemetry": "^1.0.143",
         "@aws/fully-qualified-names": "^2.1.1",
-        "@aws-sdk/types": "^3.13.1",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -3739,8 +3739,8 @@
     },
     "dependencies": {
         "@aws-sdk/client-cognito-identity": "3.46.0",
-        "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-lambda": "3.385.0",
+        "@aws-sdk/client-sso": "^3.342.0",
         "@aws-sdk/client-sso-oidc": "^3.181.0",
         "@aws-sdk/credential-provider-ini": "3.46.0",
         "@aws-sdk/credential-provider-process": "3.37.0",
@@ -3779,9 +3779,9 @@
         "vscode-languageclient": "^6.1.4",
         "vscode-languageserver": "^6.1.1",
         "vscode-languageserver-protocol": "^3.15.3",
-        "vscode-languageserver-textdocument": "^1.0.3",
+        "vscode-languageserver-textdocument": "^1.0.8",
         "vscode-nls": "^5.2.0",
-        "vue": "^3.2.31",
+        "vue": "^3.3.4",
         "web-tree-sitter": "^0.20.7",
         "winston": "^3.7.1",
         "winston-transport": "^4.5.0",
