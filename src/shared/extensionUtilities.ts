@@ -136,6 +136,13 @@ export function isSageMaker(): boolean {
     return vscode.env.appName === sageMakerAppname
 }
 
+<<<<<<< HEAD
+=======
+export function hasVendedIamCredentials(isC9: boolean = isCloud9(), isSM: boolean = isSageMaker()) {
+    return isSM || isC9
+}
+
+>>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
 export function isCn(): boolean {
     return getComputeRegion()?.startsWith('cn') ?? false
 }
@@ -373,7 +380,11 @@ export async function initializeComputeRegion(
     isC9: boolean = isCloud9(),
     isSM: boolean = isSageMaker()
 ): Promise<void> {
+<<<<<<< HEAD
     if (isC9 || isSM) {
+=======
+    if (hasVendedIamCredentials(isC9, isSM)) {
+>>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
         metadata ??= new DefaultEc2MetadataClient()
         try {
             const identity = await metadata.getInstanceIdentity()

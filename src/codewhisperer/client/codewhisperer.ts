@@ -10,7 +10,11 @@ import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
+<<<<<<< HEAD
 import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+=======
+import { hasVendedIamCredentials } from '../../shared/extensionUtilities'
+>>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { Credentials } from 'aws-sdk'
@@ -85,7 +89,11 @@ export class DefaultCodeWhispererClient {
                         }
                         // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
+<<<<<<< HEAD
                         if (isCloud9() || isSageMaker()) {
+=======
+                        if (hasVendedIamCredentials()) {
+>>>>>>> c9abc0cc (Add new IDE type for SM VSCode)
                             req.on('retry', resp => {
                                 if (
                                     resp.error?.code === 'AccessDeniedException' &&
