@@ -81,10 +81,8 @@ abstract class CodeWhispererCodeCoverageTracker(
                 override fun afterAccept(states: InvocationContext, sessionContext: SessionContext, rangeMarker: RangeMarker) {
                     if (states.requestContext.fileContextInfo.programmingLanguage != language) return
                     rangeMarkers.add(rangeMarker)
-                    val originalRecommendation = extractRangeMarkerString(rangeMarker)
-                    originalRecommendation?.let {
-                        rangeMarker.putUserData(KEY_REMAINING_RECOMMENDATION, it)
-                    }
+                    val originalRecommendation = extractRangeMarkerString(rangeMarker) ?: return
+                    rangeMarker.putUserData(KEY_REMAINING_RECOMMENDATION, originalRecommendation)
                 }
             }
         )
@@ -114,6 +112,9 @@ abstract class CodeWhispererCodeCoverageTracker(
         }
         // This case capture IDE reformatting the document, which will be blank string
         if (isDocumentEventFromReformatting(event)) return
+
+        // Don't capture deletion events
+        if (event.newLength <= event.oldLength) return
         incrementTotalTokens(event.document, event.newLength - event.oldLength)
     }
 
@@ -181,6 +182,8 @@ abstract class CodeWhispererCodeCoverageTracker(
     }
 
     internal fun emitCodeWhispererCodeContribution() {
+        // If the user is inactive, don't emit the telemetry
+        if (percentage == null) return
         rangeMarkers.forEach { rangeMarker ->
             if (!rangeMarker.isValid) return@forEach
             // if users add more code upon the recommendation generated from CodeWhisperer, we consider those added part as userToken but not CwsprTokens
