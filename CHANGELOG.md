@@ -1,3 +1,9 @@
+## 1.90.0 2023-09-15
+
+- **Bug Fix** CodeCatalyst: "Open CodeCatalyst Dev Environment" may fail to connect from a new Windows system
+- **Bug Fix** CodeWhisperer: Fixed an issue where sometimes the suggestions are not matching the current editor context.
+- **Feature** Authentication: When signing in to AWS Builder Id or IAM Identity Center (SSO), verify the device code matches instead of copy-pasting it
+
 ## 1.89.0 2023-09-08
 
 - **Bug Fix** CodeWhisperer: show "Reconnect" instead of "Start" for expired connections to make reconnecting easier
