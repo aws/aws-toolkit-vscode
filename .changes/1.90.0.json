@@ -1,0 +1,18 @@
+{
+	"date": "2023-09-15",
+	"version": "1.90.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeCatalyst: \"Open CodeCatalyst Dev Environment\" may fail to connect from a new Windows system"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Fixed an issue where sometimes the suggestions are not matching the current editor context."
+		},
+		{
+			"type": "Feature",
+			"description": "Authentication: When signing in to AWS Builder Id or IAM Identity Center (SSO), verify the device code matches instead of copy-pasting it"
+		}
+	]
+}

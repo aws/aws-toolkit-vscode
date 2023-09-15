@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "CodeWhisperer: Fixed an issue where sometimes the suggestions are not matching the current editor context."
-}
