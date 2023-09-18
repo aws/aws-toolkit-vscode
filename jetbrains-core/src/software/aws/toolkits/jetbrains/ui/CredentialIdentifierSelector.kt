@@ -83,7 +83,7 @@ class CredentialIdentifierSelector(identifiers: List<CredentialIdentifier> = Cre
      */
     fun getSelectedValidCredentialIdentifier(): CredentialIdentifier? = comboBoxModel.selected?.takeIf { isSelectionValid() }
 
-    private class InvalidCredentialIdentifier(override val id: String) : CredentialIdentifier {
+    class InvalidCredentialIdentifier(override val id: String) : CredentialIdentifier {
         override val displayName: String = message("credentials.invalid.not_found", id)
         override val factoryId: String = "InvalidCredentialIdentifier"
         override val credentialType: CredentialType? = null
@@ -120,7 +120,7 @@ class CredentialIdentifierSelector(identifiers: List<CredentialIdentifier> = Cre
                 .withValidationOnInput { validateSelection(it) }
         }
 
-        private fun ValidationInfoBuilder.validateSelection(selector: CredentialIdentifierSelector): ValidationInfo? = if (!selector.isSelectionValid()) {
+        fun ValidationInfoBuilder.validateSelection(selector: CredentialIdentifierSelector): ValidationInfo? = if (!selector.isSelectionValid()) {
             error(message("credentials.invalid.invalid_selection"))
         } else {
             null
