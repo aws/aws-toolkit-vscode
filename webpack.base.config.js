@@ -69,7 +69,7 @@ const baseConfig = {
                         loader: 'esbuild-loader',
                         options: {
                             loader: 'ts',
-                            target: 'es2018',
+                            target: 'es2021',
                         },
                     },
                 ],
@@ -94,7 +94,7 @@ const baseConfig = {
         minimize: true,
         minimizer: [
             new ESBuildMinifyPlugin({
-                target: 'es2018',
+                target: 'es2021',
             }),
         ],
     },
