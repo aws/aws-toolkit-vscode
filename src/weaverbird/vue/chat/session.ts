@@ -6,14 +6,12 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger/logger'
-
-import { LocalResolvedConfig } from '../../config'
 import { defaultLlmConfig } from '../../constants'
-import { LLMConfig } from '../../types'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
-import { SessionState, SessionStateConfig, RefinementState, Interaction } from './sessionState'
+import { RefinementState } from './sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
+import type { Interaction, SessionState, SessionStateConfig, LocalResolvedConfig, LLMConfig } from '../../types'
 
 export class Session {
     // TODO remake private

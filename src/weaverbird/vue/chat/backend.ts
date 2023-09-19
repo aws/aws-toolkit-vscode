@@ -4,16 +4,15 @@
  */
 
 import * as vscode from 'vscode'
+import * as path from 'path'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { Session } from './session'
-import * as path from 'path'
-import { LLMConfig } from '../../types'
-import { LocalResolvedConfig, getConfig } from '../../config'
-import { Interaction } from './sessionState'
+import { getConfig } from '../../config'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { weaverbirdScheme } from '../../constants'
 import { FileSystemCommon } from '../../../srcShared/fs'
+import type { Interaction, LLMConfig, LocalResolvedConfig } from '../../types'
 
 // const localize = nls.loadMessageBundle()
 const fs = FileSystemCommon.instance

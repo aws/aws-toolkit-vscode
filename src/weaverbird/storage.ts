@@ -6,16 +6,7 @@
 import * as vscode from 'vscode'
 import globals from '../shared/extensionGlobals'
 
-interface SessionStorage {
-    [key: string]: SessionInfo
-}
-
-export interface SessionInfo {
-    // TODO, if it had a summarized name that was better for the UI
-    name?: string
-    history: string[]
-}
-
+import type { SessionStorage, SessionInfo } from './types'
 export class Storage {
     /**
      * Weaverbird local storage layout is:

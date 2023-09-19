@@ -6,9 +6,6 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 
-import { LocalResolvedConfig } from '../../config'
-import { LLMConfig } from '../../types'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
 import {
     FileMetadata,
@@ -26,73 +23,17 @@ import { FileSystemCommon } from '../../../srcShared/fs'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
 import { weaverbirdScheme } from '../../constants'
-import { ToolkitError } from '../../../shared/errors'
+import type {
+    Interaction,
+    SessionStateAction,
+    SessionStateConfig,
+    SessionStateInteraction,
+    SessionState,
+    NewFileContents,
+} from '../../types'
+import { invoke } from './invoke'
 
 const fs = FileSystemCommon.instance
-
-export interface UserInteraction {
-    origin: 'user' | 'ai'
-    type: 'message'
-    content: string
-}
-
-export interface CodeGenInteraction {
-    origin: 'ai'
-    type: 'codegen'
-    content: string[]
-    status?: 'accepted' | 'rejected' | 'iterating'
-}
-
-export type Interaction = UserInteraction | CodeGenInteraction
-
-export interface SessionStateInteraction {
-    nextState: SessionState | undefined
-    interactions: Interaction[]
-}
-
-export interface SessionState {
-    approach: string
-    tokenSource: vscode.CancellationTokenSource
-    interact(action: SessionStateAction): Promise<SessionStateInteraction>
-}
-
-export interface SessionStateConfig {
-    client: LambdaClient
-    llmConfig: LLMConfig
-    workspaceRoot: string
-    backendConfig: LocalResolvedConfig
-    conversationId: string
-}
-
-interface SessionStateAction {
-    task: string
-    files: FileMetadata[]
-    msg?: string
-    onAddToHistory: vscode.EventEmitter<Interaction[]>
-    fs: VirtualFileSystem
-}
-
-type NewFileContents = { filePath: string; fileContent: string }[]
-
-async function invoke<TInput, TOutput>(client: LambdaClient, arn: string, payload: TInput): Promise<TOutput> {
-    try {
-        const response = await client.invoke(
-            arn,
-            JSON.stringify({
-                body: JSON.stringify(payload),
-            })
-        )
-        const rawResult = response.Payload!.toString()
-        const result = JSON.parse(rawResult)
-        if (result.statusCode != 200) {
-            throw new ToolkitError(`Server error(${result.statusCode}): ${result.body}`)
-        }
-        return JSON.parse(result.body) as TOutput
-    } catch (e) {
-        getLogger().error("Server side error", e);
-        throw (e instanceof ToolkitError) ? e : ToolkitError.chain(e, "Server side error")
-    }
-}
 
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
@@ -136,7 +77,7 @@ export class RefinementState implements SessionState {
     }
 }
 
-class RefinementIterationState implements SessionState {
+export class RefinementIterationState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
 
     constructor(private config: SessionStateConfig, public approach: string) {
@@ -216,9 +157,9 @@ abstract class CodeGenBase {
     }
 
     async generateCode(params: {
-        getResultLambdaArn: string,
-        fs: VirtualFileSystem,
-        onAddToHistory: vscode.EventEmitter<Interaction[]>,
+        getResultLambdaArn: string
+        fs: VirtualFileSystem
+        onAddToHistory: vscode.EventEmitter<Interaction[]>
         generationId: string
     }) {
         for (
@@ -240,10 +181,10 @@ abstract class CodeGenBase {
 
             switch (codegenResult.codeGenerationStatus) {
                 case 'ready': {
-                    const newFiles = codegenResult.result?.newFileContents ?? [];
+                    const newFiles = codegenResult.result?.newFileContents ?? []
                     const changes = await createChanges(params.fs, newFiles)
                     params.onAddToHistory.fire(changes)
-                    return newFiles;
+                    return newFiles
                 }
                 case 'in-progress': {
                     await new Promise(f => setTimeout(f, 10000))
@@ -258,11 +199,11 @@ abstract class CodeGenBase {
                             content: 'Code generation failed\n',
                         },
                     ])
-                    return [];
+                    return []
                 }
                 default: {
-                    const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`;
-                    getLogger().error(errorMessage);
+                    const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`
+                    getLogger().error(errorMessage)
                     params.onAddToHistory.fire([
                         {
                             origin: 'ai',
@@ -270,13 +211,13 @@ abstract class CodeGenBase {
                             content: errorMessage,
                         },
                     ])
-                    return [];
+                    return []
                 }
             }
         }
         // still in progress
-        const errorMessage = `Code generation did not finish withing the expected time :(`;
-        getLogger().error(errorMessage);
+        const errorMessage = `Code generation did not finish withing the expected time :(`
+        getLogger().error(errorMessage)
         params.onAddToHistory.fire([
             {
                 origin: 'ai',
@@ -284,7 +225,7 @@ abstract class CodeGenBase {
                 content: errorMessage,
             },
         ])
-        return [];
+        return []
     }
 }
 
@@ -335,7 +276,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
             interactions: [],
         }
     }
-
 }
 
 export class MockCodeGenState implements SessionState {
@@ -361,6 +301,7 @@ export class MockCodeGenState implements SessionState {
                 }))
             }
         } catch (e) {
+            // TODO: handle this error properly, double check what would be expected behaviour if mock code does not work.
             getLogger().error('Unable to use mock code generation: %O', e)
         }
 
@@ -371,7 +312,7 @@ export class MockCodeGenState implements SessionState {
     }
 }
 
-class CodeGenIterationState extends CodeGenBase implements SessionState {
+export class CodeGenIterationState extends CodeGenBase implements SessionState {
     constructor(config: SessionStateConfig, public approach: string, private newFileContents: FileMetadata[]) {
         super(config)
     }

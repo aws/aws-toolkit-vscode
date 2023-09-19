@@ -4,24 +4,10 @@
  */
 
 import { getLogger } from '../shared/logger/logger'
-
-export interface LocalResolvedConfig {
-    endpoint: string
-    region: string
-    lambdaArns: {
-        approach: {
-            generate: string
-            iterate: string
-        }
-        codegen: {
-            generate: string
-            getResults: string
-            iterate: string
-        }
-    }
-}
+import type { LocalResolvedConfig } from './types'
 
 let cachedConfig: LocalResolvedConfig | undefined = undefined
+
 export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
     return (
         cachedConfig ??

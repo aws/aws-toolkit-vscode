@@ -4,10 +4,7 @@
         <div v-else-if="interaction.status === 'rejected'">You have rejected these changes. Ohnoes :(</div>
         <div v-else>
             The following files have changed:
-            <FileTree
-                :treeNode="fileListToTree(interaction.content)"
-                :on-file-clicked="displayFileDiff"
-            />
+            <FileTree :treeNode="fileListToTree(interaction.content)" :on-file-clicked="displayFileDiff" />
             <div v-if="interaction.status === 'iterating'">
                 We are still discussing these changes. Let's keep them here for now.
             </div>
@@ -23,7 +20,7 @@
 <script setup lang="ts">
 import FileTree from '../file-tree/file-tree.vue'
 import { fileListToTree } from '../file-tree/helpers'
-import { CodeGenInteraction } from './sessionState'
+import type { CodeGenInteraction } from '../../types'
 
 interface Props {
     interaction: CodeGenInteraction

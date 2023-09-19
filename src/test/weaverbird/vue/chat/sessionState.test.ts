@@ -1,0 +1,313 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import vscode from 'vscode'
+import assert from 'assert'
+import sinon from 'sinon'
+import {
+    RefinementIterationState,
+    RefinementState,
+    MockCodeGenState,
+    CodeGenIterationState,
+    CodeGenState,
+} from '../../../../weaverbird/vue/chat/sessionState'
+import { LambdaClient } from '../../../../shared/clients/lambdaClient'
+import * as invokeModule from '../../../../weaverbird/vue/chat/invoke'
+import { VirtualFileSystem } from '../../../../shared/virtualFilesystem'
+import { SessionStateConfig, Interaction, SessionStateAction } from '../../../../weaverbird/types'
+import { GenerateApproachOutput, GenerateCodeOutput } from '../../../../weaverbird/client/weaverbirdclient'
+
+interface MockSessionStateActionInput {
+    msg?: 'WRITE CODE' | 'MOCK CODE' | 'OTHER'
+    onAddToHistory?: vscode.EventEmitter<Interaction[]>
+}
+
+const mockSessionStateAction = ({ msg, onAddToHistory }: MockSessionStateActionInput): SessionStateAction => {
+    return {
+        task: 'test-task',
+        msg: msg ?? 'test-msg',
+        files: [],
+        fs: new VirtualFileSystem(),
+        onAddToHistory: onAddToHistory ?? ({} as vscode.EventEmitter<Interaction[]>),
+    }
+}
+
+const mockSessionStateConfig = ({ conversationId }: { conversationId: string }): SessionStateConfig => ({
+    client: {} as unknown as LambdaClient,
+    llmConfig: {
+        model: 'test-model',
+        maxTokensToSample: 1,
+        temperature: 1,
+        debateRounds: 1,
+        generationFlow: 'lambda',
+    },
+    workspaceRoot: 'fake-root',
+    backendConfig: {
+        endpoint: 'fake-endpoint',
+        region: 'fake-region',
+        lambdaArns: {
+            approach: {
+                generate: 'fake-generate-arn',
+                iterate: 'fake-iterate-arn',
+            },
+            codegen: {
+                generate: 'fake-generate-arn',
+                getResults: 'fake-getResults-arn',
+                iterate: 'fake-iterate',
+            },
+        },
+    },
+    conversationId,
+})
+
+describe('sessionState', () => {
+    const testApproach = 'test-approach'
+    const generationId = 'test-id'
+    const conversationId = 'conversation-id'
+    const testConfig = mockSessionStateConfig({ conversationId })
+
+    beforeEach(() => {})
+
+    afterEach(() => {
+        sinon.restore()
+    })
+
+    describe('RefinementState', () => {
+        const testAction = mockSessionStateAction({})
+
+        it('transitions to RefinementIterationState and returns an approach', async () => {
+            sinon
+                .stub(invokeModule, 'invoke')
+                .resolves({ approach: testApproach, conversationId } satisfies GenerateApproachOutput)
+            const state = new RefinementState(testConfig, testApproach)
+            const result = await state.interact(testAction)
+
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementIterationState(testConfig, testApproach),
+                interactions: [
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: `${testApproach}\n`,
+                    },
+                ],
+            })
+        })
+
+        it('transitions to RefinementIterationState but does not return an approach', async () => {
+            sinon.stub(invokeModule, 'invoke').resolves({ conversationId } satisfies GenerateApproachOutput)
+            const state = new RefinementState(testConfig, testApproach)
+            const result = await state.interact(testAction)
+            const invokeFailureApproach =
+                "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementIterationState(testConfig, invokeFailureApproach),
+                interactions: [
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: `${invokeFailureApproach}\n`,
+                    },
+                ],
+            })
+        })
+    })
+
+    describe('MockCodeGenState', () => {
+        it('transitions to generate CodeGenIterationState', async () => {
+            const testAction = mockSessionStateAction({})
+            const state = new MockCodeGenState(testConfig, testApproach)
+            const result = await state.interact(testAction)
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+
+            assert.deepStrictEqual(result, {
+                nextState,
+                interactions: [
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Changes to files done. Please review:',
+                    },
+                    {
+                        origin: 'ai',
+                        type: 'codegen',
+                        content: [],
+                    },
+                ],
+            })
+        })
+    })
+
+    describe('CodeGenState', () => {
+        it('transitions to  generate CodeGenIterationState when codeGenerationStatus ready ', async () => {
+            sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
+            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
+            const addToHistoryStub = sinon.stub(onAddToHistory, 'fire')
+            const testAction = mockSessionStateAction({ onAddToHistory })
+            const state = new CodeGenState(testConfig, testApproach)
+            const result = await state.interact(testAction)
+
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+
+            assert.deepStrictEqual(result, {
+                nextState,
+                interactions: [],
+            })
+            assert.strictEqual(
+                addToHistoryStub.calledWithMatch([
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Code generation started\n',
+                    },
+                ]),
+                true
+            )
+            assert.strictEqual(
+                addToHistoryStub.calledWithMatch([
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Changes to files done. Please review:',
+                    },
+                    {
+                        origin: 'ai',
+                        type: 'codegen',
+                        content: [],
+                    },
+                ]),
+                true
+            )
+        })
+        it('transitions to  generate CodeGenIterationState when codeGenerationStatus failed ', async () => {
+            sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'failed' })
+            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
+            const addToHistoryStub = sinon.stub(onAddToHistory, 'fire')
+            const testAction = mockSessionStateAction({ onAddToHistory })
+            const state = new CodeGenState(testConfig, testApproach)
+            const result = await state.interact(testAction)
+
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+
+            assert.deepStrictEqual(result, {
+                nextState,
+                interactions: [],
+            })
+            assert.strictEqual(
+                addToHistoryStub.calledWithMatch([
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Code generation started\n',
+                    },
+                ]),
+                true
+            )
+            assert.strictEqual(
+                addToHistoryStub.calledWithMatch([
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Code generation failed\n',
+                    },
+                ]),
+                true
+            )
+        })
+    })
+
+    describe('RefinementIterationState', () => {
+        const refinementIterationState = new RefinementIterationState(testConfig, testApproach)
+
+        it('transitions after interaction to CodeGenState if action is WRITE CODE', async () => {
+            sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
+
+            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
+            const addToHistoryStub = sinon.stub(onAddToHistory, 'fire')
+            const testAction = mockSessionStateAction({ msg: 'WRITE CODE', onAddToHistory })
+            const interactionResult = await refinementIterationState.interact(testAction)
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+
+            assert.deepStrictEqual(interactionResult, {
+                nextState,
+                interactions: [],
+            })
+            assert.strictEqual(
+                addToHistoryStub.calledWithMatch([
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Code generation started\n',
+                    },
+                ]),
+                true
+            )
+        })
+
+        it('transitions after interaction to MockCodeGenState if action is MOCK CODE', async () => {
+            const testAction = mockSessionStateAction({ msg: 'MOCK CODE' })
+            const interactionResult = await refinementIterationState.interact(testAction)
+
+            assert.deepStrictEqual(interactionResult, {
+                nextState: new CodeGenIterationState(testConfig, testApproach, []),
+                interactions: [
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Changes to files done. Please review:',
+                    },
+                    {
+                        origin: 'ai',
+                        type: 'codegen',
+                        content: [],
+                    },
+                ],
+            })
+        })
+
+        it('keeps on RefinementIterationState after interaction in any other case', async () => {
+            sinon
+                .stub(invokeModule, 'invoke')
+                .resolves({ approach: testApproach, conversationId } satisfies GenerateApproachOutput)
+            const testAction = mockSessionStateAction({ msg: 'OTHER' })
+            const interactionResult = await refinementIterationState.interact(testAction)
+
+            assert.deepStrictEqual(interactionResult, {
+                nextState: new RefinementIterationState(testConfig, testApproach),
+                interactions: [
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: `${testApproach}\n`,
+                    },
+                ],
+            })
+        })
+    })
+
+    describe('CodeGenIterationState', () => {
+        it('transitions to generate CodeGenIterationState', async () => {
+            sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
+            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
+            sinon.stub(onAddToHistory, 'fire')
+            const testAction = mockSessionStateAction({ onAddToHistory })
+
+            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [])
+            const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
+
+            assert.deepStrictEqual(codeGenIterationStateResult, {
+                nextState: codeGenIterationStateResult.nextState,
+                interactions: [
+                    {
+                        origin: 'ai',
+                        type: 'message',
+                        content: 'Changes to files done',
+                    },
+                ],
+            })
+        })
+    })
+})

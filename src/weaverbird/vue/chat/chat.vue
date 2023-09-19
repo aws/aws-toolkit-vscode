@@ -84,7 +84,7 @@ import CodeCompare from './code-compare.vue'
 import { defineComponent } from 'vue'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { WeaverbirdChatWebview } from './backend'
-import type { Interaction } from './sessionState'
+import type { Interaction } from '../../types'
 import { defaultLlmConfig } from '../../constants'
 
 const client = WebviewClientFactory.create<WeaverbirdChatWebview>()
