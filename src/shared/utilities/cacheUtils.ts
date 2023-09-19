@@ -33,11 +33,12 @@ export interface KeyedCache<T, K = string> {
     save(key: K, data: T): Promise<void>
 
     /**
-     * Removes the data stored at {@link key}, if any.
+     * Deletes data stored at {@link key}, if any.
      *
      * @param key Target key to clear.
+     * @param reason Partial log message explaining why the data is being deleted.
      */
-    clear(key: K): Promise<void>
+    clear(key: K, reason: string): Promise<void>
 }
 
 /**
@@ -71,7 +72,7 @@ export function mapCache<T, U, K>(cache: KeyedCache<T, K>, get: (data: T) => U, 
     const getIf = (data?: T) => (data !== undefined ? get(data) : undefined)
 
     return {
-        clear: key => cache.clear(key),
+        clear: (key, reason) => cache.clear(key, reason),
         load: key => cache.load(key).then(getIf),
         save: (key, data) => cache.save(key, set(data)),
     }
@@ -91,10 +92,10 @@ export function createDiskCache<T, K>(
     mapKey: (key: K) => string,
     logger?: (message: string) => void
 ): KeyedCache<T, K> {
-    function log(prefix: string, key: K): void {
+    function log(msg: string, key: K): void {
         if (logger) {
             const keyMessage = typeof key === 'object' ? JSON.stringify(key) : key
-            logger(`${prefix} for key '${keyMessage}'`)
+            logger(`${msg} key: ${keyMessage}`)
         }
     }
 
@@ -104,11 +105,11 @@ export function createDiskCache<T, K>(
 
             try {
                 const result = JSON.parse(await SystemUtilities.readFile(target))
-                log('load succeeded', key)
+                log('loaded', key)
                 return result
             } catch (error) {
                 if (isFileNotFoundError(error)) {
-                    log('load missed', key)
+                    log('read failed (file not found)', key)
                     return
                 }
 
@@ -131,16 +132,16 @@ export function createDiskCache<T, K>(
                 })
             }
 
-            log('save succeeded', key)
+            log('saved', key)
         },
-        clear: async key => {
+        clear: async (key, reason) => {
             const target = mapKey(key)
 
             try {
                 await SystemUtilities.delete(target)
             } catch (error) {
                 if (isFileNotFoundError(error)) {
-                    return log('clear succeeded, file does not exist', key)
+                    return log('file not found', key)
                 }
 
                 throw ToolkitError.chain(error, `Failed to delete "${target}"`, {
@@ -149,7 +150,7 @@ export function createDiskCache<T, K>(
                 })
             }
 
-            log('clear succeeded', key)
+            log(`deleted (reason: ${reason})`, key)
         },
     }
 }
@@ -158,9 +159,9 @@ export function createSecretsCache(
     secrets: vscode.SecretStorage,
     logger?: (message: string) => void
 ): KeyedCache<string> {
-    function log(prefix: string, key: string): void {
+    function log(msg: string, key: string): void {
         if (logger) {
-            logger(`${prefix} for key '${key}'`)
+            logger(`${msg} key: ${key}`)
         }
     }
 
@@ -170,11 +171,11 @@ export function createSecretsCache(
                 const value = await secrets.get(key)
 
                 if (value === undefined) {
-                    log('load missed', key)
+                    log('read failed (key not found)', key)
                     return
                 }
 
-                log('load succeeded', key)
+                log('loaded', key)
                 return value
             } catch (error) {
                 throw ToolkitError.chain(error, 'Failed to get value from secrets storage', {
@@ -193,9 +194,9 @@ export function createSecretsCache(
                 })
             }
 
-            log('save succeeded', key)
+            log('saved', key)
         },
-        clear: async key => {
+        clear: async (key, reason) => {
             try {
                 await secrets.delete(key)
             } catch (error) {
@@ -205,7 +206,7 @@ export function createSecretsCache(
                 })
             }
 
-            log('clear succeeded', key)
+            log(`deleted (reason: ${reason})`, key)
         },
     }
 }

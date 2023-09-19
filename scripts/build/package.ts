@@ -24,7 +24,7 @@ import * as fs from 'fs-extra'
 import { betaUrl } from '../../src/dev/config'
 
 const packageJsonFile = './package.json'
-const webpackConfigJsFile = './webpack.config.js'
+const webpackConfigJsFile = './webpack.base.config.js'
 
 function parseArgs() {
     // Invoking this script with argument "foo":
