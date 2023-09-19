@@ -47,18 +47,17 @@ export class SharedCredentialsProviderFactory extends BaseCredentialsProviderFac
     private async loadSharedCredentialsProviders(): Promise<void> {
         this.resetProviders()
 
-        this.logger.verbose('Loading all Shared Credentials Sections')
         const result = await loadSharedCredentialsSections()
         if (result.errors.length > 0) {
             const errors = result.errors.map(e => e.message).join('\t\n')
-            getLogger().verbose(`credentials: errors occurred while parsing:\n%s`, errors)
+            getLogger().warn(`credentials: errors while parsing:\n%s`, errors)
         }
 
         this.loadedCredentialsModificationMillis = await this.getLastModifiedMillis(getCredentialsFilename())
         this.loadedConfigModificationMillis = await this.getLastModifiedMillis(getConfigFilename())
         await updateAwsSdkLoadConfigEnvVar()
 
-        getLogger().verbose(`credentials: found sections: ${result.sections.map(s => `${s.type}:${s.name}`)}`)
+        getLogger().verbose(`credentials: found sections: ${result.sections.map(s => `${s.type}:${s.name}`).join(' ')}`)
         for (const section of result.sections) {
             if (section.type === 'profile') {
                 await this.addProviderIfValid(
