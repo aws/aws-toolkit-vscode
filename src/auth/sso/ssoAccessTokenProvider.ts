@@ -75,9 +75,10 @@ export class SsoAccessTokenProvider {
     ) {}
 
     public async invalidate(): Promise<void> {
-        await Promise.all([
-            this.cache.token.clear(this.tokenCacheKey),
-            this.cache.registration.clear(this.registrationCacheKey),
+        // Use allSettled() instead of all() to ensure all clear() calls are resolved.
+        await Promise.allSettled([
+            this.cache.token.clear(this.tokenCacheKey, 'SsoAccessTokenProvider.invalidate()'),
+            this.cache.registration.clear(this.registrationCacheKey, 'SsoAccessTokenProvider.invalidate()'),
         ])
     }
 
@@ -114,7 +115,7 @@ export class SsoAccessTokenProvider {
             return await this.authorize(registration)
         } catch (err) {
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
-                await this.cache.registration.clear(cacheKey)
+                await this.cache.registration.clear(cacheKey, `client fault: SSOOIDCServiceException: ${err.message}`)
             }
 
             throw err
@@ -141,7 +142,10 @@ export class SsoAccessTokenProvider {
                 } as AwsRefreshCredentials)
 
                 if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
-                    await this.cache.token.clear(this.tokenCacheKey)
+                    await this.cache.token.clear(
+                        this.tokenCacheKey,
+                        `client fault: SSOOIDCServiceException: ${err.message}`
+                    )
                 }
             }
 
