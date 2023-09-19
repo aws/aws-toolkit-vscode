@@ -100,8 +100,8 @@ export function getIdeProperties(): IdeProperties {
 
 function createSageMakerProperties(company: string): IdeProperties {
     return {
-        shortName: localize('AWS.vscode.shortName', 'AWS Code'),
-        longName: localize('AWS.vscode.longName', '{0} SageMaker Code', company),
+        shortName: localize('AWS.vscode.shortName', 'AWS VS Code'),
+        longName: localize('AWS.vscode.longName', '{0} SageMaker VS Code', company),
         commandPalette: localize('AWS.vscode.commandPalette', 'Command Palette'),
         codelens: localize('AWS.vscode.codelens', 'CodeLens'),
         codelenses: localize('AWS.vscode.codelenses', 'CodeLenses'),
@@ -136,7 +136,17 @@ export function isSageMaker(): boolean {
     return vscode.env.appName === sageMakerAppname
 }
 
-export function hasVendedIamCredentials(isC9: boolean = isCloud9(), isSM: boolean = isSageMaker()) {
+/**
+ * Helper function to determine if Cloud9 or Sagemaker are being used. Both use IAM roles
+ * on hosting instance for auth
+ *
+ * @param isC9 boolean for if Cloud9 is host
+ * @param isSM boolean for if SageMaker is host
+ * @returns boolean for if C9 "OR" SM
+ */
+export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
+    isC9 ??= isCloud9()
+    isSM ??= isSageMaker()
     return isSM || isC9
 }
 
@@ -374,9 +384,11 @@ export function getToolkitEnvironmentDetails(): string {
 
 export async function initializeComputeRegion(
     metadata?: Ec2MetadataClient,
-    isC9: boolean = isCloud9(),
-    isSM: boolean = isSageMaker()
+    isC9?: boolean,
+    isSM?: boolean
 ): Promise<void> {
+    isC9 ??= isCloud9()
+    isSM ??= isSageMaker()
     if (hasVendedIamCredentials(isC9, isSM)) {
         metadata ??= new DefaultEc2MetadataClient()
         try {
