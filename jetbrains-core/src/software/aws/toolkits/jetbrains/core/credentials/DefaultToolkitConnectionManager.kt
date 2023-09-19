@@ -119,7 +119,7 @@ class DefaultToolkitConnectionManager : ToolkitConnectionManager, PersistentStat
 
                 if (featuresToPin.isNotEmpty()) {
                     application.executeOnPooledThread {
-                        pinningManager.maybePinFeatures(oldConnection, newConnection, featuresToPin)
+                        pinningManager.pinFeatures(oldConnection, newConnection, featuresToPin)
                         application.messageBus.syncPublisher(ToolkitConnectionManagerListener.TOPIC).activeConnectionChanged(newConnection)
                     }
                 }
