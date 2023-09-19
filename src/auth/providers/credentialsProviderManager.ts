@@ -32,9 +32,7 @@ export class CredentialsProviderManager {
                 telemetry.aws_loadCredentials.emit({ credentialSourceId: telemType, value: 1 })
                 providers = providers.concat(provider)
             } else {
-                getLogger().verbose(
-                    `provider for ${provider.getCredentialsId().credentialTypeId} unavailable in this environment`
-                )
+                getLogger().verbose('auth: "%s" provider unavailable', provider.getCredentialsId().credentialTypeId)
             }
         }
 
