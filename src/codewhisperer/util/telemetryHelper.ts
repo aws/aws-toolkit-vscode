@@ -466,11 +466,11 @@ export class TelemetryHelper {
 
     private getAggregatedSuggestionReferenceCount(
         events: CodewhispererUserDecision[]
-        // if there is any recommendation reference within the session, mark the reference number
+        // if there is reference for accepted recommendation within the session, mark the reference number
         // as 1, otherwise mark the session as 0
     ) {
         for (const event of events) {
-            if (event.codewhispererSuggestionReferenceCount != 0) {
+            if (event.codewhispererSuggestionState === 'Accept' && event.codewhispererSuggestionReferenceCount !== 0) {
                 return 1
             }
         }
