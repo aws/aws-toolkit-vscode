@@ -13,8 +13,8 @@ import {
     createSsoSignIn,
     createLearnMore,
     createFreeTierLimitMetNode,
-    createGettingStartedNode,
 } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
+import { createGettingStartedNode } from '../../../codewhisperer/commands/basicCommands'
 
 describe('codewhisperer children nodes', function () {
     afterEach(function () {

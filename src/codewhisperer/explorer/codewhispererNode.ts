@@ -14,8 +14,8 @@ import {
     createSsoSignIn,
     createFreeTierLimitMetNode,
     createReconnectNode,
-    createGettingStartedNode,
 } from './codewhispererChildrenNodes'
+import { createGettingStartedNode } from '../commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
