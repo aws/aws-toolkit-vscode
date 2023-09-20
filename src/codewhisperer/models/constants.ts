@@ -123,7 +123,9 @@ export const welcomeCodeWhispererReadmeFileSource = 'resources/markdown/WelcomeT
 
 export const welcomeCodeWhispererCloud9Readme = 'resources/markdown/WelcomeToCodeWhispererCloud9.md'
 
-export const welcomeMessageKey = 'CODEWHISPERER_WELCOME_MESSAGE'
+export const welcomeMessageKeyPrevious = 'CODEWHISPERER_WELCOME_MESSAGE'
+
+export const welcomeMessageKeyShown = 'CODEWHISPERER_WELCOME_MESSAGE_SHOWN'
 
 /**
  * Key bindings JSON file path

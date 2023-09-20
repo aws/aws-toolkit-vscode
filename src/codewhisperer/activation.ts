@@ -67,10 +67,20 @@ export async function activate(context: ExtContext): Promise<void> {
 
     //This logic is to show the Getting Started Page only once for the first time SignIn Users
     let start = ''
-    const hasShownWelcomeMsgBefore = get(CodeWhispererConstants.welcomeMessageKey, context.extensionContext.globalState)
-    if (!hasShownWelcomeMsgBefore) {
-        start = 'startUpOnly'
+
+    const hasShownWelcomeMsgBefore = get(
+        CodeWhispererConstants.welcomeMessageKeyPrevious,
+        context.extensionContext.globalState
+    )
+    const hasShownWelcomeMsgBeforeToExistingUsers = get(
+        CodeWhispererConstants.welcomeMessageKeyShown,
+        context.extensionContext.globalState
+    )
+
+    if (!hasShownWelcomeMsgBeforeToExistingUsers) {
+        start = hasShownWelcomeMsgBefore ? 'ExistingUser' : 'startUpOnly'
     }
+
     registerCommandsWithVSCode(
         context.extensionContext,
         CodeWhispererCommandDeclarations.instance,

@@ -44,15 +44,17 @@ export const enableCodeSuggestions = Commands.declare(
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
-        const hasShownWelcomeMsgBefore = get(
-            CodeWhispererConstants.welcomeMessageKey,
+        const hasShownWelcomeMsgBeforeToExistingUsers = get(
+            CodeWhispererConstants.welcomeMessageKeyShown,
             context.extensionContext.globalState
         )
-        // Show Getting Started Page for first time SignIn Users
-        if (!hasShownWelcomeMsgBefore) {
+
+        //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
+        if (!hasShownWelcomeMsgBeforeToExistingUsers) {
             vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
-            await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
+            await set(CodeWhispererConstants.welcomeMessageKeyShown, true, context.extensionContext.globalState)
         }
+
         if (!isCloud9()) {
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         }

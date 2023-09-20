@@ -101,11 +101,10 @@ export class CodeWhispererWebview extends VueWebview {
 export type CodeWhispererUiClick =
     | 'cw_Resources_Documentation'
     | 'cw_Resources_Feedback'
-    | 'cw_Resources_Workshop'
-    | 'cw_Shortcuts_KeyboardShortcutsEditor'
+    | 'cw_Workshop_LearnMore'
+    | 'cw_Commands_KeyboardShortcutsEditor'
     | 'cw_ScanCode_LearnMore'
     | 'cw_GenerateSuggestions_LearnMore'
-    | 'cw_GenerateSuggestions_Tab'
     | 'cw_GenerateSuggestions_TryExample'
 
 const Panel = VueWebview.compilePanel(CodeWhispererWebview)

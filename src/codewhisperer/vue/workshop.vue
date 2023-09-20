@@ -42,7 +42,7 @@
             <a
                 class="getStartedText"
                 href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/01-introduction"
-                @click="emitUiClick('cw_Resources_Workshop')"
+                @click="emitUiClick('cw_Workshop_LearnMore')"
                 >Learn more</a
             >
         </div>

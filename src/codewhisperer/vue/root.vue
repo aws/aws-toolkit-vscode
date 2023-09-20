@@ -4,7 +4,10 @@
         <!-- Header -->
         <div class="headerDiv">
             <!-- Banner -->
-            <div v-if="showAtStartUpOnly === 'startUpOnly'" class="bannerContainer">
+            <div
+                v-if="active === 0 && (showAtStartUpOnly === 'ExistingUser' || showAtStartUpOnly === 'startUpOnly')"
+                class="bannerContainer"
+            >
                 <div class="banner">
                     <div class="infoIcon">
                         <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -14,8 +17,11 @@
                             />
                         </svg>
                     </div>
-                    <div class="bannerDescription">
+                    <div v-if="showAtStartUpOnly === 'startUpOnly'" class="bannerDescription">
                         You can always return to this page by clicking “Learn” in Developer Tools > CodeWhisperer
+                    </div>
+                    <div v-else-if="showAtStartUpOnly === 'ExistingUser'" class="bannerDescription">
+                        Learn the basics of CodeWhisperer with hands-on examples.
                     </div>
                 </div>
             </div>
@@ -97,18 +103,26 @@ export default defineComponent({
     data() {
         return {
             showAtStartUpOnly: '',
+            active: parseInt(sessionStorage.getItem('active') || '0'),
         }
     },
+    //The created hook runs before the templates and Virtual DOM have been mounted or rendered
     created() {
         this.showAtStartUp()
     },
-    updated() {
-        this.showAtStartUp()
+    mounted() {
+        /* 
+                We use Session Storage here because we need to store the the first time signin user and Existing first time signin state globally. According to this we need to display the banner.
+                This can be done by storing the state. We can not use local state for this. 
+                Default the value of Key: Active is 0 after the DOM is mounted it is updated to 1.
+            */
+        sessionStorage.setItem('active', '1')
     },
     methods: {
         //Triggered only for the first time
         async showAtStartUp() {
             const showAt = await client.showAtStartUp()
+
             if (typeof showAt === 'string') {
                 this.showAtStartUpOnly = showAt
             }

@@ -1,4 +1,4 @@
-<!-- This Vue File provides Shortcuts for CodeWhisperer actions-->
+<!-- This Vue File provides Shortcuts/Commands for CodeWhisperer actions-->
 <template>
     <div class="shortcutsDiv">
         <div class="shortcutsTitle">Commands</div>
@@ -66,7 +66,7 @@ export default defineComponent({
     },
     methods: {
         onClick() {
-            client.emitUiClick('cw_Shortcuts_KeyboardShortcutsEditor')
+            client.emitUiClick('cw_Commands_KeyboardShortcutsEditor')
             client.openShortCuts()
         },
         async showOS() {

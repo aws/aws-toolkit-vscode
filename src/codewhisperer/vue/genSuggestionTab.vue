@@ -312,7 +312,6 @@ export default defineComponent({
             this.osState = await client.getOSType()
         },
         activeTabFunction(index: number) {
-            client.emitUiClick('cw_GenerateSuggestions_Tab')
             this.activeTab = index
             sessionStorage.setItem('activeTab', index.toString())
         },
