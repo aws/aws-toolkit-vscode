@@ -374,10 +374,6 @@ class IdcRolePopup(
             val combo = AsyncComboBox<RoleInfo> { label, value, _ ->
                 value ?: return@AsyncComboBox
                 label.text = "${value.roleName()} (${value.accountId()})"
-                state.roleInfo = RoleInfo.builder()
-                    .roleName(value.roleName())
-                    .accountId(value.accountId())
-                    .build()
             }
 
             Disposer.register(myDisposable, combo)
