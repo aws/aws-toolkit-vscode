@@ -371,7 +371,7 @@ class CodeWhispererTelemetryService {
             // step 1, send out current decision
             previousUserTriggerDecisionTimestamp = Instant.now()
 
-            val referenceCount = if (detailContexts.map { it.recommendation }.any { it.hasReferences() }) 1 else 0
+            val referenceCount = if (hasUserAccepted && detailContexts[sessionContext.selectedIndex].recommendation.hasReferences()) 1 else 0
             val acceptedContent =
                 if (hasUserAccepted) {
                     detailContexts[sessionContext.selectedIndex].recommendation.content()
