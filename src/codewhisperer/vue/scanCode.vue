@@ -2,14 +2,14 @@
 <template>
     <div class="codeScan">
         <div>
-            <div class="codeScanTitle">Scan code to detect vulnerabilities</div>
+            <div class="codeScanTitle">Scan Code to Detect Vulnerabilities</div>
             <div class="codeScanDescription">
-                You can also ask CodeWhisperer to scan your code to detect hard-to-find vulnerabilities, and get code
-                suggestions to remediate them immediately.
+                You can also ask CodeWhisperer to scan Java, JavaScript, and Python files for security vulnerabilities,
+                and get code suggestions to remediate them immediately.
                 <a
                     class="codeScanLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html"
-                    @click="emitUiClick('cw_ScanCode_LearnMore')"
+                    @click="emitUiClick('codeWhisperer_ScanCode_LearnMore')"
                     >Learn more
                 </a>
             </div>
@@ -50,7 +50,7 @@ export default defineComponent({
 </script>
 <style>
 .codeScan {
-    width: 95%;
+    width: 100%;
     height: auto;
     display: flex;
     flex-direction: column;
@@ -89,6 +89,7 @@ export default defineComponent({
 }
 .codeScanImage {
     margin-top: 10px;
+    margin-bottom: 30px;
     display: inline-block;
 }
 </style>

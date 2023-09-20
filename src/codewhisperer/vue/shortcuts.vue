@@ -18,7 +18,7 @@
             </tbody>
         </table>
         <div class="shortcutsEditor">
-            Customize Keyboard shortcut in <a href="#" @click="onClick">Keyboard Shortcuts Editor</a>.
+            Customize Keyboard shortcuts in the <a href="#" @click="onClick">Keyboard Shortcuts Editor</a>.
         </div>
     </div>
 </template>
@@ -66,7 +66,7 @@ export default defineComponent({
     },
     methods: {
         onClick() {
-            client.emitUiClick('cw_Commands_KeyboardShortcutsEditor')
+            client.emitUiClick('codeWhisperer_Commands_KeyboardShortcutsEditor')
             client.openShortCuts()
         },
         async showOS() {
@@ -77,7 +77,7 @@ export default defineComponent({
 </script>
 <style>
 .shortcutsDiv {
-    width: 70%;
+    width: 87%;
     border: 1px solid #424750;
     border-radius: 10px;
     padding: 20px;

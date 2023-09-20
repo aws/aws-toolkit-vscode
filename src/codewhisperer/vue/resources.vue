@@ -14,7 +14,7 @@
                     <a
                         class="DocumentationLink"
                         href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/getting-started.html"
-                        @click="emitUiClick('cw_Resources_Documentation')"
+                        @click="emitUiClick('codeWhisperer_Resources_Documentation')"
                         >Documentation</a
                     >
                 </div>
@@ -49,7 +49,7 @@ export default defineComponent({
     },
     methods: {
         onClick() {
-            client.emitUiClick('cw_Resources_Feedback')
+            client.emitUiClick('codeWhisperer_Resources_Feedback')
             client.openFeedBack() //Opens CodeWhisperer Feedback Form
         },
     },
@@ -60,7 +60,9 @@ export default defineComponent({
     border: 1px solid #424750;
     padding: 20px;
     border-radius: 10px;
-    width: 70%;
+    width: 87%;
+    /* width: 305px; */
+    margin-bottom: 30px;
 }
 .resourcesTitle {
     font-size: 16px;

@@ -191,18 +191,17 @@ export default defineComponent({
 }
 .body {
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap-reverse;
     height: auto;
-    margin-left: 5%;
-    margin-right: 5%;
-    margin-bottom: 5%;
+    justify-content: center;
+    gap: 5%;
+    justify-items: center;
 }
 .bodySubDiv {
     display: flex;
     flex-direction: column;
-    width: 70%;
+    width: 720px;
     height: auto;
-    margin-left: 5%;
     justify-items: start;
     align-items: start;
 }
@@ -212,7 +211,7 @@ export default defineComponent({
     background: #2f2f2f;
 }
 .resources {
-    width: 30%;
+    width: 290px;
     display: flex;
     flex-direction: column;
     gap: 20px;

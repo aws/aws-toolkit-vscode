@@ -99,13 +99,13 @@ export class CodeWhispererWebview extends VueWebview {
 
 //List of all events that are emitted from the webview of CodeWhisperer
 export type CodeWhispererUiClick =
-    | 'cw_Resources_Documentation'
-    | 'cw_Resources_Feedback'
-    | 'cw_Workshop_LearnMore'
-    | 'cw_Commands_KeyboardShortcutsEditor'
-    | 'cw_ScanCode_LearnMore'
-    | 'cw_GenerateSuggestions_LearnMore'
-    | 'cw_GenerateSuggestions_TryExample'
+    | 'codeWhisperer_Resources_Documentation'
+    | 'codeWhisperer_Resources_Feedback'
+    | 'codeWhisperer_Workshop_LearnMore'
+    | 'codeWhisperer_Commands_KeyboardShortcutsEditor'
+    | 'codeWhisperer_ScanCode_LearnMore'
+    | 'codeWhisperer_GenerateSuggestions_LearnMore'
+    | 'codeWhisperer_GenerateSuggestions_TryExample'
 
 const Panel = VueWebview.compilePanel(CodeWhispererWebview)
 let activePanel: InstanceType<typeof Panel> | undefined

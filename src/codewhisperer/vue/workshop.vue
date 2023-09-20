@@ -42,7 +42,7 @@
             <a
                 class="getStartedText"
                 href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/01-introduction"
-                @click="emitUiClick('cw_Workshop_LearnMore')"
+                @click="emitUiClick('codeWhisperer_Workshop_LearnMore')"
                 >Learn more</a
             >
         </div>
@@ -61,7 +61,7 @@ export default defineComponent({
 .workshop {
     display: flex;
     flex-direction: column;
-    width: 70%;
+    width: 87%;
     border-radius: 10px;
     padding: 20px;
     border: 1px solid #424750;

@@ -2,13 +2,13 @@
 <template>
     <div class="generateSuggestionDiv">
         <div class="generateSuggestionHeaderDiv">
-            <div class="generateSuggestionHeader">Generate suggestions with examples</div>
+            <div class="generateSuggestionHeader">Generate Suggestions with Examples</div>
             <div class="generateSuggestionDescription">
                 CodeWhisperer supports 15 programming languages, including TypeScript, JavaScript, Python, Java, and C#.
                 <a
                     class="generateSuggestionLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
-                    @click="emitUiClick('cw_GenerateSuggestions_LearnMore')"
+                    @click="emitUiClick('codeWhisperer_GenerateSuggestions_LearnMore')"
                     >Learn more</a
                 >
             </div>
@@ -118,9 +118,9 @@
                 >
                     <div class="generateSuggestionTabRow">
                         <div class="generateSuggestionTabRowLabel">
-                            <template v-if="columnIndex === 0"> Generate Recommendations as you type </template>
+                            <template v-if="columnIndex === 0"> Generate recommendations as you type </template>
                             <template v-else-if="columnIndex === 1">
-                                Generate Recommendations Manually Using
+                                Generate recommendations manually using
                                 <div class="generateSuggestionTabMachine">
                                     <div class="col2" v-if="osState === 'Mac'">Option</div>
                                     <div class="col2" v-else>Alt</div>
@@ -129,17 +129,17 @@
                                 </div>
                             </template>
                             <template v-else-if="columnIndex === 2">
-                                Interact with CodeWhisperer Using Comments
+                                Interact with CodeWhisperer using comments
                             </template>
-                            <template v-else-if="columnIndex === 3"> Generate Unit Test Cases </template>
+                            <template v-else-if="columnIndex === 3"> Generate unit test cases </template>
                             <template v-else>
-                                Navigate Between Suggestions Using the
+                                Navigate between suggestions using the
                                 <div class="generateSuggestionTabMachine">
                                     <div class="col2">Left / Right Arrows</div>
                                 </div></template
                             >
                         </div>
-                        <button class="tryExample" @click="onClick(column)">Try Example</button>
+                        <button class="tryExample" @click="onClick(column)">Try It</button>
                     </div>
                 </div>
             </div>
@@ -305,7 +305,7 @@ export default defineComponent({
     },
     methods: {
         onClick(names: string[]) {
-            client.emitUiClick('cw_GenerateSuggestions_TryExample')
+            client.emitUiClick('codeWhisperer_GenerateSuggestions_TryExample')
             client.openFile(names)
         },
         async showOS() {
@@ -320,7 +320,7 @@ export default defineComponent({
 </script>
 <style>
 .generateSuggestionDiv {
-    width: 95%;
+    width: 100%;
     margin-right: 5%;
     height: auto;
     display: flex;
