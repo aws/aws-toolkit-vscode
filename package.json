@@ -3350,6 +3350,15 @@
                     "light": "resources/icons/aws/mynah/MynahIconBlack.svg",
                     "dark": "resources/icons/aws/mynah//MynahIconWhite.svg"
                 }
+            },
+            {
+                "command": "Weaverbird.show",
+                "title": "Show Weaverbird Chat",
+                "category": "Weaverbird",
+                "icon": {
+                    "light": "assets/MynahIconBlack.svg",
+                    "dark": "assets/MynahIconWhite.svg"
+                }
             }
         ],
         "jsonValidation": [
@@ -3750,6 +3759,7 @@
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@aws/mynah-ui": "1.4.0",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.2",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
         "adm-zip": "^0.5.10",
