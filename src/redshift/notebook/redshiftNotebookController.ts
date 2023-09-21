@@ -67,7 +67,7 @@ export class RedshiftNotebookController {
 
     private async executeCell(cell: vscode.NotebookCell): Promise<vscode.NotebookCellOutput> {
         return telemetry.redshift_executeQuery.run(async () => {
-            const connectionParams = cell.notebook.metadata.connectionParams as ConnectionParams
+            const connectionParams = cell.notebook.metadata?.connectionParams as ConnectionParams
             // check cell connection before execute the query
             if (connectionParams === undefined) {
                 throw Error('This cell is not connected to any cluster or workgroup.')
@@ -99,7 +99,7 @@ export class RedshiftNotebookController {
             if (columnMetadata) {
                 const columnNames: string[] = columnMetadata.map(column => column.name || 'UnknownColumnName')
                 if (columnNames) {
-                    const htmlTable = this.getAsTable(columnNames, records)
+                    const htmlTable = this.getAsTable(connectionParams, columnNames, records)
                     return new vscode.NotebookCellOutput([vscode.NotebookCellOutputItem.text(htmlTable, 'text/html')])
                 } else {
                     throw Error('Column metadata did not contain column names')
@@ -110,11 +110,11 @@ export class RedshiftNotebookController {
         })
     }
 
-    public getAsTable(columns: string[], records: RedshiftData.SqlRecords) {
+    public getAsTable(connectionParams: ConnectionParams, columns: string[], records: RedshiftData.SqlRecords) {
         if (!records || records.length === 0) {
             return '<p>No records to display<p>'
         }
-        let tableHtml = '<table><thead><tr>'
+        let tableHtml = `<p>Results from ${connectionParams.warehouseIdentifier} - database: ${connectionParams.database}</p><table><thead><tr>`
 
         //Adding column headers
         for (const column of columns) {
