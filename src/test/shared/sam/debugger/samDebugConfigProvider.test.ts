@@ -586,6 +586,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -739,6 +740,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -893,6 +895,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -995,7 +998,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 containerEnvFile: `${actual.baseBuildDir}/container-env-vars.json`,
                 containerEnvVars: {
-                    NODE_OPTIONS: `--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
+                    NODE_OPTIONS: `--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
                 },
                 envFile: undefined,
                 eventPayloadFile: undefined,
@@ -1025,6 +1028,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
                 parameterOverrides: undefined,
             }
@@ -1032,7 +1036,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.containerEnvFile!,
-                `{"NODE_OPTIONS":"--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
+                `{"NODE_OPTIONS":"--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
             )
 
             //
@@ -1159,6 +1163,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
                 parameterOverrides: undefined,
             }
@@ -2928,6 +2933,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 runtime: 'nodejs12.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
