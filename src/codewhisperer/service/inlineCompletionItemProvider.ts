@@ -10,6 +10,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
+import { application } from '../util/codeWhispererApplication'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -133,8 +134,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(this.startPos)) {
-            ReferenceInlineProvider.instance.removeInlineReference()
-            ImportAdderProvider.instance.clear()
+            application()._clearCodeWhispererUIListener.fire()
             this.activeItemIndex = undefined
             return
         }
@@ -164,7 +164,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
-            TelemetryHelper.instance.tryRecordClientComponentLatency(document.languageId)
+            TelemetryHelper.instance.tryRecordClientComponentLatency()
             this._onDidShow.fire()
             if (matchedCount >= 2 || this.nextToken !== '') {
                 const result = [item]
@@ -175,8 +175,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             }
             return [item]
         }
-        ReferenceInlineProvider.instance.removeInlineReference()
-        ImportAdderProvider.instance.clear()
+        application()._clearCodeWhispererUIListener.fire()
         this.activeItemIndex = undefined
         return []
     }

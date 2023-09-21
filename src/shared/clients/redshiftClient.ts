@@ -121,7 +121,14 @@ export class DefaultRedshiftClient {
         if (!executionId) {
             const execution = await redshiftData
                 .executeStatement({
-                    ClusterIdentifier: connectionParams.warehouseIdentifier,
+                    ClusterIdentifier:
+                        connectionParams.warehouseType === RedshiftWarehouseType.PROVISIONED
+                            ? connectionParams.warehouseIdentifier
+                            : undefined,
+                    WorkgroupName:
+                        connectionParams.warehouseType === RedshiftWarehouseType.SERVERLESS
+                            ? connectionParams.warehouseIdentifier
+                            : undefined,
                     Database: connectionParams.database,
                     Sql: queryToExecute,
                     DbUser: connectionParams.username,

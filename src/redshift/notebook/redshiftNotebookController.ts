@@ -68,6 +68,10 @@ export class RedshiftNotebookController {
     private async executeCell(cell: vscode.NotebookCell): Promise<vscode.NotebookCellOutput> {
         return telemetry.redshift_executeQuery.run(async () => {
             const connectionParams = cell.metadata.connectionParams as ConnectionParams
+            // check cell connection before execute the query
+            if (connectionParams === undefined) {
+                throw Error('This cell is not connected to any cluster or workgroup.')
+            }
 
             // This handles cases where the users had connected to the database with the wizard in a previous session and they opened and closed the editor
             if (!this.redshiftClient && connectionParams) {

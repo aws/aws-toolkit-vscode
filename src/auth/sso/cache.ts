@@ -46,7 +46,7 @@ export function getRegistrationCache(directory = getCacheDir()): KeyedCache<Clie
     const read = (data: StoredRegistration) => ({ ...data, expiresAt: new Date(data.expiresAt) })
     const write = (data: ClientRegistration) => ({ ...data, expiresAt: data.expiresAt.toISOString() })
 
-    const logger = (message: string) => getLogger().debug(`SSO registration cache: ${message}`)
+    const logger = (message: string) => getLogger().debug('auth: SSO registration cache: %s', message)
     const cache: KeyedCache<StoredRegistration, RegistrationKey> = createDiskCache(
         (registrationKey: RegistrationKey) => getRegistrationCacheFile(directory, registrationKey),
         logger

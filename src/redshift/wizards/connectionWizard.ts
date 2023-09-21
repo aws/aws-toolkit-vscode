@@ -43,14 +43,14 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
             relativeOrder: 1,
         })
         this.form.database.bindPrompter(getDatabasePrompter, {
-            relativeOrder: 2,
+            relativeOrder: 3,
         })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
                 state.database !== undefined &&
                 state.connectionType === ConnectionType.DatabaseUser &&
                 node.warehouseType === RedshiftWarehouseType.PROVISIONED,
-            relativeOrder: 3,
+            relativeOrder: 2,
         })
 
         this.form.secret.bindPrompter(state => getSecretPrompter(node.redshiftClient.regionCode), {
@@ -61,6 +61,7 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
 }
 
 export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
+    static readonly SERVERLESSPREFIX = 'Serverless:'
     public constructor(
         regionProvider: RegionProvider,
         region?: Region | undefined,
@@ -98,9 +99,19 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
         })
 
         this.form.warehouseType.setDefault(state => {
-            return state.warehouseIdentifier?.toLowerCase().startsWith('serverless')
-                ? RedshiftWarehouseType.SERVERLESS
-                : RedshiftWarehouseType.PROVISIONED
+            if (!state.warehouseType && state.warehouseIdentifier) {
+                if (state.warehouseIdentifier?.startsWith(NotebookConnectionWizard.SERVERLESSPREFIX)) {
+                    state.warehouseType = RedshiftWarehouseType.SERVERLESS
+                    state.warehouseIdentifier = state.warehouseIdentifier.replace(
+                        NotebookConnectionWizard.SERVERLESSPREFIX,
+                        ''
+                    )
+                    return RedshiftWarehouseType.SERVERLESS
+                } else {
+                    state.warehouseType = RedshiftWarehouseType.PROVISIONED
+                    return RedshiftWarehouseType.PROVISIONED
+                }
+            }
         })
 
         this.form.connectionType.bindPrompter(getConnectionTypePrompter, { relativeOrder: 3 })
@@ -125,6 +136,7 @@ function getUsernamePrompter(): Prompter<string> {
         value: '',
         title: localize('AWS.redshift.username', 'Enter a username'),
         buttons: createCommonButtons(),
+        placeholder: 'Enter Username',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.usernameValidation', 'Username cannot be empty')
         },
@@ -136,6 +148,7 @@ function getDatabasePrompter(): Prompter<string> {
         value: '',
         title: localize('AWS.redshift.database', 'Enter a database'),
         buttons: createCommonButtons(),
+        placeholder: 'Enter Database Name',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.databaseValidation', 'Database cannot be empty')
         },
@@ -150,6 +163,7 @@ function getConnectionTypePrompter(): Prompter<ConnectionType> {
     return createQuickPick(items, {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
         buttons: createCommonButtons(),
+        placeholder: 'Select Connection Type',
     })
 }
 
@@ -184,8 +198,12 @@ async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
                 for await (const workgroup of serverlessResponse.workgroups) {
                     yield [
                         {
-                            label: workgroup.workgroupName || 'UnknownServerlessWorkgroup',
-                            data: workgroup.workgroupName || 'UnknownServerlessWorkgroup',
+                            label: `${NotebookConnectionWizard.SERVERLESSPREFIX} ${
+                                workgroup.workgroupName ?? 'UnknownServerlessWorkgroup'
+                            }`,
+                            data: `${NotebookConnectionWizard.SERVERLESSPREFIX}${
+                                workgroup.workgroupName ?? 'UnknownServerlessWorkgroup'
+                            }`,
                         },
                     ]
                 }
@@ -200,6 +218,7 @@ function getWarehouseIdentifierPrompter(region: string): QuickPickPrompter<strin
     return createQuickPick(fetchWarehouses(redshiftClient), {
         title: localize('AWS.redshift.chooseAWarehousePrompt', 'Choose a warehouse to connect to'),
         buttons: createCommonButtons(),
+        placeholder: 'Choose a warehouse to connect to',
     })
 }
 
@@ -208,6 +227,7 @@ function getSecretPrompter(region: string): QuickPickPrompter<string> {
     return createQuickPick(fetchSecretList(secretsManagerClient), {
         title: localize('AWS.redshift.chooseSecretPrompt', 'Choose a secret'),
         buttons: createCommonButtons(),
+        placeholder: 'Choose a secret',
     })
 }
 

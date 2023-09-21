@@ -217,7 +217,7 @@ export const artifactTypeSource = 'SourceCode'
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
 // wait time for editor to update editor.selection.active (in milliseconds)
-export const vsCodeCursorUpdateDelay = 3
+export const vsCodeCursorUpdateDelay = 10
 
 export const reloadWindow = 'Reload Now'
 

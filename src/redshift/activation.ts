@@ -32,12 +32,22 @@ export async function activate(ctx: ExtContext): Promise<void> {
         const redshiftNotebookController = new RedshiftNotebookController()
         const commandHandler = async (cell: vscode.NotebookCell, refreshCellStatusBar: () => void) => {
             const warehouseConnectionWizard = new NotebookConnectionWizard(ctx.regionProvider)
-            const connectionParams: ConnectionParams | undefined = await warehouseConnectionWizard.run()
+            let connectionParams: ConnectionParams | undefined = await warehouseConnectionWizard.run()
             if (!connectionParams) {
                 return
             }
-            outputChannel.appendLine(`Redshift: connected to ${connectionParams.warehouseIdentifier}`)
             redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
+            try {
+                await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
+                outputChannel.appendLine(`Redshift: connected to: ${connectionParams.warehouseIdentifier}`)
+            } catch (error) {
+                outputChannel.appendLine(
+                    `Redshift: failed to connect to: ${connectionParams.warehouseIdentifier} - ${
+                        (error as Error).message
+                    }`
+                )
+                connectionParams = undefined
+            }
             const edit = new vscode.WorkspaceEdit()
             //NotebookEdit is  only available for engine version > 1.68.0
             const nbEdit = (vscode as any).NotebookEdit.updateCellMetadata(cell.index, {
