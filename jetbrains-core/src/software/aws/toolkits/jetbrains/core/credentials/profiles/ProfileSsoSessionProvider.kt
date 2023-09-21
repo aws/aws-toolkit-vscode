@@ -14,25 +14,28 @@ import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.diskCache
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCredentialProvider
-import java.util.Optional
 
-class ProfileSsoSessionProvider(profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
+class ProfileSsoSessionProvider(ssoCache: SsoCache, profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
     private val ssoClient: SsoClient
     private val ssoOidcClient: SsoOidcClient
     private val credentialsProvider: SsoCredentialProvider
     private val mySsoSection: SsoMetadata
     init {
         val ssoSession = profile.requiredProperty(SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY)
-        val ssoSessionSection: Optional<Profile>? = ProfileFile.defaultProfileFile().getSection(SsoSessionConstants.SSO_SESSION_SECTION_NAME, ssoSession)
+        val ssoSessionSection = ProfileFile.defaultProfileFile().getSection(SsoSessionConstants.SSO_SESSION_SECTION_NAME, ssoSession).orElseThrow()
         val clientManager = AwsClientManager.getInstance()
 
         mySsoSection = SsoMetadata(
-            ssoSessionSection?.get()?.requiredProperty(ProfileProperty.SSO_REGION).toString(),
-            ssoSessionSection?.get()?.requiredProperty(ProfileProperty.SSO_START_URL).toString(),
-            listOf(ssoSessionSection?.get()?.property(SsoSessionConstants.SSO_REGISTRATION_SCOPES).toString())
+            ssoSessionSection.requiredProperty(ProfileProperty.SSO_REGION),
+            ssoSessionSection.requiredProperty(ProfileProperty.SSO_START_URL),
+            // default to a sane scope; we need this anyways for the credential provider to have the correct permissions
+            ssoSessionSection.property(SsoSessionConstants.SSO_REGISTRATION_SCOPES)
+                .map { it.trim().split(",") }
+                .orElse(listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE))
         )
 
         ssoClient = clientManager.createUnmanagedClient(AnonymousCredentialsProvider.create(), Region.of(mySsoSection.ssoRegion))
@@ -41,7 +44,7 @@ class ProfileSsoSessionProvider(profile: Profile) : AwsCredentialsProvider, SdkA
         val ssoAccessTokenProvider = SsoAccessTokenProvider(
             mySsoSection.ssoStartUrl,
             mySsoSection.ssoRegion,
-            diskCache,
+            ssoCache,
             ssoOidcClient,
             mySsoSection.ssoRegistrationScopes
         )

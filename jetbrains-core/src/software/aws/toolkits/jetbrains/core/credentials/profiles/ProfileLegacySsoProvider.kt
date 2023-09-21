@@ -13,11 +13,11 @@ import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCredentialProvider
 
-class ProfileSsoProvider(profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
+class ProfileLegacySsoProvider(ssoCache: SsoCache, profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
     private val ssoClient: SsoClient
     private val ssoOidcClient: SsoOidcClient
     private val credentialsProvider: SsoCredentialProvider
@@ -32,7 +32,7 @@ class ProfileSsoProvider(profile: Profile) : AwsCredentialsProvider, SdkAutoClos
         val ssoAccessTokenProvider = SsoAccessTokenProvider(
             profile.requiredProperty(ProfileProperty.SSO_START_URL),
             ssoRegion,
-            diskCache,
+            ssoCache,
             ssoOidcClient
         )
 

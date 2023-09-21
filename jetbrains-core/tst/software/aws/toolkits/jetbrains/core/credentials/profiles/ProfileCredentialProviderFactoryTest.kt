@@ -21,39 +21,44 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.rules.TemporaryFolder
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.stub
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProviderChain
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
 import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
-import software.amazon.awssdk.profiles.Profile
-import software.amazon.awssdk.profiles.ProfileFile
-import software.amazon.awssdk.profiles.ProfileProperty
 import software.amazon.awssdk.services.sso.SsoClient
+import software.amazon.awssdk.services.sso.model.GetRoleCredentialsRequest
+import software.amazon.awssdk.services.sso.model.GetRoleCredentialsResponse
+import software.amazon.awssdk.services.sso.model.RoleCredentials
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
 import software.aws.toolkits.core.rules.SystemPropertyHelper
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.InteractiveCredential
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
-import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_REGISTRATION_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
+import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
+import software.aws.toolkits.jetbrains.core.credentials.sso.AccessTokenCacheKey
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
 import software.aws.toolkits.jetbrains.utils.isInstanceOfSatisfying
 import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
 import java.io.File
-import java.util.Optional
+import java.time.Instant
 import java.util.function.Function
 
 class ProfileCredentialProviderFactoryTest {
@@ -637,7 +642,7 @@ class ProfileCredentialProviderFactoryTest {
         val validProfile = findCredentialIdentifier("sso")
         val credentialsProvider = providerFactory.createProvider(validProfile)
 
-        assertThat(credentialsProvider).isInstanceOf<ProfileSsoProvider>()
+        assertThat(credentialsProvider).isInstanceOf<ProfileLegacySsoProvider>()
     }
 
     @Test
@@ -759,7 +764,7 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     @Test
-    fun `sso-session profile creates a provider`() {
+    fun `sso-session profile creates a provider with the appropriate properties`() {
         writeProfileFile(
             """
             [profile sso]
@@ -770,27 +775,125 @@ class ProfileCredentialProviderFactoryTest {
             [sso-session my-sso]
             sso_region=us-east-2
             sso_start_url=ValidUrl
-            sso_registration_scopes = sso:validAcc:validAccess
+            sso_registration_scopes = scope1,scope2,scope3
             """.trimIndent()
         )
 
-        clientManager.create<SsoClient>()
+        // mock out enough of the flow to validate the values we care about
+        val accessToken = aString()
+        val diskCache = mock<SsoCache> {
+            whenever(it.loadAccessToken(any<AccessTokenCacheKey>())).thenReturn(
+                AccessToken("startUrl", "region", accessToken, expiresAt = Instant.MAX)
+            )
+        }
+        val ssoClientMock = clientManager.create<SsoClient>().also {
+            whenever(it.getRoleCredentials(any<GetRoleCredentialsRequest>())).thenReturn(
+                GetRoleCredentialsResponse.builder()
+                    .roleCredentials(
+                        RoleCredentials.builder()
+                            .accessKeyId("access")
+                            .secretAccessKey("secret")
+                            .sessionToken("token")
+                            .expiration(Instant.MAX.epochSecond)
+                            .build()
+                    )
+                    .build()
+            )
+        }
         clientManager.create<SsoOidcClient>()
 
-        val providerFactory = createProviderFactory()
+        val providerFactory = createProviderFactory(diskCache)
         val validProfile = findCredentialIdentifier("sso")
-
-        val ssoSessionSection: Optional<Profile>? = ProfileFile.defaultProfileFile().getSection(SsoSessionConstants.SSO_SESSION_SECTION_NAME, "my-sso")
 
         val credentialsProvider = providerFactory.createProvider(validProfile)
         assertThat(credentialsProvider).isInstanceOf<ProfileSsoSessionProvider>()
-        assertThat(ssoSessionSection?.get()?.requiredProperty(ProfileProperty.SSO_REGION)).isEqualTo("us-east-2")
-        assertThat(ssoSessionSection?.get()?.requiredProperty(ProfileProperty.SSO_START_URL)).isEqualTo("ValidUrl")
-        assertThat(ssoSessionSection?.get()?.property(SSO_REGISTRATION_SCOPES)).get().isEqualTo("sso:validAcc:validAccess")
+
+        try {
+            credentialsProvider.resolveCredentials()
+        } catch (_: Exception) {}
+
+        argumentCaptor<AccessTokenCacheKey> {
+            verify(diskCache).loadAccessToken(capture())
+            assertThat(firstValue.startUrl).isEqualTo("ValidUrl")
+            assertThat(firstValue.scopes).containsExactlyInAnyOrder("scope1", "scope2", "scope3")
+        }
+
+        argumentCaptor<GetRoleCredentialsRequest> {
+            verify(ssoClientMock).getRoleCredentials(capture())
+            assertThat(firstValue.accessToken()).isEqualTo(accessToken)
+            assertThat(firstValue.roleName()).isEqualTo("RoleName")
+            assertThat(firstValue.accountId()).isEqualTo("111222333444")
+        }
+
+        // ideally also assert the sso region, but there's no obvious way to test that without lots of plumbing
     }
 
     @Test
-    fun `invalid sso-session profile`() {
+    fun `sso-session profile can get role credentials with no scope`() {
+        writeProfileFile(
+            """
+            [profile sso]
+            sso_session = my-sso
+            sso_account_id=111222333444
+            sso_role_name=RoleName
+            
+            [sso-session my-sso]
+            sso_region=us-east-2
+            sso_start_url=ValidUrl
+            """.trimIndent()
+        )
+
+        // mock out enough of the flow to validate the values we care about
+        val accessToken = aString()
+        val diskCache = mock<SsoCache> {
+            whenever(it.loadAccessToken(any<AccessTokenCacheKey>())).thenReturn(
+                AccessToken("startUrl", "region", accessToken, expiresAt = Instant.MAX)
+            )
+        }
+        val ssoClientMock = clientManager.create<SsoClient>().also {
+            whenever(it.getRoleCredentials(any<GetRoleCredentialsRequest>())).thenReturn(
+                GetRoleCredentialsResponse.builder()
+                    .roleCredentials(
+                        RoleCredentials.builder()
+                            .accessKeyId("access")
+                            .secretAccessKey("secret")
+                            .sessionToken("token")
+                            .expiration(Instant.MAX.epochSecond)
+                            .build()
+                    )
+                    .build()
+            )
+        }
+        clientManager.create<SsoOidcClient>()
+
+        val providerFactory = createProviderFactory(diskCache)
+        val validProfile = findCredentialIdentifier("sso")
+
+        val credentialsProvider = providerFactory.createProvider(validProfile)
+        assertThat(credentialsProvider).isInstanceOf<ProfileSsoSessionProvider>()
+
+        try {
+            credentialsProvider.resolveCredentials()
+        } catch (_: Exception) {}
+
+        argumentCaptor<AccessTokenCacheKey> {
+            verify(diskCache).loadAccessToken(capture())
+            assertThat(firstValue.startUrl).isEqualTo("ValidUrl")
+            assertThat(firstValue.scopes).containsExactly(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
+        }
+
+        argumentCaptor<GetRoleCredentialsRequest> {
+            verify(ssoClientMock).getRoleCredentials(capture())
+            assertThat(firstValue.accessToken()).isEqualTo(accessToken)
+            assertThat(firstValue.roleName()).isEqualTo("RoleName")
+            assertThat(firstValue.accountId()).isEqualTo("111222333444")
+        }
+
+        // ideally also assert the sso region, but there's no obvious way to test that without lots of plumbing
+    }
+
+    @Test
+    fun `ignores profile referencing invalid sso-session profile`() {
         writeProfileFile(
             """
             [profile sso]
@@ -811,7 +914,7 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     @Test
-    fun `profile without sso-session section`() {
+    fun `ignores profile referencing missing sso-session section`() {
         writeProfileFile(
             """
             [profile sso]
