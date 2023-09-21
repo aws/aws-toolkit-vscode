@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM: Debugging a nodejs Lambda always hits breakpoint in nodejs async_hooks module before reaching the user-specified breakpoint"
+}
