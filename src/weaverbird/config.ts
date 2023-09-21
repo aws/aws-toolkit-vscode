@@ -21,17 +21,17 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
             //     lambdaArns: {
             //         approach: {
             //             generate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GenerateApproachLambda47-xehxHZR07av2:live',
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:GenerateApproachLambda:live',
             //             iterate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-IterateApproachLambda18D-U8Nhv4fB2obb:live',
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:IterateApproachLambda:live',
             //         },
             //         codegen: {
             //             generate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-XXqmVJOB85DZ:live',
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:GenerateCodeLambda:live',
             //             iterate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-nvZ0wa8hAqfE:live',
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:IterateCodeLambda:live',
             //             getResults:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:WeaverbirdService-Service-GetCodeGenerationLambdaB-Gg6ZiJCfJ9sG:live',
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:GetCodeGenerationResultLambda:live',
             //         },
             //     },
             // }
@@ -40,18 +40,13 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                 region: 'us-west-2',
                 lambdaArns: {
                     approach: {
-                        generate:
-                            'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateApproachLambda47-VIjB8vZYS3Iu:live',
-                        iterate:
-                            'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateApproachLambda18D-48KTZ8YLkK70:live',
+                        generate: 'arn:aws:lambda:us-west-2:789621683470:function:GenerateApproachLambda:live',
+                        iterate: 'arn:aws:lambda:us-west-2:789621683470:function:IterateApproachLambda:live',
                     },
                     codegen: {
-                        generate:
-                            'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GenerateCodeLambdaCDE418-nXvafUVY7rmw:live',
-                        iterate:
-                            'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-IterateCodeLambdaA908EBD-Asyx9VdIH3k2:live',
-                        getResults:
-                            'arn:aws:lambda:us-west-2:789621683470:function:WeaverbirdService-Service-GetCodeGenerationLambdaB-3W5Wr1TtVHcr:live',
+                        generate: 'arn:aws:lambda:us-west-2:789621683470:function:GenerateCodeLambda:live',
+                        iterate: 'arn:aws:lambda:us-west-2:789621683470:function:IterateCodeLambda:live',
+                        getResults: 'arn:aws:lambda:us-west-2:789621683470:function:GetCodeGenerationResultLambda:live',
                     },
                 },
             }
