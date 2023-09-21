@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger/logger'
 import { defaultLlmConfig } from '../../constants'
@@ -12,12 +11,9 @@ import { collectFiles } from '../../files'
 import { RefinementState } from './sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import type { Interaction, SessionState, SessionStateConfig, LocalResolvedConfig, LLMConfig } from '../../types'
+import { AddToChat } from '../../models'
 
 export class Session {
-    // TODO remake private
-    public onProgressEventEmitter: vscode.EventEmitter<string>
-    public onProgressEvent: vscode.Event<string>
-
     public workspaceRoot: string
     private state: SessionState
     private task: string = ''
@@ -27,42 +23,36 @@ export class Session {
     private backendConfig: LocalResolvedConfig
     private fs: VirtualFileSystem
 
-    public onAddToHistory: vscode.EventEmitter<Interaction[]>
-
-    // TODO remake private
-    public onProgressFinishedEventEmitter: vscode.EventEmitter<void>
-    public onProgressFinishedEvent: vscode.Event<void>
+    private addToChat: AddToChat
 
     constructor(
         workspaceRoot: string,
-        onAddToHistory: vscode.EventEmitter<Interaction[]>,
         backendConfig: LocalResolvedConfig,
-        fs: VirtualFileSystem
+        fs: VirtualFileSystem,
+        addToChat: AddToChat
     ) {
         this.workspaceRoot = workspaceRoot
-        this.onProgressEventEmitter = new vscode.EventEmitter<string>()
         this.lambdaClient = new DefaultLambdaClient(backendConfig.region)
         this.backendConfig = backendConfig
         this.fs = fs
         this.state = new RefinementState(this.getSessionStateConfig(), '')
-        this.onProgressEvent = this.onProgressEventEmitter.event
 
-        this.onAddToHistory = onAddToHistory
-        this.onProgressFinishedEventEmitter = new vscode.EventEmitter<void>()
-        this.onProgressFinishedEvent = this.onProgressFinishedEventEmitter.event
+        this.addToChat = addToChat
     }
 
-    async send(msg: string): Promise<Interaction | Interaction[]> {
+    async send(msg: string): Promise<Interaction[]> {
         try {
             getLogger().info(`Received message from chat view: ${msg}`)
             return await this.sendUnsafe(msg)
         } catch (e: any) {
             getLogger().error(e)
-            return {
-                origin: 'ai',
-                type: 'message',
-                content: `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`,
-            }
+            return [
+                {
+                    origin: 'ai',
+                    type: 'message',
+                    content: `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`,
+                },
+            ]
         }
     }
 
@@ -79,7 +69,7 @@ export class Session {
         }
     }
 
-    async sendUnsafe(msg: string): Promise<Interaction | Interaction[]> {
+    async sendUnsafe(msg: string): Promise<Interaction[]> {
         const sessionStageConfig = this.getSessionStateConfig()
 
         const files = await collectFiles(path.join(this.workspaceRoot, 'src'))
@@ -90,11 +80,13 @@ export class Session {
             this.state = new RefinementState(sessionStageConfig, this.approach)
             const message =
                 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
-            return {
-                origin: 'ai',
-                type: 'message',
-                content: message,
-            }
+            return [
+                {
+                    origin: 'ai',
+                    type: 'message',
+                    content: message,
+                },
+            ]
         }
 
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
@@ -106,8 +98,8 @@ export class Session {
             files,
             task: this.task,
             msg,
-            onAddToHistory: this.onAddToHistory,
             fs: this.fs,
+            addToChat: this.addToChat,
         })
 
         if (resp.nextState) {

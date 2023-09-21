@@ -6,7 +6,8 @@
 import { FileMetadata } from './client/weaverbirdclient'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import { LambdaClient } from '../shared/clients/lambdaClient'
-import type { EventEmitter, CancellationTokenSource } from 'vscode'
+import type { CancellationTokenSource } from 'vscode'
+import { AddToChat } from './models'
 
 export interface LLMConfig {
     model: string
@@ -54,7 +55,7 @@ export interface SessionStateAction {
     task: string
     files: FileMetadata[]
     msg?: string
-    onAddToHistory: EventEmitter<Interaction[]>
+    addToChat: AddToChat
     fs: VirtualFileSystem
 }
 

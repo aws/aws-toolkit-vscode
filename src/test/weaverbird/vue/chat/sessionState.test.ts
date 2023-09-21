@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
 import {
@@ -16,21 +15,22 @@ import {
 import { LambdaClient } from '../../../../shared/clients/lambdaClient'
 import * as invokeModule from '../../../../weaverbird/vue/chat/invoke'
 import { VirtualFileSystem } from '../../../../shared/virtualFilesystem'
-import { SessionStateConfig, Interaction, SessionStateAction } from '../../../../weaverbird/types'
+import { SessionStateConfig, SessionStateAction } from '../../../../weaverbird/types'
 import { GenerateApproachOutput, GenerateCodeOutput } from '../../../../weaverbird/client/weaverbirdclient'
+import { MessageActionType, AddToChat, createChatContent } from '../../../../weaverbird/models'
 
 interface MockSessionStateActionInput {
     msg?: 'WRITE CODE' | 'MOCK CODE' | 'OTHER'
-    onAddToHistory?: vscode.EventEmitter<Interaction[]>
+    addToChat?: AddToChat
 }
 
-const mockSessionStateAction = ({ msg, onAddToHistory }: MockSessionStateActionInput): SessionStateAction => {
+const mockSessionStateAction = ({ msg, addToChat }: MockSessionStateActionInput): SessionStateAction => {
     return {
         task: 'test-task',
         msg: msg ?? 'test-msg',
         files: [],
         fs: new VirtualFileSystem(),
-        onAddToHistory: onAddToHistory ?? ({} as vscode.EventEmitter<Interaction[]>),
+        addToChat: addToChat ?? function (data: any, action: MessageActionType) {},
     }
 }
 
@@ -144,9 +144,8 @@ describe('sessionState', () => {
     describe('CodeGenState', () => {
         it('transitions to  generate CodeGenIterationState when codeGenerationStatus ready ', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
-            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-            const addToHistoryStub = sinon.stub(onAddToHistory, 'fire')
-            const testAction = mockSessionStateAction({ onAddToHistory })
+            const addToChatSpy = sinon.spy()
+            const testAction = mockSessionStateAction({ addToChat: addToChatSpy })
             const state = new CodeGenState(testConfig, testApproach)
             const result = await state.interact(testAction)
 
@@ -157,36 +156,25 @@ describe('sessionState', () => {
                 interactions: [],
             })
             assert.strictEqual(
-                addToHistoryStub.calledWithMatch([
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Code generation started\n',
-                    },
-                ]),
+                addToChatSpy.calledWithMatch(
+                    createChatContent('Code generation started\n'),
+                    MessageActionType.CHAT_ANSWER
+                ),
                 true
             )
             assert.strictEqual(
-                addToHistoryStub.calledWithMatch([
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Changes to files done. Please review:',
-                    },
-                    {
-                        origin: 'ai',
-                        type: 'codegen',
-                        content: [],
-                    },
-                ]),
+                addToChatSpy.calledWithMatch(
+                    createChatContent('Changes to files done. Please review:'),
+                    MessageActionType.CHAT_ANSWER
+                ),
                 true
             )
         })
+
         it('transitions to  generate CodeGenIterationState when codeGenerationStatus failed ', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'failed' })
-            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-            const addToHistoryStub = sinon.stub(onAddToHistory, 'fire')
-            const testAction = mockSessionStateAction({ onAddToHistory })
+            const addToChatSpy = sinon.spy()
+            const testAction = mockSessionStateAction({ addToChat: addToChatSpy })
             const state = new CodeGenState(testConfig, testApproach)
             const result = await state.interact(testAction)
 
@@ -197,23 +185,17 @@ describe('sessionState', () => {
                 interactions: [],
             })
             assert.strictEqual(
-                addToHistoryStub.calledWithMatch([
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Code generation started\n',
-                    },
-                ]),
+                addToChatSpy.calledWithMatch(
+                    createChatContent('Code generation started\n'),
+                    MessageActionType.CHAT_ANSWER
+                ),
                 true
             )
             assert.strictEqual(
-                addToHistoryStub.calledWithMatch([
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Code generation failed\n',
-                    },
-                ]),
+                addToChatSpy.calledWithMatch(
+                    createChatContent('Code generation failed\n'),
+                    MessageActionType.CHAT_ANSWER
+                ),
                 true
             )
         })
@@ -225,9 +207,8 @@ describe('sessionState', () => {
         it('transitions after interaction to CodeGenState if action is WRITE CODE', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
 
-            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-            const addToHistoryStub = sinon.stub(onAddToHistory, 'fire')
-            const testAction = mockSessionStateAction({ msg: 'WRITE CODE', onAddToHistory })
+            const addToChatSpy = sinon.spy()
+            const testAction = mockSessionStateAction({ msg: 'WRITE CODE', addToChat: addToChatSpy })
             const interactionResult = await refinementIterationState.interact(testAction)
             const nextState = new CodeGenIterationState(testConfig, testApproach, [])
 
@@ -236,13 +217,10 @@ describe('sessionState', () => {
                 interactions: [],
             })
             assert.strictEqual(
-                addToHistoryStub.calledWithMatch([
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Code generation started\n',
-                    },
-                ]),
+                addToChatSpy.calledWithMatch(
+                    createChatContent('Code generation started\n'),
+                    MessageActionType.CHAT_ANSWER
+                ),
                 true
             )
         })
@@ -291,9 +269,7 @@ describe('sessionState', () => {
     describe('CodeGenIterationState', () => {
         it('transitions to generate CodeGenIterationState', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
-            const onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-            sinon.stub(onAddToHistory, 'fire')
-            const testAction = mockSessionStateAction({ onAddToHistory })
+            const testAction = mockSessionStateAction({})
 
             const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [])
             const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)

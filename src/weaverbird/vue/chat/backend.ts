@@ -8,11 +8,11 @@ import * as path from 'path'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { Session } from './session'
-import { getConfig } from '../../config'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { weaverbirdScheme } from '../../constants'
 import { FileSystemCommon } from '../../../srcShared/fs'
 import type { Interaction, LLMConfig, LocalResolvedConfig } from '../../types'
+import { MessageActionType } from '../../models'
 
 // const localize = nls.loadMessageBundle()
 const fs = FileSystemCommon.instance
@@ -38,7 +38,7 @@ export class WeaverbirdChatWebview extends VueWebview {
         const workspaceRoot = workspaceFolders[0].uri.fsPath
         this.workspaceRoot = workspaceRoot
         this.onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-        this.session = new Session(workspaceRoot, this.onAddToHistory, backendConfig, fs)
+        this.session = new Session(workspaceRoot, backendConfig, fs, (_data: any, _type: MessageActionType) => {})
         this.virtualFs = fs
     }
 
@@ -89,9 +89,9 @@ let activeView: InstanceType<typeof View> | undefined
 
 export async function registerChatView(
     ctx: vscode.ExtensionContext,
+    backendConfig: LocalResolvedConfig,
     fs: VirtualFileSystem
 ): Promise<WeaverbirdChatWebview> {
-    const backendConfig = await getConfig()
     activeView ??= new View(ctx, backendConfig, fs)
     activeView.register({
         title: 'Weaverbird Chat',
