@@ -85,7 +85,6 @@ export class InlineCompletionService {
         // Call report user decisions once to report recommendations leftover from last invocation.
         RecommendationHandler.instance.reportUserDecisions(-1)
 
-        this.setCodeWhispererStatusBarLoading()
         if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
             ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
         }
@@ -98,6 +97,9 @@ export class InlineCompletionService {
             await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
             return
         }
+
+        this.setCodeWhispererStatusBarLoading()
+
         TelemetryHelper.instance.setInvocationStartTime(performance.now())
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         RecommendationHandler.instance.documentUri = editor.document.uri
