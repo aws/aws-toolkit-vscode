@@ -18,7 +18,7 @@ describe('RedshiftDatabaseNode', function () {
     const mockRedshiftData = <RedshiftData>{}
     const redshiftClient = new DefaultRedshiftClient('us-east-1', async () => mockRedshiftData, undefined, undefined)
     const connectionParams = new ConnectionParams(
-        ConnectionType.DatabaseUser,
+        ConnectionType.TempCreds,
         'testDb1',
         'warehouseId',
         RedshiftWarehouseType.PROVISIONED

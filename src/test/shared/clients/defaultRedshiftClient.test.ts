@@ -26,14 +26,14 @@ describe('DefaultRedshiftClient', function () {
     const dbName = 'DB'
     const dbUsername = 'User'
     const provisionedDbUserAndPasswordParams = new ConnectionParams(
-        ConnectionType.DatabaseUser,
+        ConnectionType.TempCreds,
         dbName,
         clusterIdentifier,
         RedshiftWarehouseType.PROVISIONED,
         dbUsername
     )
     const serverlessFederatedParams = new ConnectionParams(
-        ConnectionType.DatabaseUser,
+        ConnectionType.TempCreds,
         dbName,
         workgroupName,
         RedshiftWarehouseType.SERVERLESS
