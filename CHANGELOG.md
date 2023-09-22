@@ -1,3 +1,8 @@
+## 1.91.0 2023-09-22
+
+- **Bug Fix** SAM: Debugging a nodejs Lambda always hits breakpoint in nodejs async_hooks module before reaching the user-specified breakpoint
+- **Bug Fix** CodeWhisperer: fixed case where 'CodeWhisperer' status bar stuck loading
+
 ## 1.90.0 2023-09-15
 
 - **Bug Fix** CodeCatalyst: "Open CodeCatalyst Dev Environment" may fail to connect from a new Windows system
