@@ -32,9 +32,10 @@ export class CellStatusBarItemProvider implements NotebookCellStatusBarItemProvi
         cell: NotebookCell,
         token: CancellationToken
     ): ProviderResult<NotebookCellStatusBarItem | NotebookCellStatusBarItem[]> {
-        if (cell.metadata?.connectionParams) {
+        const metadata = cell.notebook.metadata
+        if (metadata?.connectionParams) {
             this._item.text = `${getIcon('vscode-notebook-state-success')} Connected to ${
-                cell.metadata?.connectionParams?.warehouseIdentifier
+                metadata.connectionParams?.warehouseIdentifier
             }`
         } else {
             this._item.text = `${getIcon('vscode-notebook-state-error')} Connect`

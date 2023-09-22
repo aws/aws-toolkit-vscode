@@ -50,7 +50,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
             }
             const edit = new vscode.WorkspaceEdit()
             //NotebookEdit is  only available for engine version > 1.68.0
-            const nbEdit = (vscode as any).NotebookEdit.updateCellMetadata(cell.index, {
+            const nbEdit = (vscode as any).NotebookEdit.updateNotebookMetadata({
                 connectionParams: connectionParams,
             })
             edit.set(cell.notebook.uri, [nbEdit])

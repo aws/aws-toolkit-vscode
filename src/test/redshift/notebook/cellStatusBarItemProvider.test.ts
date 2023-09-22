@@ -15,9 +15,11 @@ describe('CellStatusBarItemProvider', function () {
 
     beforeEach(() => {
         cell = {
-            metadata: {
-                connectionParams: {
-                    warehouseIdentifier: 'TestWarehouse',
+            notebook: {
+                metadata: {
+                    connectionParams: {
+                        warehouseIdentifier: 'TestWarehouse',
+                    },
                 },
             },
         }
@@ -30,7 +32,7 @@ describe('CellStatusBarItemProvider', function () {
     })
 
     it('provides "Connect" status bar item when cell has no connectionParams', () => {
-        const cell = { metadata: { connectionParams: undefined } }
+        const cell = { notebook: { metadata: { connectionParams: undefined } } }
         const expectedText = '$(notebook-state-error) Connect'
         const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, undefined)
         assert(Array.isArray(result))

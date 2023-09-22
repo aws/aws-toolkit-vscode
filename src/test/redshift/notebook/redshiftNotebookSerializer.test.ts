@@ -23,13 +23,14 @@ describe('RedshiftNotebookSerializer', () => {
 
     it('should deserialize NotebookData correctly', async () => {
         const serializer = new RedshiftNotebookSerializer()
+        const expectedMetadata = { Test: 'Meta' }
         const rawNotebookData = {
             cells: [
                 {
                     kind: vscode.NotebookCellKind.Code,
                     language: 'sql',
                     value: 'select * from table',
-                    metadata: {},
+                    metadata: expectedMetadata,
                 },
             ],
         }
@@ -38,14 +39,13 @@ describe('RedshiftNotebookSerializer', () => {
         const result = await serializer.deserializeNotebook(rawData, token)
         assert.strictEqual(result.cells.length, 1)
         const actualResultCopy = JSON.parse(JSON.stringify(result.cells[0]))
-        delete actualResultCopy.metadata.mt
         assert.deepStrictEqual(actualResultCopy, {
             kind: vscode.NotebookCellKind.Code,
             value: 'select * from table',
             languageId: 'sql',
             outputs: [],
-            metadata: {},
         })
+        assert.deepStrictEqual(result.metadata, expectedMetadata)
     })
 
     it('should serialize NotebookData correctly', async () => {
@@ -53,11 +53,12 @@ describe('RedshiftNotebookSerializer', () => {
         const notebookData = new vscode.NotebookData([
             new vscode.NotebookCellData(vscode.NotebookCellKind.Code, 'select * from table;', 'SQL'),
         ])
+        notebookData.metadata = { Test: 'Meta' }
         const token = new vscode.CancellationTokenSource().token
         const result = await serializer.serializeNotebook(notebookData, token)
         const decodedResult = new TextDecoder().decode(result)
         const expectedSerializedData =
-            '{"cells":[{"kind":2,"language":"SQL","value":"select * from table;","metadata":{}}]}'
+            '{"cells":[{"kind":2,"language":"SQL","value":"select * from table;","metadata":{"Test":"Meta"}}]}'
         assert.strictEqual(decodedResult, expectedSerializedData)
     })
 
