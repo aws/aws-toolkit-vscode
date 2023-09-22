@@ -33,26 +33,31 @@ export class RedshiftNotebookSerializer implements vscode.NotebookSerializer {
         }
 
         // Create array of Notebook cells for the VS Code API from file contents
+        const metadata = raw.cells[0]?.metadata ?? {}
         const cells = raw.cells.map(item => {
             const newCell = new vscode.NotebookCellData(item.kind, item.value, item.language)
-            newCell.metadata = item.metadata || {}
             return newCell
         })
 
+        const notebookData = new vscode.NotebookData(cells)
+        notebookData.metadata = metadata
         // Pass read and formatted Notebook Data to VS Code to display Notebook with saved cells
-        return new vscode.NotebookData(cells)
+        return notebookData
     }
 
-    public async serializeNotebook(data: vscode.NotebookData, token: vscode.CancellationToken): Promise<Uint8Array> {
+    public async serializeNotebook(
+        notebookData: vscode.NotebookData,
+        token: vscode.CancellationToken
+    ): Promise<Uint8Array> {
         // Map the Notebook data into the format we want to save the Notebook data as
         const contents: RawNotebookData = { cells: [] }
 
-        for (const cell of data.cells) {
+        for (const cell of notebookData.cells) {
             contents.cells.push({
                 kind: cell.kind,
                 language: cell.languageId,
                 value: cell.value,
-                metadata: cell.metadata || {},
+                metadata: notebookData.metadata ?? {},
             })
         }
 
