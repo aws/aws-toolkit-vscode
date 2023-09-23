@@ -41,7 +41,13 @@ export class CodeWhispererWebview extends VueWebview {
         if (fs.existsSync(localFilePath) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
             vscode.workspace.openTextDocument(fileUri).then(doc => {
-                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+                    const endOfDocument = new vscode.Position(
+                        doc.lineCount - 1,
+                        doc.lineAt(doc.lineCount - 1).text.length
+                    )
+                    editor.selection = new vscode.Selection(endOfDocument, endOfDocument)
+                })
             })
         } else {
             this.saveFileLocally(localFilePath, fileContent)
@@ -53,7 +59,10 @@ export class CodeWhispererWebview extends VueWebview {
         await fs.promises.writeFile(localFilePath, fileContent)
         this.isFileSaved = true
         vscode.workspace.openTextDocument(localFilePath).then(doc => {
-            vscode.window.showTextDocument(doc, vscode.ViewColumn.Active)
+            vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+                const endOfDocument = new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
+                editor.selection = new vscode.Selection(endOfDocument, endOfDocument)
+            })
         })
     }
 
@@ -94,6 +103,15 @@ export class CodeWhispererWebview extends VueWebview {
         telemetry.ui_click.emit({
             elementId: id,
         })
+    }
+    //Telemetry for CW Try Example
+    emitTryExampleClick(languageSelected: string, taskType: string) {
+        /*
+        telemetry.codewhisperer_onboardingClick({
+            language: languageSelected,
+            taskType: taskType,
+        })
+        */
     }
 }
 

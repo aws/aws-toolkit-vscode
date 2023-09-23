@@ -13,7 +13,7 @@
                 <div>
                     <a
                         class="DocumentationLink"
-                        href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/getting-started.html"
+                        href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/features.html"
                         @click="emitUiClick('codeWhisperer_Resources_Documentation')"
                         >Documentation</a
                     >

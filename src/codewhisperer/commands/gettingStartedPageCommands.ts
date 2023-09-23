@@ -5,7 +5,7 @@
 import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../../shared/vscode/commands2'
 import { showCodeWhispererWebview, CodeWhispererSource } from '../vue/backend'
-
+import { telemetry } from '../../shared/telemetry/telemetry'
 /**
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
@@ -13,6 +13,9 @@ export class CodeWhispererCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext, private start: string) {}
 
     public showGettingStartedPage(source: CodeWhispererSource) {
+        telemetry.ui_click.emit({
+            elementId: 'codewhisperer_learn_buttonclick',
+        })
         return showCodeWhispererWebview(this.extContext, source, this.start)
     }
 }

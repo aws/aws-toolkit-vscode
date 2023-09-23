@@ -38,7 +38,7 @@
             </svg>
         </div>
         <div class="workshopDescription">
-            Learn how to get the best recommendations with prompt engineering.
+            Learn how to get the best suggestions with prompt engineering.
             <a
                 class="getStartedText"
                 href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/01-introduction"
