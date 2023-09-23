@@ -138,6 +138,7 @@ export default defineComponent({
 .bannerContainer {
     padding-left: 30px;
     background-color: #0a4265;
+    border-radius: 10px;
 }
 .banner {
     display: flex;
