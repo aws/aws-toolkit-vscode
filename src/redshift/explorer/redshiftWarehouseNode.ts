@@ -21,6 +21,7 @@ import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 
 export class StartButtonNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -41,7 +42,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public connectionParams: ConnectionParams | undefined
     public newStartButton: { label: string; iconPath: any }
     private readonly logger = getLogger()
-
+    public secretManagerClient: SecretsManagerClient | undefined
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
@@ -57,6 +58,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.redshiftClient = parent.redshiftClient
         this.newStartButton = { label: 'Start', iconPath: getIcon('vscode-debug-start') }
         this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
+        this.secretManagerClient = new SecretsManagerClient('us-east-1')
     }
 
     public setConnectionParams(connectionParams: ConnectionParams) {
@@ -113,6 +115,16 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     return this.getRetryNode()
                 } else {
                     this.connectionParams = connectionParams
+                    const connectionType = connectionParams.connectionType
+                    let secretArnFetched = ''
+                    if (connectionType === 'Database user name and Password') {
+                        secretArnFetched = (await this.secretManagerClient?.createSecretArn(connectionParams)) ?? ''
+                        connectionParams.username = undefined
+                        connectionParams.password = undefined
+                        connectionParams.secret = secretArnFetched
+                    } else {
+                        this.connectionParams = connectionParams
+                    }
                     try {
                         const childNodes = await this.childLoader.getChildren()
                         //Add the startButton
