@@ -58,7 +58,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.redshiftClient = parent.redshiftClient
         this.newStartButton = { label: 'Start', iconPath: getIcon('vscode-debug-start') }
         this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
-        this.secretManagerClient = new SecretsManagerClient('us-east-1')
+        this.secretManagerClient = new SecretsManagerClient(this.redshiftClient.regionCode)
     }
 
     public setConnectionParams(connectionParams: ConnectionParams) {
