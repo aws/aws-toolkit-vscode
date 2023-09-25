@@ -153,6 +153,7 @@ import { defineComponent } from 'vue'
 import { CodeWhispererWebview } from './backend'
 import TelemetryClient from '../../codewhisperer/vue/telemetry.vue'
 import { WebviewClientFactory } from '../../webviews/client'
+import { CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 const client = WebviewClientFactory.create<CodeWhispererWebview>()
 
 export default defineComponent({
@@ -307,7 +308,31 @@ export default defineComponent({
     },
     methods: {
         onClick(names: string[], label: string) {
-            client.emitTryExampleClick(label, names[0])
+            let taskType: CodewhispererGettingStartedTask = 'autoTrigger'
+            if (names[0] === 'CodeWhisperer_Example1.js') {
+                taskType = 'autoTrigger'
+            } else if (names[0] === 'CodeWhisperer_Example2.js') {
+                taskType = 'manualTrigger'
+            } else if (names[0] === 'CodeWhisperer_Example3.js') {
+                taskType = 'commentAsPrompt'
+            } else if (names[0] === 'CodeWhisperer_Example4.js') {
+                taskType = 'navigation'
+            } else {
+                taskType = 'unitTest'
+            }
+            let telemetryLabel: CodewhispererLanguage = 'typescript'
+            if (label === 'TypeScript') {
+                telemetryLabel = 'typescript'
+            } else if (label === 'JavaScript') {
+                telemetryLabel = 'javascript'
+            } else if (label === 'Python') {
+                telemetryLabel = 'python'
+            } else if (label === 'Java') {
+                telemetryLabel = 'java'
+            } else if (label === 'C#') {
+                telemetryLabel = 'csharp'
+            }
+            client.emitTryExampleClick(telemetryLabel, taskType)
             client.openFile(names)
         },
         async showOS() {

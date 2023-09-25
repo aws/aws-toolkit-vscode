@@ -11,7 +11,7 @@ import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 
 export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
@@ -104,17 +104,15 @@ export class CodeWhispererWebview extends VueWebview {
             elementId: id,
         })
     }
-    //Telemetry for CW Try Example
-    emitTryExampleClick(languageSelected: string, taskType: string) {
-        /*
-        telemetry.codewhisperer_onboardingClick({
-            language: languageSelected,
-            taskType: taskType,
+    //Telemetry for CodeWhisperer Try Example with two params Language and Task Type
+    emitTryExampleClick(languageSelected: CodewhispererLanguage, taskType: CodewhispererGettingStartedTask) {
+        telemetry.codewhisperer_onboardingClick.emit({
+            codewhispererLanguage: languageSelected,
+            codewhispererGettingStartedTask: taskType,
         })
-        */
     }
 }
-
+// export type codewhispererLanguage = 'python' | 'javascript' | 'csharp'
 //List of all events that are emitted from the webview of CodeWhisperer
 export type CodeWhispererUiClick =
     | 'codeWhisperer_Resources_Documentation'
