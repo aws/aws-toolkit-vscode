@@ -39,9 +39,18 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
                 warehouseType: node.warehouseType,
             },
         })
-        this.form.connectionType.bindPrompter(getConnectionTypePrompter, {
-            relativeOrder: 1,
-        })
+        this.form.connectionType.bindPrompter(
+            state => {
+                if (state?.warehouseType === 1) {
+                    return getConnectionTypePrompterServerless()
+                } else {
+                    return getConnectionTypePrompter()
+                }
+            },
+            {
+                relativeOrder: 1,
+            }
+        )
 
         this.form.database.bindPrompter(getDatabasePrompter, {
             relativeOrder: 3,
@@ -117,7 +126,20 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 }
             }
         })
-        this.form.connectionType.bindPrompter(getConnectionTypePrompter, { relativeOrder: 3 })
+
+        this.form.connectionType.bindPrompter(
+            state => {
+                if (state.warehouseIdentifier?.startsWith('serverless'.toLowerCase())) {
+                    return getConnectionTypePrompterServerless()
+                } else {
+                    return getConnectionTypePrompter()
+                }
+            },
+            {
+                relativeOrder: 3,
+            }
+        )
+
         this.form.database.bindPrompter(getDatabasePrompter, { relativeOrder: 4 })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
@@ -179,6 +201,17 @@ function getConnectionTypePrompter(): Prompter<ConnectionType> {
         data: type,
     }))
     return createQuickPick(items, {
+        title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
+        buttons: createCommonButtons(),
+        placeholder: 'Select Connection Type',
+    })
+}
+function getConnectionTypePrompterServerless(): Prompter<ConnectionType> {
+    const items: DataQuickPickItem<ConnectionType>[] = Object.values(ConnectionType).map(type => ({
+        label: type,
+        data: type,
+    }))
+    return createQuickPick([items[0], items[1]], {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
         buttons: createCommonButtons(),
         placeholder: 'Select Connection Type',
