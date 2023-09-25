@@ -69,12 +69,10 @@ export class CodeWhispererWebview extends VueWebview {
     //This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
     public getOSType() {
         const platform = os.platform()
-        if (platform === 'win32') {
-            return 'Windows'
-        } else if (platform === 'darwin') {
+        if (platform === 'darwin') {
             return 'Mac'
         } else {
-            return 'undefined'
+            return 'RestOfOS'
         }
     }
 

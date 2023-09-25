@@ -65,27 +65,8 @@ export async function activate(context: ExtContext): Promise<void> {
         await enableDefaultConfigCloud9()
     }
 
-    //This logic is to show the Getting Started Page only once for the first time SignIn Users
-    let start = ''
-
-    const hasShownWelcomeMsgBefore = get(
-        CodeWhispererConstants.welcomeMessageKeyPrevious,
-        context.extensionContext.globalState
-    )
-    const hasShownWelcomeMsgBeforeToExistingUsers = get(
-        CodeWhispererConstants.welcomeMessageKeyShown,
-        context.extensionContext.globalState
-    )
-
-    if (!hasShownWelcomeMsgBeforeToExistingUsers) {
-        start = hasShownWelcomeMsgBefore ? 'ExistingUser' : 'startUpOnly'
-    }
-
-    registerCommandsWithVSCode(
-        context.extensionContext,
-        CodeWhispererCommandDeclarations.instance,
-        new CodeWhispererCommandBackend(context.extensionContext, start)
-    )
+    //Opens the getting started page if it is not already open.
+    tryShowGettingStartedPage()
 
     /**
      * CodeWhisperer security panel
@@ -223,6 +204,39 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt()
+    }
+
+    function tryShowGettingStartedPage() {
+        //This logic is to show the Getting Started Page only once for the first time SignIn Users
+        let start = ''
+
+        /**
+         * hasShownWelcomeMsgBefore defines whether user is existing user or new user.
+         */
+        const hasShownWelcomeMsgBefore = get(
+            /** welcomeMessageKeyPrevious is a key for the previous welcome page of version v1.91.0,*/
+            CodeWhispererConstants.welcomeMessageKeyPrevious,
+            context.extensionContext.globalState
+        )
+
+        //hasShownWelcomeMsgBeforeToExistingUsers defines whether getting started page has been shown to existing users or new users since v1.92.0.
+        const hasShownWelcomeMsgBeforeToExistingUsers = get(
+            /**
+             *  welcomeMessageKeyShown is a new key for the new getting started experience, it is used to track if first time signIn new user/ existing user has seen the getting started page or not.
+             */
+            CodeWhispererConstants.welcomeMessageKeyShown,
+            context.extensionContext.globalState
+        )
+
+        if (!hasShownWelcomeMsgBeforeToExistingUsers) {
+            start = hasShownWelcomeMsgBefore ? 'ExistingUser' : 'startUpOnly'
+        }
+
+        registerCommandsWithVSCode(
+            context.extensionContext,
+            CodeWhispererCommandDeclarations.instance,
+            new CodeWhispererCommandBackend(context.extensionContext, start)
+        )
     }
 
     function activateSecurityScan() {
