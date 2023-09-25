@@ -9,9 +9,7 @@ import { ExtensionContext } from 'vscode'
 import { PanelStore } from '../stores/panelStore'
 import { messageIdentifier, MessageActionType, NotificationType, createChatContent } from '../models'
 import { Session } from '../vue/chat/session'
-import { LocalResolvedConfig } from '../types'
-import { VirtualFileSystem } from '../../shared/virtualFilesystem'
-import { ToolkitError } from '../../shared/errors'
+import { createSessionConfig } from '../vue/chat/sessionConfigFactory'
 
 export interface MynahDisplayProps {
     panelStore: PanelStore
@@ -21,22 +19,13 @@ export class WeaverbirdDisplay {
     private readonly assetsPath: vscode.Uri
     private readonly panelStore: PanelStore
     private uiReady: Record<string, boolean> = {}
-    private backendConfig: LocalResolvedConfig
-    private fs: VirtualFileSystem
 
-    constructor(
-        context: ExtensionContext,
-        props: MynahDisplayProps,
-        backendConfig: LocalResolvedConfig,
-        fs: VirtualFileSystem
-    ) {
+    constructor(context: ExtensionContext, props: MynahDisplayProps) {
         this.assetsPath = vscode.Uri.joinPath(context.extensionUri)
         this.panelStore = props.panelStore
-        this.backendConfig = backendConfig
-        this.fs = fs
     }
 
-    private setupPanel(panelId: string): void {
+    private async setupPanel(panelId: string): Promise<void> {
         const viewColumn = this.panelStore.getMostRecentPanel()?.webviewPanel.viewColumn ?? vscode.ViewColumn.Beside
         const panel = vscode.window.createWebviewPanel(
             'weaverbirdui-sample-extension',
@@ -50,14 +39,10 @@ export class WeaverbirdDisplay {
             }
         )
 
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            throw new ToolkitError('Can not initialize weaverbird chat when no workspace folder is present')
-        }
-
-        const workspaceRoot = workspaceFolders[0].uri.fsPath
         const addToChat = this.sendDataToUI.bind(this, panelId)
-        const session = new Session(workspaceRoot, this.backendConfig, this.fs, addToChat)
+
+        const sessionConfig = await createSessionConfig()
+        const session = new Session(sessionConfig, addToChat)
 
         // Handle when a message recieved from the UI layer
         panel.webview.onDidReceiveMessage(async msg => {
@@ -192,14 +177,14 @@ export class WeaverbirdDisplay {
     }
 
     // show or create and show a mynah-ui panel
-    public show(panelId: string): void {
+    public async show(panelId: string): Promise<void> {
         const panel = this.panelStore.getPanel(panelId ?? '')
         // eslint-disable-next-line no-null/no-null
         if (panel != null) {
             panel.webviewPanel.title = 'Weaverbird with Mynah UI Example'
             panel.webviewPanel.reveal(panel.webviewPanel.viewColumn, false)
         } else {
-            this.setupPanel(panelId)
+            await this.setupPanel(panelId)
         }
     }
 }
