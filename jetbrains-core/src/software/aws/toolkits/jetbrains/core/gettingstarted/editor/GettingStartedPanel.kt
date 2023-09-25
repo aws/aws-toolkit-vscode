@@ -24,9 +24,9 @@ import com.intellij.util.ui.components.BorderLayoutPanel
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.core.gettingstarted.SetupAuthenticationDialog
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.BULLET_PANEL_HEIGHT
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_TITLE_FONT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_WIDTH
-import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.TITLE_TEXT_FONTCOLOR
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
@@ -45,7 +45,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                             row {
                                 label(message("aws.onboarding.getstarted.panel.title")).applyToComponent {
                                     font = JBFont.h1().asBold()
-                                    foreground = TITLE_TEXT_FONTCOLOR
                                 }
                             }
                             row {
@@ -67,7 +66,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         JBLabel(message("aws.onboarding.getstarted.panel.group_title"))
                             .apply {
                                 font = PANEL_TITLE_FONT
-                                foreground = TITLE_TEXT_FONTCOLOR
                             }
                     ) {
                         row {
@@ -86,11 +84,77 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
                         row {
                             // CodeWhisperer auth bullets
-                            cell(PanelAuthBullets(message("codewhisperer.experiment")))
+                            cell(
+                                PanelAuthBullets(
+                                    message("codewhisperer.experiment"),
+                                    listOf(
+                                        AuthPanelBullet(
+                                            PanelConstants.COMMIT_ICON,
+                                            message("iam_identity_center.name"),
+                                            message("aws.onboarding.getstarted.panel.idc_row_comment_text")
+                                        ),
+                                        AuthPanelBullet(
+                                            PanelConstants.COMMIT_ICON,
+                                            message("aws_builder_id.service_name"),
+                                            "Need to insert tagline"
+                                        ),
+                                        AuthPanelBullet(
+                                            PanelConstants.CANCEL_ICON,
+                                            message("settings.credentials.iam"),
+                                            message("aws.getstarted.auth.panel.notSupport_text"),
+                                            false
+                                        )
+                                    )
+                                )
+                            )
                             // Resource Explorer panel auth bullets
-                            cell(PanelAuthBullets(message("aws.getstarted.resource.panel_title")))
+                            cell(
+                                PanelAuthBullets(
+                                    message("aws.getstarted.resource.panel_title"),
+                                    listOf(
+                                        AuthPanelBullet(
+                                            PanelConstants.COMMIT_ICON,
+                                            message("iam_identity_center.name"),
+                                            message("aws.onboarding.getstarted.panel.idc_row_comment_text")
+                                        ),
+                                        AuthPanelBullet(
+                                            PanelConstants.COMMIT_ICON,
+                                            message("aws_builder_id.service_name"),
+                                            "Need to insert tagline"
+                                        ),
+                                        AuthPanelBullet(
+                                            PanelConstants.COMMIT_ICON,
+                                            message("settings.credentials.iam"),
+                                            message("aws.getstarted.auth.panel.notSupport_text")
+                                        )
+                                    )
+                                )
+                            )
                             // CodeCatalyst panel auth bullets
-                            cell(PanelAuthBullets(message("caws.devtoolPanel.title")))
+                            cell(
+                                PanelAuthBullets(
+                                    message("caws.devtoolPanel.title"),
+                                    listOf(
+                                        AuthPanelBullet(
+                                            PanelConstants.CANCEL_ICON,
+                                            message("iam_identity_center.name"),
+                                            message("aws.getstarted.auth.panel.notSupport_text"),
+                                            false
+                                        ),
+                                        AuthPanelBullet(
+                                            PanelConstants.COMMIT_ICON,
+                                            message("aws_builder_id.service_name"),
+                                            "Need to insert tagline"
+                                        ),
+                                        AuthPanelBullet(
+                                            PanelConstants.CANCEL_ICON,
+                                            message("settings.credentials.iam"),
+                                            message("aws.getstarted.auth.panel.notSupport_text"),
+                                            false
+                                        )
+                                    )
+                                )
+                            )
                         }
                     }
                 }
@@ -98,7 +162,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         )
     }
 
-    class CodeCatalystPanel : BorderLayoutPanel() {
+    private class CodeCatalystPanel : FeatureDescriptionPanel() {
         init {
             addToCenter(
                 panel {
@@ -107,7 +171,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                             label(message("caws.devtoolPanel.title"))
                                 .applyToComponent {
                                     font = PANEL_TITLE_FONT
-                                    foreground = TITLE_TEXT_FONTCOLOR
                                 }
                         }
 
@@ -120,7 +183,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
 
                         row {
-                            text(message("caws.getstarted.panel.description")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
+                            text(message("caws.getstarted.panel.description"))
                         }
 
                         row {
@@ -128,13 +191,14 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
 
                         row {
-                            button(message("caws.getstarted.panel.login")) {}.applyToComponent {
+                            button(message("caws.getstarted.panel.login")) {
+                            }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
                         }
 
                         row {
-                            label(message("caws.getstarted.panel.question.text")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
+                            label(message("caws.getstarted.panel.question.text"))
                         }
                         row {
                             browserLink(message("caws.getstarted.panel.link_text"), CawsEndpoints.CAWS_SPACES_DOC)
@@ -142,15 +206,10 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                     }
                 }
             )
-
-            border = IdeBorderFactory.createRoundedBorder().apply {
-                setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
-            }
         }
     }
 
-    class ResourceExplorerPanel : BorderLayoutPanel() {
+    private class ResourceExplorerPanel : FeatureDescriptionPanel() {
         init {
             addToCenter(
                 panel {
@@ -159,7 +218,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                             label(message("aws.getstarted.resource.panel_title"))
                                 .applyToComponent {
                                     font = PANEL_TITLE_FONT
-                                    foreground = TITLE_TEXT_FONTCOLOR
                                 }
                         }
                         row {
@@ -171,7 +229,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
 
                         row {
-                            text(message("aws.getstarted.resource.panel_description")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
+                            text(message("aws.getstarted.resource.panel_description"))
                         }
 
                         row {
@@ -182,15 +240,16 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
 
                         row {
-                            button(message("aws.onboarding.getstarted.panel.button_iam_login")) {}
-                                .applyToComponent {
-                                    putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
-                                }
+                            button(message("aws.onboarding.getstarted.panel.button_iam_login")) {
+                            }.applyToComponent {
+                                putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
+                            }
+
                             topGap(TopGap.MEDIUM)
                         }
 
                         row {
-                            label(message("aws.getstarted.resource.panel_question_text")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
+                            label(message("aws.getstarted.resource.panel_question_text"))
                         }
                         row {
                             browserLink(message("aws.onboarding.getstarted.panel.signup_iam_text"), url = PanelConstants.RESOURCE_EXPLORER_SIGNUP_DOC)
@@ -198,15 +257,10 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                     }
                 }
             )
-
-            border = IdeBorderFactory.createRoundedBorder().apply {
-                setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
-            }
         }
     }
 
-    class CodeWhispererPanel(val project: Project) : BorderLayoutPanel() {
+    private class CodeWhispererPanel(val project: Project) : FeatureDescriptionPanel() {
         init {
             addToCenter(
                 panel {
@@ -215,7 +269,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                             label(message("codewhisperer.experiment"))
                                 .applyToComponent {
                                     font = PANEL_TITLE_FONT
-                                    foreground = TITLE_TEXT_FONTCOLOR
                                 }
                         }
                         row {
@@ -227,7 +280,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
 
                         row {
-                            text(message("codewhisperer.gettingstarted.panel.comment")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
+                            text(message("codewhisperer.gettingstarted.panel.comment"))
                         }
 
                         row {
@@ -235,15 +288,16 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
 
                         row {
-                            button(message("codewhisperer.gettingstarted.panel.login_button")) {}
-                                .applyToComponent {
-                                    putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
-                                }
+                            button(message("codewhisperer.gettingstarted.panel.login_button")) {
+                            }.applyToComponent {
+                                putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
+                            }
+
                             topGap(TopGap.SMALL)
                         }
 
                         row {
-                            label(message("codewhisperer.gettingstarted.panel.licence_comment")).applyToComponent { foreground = PanelConstants.TEXT_FONTCOLOR }
+                            label(message("codewhisperer.gettingstarted.panel.licence_comment"))
                         }
                         row {
                             text(message("aws.onboarding.getstarted.panel.login_with_iam")) {
@@ -257,41 +311,12 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                     }
                 }
             )
-
-            border = IdeBorderFactory.createRoundedBorder().apply {
-                setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PANEL_WIDTH, PanelConstants.PANEL_HEIGHT)
-            }
         }
     }
 
-    class PanelAuthBullets(private val panelTitle: String) : BorderLayoutPanel() {
-
-        val codeWhispererBulletsLists: List<BulletAuthPanel> = listOf(
-            BulletAuthPanel(PanelConstants.COMMIT_ICON, message("iam_identity_center.name"), message("aws.onboarding.getstarted.panel.idc_row_comment_text")),
-            BulletAuthPanel(PanelConstants.COMMIT_ICON, message("aws_builder_id.service_name"), "Need to insert tagline"),
-            BulletAuthPanel(PanelConstants.CANCEL_ICON, message("settings.credentials.iam"), message("aws.getstarted.auth.panel.notSupport_text"), false)
-        )
-
-        val resourceBulletsLists: List<BulletAuthPanel> = listOf(
-            BulletAuthPanel(PanelConstants.COMMIT_ICON, message("iam_identity_center.name"), message("aws.onboarding.getstarted.panel.idc_row_comment_text")),
-            BulletAuthPanel(PanelConstants.CANCEL_ICON, message("aws_builder_id.service_name"), "Need to insert tagline", false),
-            BulletAuthPanel(PanelConstants.COMMIT_ICON, message("settings.credentials.iam"), message("aws.getstarted.auth.panel.notSupport_text"))
-        )
-
-        val codeCatalystBulletsLists: List<BulletAuthPanel> = listOf(
-            BulletAuthPanel(PanelConstants.CANCEL_ICON, message("iam_identity_center.name"), message("aws.getstarted.auth.panel.notSupport_text"), false),
-            BulletAuthPanel(PanelConstants.COMMIT_ICON, message("aws_builder_id.service_name"), "Need to insert tagline"),
-            BulletAuthPanel(PanelConstants.CANCEL_ICON, message("settings.credentials.iam"), message("aws.getstarted.auth.panel.notSupport_text"), false)
-        )
-
+    private class PanelAuthBullets(private val panelTitle: String, bullets: List<AuthPanelBullet>) : FeatureDescriptionPanel() {
         init {
-
-            val serviceTitleMap = mapOf(
-                message("codewhisperer.experiment") to codeWhispererBulletsLists,
-                message("aws.getstarted.resource.panel_title") to resourceBulletsLists,
-                message("caws.devtoolPanel.title") to codeCatalystBulletsLists
-            )
+            preferredSize = Dimension(PANEL_WIDTH, BULLET_PANEL_HEIGHT)
 
             addToCenter(
                 panel {
@@ -300,11 +325,10 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         row {
                             label(panelTitle).applyToComponent {
                                 font = PANEL_TITLE_FONT
-                                foreground = TITLE_TEXT_FONTCOLOR
                             }
                         }
 
-                        serviceTitleMap[panelTitle]?.forEach { bullet ->
+                        bullets.forEach { bullet ->
                             row {
                                 icon(bullet.icon)
                                 panel {
@@ -317,15 +341,20 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                     }
                 }
             )
+        }
+    }
+
+    private open class FeatureDescriptionPanel : BorderLayoutPanel() {
+        init {
+            preferredSize = Dimension(PANEL_WIDTH, PANEL_HEIGHT)
 
             border = IdeBorderFactory.createRoundedBorder().apply {
-                setColor(PanelConstants.TEXT_FONTCOLOR)
-                preferredSize = Dimension(PANEL_WIDTH, BULLET_PANEL_HEIGHT)
+                setColor(UIUtil.getLabelForeground())
             }
         }
     }
 
-    object PanelConstants {
+    private object PanelConstants {
         const val RESOURCE_EXPLORER_LEARN_MORE = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/working-with-aws.html"
         const val RESOURCE_EXPLORER_SIGNUP_DOC = "https://aws.amazon.com/free/"
         const val AWS_TOOLKIT_DOC = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html"
@@ -333,15 +362,13 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         const val SHARE_FEEDBACK_LINK = "FeedbackDialog"
         val COMMIT_ICON = AllIcons.General.InspectionsOK
         val CANCEL_ICON = AllIcons.Ide.Notification.Close
-        val TEXT_FONTCOLOR = UIUtil.getLabelForeground()
-        val TITLE_TEXT_FONTCOLOR = UIUtil.getLabelTextForeground()
         val PANEL_TITLE_FONT = JBFont.h2().asBold()
         const val PANEL_WIDTH = 300
         const val PANEL_HEIGHT = 450
         const val BULLET_PANEL_HEIGHT = 200
     }
 
-    data class BulletAuthPanel(
+    data class AuthPanelBullet(
         val icon: Icon,
         val titleName: String,
         val comment: String,
