@@ -32,6 +32,7 @@ import type {
     NewFileContents,
 } from '../../types'
 import { invoke } from './invoke'
+import { MessageActionType, AddToChat, createChatContent } from '../../models'
 
 const fs = FileSystemCommon.instance
 
@@ -159,7 +160,7 @@ abstract class CodeGenBase {
     async generateCode(params: {
         getResultLambdaArn: string
         fs: VirtualFileSystem
-        onAddToHistory: vscode.EventEmitter<Interaction[]>
+        addToChat: AddToChat
         generationId: string
     }) {
         for (
@@ -183,7 +184,16 @@ abstract class CodeGenBase {
                 case 'ready': {
                     const newFiles = codegenResult.result?.newFileContents ?? []
                     const changes = await createChanges(params.fs, newFiles)
-                    params.onAddToHistory.fire(changes)
+                    for (const change of changes) {
+                        // TODO Fix the types. Having content: string and string[] overcomplicates everything
+                        if (typeof change.content === 'string') {
+                            params.addToChat(createChatContent(change.content), MessageActionType.CHAT_ANSWER)
+                        } else {
+                            for (const content of change.content) {
+                                params.addToChat(createChatContent(content), MessageActionType.CHAT_ANSWER)
+                            }
+                        }
+                    }
                     return newFiles
                 }
                 case 'in-progress': {
@@ -192,25 +202,13 @@ abstract class CodeGenBase {
                 }
                 case 'failed': {
                     getLogger().error('Failed to generate code')
-                    params.onAddToHistory.fire([
-                        {
-                            origin: 'ai',
-                            type: 'message',
-                            content: 'Code generation failed\n',
-                        },
-                    ])
+                    params.addToChat(createChatContent('Code generation failed\n'), MessageActionType.CHAT_ANSWER)
                     return []
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`
                     getLogger().error(errorMessage)
-                    params.onAddToHistory.fire([
-                        {
-                            origin: 'ai',
-                            type: 'message',
-                            content: errorMessage,
-                        },
-                    ])
+                    params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
                     return []
                 }
             }
@@ -218,13 +216,7 @@ abstract class CodeGenBase {
         // still in progress
         const errorMessage = `Code generation did not finish withing the expected time :(`
         getLogger().error(errorMessage)
-        params.onAddToHistory.fire([
-            {
-                origin: 'ai',
-                type: 'message',
-                content: errorMessage,
-            },
-        ])
+        params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
         return []
     }
 }
@@ -251,18 +243,12 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
         const genId = response.generationId
 
-        action.onAddToHistory.fire([
-            {
-                origin: 'ai',
-                type: 'message',
-                content: 'Code generation started\n',
-            },
-        ])
+        action.addToChat(createChatContent('Code generation started\n'), MessageActionType.CHAT_ANSWER)
 
         const newFileContents = await this.generateCode({
             getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
             fs: action.fs,
-            onAddToHistory: action.onAddToHistory,
+            addToChat: action.addToChat,
             generationId: genId,
         }).catch(_ => {
             getLogger().error(`Failed to generate code`)
@@ -342,18 +328,12 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
 
         const genId = response.generationId
 
-        action.onAddToHistory.fire([
-            {
-                origin: 'ai',
-                type: 'message',
-                content: 'Code generation started\n',
-            },
-        ])
+        action.addToChat(createChatContent('Code generation started\n'), MessageActionType.CHAT_ANSWER)
 
         this.newFileContents = await this.generateCode({
             getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
             fs: action.fs,
-            onAddToHistory: action.onAddToHistory,
+            addToChat: action.addToChat,
             generationId: genId,
         }).catch(_ => {
             getLogger().error(`Failed to generate code`)

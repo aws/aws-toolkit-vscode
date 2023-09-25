@@ -13,6 +13,7 @@ import { VirtualMemoryFile } from '../shared/virtualMemoryFile'
 import { PanelStore } from './stores/panelStore'
 import { WeaverbirdDisplay } from './views/weaverbird-display'
 import { v4 as uuid } from 'uuid'
+import { getConfig } from './config'
 
 /**
  * Activate Weaverbird functionality for the extension.
@@ -26,7 +27,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         new VirtualMemoryFile(new Uint8Array())
     )
 
-    await registerChatView(context, fs)
+    const localConfig = await getConfig()
+
+    await registerChatView(context, localConfig, fs)
     const weaverbirdProvider = new (class implements vscode.TextDocumentContentProvider {
         async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
             try {
@@ -48,9 +51,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const panelStore = new PanelStore()
 
-    const weaverbirdDisplay = new WeaverbirdDisplay(context, {
-        panelStore,
-    })
+    const weaverbirdDisplay = new WeaverbirdDisplay(
+        context,
+        {
+            panelStore,
+        },
+        localConfig,
+        fs
+    )
 
     context.subscriptions.push(
         vscode.commands.registerCommand('Weaverbird.show', async () => {

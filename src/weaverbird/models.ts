@@ -19,7 +19,15 @@ export enum NotificationType {
     WARNING = 'warning',
     ERROR = 'error',
 }
-// ^^^
+
+export function createChatContent(content: string) {
+    return {
+        body: content,
+        type: ChatItemType.ANSWER,
+    }
+}
+
+export type AddToChat = (data: any, action: MessageActionType) => void
 
 // You can configure below items as you like
 // Since you're handling these while sending and recieving

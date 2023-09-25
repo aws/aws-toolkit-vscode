@@ -7,8 +7,11 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { ExtensionContext } from 'vscode'
 import { PanelStore } from '../stores/panelStore'
-import { MockBackend } from '../mock-backend'
-import { messageIdentifier, MessageActionType, NotificationType } from '../models'
+import { messageIdentifier, MessageActionType, NotificationType, createChatContent } from '../models'
+import { Session } from '../vue/chat/session'
+import { LocalResolvedConfig } from '../types'
+import { VirtualFileSystem } from '../../shared/virtualFilesystem'
+import { ToolkitError } from '../../shared/errors'
 
 export interface MynahDisplayProps {
     panelStore: PanelStore
@@ -18,10 +21,19 @@ export class WeaverbirdDisplay {
     private readonly assetsPath: vscode.Uri
     private readonly panelStore: PanelStore
     private uiReady: Record<string, boolean> = {}
+    private backendConfig: LocalResolvedConfig
+    private fs: VirtualFileSystem
 
-    constructor(context: ExtensionContext, props: MynahDisplayProps) {
+    constructor(
+        context: ExtensionContext,
+        props: MynahDisplayProps,
+        backendConfig: LocalResolvedConfig,
+        fs: VirtualFileSystem
+    ) {
         this.assetsPath = vscode.Uri.joinPath(context.extensionUri)
         this.panelStore = props.panelStore
+        this.backendConfig = backendConfig
+        this.fs = fs
     }
 
     private setupPanel(panelId: string): void {
@@ -38,8 +50,17 @@ export class WeaverbirdDisplay {
             }
         )
 
+        const workspaceFolders = vscode.workspace.workspaceFolders
+        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
+            throw new ToolkitError('Can not initialize weaverbird chat when no workspace folder is present')
+        }
+
+        const workspaceRoot = workspaceFolders[0].uri.fsPath
+        const addToChat = this.sendDataToUI.bind(this, panelId)
+        const session = new Session(workspaceRoot, this.backendConfig, this.fs, addToChat)
+
         // Handle when a message recieved from the UI layer
-        panel.webview.onDidReceiveMessage(msg => {
+        panel.webview.onDidReceiveMessage(async msg => {
             const panel = this.panelStore.getPanel(panelId)
             if (panel === undefined) {
                 return
@@ -50,30 +71,33 @@ export class WeaverbirdDisplay {
                     // Keep them in a list that which is loaded and which is not
                     this.uiReady[panelId] = true
                     break
-                case MessageActionType.PROMPT:
+                case MessageActionType.PROMPT: {
                     // Ok here's a new prompt catched from the UI user interaction
                     // Lets roll the spinner
                     this.sendDataToUI(panelId, true, MessageActionType.SPINNER_STATE)
 
-                    // And now request our mock streams and other chat items
-                    MockBackend.getInstance()
-                        .requestGenerativeAIAnswer(
-                            JSON.parse(msg.data),
-                            answer => {
-                                // When an answer returns, send it to UI to create it's card or visual block
-                                this.sendDataToUI(panelId, answer, MessageActionType.CHAT_ANSWER)
-                                // And also stop the preloader
-                                this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
-                            },
-                            answerStream => {
-                                // But if it is a stream, let the UI know about a new stream text is coming
-                                this.sendDataToUI(panelId, answerStream, MessageActionType.CHAT_STREAM)
-                                // And keep the spinner rolling
-                                this.sendDataToUI(panelId, true, MessageActionType.SPINNER_STATE)
+                    const chatPrompt = JSON.parse(msg.data)
+                    const interactions = await session.send(chatPrompt.prompt)
+
+                    for (const interaction of interactions) {
+                        if (typeof interaction.content === 'string') {
+                            this.sendDataToUI(
+                                panelId,
+                                createChatContent(interaction.content),
+                                MessageActionType.CHAT_ANSWER
+                            )
+                        } else {
+                            // TODO show the file picker view here instead
+                            for (const content of interaction.content) {
+                                this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
                             }
-                        )
-                        .finally(() => {})
+                        }
+                    }
+
+                    // Spinner is no longer neccessary
+                    this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
                     break
+                }
                 case MessageActionType.CLEAR:
                     // OK there is a new UI user interaction
                     // Which is the clear
