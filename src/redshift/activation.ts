@@ -57,7 +57,9 @@ export async function activate(ctx: ExtContext): Promise<void> {
             await vscode.workspace.applyEdit(edit)
             refreshCellStatusBar()
         }
-        ctx.extensionContext.subscriptions.push(Commands.register('aws.redshift.connectClicked', commandHandler))
+        ctx.extensionContext.subscriptions.push(
+            Commands.register('aws.redshift.notebookConnectClicked', commandHandler)
+        )
 
         const startHandler = async (parentNode: RedshiftWarehouseNode) => {
             const workspaceDir = vscode.workspace.workspaceFolders
@@ -96,6 +98,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 }
             }
         }
-        ctx.extensionContext.subscriptions.push(Commands.register('aws.redshift.startButtonClicked', startHandler))
+        ctx.extensionContext.subscriptions.push(Commands.register('aws.redshift.createNotebookClicked', startHandler))
     }
 }

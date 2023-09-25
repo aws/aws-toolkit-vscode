@@ -41,7 +41,7 @@ export class CellStatusBarItemProvider implements NotebookCellStatusBarItemProvi
             this._item.text = `${getIcon('vscode-notebook-state-error')} Connect`
         }
         this._item.command = {
-            command: 'aws.redshift.connectClicked',
+            command: 'aws.redshift.notebookConnectClicked',
             arguments: [cell, this.refreshCellStatusBar.bind(this)],
         } as Command
         return [this._item]
