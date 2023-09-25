@@ -19,7 +19,7 @@ export class ConnectionParams {
 }
 
 export enum ConnectionType {
-    DatabaseUser = 'Database user name and Password',
+    DatabaseUser = 'Database user name and password',
     SecretsManager = 'AWS Secrets Manager',
     TempCreds = 'Temporary credentails',
 }

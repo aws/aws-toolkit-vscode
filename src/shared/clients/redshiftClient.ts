@@ -22,6 +22,8 @@ import {
 } from 'aws-sdk/clients/redshiftdata'
 import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
+import { SecretsManager } from 'aws-sdk'
+import { ListSecretsRequest, ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -195,4 +197,79 @@ async function createRedshiftServerlessSdkClient(regionCode: string): Promise<Re
 }
 async function createRedshiftDataClient(regionCode: string): Promise<RedshiftData> {
     return await globals.sdkClientBuilder.createAwsService(RedshiftData, { computeChecksums: true }, regionCode)
+}
+
+export class SecretsManagerClient {
+    public constructor(
+        public readonly regionCode: string,
+        private readonly secretsManagerClientProvider: (
+            regionCode: string
+        ) => Promise<SecretsManager> = createSecretsManagerClient
+    ) {}
+
+    /**
+     * Lists the secrets that are stored by Secrets Manager
+     * @param filter tagged key filter value
+     * @returns a list of the secrets
+     */
+    public async listSecrets(filter: string): Promise<ListSecretsResponse> {
+        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
+        const request: ListSecretsRequest = {
+            IncludePlannedDeletion: false,
+            Filters: [
+                {
+                    Key: 'tag-key',
+                    Values: [filter],
+                },
+            ],
+            SortOrder: 'desc',
+        }
+        return secretsManagerClient.listSecrets(request).promise()
+    }
+
+    public genUniqueId(connectionParams: ConnectionParams): string {
+        const epocDate = new Date().getTime()
+        return `${epocDate}-${connectionParams.warehouseIdentifier}`
+    }
+
+    public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string> {
+        /*
+            create a secrete arn for the username and password entered through the Database Username and Password authentication
+        */
+        const username = connectionParams.username
+        const password = connectionParams.password
+        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
+        const request: SecretsManager.CreateSecretRequest = {
+            Description: 'Database secret created with vscode plugin',
+            Name: this.genUniqueId(connectionParams) ? this.genUniqueId(connectionParams) : '',
+            SecretString: JSON.stringify({ username, password }),
+            Tags: [
+                {
+                    Key: 'Service',
+                    Value: 'Redshift',
+                },
+                {
+                    Key: 'Request-Source',
+                    Value: 'Vscode',
+                },
+            ],
+            ForceOverwriteReplicaSecret: true,
+        }
+        try {
+            const response: SecretsManager.CreateSecretResponse = await secretsManagerClient
+                .createSecret(request)
+                .promise()
+            if (response && response.ARN) {
+                return response.ARN
+            }
+            throw new Error('Secret Arn not created')
+        } catch (error) {
+            console.error('Error creating secret in AWS Secrets Manager:', error)
+            throw error
+        }
+    }
+}
+
+async function createSecretsManagerClient(regionCode: string): Promise<SecretsManager> {
+    return await globals.sdkClientBuilder.createAwsService(SecretsManager, { computeChecksums: true }, regionCode)
 }

@@ -10,8 +10,7 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftWarehouseNode } from '../explorer/redshiftWarehouseNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
-import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
+import { DefaultRedshiftClient, SecretsManagerClient } from '../../shared/clients/redshiftClient'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { createRegionPrompter } from '../../shared/ui/common/region'
@@ -162,7 +161,7 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
 function getUsernamePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
-        title: localize('AWS.redshift.username', 'Enter a username'),
+        title: localize('AWS.redshift.username', 'Enter username'),
         buttons: createCommonButtons(),
         placeholder: 'Enter Username',
         validateInput: value => {
@@ -174,12 +173,13 @@ function getUsernamePrompter(): Prompter<string> {
 function getPasswordPrompter(): Prompter<string> {
     return createInputBox({
         value: '',
-        title: localize('AWS.redshift.password', 'Enter a password'),
+        title: localize('AWS.redshift.password', 'Enter password'),
         buttons: createCommonButtons(),
         placeholder: 'Enter Password',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.passwordValidation', 'Password cannot be empty')
         },
+        password: true,
     })
 }
 

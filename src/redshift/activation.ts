@@ -11,12 +11,11 @@ import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
 import { Commands } from '../shared/vscode/commands2'
 import { NotebookConnectionWizard } from './wizards/connectionWizard'
 import { ConnectionParams } from './models/models'
-import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
+import { DefaultRedshiftClient, SecretsManagerClient } from '../shared/clients/redshiftClient'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { SystemUtilities } from '../shared/systemUtilities'
 import * as fs from 'fs-extra'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
-import { SecretsManagerClient } from '../shared/clients/secretsManagerClient'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const outputChannel = vscode.window.createOutputChannel('Redshift Connection')
@@ -41,9 +40,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
             try {
                 redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
                 let secretArnFetched = ''
-                if (connectionParams.connectionType === 'Database user name and Password') {
+                if (connectionParams.connectionType === 'Database user name and password') {
                     const secremanagerClient = new SecretsManagerClient(connectionParams.region!.id)
-                    secretArnFetched = (await secremanagerClient.createSecretArn(connectionParams)) ?? ''
+                    secretArnFetched =
+                        (await secremanagerClient.createSecretFromConnectionParams(connectionParams)) ?? ''
                     connectionParams.username = undefined
                     connectionParams.password = undefined
                     connectionParams.secret = secretArnFetched

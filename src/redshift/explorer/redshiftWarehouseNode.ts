@@ -13,7 +13,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient, SecretsManagerClient } from '../../shared/clients/redshiftClient'
 import { ConnectionParams, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
@@ -21,7 +21,6 @@ import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 
 export class StartButtonNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -117,8 +116,9 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     this.connectionParams = connectionParams
                     const connectionType = connectionParams.connectionType
                     let secretArnFetched = ''
-                    if (connectionType === 'Database user name and Password') {
-                        secretArnFetched = (await this.secretManagerClient?.createSecretArn(connectionParams)) ?? ''
+                    if (connectionType === 'Database user name and password') {
+                        secretArnFetched =
+                            (await this.secretManagerClient?.createSecretFromConnectionParams(connectionParams)) ?? ''
                         connectionParams.username = undefined
                         connectionParams.password = undefined
                         connectionParams.secret = secretArnFetched
