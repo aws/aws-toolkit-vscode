@@ -16,6 +16,7 @@ import { localize } from '../shared/utilities/vsCodeUtils'
 import { SystemUtilities } from '../shared/systemUtilities'
 import * as fs from 'fs-extra'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
+import { SecretsManagerClient } from '../shared/clients/secretsManagerClient'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const outputChannel = vscode.window.createOutputChannel('Redshift Connection')
@@ -38,6 +39,15 @@ export async function activate(ctx: ExtContext): Promise<void> {
             }
             redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
             try {
+                redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
+                let secretArnFetched = ''
+                if (connectionParams.connectionType === 'Database user name and Password') {
+                    const secremanagerClient = new SecretsManagerClient(connectionParams.region!.id)
+                    secretArnFetched = (await secremanagerClient.createSecretArn(connectionParams)) ?? ''
+                    connectionParams.username = undefined
+                    connectionParams.password = undefined
+                    connectionParams.secret = secretArnFetched
+                }
                 await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
                 outputChannel.appendLine(`Redshift: connected to: ${connectionParams.warehouseIdentifier}`)
             } catch (error) {

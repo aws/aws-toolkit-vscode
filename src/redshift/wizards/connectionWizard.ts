@@ -74,7 +74,6 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
         connectionType?: ConnectionType | undefined,
         database?: string | undefined,
         username?: string | undefined,
-        password?: string | undefined,
         secret?: string | undefined
     ) {
         super({
@@ -86,7 +85,6 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 region: region,
                 warehouseType: warehouseType,
                 secret: secret,
-                password: password,
             },
         })
 
@@ -119,26 +117,17 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 }
             }
         })
-
-        this.form.connectionType.bindPrompter(getConnectionTypePrompter, {
-            showWhen: state => warehouseType == RedshiftWarehouseType.PROVISIONED,
-            relativeOrder: 1,
-        })
-        this.form.connectionType.bindPrompter(getConnectionTypePrompter, {
-            showWhen: state => warehouseType == RedshiftWarehouseType.SERVERLESS,
-            relativeOrder: 1,
-        })
+        this.form.connectionType.bindPrompter(getConnectionTypePrompter, { relativeOrder: 3 })
         this.form.database.bindPrompter(getDatabasePrompter, { relativeOrder: 4 })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
-                state.database !== undefined &&
-                state.connectionType === ConnectionType.TempCreds &&
-                state.warehouseType === RedshiftWarehouseType.PROVISIONED,
+                (state.database !== undefined && state.connectionType === ConnectionType.TempCreds) ||
+                state.connectionType === ConnectionType.DatabaseUser,
             relativeOrder: 5,
         })
         this.form.password.bindPrompter(getPasswordPrompter, {
             showWhen: state => state.username !== undefined && state.connectionType === ConnectionType.DatabaseUser,
-            relativeOrder: 6,
+            relativeOrder: 5,
         })
 
         this.form.secret.bindPrompter(state => getSecretPrompter(state.region!.id), {
