@@ -11,10 +11,10 @@ export class ConnectionParams {
         public database: string,
         public readonly warehouseIdentifier: string,
         public readonly warehouseType: RedshiftWarehouseType,
-        public readonly username?: string,
+        public username?: string,
         public readonly region?: Region,
-        public readonly password?: string,
-        public readonly secret?: string
+        public password?: string,
+        public secret?: string
     ) {}
 }
 
