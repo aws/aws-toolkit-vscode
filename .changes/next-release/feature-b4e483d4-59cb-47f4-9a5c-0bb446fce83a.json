@@ -1,0 +1,4 @@
+{
+  "type" : "feature",
+  "description" : "Authentication: When signing in to AWS Builder Id or IAM Identity Center (SSO), verify the device code matches instead of copy-pasting it"
+}
