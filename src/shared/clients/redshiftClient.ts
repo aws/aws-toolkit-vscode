@@ -186,8 +186,8 @@ export class DefaultRedshiftClient {
         }
     }
     public genUniqueId(connectionParams: ConnectionParams): string {
-        const epocDate = new Date().getTime()
-        return `${epocDate}-${connectionParams.warehouseIdentifier}`
+        const epochDate = new Date().getTime()
+        return `${epochDate}-${connectionParams.warehouseIdentifier}`
     }
 
     public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string> {

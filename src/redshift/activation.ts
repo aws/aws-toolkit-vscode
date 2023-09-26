@@ -47,9 +47,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     if (!secretArnFetched) {
                         throw new Error('secret arn could not be fetched')
                     }
-                    if (!connectionParams.username || !connectionParams.password) {
-                        throw new Error('Required properties (username and password) are missing')
-                    }
                     connectionParams.secret = secretArnFetched
                 }
                 await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
