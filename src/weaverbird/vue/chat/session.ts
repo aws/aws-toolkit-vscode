@@ -5,36 +5,22 @@
 
 import * as path from 'path'
 import { getLogger } from '../../../shared/logger/logger'
-import { defaultLlmConfig } from '../../constants'
-import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { collectFiles } from '../../files'
 import { RefinementState } from './sessionState'
-import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
-import type { Interaction, SessionState, SessionStateConfig, LocalResolvedConfig, LLMConfig } from '../../types'
+import type { Interaction, SessionState, SessionStateConfig } from '../../types'
 import { AddToChat } from '../../models'
+import { SessionConfig } from './sessionConfig'
 
 export class Session {
-    public workspaceRoot: string
     private state: SessionState
     private task: string = ''
     private approach: string = ''
-    private llmConfig = defaultLlmConfig
-    private lambdaClient: LambdaClient
-    private backendConfig: LocalResolvedConfig
-    private fs: VirtualFileSystem
+    public readonly config: SessionConfig
 
     private addToChat: AddToChat
 
-    constructor(
-        workspaceRoot: string,
-        backendConfig: LocalResolvedConfig,
-        fs: VirtualFileSystem,
-        addToChat: AddToChat
-    ) {
-        this.workspaceRoot = workspaceRoot
-        this.lambdaClient = new DefaultLambdaClient(backendConfig.region)
-        this.backendConfig = backendConfig
-        this.fs = fs
+    constructor(sessionConfig: SessionConfig, addToChat: AddToChat) {
+        this.config = sessionConfig
         this.state = new RefinementState(this.getSessionStateConfig(), '')
 
         this.addToChat = addToChat
@@ -56,23 +42,19 @@ export class Session {
         }
     }
 
-    public setLLMConfig(config: LLMConfig) {
-        this.llmConfig = config
-    }
-
     private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
         return {
-            client: this.lambdaClient,
-            llmConfig: this.llmConfig,
-            workspaceRoot: this.workspaceRoot,
-            backendConfig: this.backendConfig,
+            client: this.config.client,
+            llmConfig: this.config.llmConfig,
+            workspaceRoot: this.config.workspaceRoot,
+            backendConfig: this.config.backendConfig,
         }
     }
 
     async sendUnsafe(msg: string): Promise<Interaction[]> {
         const sessionStageConfig = this.getSessionStateConfig()
 
-        const files = await collectFiles(path.join(this.workspaceRoot, 'src'))
+        const files = await collectFiles(path.join(this.config.workspaceRoot, 'src'))
 
         if (msg === 'CLEAR') {
             this.task = ''
@@ -98,7 +80,7 @@ export class Session {
             files,
             task: this.task,
             msg,
-            fs: this.fs,
+            fs: this.config.fs,
             addToChat: this.addToChat,
         })
 

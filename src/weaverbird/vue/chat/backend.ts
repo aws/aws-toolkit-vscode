@@ -8,11 +8,12 @@ import * as path from 'path'
 // import * as nls from 'vscode-nls'
 import { VueWebview } from '../../../webviews/main'
 import { Session } from './session'
-import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { weaverbirdScheme } from '../../constants'
 import { FileSystemCommon } from '../../../srcShared/fs'
-import type { Interaction, LLMConfig, LocalResolvedConfig } from '../../types'
+import type { Interaction } from '../../types'
 import { MessageActionType } from '../../models'
+import { createSessionConfig } from './sessionConfigFactory'
+import { SessionConfig } from './sessionConfig'
 
 // const localize = nls.loadMessageBundle()
 const fs = FileSystemCommon.instance
@@ -21,25 +22,11 @@ export class WeaverbirdChatWebview extends VueWebview {
     public readonly id = 'configureChat'
     public readonly source = 'src/weaverbird/vue/chat/index.js'
     public readonly session: Session
-    public readonly workspaceRoot: string
-    public readonly onAddToHistory: vscode.EventEmitter<Interaction[]>
-    private readonly virtualFs: VirtualFileSystem
 
-    public constructor(backendConfig: LocalResolvedConfig, fs: VirtualFileSystem) {
+    public constructor(sessionConfig: SessionConfig) {
         // private readonly _client: codeWhispererClient // would be used if we integrate with codewhisperer
         super()
-
-        // TODO do something better then handle this in the constructor
-        const workspaceFolders = vscode.workspace.workspaceFolders
-        if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-            throw new Error('Could not find workspace folder')
-        }
-
-        const workspaceRoot = workspaceFolders[0].uri.fsPath
-        this.workspaceRoot = workspaceRoot
-        this.onAddToHistory = new vscode.EventEmitter<Interaction[]>()
-        this.session = new Session(workspaceRoot, backendConfig, fs, (_data: any, _type: MessageActionType) => {})
-        this.virtualFs = fs
+        this.session = new Session(sessionConfig, (_data: any, _type: MessageActionType) => {})
     }
 
     public async getSession(): Promise<Session> {
@@ -57,7 +44,7 @@ export class WeaverbirdChatWebview extends VueWebview {
     public async displayDiff(filePath: string) {
         const emptyFile = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty' })
         const fileName = path.basename(filePath)
-        const originalFileUri = vscode.Uri.file(path.join(this.workspaceRoot, filePath))
+        const originalFileUri = vscode.Uri.file(path.join(this.session.config.workspaceRoot, filePath))
         const originalFileExists = await fs.fileExists(originalFileUri)
         const leftFileUri = originalFileExists ? originalFileUri : emptyFile
         const newFileUri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
@@ -68,31 +55,27 @@ export class WeaverbirdChatWebview extends VueWebview {
 
     public async acceptChanges(filePaths: string[]) {
         for (const filePath of filePaths) {
-            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.workspaceRoot, filePath)
+            const absolutePath = path.isAbsolute(filePath)
+                ? filePath
+                : path.join(this.session.config.workspaceRoot, filePath)
 
             const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
-            const content = await this.virtualFs.readFile(uri)
+            const content = await this.session.config.fs.readFile(uri)
             const decodedContent = new TextDecoder().decode(content)
 
             await fs.mkdir(path.dirname(absolutePath))
             await fs.writeFile(absolutePath, decodedContent)
         }
     }
-
-    public setLLMConfig(config: LLMConfig) {
-        this.session.setLLMConfig(config)
-    }
 }
 
 const View = VueWebview.compileView(WeaverbirdChatWebview)
 let activeView: InstanceType<typeof View> | undefined
 
-export async function registerChatView(
-    ctx: vscode.ExtensionContext,
-    backendConfig: LocalResolvedConfig,
-    fs: VirtualFileSystem
-): Promise<WeaverbirdChatWebview> {
-    activeView ??= new View(ctx, backendConfig, fs)
+export async function registerChatView(ctx: vscode.ExtensionContext): Promise<WeaverbirdChatWebview> {
+    const sessionConfig = await createSessionConfig()
+
+    activeView ??= new View(ctx, sessionConfig)
     activeView.register({
         title: 'Weaverbird Chat',
     })

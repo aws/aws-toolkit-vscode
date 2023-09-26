@@ -148,7 +148,7 @@ export default defineComponent({
             this.isInputDisabled = false
         },
         onConfigChanged() {
-            client.setLLMConfig(this.llmConfig)
+            // Removed as the first step to deprecating the vue view
         },
     },
 })
