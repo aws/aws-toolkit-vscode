@@ -14,7 +14,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
-import { ConnectionParams, RedshiftWarehouseType } from '../models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { getIcon } from '../../shared/icons'
@@ -113,14 +113,12 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                 } else {
                     this.connectionParams = connectionParams
                     let secretArnFetched = ''
-                    if (connectionParams.connectionType === connectionParams.connectionType) {
+                    if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
                         secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(connectionParams)
                         if (!secretArnFetched) {
                             throw new Error('secret arn could not be fetched')
                         }
                         connectionParams.secret = secretArnFetched
-                    } else {
-                        this.connectionParams = connectionParams
                     }
                     try {
                         const childNodes = await this.childLoader.getChildren()

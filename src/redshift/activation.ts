@@ -10,7 +10,7 @@ import { RedshiftNotebookController } from './notebook/redshiftNotebookControlle
 import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
 import { Commands } from '../shared/vscode/commands2'
 import { NotebookConnectionWizard } from './wizards/connectionWizard'
-import { ConnectionParams } from './models/models'
+import { ConnectionParams, ConnectionType } from './models/models'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { SystemUtilities } from '../shared/systemUtilities'
@@ -42,7 +42,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
                     connectionParams.region!.id
                 ))
                 let secretArnFetched = ''
-                if (connectionParams.connectionType === connectionParams.connectionType) {
+                if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
                     secretArnFetched = await redshiftClient.createSecretFromConnectionParams(connectionParams)
                     if (!secretArnFetched) {
                         throw new Error('secret arn could not be fetched')

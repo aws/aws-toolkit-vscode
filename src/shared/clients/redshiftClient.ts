@@ -195,18 +195,22 @@ export class DefaultRedshiftClient {
             create a secrete arn for the username and password entered through the Database Username and Password authentication
         */
         const secretsManagerClient = new SecretsManagerClient(this.regionCode)
-        const username = connectionParams.username ? connectionParams.username : ''
-        const password = connectionParams.password ? connectionParams.password : ''
-        const secretString = this.genUniqueId(connectionParams)
-        try {
-            const response = await secretsManagerClient?.createSecret(secretString, username, password)
-            if (response && response.ARN) {
-                return response.ARN
+        const username = connectionParams.username
+        const password = connectionParams.password
+        if (username && password) {
+            const secretString = this.genUniqueId(connectionParams)
+            try {
+                const response = await secretsManagerClient?.createSecret(secretString, username, password)
+                if (response && response.ARN) {
+                    return response.ARN
+                }
+                throw new Error('Secret Arn not created')
+            } catch (error) {
+                console.error('Error creating secret in AWS Secrets Manager:', error)
+                throw error
             }
-            throw new Error('Secret Arn not created')
-        } catch (error) {
-            console.error('Error creating secret in AWS Secrets Manager:', error)
-            throw error
+        } else {
+            throw new Error('Username or Password not present')
         }
     }
 }

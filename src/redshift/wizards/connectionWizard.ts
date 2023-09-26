@@ -164,7 +164,7 @@ function getUsernamePrompter(): Prompter<string> {
         value: '',
         title: localize('AWS.redshift.username', 'Enter username'),
         buttons: createCommonButtons(),
-        placeholder: 'Enter Username',
+        placeholder: 'Enter username',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.usernameValidation', 'Username cannot be empty')
         },
@@ -176,7 +176,7 @@ function getPasswordPrompter(): Prompter<string> {
         value: '',
         title: localize('AWS.redshift.password', 'Enter password'),
         buttons: createCommonButtons(),
-        placeholder: 'Enter Password',
+        placeholder: 'Enter password',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.passwordValidation', 'Password cannot be empty')
         },
