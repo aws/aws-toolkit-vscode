@@ -6,13 +6,14 @@
 import * as path from 'path'
 import { getLogger } from '../../shared/logger/logger'
 import { collectFiles } from '../util/files'
-import { RefinementState } from './sessionState'
+import { CodeGenState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { AddToChat } from '../models'
 import { SessionConfig } from './sessionConfig'
+import { ConversationIdNotFoundError } from '../errors'
 
 export class Session {
-    private state: SessionState
+    private _state: SessionState
     private task: string = ''
     private approach: string = ''
     public readonly config: SessionConfig
@@ -21,7 +22,7 @@ export class Session {
 
     constructor(sessionConfig: SessionConfig, addToChat: AddToChat) {
         this.config = sessionConfig
-        this.state = new RefinementState(this.getSessionStateConfig(), '')
+        this._state = new RefinementState(this.getSessionStateConfig(), '')
 
         this.addToChat = addToChat
     }
@@ -51,15 +52,31 @@ export class Session {
         }
     }
 
+    /**
+     * Triggered by the Write Code follow up button to start the code generation phase
+     */
+    async startCodegen(): Promise<void> {
+        if (!this.state.conversationId) {
+            throw new ConversationIdNotFoundError()
+        }
+
+        this._state = new CodeGenState(
+            {
+                ...this.getSessionStateConfig(),
+                conversationId: this.state.conversationId,
+            },
+            this.approach
+        )
+        await this.nextInteraction(undefined)
+    }
+
     async sendUnsafe(msg: string): Promise<Interaction[]> {
         const sessionStageConfig = this.getSessionStateConfig()
-
-        const files = await collectFiles(path.join(this.config.workspaceRoot, 'src'))
 
         if (msg === 'CLEAR') {
             this.task = ''
             this.approach = ''
-            this.state = new RefinementState(sessionStageConfig, this.approach)
+            this._state = new RefinementState(sessionStageConfig, this.approach)
             const message =
                 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
             return [
@@ -75,6 +92,12 @@ export class Session {
         if (this.task === '') {
             this.task = msg
         }
+
+        return this.nextInteraction(msg)
+    }
+
+    private async nextInteraction(msg: string | undefined) {
+        const files = await collectFiles(path.join(this.config.workspaceRoot, 'src'))
 
         const resp = await this.state.interact({
             files,
@@ -92,7 +115,7 @@ export class Session {
             this.state.tokenSource.cancel()
 
             // Move to the next state
-            this.state = resp.nextState
+            this._state = resp.nextState
 
             // If approach was changed then we need to set it in the next state and this state
             this.state.approach = newApproach
@@ -100,5 +123,9 @@ export class Session {
         }
 
         return resp.interactions
+    }
+
+    get state() {
+        return this._state
     }
 }

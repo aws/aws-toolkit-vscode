@@ -23,13 +23,14 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { weaverbirdScheme } from '../constants'
-import type {
+import {
     Interaction,
     SessionStateAction,
     SessionStateConfig,
     SessionStateInteraction,
     SessionState,
     NewFileContents,
+    SessionStatePhase,
 } from '../types'
 import { invoke } from '../util/invoke'
 import { MessageActionType, AddToChat, createChatContent } from '../models'
@@ -38,6 +39,7 @@ const fs = FileSystemCommon.instance
 
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
+    public readonly phase = SessionStatePhase.Approach
 
     constructor(private config: Omit<SessionStateConfig, 'conversationId'>, public approach: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
@@ -80,16 +82,15 @@ export class RefinementState implements SessionState {
 
 export class RefinementIterationState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
+    public readonly phase = SessionStatePhase.Approach
+    public readonly conversationId: string
 
     constructor(private config: SessionStateConfig, public approach: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.conversationId = config.conversationId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        if (action.msg && action.msg.indexOf('WRITE CODE') !== -1) {
-            return new CodeGenState(this.config, this.approach).interact(action)
-        }
-
         if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
             return new MockCodeGenState(this.config, this.approach).interact(action)
         }
@@ -151,10 +152,13 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
 
 abstract class CodeGenBase {
     private pollCount = 60
-    tokenSource: vscode.CancellationTokenSource
+    readonly tokenSource: vscode.CancellationTokenSource
+    public phase = SessionStatePhase.Codegen
+    public readonly conversationId: string
 
     constructor(protected config: SessionStateConfig) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.conversationId = config.conversationId
     }
 
     async generateCode(params: {

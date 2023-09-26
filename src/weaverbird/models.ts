@@ -41,4 +41,5 @@ export enum MessageActionType {
     CLEAR = 'chat-clear',
     STOP_STREAM = 'stop-stream',
     NOTIFY = 'show-notification',
+    FOLLOW_UP_CLICKED = 'follow-up-clicked',
 }

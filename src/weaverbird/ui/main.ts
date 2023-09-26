@@ -62,7 +62,10 @@ export const createWeaverbirdUI = (): MynahUI => {
         },
         // Just calling a get function here which sends a message to the extension
         onChatPrompt: (prompt: ChatPrompt) => {
-            getGenerativeAIAnswer(prompt)
+            extensionCommunicator.sendMessageToExtension({
+                action: MessageActionType.PROMPT,
+                data: prompt,
+            })
         },
         // If you set this (even with an empty function)
         // It will change the send button to a stop button until the loadingChat state sets back to false
@@ -78,7 +81,10 @@ export const createWeaverbirdUI = (): MynahUI => {
         // Informing you about which follow up is selected.
         onFollowUpClicked: followUp => {
             // Get answer from the followup question, we're just using the prompt here.
-            getGenerativeAIAnswer({ prompt: followUp.prompt })
+            extensionCommunicator.sendMessageToExtension({
+                action: MessageActionType.FOLLOW_UP_CLICKED,
+                data: followUp,
+            })
         },
         // If you connect to this event, it will show a button under the three dots menu
         // on the left of the send button which is names Clear chat and will trigger this function
@@ -94,17 +100,6 @@ export const createWeaverbirdUI = (): MynahUI => {
             })
         },
     })
-
-    // Calling the extension layer here, nothing more than that.
-    // To get answers we're waiting for the incoming messages all the time
-    // No promises possible for postMessage structures.
-    // Since we don't know if the message we've sent is catched and when the answer will come
-    const getGenerativeAIAnswer = (prompt: ChatPrompt): void => {
-        extensionCommunicator.sendMessageToExtension({
-            action: MessageActionType.PROMPT,
-            data: prompt,
-        })
-    }
 
     return mynahUI
 }

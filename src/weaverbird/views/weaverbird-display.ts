@@ -7,9 +7,11 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import { ExtensionContext } from 'vscode'
 import { PanelStore } from '../stores/panelStore'
-import { messageIdentifier, MessageActionType, NotificationType, createChatContent } from '../models'
+import { messageIdentifier, MessageActionType, NotificationType, createChatContent, ChatItemType } from '../models'
 import { Session } from '../session/session'
 import { createSessionConfig } from '../session/sessionConfigFactory'
+import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { FollowUpTypes, SessionStatePhase } from '../types'
 
 export interface MynahDisplayProps {
     panelStore: PanelStore
@@ -79,6 +81,21 @@ export class WeaverbirdDisplay {
                         }
                     }
 
+                    const followUpOptions = this.followUpOptions(session.state.phase)
+                    if (followUpOptions.length > 0) {
+                        this.sendDataToUI(
+                            panelId,
+                            {
+                                type: ChatItemType.ANSWER,
+                                followUp: {
+                                    text: 'Followup options',
+                                    options: followUpOptions,
+                                },
+                            },
+                            MessageActionType.CHAT_ANSWER
+                        )
+                    }
+
                     // Spinner is no longer neccessary
                     this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
                     break
@@ -102,20 +119,33 @@ export class WeaverbirdDisplay {
                     )
                     break
                 case MessageActionType.STOP_STREAM:
-                    // Similar to clear.
-                    // This time you can stop the streaming and if you like also send another nofication
-                    // Please do not forget, nothing here is done by following your projects related UX sources (if you have any)
-                    // They are all guidance purposes.
                     this.sendDataToUI(
                         panelId,
                         {
-                            title: 'Cannot stop the streeaaam!!',
-                            content: "Sorry i didn't implemented anything to stop the stream in the demo app",
+                            title: 'Request cancelled',
+                            content: '',
                             type: NotificationType.WARNING,
                         },
                         MessageActionType.NOTIFY
                     )
+
+                    session.state.tokenSource.cancel()
                     break
+                case MessageActionType.FOLLOW_UP_CLICKED: {
+                    // Lock the chat box
+                    this.sendDataToUI(panelId, true, MessageActionType.SPINNER_STATE)
+
+                    const data = JSON.parse(msg.data)
+                    switch (data?.type) {
+                        case FollowUpTypes.WriteCode:
+                            await session.startCodegen()
+                            break
+                    }
+
+                    // Unlock the chat box
+                    this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
+                    break
+                }
             }
         })
 
@@ -129,6 +159,22 @@ export class WeaverbirdDisplay {
         this.panelStore.savePanel(panelId, { webviewPanel: panel })
 
         this.generatePanel(panelId)
+    }
+
+    private followUpOptions(phase: SessionStatePhase | undefined): ChatItemFollowUp[] {
+        switch (phase) {
+            case SessionStatePhase.Approach:
+                return [
+                    {
+                        pillText: 'Write Code',
+                        type: FollowUpTypes.WriteCode,
+                    },
+                ]
+            case SessionStatePhase.Codegen:
+                return []
+            default:
+                return []
+        }
     }
 
     private generatePanel(panelId: string): void {
