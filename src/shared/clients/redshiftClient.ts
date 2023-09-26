@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftServerless, RedshiftData, SecretsManager } from 'aws-sdk'
+import { Redshift, RedshiftServerless, RedshiftData } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { ClusterCredentials, ClustersMessage, GetClusterCredentialsMessage } from 'aws-sdk/clients/redshift'
 import {
@@ -22,6 +22,8 @@ import {
 } from 'aws-sdk/clients/redshiftdata'
 import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
+import { SecretsManagerClient } from './secretsManagerClient'
+import { CreateSecretRequest, CreateSecretResponse } from 'aws-sdk/clients/secretsmanager'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -39,10 +41,10 @@ export class DefaultRedshiftClient {
         private readonly redshiftServerlessClientProvider: (
             regionCode: string
         ) => Promise<RedshiftServerless> = createRedshiftServerlessSdkClient,
-        private readonly secretsManagerClientProvider: (
-            regionCode: string
-        ) => Promise<SecretsManager> = createSecretsManagerClient
-    ) {}
+        public secretManagerClient: SecretsManagerClient | undefined
+    ) {
+        this.secretManagerClient = new SecretsManagerClient(regionCode)
+    }
 
     // eslint-disable-next-line require-yield
     public async describeProvisionedClusters(nextToken?: string): Promise<ClustersMessage> {
@@ -196,29 +198,11 @@ export class DefaultRedshiftClient {
         /*
             create a secrete arn for the username and password entered through the Database Username and Password authentication
         */
-        const username = connectionParams.username
-        const password = connectionParams.password
-        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
-        const request: SecretsManager.CreateSecretRequest = {
-            Description: 'Database secret created with vscode plugin',
-            Name: this.genUniqueId(connectionParams) ? this.genUniqueId(connectionParams) : '',
-            SecretString: JSON.stringify({ username, password }),
-            Tags: [
-                {
-                    Key: 'Service',
-                    Value: 'Redshift',
-                },
-                {
-                    Key: 'Request-Source',
-                    Value: 'Vscode',
-                },
-            ],
-            ForceOverwriteReplicaSecret: true,
-        }
+        const username = connectionParams.username ? connectionParams.username : ''
+        const password = connectionParams.password ? connectionParams.password : ''
+        const secretString = this.genUniqueId(connectionParams)
         try {
-            const response: SecretsManager.CreateSecretResponse = await secretsManagerClient
-                .createSecret(request)
-                .promise()
+            const response = await this.secretManagerClient?.createSecret(secretString, username, password)
             if (response && response.ARN) {
                 return response.ARN
             }
@@ -239,8 +223,4 @@ async function createRedshiftServerlessSdkClient(regionCode: string): Promise<Re
 }
 async function createRedshiftDataClient(regionCode: string): Promise<RedshiftData> {
     return await globals.sdkClientBuilder.createAwsService(RedshiftData, { computeChecksums: true }, regionCode)
-}
-
-async function createSecretsManagerClient(regionCode: string): Promise<SecretsManager> {
-    return await globals.sdkClientBuilder.createAwsService(SecretsManager, { computeChecksums: true }, regionCode)
 }

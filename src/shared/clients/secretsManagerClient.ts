@@ -5,7 +5,13 @@
 
 import { SecretsManager } from 'aws-sdk'
 import globals from '../extensionGlobals'
-import { ListSecretsRequest, ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
+import {
+    CreateSecretRequest,
+    CreateSecretResponse,
+    ListSecretsRequest,
+    ListSecretsResponse,
+} from 'aws-sdk/clients/secretsmanager'
+import { ConnectionParams } from '../../redshift/models/models'
 
 export class SecretsManagerClient {
     public constructor(
@@ -33,6 +39,27 @@ export class SecretsManagerClient {
             SortOrder: 'desc',
         }
         return secretsManagerClient.listSecrets(request).promise()
+    }
+
+    public async createSecret(secretString: string, username: string, password: string): Promise<CreateSecretResponse> {
+        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
+        const request: CreateSecretRequest = {
+            Description: 'Database secret created with vscode plugin',
+            Name: secretString ? secretString : '',
+            SecretString: JSON.stringify({ username, password }),
+            Tags: [
+                {
+                    Key: 'Service',
+                    Value: 'Redshift',
+                },
+                {
+                    Key: 'Request-Source',
+                    Value: 'Vscode',
+                },
+            ],
+            ForceOverwriteReplicaSecret: true,
+        }
+        return secretsManagerClient.createSecret(request).promise()
     }
 }
 
