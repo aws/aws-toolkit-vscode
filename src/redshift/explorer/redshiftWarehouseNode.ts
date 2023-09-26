@@ -114,11 +114,14 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     this.connectionParams = connectionParams
                     const connectionType = connectionParams.connectionType
                     let secretArnFetched = ''
-                    if (connectionType === 'Database user name and password') {
-                        secretArnFetched =
-                            (await this.redshiftClient.createSecretFromConnectionParams(connectionParams)) ?? ''
-                        connectionParams.username = undefined
-                        connectionParams.password = undefined
+                    if (connectionType === connectionParams.connectionType) {
+                        secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(connectionParams)
+                        if (!secretArnFetched) {
+                            throw new Error('secret arn could not be fetched')
+                        }
+                        if (!connectionParams.username || !connectionParams.password) {
+                            throw new Error('Required properties (username and password) are missing')
+                        }
                         connectionParams.secret = secretArnFetched
                     } else {
                         this.connectionParams = connectionParams
