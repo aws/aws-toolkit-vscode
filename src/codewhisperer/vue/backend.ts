@@ -107,13 +107,13 @@ export class CodeWhispererWebview extends VueWebview {
 // export type codewhispererLanguage = 'python' | 'javascript' | 'csharp'
 //List of all events that are emitted from the webview of CodeWhisperer
 export type CodeWhispererUiClick =
-    | 'codeWhisperer_Resources_Documentation'
-    | 'codeWhisperer_Resources_Feedback'
-    | 'codeWhisperer_Workshop_LearnMore'
-    | 'codeWhisperer_Commands_KeyboardShortcutsEditor'
-    | 'codeWhisperer_ScanCode_LearnMore'
-    | 'codeWhisperer_GenerateSuggestions_LearnMore'
-    | 'codeWhisperer_GenerateSuggestions_TryExample'
+    | 'codewhisperer_Resources_Documentation'
+    | 'codewhisperer_Resources_Feedback'
+    | 'codewhisperer_Workshop_LearnMore'
+    | 'codewhisperer_Commands_KeyboardShortcutsEditor'
+    | 'codewhisperer_ScanCode_LearnMore'
+    | 'codewhisperer_GenerateSuggestions_LearnMore'
+    | 'codewhisperer_GenerateSuggestions_TryExample'
 
 const Panel = VueWebview.compilePanel(CodeWhispererWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
