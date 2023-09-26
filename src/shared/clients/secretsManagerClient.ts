@@ -11,7 +11,6 @@ import {
     ListSecretsRequest,
     ListSecretsResponse,
 } from 'aws-sdk/clients/secretsmanager'
-import { ConnectionParams } from '../../redshift/models/models'
 
 export class SecretsManagerClient {
     public constructor(

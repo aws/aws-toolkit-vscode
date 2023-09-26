@@ -23,7 +23,6 @@ import {
 import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
-import { CreateSecretRequest, CreateSecretResponse } from 'aws-sdk/clients/secretsmanager'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -40,11 +39,8 @@ export class DefaultRedshiftClient {
         private readonly redshiftClientProvider: (regionCode: string) => Promise<Redshift> = createRedshiftSdkClient,
         private readonly redshiftServerlessClientProvider: (
             regionCode: string
-        ) => Promise<RedshiftServerless> = createRedshiftServerlessSdkClient,
-        public secretManagerClient: SecretsManagerClient | undefined
-    ) {
-        this.secretManagerClient = new SecretsManagerClient(regionCode)
-    }
+        ) => Promise<RedshiftServerless> = createRedshiftServerlessSdkClient
+    ) {}
 
     // eslint-disable-next-line require-yield
     public async describeProvisionedClusters(nextToken?: string): Promise<ClustersMessage> {
@@ -198,11 +194,12 @@ export class DefaultRedshiftClient {
         /*
             create a secrete arn for the username and password entered through the Database Username and Password authentication
         */
+        const secretsManagerClient = new SecretsManagerClient(this.regionCode)
         const username = connectionParams.username ? connectionParams.username : ''
         const password = connectionParams.password ? connectionParams.password : ''
         const secretString = this.genUniqueId(connectionParams)
         try {
-            const response = await this.secretManagerClient?.createSecret(secretString, username, password)
+            const response = await secretsManagerClient?.createSecret(secretString, username, password)
             if (response && response.ARN) {
                 return response.ARN
             }
