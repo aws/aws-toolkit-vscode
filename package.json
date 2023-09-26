@@ -276,6 +276,45 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Enables the Live Search Suggestions. A reload of the application is necessary for this change to take effect."
+                },
+                "aws.weaverbird.debateRounds": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "default": 2,
+                    "description": "The max number of times for the LLMs to debate the code change before responding"
+                },
+                "aws.weaverbird.generationFlow": {
+                    "type": "string",
+                    "enum": [
+                        "fargate",
+                        "lambda",
+                        "stepFunction"
+                    ],
+                    "default": "lambda",
+                    "description": "The flow used on the backend for generating code changes"
+                },
+                "aws.weaverbird.maxTokensToSample": {
+                    "type": "number",
+                    "minimum": 1000,
+                    "maximum": 50000,
+                    "default": 50000,
+                    "description": "The max number of tokens to generate before stopping"
+                },
+                "aws.weaverbird.model": {
+                    "type": "string",
+                    "enum": [
+                        "claude-2"
+                    ],
+                    "default": "claude-2",
+                    "description": "The large language model to use"
+                },
+                "aws.weaverbird.modelTemperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0,
+                    "description": "The randomness of the LLM output"
                 }
             }
         },

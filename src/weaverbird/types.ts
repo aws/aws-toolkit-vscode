@@ -9,12 +9,19 @@ import { LambdaClient } from '../shared/clients/lambdaClient'
 import type { CancellationTokenSource } from 'vscode'
 import { AddToChat } from './models'
 
+const GenerationFlowOptions = ['fargate', 'lambda', 'stepFunction'] as const
+type GenerationFlowOption = (typeof GenerationFlowOptions)[number]
+
+export function isGenerationFlowOption(value: string): value is GenerationFlowOption {
+    return GenerationFlowOptions.includes(value as GenerationFlowOption)
+}
+
 export interface LLMConfig {
     model: string
     maxTokensToSample: number
     temperature: number
     debateRounds: number
-    generationFlow: 'fargate' | 'lambda' | 'stepFunction'
+    generationFlow: GenerationFlowOption
 }
 
 export interface UserInteraction {
