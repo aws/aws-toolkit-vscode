@@ -13,7 +13,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
-import { DefaultRedshiftClient, SecretsManagerClient } from '../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { ConnectionParams, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
@@ -41,7 +41,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public connectionParams: ConnectionParams | undefined
     public newStartButton: { label: string; iconPath: any }
     private readonly logger = getLogger()
-    public secretManagerClient: SecretsManagerClient | undefined
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
@@ -57,7 +56,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.redshiftClient = parent.redshiftClient
         this.newStartButton = { label: 'Start', iconPath: getIcon('vscode-debug-start') }
         this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
-        this.secretManagerClient = new SecretsManagerClient(this.redshiftClient.regionCode)
     }
 
     public setConnectionParams(connectionParams: ConnectionParams) {
@@ -118,7 +116,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     let secretArnFetched = ''
                     if (connectionType === 'Database user name and password') {
                         secretArnFetched =
-                            (await this.secretManagerClient?.createSecretFromConnectionParams(connectionParams)) ?? ''
+                            (await this.redshiftClient.createSecretFromConnectionParams(connectionParams)) ?? ''
                         connectionParams.username = undefined
                         connectionParams.password = undefined
                         connectionParams.secret = secretArnFetched

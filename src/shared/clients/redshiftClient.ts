@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftServerless, RedshiftData } from 'aws-sdk'
+import { Redshift, RedshiftServerless, RedshiftData, SecretsManager } from 'aws-sdk'
 import globals from '../extensionGlobals'
 import { ClusterCredentials, ClustersMessage, GetClusterCredentialsMessage } from 'aws-sdk/clients/redshift'
 import {
@@ -22,8 +22,6 @@ import {
 } from 'aws-sdk/clients/redshiftdata'
 import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
-import { SecretsManager } from 'aws-sdk'
-import { ListSecretsRequest, ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -40,7 +38,10 @@ export class DefaultRedshiftClient {
         private readonly redshiftClientProvider: (regionCode: string) => Promise<Redshift> = createRedshiftSdkClient,
         private readonly redshiftServerlessClientProvider: (
             regionCode: string
-        ) => Promise<RedshiftServerless> = createRedshiftServerlessSdkClient
+        ) => Promise<RedshiftServerless> = createRedshiftServerlessSdkClient,
+        private readonly secretsManagerClientProvider: (
+            regionCode: string
+        ) => Promise<SecretsManager> = createSecretsManagerClient
     ) {}
 
     // eslint-disable-next-line require-yield
@@ -186,47 +187,6 @@ export class DefaultRedshiftClient {
             return redshiftServerless.getCredentials(getCredentialsRequest).promise()
         }
     }
-}
-
-async function createRedshiftSdkClient(regionCode: string): Promise<Redshift> {
-    return await globals.sdkClientBuilder.createAwsService(Redshift, { computeChecksums: true }, regionCode)
-}
-
-async function createRedshiftServerlessSdkClient(regionCode: string): Promise<RedshiftServerless> {
-    return await globals.sdkClientBuilder.createAwsService(RedshiftServerless, { computeChecksums: true }, regionCode)
-}
-async function createRedshiftDataClient(regionCode: string): Promise<RedshiftData> {
-    return await globals.sdkClientBuilder.createAwsService(RedshiftData, { computeChecksums: true }, regionCode)
-}
-
-export class SecretsManagerClient {
-    public constructor(
-        public readonly regionCode: string,
-        private readonly secretsManagerClientProvider: (
-            regionCode: string
-        ) => Promise<SecretsManager> = createSecretsManagerClient
-    ) {}
-
-    /**
-     * Lists the secrets that are stored by Secrets Manager
-     * @param filter tagged key filter value
-     * @returns a list of the secrets
-     */
-    public async listSecrets(filter: string): Promise<ListSecretsResponse> {
-        const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
-        const request: ListSecretsRequest = {
-            IncludePlannedDeletion: false,
-            Filters: [
-                {
-                    Key: 'tag-key',
-                    Values: [filter],
-                },
-            ],
-            SortOrder: 'desc',
-        }
-        return secretsManagerClient.listSecrets(request).promise()
-    }
-
     public genUniqueId(connectionParams: ConnectionParams): string {
         const epocDate = new Date().getTime()
         return `${epocDate}-${connectionParams.warehouseIdentifier}`
@@ -268,6 +228,17 @@ export class SecretsManagerClient {
             throw error
         }
     }
+}
+
+async function createRedshiftSdkClient(regionCode: string): Promise<Redshift> {
+    return await globals.sdkClientBuilder.createAwsService(Redshift, { computeChecksums: true }, regionCode)
+}
+
+async function createRedshiftServerlessSdkClient(regionCode: string): Promise<RedshiftServerless> {
+    return await globals.sdkClientBuilder.createAwsService(RedshiftServerless, { computeChecksums: true }, regionCode)
+}
+async function createRedshiftDataClient(regionCode: string): Promise<RedshiftData> {
+    return await globals.sdkClientBuilder.createAwsService(RedshiftData, { computeChecksums: true }, regionCode)
 }
 
 async function createSecretsManagerClient(regionCode: string): Promise<SecretsManager> {
