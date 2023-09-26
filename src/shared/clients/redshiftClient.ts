@@ -20,7 +20,7 @@ import {
     ListSchemasResponse,
     ListTablesResponse,
 } from 'aws-sdk/clients/redshiftdata'
-import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
 
@@ -68,10 +68,17 @@ export class DefaultRedshiftClient {
         const input: RedshiftData.ListDatabasesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
-            DbUser: warehouseType === RedshiftWarehouseType.PROVISIONED ? connectionParams.username : undefined,
+            DbUser:
+                warehouseType === RedshiftWarehouseType.PROVISIONED &&
+                connectionParams.connectionType != ConnectionType.DatabaseUser
+                    ? connectionParams.username
+                    : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
-            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+            SecretArn:
+                connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                    ? connectionParams.secret
+                    : undefined,
         }
         return redshiftDataClient.listDatabases(input).promise()
     }
@@ -82,10 +89,16 @@ export class DefaultRedshiftClient {
         const input: RedshiftData.ListSchemasRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
-            DbUser: connectionParams.username,
+            DbUser:
+                connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                    ? connectionParams.username
+                    : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
-            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+            SecretArn:
+                connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                    ? connectionParams.secret
+                    : undefined,
         }
         return redshiftDataClient.listSchemas(input).promise()
     }
@@ -100,12 +113,18 @@ export class DefaultRedshiftClient {
         const warehouseIdentifier = connectionParams.warehouseIdentifier
         const input: RedshiftData.ListTablesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
-            DbUser: connectionParams.username,
+            DbUser:
+                connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                    ? connectionParams.username
+                    : undefined,
             Database: connectionParams.database,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             SchemaPattern: schemaName,
             NextToken: nextToken,
-            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+            SecretArn:
+                connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                    ? connectionParams.secret
+                    : undefined,
         }
         const ListTablesResponse = redshiftDataClient.listTables(input).promise()
         return ListTablesResponse
@@ -132,8 +151,14 @@ export class DefaultRedshiftClient {
                             : undefined,
                     Database: connectionParams.database,
                     Sql: queryToExecute,
-                    DbUser: connectionParams.username,
-                    SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+                    DbUser:
+                        connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                            ? connectionParams.username
+                            : undefined,
+                    SecretArn:
+                        connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                            ? connectionParams.secret
+                            : undefined,
                 })
                 .promise()
 
