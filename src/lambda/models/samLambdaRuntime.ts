@@ -28,12 +28,7 @@ export type RuntimePackageType = 'Image' | 'Zip'
 
 // TODO: Consolidate all of the runtime constructs into a single <Runtime, Set<Runtime>> map
 //       We should be able to eliminate a fair amount of redundancy with that.
-export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>([
-    'nodejs18.x',
-    'nodejs16.x',
-    'nodejs14.x',
-    'nodejs12.x',
-])
+export const nodeJsRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>(['nodejs18.x', 'nodejs16.x', 'nodejs14.x'])
 export function getNodeMajorVersion(version?: string): number | undefined {
     if (!version) {
         return undefined
@@ -98,7 +93,6 @@ export const samArmLambdaRuntimes: ImmutableSet<Runtime> = ImmutableSet<Runtime>
     'nodejs18.x',
     'nodejs16.x',
     'nodejs14.x',
-    'nodejs12.x',
     'java11',
     'java8.al2',
 ])
