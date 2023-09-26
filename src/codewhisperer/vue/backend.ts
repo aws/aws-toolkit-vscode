@@ -6,7 +6,6 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as os from 'os'
 import * as vscode from 'vscode'
-import * as fs from 'fs'
 import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -29,7 +28,7 @@ export class CodeWhispererWebview extends VueWebview {
     private isFileSaved: boolean = false
     private getLocalFilePath(fileName: string): string {
         //This will store the files in the global storage path of VSCode
-        return path.join(globals.context.globalStoragePath, fileName)
+        return path.join(globals.context.globalStorageUri.fsPath, fileName)
     }
 
     // This function opens Python/JavaScript/C# file in the editor.

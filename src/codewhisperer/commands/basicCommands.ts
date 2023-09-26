@@ -26,7 +26,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
     (globalState: vscode.Memento) => async () => {
-        const autoTriggerEnabled: boolean = getState(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
+        const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
         const toSet: boolean = !autoTriggerEnabled
         await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
@@ -57,7 +57,7 @@ export const enableCodeSuggestions = Commands.declare(
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
-        const hasShownNewWelcomeMsg = getState(
+        const hasShownNewWelcomeMsg = get(
             CodeWhispererConstants.newWelcomeMessageKey,
             context.extensionContext.globalState
         )
@@ -114,7 +114,7 @@ export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => a
     await AuthUtil.instance.reauthenticate()
 })
 
-export function getState(key: string, context: vscode.Memento): any {
+export function get(key: string, context: vscode.Memento): any {
     return context.get(key)
 }
 

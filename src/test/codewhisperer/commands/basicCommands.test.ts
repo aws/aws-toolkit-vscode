@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { assertTelemetryCurried } from '../../testUtil'
-import { toggleCodeSuggestions, getState, set, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
+import { toggleCodeSuggestions, get, set, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command } from '../../../shared/vscode/commands2'
@@ -36,15 +36,15 @@ describe('CodeWhisperer-basicCommands', function () {
         const fakeMemeto = new FakeMemento()
         fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
 
-        let res = getState(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
+        let res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, true)
 
         fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
-        res = getState(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
+        res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, undefined)
 
         fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
-        res = getState(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
+        res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
         assert.strictEqual(res, false)
     })
 
