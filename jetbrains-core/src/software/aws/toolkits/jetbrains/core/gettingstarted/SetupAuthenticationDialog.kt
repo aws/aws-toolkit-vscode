@@ -38,6 +38,7 @@ import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.SsoSessionConfigurationManager
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
@@ -421,9 +422,14 @@ fun rolePopupFromConnection(project: Project, connection: AwsBearerTokenConnecti
     }
 }
 
-fun requestCredentialsForCodeWhisperer(project: Project) =
+fun requestCredentialsForCodeWhisperer(project: Project, popupBuilderIdTab: Boolean = true) =
     SetupAuthenticationDialog(
         project,
+        state = SetupAuthenticationDialogState().also {
+            if (popupBuilderIdTab) {
+                it.selectedTab.set(SetupAuthenticationTabs.BUILDER_ID)
+            }
+        },
         tabSettings = mapOf(
             SetupAuthenticationTabs.IDENTITY_CENTER to AuthenticationTabSettings(
                 disabled = false,
@@ -450,6 +456,7 @@ fun requestCredentialsForCodeWhisperer(project: Project) =
                 )
             )
         ),
+        scopes = CODEWHISPERER_SCOPES,
         promptForIdcPermissionSet = false
     ).showAndGet()
 

@@ -22,11 +22,16 @@ import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.components.BorderLayoutPanel
 import icons.AwsIcons
-import software.aws.toolkits.jetbrains.core.gettingstarted.SetupAuthenticationDialog
+import software.aws.toolkits.jetbrains.core.credentials.loginSso
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.BULLET_PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_TITLE_FONT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_WIDTH
+import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForCodeWhisperer
+import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForExplorer
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
@@ -70,7 +75,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                     ) {
                         row {
                             // CodeWhisperer panel
-                            cell(CodeWhispererPanel(project))
+                            cell(CodeWhispererPanel())
                             // Resource Explorer Panel
                             cell(ResourceExplorerPanel())
                             // CodeCatalyst Panel
@@ -162,7 +167,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         )
     }
 
-    private class CodeCatalystPanel : FeatureDescriptionPanel() {
+    private inner class CodeCatalystPanel : FeatureDescriptionPanel() {
         init {
             addToCenter(
                 panel {
@@ -192,6 +197,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         row {
                             button(message("caws.getstarted.panel.login")) {
+                                loginSso(project, SONO_URL, SONO_REGION, CODECATALYST_SCOPES)
                             }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
@@ -209,7 +215,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         }
     }
 
-    private class ResourceExplorerPanel : FeatureDescriptionPanel() {
+    private inner class ResourceExplorerPanel : FeatureDescriptionPanel() {
         init {
             addToCenter(
                 panel {
@@ -241,6 +247,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         row {
                             button(message("aws.onboarding.getstarted.panel.button_iam_login")) {
+                                requestCredentialsForExplorer(project)
                             }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
@@ -260,7 +267,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         }
     }
 
-    private class CodeWhispererPanel(val project: Project) : FeatureDescriptionPanel() {
+    private inner class CodeWhispererPanel : FeatureDescriptionPanel() {
         init {
             addToCenter(
                 panel {
@@ -289,6 +296,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         row {
                             button(message("codewhisperer.gettingstarted.panel.login_button")) {
+                                requestCredentialsForCodeWhisperer(project, popupBuilderIdTab = true)
                             }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
@@ -301,11 +309,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
                         row {
                             text(message("aws.onboarding.getstarted.panel.login_with_iam")) {
-                                try {
-                                    SetupAuthenticationDialog(project, promptForIdcPermissionSet = true).show()
-                                } catch (e: Exception) {
-                                    throw Exception("Unable to pop up the IAM Identity Center Authentication Dialog")
-                                }
+                                requestCredentialsForCodeWhisperer(project, popupBuilderIdTab = false)
                             }
                         }
                     }
