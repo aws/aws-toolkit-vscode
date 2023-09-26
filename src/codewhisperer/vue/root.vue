@@ -109,6 +109,7 @@ export default defineComponent({
     //The created hook runs before the templates and Virtual DOM have been mounted or rendered
     created() {
         this.showAtStartUp()
+        client.emitUiClick('codewhisperer_Learn_PageOpen')
     },
     mounted() {
         /* 
