@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials.sso
 import com.intellij.ide.BrowserUtil
 import com.intellij.openapi.progress.ProcessCanceledException
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
-import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.CopyUserCodeForLoginDialog
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ConfirmUserCodeLoginDialog
 import software.aws.toolkits.jetbrains.utils.computeOnEdt
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
@@ -28,7 +28,7 @@ class DefaultSsoLoginCallbackProvider : SsoLoginCallbackProvider {
 object SsoPrompt : SsoLoginCallback {
     override fun tokenPending(authorization: Authorization) {
         computeOnEdt {
-            val result = CopyUserCodeForLoginDialog(
+            val result = ConfirmUserCodeLoginDialog(
                 authorization.userCode,
                 message("credentials.sso.login.title"),
                 CredentialType.SsoProfile
@@ -36,7 +36,7 @@ object SsoPrompt : SsoLoginCallback {
 
             if (result) {
                 AwsTelemetry.loginWithBrowser(project = null, Result.Succeeded, CredentialType.SsoProfile)
-                BrowserUtil.browse(authorization.verificationUri)
+                BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
                 AwsTelemetry.loginWithBrowser(project = null, Result.Cancelled, CredentialType.SsoProfile)
                 throw ProcessCanceledException(IllegalStateException(message("credentials.sso.login.cancelled")))
@@ -54,7 +54,7 @@ object SsoPrompt : SsoLoginCallback {
 object BearerTokenPrompt : SsoLoginCallback {
     override fun tokenPending(authorization: Authorization) {
         computeOnEdt {
-            val codeCopied = CopyUserCodeForLoginDialog(
+            val codeCopied = ConfirmUserCodeLoginDialog(
                 authorization.userCode,
                 message("credentials.sono.login"),
                 CredentialType.BearerToken
@@ -62,7 +62,7 @@ object BearerTokenPrompt : SsoLoginCallback {
 
             if (codeCopied) {
                 AwsTelemetry.loginWithBrowser(project = null, Result.Succeeded, CredentialType.BearerToken)
-                BrowserUtil.browse(authorization.verificationUri)
+                BrowserUtil.browse(authorization.verificationUriComplete)
             } else {
                 AwsTelemetry.loginWithBrowser(project = null, Result.Cancelled, CredentialType.BearerToken)
             }
