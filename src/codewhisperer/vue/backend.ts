@@ -113,7 +113,6 @@ export type CodeWhispererUiClick =
     | 'codewhisperer_Commands_KeyboardShortcutsEditor'
     | 'codewhisperer_ScanCode_LearnMore'
     | 'codewhisperer_GenerateSuggestions_LearnMore'
-    | 'codewhisperer_GenerateSuggestions_TryExample'
     | 'codewhisperer_Learn_PageOpen'
 
 const Panel = VueWebview.compilePanel(CodeWhispererWebview)
