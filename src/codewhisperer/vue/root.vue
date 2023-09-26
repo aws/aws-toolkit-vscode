@@ -5,7 +5,7 @@
         <div class="headerDiv">
             <!-- Banner -->
             <div
-                v-if="active === 0 && (showAtStartUpOnly === 'ExistingUser' || showAtStartUpOnly === 'startUpOnly')"
+                v-if="active === 0 && (showAtStartUpOnly === 'ExistingUser' || showAtStartUpOnly === 'NewUser')"
                 class="bannerContainer"
             >
                 <div class="banner">
@@ -17,7 +17,7 @@
                             />
                         </svg>
                     </div>
-                    <div v-if="showAtStartUpOnly === 'startUpOnly'" class="bannerDescription">
+                    <div v-if="showAtStartUpOnly === 'NewUser'" class="bannerDescription">
                         You can always return to this page by clicking “Learn” in Developer Tools > CodeWhisperer
                     </div>
                     <div v-else-if="showAtStartUpOnly === 'ExistingUser'" class="bannerDescription">

@@ -84,21 +84,13 @@ describe('codewhispererNode', function () {
             isConnectionValid.returns(true)
             isConnected.returns(true)
             const node = codewhispererNode
-            const children = node.getChildren()
-
-            const pauseAutoSuggestionsNode = children.find(
-                c => c.resource.id == 'aws.codeWhisperer.toggleCodeSuggestion'
-            )
-            const getingStartedNode = children.find(c => c.resource.id == 'aws.codeWhisperer.gettingStarted')
-            const openCodeReferenceNode = children.find(c => c.resource.id == 'aws.codeWhisperer.openReferencePanel')
-            const runSecurityScanNode = children.find(c => c.resource.id == 'aws.codeWhisperer.security.scan')
-
-            assert.strictEqual(children.length, 4)
-
-            assert.ok(pauseAutoSuggestionsNode)
-            assert.ok(runSecurityScanNode)
-            assert.ok(openCodeReferenceNode)
-            assert.ok(getingStartedNode)
+            const ids = node.getChildren().map(o => o.resource.id)
+            assert.deepStrictEqual(ids, [
+                'aws.codeWhisperer.toggleCodeSuggestion',
+                'aws.codeWhisperer.security.scan',
+                'aws.codeWhisperer.openReferencePanel',
+                'aws.codeWhisperer.gettingStarted',
+            ])
         })
     })
 })

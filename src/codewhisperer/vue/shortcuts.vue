@@ -43,7 +43,7 @@ export default defineComponent({
                 },
                 {
                     id: 2,
-                    column1: 'Invoke',
+                    column1: 'Manual Invoke',
                     column2: 'Option',
                     column3: 'C',
                     column4: 'Alt',
@@ -101,7 +101,7 @@ export default defineComponent({
     display: flex;
     flex-direction: columns;
     justify-content: end;
-    padding-right: 10px;
+    padding-right: 7px;
     text-align: end;
 }
 .shortcutsEditor {
@@ -119,7 +119,6 @@ td {
     border: none;
 }
 td {
-    padding-left: 15px;
     padding-top: 5px;
     padding-bottom: 5px;
     font-family: Verdana;
@@ -130,6 +129,7 @@ td {
     text-align: left;
 }
 .tableDivCol1 {
+    padding-left: 7px;
     color: var(--vscode-descriptionForeground);
 }
 </style>

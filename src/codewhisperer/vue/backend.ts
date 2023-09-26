@@ -12,7 +12,8 @@ import { VueWebview } from '../../webviews/main'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
-
+import { FileSystemCommon } from '../../srcShared/fs'
+export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
     public readonly source = 'src/codewhisperer/vue/index.js'
@@ -32,13 +33,12 @@ export class CodeWhispererWebview extends VueWebview {
     }
 
     // This function opens Python/JavaScript/C# file in the editor.
-    async openFile(name: string[]): Promise<void> {
+    async openFile(name: [fileName: string, fileContent: string]): Promise<void> {
         const fileName = name[0]
         const fileContent = name[1]
 
         const localFilePath = this.getLocalFilePath(fileName)
-
-        if (fs.existsSync(localFilePath) && this.isFileSaved) {
+        if ((await FileSystemCommon.instance.fileExists(localFilePath)) && this.isFileSaved) {
             const fileUri = vscode.Uri.file(localFilePath)
             vscode.workspace.openTextDocument(fileUri).then(doc => {
                 vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
@@ -56,7 +56,7 @@ export class CodeWhispererWebview extends VueWebview {
 
     // This function saves and open the file in the editor.
     private async saveFileLocally(localFilePath: string, fileContent: string): Promise<void> {
-        await fs.promises.writeFile(localFilePath, fileContent)
+        await FileSystemCommon.instance.writeFile(localFilePath, fileContent)
         this.isFileSaved = true
         vscode.workspace.openTextDocument(localFilePath).then(doc => {
             vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
@@ -67,13 +67,8 @@ export class CodeWhispererWebview extends VueWebview {
     }
 
     //This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
-    public getOSType() {
-        const platform = os.platform()
-        if (platform === 'darwin') {
-            return 'Mac'
-        } else {
-            return 'RestOfOS'
-        }
+    public getOSType(): OSType {
+        return os.platform() === 'darwin' ? 'Mac' : 'RestOfOS'
     }
 
     //This function opens the Keyboard shortcuts in VSCode

@@ -50,7 +50,7 @@ import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
-import { get } from './commands/basicCommands'
+import { getState } from './commands/basicCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -213,23 +213,23 @@ export async function activate(context: ExtContext): Promise<void> {
         /**
          * hasShownWelcomeMsgBefore defines whether user is existing user or new user.
          */
-        const hasShownWelcomeMsgBefore = get(
-            /** welcomeMessageKeyPrevious is a key for the previous welcome page of version v1.91.0,*/
-            CodeWhispererConstants.welcomeMessageKeyPrevious,
+        const hasShownWelcomeMsgBefore = getState(
+            /** oldWelcomeMessageKey is a key for the previous welcome page of version v1.91.0,*/
+            CodeWhispererConstants.oldWelcomeMessageKey,
             context.extensionContext.globalState
         )
 
-        //hasShownWelcomeMsgBeforeToExistingUsers defines whether getting started page has been shown to existing users or new users since v1.92.0.
-        const hasShownWelcomeMsgBeforeToExistingUsers = get(
+        //hasShownNewWelcomeMsg defines whether getting started page has been shown to existing users or new users since v1.92.0.
+        const hasShownNewWelcomeMsg = getState(
             /**
-             *  welcomeMessageKeyShown is a new key for the new getting started experience, it is used to track if first time signIn new user/ existing user has seen the getting started page or not.
+             *  newWelcomeMessageKey is a new key for the new getting started experience, it is used to track if first time signIn new user/ existing user has seen the getting started page or not.
              */
-            CodeWhispererConstants.welcomeMessageKeyShown,
+            CodeWhispererConstants.newWelcomeMessageKey,
             context.extensionContext.globalState
         )
 
-        if (!hasShownWelcomeMsgBeforeToExistingUsers) {
-            start = hasShownWelcomeMsgBefore ? 'ExistingUser' : 'startUpOnly'
+        if (!hasShownNewWelcomeMsg) {
+            start = hasShownWelcomeMsgBefore ? 'ExistingUser' : 'NewUser'
         }
 
         registerCommandsWithVSCode(

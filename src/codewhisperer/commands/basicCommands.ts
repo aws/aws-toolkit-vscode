@@ -26,7 +26,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
     (globalState: vscode.Memento) => async () => {
-        const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
+        const autoTriggerEnabled: boolean = getState(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
         const toSet: boolean = !autoTriggerEnabled
         await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
@@ -57,15 +57,15 @@ export const enableCodeSuggestions = Commands.declare(
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
 
-        const hasShownWelcomeMsgBeforeToExistingUsers = get(
-            CodeWhispererConstants.welcomeMessageKeyShown,
+        const hasShownNewWelcomeMsg = getState(
+            CodeWhispererConstants.newWelcomeMessageKey,
             context.extensionContext.globalState
         )
 
         //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-        if (!hasShownWelcomeMsgBeforeToExistingUsers) {
+        if (!hasShownNewWelcomeMsg) {
             vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
-            await set(CodeWhispererConstants.welcomeMessageKeyShown, true, context.extensionContext.globalState)
+            await set(CodeWhispererConstants.newWelcomeMessageKey, true, context.extensionContext.globalState)
         }
 
         if (!isCloud9()) {
@@ -114,7 +114,7 @@ export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => a
     await AuthUtil.instance.reauthenticate()
 })
 
-export function get(key: string, context: vscode.Memento): any {
+export function getState(key: string, context: vscode.Memento): any {
     return context.get(key)
 }
 

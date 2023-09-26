@@ -11,11 +11,8 @@ import { telemetry } from '../../shared/telemetry/telemetry'
  */
 export class CodeWhispererCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext, private start: string) {}
-
     public showGettingStartedPage(source: CodeWhispererSource) {
-        telemetry.ui_click.emit({
-            elementId: 'codewhisperer_learn_buttonclick',
-        })
+        telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick' })
         return showCodeWhispererWebview(this.extContext, source, this.start)
     }
 }
