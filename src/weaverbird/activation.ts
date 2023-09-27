@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 
-import { registerChatView } from './vue/chat/backend'
 import { PanelStore } from './stores/panelStore'
 import { WeaverbirdDisplay } from './views/weaverbird-display'
 import { v4 as uuid } from 'uuid'
@@ -14,8 +13,6 @@ import { v4 as uuid } from 'uuid'
  * Activate Weaverbird functionality for the extension.
  */
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-    await registerChatView(context)
-
     const panelStore = new PanelStore()
 
     const weaverbirdDisplay = new WeaverbirdDisplay(context, {

@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 
-import { collectFiles } from '../../files'
+import { collectFiles } from '../util/files'
 import {
     FileMetadata,
     GenerateApproachInput,
@@ -17,12 +17,12 @@ import {
     GetCodeGenerationResultOutput,
     IterateApproachInput,
     IterateApproachOutput,
-} from '../../client/weaverbirdclient'
-import { getLogger } from '../../../shared/logger'
-import { FileSystemCommon } from '../../../srcShared/fs'
-import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
-import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
-import { weaverbirdScheme } from '../../constants'
+} from '../client/weaverbirdclient'
+import { getLogger } from '../../shared/logger'
+import { FileSystemCommon } from '../../srcShared/fs'
+import { VirtualFileSystem } from '../../shared/virtualFilesystem'
+import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
+import { weaverbirdScheme } from '../constants'
 import type {
     Interaction,
     SessionStateAction,
@@ -30,9 +30,9 @@ import type {
     SessionStateInteraction,
     SessionState,
     NewFileContents,
-} from '../../types'
-import { invoke } from './invoke'
-import { MessageActionType, AddToChat, createChatContent } from '../../models'
+} from '../types'
+import { invoke } from '../util/invoke'
+import { MessageActionType, AddToChat, createChatContent } from '../models'
 
 const fs = FileSystemCommon.instance
 

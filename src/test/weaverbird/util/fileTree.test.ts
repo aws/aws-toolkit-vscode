@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { TreeNode, fileListToTree } from '../../../../weaverbird/vue/file-tree/helpers'
+import { TreeNode, fileListToTree } from '../../../weaverbird/util/fileTree'
 
 describe('file-tree helper', function () {
     describe('fileListToTree', function () {

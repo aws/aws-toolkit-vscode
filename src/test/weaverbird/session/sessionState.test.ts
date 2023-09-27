@@ -11,13 +11,13 @@ import {
     MockCodeGenState,
     CodeGenIterationState,
     CodeGenState,
-} from '../../../../weaverbird/vue/chat/sessionState'
-import { LambdaClient } from '../../../../shared/clients/lambdaClient'
-import * as invokeModule from '../../../../weaverbird/vue/chat/invoke'
-import { VirtualFileSystem } from '../../../../shared/virtualFilesystem'
-import { SessionStateConfig, SessionStateAction } from '../../../../weaverbird/types'
-import { GenerateApproachOutput, GenerateCodeOutput } from '../../../../weaverbird/client/weaverbirdclient'
-import { MessageActionType, AddToChat, createChatContent } from '../../../../weaverbird/models'
+} from '../../../weaverbird/session/sessionState'
+import { LambdaClient } from '../../../shared/clients/lambdaClient'
+import * as invokeModule from '../../../weaverbird/util/invoke'
+import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
+import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
+import { GenerateApproachOutput, GenerateCodeOutput } from '../../../weaverbird/client/weaverbirdclient'
+import { MessageActionType, AddToChat, createChatContent } from '../../../weaverbird/models'
 
 interface MockSessionStateActionInput {
     msg?: 'WRITE CODE' | 'MOCK CODE' | 'OTHER'
