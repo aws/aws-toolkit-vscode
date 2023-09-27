@@ -4,4 +4,4 @@ Resources:
         Properties:
             CodeUri: src
             Handler: dist/app.handler
-            Runtime: nodejs12.x
+            Runtime: nodejs18.x
