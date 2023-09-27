@@ -217,7 +217,7 @@ export class DefaultRedshiftClient {
         return `${epochDate}-${connectionParams.warehouseIdentifier}`
     }
 
-    public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string> {
+    public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string | undefined> {
         /*
             create a secrete arn for the username and password entered through the Database Username and Password authentication
         */

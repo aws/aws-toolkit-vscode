@@ -40,7 +40,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public redshiftClient: DefaultRedshiftClient
     public connectionParams: ConnectionParams | undefined
     public newStartButton: { label: string; iconPath: any }
-    private readonly logger = getLogger()
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
