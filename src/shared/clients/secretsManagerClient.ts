@@ -11,6 +11,7 @@ import {
     ListSecretsRequest,
     ListSecretsResponse,
 } from 'aws-sdk/clients/secretsmanager'
+import { productName } from '../constants'
 
 export class SecretsManagerClient {
     public constructor(
@@ -43,7 +44,7 @@ export class SecretsManagerClient {
     public async createSecret(secretString: string, username: string, password: string): Promise<CreateSecretResponse> {
         const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
         const request: CreateSecretRequest = {
-            Description: 'Database secret created with vscode plugin',
+            Description: `Database secret created with ${productName}`,
             Name: secretString ? secretString : '',
             SecretString: JSON.stringify({ username, password }),
             Tags: [
@@ -53,7 +54,7 @@ export class SecretsManagerClient {
                 },
                 {
                     Key: 'Request-Source',
-                    Value: 'Vscode',
+                    Value: productName,
                 },
             ],
             ForceOverwriteReplicaSecret: true,

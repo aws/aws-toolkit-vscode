@@ -23,6 +23,8 @@ import {
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
+import { ToolkitError } from '../errors'
+import { getLogger } from '../logger/logger'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -229,13 +231,13 @@ export class DefaultRedshiftClient {
                 if (response && response.ARN) {
                     return response.ARN
                 }
-                throw new Error('Secret Arn not created')
-            } catch (error) {
-                console.error('Error creating secret in AWS Secrets Manager:', error)
-                throw error
+                throw new ToolkitError('Secret Arn not created')
+            } catch (ToolkitError) {
+                getLogger().error(`Error creating secret in AWS Secrets Manager ${ToolkitError}`)
+                throw ToolkitError
             }
         } else {
-            throw new Error('Username or Password not present')
+            throw new ToolkitError('Username or Password not present')
         }
     }
 }

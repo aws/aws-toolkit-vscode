@@ -16,6 +16,7 @@ import { localize } from '../shared/utilities/vsCodeUtils'
 import { SystemUtilities } from '../shared/systemUtilities'
 import * as fs from 'fs-extra'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
+import { ToolkitError } from '../shared/errors'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const outputChannel = vscode.window.createOutputChannel('Redshift Connection')
@@ -45,16 +46,16 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
                     secretArnFetched = await redshiftClient.createSecretFromConnectionParams(connectionParams)
                     if (!secretArnFetched) {
-                        throw new Error('secret arn could not be fetched')
+                        throw new ToolkitError('secret arn could not be fetched')
                     }
                     connectionParams.secret = secretArnFetched
                 }
                 await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
                 outputChannel.appendLine(`Redshift: connected to: ${connectionParams.warehouseIdentifier}`)
-            } catch (error) {
+            } catch (ToolkitError) {
                 outputChannel.appendLine(
                     `Redshift: failed to connect to: ${connectionParams.warehouseIdentifier} - ${
-                        (error as Error).message
+                        (ToolkitError as Error).message
                     }`
                 )
                 connectionParams = undefined
