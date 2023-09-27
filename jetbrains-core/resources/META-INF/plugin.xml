@@ -93,7 +93,9 @@ with what features/services are supported.
     <depends optional="true" config-file="ext-scala.xml">org.intellij.scala</depends>
     <depends optional="true" config-file="ext-kotlin.xml">org.jetbrains.kotlin</depends>
     <depends optional="true" config-file="ext-shell.xml">com.jetbrains.sh</depends>
-    <depends optional="true" config-file="ext-rust.xml">org.rust.lang</depends>
+    <depends optional="true" config-file="ext-rust-deprecated.xml">org.rust.lang</depends>
+    <depends optional="true" config-file="ext-rust.xml">com.jetbrains.rust</depends>
+
     <xi:include href="services/caws.xml" xpointer="xpointer(/idea-plugin/*)">
         <xi:fallback/>
     </xi:include>
