@@ -11,6 +11,10 @@ interface ToolkitCredentialsChangeListener {
     fun providerModified(identifier: CredentialIdentifier) {}
     fun providerRemoved(identifier: CredentialIdentifier) {}
     fun providerRemoved(providerId: String) {}
+
+    fun ssoSessionAdded(identifier: SsoSessionIdentifier) {}
+    fun ssoSessionModified(identifier: SsoSessionIdentifier) {}
+    fun ssoSessionRemoved(identifier: SsoSessionIdentifier) {}
 }
 
 class CredentialProviderNotFoundException : RuntimeException {

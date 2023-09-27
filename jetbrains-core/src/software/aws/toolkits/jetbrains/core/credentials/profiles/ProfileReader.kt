@@ -9,18 +9,31 @@ import software.amazon.awssdk.profiles.ProfileProperty
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
 import software.aws.toolkits.resources.message
-import java.util.Optional
 
-data class Profiles(val validProfiles: Map<String, Profile>, val invalidProfiles: Map<String, Exception>)
+data class Profiles(
+    val validProfiles: Map<String, Profile>,
+    val invalidProfiles: Map<String, Exception>,
+    val validSsoSessions: Map<String, Profile>,
+    val invalidSsoSessions: Map<String, Exception>
+)
 
 /**
  * Reads the AWS shared credentials files and produces what profiles are valid and if not why it is not
  */
 fun validateAndGetProfiles(): Profiles {
-    val allProfiles: Map<String, Profile> = ProfileFile.defaultProfileFile().profiles().orEmpty()
+    val profileFile = ProfileFile.defaultProfileFile()
+    val allProfiles = profileFile.profiles().orEmpty()
+    // we could also manually parse the file to avoid reflection, but the SDK encodes a lot of logic that we don't want to try to duplicate
+    val rawProfilesField = profileFile.javaClass.declaredFields.first { it.name == "profilesAndSectionsMap" }.apply {
+        isAccessible = true
+    }
+    val rawProfiles = rawProfilesField.get(profileFile) as Map<String, Map<String, Profile>>
+    val ssoSessions = rawProfiles.get("sso-session").orEmpty()
 
     val validProfiles = mutableMapOf<String, Profile>()
     val invalidProfiles = mutableMapOf<String, Exception>()
+    val validSsoSessions = mutableMapOf<String, Profile>()
+    val invalidSsoSessions = mutableMapOf<String, Exception>()
 
     allProfiles.values.forEach {
         try {
@@ -31,16 +44,25 @@ fun validateAndGetProfiles(): Profiles {
         }
     }
 
-    return Profiles(validProfiles, invalidProfiles)
+    ssoSessions.values.forEach {
+        try {
+            validateSsoSession(it)
+            validSsoSessions[it.name()] = it
+        } catch (e: Exception) {
+            invalidSsoSessions[it.name()] = e
+        }
+    }
+
+    return Profiles(validProfiles, invalidProfiles, validSsoSessions, invalidSsoSessions)
 }
 
 private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>) {
     when {
-        profile.propertyExists(ProfileProperty.SSO_START_URL) -> validateSsoProfile(profile)
+        profile.propertyExists(ProfileProperty.SSO_START_URL) -> validateLegacySsoProfile(profile)
         profile.propertyExists(ProfileProperty.ROLE_ARN) -> validateAssumeRoleProfile(profile, allProfiles)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> validateStaticSessionProfile(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> validateBasicProfile(profile)
-        profile.propertyExists(PROFILE_SSO_SESSION_PROPERTY) -> validateSsoSection(profile)
+        profile.propertyExists(PROFILE_SSO_SESSION_PROPERTY) -> validateSsoProfile(profile)
         profile.propertyExists(ProfileProperty.CREDENTIAL_PROCESS) -> {
             // NO-OP Always valid
         }
@@ -50,7 +72,7 @@ private fun validateProfile(profile: Profile, allProfiles: Map<String, Profile>)
     }
 }
 
-fun validateSsoProfile(profile: Profile) {
+fun validateLegacySsoProfile(profile: Profile) {
     profile.requiredProperty(ProfileProperty.SSO_ACCOUNT_ID)
     profile.requiredProperty(ProfileProperty.SSO_REGION)
     profile.requiredProperty(ProfileProperty.SSO_ROLE_NAME)
@@ -82,16 +104,18 @@ private fun validateBasicProfile(profile: Profile) {
     profile.requiredProperty(ProfileProperty.AWS_SECRET_ACCESS_KEY)
 }
 
-private fun validateSsoSection(profile: Profile) {
-    profile.requiredProperty(PROFILE_SSO_SESSION_PROPERTY)
+private fun validateSsoProfile(profile: Profile) {
+    val ssoSessionName = profile.requiredProperty(PROFILE_SSO_SESSION_PROPERTY)
     profile.requiredProperty(ProfileProperty.SSO_ACCOUNT_ID)
     profile.requiredProperty(ProfileProperty.SSO_ROLE_NAME)
 
-    val ssoSessionName = profile.property(PROFILE_SSO_SESSION_PROPERTY)
-    val ssoSessionSection: Optional<Profile>? = ProfileFile.defaultProfileFile().getSection(SSO_SESSION_SECTION_NAME, ssoSessionName.get())
+    val sessionSection = ProfileFile.defaultProfileFile().getSection(SSO_SESSION_SECTION_NAME, ssoSessionName).orElse(null)
+        ?: error(message("credentials.ssoSession.validation_error", profile.name(), ssoSessionName))
 
-    ssoSessionSection?.get()?.let {
-        it.requiredProperty(ProfileProperty.SSO_START_URL)
-        it.requiredProperty(ProfileProperty.SSO_REGION)
-    } ?: error(message("credentials.ssoSession.validation_error", profile.name(), ssoSessionName.get()))
+    validateSsoSession(sessionSection)
+}
+
+private fun validateSsoSession(profile: Profile) {
+    profile.requiredProperty(ProfileProperty.SSO_START_URL)
+    profile.requiredProperty(ProfileProperty.SSO_REGION)
 }

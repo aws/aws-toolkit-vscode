@@ -8,6 +8,7 @@ package software.aws.toolkits.jetbrains.core.credentials.sso
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
+import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.UnauthorizedException
 import software.amazon.awssdk.utils.SdkAutoCloseable
@@ -26,7 +27,7 @@ class SsoCredentialProvider(
     private val ssoAccount: String,
     private val ssoRole: String,
     private val ssoClient: SsoClient,
-    private val ssoAccessTokenProvider: SsoAccessTokenProvider
+    private val ssoAccessTokenProvider: SdkTokenProvider
 ) : AwsCredentialsProvider, SdkAutoCloseable {
     private val sessionCache: CachedSupplier<SsoCredentialsHolder> = CachedSupplier.builder(this::refreshCredentials).build()
 
@@ -36,16 +37,19 @@ class SsoCredentialProvider(
         assertIsNonDispatchThread()
 
         val roleCredentials = try {
-            val accessToken = ssoAccessTokenProvider.accessToken()
+            val accessToken = ssoAccessTokenProvider.resolveToken()
 
             ssoClient.getRoleCredentials {
-                it.accessToken(accessToken.accessToken)
+                it.accessToken(accessToken.token())
                 it.accountId(ssoAccount)
                 it.roleName(ssoRole)
             }
         } catch (e: UnauthorizedException) {
-            // OIDC access token was rejected, invalidate the cache and throw
-            ssoAccessTokenProvider.invalidate()
+            // OIDC access token was rejected, invalidate the cache if applicable and throw
+            if (ssoAccessTokenProvider is SsoAccessTokenProvider) {
+                ssoAccessTokenProvider.invalidate()
+            }
+
             throw e
         }
 

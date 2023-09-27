@@ -3,9 +3,11 @@
 
 package software.aws.toolkits.jetbrains.core.credentials.sso
 
+import com.intellij.testFramework.ApplicationRule
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -37,12 +39,16 @@ class SsoCredentialProviderTest {
     private lateinit var ssoAccessTokenProvider: SsoAccessTokenProvider
     private lateinit var sut: SsoCredentialProvider
 
+    @JvmField
+    @Rule
+    val applicationRule = ApplicationRule()
+
     @Before
     fun setUp() {
         ssoClient = delegateMock()
         ssoAccessTokenProvider = mock {
             onBlocking {
-                it.accessToken()
+                it.resolveToken()
             }.thenReturn(
                 accessToken
             )

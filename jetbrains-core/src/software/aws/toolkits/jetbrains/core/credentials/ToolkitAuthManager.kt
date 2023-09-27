@@ -57,7 +57,17 @@ data class ManagedSsoProfile(
     var scopes: List<String> = emptyList()
 ) : AuthProfile
 
-data class DiskSsoSessionProfile(
+data class UserConfigSsoSessionProfile(
+    var configSessionName: String = "",
+    var ssoRegion: String = "",
+    var startUrl: String = "",
+    var scopes: List<String> = emptyList()
+) : AuthProfile {
+    val id
+        get() = "sso-session:$configSessionName"
+}
+
+data class DetectedDiskSsoSessionProfile(
     var profileName: String = "",
     var startUrl: String = "",
     var ssoRegion: String = ""
@@ -78,6 +88,7 @@ interface ToolkitAuthManager {
     fun listConnections(): List<ToolkitConnection>
 
     fun createConnection(profile: AuthProfile): ToolkitConnection
+    fun getOrCreateSsoConnection(profile: UserConfigSsoSessionProfile): BearerSsoConnection
 
     fun deleteConnection(connection: ToolkitConnection)
     fun deleteConnection(connectionId: String)
@@ -106,7 +117,6 @@ interface ToolkitConnectionManager : Disposable {
 /**
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
-
 fun loginSso(project: Project?, startUrl: String, region: String, requestedScopes: List<String>): BearerTokenProvider {
     val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
 

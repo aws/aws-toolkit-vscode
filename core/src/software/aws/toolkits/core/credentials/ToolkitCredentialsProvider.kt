@@ -65,6 +65,13 @@ interface CredentialIdentifier {
     val defaultRegionId: String? get() = null
 }
 
+interface SsoSessionIdentifier {
+    val id: String
+    val startUrl: String
+    val ssoRegion: String
+    val scopes: Set<String>
+}
+
 abstract class CredentialIdentifierBase(override val credentialType: CredentialType?) : CredentialIdentifier {
     final override fun equals(other: Any?): Boolean {
         if (this === other) return true

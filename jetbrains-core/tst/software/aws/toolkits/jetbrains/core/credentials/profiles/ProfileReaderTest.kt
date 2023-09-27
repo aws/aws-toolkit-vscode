@@ -233,4 +233,103 @@ class ProfileReaderTest {
         assertThat(validProfiles).hasSize(4)
         assertThat(invalidProfiles).isEmpty()
     }
+
+    @Test
+    fun `can read sso-session`() {
+        configFile.writeText(
+            """
+            [sso-session validSession]
+            sso_start_url=https://example.com
+            sso_region=us-fake-1
+
+            [sso-session missingStartUrl]
+            sso_region=us-fake-2
+
+            [sso-session missingRegion]
+            sso_start_url=https://example2.com
+            """.trimIndent()
+        )
+
+        val result = validateAndGetProfiles()
+        assertThat(result.validSsoSessions).hasSize(1).allSatisfy { profileName, profile ->
+            assertThat(profileName).isEqualTo("validSession")
+            assertThat(profile.name()).isEqualTo(profileName)
+            assertThat(profile.properties()).containsExactlyInAnyOrderEntriesOf(
+                mapOf(
+                    "sso_start_url" to "https://example.com",
+                    "sso_region" to "us-fake-1"
+                )
+            )
+        }
+        assertThat(result.invalidSsoSessions).hasSize(2)
+    }
+
+    @Test
+    fun `can read sso-session based profile`() {
+        configFile.writeText(
+            """
+            [sso-session validSession]
+            sso_start_url=https://example.com
+            sso_region=us-fake-1
+
+            [profile ssoProfile]
+            sso_session=validSession
+            sso_account_id=111122223333
+            sso_role_name=SampleRole2
+            """.trimIndent()
+        )
+
+        val result = validateAndGetProfiles()
+        assertThat(result.validProfiles).hasSize(1).allSatisfy { profileName, profile ->
+            assertThat(profileName).isEqualTo("ssoProfile")
+            assertThat(profile.name()).isEqualTo(profileName)
+            assertThat(profile.properties()).containsExactlyInAnyOrderEntriesOf(
+                mapOf(
+                    "sso_session" to "validSession",
+                    "sso_account_id" to "111122223333",
+                    "sso_role_name" to "SampleRole2"
+                )
+            )
+        }
+        assertThat(result.invalidProfiles).isEmpty()
+        assertThat(result.validSsoSessions).hasSize(1)
+        assertThat(result.invalidSsoSessions).isEmpty()
+    }
+
+    @Test
+    fun `sso-session based profile referencing missing sso-session is invalid`() {
+        configFile.writeText(
+            """
+            [profile ssoProfile]
+            sso_session=missingSession
+            sso_account_id=111122223333
+            sso_role_name=SampleRole2
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).isEmpty()
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("ssoProfile" to message("credentials.ssoSession.validation_error", "ssoProfile", "missingSession"))
+    }
+
+    @Test
+    fun `sso-session based profile referencing invalid sso-session is invalid`() {
+        configFile.writeText(
+            """
+            [sso-session invalidSession]
+            sso_region=us-fake-1
+
+            [profile ssoProfile]
+            sso_session=invalidSession
+            sso_account_id=111122223333
+            sso_role_name=SampleRole2
+            """.trimIndent()
+        )
+
+        val (validProfiles, invalidProfiles) = validateAndGetProfiles()
+        assertThat(validProfiles).isEmpty()
+        assertThat(invalidProfiles.map { it.key to it.value.message })
+            .contains("ssoProfile" to message("credentials.profile.missing_property", "invalidSession", "sso_start_url"))
+    }
 }

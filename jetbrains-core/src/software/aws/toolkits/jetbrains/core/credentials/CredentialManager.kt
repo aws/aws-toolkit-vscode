@@ -14,6 +14,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
+import software.aws.toolkits.core.credentials.SsoSessionIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
@@ -27,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 abstract class CredentialManager : SimpleModificationTracker() {
     private val providerIds = ConcurrentHashMap<String, CredentialIdentifier>()
+    private val ssoSessionIds = ConcurrentHashMap<String, SsoSessionIdentifier>()
     private val awsCredentialProviderCache = ConcurrentHashMap<String, ConcurrentHashMap<String, AwsCredentialsProvider>>()
 
     protected abstract fun factoryMapping(): Map<String, CredentialProviderFactory>
@@ -37,6 +39,9 @@ abstract class CredentialManager : SimpleModificationTracker() {
 
     fun getCredentialIdentifiers(): List<CredentialIdentifier> = providerIds.values
         .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.displayName })
+
+    fun getSsoSessionIdentifiers(): List<SsoSessionIdentifier> = ssoSessionIds.values
+        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.id })
 
     fun getCredentialIdentifierById(id: String): CredentialIdentifier? = providerIds[id]
 
@@ -62,6 +67,27 @@ abstract class CredentialManager : SimpleModificationTracker() {
 
         incModificationCount()
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).providerRemoved(identifier)
+    }
+
+    protected fun addSsoSession(identifier: SsoSessionIdentifier) {
+        ssoSessionIds[identifier.id] = identifier
+
+        incModificationCount()
+        ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).ssoSessionAdded(identifier)
+    }
+
+    protected fun modifySsoSession(identifier: SsoSessionIdentifier) {
+        ssoSessionIds[identifier.id] = identifier
+
+        incModificationCount()
+        ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).ssoSessionModified(identifier)
+    }
+
+    protected fun removeSsoSession(identifier: SsoSessionIdentifier) {
+        ssoSessionIds.remove(identifier.id)
+
+        incModificationCount()
+        ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).ssoSessionRemoved(identifier)
     }
 
     /**
@@ -133,6 +159,19 @@ class DefaultCredentialManager : CredentialManager() {
                         removeProvider(it)
                         count.decrementAndGet()
                     }
+
+                    change.ssoAdded.forEach {
+                        addSsoSession(it)
+                    }
+
+                    change.ssoModified.forEach {
+                        modifySsoSession(it)
+                    }
+
+                    change.ssoRemoved.forEach {
+                        removeSsoSession(it)
+                    }
+
                     AwsTelemetry.loadCredentials(
                         credentialSourceId = providerFactory.credentialSourceId.toTelemetryCredentialSourceId(),
                         value = count.get().toDouble()

@@ -35,23 +35,28 @@ import software.amazon.awssdk.auth.credentials.AwsSessionCredentials
 import software.amazon.awssdk.auth.credentials.ContainerCredentialsProvider
 import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvider
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
+import software.amazon.awssdk.auth.token.credentials.SdkToken
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsRequest
 import software.amazon.awssdk.services.sso.model.GetRoleCredentialsResponse
 import software.amazon.awssdk.services.sso.model.RoleCredentials
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.services.sts.StsClient
+import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
+import software.aws.toolkits.core.credentials.SsoSessionIdentifier
+import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
 import software.aws.toolkits.core.rules.SystemPropertyHelper
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.InteractiveCredential
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
+import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
-import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
-import software.aws.toolkits.jetbrains.core.credentials.sso.AccessTokenCacheKey
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.core.region.getDefaultRegion
 import software.aws.toolkits.jetbrains.utils.isInstanceOf
@@ -59,6 +64,7 @@ import software.aws.toolkits.jetbrains.utils.isInstanceOfSatisfying
 import software.aws.toolkits.jetbrains.utils.rules.NotificationListenerRule
 import java.io.File
 import java.time.Instant
+import java.util.Optional
 import java.util.function.Function
 
 class ProfileCredentialProviderFactoryTest {
@@ -300,6 +306,99 @@ class ProfileCredentialProviderFactoryTest {
     }
 
     @Test
+    fun `modifying a sso-session gets reported as a modification`() {
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example.com
+            """.trimIndent()
+        )
+
+        createProviderFactory()
+
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example2.com
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent> {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.ssoAdded).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(firstValue.ssoModified).isEmpty()
+            assertThat(firstValue.ssoRemoved).isEmpty()
+
+            assertThat(secondValue.ssoAdded).isEmpty()
+            assertThat(secondValue.ssoModified).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(secondValue.ssoRemoved).isEmpty()
+        }
+    }
+
+    @Test
+    fun `deleting a sso-session gets reported as a deletion`() {
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example.com
+            """.trimIndent()
+        )
+
+        createProviderFactory()
+
+        writeProfileFile("")
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent> {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.ssoAdded).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(firstValue.ssoModified).isEmpty()
+            assertThat(firstValue.ssoRemoved).isEmpty()
+
+            assertThat(secondValue.ssoAdded).isEmpty()
+            assertThat(secondValue.ssoModified).isEmpty()
+            assertThat(secondValue.ssoRemoved).hasSize(1).has(ssoSessionName("foo"))
+        }
+    }
+
+    @Test
+    fun `adding a sso-session gets reported as an addition`() {
+        writeProfileFile("")
+
+        createProviderFactory()
+
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example.com
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent> {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.ssoAdded).isEmpty()
+            assertThat(firstValue.ssoModified).isEmpty()
+            assertThat(firstValue.ssoRemoved).isEmpty()
+
+            assertThat(secondValue.ssoAdded).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(secondValue.ssoModified).isEmpty()
+            assertThat(secondValue.ssoRemoved).isEmpty()
+        }
+    }
+
+    @Test
     fun `modifying a parent credential provider reports modification for it and its children`() {
         writeProfileFile(
             """
@@ -400,6 +499,124 @@ class ProfileCredentialProviderFactoryTest {
             assertThat(secondValue.added).isEmpty()
             assertThat(secondValue.modified).isEmpty()
             assertThat(secondValue.removed).hasSize(2).has(profileName("bar")).has(profileName("baz"))
+        }
+    }
+
+    @Test
+    fun `modifying a sso-session reports modification for it and its children`() {
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example.com
+            
+            [profile bar]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = bar
+            
+            [profile baz]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = baz
+            """.trimIndent()
+        )
+
+        createProviderFactory()
+
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example2.com
+            
+            [profile bar]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = bar
+            
+            [profile baz]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = baz
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent> {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("bar")).has(profileName("baz"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+            assertThat(firstValue.ssoAdded).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(firstValue.ssoModified).isEmpty()
+            assertThat(firstValue.ssoRemoved).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).hasSize(2).has(profileName("bar")).has(profileName("baz"))
+            assertThat(secondValue.removed).isEmpty()
+            assertThat(secondValue.ssoAdded).isEmpty()
+            assertThat(secondValue.ssoModified).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(secondValue.ssoRemoved).isEmpty()
+        }
+    }
+
+    @Test
+    fun `removing a sso-session reports removal for it and its children`() {
+        writeProfileFile(
+            """
+            [sso-session foo]
+            sso_region = us-east-1
+            sso_start_url = https://example.com
+            
+            [profile bar]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = bar
+            
+            [profile baz]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = baz
+            """.trimIndent()
+        )
+
+        createProviderFactory()
+
+        writeProfileFile(
+            """
+            [profile bar]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = bar
+            
+            [profile baz]
+            sso_session = foo
+            sso_account_id = 123456789011
+            sso_role_name = baz
+            """.trimIndent()
+        )
+
+        mockProfileWatcher.triggerListeners()
+
+        argumentCaptor<CredentialsChangeEvent> {
+            verify(profileLoadCallback, times(2)).invoke(capture())
+
+            assertThat(firstValue.added).hasSize(2).has(profileName("bar")).has(profileName("baz"))
+            assertThat(firstValue.modified).isEmpty()
+            assertThat(firstValue.removed).isEmpty()
+            assertThat(firstValue.ssoAdded).hasSize(1).has(ssoSessionName("foo"))
+            assertThat(firstValue.ssoModified).isEmpty()
+            assertThat(firstValue.ssoRemoved).isEmpty()
+
+            assertThat(secondValue.added).isEmpty()
+            assertThat(secondValue.modified).isEmpty()
+            assertThat(secondValue.removed).hasSize(2).has(profileName("bar")).has(profileName("baz"))
+            assertThat(secondValue.ssoAdded).isEmpty()
+            assertThat(secondValue.ssoModified).isEmpty()
+            assertThat(secondValue.ssoRemoved).hasSize(1).has(ssoSessionName("foo"))
         }
     }
 
@@ -732,6 +949,15 @@ class ProfileCredentialProviderFactoryTest {
             }
         }
 
+    private fun ssoSessionName(
+        expectedProfileName: String
+    ): Condition<Iterable<SsoSessionIdentifier>> =
+        object : Condition<Iterable<SsoSessionIdentifier>>(expectedProfileName) {
+            override fun matches(value: Iterable<SsoSessionIdentifier>): Boolean = value.any {
+                it.id == "sso-session:$expectedProfileName"
+            }
+        }
+
     private fun createProviderFactory(ssoCache: SsoCache = mock()): ProfileCredentialProviderFactory {
         val factory = ProfileCredentialProviderFactory(ssoCache)
         factory.setUp(profileLoadCallback)
@@ -781,11 +1007,22 @@ class ProfileCredentialProviderFactoryTest {
 
         // mock out enough of the flow to validate the values we care about
         val accessToken = aString()
-        val diskCache = mock<SsoCache> {
-            whenever(it.loadAccessToken(any<AccessTokenCacheKey>())).thenReturn(
-                AccessToken("startUrl", "region", accessToken, expiresAt = Instant.MAX)
-            )
+        val mockBearerProvider = mock<ToolkitBearerTokenProvider> {
+            whenever(it.resolveToken()).thenReturn(object : SdkToken {
+                override fun token() = accessToken
+                override fun expirationTime() = Optional.empty<Instant>()
+            })
         }
+        val connectionSettingsMock = mock<TokenConnectionSettings> {
+            whenever(it.tokenProvider).thenReturn(mockBearerProvider)
+        }
+        val connectionMock = mock<BearerSsoConnection> {
+            whenever(it.getConnectionSettings()).thenReturn(connectionSettingsMock)
+        }
+        val authManager = mock<ToolkitAuthManager> {
+            whenever(it.getOrCreateSsoConnection(any())).thenReturn(connectionMock)
+        }
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, authManager, disposableRule.disposable)
         val ssoClientMock = clientManager.create<SsoClient>().also {
             whenever(it.getRoleCredentials(any<GetRoleCredentialsRequest>())).thenReturn(
                 GetRoleCredentialsResponse.builder()
@@ -802,7 +1039,7 @@ class ProfileCredentialProviderFactoryTest {
         }
         clientManager.create<SsoOidcClient>()
 
-        val providerFactory = createProviderFactory(diskCache)
+        val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("sso")
 
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -812,10 +1049,11 @@ class ProfileCredentialProviderFactoryTest {
             credentialsProvider.resolveCredentials()
         } catch (_: Exception) {}
 
-        argumentCaptor<AccessTokenCacheKey> {
-            verify(diskCache).loadAccessToken(capture())
+        argumentCaptor<UserConfigSsoSessionProfile> {
+            verify(authManager).getOrCreateSsoConnection(capture())
             assertThat(firstValue.startUrl).isEqualTo("ValidUrl")
-            assertThat(firstValue.scopes).containsExactlyInAnyOrder("scope1", "scope2", "scope3")
+            assertThat(firstValue.ssoRegion).isEqualTo("us-east-2")
+            assertThat(firstValue.scopes).containsExactly("scope1", "scope2", "scope3")
         }
 
         argumentCaptor<GetRoleCredentialsRequest> {
@@ -824,8 +1062,6 @@ class ProfileCredentialProviderFactoryTest {
             assertThat(firstValue.roleName()).isEqualTo("RoleName")
             assertThat(firstValue.accountId()).isEqualTo("111222333444")
         }
-
-        // ideally also assert the sso region, but there's no obvious way to test that without lots of plumbing
     }
 
     @Test
@@ -845,11 +1081,22 @@ class ProfileCredentialProviderFactoryTest {
 
         // mock out enough of the flow to validate the values we care about
         val accessToken = aString()
-        val diskCache = mock<SsoCache> {
-            whenever(it.loadAccessToken(any<AccessTokenCacheKey>())).thenReturn(
-                AccessToken("startUrl", "region", accessToken, expiresAt = Instant.MAX)
-            )
+        val mockBearerProvider = mock<ToolkitBearerTokenProvider> {
+            whenever(it.resolveToken()).thenReturn(object : SdkToken {
+                override fun token() = accessToken
+                override fun expirationTime() = Optional.empty<Instant>()
+            })
         }
+        val connectionSettingsMock = mock<TokenConnectionSettings> {
+            whenever(it.tokenProvider).thenReturn(mockBearerProvider)
+        }
+        val connectionMock = mock<BearerSsoConnection> {
+            whenever(it.getConnectionSettings()).thenReturn(connectionSettingsMock)
+        }
+        val authManager = mock<ToolkitAuthManager> {
+            whenever(it.getOrCreateSsoConnection(any())).thenReturn(connectionMock)
+        }
+        ApplicationManager.getApplication().replaceService(ToolkitAuthManager::class.java, authManager, disposableRule.disposable)
         val ssoClientMock = clientManager.create<SsoClient>().also {
             whenever(it.getRoleCredentials(any<GetRoleCredentialsRequest>())).thenReturn(
                 GetRoleCredentialsResponse.builder()
@@ -866,7 +1113,7 @@ class ProfileCredentialProviderFactoryTest {
         }
         clientManager.create<SsoOidcClient>()
 
-        val providerFactory = createProviderFactory(diskCache)
+        val providerFactory = createProviderFactory()
         val validProfile = findCredentialIdentifier("sso")
 
         val credentialsProvider = providerFactory.createProvider(validProfile)
@@ -876,9 +1123,10 @@ class ProfileCredentialProviderFactoryTest {
             credentialsProvider.resolveCredentials()
         } catch (_: Exception) {}
 
-        argumentCaptor<AccessTokenCacheKey> {
-            verify(diskCache).loadAccessToken(capture())
+        argumentCaptor<UserConfigSsoSessionProfile> {
+            verify(authManager).getOrCreateSsoConnection(capture())
             assertThat(firstValue.startUrl).isEqualTo("ValidUrl")
+            assertThat(firstValue.ssoRegion).isEqualTo("us-east-2")
             assertThat(firstValue.scopes).containsExactly(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
         }
 
@@ -888,8 +1136,6 @@ class ProfileCredentialProviderFactoryTest {
             assertThat(firstValue.roleName()).isEqualTo("RoleName")
             assertThat(firstValue.accountId()).isEqualTo("111222333444")
         }
-
-        // ideally also assert the sso region, but there's no obvious way to test that without lots of plumbing
     }
 
     @Test
