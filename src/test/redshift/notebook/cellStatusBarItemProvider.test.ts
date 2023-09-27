@@ -44,7 +44,7 @@ describe('CellStatusBarItemProvider', function () {
         const result = cellStatusBarItemProvider.provideCellStatusBarItems(cell, token)
         const expectedText = '$(notebook-state-success) Connected to TestWarehouse'
         const expectedCommand = {
-            command: 'aws.redshift.connectClicked',
+            command: 'aws.redshift.notebookConnectClicked',
             arguments: [cell, cellStatusBarItemProvider.refreshCellStatusBar.bind(cellStatusBarItemProvider)],
         }
         assert.strictEqual(result.length, 1)

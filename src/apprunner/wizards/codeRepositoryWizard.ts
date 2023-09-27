@@ -88,7 +88,7 @@ function createBranchPrompter(
 function createRuntimePrompter(): QuickPickPrompter<AppRunner.Runtime> {
     const items = [
         { label: 'python3', data: 'PYTHON_3' },
-        { label: 'nodejs12', data: 'NODEJS_12' },
+        { label: 'nodejs12', data: 'NODEJS_16' },
     ]
 
     return createQuickPick(items, {

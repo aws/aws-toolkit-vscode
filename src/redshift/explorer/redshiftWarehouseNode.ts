@@ -2,7 +2,6 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import * as vscode from 'vscode'
@@ -22,9 +21,9 @@ import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNo
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-export class StartButtonNode extends AWSCommandTreeNode {
+export class CreateNotebookNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
-        super(parent, 'Create-Notebook', 'aws.redshift.startButtonClicked', [parent])
+        super(parent, 'Create-Notebook', 'aws.redshift.createNotebookClicked', [parent])
         this.iconPath = getIcon('vscode-debug-start')
     }
     toJSON() {
@@ -38,8 +37,9 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public arn: string
     public name: string
     public redshiftClient: DefaultRedshiftClient
-    public connectionParams: ConnectionParams | undefined
-    public newStartButton: { label: string; iconPath: any }
+    public connectionParams?: ConnectionParams
+    private readonly logger = getLogger()
+
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
@@ -53,7 +53,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.arn = redshiftWarehouse.arn
         this.name = redshiftWarehouse.name
         this.redshiftClient = parent.redshiftClient
-        this.newStartButton = { label: 'Start', iconPath: getIcon('vscode-debug-start') }
         this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
     }
 
@@ -121,8 +120,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     }
                     try {
                         const childNodes = await this.childLoader.getChildren()
-                        //Add the startButton
-                        const startButtonNode = new StartButtonNode(this)
+                        const startButtonNode = new CreateNotebookNode(this)
                         childNodes.unshift(startButtonNode)
                         return childNodes
                     } catch {
