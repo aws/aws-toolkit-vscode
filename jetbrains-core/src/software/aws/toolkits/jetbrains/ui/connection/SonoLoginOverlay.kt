@@ -15,7 +15,6 @@ import com.intellij.ui.AppIcon
 import com.intellij.ui.components.panels.NonOpaquePanel
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.layout.applyToComponent
 import com.intellij.util.ui.JBFont
 import icons.AwsIcons
 import software.aws.toolkits.core.ClientConnectionSettings

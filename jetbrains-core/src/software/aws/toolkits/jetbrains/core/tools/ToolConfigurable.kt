@@ -11,7 +11,6 @@ import com.intellij.ui.components.JBTextField
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
-import com.intellij.ui.layout.applyToComponent
 import software.aws.toolkits.resources.message
 import java.nio.file.Path
 

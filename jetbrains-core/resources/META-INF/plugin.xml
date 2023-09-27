@@ -553,10 +553,6 @@ with what features/services are supported.
                     class="software.aws.toolkits.jetbrains.services.lambda.actions.DeleteFunctionAction"/>
         </group>
 
-        <group id="aws.toolkit.explorer.cloudformation" popup="true" compact="false">
-            <action id="cloudformation.serverless.deploy" class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
-        </group>
-
         <group id="aws.toolkit.explorer.cloudformation.stack" popup="true" compact="false">
             <action id="cloudformation.stack.view"
                     class="software.aws.toolkits.jetbrains.services.cloudformation.stack.OpenStackUiAction"/>
@@ -671,7 +667,6 @@ with what features/services are supported.
 
         <action class="software.aws.toolkits.jetbrains.core.credentials.ConfigureAwsConnectionAction" id="aws.settings.selector" icon="AwsIcons.Logos.AWS"/>
         <action class="software.aws.toolkits.jetbrains.core.credentials.CreateOrUpdateCredentialProfilesAction" id="aws.settings.upsertCredentials" icon="AwsIcons.Logos.AWS"/>
-        <action class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction" id="serverless.application.deploy" />
 
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessApplicationAction" id="serverless.sync.infra"/>
         <action class="software.aws.toolkits.jetbrains.services.lambda.actions.SyncServerlessAppAction" id="serverless.sync.app"/>

@@ -9,11 +9,7 @@ import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.ColoredListCellRenderer
 import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.SimpleTextAttributes
-import com.intellij.ui.layout.CellBuilder
-import com.intellij.ui.layout.PropertyBinding
-import com.intellij.ui.layout.Row
 import com.intellij.ui.layout.ValidationInfoBuilder
-import com.intellij.ui.layout.applyToComponent
 import software.aws.toolkits.core.ConnectionSettings
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialType
@@ -21,7 +17,6 @@ import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.resources.message
 import javax.swing.JList
-import kotlin.reflect.KMutableProperty0
 
 /**
  * Combo box used to select a credential identifier
@@ -91,53 +86,11 @@ class CredentialIdentifierSelector(identifiers: List<CredentialIdentifier> = Cre
     }
 
     companion object {
-        fun Row.credentialSelector(
-            prop: KMutableProperty0<CredentialIdentifier?>,
-            identifiers: List<CredentialIdentifier> = CredentialManager.getInstance().getCredentialIdentifiers()
-        ): CellBuilder<CredentialIdentifierSelector> {
-            val binding = PropertyBinding(
-                get = { prop.get() },
-                set = { prop.set(it) }
-            )
-            return createSelector(binding, identifiers)
-        }
-
-        /**
-         * Credential selector that forces the selection to be valid
-         *
-         * Note: Initial property may be a lateinit property, in that case there will be no default selection
-         */
-        fun Row.validCredentialSelector(
-            prop: KMutableProperty0<CredentialIdentifier>,
-            identifiers: List<CredentialIdentifier> = CredentialManager.getInstance().getCredentialIdentifiers()
-        ): CellBuilder<CredentialIdentifierSelector> {
-            val binding = PropertyBinding(
-                get = { runCatching { prop.get() }.getOrNull() },
-                set = { prop.set(it!!) /* Guarded by apply check */ }
-            )
-            return createSelector(binding, identifiers)
-                .withValidationOnApply { validateSelection(it) }
-                .withValidationOnInput { validateSelection(it) }
-        }
 
         fun ValidationInfoBuilder.validateSelection(selector: CredentialIdentifierSelector): ValidationInfo? = if (!selector.isSelectionValid()) {
             error(message("credentials.invalid.invalid_selection"))
         } else {
             null
-        }
-
-        private fun Row.createSelector(
-            binding: PropertyBinding<CredentialIdentifier?>,
-            identifiers: List<CredentialIdentifier>
-        ): CellBuilder<CredentialIdentifierSelector> {
-            val credentialProviderSelector = CredentialIdentifierSelector(identifiers)
-            return component(credentialProviderSelector)
-                .applyToComponent { selectedItem = binding.get() }
-                .withBinding(
-                    { component -> component.getSelectedValidCredentialIdentifier() },
-                    { component, value -> component.setSelectedCredentialIdentifierId(value?.id) },
-                    binding
-                )
         }
     }
 }

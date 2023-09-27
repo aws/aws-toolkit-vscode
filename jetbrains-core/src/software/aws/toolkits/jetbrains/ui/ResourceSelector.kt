@@ -11,8 +11,6 @@ import com.intellij.openapi.ui.ComponentValidator
 import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.ComboboxSpeedSearch
 import com.intellij.ui.MutableCollectionComboBoxModel
-import com.intellij.ui.layout.Cell
-import com.intellij.ui.layout.PropertyBinding
 import com.intellij.util.ExceptionUtil
 import org.jetbrains.annotations.TestOnly
 import software.aws.toolkits.core.ConnectionSettings
@@ -28,7 +26,6 @@ import software.aws.toolkits.resources.message
 import java.util.concurrent.CancellationException
 import java.util.concurrent.CompletableFuture
 import javax.swing.ListCellRenderer
-import kotlin.reflect.KMutableProperty0
 
 private typealias Selector<T> = Either<Any?, (T) -> Boolean>
 
@@ -266,10 +263,3 @@ class ResourceSelector<T> private constructor(
         )
     }
 }
-
-inline fun <reified T : Any> Cell.resourceSelector(resource: Resource<out Collection<T>>, connectionSettings: ConnectionSettings, prop: KMutableProperty0<T?>) =
-    component(ResourceSelector.builder().resource(resource).awsConnection(connectionSettings).build()).withBinding(
-        { it.selected() },
-        { component, value -> component.selectedItem = value },
-        PropertyBinding(prop::get, prop::set)
-    )
