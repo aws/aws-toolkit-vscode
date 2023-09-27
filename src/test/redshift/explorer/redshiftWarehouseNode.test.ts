@@ -7,7 +7,7 @@ import sinon = require('sinon')
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
-import { RedshiftWarehouseNode, StartButtonNode } from '../../../redshift/explorer/redshiftWarehouseNode'
+import { RedshiftWarehouseNode, CreateNotebookNode } from '../../../redshift/explorer/redshiftWarehouseNode'
 import { RedshiftNode } from '../../../redshift/explorer/redshiftNode'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import * as assert from 'assert'
@@ -20,9 +20,9 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 
 function verifyChildNodes(childNodes: AWSTreeNodeBase[], databaseNodeCount: number, shouldHaveLoadMore: boolean) {
     assert.strictEqual(childNodes.length, databaseNodeCount + (shouldHaveLoadMore ? 1 : 0) + 1)
-    const startButtonNodes = childNodes.filter(node => node instanceof StartButtonNode)
+    const startButtonNodes = childNodes.filter(node => node instanceof CreateNotebookNode)
     assert.strictEqual(startButtonNodes.length, 1)
-    assert.ok(childNodes[0] instanceof StartButtonNode)
+    assert.ok(childNodes[0] instanceof CreateNotebookNode)
     const databaseNodes = childNodes.filter(node => node instanceof RedshiftDatabaseNode)
     assert.strictEqual(databaseNodes.length, databaseNodeCount)
     const loadMoreNodes = childNodes.filter(node => node instanceof MoreResultsNode)
