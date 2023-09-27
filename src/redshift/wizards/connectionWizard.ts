@@ -162,7 +162,7 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
 function getUsernamePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
-        title: localize('AWS.redshift.username', 'Enter the name of the database you want to connect to.'),
+        title: localize('AWS.redshift.username', 'Enter the username you want to use to connect to the database.'),
         buttons: createCommonButtons(),
         placeholder: 'Enter the username you want to use to connect to the database',
         validateInput: value => {

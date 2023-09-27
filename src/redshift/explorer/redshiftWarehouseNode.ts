@@ -109,6 +109,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     return this.getRetryNode()
                 } else {
                     this.connectionParams = connectionParams
+                    this.iconPath = getIcon('aws-redshift-cluster-connected')
                     let secretArnFetched = ''
                     if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
                         secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(connectionParams)
