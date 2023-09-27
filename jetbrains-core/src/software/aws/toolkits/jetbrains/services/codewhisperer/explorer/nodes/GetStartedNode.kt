@@ -37,6 +37,7 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
     override fun onDoubleClick(event: MouseEvent) {
         enableCodeWhisperer(project)
         UiTelemetry.click(project, "cw_signUp_Cta")
+        UiTelemetry.click(project, "auth_start_CodeWhisperer")
     }
 
     /**

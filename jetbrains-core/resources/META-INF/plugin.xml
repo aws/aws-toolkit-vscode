@@ -208,6 +208,7 @@ with what features/services are supported.
 
         <applicationService serviceInterface="software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings"
                             serviceImplementation="software.aws.toolkits.jetbrains.settings.DefaultDynamicResourcesSettings"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.settings.GettingStartedSettings"/>
 
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.settings.LambdaSettings"/>
 
@@ -242,6 +243,7 @@ with what features/services are supported.
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.AwsTelemetryPrompter"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.executables.ExecutableLoader"/>
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.core.gettingstarted.GettingStartedOnStartup"/>
 
         <applicationService serviceInterface="software.aws.toolkits.core.clients.SdkClientProvider"
                             serviceImplementation="software.aws.toolkits.jetbrains.core.AwsSdkClient"/>
