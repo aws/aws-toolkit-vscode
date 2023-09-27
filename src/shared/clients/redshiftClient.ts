@@ -20,8 +20,11 @@ import {
     ListSchemasResponse,
     ListTablesResponse,
 } from 'aws-sdk/clients/redshiftdata'
-import { ConnectionParams, RedshiftWarehouseType } from '../../redshift/models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
+import { SecretsManagerClient } from './secretsManagerClient'
+import { ToolkitError } from '../errors'
+import { getLogger } from '../logger/logger'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -67,10 +70,17 @@ export class DefaultRedshiftClient {
         const input: RedshiftData.ListDatabasesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
-            DbUser: warehouseType === RedshiftWarehouseType.PROVISIONED ? connectionParams.username : undefined,
+            DbUser:
+                warehouseType === RedshiftWarehouseType.PROVISIONED &&
+                connectionParams.connectionType != ConnectionType.DatabaseUser
+                    ? connectionParams.username
+                    : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
-            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+            SecretArn:
+                connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                    ? connectionParams.secret
+                    : undefined,
         }
         return redshiftDataClient.listDatabases(input).promise()
     }
@@ -81,10 +91,16 @@ export class DefaultRedshiftClient {
         const input: RedshiftData.ListSchemasRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
-            DbUser: connectionParams.username,
+            DbUser:
+                connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                    ? connectionParams.username
+                    : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             NextToken: nextToken,
-            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+            SecretArn:
+                connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                    ? connectionParams.secret
+                    : undefined,
         }
         return redshiftDataClient.listSchemas(input).promise()
     }
@@ -99,12 +115,18 @@ export class DefaultRedshiftClient {
         const warehouseIdentifier = connectionParams.warehouseIdentifier
         const input: RedshiftData.ListTablesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
-            DbUser: connectionParams.username,
+            DbUser:
+                connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                    ? connectionParams.username
+                    : undefined,
             Database: connectionParams.database,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
             SchemaPattern: schemaName,
             NextToken: nextToken,
-            SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+            SecretArn:
+                connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                    ? connectionParams.secret
+                    : undefined,
         }
         const ListTablesResponse = redshiftDataClient.listTables(input).promise()
         return ListTablesResponse
@@ -131,8 +153,14 @@ export class DefaultRedshiftClient {
                             : undefined,
                     Database: connectionParams.database,
                     Sql: queryToExecute,
-                    DbUser: connectionParams.username,
-                    SecretArn: connectionParams.secret ? connectionParams.secret : undefined,
+                    DbUser:
+                        connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                            ? connectionParams.username
+                            : undefined,
+                    SecretArn:
+                        connectionParams.connectionType === ConnectionType.DatabaseUser || connectionParams.secret
+                            ? connectionParams.secret
+                            : undefined,
                 })
                 .promise()
 
@@ -182,6 +210,34 @@ export class DefaultRedshiftClient {
                 workgroupName: connectionParams.warehouseIdentifier,
             }
             return redshiftServerless.getCredentials(getCredentialsRequest).promise()
+        }
+    }
+    public genUniqueId(connectionParams: ConnectionParams): string {
+        const epochDate = new Date().getTime()
+        return `${epochDate}-${connectionParams.warehouseIdentifier}`
+    }
+
+    public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string> {
+        /*
+            create a secrete arn for the username and password entered through the Database Username and Password authentication
+        */
+        const secretsManagerClient = new SecretsManagerClient(this.regionCode)
+        const username = connectionParams.username
+        const password = connectionParams.password
+        if (username && password) {
+            const secretString = this.genUniqueId(connectionParams)
+            try {
+                const response = await secretsManagerClient?.createSecret(secretString, username, password)
+                if (response && response.ARN) {
+                    return response.ARN
+                }
+                throw new ToolkitError('Secret Arn not created')
+            } catch (error) {
+                getLogger().error(`Error creating secret in AWS Secrets Manager`, error)
+                throw error
+            }
+        } else {
+            throw new ToolkitError('Username or Password not present')
         }
     }
 }

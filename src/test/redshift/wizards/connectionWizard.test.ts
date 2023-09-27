@@ -39,7 +39,7 @@ describe('redshiftNodeConnectionWizard', async function () {
     it('shows all steps for provisionedNode and database username connection type', function () {
         const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(provisionedNode))
         testWizard.connectionType.assertShowFirst()
-        testWizard.connectionType.applyInput(ConnectionType.DatabaseUser)
+        testWizard.connectionType.applyInput(ConnectionType.TempCreds)
         testWizard.database.assertShowFirst()
         testWizard.database.applyInput('testDB')
         testWizard.username.assertShowFirst()
@@ -48,7 +48,7 @@ describe('redshiftNodeConnectionWizard', async function () {
     it('shows only database as input for serverlessNode and database username connection type', function () {
         const testWizard = createWizardTester(new RedshiftNodeConnectionWizard(serverlessNode))
         testWizard.connectionType.assertShowFirst()
-        testWizard.connectionType.applyInput(ConnectionType.DatabaseUser)
+        testWizard.connectionType.applyInput(ConnectionType.TempCreds)
         testWizard.database.assertShowFirst()
         testWizard.username.assertDoesNotShow()
     })
@@ -84,7 +84,7 @@ describe('NotebookConnectionWizard', async () => {
         testWizard.warehouseIdentifier.assertShowFirst()
         testWizard.warehouseIdentifier.applyInput('testCluster')
         testWizard.connectionType.assertShowFirst()
-        testWizard.connectionType.applyInput(ConnectionType.DatabaseUser)
+        testWizard.connectionType.applyInput(ConnectionType.TempCreds)
         testWizard.database.assertShowFirst()
         testWizard.database.applyInput('testDB')
         testWizard.username.assertShowFirst()

@@ -10,12 +10,13 @@ import { RedshiftNotebookController } from './notebook/redshiftNotebookControlle
 import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
 import { Commands } from '../shared/vscode/commands2'
 import { NotebookConnectionWizard } from './wizards/connectionWizard'
-import { ConnectionParams } from './models/models'
+import { ConnectionParams, ConnectionType } from './models/models'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { SystemUtilities } from '../shared/systemUtilities'
 import * as fs from 'fs-extra'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
+import { ToolkitError } from '../shared/errors'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const outputChannel = vscode.window.createOutputChannel('Redshift Connection')
@@ -38,6 +39,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
             }
             redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
             try {
+                const redshiftClient = (redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(
+                    connectionParams.region!.id
+                ))
+                let secretArnFetched = ''
+                if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
+                    secretArnFetched = await redshiftClient.createSecretFromConnectionParams(connectionParams)
+                    if (!secretArnFetched) {
+                        throw new ToolkitError('secret arn could not be fetched')
+                    }
+                    connectionParams.secret = secretArnFetched
+                }
                 await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
                 outputChannel.appendLine(`Redshift: connected to: ${connectionParams.warehouseIdentifier}`)
             } catch (error) {

@@ -13,7 +13,7 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
-import { ConnectionParams, RedshiftWarehouseType } from '../models/models'
+import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { getIcon } from '../../shared/icons'
@@ -38,7 +38,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public name: string
     public redshiftClient: DefaultRedshiftClient
     public connectionParams?: ConnectionParams
-    private readonly logger = getLogger()
 
     constructor(
         public readonly parent: RedshiftNode,
@@ -95,7 +94,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     newChildren: childNodes,
                 }
             } catch (error) {
-                this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
+                getLogger().error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
                 return Promise.reject(error)
             }
         })
@@ -110,6 +109,14 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     return this.getRetryNode()
                 } else {
                     this.connectionParams = connectionParams
+                    let secretArnFetched = ''
+                    if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
+                        secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(connectionParams)
+                        if (!secretArnFetched) {
+                            throw new Error('secret arn could not be fetched')
+                        }
+                        connectionParams.secret = secretArnFetched
+                    }
                     try {
                         const childNodes = await this.childLoader.getChildren()
                         const startButtonNode = new CreateNotebookNode(this)

@@ -11,16 +11,17 @@ export class ConnectionParams {
         public database: string,
         public readonly warehouseIdentifier: string,
         public readonly warehouseType: RedshiftWarehouseType,
-        public readonly username?: string,
+        public username?: string,
         public readonly region?: Region,
-        public readonly password?: string,
-        public readonly secret?: string
+        public password?: string,
+        public secret?: string
     ) {}
 }
 
 export enum ConnectionType {
-    DatabaseUser = 'Database user',
-    SecretsManager = 'Secrets Manager',
+    DatabaseUser = 'Database user name and password',
+    SecretsManager = 'AWS Secrets Manager',
+    TempCreds = 'Temporary credentails',
 }
 
 export enum RedshiftWarehouseType {

@@ -11,13 +11,13 @@ import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../mode
 import { RedshiftWarehouseNode } from '../explorer/redshiftWarehouseNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
-import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { ClustersMessage } from 'aws-sdk/clients/redshift'
 import { Prompter } from '../../shared/ui/prompter'
 import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
+import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 
 export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
     public constructor(
@@ -39,18 +39,31 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
                 warehouseType: node.warehouseType,
             },
         })
-        this.form.connectionType.bindPrompter(getConnectionTypePrompter, {
-            relativeOrder: 1,
-        })
+        this.form.connectionType.bindPrompter(
+            state => {
+                if (state?.warehouseType === 1) {
+                    return getConnectionTypePrompterServerless()
+                } else {
+                    return getConnectionTypePrompter()
+                }
+            },
+            {
+                relativeOrder: 1,
+            }
+        )
+
         this.form.database.bindPrompter(getDatabasePrompter, {
             relativeOrder: 3,
         })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
-                state.database !== undefined &&
-                state.connectionType === ConnectionType.DatabaseUser &&
-                node.warehouseType === RedshiftWarehouseType.PROVISIONED,
+                (state.database !== undefined && state.connectionType === ConnectionType.TempCreds) ||
+                state.connectionType === ConnectionType.DatabaseUser,
             relativeOrder: 2,
+        })
+        this.form.password.bindPrompter(getPasswordPrompter, {
+            showWhen: state => state.username !== undefined && state.connectionType === ConnectionType.DatabaseUser,
+            relativeOrder: 4,
         })
 
         this.form.secret.bindPrompter(state => getSecretPrompter(node.redshiftClient.regionCode), {
@@ -114,13 +127,28 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
             }
         })
 
-        this.form.connectionType.bindPrompter(getConnectionTypePrompter, { relativeOrder: 3 })
+        this.form.connectionType.bindPrompter(
+            state => {
+                if (state.warehouseIdentifier?.startsWith('serverless'.toLowerCase())) {
+                    return getConnectionTypePrompterServerless()
+                } else {
+                    return getConnectionTypePrompter()
+                }
+            },
+            {
+                relativeOrder: 3,
+            }
+        )
+
         this.form.database.bindPrompter(getDatabasePrompter, { relativeOrder: 4 })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
-                state.database !== undefined &&
-                state.connectionType === ConnectionType.DatabaseUser &&
-                state.warehouseType === RedshiftWarehouseType.PROVISIONED,
+                (state.database !== undefined && state.connectionType === ConnectionType.TempCreds) ||
+                state.connectionType === ConnectionType.DatabaseUser,
+            relativeOrder: 5,
+        })
+        this.form.password.bindPrompter(getPasswordPrompter, {
+            showWhen: state => state.username !== undefined && state.connectionType === ConnectionType.DatabaseUser,
             relativeOrder: 5,
         })
 
@@ -134,12 +162,25 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
 function getUsernamePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
-        title: localize('AWS.redshift.username', 'Enter a username'),
+        title: localize('AWS.redshift.username', 'Enter username'),
         buttons: createCommonButtons(),
-        placeholder: 'Enter Username',
+        placeholder: 'Enter username',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.usernameValidation', 'Username cannot be empty')
         },
+    })
+}
+
+function getPasswordPrompter(): Prompter<string> {
+    return createInputBox({
+        value: '',
+        title: localize('AWS.redshift.password', 'Enter password'),
+        buttons: createCommonButtons(),
+        placeholder: 'Enter password',
+        validateInput: value => {
+            return value.trim() ? undefined : localize('AWS.redshift.passwordValidation', 'Password cannot be empty')
+        },
+        password: true,
     })
 }
 
@@ -161,6 +202,17 @@ function getConnectionTypePrompter(): Prompter<ConnectionType> {
         data: type,
     }))
     return createQuickPick(items, {
+        title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
+        buttons: createCommonButtons(),
+        placeholder: 'Select Connection Type',
+    })
+}
+function getConnectionTypePrompterServerless(): Prompter<ConnectionType> {
+    const items: DataQuickPickItem<ConnectionType>[] = Object.values(ConnectionType).map(type => ({
+        label: type,
+        data: type,
+    }))
+    return createQuickPick([items[0], items[1]], {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
         buttons: createCommonButtons(),
         placeholder: 'Select Connection Type',
