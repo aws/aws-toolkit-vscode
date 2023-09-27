@@ -39,15 +39,10 @@
     </extensions>
 
     <actions>
-        <unregister id="serverless.application.deploy"/>
         <group id="aws.toolkit.serverless.template.rider">
             <add-to-group group-id="SolutionExplorerPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorPopupMenu" anchor="last"/>
             <add-to-group group-id="EditorTabPopupMenu" anchor="last"/>
-
-            <separator/>
-            <action id="serverless.application.deploy.rider" class="software.aws.toolkits.jetbrains.services.lambda.actions.DeployServerlessApplicationAction"/>
-            <separator/>
         </group>
     </actions>
 

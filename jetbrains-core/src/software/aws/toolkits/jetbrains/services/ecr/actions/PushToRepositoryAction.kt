@@ -33,7 +33,6 @@ import com.intellij.ui.dsl.builder.columns
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.toMutableProperty
 import com.intellij.ui.dsl.builder.toNullableProperty
-import com.intellij.ui.layout.applyToComponent
 import com.intellij.ui.layout.listCellRenderer
 import com.intellij.ui.layout.selected
 import com.intellij.util.text.nullize

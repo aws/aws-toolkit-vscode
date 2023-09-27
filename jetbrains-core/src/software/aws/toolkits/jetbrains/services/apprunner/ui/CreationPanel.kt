@@ -29,11 +29,9 @@ import software.aws.toolkits.jetbrains.services.iam.IamResources
 import software.aws.toolkits.jetbrains.services.iam.IamRole
 import software.aws.toolkits.jetbrains.ui.KeyValueTextField
 import software.aws.toolkits.jetbrains.ui.ResourceSelector
-import software.aws.toolkits.jetbrains.ui.intTextField
 import software.aws.toolkits.jetbrains.utils.toHumanReadable
 import software.aws.toolkits.jetbrains.utils.ui.installOnParent
 import software.aws.toolkits.jetbrains.utils.ui.selected
-import software.aws.toolkits.jetbrains.utils.ui.visibleIf
 import software.aws.toolkits.resources.message
 import javax.swing.DefaultComboBoxModel
 
