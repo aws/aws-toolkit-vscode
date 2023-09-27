@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { ToolkitError } from '../../../shared/errors'
-import { getLogger } from '../../../shared/logger'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
 
 export async function invoke<TInput, TOutput>(client: LambdaClient, arn: string, payload: TInput): Promise<TOutput> {
     try {

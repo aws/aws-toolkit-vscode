@@ -8,8 +8,8 @@ import * as path from 'path'
 import { ExtensionContext } from 'vscode'
 import { PanelStore } from '../stores/panelStore'
 import { messageIdentifier, MessageActionType, NotificationType, createChatContent } from '../models'
-import { Session } from '../vue/chat/session'
-import { createSessionConfig } from '../vue/chat/sessionConfigFactory'
+import { Session } from '../session/session'
+import { createSessionConfig } from '../session/sessionConfigFactory'
 
 export interface MynahDisplayProps {
     panelStore: PanelStore

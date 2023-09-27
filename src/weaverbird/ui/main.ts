@@ -4,7 +4,7 @@
  */
 import { MynahUI, ChatPrompt, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/styles.scss'
-import { ExtensionCommunicator } from './extension-communicator'
+import { ExtensionCommunicator } from './extensionCommunicator'
 import { MessageActionType } from '../models'
 
 export const createWeaverbirdUI = (): MynahUI => {

@@ -6,8 +6,8 @@
 import vscode from 'vscode'
 import sinon from 'sinon'
 import assert from 'assert'
-import { collectFiles } from '../../weaverbird/files'
-import { createTestWorkspace } from '../testUtil'
+import { collectFiles } from '../../../weaverbird/util/files'
+import { createTestWorkspace } from '../../testUtil'
 
 describe('collectFiles', function () {
     it('returns all files in the workspace', async function () {

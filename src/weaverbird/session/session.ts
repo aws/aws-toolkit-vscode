@@ -4,11 +4,11 @@
  */
 
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger/logger'
-import { collectFiles } from '../../files'
+import { getLogger } from '../../shared/logger/logger'
+import { collectFiles } from '../util/files'
 import { RefinementState } from './sessionState'
-import type { Interaction, SessionState, SessionStateConfig } from '../../types'
-import { AddToChat } from '../../models'
+import type { Interaction, SessionState, SessionStateConfig } from '../types'
+import { AddToChat } from '../models'
 import { SessionConfig } from './sessionConfig'
 
 export class Session {

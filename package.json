@@ -758,13 +758,6 @@
                     "id": "aws.codeWhisperer.referenceLog",
                     "name": ""
                 }
-            ],
-            "explorer": [
-                {
-                    "type": "webview",
-                    "id": "configureChat",
-                    "name": "Weaverbird Chat"
-                }
             ]
         },
         "submenus": [
@@ -2020,13 +2013,6 @@
                     "command": "aws.auth.signout",
                     "enablement": "!isCloud9",
                     "group": "0@3"
-                }
-            ],
-            "comments/commentThread/context": [
-                {
-                    "command": "aws.weaverbird.chat.submit",
-                    "group": "inline",
-                    "when": "commentController == aws.weaverbird.comment-controller"
                 }
             ]
         },
@@ -3366,20 +3352,6 @@
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
-            },
-            {
-                "command": "aws.weaverbird.openChat",
-                "title": "Open Weaverbird Chat",
-                "category": "%AWS.title%"
-            },
-            {
-                "command": "aws.weaverbird.chat.submit",
-                "title": "Submit"
-            },
-            {
-                "command": "aws.weaverbird.chat.showProgress",
-                "title": "Show Weaverbird Notification",
-                "category": "%AWS.title%"
             },
             {
                 "command": "Mynah.show",

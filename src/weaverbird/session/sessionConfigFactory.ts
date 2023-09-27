@@ -4,15 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
-import { LLMConfig, LocalResolvedConfig } from '../../types'
+import { DefaultLambdaClient, LambdaClient } from '../../shared/clients/lambdaClient'
+import { LLMConfig, LocalResolvedConfig } from '../types'
 import { SessionConfig } from './sessionConfig'
-import { defaultLlmConfig, weaverbirdScheme } from '../../constants'
-import { getConfig } from '../../config'
-import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
-import { VirtualMemoryFile } from '../../../shared/virtualMemoryFile'
-import { getLogger } from '../../../shared/logger'
-import globals from '../../../shared/extensionGlobals'
+import { defaultLlmConfig, weaverbirdScheme } from '../constants'
+import { getConfig } from '../config'
+import { VirtualFileSystem } from '../../shared/virtualFilesystem'
+import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
+import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
 
 /**
  * Factory method for creating session configurations

@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import { Settings } from '../../../shared/settings'
-import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
-import { LLMConfig, LocalResolvedConfig, isGenerationFlowOption } from '../../types'
+import { LambdaClient } from '../../shared/clients/lambdaClient'
+import { Settings } from '../../shared/settings'
+import { VirtualFileSystem } from '../../shared/virtualFilesystem'
+import { LLMConfig, LocalResolvedConfig, isGenerationFlowOption } from '../types'
 
 /**
  * Data class for holding all the relevant details for a session
