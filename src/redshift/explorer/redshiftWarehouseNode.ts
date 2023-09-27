@@ -38,7 +38,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     public name: string
     public redshiftClient: DefaultRedshiftClient
     public connectionParams?: ConnectionParams
-    private readonly logger = getLogger()
 
     constructor(
         public readonly parent: RedshiftNode,
