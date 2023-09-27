@@ -232,9 +232,8 @@ export class DefaultRedshiftClient {
                     return response.ARN
                 }
                 throw new ToolkitError('Secret Arn not created')
-            } catch (ToolkitError) {
-                getLogger().error(`Error creating secret in AWS Secrets Manager ${ToolkitError}`)
-                throw ToolkitError
+            } catch (error) {
+                getLogger().error(`Error creating secret in AWS Secrets Manager`, error)
             }
         } else {
             throw new ToolkitError('Username or Password not present')

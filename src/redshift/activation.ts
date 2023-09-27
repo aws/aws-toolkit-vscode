@@ -52,10 +52,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
                 }
                 await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
                 outputChannel.appendLine(`Redshift: connected to: ${connectionParams.warehouseIdentifier}`)
-            } catch (ToolkitError) {
+            } catch (error) {
                 outputChannel.appendLine(
                     `Redshift: failed to connect to: ${connectionParams.warehouseIdentifier} - ${
-                        (ToolkitError as Error).message
+                        (error as Error).message
                     }`
                 )
                 connectionParams = undefined

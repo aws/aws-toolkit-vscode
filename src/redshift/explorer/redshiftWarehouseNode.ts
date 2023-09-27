@@ -97,7 +97,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     newChildren: childNodes,
                 }
             } catch (error) {
-                this.logger.error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
+                getLogger().error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
                 return Promise.reject(error)
             }
         })
