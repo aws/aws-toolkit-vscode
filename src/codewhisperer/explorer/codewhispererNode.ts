@@ -89,7 +89,7 @@ export class CodeWhispererNode implements RootNode {
                     createAutoSuggestionsNode(autoTriggerEnabled),
                     createSecurityScanNode(),
                     createOpenReferenceLogNode(),
-                    createGettingStartedNode(), // "Learn" Node : Getting Started Page for CodeWhisperer
+                    createGettingStartedNode(), // "Learn" node : opens Learn CodeWhisperer page
                 ]
             }
         }

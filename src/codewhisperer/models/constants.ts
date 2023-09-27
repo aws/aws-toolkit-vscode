@@ -122,15 +122,6 @@ export const licenseFilter = 'CodeWhisperer suggestions were filtered due to ref
 export const welcomeCodeWhispererReadmeFileSource = 'resources/markdown/WelcomeToCodeWhisperer.md'
 
 export const welcomeCodeWhispererCloud9Readme = 'resources/markdown/WelcomeToCodeWhispererCloud9.md'
-/**
- * oldWelcomeMessageKey is a key for the previous welcome page of version v1.91.0,
- */
-export const oldWelcomeMessageKey = 'CODEWHISPERER_WELCOME_MESSAGE'
-
-/**
- *  newWelcomeMessageKey is a new key for the new getting started experience, it is used to track if first time signIn new user/ existing user has seen the getting started page or not.
- */
-export const newWelcomeMessageKey = 'CODEWHISPERER_WELCOME_MESSAGE_SHOWN'
 
 /**
  * Key bindings JSON file path

@@ -4,11 +4,8 @@
         <!-- Header -->
         <div class="headerDiv">
             <!-- Banner -->
-            <div
-                v-if="active === 0 && (showAtStartUpOnly === 'ExistingUser' || showAtStartUpOnly === 'NewUser')"
-                class="bannerContainer"
-            >
-                <div class="banner">
+            <div v-if="active === 0 && bannerVisible" class="banner">
+                <div class="bannerDiv">
                     <div class="infoIcon">
                         <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path
@@ -17,13 +14,11 @@
                             />
                         </svg>
                     </div>
-                    <div v-if="showAtStartUpOnly === 'NewUser'" class="bannerDescription">
+                    <div class="bannerDescription">
                         You can always return to this page by clicking “Learn” in Developer Tools > CodeWhisperer
                     </div>
-                    <div v-else-if="showAtStartUpOnly === 'ExistingUser'" class="bannerDescription">
-                        Learn the basics of CodeWhisperer with hands-on examples.
-                    </div>
                 </div>
+                <div v-on:click="closeStatusBar" class="icon icon-lg icon-vscode-chrome-close closeBanner"></div>
             </div>
             <!-- Logo + Title -->
             <div class="logoIcon">
@@ -102,13 +97,12 @@ export default defineComponent({
     },
     data() {
         return {
-            showAtStartUpOnly: '',
+            bannerVisible: true,
             active: parseInt(sessionStorage.getItem('active') || '0'),
         }
     },
     //The created hook runs before the templates and Virtual DOM have been mounted or rendered
     created() {
-        this.showAtStartUp()
         client.emitUiClick('codewhisperer_Learn_PageOpen')
     },
     mounted() {
@@ -121,12 +115,8 @@ export default defineComponent({
     },
     methods: {
         //Triggered only for the first time
-        async showAtStartUp() {
-            const showAt = await client.showAtStartUp()
-
-            if (typeof showAt === 'string') {
-                this.showAtStartUpOnly = showAt
-            }
+        closeStatusBar() {
+            this.bannerVisible = false
         },
     },
 })
@@ -136,20 +126,28 @@ export default defineComponent({
     display: flex;
     flex-direction: column;
 }
-.bannerContainer {
+
+.banner {
     padding-left: 30px;
+    padding-right: 30px;
     background-color: #0a4265;
     border-radius: 10px;
-}
-.banner {
     display: flex;
     height: 48px;
-    justify-content: left;
     align-items: center;
-    gap: 10px;
+    /* border: 1px solid #f5f5f5; */
+}
+.bannerDiv {
+    display: flex;
+    flex-direction: row;
+    flex: 0.95;
+    align-items: center;
+    justify-content: left;
+    gap: 20px;
 }
 .infoIcon {
     margin-top: 3px;
+    justify-content: left;
 }
 .bannerDescription {
     color: #f5f5f5;
@@ -157,6 +155,15 @@ export default defineComponent({
     font-size: 14px;
     font-weight: 350;
     text-align: left;
+    justify-content: left;
+}
+.closeBanner {
+    cursor: pointer;
+    color: #ffffff;
+    align-items: center;
+    flex: 0.05;
+    text-align: right;
+    padding-top: 5px;
 }
 .logoIcon {
     display: flex;
@@ -166,6 +173,7 @@ export default defineComponent({
     padding-top: 25px;
     padding-bottom: 30px;
     padding-left: 60px;
+    height: auto;
 }
 .titleDiv {
     display: flex;

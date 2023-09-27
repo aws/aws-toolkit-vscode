@@ -4,13 +4,13 @@
         <div class="generateSuggestionHeaderDiv">
             <div class="generateSuggestionHeader">Generate code suggestions with examples</div>
             <div class="generateSuggestionDescription">
-                CodeWhisperer supports 15 programming languages, including TypeScript, JavaScript, Python, Java, and C#.
+                CodeWhisperer supports
                 <a
                     class="generateSuggestionLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
-                    @click="emitUiClick('codeWhisperer_GenerateSuggestions_LearnMore')"
-                    >Learn more</a
-                >
+                    @click="emitUiClick('codewhisperer_GenerateSuggestions_LearnMore')"
+                    >15 programming languages</a
+                >, including TypeScript, JavaScript, Python, Java, and C#.
             </div>
         </div>
         <!-- Tab -->
@@ -170,23 +170,23 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_Example1.ts',
-                                `// TODO: Place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}const fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                'CodeWhisperer_generate_suggestion.ts',
+                                `// TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}const fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_Example2.ts',
+                                'CodeWhisperer_manual_invoke.ts',
                                 `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
-                                'CodeWhisperer_Example3.ts',
-                                `// TODO: Place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_use_comments.ts',
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_Example5.ts',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                'CodeWhisperer_navigate_suggestions.ts',
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
-                                'CodeWhisperer_Example4.ts',
+                                'Generate_unit_tests.ts',
                                 `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}function sum(a: number, b: number): number {${'\n'}  return a + b${'\n'}}${'\n'}${'\n'}// Write a test case for the sum function.`,
                             ],
                         },
@@ -197,23 +197,23 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_Example1.js',
-                                `// TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                'CodeWhisperer_generate_suggestion.js',
+                                `// TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_Example2.js',
+                                'CodeWhisperer_manual_invoke.js',
                                 `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
-                                'CodeWhisperer_Example3.js',
-                                `// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_use_comments.js',
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_Example5.js',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                'CodeWhisperer_navigate_suggestions.js',
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
-                                'CodeWhisperer_Example4.js',
+                                'Generate_unit_tests.js',
                                 `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}const sum = (x, y) => x + y${'\n'}${'\n'}// Write a test case for the sum function.`,
                             ],
                         },
@@ -224,24 +224,24 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_Example1.py',
-                                `# TODO: place your cursor at the end of the code and press Enter to generate suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                'CodeWhisperer_generate_suggestion.py',
+                                `# TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}# Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_Example2.py',
+                                'CodeWhisperer_manual_invoke.py',
                                 `# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
-                                'CodeWhisperer_Example3.py',
-                                `# TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_use_comments.py',
+                                `# TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}# Tip: press tab to accept the suggestion.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_Example5.py',
-                                `# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'}`,
+                                'CodeWhisperer_navigate_suggestions.py',
+                                `# TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
-                                'CodeWhisperer_Example4.py',
-                                `# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}from unittest import TestCase${'\n'}${'\n'}# Function to sum two numbers.${'\n'}def sum(x, y):${'\n'}    return x + y${'\n'}${'\n'}class TestSum(TestCase):${'\n'}    # test the sum method with integers`,
+                                'Generate_unit_tests.py',
+                                `# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}from unittest import TestCase${'\n'}${'\n'}# Function to sum two numbers.${'\n'}def sum(x, y):${'\n'}    return x + y${'\n'}${'\n'}# test the sum method with integers.`,
                             ],
                         },
                     ],
@@ -251,23 +251,23 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_Example1.java',
-                                `// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_generate_suggestion.java',
+                                `// TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_Example2.java',
+                                'CodeWhisperer_manual_invoke.java',
                                 `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
-                                'CodeWhisperer_Example3.java',
-                                `// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_use_comments.java',
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_Example5.java',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                'CodeWhisperer_navigate_suggestions.java',
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
-                                'CodeWhisperer_Example4.java',
+                                'Generate_unit_tests.java',
                                 `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to calculate sum of two numbers.${'\n'}public class Calculator${'\n'}{${'\n'}  public int Add(int a, int b)${'\n'}  {${'\n'}    return a + b;${'\n'}  }${'\n'}}${'\n'}${'\n'}// Write a test case for the above function.`,
                             ],
                         },
@@ -278,23 +278,23 @@ export default defineComponent({
                     tableData: [
                         {
                             column1: [
-                                'CodeWhisperer_Example1.cs',
-                                `// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_generate_suggestion.cs',
+                                `// TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
                             ],
                             column2: [
-                                'CodeWhisperer_Example2.cs',
+                                'CodeWhisperer_manual_invoke.cs',
                                 `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
-                                'CodeWhisperer_Example3.cs',
-                                `// TODO: place your cursor at the end of the next comment and press Enter to add a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                'CodeWhisperer_use_comments.cs',
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column4: [
-                                'CodeWhisperer_Example5.cs',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line. Once Recommendations are Generated, Press Left/Right Arrows to Navigate between the Recommmendations.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                'CodeWhisperer_navigate_suggestions.cs',
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
-                                'CodeWhisperer_Example4.cs',
+                                'Generate_unit_tests.cs',
                                 `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to calculate sum of two numbers.${'\n'}public class Calculator${'\n'}{${'\n'}  public int Add(int a, int b)${'\n'}  {${'\n'}    return a + b;${'\n'}  }${'\n'}}${'\n'}${'\n'}// Write a test case for the above function.`,
                             ],
                         },
@@ -309,13 +309,14 @@ export default defineComponent({
     methods: {
         onClick(names: string[], label: string) {
             let taskType: CodewhispererGettingStartedTask = 'autoTrigger'
-            if (names[0] === 'CodeWhisperer_Example1.js') {
+            const fileName = names[0].split('.')[0]
+            if (fileName === 'CodeWhisperer_generate_suggestion') {
                 taskType = 'autoTrigger'
-            } else if (names[0] === 'CodeWhisperer_Example2.js') {
+            } else if (fileName === 'CodeWhisperer_manual_invoke') {
                 taskType = 'manualTrigger'
-            } else if (names[0] === 'CodeWhisperer_Example3.js') {
+            } else if (fileName === 'CodeWhisperer_use_comments') {
                 taskType = 'commentAsPrompt'
-            } else if (names[0] === 'CodeWhisperer_Example4.js') {
+            } else if (fileName === 'CodeWhisperer_navigate_suggestions') {
                 taskType = 'navigation'
             } else {
                 taskType = 'unitTest'
@@ -333,7 +334,7 @@ export default defineComponent({
                 telemetryLabel = 'csharp'
             }
             client.emitTryExampleClick(telemetryLabel, taskType)
-            client.openFile(names)
+            client.openFile([names[0], names[1]])
         },
         async showOS() {
             this.osState = await client.getOSType()
@@ -381,7 +382,7 @@ export default defineComponent({
     font-size: 14px;
     text-decoration: none;
     cursor: pointer;
-    color: #2470b3;
+    color: #0097fb;
 }
 .generateSuggestionTabHeader {
     display: flex;

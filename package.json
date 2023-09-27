@@ -218,6 +218,10 @@
                             "type": "boolean",
                             "default": false
                         },
+                        "codeWhispererNewWelcomeMessageKey": {
+                            "type": "boolean",
+                            "default": false
+                        },
                         "codeWhispererConnectionExpired": {
                             "type": "boolean",
                             "default": false

@@ -12,17 +12,14 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 import { FileSystemCommon } from '../../srcShared/fs'
+import { getLogger } from '../../shared/logger'
 export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
     public readonly source = 'src/codewhisperer/vue/index.js'
 
-    public constructor(private readonly start: string) {
+    public constructor() {
         super()
-    }
-    //This function is called when the extension is activated to check whether is it the first time the user is using the extension or not
-    public async showAtStartUp(): Promise<string | void> {
-        return this.start
     }
 
     private isFileSaved: boolean = false
@@ -31,7 +28,7 @@ export class CodeWhispererWebview extends VueWebview {
         return path.join(globals.context.globalStorageUri.fsPath, fileName)
     }
 
-    // This function opens Python/JavaScript/C# file in the editor.
+    // This function opens TypeScript/JavaScript/Python/Java/C# file in the editor.
     async openFile(name: [fileName: string, fileContent: string]): Promise<void> {
         const fileName = name[0]
         const fileContent = name[1]
@@ -55,14 +52,28 @@ export class CodeWhispererWebview extends VueWebview {
 
     // This function saves and open the file in the editor.
     private async saveFileLocally(localFilePath: string, fileContent: string): Promise<void> {
-        await FileSystemCommon.instance.writeFile(localFilePath, fileContent)
-        this.isFileSaved = true
-        vscode.workspace.openTextDocument(localFilePath).then(doc => {
-            vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
-                const endOfDocument = new vscode.Position(doc.lineCount - 1, doc.lineAt(doc.lineCount - 1).text.length)
-                editor.selection = new vscode.Selection(endOfDocument, endOfDocument)
+        try {
+            await FileSystemCommon.instance.writeFile(localFilePath, fileContent)
+            this.isFileSaved = true
+            // Opening the text document
+            vscode.workspace.openTextDocument(localFilePath).then(doc => {
+                vscode.window.showTextDocument(doc, vscode.ViewColumn.Active).then(editor => {
+                    // Set the selection to the end of the document
+                    const endOfDocument = new vscode.Position(
+                        doc.lineCount - 1,
+                        doc.lineAt(doc.lineCount - 1).text.length
+                    )
+                    editor.selection = new vscode.Selection(endOfDocument, endOfDocument)
+                })
             })
-        })
+        } catch (error) {
+            vscode.window.showErrorMessage(
+                localize(
+                    'AWS.message.error.codewhispererLearnPage.saveFileLocally',
+                    'There was an error in saving the file, check log for details.'
+                )
+            )
+        }
     }
 
     //This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
@@ -104,7 +115,6 @@ export class CodeWhispererWebview extends VueWebview {
         })
     }
 }
-// export type codewhispererLanguage = 'python' | 'javascript' | 'csharp'
 //List of all events that are emitted from the webview of CodeWhisperer
 export type CodeWhispererUiClick =
     | 'codewhisperer_Resources_Documentation'
@@ -124,12 +134,14 @@ export type CodeWhispererSource = 'codewhispererDeveloperTools'
 // This function is called when the extension is activated : Webview of CodeWhisperer
 export async function showCodeWhispererWebview(
     ctx: vscode.ExtensionContext,
-    source: CodeWhispererSource,
-    start: string
+    source: CodeWhispererSource
 ): Promise<void> {
-    activePanel ??= new Panel(ctx, start) // "start" Parameter is passed to the constructor of CodeWhispererWebview to seperate the user experience from first time user to regualr signIn user
+    activePanel ??= new Panel(ctx)
     activePanel.server.setSource(source)
-
+    if (activePanel === undefined) {
+        getLogger().error(`codewhisperer: failed to load Learn CodeWhisperer Page`)
+        return
+    }
     const webview = await activePanel!.show({
         title: localize('AWS.view.gettingStartedPage.title', `Learn CodeWhisperer`),
         viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,

@@ -18,7 +18,8 @@
             </tbody>
         </table>
         <div class="shortcutsEditor">
-            Customize Keyboard shortcuts in the <a href="#" @click="onClick">Keyboard Shortcuts Editor</a>.
+            Customize keyboard shortcuts in the
+            <a href="#" @click="onClick" class="shortcuts-editor-link">Keyboard Shortcuts Editor</a>.
         </div>
     </div>
 </template>
@@ -43,14 +44,14 @@ export default defineComponent({
                 },
                 {
                     id: 2,
-                    column1: 'Manual Invoke',
+                    column1: 'Manual invoke',
                     column2: 'Option',
                     column3: 'C',
                     column4: 'Alt',
                 },
                 {
                     id: 3,
-                    column1: 'Navigate',
+                    column1: 'Navigate code suggestions',
                     column2: 'Left / Right Arrows',
                 },
                 {
@@ -66,7 +67,7 @@ export default defineComponent({
     },
     methods: {
         onClick() {
-            client.emitUiClick('codeWhisperer_Commands_KeyboardShortcutsEditor')
+            client.emitUiClick('codewhisperer_Commands_KeyboardShortcutsEditor')
             client.openShortCuts()
         },
         async showOS() {
@@ -113,6 +114,10 @@ export default defineComponent({
     letter-spacing: 0em;
     text-align: left;
     color: var(--vscode-descriptionForeground);
+}
+.shortcuts-editor-link {
+    color: #0097fb;
+    text-decoration: none;
 }
 table tr,
 td {

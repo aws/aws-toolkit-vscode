@@ -10,10 +10,10 @@ import { telemetry } from '../../shared/telemetry/telemetry'
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
 export class CodeWhispererCommandBackend {
-    constructor(private readonly extContext: vscode.ExtensionContext, private start: string) {}
+    constructor(private readonly extContext: vscode.ExtensionContext) {}
     public showGettingStartedPage(source: CodeWhispererSource) {
         telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick' })
-        return showCodeWhispererWebview(this.extContext, source, this.start)
+        return showCodeWhispererWebview(this.extContext, source)
     }
 }
 /**

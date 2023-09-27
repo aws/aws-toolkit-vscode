@@ -14,7 +14,7 @@
                     <a
                         class="DocumentationLink"
                         href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/features.html"
-                        @click="emitUiClick('codeWhisperer_Resources_Documentation')"
+                        @click="emitUiClick('codewhisperer_Resources_Documentation')"
                         >Documentation</a
                     >
                 </div>
@@ -49,7 +49,7 @@ export default defineComponent({
     },
     methods: {
         onClick() {
-            client.emitUiClick('codeWhisperer_Resources_Feedback')
+            client.emitUiClick('codewhisperer_Resources_Feedback')
             client.openFeedBack() //Opens CodeWhisperer Feedback Form
         },
     },

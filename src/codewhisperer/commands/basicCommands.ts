@@ -22,6 +22,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { PromptSettings } from '../../shared/settings'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -40,7 +41,7 @@ export const toggleCodeSuggestions = Commands.declare(
 )
 /* 
 createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
-onClick on this "Learn" Node will open the Getting Started Page of CodeWhisperer.
+onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
 */
 export const createGettingStartedNode = () =>
     CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
@@ -56,16 +57,12 @@ export const enableCodeSuggestions = Commands.declare(
         await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-
-        const hasShownNewWelcomeMsg = get(
-            CodeWhispererConstants.newWelcomeMessageKey,
-            context.extensionContext.globalState
-        )
-
+        const prompts = PromptSettings.instance
+        const shouldShow = await prompts.isPromptEnabled('codeWhispererNewWelcomeMessageKey')
         //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-        if (!hasShownNewWelcomeMsg) {
+        if (shouldShow) {
             vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
-            await set(CodeWhispererConstants.newWelcomeMessageKey, true, context.extensionContext.globalState)
+            prompts.update('codeWhispererNewWelcomeMessageKey', true)
         }
 
         if (!isCloud9()) {

@@ -1,7 +1,7 @@
 <!-- This Vue File provides Users to navigate to the AWS CodeWhisperer Workshop -->
 <template>
     <div class="workshop">
-        <div class="workshopTitle">Workshop</div>
+        <div class="workshopTitle">Learn prompt engineering</div>
         <div class="workshopDiv">
             <svg
                 width="268"
@@ -41,9 +41,9 @@
             Learn how to get the best code suggestions with prompt engineering.
             <a
                 class="getStartedText"
-                href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/01-introduction"
-                @click="emitUiClick('codeWhisperer_Workshop_LearnMore')"
-                >Learn more</a
+                href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/03-getting-started/03-02-prompts"
+                @click="emitUiClick('codewhisperer_Workshop_LearnMore')"
+                >Open guide</a
             >
         </div>
     </div>
@@ -94,7 +94,7 @@ export default defineComponent({
     text-align: center;
     font-family: Verdana;
     text-decoration: none;
-    color: #00a1c9;
+    color: #0097fb;
 }
 .getStartedText :hover {
     text-decoration: none;
