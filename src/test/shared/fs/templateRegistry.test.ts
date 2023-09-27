@@ -124,7 +124,7 @@ describe('CloudFormation Template Registry', async function () {
         Properties: {
             Handler: 'index.handler',
             CodeUri: path.join(nestedPath),
-            Runtime: 'nodejs12.x',
+            Runtime: 'nodejs16.x',
         },
     }
     const nonParentTemplate = {
@@ -379,7 +379,7 @@ describe('CloudFormation Template Registry', async function () {
                 ...resource,
                 ...{
                     Metadata: {
-                        DockerTag: 'nodejs12.x-v1',
+                        DockerTag: 'nodejs16.x-v1',
                         DockerContext: './hello-world',
                         Dockerfile: 'Dockerfile',
                     },
@@ -390,7 +390,7 @@ describe('CloudFormation Template Registry', async function () {
                 ...resource,
                 ...{
                     Metadata: {
-                        DockerTag: 'nodejs12.x-v1',
+                        DockerTag: 'nodejs16.x-v1',
                         DockerContext: './hello-world/nested',
                         Dockerfile: 'Dockerfile',
                     },
