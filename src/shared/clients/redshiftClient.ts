@@ -217,7 +217,7 @@ export class DefaultRedshiftClient {
         return `${epochDate}-${connectionParams.warehouseIdentifier}`
     }
 
-    public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string | undefined> {
+    public async createSecretFromConnectionParams(connectionParams: ConnectionParams): Promise<string> {
         /*
             create a secrete arn for the username and password entered through the Database Username and Password authentication
         */
@@ -234,6 +234,7 @@ export class DefaultRedshiftClient {
                 throw new ToolkitError('Secret Arn not created')
             } catch (error) {
                 getLogger().error(`Error creating secret in AWS Secrets Manager`, error)
+                throw error
             }
         } else {
             throw new ToolkitError('Username or Password not present')
