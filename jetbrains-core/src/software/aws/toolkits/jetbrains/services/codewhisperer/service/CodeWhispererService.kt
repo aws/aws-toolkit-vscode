@@ -49,6 +49,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhisper
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getCaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
@@ -90,6 +91,8 @@ class CodeWhispererService {
         latencyContext.credentialFetchingStart = System.nanoTime()
 
         if (promptReAuth(project)) return
+
+        if (isCodeWhispererExpired(project)) return
 
         latencyContext.credentialFetchingEnd = System.nanoTime()
         val psiFile = runReadAction { PsiDocumentManager.getInstance(project).getPsiFile(editor.document) }
