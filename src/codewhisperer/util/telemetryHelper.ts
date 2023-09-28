@@ -132,6 +132,7 @@ export class TelemetryHelper {
             codewhispererSuggestionReferenceCount: 0,
             codewhispererCompletionType: 'Line',
             codewhispererLanguage: languageContext.language,
+            codewhispererGettingStartedTask: session.taskType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
@@ -183,6 +184,7 @@ export class TelemetryHelper {
                 codewhispererSuggestionImportCount: getImportCount(_elem),
                 codewhispererCompletionType: this.getCompletionType(i, completionTypes),
                 codewhispererLanguage: session.language,
+                codewhispererGettingStartedTask: session.taskType,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
                 codewhispererSupplementalContextTimeout: supplementalContextMetadata?.isProcessTimeout,
@@ -286,6 +288,7 @@ export class TelemetryHelper {
             credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             codewhispererCompletionType: aggregatedCompletionType,
             codewhispererLanguage: language,
+            codewhispererGettingStartedTask: this.sessionDecisions[0].codewhispererGettingStartedTask,
             codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
             codewhispererSuggestionCount: this.sessionDecisions
                 .map(e => e.codewhispererSuggestionCount)
