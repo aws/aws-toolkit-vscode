@@ -21,7 +21,7 @@ export class ConnectionParams {
 export enum ConnectionType {
     DatabaseUser = 'Database user name and password',
     SecretsManager = 'AWS Secrets Manager',
-    TempCreds = 'Temporary credentails',
+    TempCreds = 'Temporary credentials',
 }
 
 export enum RedshiftWarehouseType {
