@@ -24,6 +24,7 @@ import { showTimedMessage } from '../../shared/utilities/messages'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
+    CodewhispererGettingStartedTask,
     CodewhispererTriggerType,
     telemetry,
 } from '../../shared/telemetry/telemetry'
@@ -134,6 +135,20 @@ export class RecommendationHandler {
         }
     }
 
+    async getTaskTypeFromEditorFileName(fileName: string): Promise<CodewhispererGettingStartedTask> {
+        if (fileName.startsWith('CodeWhisperer_generate_suggestion')) {
+            return 'autoTrigger'
+        } else if (fileName.startsWith('CodeWhisperer_manual_invoke')) {
+            return 'manualTrigger'
+        } else if (fileName.startsWith('CodeWhisperer_use_comments')) {
+            return 'commentAsPrompt'
+        } else if (fileName.startsWith('CodeWhisperer_navigate_suggestions')) {
+            return 'navigation'
+        } else {
+            return 'unitTest'
+        }
+    }
+
     async getRecommendations(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
@@ -161,6 +176,7 @@ export class RecommendationHandler {
         let nextToken = ''
         let shouldRecordServiceInvocation = true
         session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+        session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
             if (page === 0) {

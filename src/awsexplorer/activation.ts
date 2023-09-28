@@ -119,8 +119,12 @@ async function registerAwsExplorerCommands(
                 telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
-        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
-            await submitFeedback(context)
+        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async id => {
+            if (id === 'CodeWhisperer') {
+                await submitFeedback(context, 'CodeWhisperer')
+            } else {
+                await submitFeedback(context, 'AWS Toolkit')
+            }
         }),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
