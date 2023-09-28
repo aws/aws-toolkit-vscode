@@ -183,7 +183,7 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.ts',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
                                 'Generate_unit_tests.ts',
@@ -210,7 +210,7 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.js',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'} `,
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
                                 'Generate_unit_tests.js',
@@ -237,7 +237,7 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.py',
-                                `# TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'} `,
+                                `# TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}# CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
                                 'Generate_unit_tests.py',
@@ -264,7 +264,7 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.java',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'} `,
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
                                 'Generate_unit_tests.java',
@@ -291,7 +291,7 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.cs',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'} `,
+                                `// TODO: place your cursor at the end of line 4 and press Enter to generate a suggestion.${'\n'}// CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
                             ],
                             column5: [
                                 'Generate_unit_tests.cs',
