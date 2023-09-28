@@ -64,7 +64,6 @@ export async function activate(context: ExtContext): Promise<void> {
         await enableDefaultConfigCloud9()
     }
 
-    //Opens the getting started page if it is not already open.
     registerCommandsWithVSCode(
         context.extensionContext,
         CodeWhispererCommandDeclarations.instance,
