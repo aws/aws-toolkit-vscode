@@ -32,6 +32,8 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
             //                 'arn:aws:lambda:us-west-2:740920811238:function:IterateCodeLambda:live',
             //             getResults:
             //                 'arn:aws:lambda:us-west-2:740920811238:function:GetCodeGenerationResultLambda:live',
+            //             getIterationResults:
+            //                 'arn:aws:lambda:us-west-2:740920811238:function:GetCodeIterationResultLambda:live'
             //         },
             //     },
             // }
@@ -47,6 +49,8 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                         generate: 'arn:aws:lambda:us-west-2:789621683470:function:GenerateCodeLambda:live',
                         iterate: 'arn:aws:lambda:us-west-2:789621683470:function:IterateCodeLambda:live',
                         getResults: 'arn:aws:lambda:us-west-2:789621683470:function:GetCodeGenerationResultLambda:live',
+                        getIterationResults:
+                            'arn:aws:lambda:us-west-2:789621683470:function:GetCodeIterationResultLambda:live',
                     },
                 },
             }
@@ -81,6 +85,7 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
                             getResults:
                                 (parsedConfig.lambdaArns?.codegen?.getResults as string) ??
                                 defaultConfig.lambdaArns.codegen.getResults,
+                            getIterationResults: parsedConfig.lambdaArns?.codegen?.getIterationResults as string,
                         },
                     },
                 }

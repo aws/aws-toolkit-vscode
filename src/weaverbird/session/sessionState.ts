@@ -17,6 +17,8 @@ import {
     GetCodeGenerationResultOutput,
     IterateApproachInput,
     IterateApproachOutput,
+    IterateCodeInput,
+    IterateCodeOutput,
 } from '../client/weaverbirdclient'
 import { getLogger } from '../../shared/logger'
 import { FileSystemCommon } from '../../srcShared/fs'
@@ -196,10 +198,16 @@ abstract class CodeGenBase {
                     }
                     return newFiles
                 }
+                case 'predict-ready': {
+                    await new Promise(f => setTimeout(f, 10000))
+                    break
+                }
                 case 'in-progress': {
                     await new Promise(f => setTimeout(f, 10000))
                     break
                 }
+                case 'predict-failed':
+                case 'debate-failed':
                 case 'failed': {
                     getLogger().error('Failed to generate code')
                     params.addToChat(createChatContent('Code generation failed\n'), MessageActionType.CHAT_ANSWER)
@@ -309,20 +317,20 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
                 originalFile => !this.newFileContents.some(newFile => newFile.filePath === originalFile.filePath)
             )
         )
-        const payload: GenerateCodeInput = {
+        const payload: IterateCodeInput = {
             originalFileContents: fileContents,
             approach: this.approach,
             task: action.task,
-            //comment: action.msg ?? '',
+            comment: action.msg ?? '',
             config: this.config.llmConfig,
             conversationId: this.config.conversationId,
         }
 
-        const response = await invoke<GenerateCodeInput, GenerateCodeOutput>(
+        const response = await invoke<IterateCodeInput, IterateCodeOutput>(
             this.config.client,
             // going to the `generate` lambda here because the `iterate` one doesn't work on a
             // task/poll-results strategy yet
-            this.config.backendConfig.lambdaArns.codegen.generate,
+            this.config.backendConfig.lambdaArns.codegen.iterate,
             payload
         )
 
@@ -331,7 +339,7 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
         action.addToChat(createChatContent('Code generation started\n'), MessageActionType.CHAT_ANSWER)
 
         this.newFileContents = await this.generateCode({
-            getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
+            getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getIterationResults,
             fs: action.fs,
             addToChat: action.addToChat,
             generationId: genId,

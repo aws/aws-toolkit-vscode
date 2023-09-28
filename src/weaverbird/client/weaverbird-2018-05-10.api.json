@@ -56,6 +56,17 @@
             "output": { "shape": "GetCodeGenerationResultOutput" },
             "errors": [{ "shape": "InvalidInputException" }]
         },
+        "GetCodeIterationResult": {
+            "name": "GetCodeIterationResult",
+            "http": {
+                "method": "POST",
+                "requestUri": "/getCodeIterationResult",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetCodeIterationResultInput" },
+            "output": { "shape": "GetCodeIterationResultOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
         "IterateApproach": {
             "name": "IterateApproach",
             "http": {
@@ -191,6 +202,23 @@
                 "conversationId": { "shape": "String" }
             }
         },
+        "GetCodeIterationResultInput": {
+            "type": "structure",
+            "required": ["generationId", "conversationId"],
+            "members": {
+                "generationId": { "shape": "String" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GetCodeIterationResultOutput": {
+            "type": "structure",
+            "required": ["codeGenerationStatus"],
+            "members": {
+                "codeGenerationStatus": { "shape": "CodeGenerationStatus" },
+                "result": { "shape": "CodeGenerationResult" },
+                "conversationId": { "shape": "String" }
+            }
+        },
         "Integer": {
             "type": "integer",
             "box": true
@@ -239,9 +267,9 @@
         },
         "IterateCodeOutput": {
             "type": "structure",
+            "required": ["generationId"],
             "members": {
-                "newFileContents": { "shape": "FileMetadataList" },
-                "deletedFiles": { "shape": "DeletedFilesList" },
+                "generationId": { "shape": "String" },
                 "conversationId": { "shape": "String" }
             }
         },

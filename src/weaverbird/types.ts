@@ -80,6 +80,7 @@ export interface LocalResolvedConfig {
             generate: string
             getResults: string
             iterate: string
+            getIterationResults: string
         }
     }
 }
