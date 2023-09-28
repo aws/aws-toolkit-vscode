@@ -175,7 +175,7 @@ export default defineComponent({
                             ],
                             column2: [
                                 'CodeWhisperer_manual_invoke.ts',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                `// TODO: Press either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
                                 'CodeWhisperer_use_comments.ts',
@@ -183,11 +183,11 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.ts',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column5: [
                                 'Generate_unit_tests.ts',
-                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}function sum(a: number, b: number): number {${'\n'}  return a + b${'\n'}}${'\n'}${'\n'}// Write a test case for the sum function.`,
+                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}function sum(a: number, b: number): number {${'\n'}  return a + b${'\n'}}${'\n'}${'\n'}// Write a test case for the sum function.${'\n'}`,
                             ],
                         },
                     ],
@@ -202,7 +202,7 @@ export default defineComponent({
                             ],
                             column2: [
                                 'CodeWhisperer_manual_invoke.js',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                `// TODO: Press either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
                                 'CodeWhisperer_use_comments.js',
@@ -210,11 +210,11 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.js',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'} `,
                             ],
                             column5: [
                                 'Generate_unit_tests.js',
-                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}const sum = (x, y) => x + y${'\n'}${'\n'}// Write a test case for the sum function.`,
+                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to sum two numbers.${'\n'}function sum(a, b) {${'\n'}  return a + b${'\n'}}${'\n'}${'\n'}// Write a test case for the sum function.${'\n'}`,
                             ],
                         },
                     ],
@@ -229,7 +229,7 @@ export default defineComponent({
                             ],
                             column2: [
                                 'CodeWhisperer_manual_invoke.py',
-                                `# TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'}`,
+                                `# TODO: Press either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'}`,
                             ],
                             column3: [
                                 'CodeWhisperer_use_comments.py',
@@ -237,11 +237,11 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.py',
-                                `# TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.`,
+                                `# TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}# Function to upload a file to an S3 bucket.${'\n'} `,
                             ],
                             column5: [
                                 'Generate_unit_tests.py',
-                                `# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}from unittest import TestCase${'\n'}${'\n'}# Function to sum two numbers.${'\n'}def sum(x, y):${'\n'}    return x + y${'\n'}${'\n'}# test the sum method with integers.`,
+                                `# TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}def sum(a, b):${'\n'}    """${'\n'}    Function to sum two numbers.${'\n'}${'\n'}    Args:${'\n'}    - a: First number.${'\n'}    - b: Second number.${'\n'}${'\n'}    Returns:${'\n'}    - Sum of the two numbers.${'\n'}    """${'\n'}    return a + b${'\n'}${'\n'}# Write a test case for the above function.${'\n'}`,
                             ],
                         },
                     ],
@@ -252,11 +252,11 @@ export default defineComponent({
                         {
                             column1: [
                                 'CodeWhisperer_generate_suggestion.java',
-                                `// TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                `import java.util.ArrayList;${'\n'}import java.util.HashMap;${'\n'}import java.util.List;${'\n'}import java.util.Map;${'\n'}${'\n'}public class Main {${'\n'}    public static void main(String[] args) {${'\n'}        // TODO: place your cursor at the end of line 18 and press Enter to generate a suggestion.${'\n'}        // Tip: press tab to accept the suggestion.${'\n'}${'\n'}        List<Map<String, String>> fakeUsers = new ArrayList<>();${'\n'}        Map<String, String> user1 = new HashMap<>();${'\n'}        user1.put("name", "User 1");${'\n'}        user1.put("id", "user1");${'\n'}        user1.put("city", "San Francisco");${'\n'}        user1.put("state", "CA");${'\n'}        fakeUsers.add(user1);${'\n'}        `,
                             ],
                             column2: [
                                 'CodeWhisperer_manual_invoke.java',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                `// TODO: Press either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}public class S3Uploader {${'\n'}${'\n'}    // Function to upload a file to an S3 bucket.${'\n'}    public static void uploadFile(String filePath, String bucketName) {${'\n'}        `,
                             ],
                             column3: [
                                 'CodeWhisperer_use_comments.java',
@@ -264,11 +264,11 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.java',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'} `,
                             ],
                             column5: [
                                 'Generate_unit_tests.java',
-                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to calculate sum of two numbers.${'\n'}public class Calculator${'\n'}{${'\n'}  public int Add(int a, int b)${'\n'}  {${'\n'}    return a + b;${'\n'}  }${'\n'}}${'\n'}${'\n'}// Write a test case for the above function.`,
+                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Write a test case for the sum function.${'\n'}${'\n'}import junit.framework.Test;${'\n'}${'\n'}public class SumFunction {${'\n'}${'\n'}    /**${'\n'}     * Function to sum two numbers.${'\n'}     *${'\n'}     * @param a First number.${'\n'}     * @param b Second number.${'\n'}     * @return Sum of the two numbers.${'\n'}     */${'\n'}    public static int sum(int a, int b) {${'\n'}        return a + b;${'\n'}    }${'\n'}    `,
                             ],
                         },
                     ],
@@ -279,11 +279,11 @@ export default defineComponent({
                         {
                             column1: [
                                 'CodeWhisperer_generate_suggestion.cs',
-                                `// TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}// Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                `using System;${'\n'}using System.Collections.Generic;${'\n'}${'\n'}public class Program${'\n'}{${'\n'}    public static void Main()${'\n'}    {${'\n'}        // TODO: place your cursor at the end of line 20 and press Enter to generate a suggestion.${'\n'}        // Tip: press tab to accept the suggestion.${'\n'}${'\n'}        List<Dictionary<string, string>> fakeUsers = new List<Dictionary<string, string>>();${'\n'}${'\n'}        Dictionary<string, string> user1 = new Dictionary<string, string>();${'\n'}        user1.Add("name", "User 1");${'\n'}        user1.Add("id", "user1");${'\n'}        user1.Add("city", "San Francisco");${'\n'}        user1.Add("state", "CA");${'\n'}${'\n'}        fakeUsers.Add(user1);${'\n'}${'\n'}        `,
                             ],
                             column2: [
                                 'CodeWhisperer_manual_invoke.cs',
-                                `// TODO: Pressing either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'}`,
+                                `// TODO: Press either Option + C on MacOS or Alt + C on Windows on a new line.${'\n'}${'\n'}public class S3Uploader${'\n'}{${'\n'}    // Function to upload a file to an S3 bucket.${'\n'}    public static void UploadFile(string filePath, string bucketName)${'\n'}    {${'\n'}        `,
                             ],
                             column3: [
                                 'CodeWhisperer_use_comments.cs',
@@ -291,11 +291,11 @@ export default defineComponent({
                             ],
                             column4: [
                                 'CodeWhisperer_navigate_suggestions.cs',
-                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.`,
+                                `// TODO: CodeWhisperer generates multiple code recommendations. Use the left and right arrow keys to navigate between them.${'\n'}${'\n'}// Function to upload a file to an S3 bucket.${'\n'} `,
                             ],
                             column5: [
                                 'Generate_unit_tests.cs',
-                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}// Function to calculate sum of two numbers.${'\n'}public class Calculator${'\n'}{${'\n'}  public int Add(int a, int b)${'\n'}  {${'\n'}    return a + b;${'\n'}  }${'\n'}}${'\n'}${'\n'}// Write a test case for the above function.`,
+                                `// TODO: Ask CodeWhisperer to write unit tests.${'\n'}${'\n'}using System;${'\n'}${'\n'}public class SumFunction${'\n'}{${'\n'}    /// <summary>${'\n'}${'\n'}    /// </summary>${'\n'}    /// <param name="a">First number.</param>${'\n'}    /// <param name="b">Second number.</param>${'\n'}    /// <returns>Sum of the two numbers.</returns>${'\n'}    public static int Sum(int a, int b)${'\n'}    {${'\n'}        return a + b;${'\n'}    }${'\n'}${'\n'}    // Write a test case for the Sum function.${'\n'}    `,
                             ],
                         },
                     ],
@@ -309,14 +309,14 @@ export default defineComponent({
     methods: {
         onClick(names: string[], label: string) {
             let taskType: CodewhispererGettingStartedTask = 'autoTrigger'
-            const fileName = names[0].split('.')[0]
-            if (fileName === 'CodeWhisperer_generate_suggestion') {
+            const fileName = names[0]
+            if (fileName.startsWith('CodeWhisperer_generate_suggestion')) {
                 taskType = 'autoTrigger'
-            } else if (fileName === 'CodeWhisperer_manual_invoke') {
+            } else if (fileName.startsWith('CodeWhisperer_manual_invoke')) {
                 taskType = 'manualTrigger'
-            } else if (fileName === 'CodeWhisperer_use_comments') {
+            } else if (fileName.startsWith('CodeWhisperer_use_comments')) {
                 taskType = 'commentAsPrompt'
-            } else if (fileName === 'CodeWhisperer_navigate_suggestions') {
+            } else if (fileName.startsWith('CodeWhisperer_navigate_suggestions')) {
                 taskType = 'navigation'
             } else {
                 taskType = 'unitTest'
