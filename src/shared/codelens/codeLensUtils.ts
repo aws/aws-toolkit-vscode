@@ -346,7 +346,7 @@ export async function makeCSharpCodeLensProvider(configuration: SamCliSettings):
                 document,
                 handlers,
                 token,
-                runtimeFamily: RuntimeFamily.DotNetCore,
+                runtimeFamily: RuntimeFamily.DotNet,
             })
         },
     }

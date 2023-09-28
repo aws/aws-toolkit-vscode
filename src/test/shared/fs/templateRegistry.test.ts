@@ -153,7 +153,7 @@ describe('CloudFormation Template Registry', async function () {
         Properties: {
             Handler: 'Asdf::Asdf.Function::FunctionHandler',
             CodeUri: path.join(nestedPath),
-            Runtime: 'dotnetcore3.1',
+            Runtime: 'dotnet6',
         },
     }
     const dotNetTemplate = {

@@ -636,7 +636,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await pythonDebug.makePythonDebugConfig(launchConfig)
                 break
             }
-            case RuntimeFamily.DotNetCore: {
+            case RuntimeFamily.DotNet: {
                 // Make a DotNet launch-config from the generic config.
                 launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
@@ -711,7 +711,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 config.type = 'python'
                 return await pythonDebug.invokePythonLambda(this.ctx, config as PythonDebugConfiguration)
             }
-            case RuntimeFamily.DotNetCore: {
+            case RuntimeFamily.DotNet: {
                 config.type = 'coreclr'
                 return await csharpDebug.invokeCsharpLambda(this.ctx, config)
             }
