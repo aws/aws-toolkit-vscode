@@ -42,7 +42,7 @@
             <a
                 class="getStartedText"
                 href="https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/en-US/03-getting-started/03-02-prompts"
-                @click="emitUiClick('codewhisperer_Workshop_LearnMore')"
+                @click="emitUiClick('codewhisperer_Prompt_Eng')"
                 >Open guide</a
             >
         </div>

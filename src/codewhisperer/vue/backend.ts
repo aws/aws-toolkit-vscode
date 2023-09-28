@@ -120,7 +120,7 @@ export class CodeWhispererWebview extends VueWebview {
 export type CodeWhispererUiClick =
     | 'codewhisperer_Resources_Documentation'
     | 'codewhisperer_Resources_Feedback'
-    | 'codewhisperer_Workshop_LearnMore'
+    | 'codewhisperer_Prompt_Eng'
     | 'codewhisperer_Commands_KeyboardShortcutsEditor'
     | 'codewhisperer_ScanCode_LearnMore'
     | 'codewhisperer_GenerateSuggestions_LearnMore'
