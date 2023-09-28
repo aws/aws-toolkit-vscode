@@ -134,10 +134,14 @@ export default defineComponent({
         async signin(): Promise<void> {
             await client.startAuthFormInteraction(this.state.featureType, 'iamIdentityCenter')
 
-            // Error checks
+            // Return without actually submitting if the form has errors before submitting
             this.updateEmptyFieldErrors()
             const fieldsWithError = this.processFieldsWithError()
-            if (fieldsWithError.length > 0) {
+            // If there is an error in the submission field from a previous attempt we want to allow them to try submitting again
+            // without needing to update the form. There are cases where they may not need to update the form (eg: cancelled manually)
+            // and should be able to submit again
+            const submitErrorExcluded = fieldsWithError.filter(field => field !== 'submit')
+            if (submitErrorExcluded.length > 0) {
                 client.failedAuthAttempt({
                     authType: 'iamIdentityCenter',
                     featureType: this.state.featureType,
