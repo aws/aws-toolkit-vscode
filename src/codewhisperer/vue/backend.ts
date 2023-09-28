@@ -105,6 +105,7 @@ export class CodeWhispererWebview extends VueWebview {
     emitUiClick(id: CodeWhispererUiClick) {
         telemetry.ui_click.emit({
             elementId: id,
+            passive: true,
         })
     }
     //Telemetry for CodeWhisperer Try Example with two params Language and Task Type

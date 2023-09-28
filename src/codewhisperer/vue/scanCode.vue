@@ -4,8 +4,7 @@
         <div>
             <div class="codeScanTitle">Scan code to detect vulnerabilities</div>
             <div class="codeScanDescription">
-                You can also ask CodeWhisperer to scan Java, JavaScript, and Python files for security vulnerabilities,
-                and get code suggestions to remediate them immediately.
+                You can ask CodeWhisperer to scan Java, JavaScript, and Python files for security vulnerabilities.
                 <a
                     class="codeScanLearnMore"
                     href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html"
