@@ -162,9 +162,9 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
 function getUsernamePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
-        title: localize('AWS.redshift.username', 'Enter the username you want to use to connect to the database.'),
+        title: localize('AWS.redshift.username', 'Enter the username you want to use to connect to the database'),
         buttons: createCommonButtons(),
-        placeholder: 'Enter the username you want to use to connect to the database',
+        placeholder: 'Enter username',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.usernameValidation', 'Username cannot be empty')
         },
@@ -187,9 +187,9 @@ function getPasswordPrompter(): Prompter<string> {
 function getDatabasePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
-        title: localize('AWS.redshift.database', 'Enter the name of the database you want to connect to.'),
+        title: localize('AWS.redshift.database', 'Enter the name of the database you want to connect to'),
         buttons: createCommonButtons(),
-        placeholder: 'Enter the name of the database you want to connect to.',
+        placeholder: 'Enter database name',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.databaseValidation', 'Database cannot be empty')
         },
