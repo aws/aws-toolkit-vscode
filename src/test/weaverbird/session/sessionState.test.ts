@@ -56,6 +56,7 @@ const mockSessionStateConfig = ({ conversationId }: { conversationId: string }):
                 generate: 'fake-generate-arn',
                 getResults: 'fake-getResults-arn',
                 iterate: 'fake-iterate',
+                getIterationResults: 'fake-getIterationResults-arn',
             },
         },
     },
@@ -275,7 +276,7 @@ describe('sessionState', () => {
             const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
 
             assert.deepStrictEqual(codeGenIterationStateResult, {
-                nextState: codeGenIterationStateResult.nextState,
+                nextState: codeGenIterationState,
                 interactions: [
                     {
                         origin: 'ai',

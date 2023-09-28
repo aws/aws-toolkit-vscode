@@ -291,7 +291,7 @@
                         "lambda",
                         "stepFunction"
                     ],
-                    "default": "lambda",
+                    "default": "stepFunction",
                     "description": "The flow used on the backend for generating code changes"
                 },
                 "aws.weaverbird.maxTokensToSample": {
