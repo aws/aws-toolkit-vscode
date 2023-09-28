@@ -20,7 +20,7 @@ import { GenerateApproachOutput, GenerateCodeOutput } from '../../../weaverbird/
 import { MessageActionType, AddToChat, createChatContent } from '../../../weaverbird/models'
 
 interface MockSessionStateActionInput {
-    msg?: 'WRITE CODE' | 'MOCK CODE' | 'OTHER'
+    msg?: 'MOCK CODE' | 'OTHER'
     addToChat?: AddToChat
 }
 
@@ -204,27 +204,6 @@ describe('sessionState', () => {
 
     describe('RefinementIterationState', () => {
         const refinementIterationState = new RefinementIterationState(testConfig, testApproach)
-
-        it('transitions after interaction to CodeGenState if action is WRITE CODE', async () => {
-            sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
-
-            const addToChatSpy = sinon.spy()
-            const testAction = mockSessionStateAction({ msg: 'WRITE CODE', addToChat: addToChatSpy })
-            const interactionResult = await refinementIterationState.interact(testAction)
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
-
-            assert.deepStrictEqual(interactionResult, {
-                nextState,
-                interactions: [],
-            })
-            assert.strictEqual(
-                addToChatSpy.calledWithMatch(
-                    createChatContent('Code generation started\n'),
-                    MessageActionType.CHAT_ANSWER
-                ),
-                true
-            )
-        })
 
         it('transitions after interaction to MockCodeGenState if action is MOCK CODE', async () => {
             const testAction = mockSessionStateAction({ msg: 'MOCK CODE' })

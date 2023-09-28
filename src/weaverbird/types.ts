@@ -44,9 +44,20 @@ export interface SessionStateInteraction {
     interactions: Interaction[]
 }
 
+export enum FollowUpTypes {
+    WriteCode = 'WriteCode',
+}
+
+export enum SessionStatePhase {
+    Approach = 'Approach',
+    Codegen = 'Codegen',
+}
+
 export interface SessionState {
+    readonly conversationId?: string
+    readonly phase?: SessionStatePhase
     approach: string
-    tokenSource: CancellationTokenSource
+    readonly tokenSource: CancellationTokenSource
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
 }
 
