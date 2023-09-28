@@ -1,3 +1,23 @@
+## 1.91.0 2023-09-22
+
+- **Bug Fix** SAM: Debugging a nodejs Lambda always hits breakpoint in nodejs async_hooks module before reaching the user-specified breakpoint
+- **Bug Fix** CodeWhisperer: fixed case where 'CodeWhisperer' status bar stuck loading
+
+## 1.90.0 2023-09-15
+
+- **Bug Fix** CodeCatalyst: "Open CodeCatalyst Dev Environment" may fail to connect from a new Windows system
+- **Bug Fix** CodeWhisperer: Fixed an issue where sometimes the suggestions are not matching the current editor context.
+- **Feature** Authentication: When signing in to AWS Builder Id or IAM Identity Center (SSO), verify the device code matches instead of copy-pasting it
+
+## 1.89.0 2023-09-08
+
+- **Bug Fix** CodeWhisperer: show "Reconnect" instead of "Start" for expired connections to make reconnecting easier
+
+## 1.88.0 2023-09-07
+
+- **Feature** ECS: "Insufficient permissions" message shows more details about missing permissions
+- **Feature** Step Functions: Upgrade amazon-states-language-service to 1.11. This new version adds Fail State fields ErrorPath and CausePath, and on Retriers MaxDelaySeconds and JitterStrategy.
+
 ## 1.87.0 2023-08-31
 
 - **Breaking Change** Minimum required VS Code version is now 1.68

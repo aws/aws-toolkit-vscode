@@ -19,6 +19,8 @@ describe('codewhispererNode', function () {
 
         isConnected = sinon.stub(AuthUtil.instance, 'isConnected')
         isConnected.returns(false)
+
+        sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => false)
     })
 
     describe('getTreeItem', function () {

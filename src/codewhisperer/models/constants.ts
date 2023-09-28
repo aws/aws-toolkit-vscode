@@ -215,7 +215,7 @@ export const artifactTypeSource = 'SourceCode'
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
 // wait time for editor to update editor.selection.active (in milliseconds)
-export const vsCodeCursorUpdateDelay = 3
+export const vsCodeCursorUpdateDelay = 10
 
 export const reloadWindow = 'Reload Now'
 
@@ -272,7 +272,6 @@ export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental 
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
-    numberOfChunkToFetchExperiment: 1000,
     topK: 3,
     numberOfLinesEachChunk: 10,
 }

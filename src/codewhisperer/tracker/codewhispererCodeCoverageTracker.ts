@@ -14,6 +14,8 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
+import { codeWhispererClient as client } from '../client/codewhisperer'
+import { isAwsError } from '../../shared/errors'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -62,7 +64,6 @@ export class CodeWhispererCodeCoverageTracker {
         }
         // generate accepted recommendation token and stored in collection
         this.addAcceptedTokens(filename, { range: range, text: text, accepted: text.length })
-        this.addTotalTokens(filename, text.length)
     }
 
     public incrementServiceInvocationCount() {
@@ -128,6 +129,32 @@ export class CodeWhispererCodeCoverageTracker {
             successCount: this._serviceInvocationCount,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })
+        client
+            .sendTelemetryEvent({
+                telemetryEvent: {
+                    codeCoverageEvent: {
+                        programmingLanguage: {
+                            languageName: this._language,
+                        },
+                        acceptedCharacterCount: acceptedTokens,
+                        totalCharacterCount: totalTokens,
+                        timestamp: new Date(Date.now()),
+                    },
+                },
+            })
+            .then()
+            .catch(error => {
+                let requestId: string | undefined
+                if (isAwsError(error)) {
+                    requestId = error.requestId
+                }
+
+                getLogger().debug(
+                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
+                        error.message
+                    }`
+                )
+            })
     }
 
     private tryStartTimer() {
@@ -196,26 +223,19 @@ export class CodeWhispererCodeCoverageTracker {
 
     public countTotalTokens(e: vscode.TextDocumentChangeEvent) {
         // ignore no contentChanges. ignore contentChanges from other plugins (formatters)
-        // only include contentChanges from user action
+        // only include contentChanges from user action.
+        // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
         if (
             !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
             vsCodeState.isCodeWhispererEditing ||
-            e.contentChanges.length !== 1
+            e.contentChanges.length !== 1 ||
+            e.contentChanges[0].text.length === 0
         ) {
             return
         }
         const content = e.contentChanges[0]
-        // do not count user tokens if user copies large chunk of code
-        if (content.text.length > 20) {
-            return
-        }
         this.tryStartTimer()
-        // deletion events has no text.
-        if (content.text.length === 0) {
-            this.addTotalTokens(e.document.fileName, -content.rangeLength)
-        } else {
-            this.addTotalTokens(e.document.fileName, content.text.length)
-        }
+        this.addTotalTokens(e.document.fileName, content.text.length)
     }
 
     public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
