@@ -19,6 +19,10 @@ import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
+import { getIcon } from '../../shared/icons'
+import { localize } from '../../shared/utilities/vsCodeUtils'
+import { PromptSettings } from '../../shared/settings'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -35,6 +39,17 @@ export const toggleCodeSuggestions = Commands.declare(
         })
     }
 )
+/* 
+createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
+onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
+*/
+export const createGettingStartedNode = () =>
+    CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
+        .build('codewhispererDeveloperTools')
+        .asTreeNode({
+            label: localize('AWS.explorerNode.codewhispererGettingStartedNode.label', 'Learn'),
+            iconPath: getIcon('aws-codewhisperer-learn'),
+        })
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
@@ -42,14 +57,13 @@ export const enableCodeSuggestions = Commands.declare(
         await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        const prompts = PromptSettings.instance
 
-        const hasShownWelcomeMsgBefore = get(
-            CodeWhispererConstants.welcomeMessageKey,
-            context.extensionContext.globalState
-        )
-        if (!hasShownWelcomeMsgBefore) {
-            showCodeWhispererWelcomeMessage(context)
-            await set(CodeWhispererConstants.welcomeMessageKey, true, context.extensionContext.globalState)
+        const shouldShow = await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')
+        //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
+        if (shouldShow) {
+            vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
+            prompts.update('codeWhispererNewWelcomeMessage', true)
         }
         if (!isCloud9()) {
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
@@ -131,14 +145,6 @@ export const updateReferenceLog = Commands.declare(
         ReferenceLogViewProvider.instance.update()
     }
 )
-
-async function showCodeWhispererWelcomeMessage(context: ExtContext): Promise<void> {
-    const filePath = isCloud9()
-        ? context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererCloud9Readme)
-        : context.extensionContext.asAbsolutePath(CodeWhispererConstants.welcomeCodeWhispererReadmeFileSource)
-    const readmeUri = vscode.Uri.file(filePath)
-    await vscode.commands.executeCommand('markdown.showPreviewToSide', readmeUri)
-}
 
 export const refreshStatusBar = Commands.declare(
     { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
