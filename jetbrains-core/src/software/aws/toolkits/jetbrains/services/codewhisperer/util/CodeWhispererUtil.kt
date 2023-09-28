@@ -21,6 +21,7 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
+import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLoginLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSsoLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.ConnectWithAwsToContinueActionError
@@ -196,12 +197,14 @@ object CodeWhispererUtil {
     //   for example, when user performs security scan or fetch code completion for the first time
     // Return true if need to re-auth, false otherwise
     fun promptReAuth(project: Project, isPluginStarting: Boolean = false): Boolean {
-        if (CodeWhispererService.hasReAuthPromptBeenShown()) return false
         if (!isCodeWhispererExpired(project)) return false
         val tokenProvider = tokenProvider(project) ?: return false
         return maybeReauthProviderIfNeeded(project, tokenProvider) {
             runInEdt {
-                notifyConnectionExpiredRequestReauth(project)
+                project.refreshDevToolTree()
+                if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
+                    notifyConnectionExpiredRequestReauth(project)
+                }
                 if (!isPluginStarting) {
                     CodeWhispererService.markReAuthPromptShown()
                 }
