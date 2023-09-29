@@ -156,5 +156,6 @@ export async function showCodeWhispererWebview(
                 subscriptions = undefined
             }),
         ]
+        telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })
     }
 }

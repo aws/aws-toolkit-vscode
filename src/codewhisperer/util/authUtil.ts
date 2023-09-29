@@ -72,7 +72,10 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
-            await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
+            // To check valid connection
+            if (this.isValidEnterpriseSsoInUse() || this.isBuilderIdInUse()) {
+                await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
+            }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
     }
