@@ -473,6 +473,10 @@
                     "type": "codewhispererLanguage"
                 },
                 {
+                    "type": "codewhispererGettingStartedTask",
+                    "required": false
+                },
+                {
                     "type": "codewhispererTriggerType"
                 },
                 {
@@ -535,6 +539,10 @@
                 },
                 {
                     "type": "codewhispererSupplementalContextLength",
+                    "required": false
+                },
+                {
+                    "type": "codewhispererSupplementalContextStrategyId",
                     "required": false
                 },
                 {

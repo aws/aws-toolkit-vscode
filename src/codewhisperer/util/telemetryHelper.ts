@@ -27,10 +27,8 @@ import { CodeWhispererUserGroupSettings } from './userGroupUtil'
 import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { getSelectedCustomization } from './customizationUtil'
 import { AuthUtil } from './authUtil'
-import { CodeWhispererStates } from './codewhispererStates'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
-import { AcceptedSuggestionEntry } from '../models/model'
 import { session } from './codeWhispererSession'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -67,8 +65,6 @@ export class TelemetryHelper {
     private timeToFirstRecommendation = 0
     private classifierResult?: number = undefined
     private classifierThreshold?: number = undefined
-    private suggestionReferenceNumber = 0
-    private generatedLines = 0
 
     constructor() {
         this.triggerType = 'OnDemand'
