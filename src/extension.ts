@@ -63,13 +63,11 @@ import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler } from './shared/vscode/commands2'
-import { ToolkitError, isUserCancelledError, resolveErrorMessageToDisplay } from './shared/errors'
-import { Logging } from './shared/logger/commands'
 import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
-import { showMessageWithUrl } from './shared/utilities/messages'
 import { openUrl } from './shared/utilities/vsCodeUtils'
+import { showErrorToUser } from './shared/utilities/errorUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -91,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     registerErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        handleError(error, info.id, defaultMessage)
+        showErrorToUser(error, info.id, defaultMessage)
     })
 
     if (isCloud9()) {
@@ -270,29 +268,6 @@ export async function activate(context: vscode.ExtensionContext) {
             )
         )
         throw error
-    }
-}
-
-// This is only being used for errors from commands although there's plenty of other places where it
-// could be used. It needs to be apart of some sort of `core` module that is guaranteed to initialize
-// prior to every other Toolkit component. Logging and telemetry would fit well within this core module.
-async function handleError(error: unknown, topic: string, defaultMessage: string) {
-    if (isUserCancelledError(error)) {
-        getLogger().verbose(`${topic}: user cancelled`)
-        return
-    }
-    const logsItem = localize('AWS.generic.message.viewLogs', 'View Logs...')
-    const logId = getLogger().error(`${topic}: %s`, error)
-    const message = resolveErrorMessageToDisplay(error, defaultMessage)
-
-    if (error instanceof ToolkitError && error.documentationUri) {
-        await showMessageWithUrl(message, error.documentationUri, 'View Documentation', 'error')
-    } else {
-        await vscode.window.showErrorMessage(message, logsItem).then(async resp => {
-            if (resp === logsItem) {
-                await Logging.declared.viewLogsAtMessage.execute(logId)
-            }
-        })
     }
 }
 

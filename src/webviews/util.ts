@@ -3,6 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/**
+ * IMPORTANT:
+ *
+ * This class is used in the frontend vue.js webview code.
+ * Do not put backend code in this module.
+ */
+
 import { PropType } from 'vue'
 
 /**
