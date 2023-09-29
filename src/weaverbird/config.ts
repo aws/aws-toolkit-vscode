@@ -16,41 +16,41 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
             const config = process.env.WEAVERBIRD_CONFIG
 
             // const _betaConfig = {
-            //     endpoint: 'https://pehp5nezwj.execute-api.us-west-2.amazonaws.com/beta',
-            //     region: 'us-west-2',
+            //     endpoint: 'https://jq1ufi88qi.execute-api.us-east-1.amazonaws.com/beta',
+            //     region: 'us-east-1',
             //     lambdaArns: {
             //         approach: {
             //             generate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:GenerateApproachLambda:live',
+            //                 'arn:aws:lambda:us-east-1:740920811238:function:GenerateApproachLambda:live',
             //             iterate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:IterateApproachLambda:live',
+            //                 'arn:aws:lambda:us-east-1:740920811238:function:IterateApproachLambda:live',
             //         },
             //         codegen: {
             //             generate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:GenerateCodeLambda:live',
+            //                 'arn:aws:lambda:us-east-1:740920811238:function:GenerateCodeLambda:live',
             //             iterate:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:IterateCodeLambda:live',
+            //                 'arn:aws:lambda:us-east-1:740920811238:function:IterateCodeLambda:live',
             //             getResults:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:GetCodeGenerationResultLambda:live',
+            //                 'arn:aws:lambda:us-east-1:740920811238:function:GetCodeGenerationResultLambda:live',
             //             getIterationResults:
-            //                 'arn:aws:lambda:us-west-2:740920811238:function:GetCodeIterationResultLambda:live'
+            //                 'arn:aws:lambda:us-east-1:740920811238:function:GetCodeIterationResultLambda:live'
             //         },
             //     },
             // }
             const gammaConfig = {
-                endpoint: 'https://8id2rzphzj.execute-api.us-west-2.amazonaws.com/gamma',
-                region: 'us-west-2',
+                endpoint: 'https://80u08f1ec9.execute-api.us-east-1.amazonaws.com/gamma',
+                region: 'us-east-1',
                 lambdaArns: {
                     approach: {
-                        generate: 'arn:aws:lambda:us-west-2:789621683470:function:GenerateApproachLambda:live',
-                        iterate: 'arn:aws:lambda:us-west-2:789621683470:function:IterateApproachLambda:live',
+                        generate: 'arn:aws:lambda:us-east-1:789621683470:function:GenerateApproachLambda:live',
+                        iterate: 'arn:aws:lambda:us-east-1:789621683470:function:IterateApproachLambda:live',
                     },
                     codegen: {
-                        generate: 'arn:aws:lambda:us-west-2:789621683470:function:GenerateCodeLambda:live',
-                        iterate: 'arn:aws:lambda:us-west-2:789621683470:function:IterateCodeLambda:live',
-                        getResults: 'arn:aws:lambda:us-west-2:789621683470:function:GetCodeGenerationResultLambda:live',
+                        generate: 'arn:aws:lambda:us-east-1:789621683470:function:GenerateCodeLambda:live',
+                        iterate: 'arn:aws:lambda:us-east-1:789621683470:function:IterateCodeLambda:live',
+                        getResults: 'arn:aws:lambda:us-east-1:789621683470:function:GetCodeGenerationResultLambda:live',
                         getIterationResults:
-                            'arn:aws:lambda:us-west-2:789621683470:function:GetCodeIterationResultLambda:live',
+                            'arn:aws:lambda:us-east-1:789621683470:function:GetCodeIterationResultLambda:live',
                     },
                 },
             }
