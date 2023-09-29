@@ -138,13 +138,13 @@ export class RecommendationHandler {
     async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask | undefined> {
         if (filePath.includes('CodeWhisperer_generate_suggestion')) {
             return 'autoTrigger'
-        } else if (filePath.startsWith('CodeWhisperer_manual_invoke')) {
+        } else if (filePath.includes('CodeWhisperer_manual_invoke')) {
             return 'manualTrigger'
-        } else if (filePath.startsWith('CodeWhisperer_use_comments')) {
+        } else if (filePath.includes('CodeWhisperer_use_comments')) {
             return 'commentAsPrompt'
-        } else if (filePath.startsWith('CodeWhisperer_navigate_suggestions')) {
+        } else if (filePath.includes('CodeWhisperer_navigate_suggestions')) {
             return 'navigation'
-        } else if (filePath.startsWith('Generate_unit_tests')) {
+        } else if (filePath.includes('Generate_unit_tests')) {
             return 'unitTest'
         } else {
             return undefined
