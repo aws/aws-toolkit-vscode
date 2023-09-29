@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as assert from 'assert'
-import * as sinon from 'sinon'
+import vscode from 'vscode'
+import assert from 'assert'
+import sinon from 'sinon'
 import { codewhispererNode } from '../../../codewhisperer/explorer/codewhispererNode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
@@ -19,6 +19,8 @@ describe('codewhispererNode', function () {
 
         isConnected = sinon.stub(AuthUtil.instance, 'isConnected')
         isConnected.returns(false)
+
+        sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => false)
     })
 
     describe('getTreeItem', function () {
@@ -77,6 +79,20 @@ describe('codewhispererNode', function () {
             assert.strictEqual(children.length, 2)
             assert.ok(ssoSignInNode)
             assert.ok(learnMorenNode)
+        })
+
+        it('should get correct child nodes if user is  connected', function () {
+            sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => true)
+            isConnectionValid.returns(true)
+            isConnected.returns(true)
+            const node = codewhispererNode
+            const ids = node.getChildren().map(o => o.resource.id)
+            assert.deepStrictEqual(ids, [
+                'aws.codeWhisperer.toggleCodeSuggestion',
+                'aws.codeWhisperer.security.scan',
+                'aws.codeWhisperer.openReferencePanel',
+                'aws.codeWhisperer.gettingStarted',
+            ])
         })
     })
 })

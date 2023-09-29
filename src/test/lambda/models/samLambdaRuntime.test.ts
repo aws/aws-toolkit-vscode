@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Runtime } from 'aws-sdk/clients/lambda'
 import {
     compareSamLambdaRuntime,
@@ -22,9 +22,9 @@ describe('compareSamLambdaRuntime', async function () {
         lowerRuntime: Runtime
         higherRuntime: Runtime
     }[] = [
-        { lowerRuntime: 'nodejs12.x', higherRuntime: 'nodejs14.x' },
-        { lowerRuntime: 'nodejs14.x', higherRuntime: 'nodejs14.x (Image)' },
-        { lowerRuntime: 'nodejs12.x (Image)', higherRuntime: 'nodejs14.x' },
+        { lowerRuntime: 'nodejs14.x', higherRuntime: 'nodejs16.x' },
+        { lowerRuntime: 'nodejs16.x', higherRuntime: 'nodejs16.x (Image)' },
+        { lowerRuntime: 'nodejs14.x (Image)', higherRuntime: 'nodejs16.x' },
     ]
 
     scenarios.forEach(scenario => {
@@ -69,21 +69,21 @@ describe('getFamily', function () {
 describe('runtimes', function () {
     it('cloud9', function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(true).toArray().sort(), [
-            'nodejs12.x',
             'nodejs14.x',
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
         ])
         assert.deepStrictEqual(samImageLambdaRuntimes(true).toArray().sort(), [
-            'nodejs12.x',
             'nodejs14.x',
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -92,16 +92,15 @@ describe('runtimes', function () {
     it('vscode', function () {
         assert.deepStrictEqual(samLambdaCreatableRuntimes(false).toArray().sort(), [
             'dotnet6',
-            'dotnetcore3.1',
             'go1.x',
             'java11',
             'java8',
             'java8.al2',
-            'nodejs12.x',
             'nodejs14.x',
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -109,16 +108,15 @@ describe('runtimes', function () {
         assert.deepStrictEqual(samImageLambdaRuntimes(false).toArray().sort(), [
             'dotnet5.0',
             'dotnet6',
-            'dotnetcore3.1',
             'go1.x',
             'java11',
             'java8',
             'java8.al2',
-            'nodejs12.x',
             'nodejs14.x',
             'nodejs16.x',
             'nodejs18.x',
             'python3.10',
+            'python3.11',
             'python3.7',
             'python3.8',
             'python3.9',
@@ -127,14 +125,9 @@ describe('runtimes', function () {
 })
 
 describe('getNodeMajorVersion()', () => {
-    it('returns 12 on "nodejs12.x"', () => {
-        const version = getNodeMajorVersion('nodejs12.x')
-        assert.strictEqual(version, 12)
-    })
-
-    it('returns 18 on "nodejs18.x"', () => {
-        const version = getNodeMajorVersion('nodejs18.x')
-        assert.strictEqual(version, 18)
+    it('returns node version', () => {
+        assert.strictEqual(getNodeMajorVersion('nodejs12.x'), 12)
+        assert.strictEqual(getNodeMajorVersion('nodejs18.x'), 18)
     })
 
     it('returns undefined on invalid input', () => {

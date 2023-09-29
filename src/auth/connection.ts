@@ -5,12 +5,19 @@
 import * as vscode from 'vscode'
 import { Credentials } from '@aws-sdk/types'
 import { Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken } from './sso/model'
+import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
 import { fromString } from './providers/credentials'
+import { getLogger } from '../shared/logger/logger'
+import { showMessageWithUrl } from '../shared/utilities/messages'
+import { onceChanged } from '../shared/utilities/functionUtils'
 
-export const ssoScope = 'sso:account:access'
+/** Shows an error message unless it is the same as the last one shown. */
+const warnOnce = onceChanged((s: string, url: string) => {
+    showMessageWithUrl(s, url, undefined, 'error')
+})
+
 export const codecatalystScopes = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
@@ -247,21 +254,31 @@ export async function loadIamProfilesIntoStore(store: ProfileStore, manager: Cre
     }
 }
 
+/**
+ * Gets credentials profiles constructed from roles ("Permission Sets") discovered from the given
+ * SSO ("IAM Identity Center", "IdC") connection.
+ */
 export async function* loadLinkedProfilesIntoStore(
     store: ProfileStore,
-    source: SsoConnection['id'],
+    sourceId: SsoConnection['id'],
+    ssoProfile: StoredProfile<SsoProfile>,
     client: SsoClient
 ) {
+    const accounts = new Set<string>()
+    const found = new Set<Connection['id']>()
+
     const stream = client
         .listAccounts()
         .flatten()
-        .map(resp => client.listAccountRoles({ accountId: resp.accountId }).flatten())
+        .map(resp => {
+            accounts.add(resp.accountId)
+            return client.listAccountRoles({ accountId: resp.accountId }).flatten()
+        })
         .flatten()
 
-    const found = new Set<Connection['id']>()
     for await (const info of stream) {
         const name = `${info.roleName}-${info.accountId}`
-        const id = `sso:${source}#${name}`
+        const id = `sso:${sourceId}#${name}`
         found.add(id)
 
         if (store.getProfile(id) !== undefined) {
@@ -272,7 +289,7 @@ export async function* loadLinkedProfilesIntoStore(
             name,
             type: 'iam',
             subtype: 'linked',
-            ssoSession: source,
+            ssoSession: sourceId,
             ssoRoleName: info.roleName,
             ssoAccountId: info.accountId,
         })
@@ -280,9 +297,32 @@ export async function* loadLinkedProfilesIntoStore(
         yield [id, profile] as const
     }
 
+    /** Does `ssoProfile` have scopes other than "sso:account:access"? */
+    const hasScopes = !!ssoProfile.scopes?.some(s => !ssoAccountAccessScopes.includes(s))
+    if (!hasScopes && (accounts.size === 0 || found.size === 0)) {
+        // SSO user has no OIDC scopes nor IAM roles. Possible causes:
+        // - user is not an "Assigned user" in any account in the SSO org
+        // - SSO org has no "Permission sets"
+        const name = truncateStartUrl(ssoProfile.startUrl)
+        if (accounts.size === 0) {
+            getLogger().warn('auth: SSO org (%s) returned no accounts', name)
+        } else if (found.size === 0) {
+            getLogger().warn('auth: SSO org (%s) returned no roles for account: %s', name, Array.from(accounts).join())
+        }
+        warnOnce(
+            `IAM Identity Center (${name}) returned no roles. Ensure the user is assigned to an account with a Permission Set.`,
+            'https://docs.aws.amazon.com/singlesignon/latest/userguide/getting-started.html'
+        )
+    }
+
     // Clean-up stale references in case the user no longer has access
     for (const [id, profile] of store.listProfiles()) {
-        if (profile.type === 'iam' && profile.subtype === 'linked' && profile.ssoSession === source && !found.has(id)) {
+        if (
+            profile.type === 'iam' &&
+            profile.subtype === 'linked' &&
+            profile.ssoSession === sourceId &&
+            !found.has(id)
+        ) {
             await store.deleteProfile(id)
         }
     }

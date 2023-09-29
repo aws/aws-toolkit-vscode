@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
 import * as sinon from 'sinon'
@@ -489,7 +489,7 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it('supports workspace-relative template path ("./foo.yaml")', async function () {
-            testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs12.x' }), tempFile.fsPath)
+            testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs18.x' }), tempFile.fsPath)
             // Register with *full* path.
             await globals.templateRegistry.addItemToRegistry(tempFile)
             // Simulates launch.json:
@@ -530,7 +530,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'src',
                 },
                 lambda: {
-                    runtime: 'nodejs12.x',
+                    runtime: 'nodejs18.x',
                     // For target=code these envvars are written to the input-template.yaml.
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
@@ -551,7 +551,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
+                runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -586,6 +586,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -604,7 +605,7 @@ describe('SamDebugConfigurationProvider', async function () {
       Handler: my.test.handler
       CodeUri: >-
         ${expected.codeRoot}
-      Runtime: nodejs12.x
+      Runtime: nodejs18.x
       Environment:
         Variables:
           test-envvar-1: test value 1
@@ -681,7 +682,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     projectRoot: 'src',
                 },
                 lambda: {
-                    runtime: 'nodejs12.x',
+                    runtime: 'nodejs18.x',
                     // For target=code these envvars are written to the input-template.yaml.
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
@@ -702,7 +703,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
+                runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -739,6 +740,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -757,7 +759,7 @@ describe('SamDebugConfigurationProvider', async function () {
       Handler: app.handler
       CodeUri: >-
         ${expected.codeRoot}
-      Runtime: nodejs12.x
+      Runtime: nodejs18.x
       Environment:
         Variables:
           test-envvar-1: test value 1
@@ -893,6 +895,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 
@@ -973,7 +976,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     logicalId: 'HelloWorldFunction',
                 },
                 lambda: {
-                    runtime: 'nodejs12.x',
+                    runtime: 'nodejs18.x',
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
@@ -984,7 +987,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 type: AWS_SAM_DEBUG_TYPE,
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
+                runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 useIkpdb: false,
                 workspaceFolder: {
@@ -995,7 +998,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 baseBuildDir: actual.baseBuildDir, // Random, sanity-checked by assertEqualLaunchConfigs().
                 containerEnvFile: `${actual.baseBuildDir}/container-env-vars.json`,
                 containerEnvVars: {
-                    NODE_OPTIONS: `--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
+                    NODE_OPTIONS: `--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920`,
                 },
                 envFile: undefined,
                 eventPayloadFile: undefined,
@@ -1025,6 +1028,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
                 parameterOverrides: undefined,
             }
@@ -1032,7 +1036,7 @@ describe('SamDebugConfigurationProvider', async function () {
             assertEqualLaunchConfigs(actual, expected)
             assertFileText(
                 expected.containerEnvFile!,
-                `{"NODE_OPTIONS":"--inspect-brk=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
+                `{"NODE_OPTIONS":"--inspect=0.0.0.0:${actual.debugPort} --max-http-header-size 81920"}`
             )
 
             //
@@ -1159,6 +1163,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
                 parameterOverrides: undefined,
             }
@@ -1612,7 +1617,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
@@ -1778,7 +1783,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
@@ -1931,7 +1936,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
@@ -2869,7 +2874,7 @@ describe('SamDebugConfigurationProvider', async function () {
             testutil.toFile(
                 makeSampleSamTemplateYaml(true, {
                     resourceName: resourceName,
-                    runtime: 'nodejs12.x',
+                    runtime: 'nodejs18.x',
                     handler: 'my.test.handler',
                     codeUri: 'codeuri',
                 }),
@@ -2925,9 +2930,10 @@ describe('SamDebugConfigurationProvider', async function () {
                 protocol: 'inspector',
                 remoteRoot: '/var/task',
                 request: 'attach', // Input "direct-invoke", output "attach".
-                runtime: 'nodejs12.x',
+                runtime: 'nodejs18.x',
                 runtimeFamily: lambdaModel.RuntimeFamily.NodeJS,
                 skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
+                continueOnAttach: true,
                 stopOnEntry: false,
             }
 

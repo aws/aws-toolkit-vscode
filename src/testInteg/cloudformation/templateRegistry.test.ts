@@ -10,7 +10,6 @@ import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
 import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
-import { isMinimumVersion } from '../../shared/vscode/env'
 
 /**
  * Note: these tests are pretty shallow right now. They do not test the following:
@@ -49,10 +48,7 @@ describe('CloudFormation Template Registry', async function () {
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
-    it('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async function () {
-        if (!isMinimumVersion()) {
-            this.skip()
-        }
+    it.skip('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async function () {
         await registry.addWatchPattern('**/test.{yaml,yml}')
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))

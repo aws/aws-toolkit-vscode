@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
-import { vsCodeState, ConfigurationEntry } from '../models/model'
+import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
 import { getLogger } from '../../shared/logger'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
@@ -18,6 +18,7 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
+import { session } from '../util/codeWhispererSession'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -26,7 +27,7 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
  */
 export class KeyStrokeHandler {
     /**
-     * Speical character which automated triggers codewhisperer
+     * Special character which automated triggers codewhisperer
      */
     public specialChar: string
     /**
@@ -104,12 +105,8 @@ export class KeyStrokeHandler {
             }
 
             // Skip Cloud9 IntelliSense acceptance event
-            if (
-                isCloud9() &&
-                event.contentChanges.length > 0 &&
-                RecommendationHandler.instance.recommendations.length > 0
-            ) {
-                if (event.contentChanges[0].text === RecommendationHandler.instance.recommendations[0].content) {
+            if (isCloud9() && event.contentChanges.length > 0 && session.recommendations.length > 0) {
+                if (event.contentChanges[0].text === session.recommendations[0].content) {
                     return
                 }
             }
@@ -145,7 +142,6 @@ export class KeyStrokeHandler {
                 this.invokeAutomatedTrigger(triggerType, editor, client, config, event)
             }
         } catch (error) {
-            getLogger().error('Automated Trigger Exception : ', error)
             getLogger().verbose(`Automated Trigger Exception : ${error}`)
         }
     }
@@ -157,58 +153,59 @@ export class KeyStrokeHandler {
         config: ConfigurationEntry,
         event: vscode.TextDocumentChangeEvent
     ): Promise<void> {
-        if (editor) {
-            ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
-            if (isCloud9('any')) {
-                if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
-                    return
-                }
-                vsCodeState.isIntelliSenseActive = false
-                RecommendationHandler.instance.isGenerateRecommendationInProgress = true
-                try {
-                    RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-                    RecommendationHandler.instance.clearRecommendations()
-                    if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                        await RecommendationHandler.instance.getRecommendations(
-                            client,
-                            editor,
-                            'AutoTrigger',
-                            config,
-                            autoTriggerType,
-                            false
-                        )
-                    } else {
-                        if (AuthUtil.instance.isConnectionExpired()) {
-                            await AuthUtil.instance.showReauthenticatePrompt()
-                        }
-                        await RecommendationHandler.instance.getRecommendations(
-                            client,
-                            editor,
-                            'AutoTrigger',
-                            config,
-                            autoTriggerType,
-                            true
-                        )
-                    }
-                    if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false)) {
-                        await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                            vsCodeState.isIntelliSenseActive = true
-                        })
-                    }
-                } finally {
-                    RecommendationHandler.instance.isGenerateRecommendationInProgress = false
-                }
-            } else if (isInlineCompletionEnabled()) {
-                TelemetryHelper.instance.setInvokeSuggestionStartTime()
-                await InlineCompletionService.instance.getPaginatedRecommendation(
-                    client,
-                    editor,
-                    'AutoTrigger',
-                    config,
-                    autoTriggerType,
-                    event
-                )
+        if (!editor) {
+            return
+        }
+        ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
+        // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
+        if (isCloud9('any')) {
+            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
+                return
             }
+            vsCodeState.isIntelliSenseActive = false
+            RecommendationHandler.instance.isGenerateRecommendationInProgress = true
+            try {
+                let response: GetRecommendationsResponse
+                if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
+                    response = await RecommendationHandler.instance.getRecommendations(
+                        client,
+                        editor,
+                        'AutoTrigger',
+                        config,
+                        autoTriggerType,
+                        false
+                    )
+                } else {
+                    if (AuthUtil.instance.isConnectionExpired()) {
+                        await AuthUtil.instance.showReauthenticatePrompt()
+                    }
+                    response = await RecommendationHandler.instance.getRecommendations(
+                        client,
+                        editor,
+                        'AutoTrigger',
+                        config,
+                        autoTriggerType,
+                        true
+                    )
+                }
+                if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, false, response)) {
+                    await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                        vsCodeState.isIntelliSenseActive = true
+                    })
+                }
+            } finally {
+                RecommendationHandler.instance.isGenerateRecommendationInProgress = false
+            }
+        } else if (isInlineCompletionEnabled()) {
+            TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            await InlineCompletionService.instance.getPaginatedRecommendation(
+                client,
+                editor,
+                'AutoTrigger',
+                config,
+                autoTriggerType,
+                event
+            )
         }
     }
 }

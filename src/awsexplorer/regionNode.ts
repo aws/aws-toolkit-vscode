@@ -30,7 +30,20 @@ import { Ec2ParentNode } from '../ec2/explorer/ec2ParentNode'
 import { DevSettings } from '../shared/settings'
 import { Ec2Client } from '../shared/clients/ec2Client'
 
-const serviceCandidates = [
+interface ServiceNode {
+    allRegions?: boolean
+    serviceId: string
+    /**
+     * Decides if the node should be shown. Example:
+     * ```
+     * when: () => DevSettings.instance.isDevMode()
+     * ```
+     */
+    when?: () => boolean
+    createFn: (regionCode: string, partitionId: string) => any
+}
+
+const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'apigateway',
         createFn: (regionCode: string, partitionId: string) => new ApiGatewayNode(partitionId, regionCode),
@@ -85,6 +98,11 @@ const serviceCandidates = [
         serviceId: 'ssm',
         createFn: (regionCode: string) => new SsmDocumentNode(regionCode),
     },
+    {
+        allRegions: true,
+        serviceId: 'cloudcontrol',
+        createFn: (regionCode: string) => new ResourcesNode(regionCode),
+    },
 ]
 
 /**
@@ -119,14 +137,14 @@ export class RegionNode extends AWSTreeNodeBase {
             if (service.when !== undefined && !service.when()) {
                 continue
             }
-            if (this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
+            if (service.allRegions || this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
                 const node = service.createFn(this.regionCode, partitionId)
                 if (node !== undefined) {
+                    node.serviceId = service.serviceId
                     childNodes.push(node)
                 }
             }
         }
-        childNodes.push(new ResourcesNode(this.regionCode))
 
         return this.sortNodes(childNodes)
     }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { Ec2MetadataClient, IamInfo, InstanceIdentity } from '../../../shared/clients/ec2MetadataClient'
 import { Ec2CredentialsProvider } from '../../../auth/providers/ec2CredentialsProvider'
 import { instance, mock, verify, when } from '../../utilities/mockito'

@@ -9,7 +9,7 @@ import {
     isTestFile,
     utgLanguageConfigs,
 } from '../../../codewhisperer/util/supplementalContext/codeParsingUtil'
-import * as assert from 'assert'
+import assert from 'assert'
 
 describe('RegexValidationForPython', () => {
     it('should extract all function names from a python file content', () => {
@@ -63,7 +63,7 @@ describe('RegexValidationForJava', () => {
 
 describe('isTestFile', () => {
     it('should return true if the file name matches the test filename pattern - Java', async () => {
-        const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java']
+        const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java', '/path/to/MyClassTests.java']
         const language = 'java'
 
         for (const filePath of filePaths) {

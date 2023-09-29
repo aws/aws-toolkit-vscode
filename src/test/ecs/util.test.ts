@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { stub } from '../utilities/stubber'
 import { checkPermissionsForSsm } from '../../ecs/util'
 import { DefaultIamClient } from '../../shared/clients/iamClient'

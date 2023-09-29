@@ -6,10 +6,9 @@
 import { chmod, ensureDir, writeFile } from 'fs-extra'
 import * as os from 'os'
 import * as path from 'path'
-import * as semver from 'semver'
 import {
-    DotNetCoreDebugConfiguration,
-    dotnetCoreDebuggerPath,
+    DotNetDebugConfiguration,
+    dotnetDebuggerPath,
     getCodeRoot,
     isImageLambdaConfig,
 } from '../../../lambda/local/debugConfiguration'
@@ -24,8 +23,6 @@ import { HttpResourceFetcher } from '../../resourcefetcher/httpResourceFetcher'
 import { getLogger } from '../../logger'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getSamCliVersion } from '../cli/samCliContext'
-import { minSamCliVersionForDotnet31Support } from '../cli/samCliValidator'
 import globals from '../../extensionGlobals'
 const localize = nls.loadMessageBundle()
 
@@ -47,13 +44,19 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
 
     config = {
         ...config,
+        // https://github.com/dotnet/vscode-csharp/blob/a270be4f2f1236d9bc1b31b6214f1672096788b7/src/lsptoolshost/debugger.ts#L45C1-L54
+        // The "ms-dotnettools.csharp" extension declares:
+        //  - "coreclr" as the debugger type for ".NET 5+ and .NET Core"
+        //  - "dotnet" as the debugger type for "C#"
+        // but haven't found the actual circumstances when "dotnet" works while "coreclr" doesn't.
+        // type: config.runtime == 'dotnet5.0' ? 'coreclr' : 'dotnet',
         type: 'coreclr',
         request: config.noDebug ? 'launch' : 'attach',
-        runtimeFamily: RuntimeFamily.DotNetCore,
+        runtimeFamily: RuntimeFamily.DotNet,
     }
 
     if (!config.noDebug) {
-        config = await makeCoreCLRDebugConfiguration(config, originalCodeRoot)
+        config = await makeDotnetDebugConfiguration(config, originalCodeRoot)
     }
 
     return config
@@ -72,20 +75,10 @@ export async function invokeCsharpLambda(ctx: ExtContext, config: SamLaunchReque
     config.onWillAttachDebugger = waitForPort
 
     if (!config.noDebug) {
-        const samCliVersion = await getSamCliVersion(ctx.samCliContext())
-        // TODO: Remove this when min sam version is >= 1.4.0
-        if (semver.lt(samCliVersion, minSamCliVersionForDotnet31Support)) {
+        if (config.architecture === 'arm64') {
             vscode.window.showWarningMessage(
                 localize(
-                    'AWS.output.sam.local.no.net.3.1.debug',
-                    'Debugging dotnetcore3.1 lambdas requires a minimum SAM CLI version of 1.4.0. Function will run locally without debug.'
-                )
-            )
-            config.noDebug = true
-        } else if (config.architecture === 'arm64') {
-            vscode.window.showWarningMessage(
-                localize(
-                    'AWS.output.sam.local.no.arm.net.3.1.debug',
+                    'AWS.sam.noArm.dotnet.debug',
                     'The vsdbg debugger does not currently support the arm64 architecture. Function will run locally without debug.'
                 )
             )
@@ -215,12 +208,12 @@ function getSamProjectDirPathForFile(filepath: string): string {
 }
 
 /**
- * Creates a CLR launch-config composed with the given `config`.
+ * Creates a .NET launch-config composed with the given `config`.
  */
-export async function makeCoreCLRDebugConfiguration(
+export async function makeDotnetDebugConfiguration(
     config: SamLaunchRequestArgs,
     codeUri: string
-): Promise<DotNetCoreDebugConfiguration> {
+): Promise<DotNetDebugConfiguration> {
     if (config.noDebug) {
         throw Error(`SAM debug: invalid config ${config}`)
     }
@@ -265,7 +258,7 @@ export async function makeCoreCLRDebugConfiguration(
 
     return {
         ...config,
-        runtimeFamily: RuntimeFamily.DotNetCore,
+        runtimeFamily: RuntimeFamily.DotNet,
         request: 'attach',
         // Since SAM CLI 1.0 we cannot assume PID=1. So use processName=dotnet
         // instead of processId=1.
@@ -273,14 +266,14 @@ export async function makeCoreCLRDebugConfiguration(
         pipeTransport: {
             pipeProgram: 'sh',
             pipeArgs,
-            debuggerPath: dotnetCoreDebuggerPath,
+            debuggerPath: dotnetDebuggerPath,
             pipeCwd: codeUri,
         },
         windows: {
             pipeTransport: {
                 pipeProgram: 'powershell',
                 pipeArgs,
-                debuggerPath: dotnetCoreDebuggerPath,
+                debuggerPath: dotnetDebuggerPath,
                 pipeCwd: codeUri,
             },
         },

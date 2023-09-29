@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as semver from 'semver'
 import * as crossFile from '../../../codewhisperer/util/supplementalContext/crossFileContextUtil'
 import { createMockTextEditor } from '../testUtil'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
@@ -17,21 +16,14 @@ import {
     createTestWorkspaceFolder,
     openATextEditorWithText,
     shuffleList,
+    toFile,
 } from '../../testUtil'
 import { areEqual, normalize } from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
-import { getMinVscodeVersion } from '../../../shared/vscode/env'
+import { crossFileContextConfig } from '../../../codewhisperer/models/constants'
 
 const userGroupSettings = CodeWhispererUserGroupSettings.instance
 let tempFolder: string
-
-// VSCode tab APIs are available since 1.68.0
-function shouldRunTheTest(): boolean {
-    if (semver.gte(getMinVscodeVersion(), '1.68.0')) {
-        throw new Error('Minimum VSCode version is greater than 1.68.0, this check should be removed')
-    }
-    return !!(semver.valid(vscode.version) && semver.gte(vscode.version, '1.68.0'))
-}
 
 describe('crossFileContextUtil', function () {
     const fakeCancellationToken: vscode.CancellationToken = {
@@ -40,6 +32,38 @@ describe('crossFileContextUtil', function () {
     }
 
     let mockEditor: vscode.TextEditor
+
+    describe('fetchSupplementalContextForSrc', function () {
+        beforeEach(async function () {
+            tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
+        })
+
+        describe('should fetch 3 chunks and each chunk should contains 10 lines', function () {
+            async function assertCorrectCodeChunk() {
+                await openATextEditorWithText(sampleFileOf60Lines, 'CrossFile.java', tempFolder, { preview: false })
+                const myCurrentEditor = await openATextEditorWithText('', 'TargetFile.java', tempFolder, {
+                    preview: false,
+                })
+                const actual = await crossFile.fetchSupplementalContextForSrc(myCurrentEditor, fakeCancellationToken)
+                assert.ok(actual)
+                assert.ok(actual.supplementalContextItems.length === 3)
+
+                assert.strictEqual(actual.supplementalContextItems[0].content.split('\n').length, 10)
+                assert.strictEqual(actual.supplementalContextItems[1].content.split('\n').length, 10)
+                assert.strictEqual(actual.supplementalContextItems[2].content.split('\n').length, 10)
+            }
+
+            it('control group', async function () {
+                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.Control
+                await assertCorrectCodeChunk()
+            })
+
+            it('treatment group', async function () {
+                CodeWhispererUserGroupSettings.instance.userGroup = UserGroup.CrossFile
+                await assertCorrectCodeChunk()
+            })
+        })
+    })
 
     describe('non supported language should return undefined', function () {
         it('c++', async function () {
@@ -71,10 +95,6 @@ describe('crossFileContextUtil', function () {
         })
 
         it('should return opened files, exclude test files and sorted ascendingly by file distance', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
-
             const targetFile = path.join('src', 'service', 'microService', 'CodeWhispererFileContextProvider.java')
             const fileWithDistance3 = path.join('src', 'service', 'CodewhispererRecommendationService.java')
             const fileWithDistance5 = path.join('src', 'util', 'CodeWhispererConstants.java')
@@ -123,6 +143,8 @@ describe('crossFileContextUtil', function () {
     })
 
     describe('partial support - control group', function () {
+        const fileExtLists: string[] = []
+
         before(async function () {
             this.timeout(60000)
             userGroupSettings.userGroup = UserGroup.Control
@@ -136,25 +158,25 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('should be empty if userGroup is control', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
+        fileExtLists.forEach(fileExt => {
+            it('should be empty if userGroup is control', async function () {
+                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
+                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.js', tempFolder, { preview: false })
+                await assertTabCount(4)
 
-            await assertTabCount(4)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
-
-            assert.ok(actual !== undefined && actual.length === 0)
+                assert.ok(actual && actual.supplementalContextItems.length === 0)
+            })
         })
     })
 
     describe('partial support - crossfile group', function () {
+        const fileExtLists: string[] = []
+
         before(async function () {
             this.timeout(60000)
             userGroupSettings.userGroup = UserGroup.CrossFile
@@ -168,25 +190,25 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('should be non empty if userGroup is crossfile', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
+        fileExtLists.forEach(fileExt => {
+            it('should be non empty if usergroup is Crossfile', async function () {
+                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
+                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-2', 'file-2.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.js', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.js', tempFolder, { preview: false })
+                await assertTabCount(4)
 
-            await assertTabCount(4)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
-
-            assert.ok(actual !== undefined && actual.length !== 0)
+                assert.ok(actual && actual.supplementalContextItems.length !== 0)
+            })
         })
     })
 
     describe('full support', function () {
+        const fileExtLists = ['java', 'js', 'ts', 'py', 'tsx', 'jsx']
+
         before(async function () {
             this.timeout(60000)
         })
@@ -200,21 +222,118 @@ describe('crossFileContextUtil', function () {
             await closeAllEditors()
         })
 
-        it('should be non empty', async function () {
-            if (!shouldRunTheTest()) {
-                this.skip()
-            }
+        fileExtLists.forEach(fileExt => {
+            it('should be non empty', async function () {
+                const editor = await openATextEditorWithText('content-1', `file-1.${fileExt}`, tempFolder)
+                await openATextEditorWithText('content-2', `file-2.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-3', `file-3.${fileExt}`, tempFolder, { preview: false })
+                await openATextEditorWithText('content-4', `file-4.${fileExt}`, tempFolder, { preview: false })
 
-            const editor = await openATextEditorWithText('content-1', 'file-1.java', tempFolder)
-            await openATextEditorWithText('content-2', 'file-2.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-3', 'file-3.java', tempFolder, { preview: false })
-            await openATextEditorWithText('content-4', 'file-4.java', tempFolder, { preview: false })
+                await assertTabCount(4)
 
-            await assertTabCount(4)
+                const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
 
-            const actual = await crossFile.fetchSupplementalContextForSrc(editor, fakeCancellationToken)
+                assert.ok(actual && actual.supplementalContextItems.length !== 0)
+            })
+        })
+    })
 
-            assert.ok(actual?.length !== undefined && actual.length !== 0)
+    describe('splitFileToChunks', function () {
+        beforeEach(async function () {
+            tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
+        })
+
+        it('should split file to a chunk of 2 lines', function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
+
+            const chunks = crossFile.splitFileToChunks(filePath, 2)
+
+            assert.strictEqual(chunks.length, 4)
+            assert.strictEqual(chunks[0].content, 'line_1\nline_2')
+            assert.strictEqual(chunks[1].content, 'line_3\nline_4')
+            assert.strictEqual(chunks[2].content, 'line_5\nline_6')
+            assert.strictEqual(chunks[3].content, 'line_7')
+        })
+
+        it('should split file to a chunk of 5 lines', function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            toFile('line_1\nline_2\nline_3\nline_4\nline_5\nline_6\nline_7', filePath)
+
+            const chunks = crossFile.splitFileToChunks(filePath, 5)
+
+            assert.strictEqual(chunks.length, 2)
+            assert.strictEqual(chunks[0].content, 'line_1\nline_2\nline_3\nline_4\nline_5')
+            assert.strictEqual(chunks[1].content, 'line_6\nline_7')
+        })
+
+        it('codewhisperer crossfile config should use 10 lines', function () {
+            const filePath = path.join(tempFolder, 'file.txt')
+            toFile(sampleFileOf60Lines, filePath)
+
+            const chunks = crossFile.splitFileToChunks(filePath, crossFileContextConfig.numberOfLinesEachChunk)
+            assert.strictEqual(chunks.length, 6)
         })
     })
 })
+
+const sampleFileOf60Lines = `import java.util.List;
+// we need this comment on purpose because chunk will be trimed right, adding this to avoid trimRight and make assertion easier
+/**
+ * 
+ * 
+ * 
+ * 
+ * 
+ **/
+class Main {
+    public static void main(String[] args) {
+        Calculator calculator = new Calculator();
+        calculator.add(1, 2);
+        calculator.subtract(1, 2);
+        calculator.multiply(1, 2);
+        calculator.divide(1, 2);
+        calculator.remainder(1, 2);
+    }
+}
+//
+class Calculator {
+    public Calculator() {
+        System.out.println("constructor");
+    }
+//
+    public add(int num1, int num2) {
+        System.out.println("add");
+        return num1 + num2;
+    }
+//
+    public subtract(int num1, int num2) {
+        System.out.println("subtract");
+        return num1 - num2;
+    }
+//
+    public multiply(int num1, int num2) {
+        System.out.println("multiply");
+        return num1 * num2;    
+    }
+//
+    public divide(int num1, int num2) {
+        System.out.println("divide");
+        return num1 / num2;
+    }
+//
+    public remainder(int num1, int num2) {
+        System.out.println("remainder");
+        return num1 % num2;
+    }
+//
+    public power(int num1, int num2) {
+        System.out.println("power");
+        return (int) Math.pow(num1, num2);
+    }
+//
+    public squareRoot(int num1) {
+        System.out.println("squareRoot");
+        return (int) Math.sqrt(num1);
+    }
+}`

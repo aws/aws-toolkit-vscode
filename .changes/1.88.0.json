@@ -1,0 +1,14 @@
+{
+	"date": "2023-09-07",
+	"version": "1.88.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "ECS: \"Insufficient permissions\" message shows more details about missing permissions"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: Upgrade amazon-states-language-service to 1.11. This new version adds Fail State fields ErrorPath and CausePath, and on Retriers MaxDelaySeconds and JitterStrategy."
+		}
+	]
+}

@@ -16,7 +16,7 @@
 // 3. restore the original package.json
 //
 
-import type * as manifest from '../../package.json'
+import type PackageJson from '../../package.json'
 import * as child_process from 'child_process'
 import * as fs from 'fs-extra'
 
@@ -24,7 +24,7 @@ import * as fs from 'fs-extra'
 import { betaUrl } from '../../src/dev/config'
 
 const packageJsonFile = './package.json'
-const webpackConfigJsFile = './webpack.config.js'
+const webpackConfigJsFile = './webpack.base.config.js'
 
 function parseArgs() {
     // Invoking this script with argument "foo":
@@ -68,11 +68,12 @@ function parseArgs() {
 }
 
 /**
- * If the current commit is tagged then it is a "release build", else it is
- * a prerelease/nightly/edge/preview build.
+ * If the _current_ commit is tagged as a release ("v1.26.0") then it is a "release build", else it
+ * is a prerelease/nightly/edge/preview build.
  */
 function isRelease(): boolean {
-    return child_process.execSync('git tag -l --contains HEAD').toString() !== ''
+    const tag = child_process.execSync('git tag -l --contains HEAD').toString()
+    return !!tag?.match(/v\d+\.\d+\.\d+/)
 }
 
 /**
@@ -116,7 +117,7 @@ function main() {
             fs.copyFileSync(packageJsonFile, `${packageJsonFile}.bk`)
             fs.copyFileSync(webpackConfigJsFile, `${webpackConfigJsFile}.bk`)
 
-            const packageJson: typeof manifest = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
+            const packageJson: typeof PackageJson = JSON.parse(fs.readFileSync(packageJsonFile, { encoding: 'utf-8' }))
             const versionSuffix = getVersionSuffix(args.feature)
             const version = packageJson.version
             // Setting the version to an arbitrarily high number stops VSC from auto-updating the beta extension

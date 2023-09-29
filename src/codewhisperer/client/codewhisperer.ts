@@ -17,8 +17,8 @@ import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
-import { CodeWhispererStates } from '../util/codewhispererStates'
-import { getLogger } from '../../shared/logger/logger'
+import { session } from '../util/codeWhispererSession'
+import { getLogger } from '../../shared/logger'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -105,9 +105,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-        CodeWhispererStates.instance.setFetchCredentialStart()
+        session.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
-        CodeWhispererStates.instance.setSdkApiCallStart()
+        session.setSdkApiCallStart()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {
@@ -204,7 +204,7 @@ export class DefaultCodeWhispererClient {
             return
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
-        getLogger().debug(`send telemetry event requestID: ${response.$response.requestId}`)
+        getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
     }
 }
 

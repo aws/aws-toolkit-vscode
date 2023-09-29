@@ -64,7 +64,7 @@ import { Runtime, telemetry } from '../../telemetry/telemetry'
 import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../errors'
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
-import { credentialHelpUrl } from '../../constants'
+import { credentialHelpUrl, samTroubleshootingUrl } from '../../constants'
 import { Auth } from '../../../auth/auth'
 import { openUrl } from '../../utilities/vsCodeUtils'
 
@@ -81,6 +81,10 @@ class SamLaunchRequestError extends ToolkitError.named('SamLaunchRequestError') 
     public constructor(message: string, info?: ErrorInformation & { readonly extraButtons?: NotificationButton[] }) {
         super(message, info)
         this.buttons = info?.extraButtons ?? [
+            {
+                label: localize('AWS.generic.message.troubleshooting', 'Troubleshooting'),
+                onClick: () => openUrl(samTroubleshootingUrl),
+            },
             {
                 label: localize('AWS.generic.message.openConfig', 'Open Launch Config'),
                 onClick: openLaunchJsonFile,
@@ -632,7 +636,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await pythonDebug.makePythonDebugConfig(launchConfig)
                 break
             }
-            case RuntimeFamily.DotNetCore: {
+            case RuntimeFamily.DotNet: {
                 // Make a DotNet launch-config from the generic config.
                 launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
@@ -707,7 +711,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 config.type = 'python'
                 return await pythonDebug.invokePythonLambda(this.ctx, config as PythonDebugConfiguration)
             }
-            case RuntimeFamily.DotNetCore: {
+            case RuntimeFamily.DotNet: {
                 config.type = 'coreclr'
                 return await csharpDebug.invokeCsharpLambda(this.ctx, config)
             }

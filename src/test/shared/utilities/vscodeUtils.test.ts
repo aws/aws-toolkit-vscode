@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { VSCODE_EXTENSION_ID } from '../../../shared/extensions'
 import * as vscodeUtil from '../../../shared/utilities/vsCodeUtils'
 import * as vscode from 'vscode'
+import { getExcludePattern } from '../../../shared/fs/watchedFiles'
 
 describe('vscodeUtils', async function () {
     it('activateExtension(), isExtensionActive()', async function () {
@@ -19,6 +20,17 @@ describe('vscodeUtils', async function () {
 
         await vscodeUtil.activateExtension(VSCODE_EXTENSION_ID.awstoolkit, false)
         assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
+    })
+
+    it('globDirs()', async function () {
+        const input = ['foo', '**/bar/**', '*baz*', '**/*with.star*/**', '/zub', 'zim/', '/zoo/']
+        assert.deepStrictEqual(vscodeUtil.globDirs(input), '**/{foo,bar,baz,*with.star*,zub,zim,zoo}/')
+    })
+
+    it('watchedFiles.getExcludePattern()', async function () {
+        // If vscode defaults change in the future, just update this test.
+        // We intentionally want visibility into real-world defaults.
+        assert.match(getExcludePattern(), /node_modules,bower_components,\*\.code-search,/)
     })
 })
 

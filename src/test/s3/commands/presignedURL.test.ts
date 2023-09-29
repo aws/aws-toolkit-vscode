@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import {} from '../../../shared/vscode/env'
 import { copyToClipboard } from '../../../shared/utilities/messages'
 import { presignedURLCommand } from '../../../s3/commands/presignedURL'

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as assert from 'assert'
+import assert from 'assert'
 import * as fs from 'fs-extra'
 import { writeFileSync } from 'fs-extra'
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'

@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import * as assert from 'assert'
+import assert from 'assert'
 import { IAM } from 'aws-sdk'
 import { DefaultIamClient } from '../../../../shared/clients/iamClient'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../testUtils'
@@ -75,6 +75,7 @@ describe('createRolePrompter', function () {
     })
 
     it('can open documentation', async function () {
+        getOpenExternalStub().resolves(true)
         tester.pressButton('View Toolkit Documentation')
         tester.addCallback(() => assert.ok(getOpenExternalStub().calledWith(helpUri)))
         tester.hide()

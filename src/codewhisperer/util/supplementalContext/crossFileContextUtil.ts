@@ -10,11 +10,14 @@ import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
 import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
+
+export type CrossFileStrategy = 'OpenTabs_BM25'
 
 type CrossFileSupportedLanguage =
     | 'java'
@@ -50,15 +53,22 @@ interface Chunk {
 export async function fetchSupplementalContextForSrc(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
-): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
     const shouldProceed = shouldFetchCrossFileContext(
         editor.document.languageId,
         CodeWhispererUserGroupSettings.instance.userGroup
     )
 
     if (!shouldProceed) {
-        return shouldProceed === undefined ? undefined : []
+        return shouldProceed === undefined
+            ? undefined
+            : {
+                  supplementalContextItems: [],
+                  strategy: 'Empty',
+              }
     }
+
+    const codeChunksCalculated = crossFileContextConfig.numberOfChunkToFetch
 
     // Step 1: Get relevant cross files to refer
     const relevantCrossFilePaths = await getCrossFileCandidates(editor)
@@ -73,13 +83,13 @@ export async function fetchSupplementalContextForSrc(
         const chunks: Chunk[] = splitFileToChunks(relevantFile, crossFileContextConfig.numberOfLinesEachChunk)
         const linkedChunks = linkChunks(chunks)
         chunkList.push(...linkedChunks)
-        if (chunkList.length >= crossFileContextConfig.numberOfChunkToFetch) {
+        if (chunkList.length >= codeChunksCalculated) {
             break
         }
     }
 
     // it's required since chunkList.push(...) is likely giving us a list of size > 60
-    chunkList = chunkList.slice(0, crossFileContextConfig.numberOfChunkToFetch)
+    chunkList = chunkList.slice(0, codeChunksCalculated)
 
     // Step 3: Generate Input chunk (10 lines left of cursor position)
     // and Find Best K chunks w.r.t input chunk using BM25
@@ -100,7 +110,11 @@ export async function fetchSupplementalContextForSrc(
     }
 
     // DO NOT send code chunk with empty content
-    return supplementalContexts.filter(item => item.content.trim().length !== 0)
+    getLogger().debug(`CodeWhisperer finished fetching crossfile context out of ${relevantCrossFilePaths.length} files`)
+    return {
+        supplementalContextItems: supplementalContexts.filter(item => item.content.trim().length !== 0),
+        strategy: 'OpenTabs_BM25',
+    }
 }
 
 function findBestKChunkMatches(chunkInput: Chunk, chunkReferences: Chunk[], k: number): Chunk[] {
@@ -143,18 +157,15 @@ function getInputChunk(editor: vscode.TextEditor, chunkSize: number) {
  * @returns specifically returning undefined if the langueage is not supported,
  * otherwise true/false depending on if the language is fully supported or not belonging to the user group
  */
-function shouldFetchCrossFileContext(languageId: string, userGroup: UserGroup): boolean | undefined {
+function shouldFetchCrossFileContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
     if (!isCrossFileSupported(languageId)) {
         return undefined
     }
 
-    if (languageId === 'java') {
-        return true
-    } else if (supportedLanguageToDialects[languageId] && userGroup === UserGroup.CrossFile) {
-        return true
-    } else {
-        return false
-    }
+    return true
 }
 
 /**
@@ -187,7 +198,7 @@ function linkChunks(chunks: Chunk[]) {
     return updatedChunks
 }
 
-function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
+export function splitFileToChunks(filePath: string, chunkSize: number): Chunk[] {
     const chunks: Chunk[] = []
 
     const fileContent = fs.readFileSync(filePath, 'utf-8').trimEnd()

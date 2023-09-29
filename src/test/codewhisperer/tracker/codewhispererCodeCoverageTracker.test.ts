@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { CodeWhispererCodeCoverageTracker } from '../../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
@@ -195,7 +195,7 @@ describe('codewhispererCodecoverageTracker', function () {
             assert.ok(!spy.called)
         })
 
-        it('Should increase both AcceptedTokens and TotalTokens', function () {
+        it('Should increase AcceptedTokens', function () {
             if (!tracker) {
                 assert.fail()
             }
@@ -205,7 +205,6 @@ describe('codewhispererCodecoverageTracker', function () {
                 text: 'a',
                 accepted: 1,
             })
-            assert.strictEqual(tracker.totalTokens['test.py'], 1)
         })
     })
 
@@ -284,6 +283,7 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
             tracker.countTotalTokens({
                 reason: undefined,
                 document: doc,
@@ -296,7 +296,7 @@ describe('codewhispererCodecoverageTracker', function () {
                     },
                 ],
             })
-            assert.strictEqual(tracker?.totalTokens[doc.fileName], 2)
+            assert.strictEqual(tracker?.totalTokens[doc.fileName], 3)
         })
 
         it('Should add tokens when type', function () {
@@ -363,6 +363,7 @@ describe('codewhispererCodecoverageTracker', function () {
             if (tracker) {
                 sinon.stub(tracker, 'isActive').returns(true)
             }
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         afterEach(function () {

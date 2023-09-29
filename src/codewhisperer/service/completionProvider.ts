@@ -10,14 +10,15 @@ import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
+import { session } from '../util/codeWhispererSession'
 /**
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
-    RecommendationHandler.instance.recommendations.forEach((recommendation, index) => {
+    session.recommendations.forEach((recommendation, index) => {
         completionItems.push(getCompletionItem(document, position, recommendation, index))
-        RecommendationHandler.instance.setSuggestionState(index, 'Showed')
+        session.setSuggestionState(index, 'Showed')
     })
     return completionItems
 }
@@ -28,7 +29,7 @@ export function getCompletionItem(
     recommendationDetail: Recommendation,
     recommendationIndex: number
 ) {
-    const start = RecommendationHandler.instance.startPos
+    const start = session.startPos
     const range = new vscode.Range(start, start)
     const recommendation = recommendationDetail.content
     const completionItem = new vscode.CompletionItem(recommendation)
@@ -58,9 +59,9 @@ export function getCompletionItem(
             recommendationIndex,
             recommendation,
             RecommendationHandler.instance.requestId,
-            RecommendationHandler.instance.sessionId,
+            session.sessionId,
             TelemetryHelper.instance.triggerType,
-            TelemetryHelper.instance.completionType,
+            session.getCompletionType(recommendationIndex),
             languageContext.language,
             references,
         ],

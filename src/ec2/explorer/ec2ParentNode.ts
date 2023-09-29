@@ -9,18 +9,19 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
+import { Commands } from '../../shared/vscode/commands'
 
-export const contextValueEc2 = 'awsEc2Node'
+export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
 
 export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
-    protected readonly ec2InstanceNodes: Map<string, Ec2InstanceNode>
-    public override readonly contextValue: string = contextValueEc2
+    protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
+    public override readonly contextValue: string = parentContextValue
 
     public constructor(
         public override readonly regionCode: string,
-        private readonly partitionId: string,
+        public readonly partitionId: string,
         protected readonly ec2Client: Ec2Client
     ) {
         super('EC2', vscode.TreeItemCollapsibleState.Collapsed)
@@ -44,8 +45,17 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
         updateInPlace(
             this.ec2InstanceNodes,
             ec2Instances.keys(),
-            key => this.ec2InstanceNodes.get(key)!.update(ec2Instances.get(key)!),
-            key => new Ec2InstanceNode(this.regionCode, this.partitionId, ec2Instances.get(key)!, contextValueEc2)
+            key => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
+            key => new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
         )
+    }
+
+    public async clearChildren() {
+        this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()
+    }
+
+    public async refreshNode(): Promise<void> {
+        this.clearChildren()
+        Commands.vscode().execute('aws.refreshAwsExplorerNode', this)
     }
 }

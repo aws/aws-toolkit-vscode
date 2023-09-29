@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import { onAcceptance } from '../../../codewhisperer/commands/onAcceptance'
@@ -18,6 +18,7 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
@@ -83,13 +84,13 @@ describe('onAcceptance', function () {
             sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
             RecommendationHandler.instance.requestId = 'test'
-            RecommendationHandler.instance.sessionId = 'test'
-            RecommendationHandler.instance.startPos = new vscode.Position(1, 0)
+            session.sessionId = 'test'
+            session.startPos = new vscode.Position(1, 0)
             mockEditor.selection = new vscode.Selection(new vscode.Position(1, 0), new vscode.Position(1, 0))
-            RecommendationHandler.instance.recommendations = [{ content: "print('Hello World!')" }]
-            RecommendationHandler.instance.setSuggestionState(0, 'Showed')
+            session.recommendations = [{ content: "print('Hello World!')" }]
+            session.setSuggestionState(0, 'Showed')
             TelemetryHelper.instance.triggerType = 'OnDemand'
-            TelemetryHelper.instance.completionType = 'Line'
+            session.setCompletionType(0, session.recommendations[0])
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const extensionContext = await FakeExtensionContext.create()
             await onAcceptance(

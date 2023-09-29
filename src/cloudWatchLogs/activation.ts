@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../shared/constants'
 import { Settings } from '../shared/settings'
-import { CloudWatchLogsSettings } from './cloudWatchLogsUtils'
 import { addLogEvents } from './commands/addLogEvents'
 import { copyLogResource } from './commands/copyLogResource'
 import { saveCurrentLogDataContent } from './commands/saveCurrentLogDataContent'
@@ -22,8 +21,7 @@ import { CloudWatchLogsNode } from './explorer/cloudWatchLogsNode'
 import { loadAndOpenInitialLogStreamFile, LogStreamCodeLensProvider } from './document/logStreamsCodeLensProvider'
 
 export async function activate(context: vscode.ExtensionContext, configuration: Settings): Promise<void> {
-    const settings = new CloudWatchLogsSettings(configuration)
-    const registry = new LogDataRegistry(settings)
+    const registry = LogDataRegistry.instance
 
     const documentProvider = new LogDataDocumentProvider(registry)
 
@@ -75,10 +73,7 @@ export async function activate(context: vscode.ExtensionContext, configuration: 
                 onDidChangeCodeLensEvent: vscode.EventEmitter<void>
             ) => addLogEvents(document, registry, headOrTail, onDidChangeCodeLensEvent)
         ),
-        Commands.register(
-            'aws.saveCurrentLogDataContent',
-            async (uri?: vscode.Uri) => await saveCurrentLogDataContent(uri, registry)
-        ),
+        Commands.register('aws.saveCurrentLogDataContent', async () => await saveCurrentLogDataContent()),
         // AWS Explorer right-click action
         // Here instead of in ../awsexplorer/activation due to dependence on the registry.
         Commands.register('aws.cwl.viewLogStream', async (node: LogGroupNode) => await viewLogStream(node, registry)),

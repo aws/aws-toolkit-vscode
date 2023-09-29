@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as moment from 'moment'
+import moment from 'moment'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import * as fs from 'fs-extra'
 import { Logger, LogLevel, getLogger } from '.'
 import { setLogger } from './logger'
 import { logOutputChannel } from './outputChannel'
@@ -18,6 +17,7 @@ import { Settings } from '../settings'
 import { Logging } from './commands'
 import { SystemUtilities } from '../systemUtilities'
 import { resolvePath } from '../utilities/pathUtils'
+import { isInBrowser } from '../../common/browserUtils'
 
 const localize = nls.loadMessageBundle()
 
@@ -43,12 +43,13 @@ export async function activate(
         {
             logPaths: [logUri.fsPath],
             outputChannels: [chan],
+            useConsoleLog: isInBrowser(),
         },
         extensionContext.subscriptions
     )
 
     setLogger(mainLogger)
-    getLogger().error(`log level: ${getLogLevel()}`)
+    getLogger().info(`log level: ${getLogLevel()}`)
 
     // channel logger
     setLogger(
@@ -99,7 +100,8 @@ export async function activate(
  * @param opts.staticLogLevel Static log level, overriding config value. Will persist overridden config value even if the config value changes.
  * @param opts.logPaths Array of paths to output log entries to
  * @param opts.outputChannels Array of output channels to log entries to
- * @param opts.useDebugConsole If true, outputs log entries to currently-active debug console. As per VS Code API, cannot specify a debug console in particular.
+ * @param opts.useDebugConsole If true, outputs log entries to `vscode.debug.activeDebugConsole`
+ * @param opts.useConsoleLog If true, outputs log entries to the nodejs or browser devtools console.
  * @param disposables Array of disposables to add a subscription to
  */
 export function makeLogger(
@@ -108,6 +110,7 @@ export function makeLogger(
         logPaths?: string[]
         outputChannels?: vscode.OutputChannel[]
         useDebugConsole?: boolean
+        useConsoleLog?: boolean
     },
     disposables?: vscode.Disposable[]
 ): Logger {
@@ -124,6 +127,9 @@ export function makeLogger(
     }
     if (opts.useDebugConsole) {
         logger.logToDebugConsole()
+    }
+    if (opts.useConsoleLog) {
+        logger.logToConsole()
     }
 
     if (!opts.staticLogLevel) {
@@ -161,6 +167,11 @@ function makeLogFilename(): string {
  * Watches for renames on the log file and notifies the user.
  */
 async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable> {
+    if (isInBrowser()) {
+        getLogger().debug(`Not watching log file since we are in Browser.`)
+        return { dispose: () => {} }
+    }
+
     const exists = await waitUntil(() => SystemUtilities.fileExists(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
@@ -172,6 +183,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
     // TODO: fs.watch() has many problems, consider instead:
     //   - https://github.com/paulmillr/chokidar
     //   - https://www.npmjs.com/package/fb-watchman
+    const fs = await import('fs')
     const watcher = fs.watch(logFile.fsPath, async eventType => {
         if (checking || eventType !== 'rename') {
             return

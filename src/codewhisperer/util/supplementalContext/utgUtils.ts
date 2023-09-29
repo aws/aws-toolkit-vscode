@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as glob from 'glob'
+import glob from 'glob'
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -18,11 +18,35 @@ import {
 import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
+import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
+import { getLogger } from '../../../shared/logger/logger'
+
+type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
+
+export type UtgStrategy = 'ByName' | 'ByContent'
+
+function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
+    return languageId in utgLanguageConfigs
+}
+
+export function shouldFetchUtgContext(
+    languageId: vscode.TextDocument['languageId'],
+    userGroup: UserGroup
+): boolean | undefined {
+    if (!isUtgSupportedLanguage(languageId)) {
+        return undefined
+    }
+
+    if (languageId === 'java') {
+        return true
+    } else {
+        return userGroup === UserGroup.CrossFile
+    }
+}
 
 /**
  * This function attempts to find a focal file for the given trigger file.
@@ -36,25 +60,17 @@ import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 export async function fetchSupplementalContextForTest(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken
-): Promise<CodeWhispererSupplementalContextItem[] | undefined> {
-    // TODO: Add metrices
-    // 1. Total number of calls to fetchSupplementalContextForTest
-    // 2. Success count for fetchSourceFileByName (find source file by name)
-    // 3. Success count for fetchSourceFileByContent (find source file by content)
-    // 4. Failure count - when unable to find focal file (supplemental context empty)
+): Promise<Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined> {
+    const shouldProceed = shouldFetchUtgContext(
+        editor.document.languageId,
+        CodeWhispererUserGroupSettings.instance.userGroup
+    )
+
+    if (!shouldProceed) {
+        return shouldProceed === undefined ? undefined : { supplementalContextItems: [], strategy: 'Empty' }
+    }
 
     const languageConfig = utgLanguageConfigs[editor.document.languageId]
-    if (!languageConfig) {
-        // This is required because we are launching this support for even smaller subset of
-        // supported languages.
-        // TODO: Add a metrics to see number of calls falling in this bucket.
-        // TODO: Either catch this error upstream or here.
-        return undefined
-    }
-
-    if (CodeWhispererUserGroupSettings.instance.userGroup !== UserGroup.CrossFile) {
-        return []
-    }
 
     // TODO (Metrics): 1. Total number of calls to fetchSupplementalContextForTest
     throwIfCancelled(cancellationToken)
@@ -62,22 +78,43 @@ export async function fetchSupplementalContextForTest(
     let crossSourceFile = await findSourceFileByName(editor, languageConfig, cancellationToken)
     if (crossSourceFile) {
         // TODO (Metrics): 2. Success count for fetchSourceFileByName (find source file by name)
-        return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
+        getLogger().debug(`CodeWhisperer finished fetching utg context by file name`)
+        return {
+            supplementalContextItems: generateSupplementalContextFromFocalFile(
+                crossSourceFile,
+                'ByName',
+                cancellationToken
+            ),
+            strategy: 'ByName',
+        }
     }
     throwIfCancelled(cancellationToken)
 
     crossSourceFile = await findSourceFileByContent(editor, languageConfig, cancellationToken)
     if (crossSourceFile) {
         // TODO (Metrics): 3. Success count for fetchSourceFileByContent (find source file by content)
-        return generateSupplementalContextFromFocalFile(crossSourceFile, cancellationToken)
+        getLogger().debug(`CodeWhisperer finished fetching utg context by file content`)
+        return {
+            supplementalContextItems: generateSupplementalContextFromFocalFile(
+                crossSourceFile,
+                'ByContent',
+                cancellationToken
+            ),
+            strategy: 'ByContent',
+        }
     }
 
     // TODO (Metrics): 4. Failure count - when unable to find focal file (supplemental context empty)
-    return []
+    getLogger().debug(`CodeWhisperer failed to fetch utg context`)
+    return {
+        supplementalContextItems: [],
+        strategy: 'Empty',
+    }
 }
 
 function generateSupplementalContextFromFocalFile(
     filePath: string,
+    strategy: UtgStrategy,
     cancellationToken: vscode.CancellationToken
 ): CodeWhispererSupplementalContextItem[] {
     const fileContent = fs.readFileSync(vscode.Uri.file(filePath!).fsPath, 'utf-8')

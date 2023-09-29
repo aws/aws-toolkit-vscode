@@ -3,13 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { setValidConnection, skiptTestIfNoValidConn } from '../../util/codewhispererUtil'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
+import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 /*
 New model deployment may impact references returned. 
@@ -63,7 +64,7 @@ describe('CodeWhisperer service invocation', async function () {
     it('trigger known to return recs with references returns rec with reference', async function () {
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const sessionIdBefore = RecommendationHandler.instance.sessionId
+        const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestIdBefore.length === 0)
@@ -80,9 +81,9 @@ describe('CodeWhisperer service invocation', async function () {
         await invokeRecommendation(mockEditor, client, configWithRefs)
 
         const requestId = RecommendationHandler.instance.requestId
-        const sessionId = RecommendationHandler.instance.sessionId
+        const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
-        const references = RecommendationHandler.instance.recommendations[0].references
+        const references = session.recommendations[0].references
 
         assert.ok(requestId.length > 0)
         assert.ok(sessionId.length > 0)
@@ -96,7 +97,7 @@ describe('CodeWhisperer service invocation', async function () {
     it('trigger known to return rec with references does not return rec with references when reference tracker setting is off', async function () {
         //check that handler is empty before invocation
         const requestIdBefore = RecommendationHandler.instance.requestId
-        const sessionIdBefore = RecommendationHandler.instance.sessionId
+        const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestIdBefore.length === 0)
@@ -113,7 +114,7 @@ describe('CodeWhisperer service invocation', async function () {
         await invokeRecommendation(mockEditor, client, configWithNoRefs)
 
         const requestId = RecommendationHandler.instance.requestId
-        const sessionId = RecommendationHandler.instance.sessionId
+        const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 
         assert.ok(requestId.length > 0)

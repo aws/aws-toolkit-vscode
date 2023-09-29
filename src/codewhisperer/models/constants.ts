@@ -123,8 +123,6 @@ export const welcomeCodeWhispererReadmeFileSource = 'resources/markdown/WelcomeT
 
 export const welcomeCodeWhispererCloud9Readme = 'resources/markdown/WelcomeToCodeWhispererCloud9.md'
 
-export const welcomeMessageKey = 'CODEWHISPERER_WELCOME_MESSAGE'
-
 /**
  * Key bindings JSON file path
  */
@@ -221,7 +219,7 @@ export const artifactTypeSource = 'SourceCode'
 export const codeScanFindingsSchema = 'codescan/findings/1.0'
 
 // wait time for editor to update editor.selection.active (in milliseconds)
-export const vsCodeCursorUpdateDelay = 3
+export const vsCodeCursorUpdateDelay = 10
 
 export const reloadWindow = 'Reload Now'
 

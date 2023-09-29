@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import { instance, mock, when } from 'ts-mockito'
 
@@ -42,7 +42,7 @@ function createImageTemplateConfig(): AwsSamDebuggerConfiguration {
             logicalId: 'TestResource',
         },
         lambda: {
-            runtime: 'nodejs12.x',
+            runtime: 'nodejs18.x',
         },
     }
 }

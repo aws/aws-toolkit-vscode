@@ -7,6 +7,14 @@ import { SpawnOptions } from 'child_process'
 import { getLogger } from '../../logger'
 import { getUserAgent } from '../../telemetry/util'
 import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
+import { ErrorInformation, ToolkitError } from '../../errors'
+
+/** Generic SAM CLI invocation error. */
+export class SamCliError extends ToolkitError.named('SamCliError') {
+    public constructor(message?: string, info?: ErrorInformation) {
+        super(message ?? 'SAM CLI failed', { ...info, code: 'SamCliFailed' })
+    }
+}
 
 export interface SamCliProcessInvokeOptions {
     spawnOptions?: SpawnOptions
@@ -34,71 +42,86 @@ export interface SamCliProcessInvoker {
 }
 
 export function makeUnexpectedExitCodeError(message: string): Error {
-    return new Error(`Error with child process: ${message}`)
+    const msg = message ? message : 'SAM CLI failed'
+    return new SamCliError(msg)
 }
 
-export function logAndThrowIfUnexpectedExitCode(processResult: ChildProcessResult, expectedExitCode: number): void {
-    if (processResult.exitCode === expectedExitCode) {
+export function logAndThrowIfUnexpectedExitCode(r: ChildProcessResult, expectedExitCode: number): void {
+    if (r.exitCode === expectedExitCode) {
         return
     }
 
-    const logger = getLogger()
+    const errIndented = r.stderr.replace(/\n/g, '\n    ').trim()
+    const outIndented = r.stdout.replace(/\n/g, '\n    ').trim()
 
-    logger.error(`Unexpected exitcode (${processResult.exitCode}), expecting (${expectedExitCode})`)
-    logger.error(`Error: ${processResult.error}`)
-    logger.error(`stderr: ${processResult.stderr}`)
-    logger.error(`stdout: ${processResult.stdout}`)
+    getLogger().error(`SAM CLI failed (exitcode: ${r.exitCode}, expected ${expectedExitCode}): ${r.error?.message ?? ''}
+    stdout:
+    ${outIndented}
+    stderr:
+    ${errIndented}
+`)
 
-    let message: string | undefined
+    const message = r.error instanceof Error ? r.error.message : collectSamErrors(r.stderr).join('\n')
+    throw makeUnexpectedExitCodeError(message)
+}
 
-    if (processResult.error instanceof Error) {
-        if (processResult.error.message) {
-            message = processResult.error.message
+/**
+ * Collect known error messages from sam cli output, so they can be surfaced to the user.
+ *
+ * @param samOutput SAM CLI output containing potential error messages
+ */
+export function collectSamErrors(samOutput: string): string[] {
+    const lines = samOutput.split('\n')
+    const matchedLines: string[] = []
+    const matchers = [matchSamError, matchAfterEscapeSeq]
+    for (const line of lines) {
+        for (const m of matchers) {
+            const match = m(line)
+            if (match && match.trim() !== '') {
+                matchedLines.push(match)
+                break // Skip remaining matchers, go to next line.
+            }
         }
     }
-    const usefulErrors = collectAcceptedErrorMessages(processResult.stderr).join('\n')
-    throw makeUnexpectedExitCodeError(message ?? usefulErrors)
+    return matchedLines
 }
 
-/**
- * Collect known errors messages from a sam error message
- * that may have multiple errors in one message.
- * @param errors A string that can have multiple error messages
- */
-export function collectAcceptedErrorMessages(errorMessage: string): string[] {
-    const errors = errorMessage.split('\n')
-    const shouldCollectFuncs = [startsWithEscapeSequence, startsWithError]
-    return errors.filter(error => {
-        return shouldCollectFuncs.some(shouldCollect => {
-            return shouldCollect(error)
-        })
-    })
-}
-
-/**
- * All accepted escape sequences.
- */
+/** All accepted escape sequences. */
 const yellowForeground = '[33m'
 const acceptedSequences = [yellowForeground]
 
-/**
- * Returns true if text starts with an escape
- * sequence with one of the accepted sequences.
- */
-function startsWithEscapeSequence(text: string, sequences = acceptedSequences): boolean {
+/** Returns text after a known escape sequence, or empty string. */
+function matchAfterEscapeSeq(text: string, sequences = acceptedSequences): string {
+    text = text.trim()
     const escapeInDecimal = 27
     if (text.charCodeAt(0) !== escapeInDecimal) {
-        return false
+        return ''
     }
 
     const remainingText = text.substring(1)
-    return sequences.some(code => {
-        return remainingText.startsWith(code)
-    })
+    for (const seq of sequences) {
+        if (remainingText.startsWith(seq)) {
+            return remainingText.substring(seq.length).trim()
+        }
+    }
+    return ''
 }
 
-function startsWithError(text: string): boolean {
-    return text.startsWith('Error:')
+function matchSamError(text: string): string {
+    // These should be ordered by "specificity", to make the result more relevant for users.
+    const patterns = [
+        /\s*(Running.*requires Docker\.?)/,
+        /\s*(Docker.*not reachable\.?)/,
+        /\bError:\s*(.*)/, // Goes last because it is the least specific.
+    ]
+    for (const re of patterns) {
+        const match = text.match(re)
+        if (match?.[1]) {
+            // Capture group 1 is the first (…) group in the regex pattern.
+            return match[1].trim() // Return _only_ the matched text. The rest is noise.
+        }
+    }
+    return ''
 }
 
 export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Promise<SpawnOptions> {

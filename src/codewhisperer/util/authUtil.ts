@@ -23,6 +23,7 @@ import {
     isSsoConnection,
     isBuilderIdConnection,
 } from '../../auth/connection'
+import { getLogger } from '../../shared/logger'
 
 export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
@@ -89,7 +90,7 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
-
+            await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
     }
@@ -103,6 +104,7 @@ export class AuthUtil {
         return this.secondaryAuth.activeConnection
     }
 
+    // TODO: move this to the shared auth.ts
     public get startUrl(): string | undefined {
         // Reformat the url to remove any trailing '/' and `#`
         // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
@@ -204,15 +206,27 @@ export class AuthUtil {
     }
 
     public isConnectionValid(): boolean {
-        return this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
+        const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
+        getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
+                            connection is undefined = ${this.conn === undefined},
+                            secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired}`)
+        return connectionValid
     }
 
     public isConnectionExpired(): boolean {
-        return (
+        const connectionExpired =
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
             isValidCodeWhispererConnection(this.conn)
-        )
+        getLogger().debug(`codewhisperer: Connection expired = ${connectionExpired},
+                           secondaryAuth connection expired = ${this.secondaryAuth.isConnectionExpired},
+                           connection is undefined = ${this.conn === undefined}`)
+        if (this.conn) {
+            getLogger().debug(
+                `codewhisperer: isValidCodeWhispererConnection = ${isValidCodeWhispererConnection(this.conn)}`
+            )
+        }
+        return connectionExpired
     }
 
     public async reauthenticate() {

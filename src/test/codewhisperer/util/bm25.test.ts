@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { BM25Okapi } from '../../../codewhisperer/util/supplementalContext/rankBm25'
 
 describe('bm25', function () {

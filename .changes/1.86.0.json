@@ -1,0 +1,34 @@
+{
+	"date": "2023-08-24",
+	"version": "1.86.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: Fix test file supplemental context not working as expected on OS not using '/' as file path separator"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer sometimes fails on big files"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: fix java test file name MyClassTests.java (plural) will not be captured if file is not living in a test folder"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: create, run and debug Python 3.11 Lambdas #3753"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM run/debug detects and displays SAM CLI errors, so you spend less time inspecting the Output"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM template detection now skips directories specified in [user settings](https://code.visualstudio.com/docs/getstarted/settings) `files.exclude`, `search.exclude`, or `files.watcherExclude`. This improves performance on big workspaces and avoids the \"Scanning CloudFormation templates...\" message. [#3510](https://github.com/aws/aws-toolkit-vscode/issues/3510)"
+		},
+		{
+			"type": "Feature",
+			"description": "Toolkit no longer explicitly checks if Docker is running, instead it lets SAM CLI decide that #3588"
+		}
+	]
+}

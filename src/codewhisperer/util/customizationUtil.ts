@@ -287,7 +287,7 @@ const selectCustomization = async (customization: Customization) => {
     }
     await setSelectedCustomization(customization)
     const suffix =
-        customization.arn == baseCustomization.arn ? customization.name : customization.name + ' customization.'
+        customization.arn == baseCustomization.arn ? customization.name : `${customization.name} customization.`
     vscode.window.showInformationMessage(
         localize(
             'AWS.codewhisperer.customization.selected.message',

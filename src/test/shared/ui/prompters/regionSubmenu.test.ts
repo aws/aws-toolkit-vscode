@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { RegionSubmenu } from '../../../../shared/ui/common/regionSubmenu'
 import { DataQuickPickItem, QuickPickPrompter } from '../../../../shared/ui/pickerPrompter'
 import { createQuickPickPrompterTester } from '../../../shared/ui/testUtils'
@@ -45,7 +45,7 @@ describe('regionSubmenu', function () {
         const dataPrompterTester = createQuickPickPrompterTester(
             submenuPrompter.activePrompter as Combine<typeof submenuPrompter.activePrompter>
         )
-        dataPrompterTester.acceptItem('Switch region')
+        dataPrompterTester.acceptItem('Switch Region')
         await dataPrompterTester.result()
 
         const regionTester = createQuickPickPrompterTester(

@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { getLambdaDetails } from '../../lambda/utils'
 
 describe('lambda utils', async function () {
     describe('getLambdaDetails', function () {
         it('returns valid filenames and function names', function () {
             const jsNonNestedParsedName = getLambdaDetails({
-                Runtime: 'nodejs12.x',
+                Runtime: 'nodejs16.x',
                 Handler: 'app.lambda_handler',
             })
             const pyNonNestedParsedName = getLambdaDetails({
@@ -18,7 +18,7 @@ describe('lambda utils', async function () {
                 Handler: 'app.lambda_handler',
             })
             const jsNestedParsedName = getLambdaDetails({
-                Runtime: 'nodejs12.x',
+                Runtime: 'nodejs16.x',
                 Handler: 'asdf/jkl/app.lambda_handler',
             })
             const node18ModuleParsedName = getLambdaDetails({

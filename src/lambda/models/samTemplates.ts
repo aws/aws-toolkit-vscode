@@ -131,5 +131,5 @@ export function supportsStepFuntionsTemplate(samCliVersion: string): boolean {
 }
 
 export function supportsTypeScriptBackendTemplate(runtime: Runtime): boolean {
-    return runtime === 'nodejs12.x'
+    return runtime === 'nodejs16.x'
 }

@@ -7,7 +7,7 @@
         },
         "incremental": true,
         "module": "commonjs",
-        "target": "es6",
+        "target": "es2021",
         "outDir": "dist",
         "sourceMap": true,
         "moduleResolution": "node",
@@ -16,10 +16,11 @@
         "strict": true,
         "noUnusedLocals": true,
         "noImplicitOverride": true,
-        "lib": ["dom", "es6", "esnext.asynciterable"],
+        "lib": ["dom", "es2021"],
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
-        "jsx": "preserve"
+        "jsx": "preserve",
+        "esModuleInterop": true
     },
     "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }

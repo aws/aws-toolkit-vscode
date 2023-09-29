@@ -82,43 +82,55 @@ export const trustedDomainCancellation = 'TrustedDomainCancellation'
 const tryOpenHelpUrl = (url: vscode.Uri) =>
     openUrl(url).catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))
 
-export async function openSsoPortalLink(
-    startUrl: string,
-    authorization: { readonly verificationUri: string; readonly userCode: string }
-): Promise<boolean> {
-    async function copyCodeAndOpenLink() {
-        await vscode.env.clipboard.writeText(authorization.userCode).then(undefined, err => {
-            getLogger().warn(`auth: failed to copy user code "${authorization.userCode}" to clipboard: %s`, err)
-        })
+export function truncateStartUrl(startUrl: string) {
+    return startUrl.match(/https?:\/\/(.*)\.awsapps\.com\/start/)?.[1] ?? startUrl
+}
 
-        const didOpen = await vscode.env.openExternal(vscode.Uri.parse(authorization.verificationUri))
-        if (!didOpen) {
+type Authorization = { readonly verificationUri: string; readonly userCode: string }
+
+export const proceedToBrowser = localize('AWS.auth.loginWithBrowser.proceedToBrowser', 'Proceed To Browser')
+
+export async function openSsoPortalLink(startUrl: string, authorization: Authorization): Promise<boolean> {
+    /**
+     * Depending on the verification URL + parameters used, the way the sso login flow works changes.
+     * Previously, users were asked to copy and paste a device code in to the browser page.
+     *
+     * Now, with the URL this function creates, the user will instead be asked to confirm the device code
+     * in the browser.
+     */
+    function makeConfirmCodeUrl(authorization: Authorization): vscode.Uri {
+        return vscode.Uri.parse(`${authorization.verificationUri}?user_code=${authorization.userCode}`)
+    }
+
+    async function openSsoUrl() {
+        const ssoLoginUrl = makeConfirmCodeUrl(authorization)
+        const didOpenUrl = await vscode.env.openExternal(ssoLoginUrl)
+
+        if (!didOpenUrl) {
             throw new ToolkitError(`User clicked 'Copy' or 'Cancel' during the Trusted Domain popup`, {
                 code: trustedDomainCancellation,
                 name: trustedDomainCancellation,
             })
         }
-        return didOpen
+        return didOpenUrl
     }
 
     async function showLoginNotification() {
         const name = startUrl === builderIdStartUrl ? localizedText.builderId() : localizedText.iamIdentityCenterFull()
-        const title = localize('AWS.auth.loginWithBrowser.messageTitle', 'Copy Code for {0}', name)
+        const title = localize('AWS.auth.loginWithBrowser.messageTitle', 'Confirm Code for {0}', name)
         const detail = localize(
             'AWS.auth.loginWithBrowser.messageDetail',
-            'To proceed, open the login page and provide this code to confirm the access request: {0}',
+            'Confirm this code in the browser: {0}',
             authorization.userCode
         )
-        const copyCode = localize('AWS.auth.loginWithBrowser.copyCodeAction', 'Copy Code and Proceed')
-        const options = { modal: true, detail } as vscode.MessageOptions
 
         while (true) {
             // TODO: add the 'Help' item back once we have a suitable URL
             // const resp = await vscode.window.showInformationMessage(title, options, copyCode, localizedText.help)
-            const resp = await vscode.window.showInformationMessage(title, options, copyCode)
+            const resp = await vscode.window.showInformationMessage(title, { modal: true, detail }, proceedToBrowser)
             switch (resp) {
-                case copyCode:
-                    return copyCodeAndOpenLink()
+                case proceedToBrowser:
+                    return openSsoUrl()
                 case localizedText.help:
                     await tryOpenHelpUrl(ssoAuthHelpUrl)
                     continue
