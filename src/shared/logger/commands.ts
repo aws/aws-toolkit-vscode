@@ -43,6 +43,14 @@ export class Logging {
             return
         }
 
+        // HACK: The editor.document.getText() was returning a stale cached version of the logs,
+        // and due to this highlighting the new log would fail on subsequent calls of this function.T
+        // The following performs an action on the currently active file
+        // (which is why this command is right after the document is shown)
+        // and causes it to not use the cached getText() result.
+        // There is no guarantee for this behaviour in the future
+        await vscode.commands.executeCommand('workbench.action.files.revert')
+
         // Retrieve where the message starts by counting number of newlines
         const text = editor.document.getText()
         const textStart = text.indexOf(msg)
