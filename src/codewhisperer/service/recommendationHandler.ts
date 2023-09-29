@@ -135,17 +135,19 @@ export class RecommendationHandler {
         }
     }
 
-    async getTaskTypeFromEditorFileName(fileName: string): Promise<CodewhispererGettingStartedTask> {
-        if (fileName.startsWith('CodeWhisperer_generate_suggestion')) {
+    async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask | undefined> {
+        if (filePath.includes('CodeWhisperer_generate_suggestion')) {
             return 'autoTrigger'
-        } else if (fileName.startsWith('CodeWhisperer_manual_invoke')) {
+        } else if (filePath.includes('CodeWhisperer_manual_invoke')) {
             return 'manualTrigger'
-        } else if (fileName.startsWith('CodeWhisperer_use_comments')) {
+        } else if (filePath.includes('CodeWhisperer_use_comments')) {
             return 'commentAsPrompt'
-        } else if (fileName.startsWith('CodeWhisperer_navigate_suggestions')) {
+        } else if (filePath.includes('CodeWhisperer_navigate_suggestions')) {
             return 'navigation'
-        } else {
+        } else if (filePath.includes('Generate_unit_tests')) {
             return 'unitTest'
+        } else {
+            return undefined
         }
     }
 
