@@ -13,12 +13,14 @@ import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ProfileSdkTok
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 
 class ManagedBearerSsoConnection(
-    val startUrl: String,
-    val region: String,
+    override val startUrl: String,
+    override val region: String,
     override val scopes: List<String>,
+    id: String? = null,
+    label: String? = null
 ) : BearerSsoConnection, Disposable {
-    override val id: String = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
-    override val label: String = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
+    override val id: String = id ?: ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
+    override val label: String = label ?: ToolkitBearerTokenProvider.ssoDisplayName(startUrl, region)
 
     private val provider =
         tokenConnection(
@@ -37,9 +39,10 @@ class ManagedBearerSsoConnection(
     }
 }
 
-class DiskSsoSessionConnection(
+class DetectedDiskSsoSessionConnection(
     val sessionProfileName: String,
-    val region: String,
+    override val startUrl: String,
+    override val region: String,
     displayNameOverride: String? = null
 ) : AwsBearerTokenConnection, Disposable {
     override val id = ToolkitBearerTokenProvider.diskSessionIdentifier(sessionProfileName)

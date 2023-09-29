@@ -260,7 +260,7 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
         val client = AwsClientManager.getInstance().getClient<CodeCatalystClient>(connectionSettings)
         val spaces = getSpaces(client)
         return if (spaces.isEmpty()) {
-            InfoPanel()
+            infoPanel()
                 .addLine(message("caws.workspace.details.introduction_message"))
                 .addAction(message("general.get_started")) {
                     BrowserLauncher.instance.browse(CawsEndpoints.ConsoleFactory.baseUrl())

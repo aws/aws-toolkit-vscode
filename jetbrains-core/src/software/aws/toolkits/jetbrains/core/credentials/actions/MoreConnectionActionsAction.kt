@@ -9,9 +9,13 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.JBPopupFactory
+import software.aws.toolkits.jetbrains.core.credentials.AwsConnectionManagerConnection
 import software.aws.toolkits.jetbrains.core.credentials.ConnectionSettingsMenuBuilder.Companion.connectionSettingsMenuBuilder
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.lazyGetUnauthedBearerConnections
+import software.aws.toolkits.jetbrains.core.utils.buildList
 import software.aws.toolkits.resources.message
 
 class MoreConnectionActionsAction : DumbAwareAction(AllIcons.Actions.MoreHorizontal) {
@@ -19,13 +23,32 @@ class MoreConnectionActionsAction : DumbAwareAction(AllIcons.Actions.MoreHorizon
         e.presentation.icon = if (lazyGetUnauthedBearerConnections().isEmpty()) AllIcons.Actions.MoreHorizontal else AllIcons.General.Warning
     }
 
+    fun buildActions(project: Project?): ActionGroup {
+        val actionManager = ActionManager.getInstance()
+        val baseActions = actionManager.getAction("aws.toolkit.toolwindow.credentials.rightGroup.more.group") as ActionGroup
+        val identityActions = connectionSettingsMenuBuilder().apply { withIndividualIdentityActions(project) }.build()
+
+        return DefaultActionGroup(
+            buildList {
+                add(identityActions)
+
+                project?.let { project ->
+                    if (ToolkitConnectionManager.getInstance(project).activeConnection() is AwsConnectionManagerConnection) {
+                        add(actionManager.getAction("aws.settings.upsertCredentials"))
+                    }
+                }
+
+                add(baseActions)
+            }
+        )
+    }
+
     override fun actionPerformed(e: AnActionEvent) {
-        val baseActions = ActionManager.getInstance().getAction("aws.toolkit.toolwindow.credentials.rightGroup.more.group") as ActionGroup
-        val identityActions = connectionSettingsMenuBuilder().apply { withIndividualIdentityActions(e.project) }.build()
+        val actions = buildActions(e.project)
 
         JBPopupFactory.getInstance().createActionGroupPopup(
             message("settings.title"),
-            DefaultActionGroup(identityActions, baseActions),
+            actions,
             e.dataContext,
             JBPopupFactory.ActionSelectionAid.SPEEDSEARCH,
             true

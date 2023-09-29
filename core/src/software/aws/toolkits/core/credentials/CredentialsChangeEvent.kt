@@ -8,9 +8,13 @@ package software.aws.toolkits.core.credentials
  * to give an accurate representation of the state of the credentials system
  */
 data class CredentialsChangeEvent(
-    val added: List<CredentialIdentifier>,
-    val modified: List<CredentialIdentifier>,
-    val removed: List<CredentialIdentifier>
+    val added: List<CredentialIdentifier> = emptyList(),
+    val modified: List<CredentialIdentifier> = emptyList(),
+    val removed: List<CredentialIdentifier> = emptyList(),
+
+    val ssoAdded: List<SsoSessionIdentifier> = emptyList(),
+    val ssoModified: List<SsoSessionIdentifier> = emptyList(),
+    val ssoRemoved: List<SsoSessionIdentifier> = emptyList()
 )
 
 typealias CredentialsChangeListener = (changeEvent: CredentialsChangeEvent) -> Unit

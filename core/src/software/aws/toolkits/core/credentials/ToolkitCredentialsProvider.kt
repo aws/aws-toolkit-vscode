@@ -65,6 +65,13 @@ interface CredentialIdentifier {
     val defaultRegionId: String? get() = null
 }
 
+interface SsoSessionIdentifier {
+    val id: String
+    val startUrl: String
+    val ssoRegion: String
+    val scopes: Set<String>
+}
+
 abstract class CredentialIdentifierBase(override val credentialType: CredentialType?) : CredentialIdentifier {
     final override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -120,10 +127,11 @@ class ToolkitBearerTokenProvider(val delegate: ToolkitBearerTokenProviderDelegat
         fun ssoIdentifier(startUrl: String, region: String = DEFAULT_SSO_REGION) = "sso;$region;$startUrl"
 
         // TODO: For AWS Builder ID, we only have startUrl for now instead of each users' metadata data i.e. Email address
-        fun ssoDisplayName(startUrl: String) = if (startUrl == SONO_URL) {
+        fun ssoDisplayName(startUrl: String, region: String) = if (startUrl == SONO_URL) {
             message("aws_builder_id.service_name")
         } else {
-            message("iam_identity_center.service_name", extractOrgID(startUrl))
+            val ssoSessionProfileName = "${extractOrgID(startUrl)}-$region"
+            message("iam_identity_center.service_name", ssoSessionProfileName)
         }
 
         fun diskSessionIdentifier(profileName: String) = "diskSessionProfile;$profileName"
