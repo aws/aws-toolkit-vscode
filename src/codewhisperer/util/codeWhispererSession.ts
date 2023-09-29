@@ -26,7 +26,7 @@ class CodeWhispererSession {
         supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     } = { request: {} as any, supplementalMetadata: {} as any }
     language: CodewhispererLanguage = 'java'
-    taskType: CodewhispererGettingStartedTask = 'autoTrigger'
+    taskType: CodewhispererGettingStartedTask | undefined
     recommendations: Recommendation[] = []
     suggestionStates = new Map<number, string>()
     completionTypes = new Map<number, CodewhispererCompletionType>()

@@ -135,7 +135,7 @@ export class RecommendationHandler {
         }
     }
 
-    async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask> {
+    async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask | undefined> {
         if (filePath.includes('CodeWhisperer_generate_suggestion')) {
             return 'autoTrigger'
         } else if (filePath.startsWith('CodeWhisperer_manual_invoke')) {
@@ -144,8 +144,10 @@ export class RecommendationHandler {
             return 'commentAsPrompt'
         } else if (filePath.startsWith('CodeWhisperer_navigate_suggestions')) {
             return 'navigation'
-        } else {
+        } else if (filePath.startsWith('Generate_unit_tests')) {
             return 'unitTest'
+        } else {
+            return undefined
         }
 
         /**
@@ -182,15 +184,7 @@ export class RecommendationHandler {
         let nextToken = ''
         let shouldRecordServiceInvocation = true
         session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
-        if (
-            editor.document.fileName.includes('CodeWhisperer_generate_suggestion') ||
-            editor.document.fileName.includes('CodeWhisperer_manual_invoke') ||
-            editor.document.fileName.includes('CodeWhisperer_use_comments') ||
-            editor.document.fileName.includes('CodeWhisperer_navigate_suggestions') ||
-            editor.document.fileName.includes('Generate_unit_tests')
-        ) {
-            session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
-        }
+        session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
             if (page === 0) {
