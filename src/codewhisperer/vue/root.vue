@@ -81,10 +81,6 @@ import Shortcuts from './shortcuts.vue'
 import ScanCode from './scanCode.vue'
 import GenerateSuggestionTab from './genSuggestionTab.vue'
 import Workshop from './workshop.vue'
-import { CodeWhispererWebview } from './backend'
-import { WebviewClientFactory } from '../../webviews/client'
-
-const client = WebviewClientFactory.create<CodeWhispererWebview>()
 
 export default defineComponent({
     name: 'Getting_Started',
@@ -100,10 +96,6 @@ export default defineComponent({
             bannerVisible: true,
             active: parseInt(sessionStorage.getItem('active') || '0'),
         }
-    },
-    //The created hook runs before the templates and Virtual DOM have been mounted or rendered
-    created() {
-        client.emitUiClick('codewhisperer_Learn_PageOpen')
     },
     mounted() {
         /* 
