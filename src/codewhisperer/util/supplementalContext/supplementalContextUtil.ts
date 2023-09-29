@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { fetchSupplementalContextForTest } from './utgUtils'
-import { fetchSupplementalContextForSrc } from './crossFileContextUtil'
+import { UtgStrategy, fetchSupplementalContextForTest } from './utgUtils'
+import { CrossFileStrategy, fetchSupplementalContextForSrc } from './crossFileContextUtil'
 import { isTestFile } from './codeParsingUtil'
 import { DependencyGraphFactory } from '../dependencyGraph/dependencyGraphFactory'
 import * as vscode from 'vscode'
@@ -14,12 +14,15 @@ import { getLogger } from '../../../shared/logger/logger'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
     isProcessTimeout: boolean
     supplementalContextItems: CodeWhispererSupplementalContextItem[]
     contentsLength: number
     latency: number
+    strategy: SupplementalContextStrategy
 }
 
 export interface CodeWhispererSupplementalContextItem {
@@ -35,19 +38,20 @@ export async function fetchSupplementalContext(
     const timesBeforeFetching = performance.now()
     const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
 
-    if (dependencyGraph === undefined) {
-        // This is a general check for language support of CW.
-        // We perform feature level language filtering later.
-        return undefined
-    }
+    const isUtg = await isTestFile(editor.document.uri.fsPath, {
+        languageId: editor.document.languageId,
+        dependencyGraph: dependencyGraph,
+        fileContent: editor.document.getText(),
+    })
 
-    const isUtg = await isTestFile(editor, dependencyGraph)
-    let supplementalContextPromise: Promise<CodeWhispererSupplementalContextItem[] | undefined>
+    let supplementalContextPromise: Promise<
+        Pick<CodeWhispererSupplementalContext, 'supplementalContextItems' | 'strategy'> | undefined
+    >
 
     if (isUtg) {
-        supplementalContextPromise = fetchSupplementalContextForTest(editor, dependencyGraph, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, dependencyGraph, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
     }
 
     return supplementalContextPromise
@@ -56,9 +60,10 @@ export async function fetchSupplementalContext(
                 return {
                     isUtg: isUtg,
                     isProcessTimeout: false,
-                    supplementalContextItems: value,
-                    contentsLength: value.reduce((acc, curr) => acc + curr.content.length, 0),
+                    supplementalContextItems: value.supplementalContextItems,
+                    contentsLength: value.supplementalContextItems.reduce((acc, curr) => acc + curr.content.length, 0),
                     latency: performance.now() - timesBeforeFetching,
+                    strategy: value.strategy,
                 }
             } else {
                 return undefined
@@ -72,6 +77,7 @@ export async function fetchSupplementalContext(
                     supplementalContextItems: [],
                     contentsLength: 0,
                     latency: performance.now() - timesBeforeFetching,
+                    strategy: 'Empty',
                 }
             } else {
                 getLogger().error(

@@ -26,8 +26,24 @@ import { DefaultS3Client } from '../shared/clients/s3Client'
 import { DefaultSchemaClient } from '../shared/clients/schemaClient'
 import { getEcsRootNode } from '../ecs/model'
 import { compareTreeItems, TreeShim } from '../shared/treeview/utils'
+import { Ec2ParentNode } from '../ec2/explorer/ec2ParentNode'
+import { DevSettings } from '../shared/settings'
+import { Ec2Client } from '../shared/clients/ec2Client'
 
-const serviceCandidates = [
+interface ServiceNode {
+    allRegions?: boolean
+    serviceId: string
+    /**
+     * Decides if the node should be shown. Example:
+     * ```
+     * when: () => DevSettings.instance.isDevMode()
+     * ```
+     */
+    when?: () => boolean
+    createFn: (regionCode: string, partitionId: string) => any
+}
+
+const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'apigateway',
         createFn: (regionCode: string, partitionId: string) => new ApiGatewayNode(partitionId, regionCode),
@@ -43,6 +59,12 @@ const serviceCandidates = [
     {
         serviceId: 'logs',
         createFn: (regionCode: string) => new CloudWatchLogsNode(regionCode),
+    },
+    {
+        serviceId: 'ec2',
+        when: () => DevSettings.instance.isDevMode(),
+        createFn: (regionCode: string, partitionId: string) =>
+            new Ec2ParentNode(regionCode, partitionId, new Ec2Client(regionCode)),
     },
     {
         serviceId: 'ecr',
@@ -76,6 +98,11 @@ const serviceCandidates = [
         serviceId: 'ssm',
         createFn: (regionCode: string) => new SsmDocumentNode(regionCode),
     },
+    {
+        allRegions: true,
+        serviceId: 'cloudcontrol',
+        createFn: (regionCode: string) => new ResourcesNode(regionCode),
+    },
 ]
 
 /**
@@ -106,15 +133,18 @@ export class RegionNode extends AWSTreeNodeBase {
         //  This interface exists so we can add additional nodes to the array (otherwise Typescript types the array to what's already in the array at creation)
         const partitionId = this.regionProvider.getPartitionId(this.regionCode) ?? defaultPartition
         const childNodes: AWSTreeNodeBase[] = []
-        for (const { serviceId, createFn } of serviceCandidates) {
-            if (this.regionProvider.isServiceInRegion(serviceId, this.regionCode)) {
-                const node = createFn(this.regionCode, partitionId)
+        for (const service of serviceCandidates) {
+            if (service.when !== undefined && !service.when()) {
+                continue
+            }
+            if (service.allRegions || this.regionProvider.isServiceInRegion(service.serviceId, this.regionCode)) {
+                const node = service.createFn(this.regionCode, partitionId)
                 if (node !== undefined) {
+                    node.serviceId = service.serviceId
                     childNodes.push(node)
                 }
             }
         }
-        childNodes.push(new ResourcesNode(this.regionCode))
 
         return this.sortNodes(childNodes)
     }

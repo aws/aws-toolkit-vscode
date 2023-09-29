@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
-import * as bytes from 'bytes'
-import * as vscode from 'vscode'
+import assert from 'assert'
+import bytes from 'bytes'
+import vscode from 'vscode'
 import * as GitTypes from '../../../../types/git'
 import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'

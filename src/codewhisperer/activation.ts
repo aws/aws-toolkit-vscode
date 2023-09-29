@@ -41,7 +41,7 @@ import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { InlineCompletionService } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
@@ -49,7 +49,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-
+import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -64,6 +64,12 @@ export async function activate(context: ExtContext): Promise<void> {
         await enableDefaultConfigCloud9()
     }
 
+    registerCommandsWithVSCode(
+        context.extensionContext,
+        CodeWhispererCommandDeclarations.instance,
+        new CodeWhispererCommandBackend(context.extensionContext)
+    )
+
     /**
      * CodeWhisperer security panel
      */
@@ -74,6 +80,10 @@ export async function activate(context: ExtContext): Promise<void> {
      * Service control
      */
     const client = new codewhispererClient.DefaultCodeWhispererClient()
+
+    // Service initialization
+    ReferenceInlineProvider.instance
+    ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
         /**
@@ -176,8 +186,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
                 return
             }
-            RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
-            RecommendationHandler.instance.clearRecommendations()
+            RecommendationHandler.instance.reportUserDecisions(-1)
         }),
 
         vscode.languages.registerHoverProvider(
@@ -251,55 +260,58 @@ export async function activate(context: ExtContext): Promise<void> {
          */
         context.extensionContext.subscriptions.push(
             vscode.window.onDidChangeActiveTextEditor(async editor => {
-                await InlineCompletionService.instance.onEditorChange()
+                await RecommendationHandler.instance.onEditorChange()
             }),
             vscode.window.onDidChangeWindowState(async e => {
-                await InlineCompletionService.instance.onFocusChange()
+                await RecommendationHandler.instance.onFocusChange()
             }),
             vscode.window.onDidChangeTextEditorSelection(async e => {
-                await InlineCompletionService.instance.onCursorChange(e)
+                await RecommendationHandler.instance.onCursorChange(e)
             }),
             vscode.workspace.onDidChangeTextDocument(async e => {
+                const editor = vscode.window.activeTextEditor
+                if (!editor) {
+                    return
+                }
+                if (e.document !== editor.document) {
+                    return
+                }
+                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                    return
+                }
+
                 /**
                  * CodeWhisperer security panel dynamic handling
                  */
-                if (e.document === vscode.window.activeTextEditor?.document) {
-                    disposeSecurityDiagnostic(e)
-                }
+                disposeSecurityDiagnostic(e)
+
+                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
+
                 /**
                  * Handle this keystroke event only when
-                 * 1. It is in current non plaintext active editor
-                 * 2. It is not a backspace
-                 * 3. It is not caused by CodeWhisperer editing
-                 * 4. It is not from undo/redo.
+                 * 1. It is not a backspace
+                 * 2. It is not caused by CodeWhisperer editing
+                 * 3. It is not from undo/redo.
                  */
-                if (
-                    e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
-                    e.contentChanges.length != 0 &&
-                    !vsCodeState.isCodeWhispererEditing
-                ) {
-                    if (vsCodeState.lastUserModificationTime) {
-                        TelemetryHelper.instance.setTimeSinceLastModification(
-                            performance.now() - vsCodeState.lastUserModificationTime
-                        )
-                    }
-                    vsCodeState.lastUserModificationTime = performance.now()
-                    /**
-                     * Important:  Doing this sleep(10) is to make sure
-                     * 1. this event is processed by vs code first
-                     * 2. editor.selection.active has been successfully updated by VS Code
-                     * Then this event can be processed by our code.
-                     */
-                    await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                    if (!InlineCompletionService.instance.isSuggestionVisible()) {
-                        await KeyStrokeHandler.instance.processKeyStroke(
-                            e,
-                            vscode.window.activeTextEditor,
-                            client,
-                            await getConfigEntry()
-                        )
-                    }
+                if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
+                    return
+                }
+
+                if (vsCodeState.lastUserModificationTime) {
+                    TelemetryHelper.instance.setTimeSinceLastModification(
+                        performance.now() - vsCodeState.lastUserModificationTime
+                    )
+                }
+                vsCodeState.lastUserModificationTime = performance.now()
+                /**
+                 * Important:  Doing this sleep(10) is to make sure
+                 * 1. this event is processed by vs code first
+                 * 2. editor.selection.active has been successfully updated by VS Code
+                 * Then this event can be processed by our code.
+                 */
+                await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
+                if (!RecommendationHandler.instance.isSuggestionVisible()) {
+                    await KeyStrokeHandler.instance.processKeyStroke(e, editor, client, await getConfigEntry())
                 }
             })
         )
@@ -325,39 +337,33 @@ export async function activate(context: ExtContext): Promise<void> {
              * Automated trigger
              */
             vscode.workspace.onDidChangeTextDocument(async e => {
+                const editor = vscode.window.activeTextEditor
+                if (!editor) {
+                    return
+                }
+                if (e.document !== editor.document) {
+                    return
+                }
+                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                    return
+                }
                 /**
                  * CodeWhisperer security panel dynamic handling
                  */
-                if (e.document === vscode.window.activeTextEditor?.document) {
-                    if (isCloud9()) {
-                        securityPanelViewProvider.disposeSecurityPanelItem(e, vscode.window.activeTextEditor)
-                    } else {
-                        disposeSecurityDiagnostic(e)
-                    }
-                }
-
+                securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
-                if (
-                    e.document === vscode.window.activeTextEditor?.document &&
-                    runtimeLanguageContext.isLanguageSupported(e.document.languageId) &&
-                    e.contentChanges.length != 0 &&
-                    !vsCodeState.isCodeWhispererEditing
-                ) {
-                    /**
-                     * Important:  Doing this sleep(10) is to make sure
-                     * 1. this event is processed by vs code first
-                     * 2. editor.selection.active has been successfully updated by VS Code
-                     * Then this event can be processed by our code.
-                     */
-                    await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-                    await KeyStrokeHandler.instance.processKeyStroke(
-                        e,
-                        vscode.window.activeTextEditor,
-                        client,
-                        await getConfigEntry()
-                    )
+                if (e.contentChanges.length != 0 && !vsCodeState.isCodeWhispererEditing) {
+                    return
                 }
+                /**
+                 * Important:  Doing this sleep(10) is to make sure
+                 * 1. this event is processed by vs code first
+                 * 2. editor.selection.active has been successfully updated by VS Code
+                 * Then this event can be processed by our code.
+                 */
+                await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
+                await KeyStrokeHandler.instance.processKeyStroke(e, editor, client, await getConfigEntry())
             }),
 
             /**
@@ -387,13 +393,7 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    if (isCloud9()) {
-        RecommendationHandler.instance.reportUserDecisionOfRecommendation(vscode.window.activeTextEditor, -1)
-        RecommendationHandler.instance.clearRecommendations()
-    }
-    if (isInlineCompletionEnabled()) {
-        await InlineCompletionService.instance.clearInlineCompletionStates(vscode.window.activeTextEditor)
-    }
+    RecommendationHandler.instance.reportUserDecisions(-1)
     CodeWhispererTracker.getTracker().shutdown()
 }
 

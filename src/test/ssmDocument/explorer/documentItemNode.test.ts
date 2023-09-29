@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { SSM } from 'aws-sdk'
 import { DefaultSsmDocumentClient } from '../../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from '../../../ssmDocument/explorer/documentItemNode'

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as semver from 'semver'
 import * as env from '../shared/vscode/env'
 
@@ -43,11 +43,12 @@ describe('tech debt', function () {
         )
     })
 
-    it('temporary code removed', function () {
-        // Reason: https://sim.amazon.com/issues/IDE-10559
-        // At this point in time most users who would have run in to this error
-        // will have already had their old files deleted.
-        const august2023 = new Date(2023, 7, 1)
-        assert.ok(Date.now() < august2023.getTime(), 'remove `deleteOldFiles()` in `cache.ts`')
+    it('remove explicit sam cli version', function () {
+        // Indicate to start using the latest aws-sam-cli version in our CI
+        // https://issues.amazon.com/issues/IDE-11386
+        assert(
+            new Date() < new Date(2024, 1, 15),
+            'Remove use of 1.94.0 for aws-sam-cli in linuxIntegrationTests.yml and see if integration tests are passing now'
+        )
     })
 })

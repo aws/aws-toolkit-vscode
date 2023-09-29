@@ -37,6 +37,13 @@
             }
         },
         {
+            "label": "npm: buildBrowser",
+            "type": "npm",
+            "script": "buildBrowser",
+            "dependsOn": ["watch"],
+            "detail": "Builds the webpacked browser bundle"
+        },
+        {
             "type": "npm",
             "script": "lint",
             "problemMatcher": "$eslint-stylish"

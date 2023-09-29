@@ -32,20 +32,18 @@ import {
     isIamConnection,
     isSsoConnection,
 } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, promptAndUseConnection } from '../../utils'
+import { tryAddCredentials, signout, showRegionPrompter, promptAndUseConnection, ExtensionUse } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
-import { throttle } from '../../../shared/utilities/functionUtils'
+import { debounce } from '../../../shared/utilities/functionUtils'
 import { AuthError, ServiceItemId, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
-import { ExtensionUse } from '../../../shared/utilities/vsCodeUtils'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 
-const logger = getLogger()
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
@@ -71,7 +69,6 @@ export class AuthWebview extends VueWebview {
     }
 
     getCredentialFormatError(key: CredentialsKey, value: string | undefined): string | undefined {
-        getLogger().warn('getCredentialFormatError(): %s %s', key, value)
         return getCredentialFormatError(key, value)
     }
 
@@ -93,7 +90,7 @@ export class AuthWebview extends VueWebview {
     }
 
     /**
-     * Returns true if any credentials are found, even ones associated with an sso
+     * Returns true if any credentials are found, including those discovered from SSO service API.
      */
     async isCredentialExists(): Promise<boolean> {
         return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
@@ -239,7 +236,7 @@ export class AuthWebview extends VueWebview {
                 return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
             }
 
-            logger.error('Failed to setup.', e)
+            getLogger().error('AuthWebview: Failed to setup: %s', (e as Error).message)
             return { id: 'defaultFailure', text: 'Failed to setup.' }
         }
     }
@@ -315,12 +312,12 @@ export class AuthWebview extends VueWebview {
         ]
 
         // The event handler in the frontend refreshes all connection statuses
-        // when triggered, and multiple events can fire at the same time so we throttle.
-        const throttledFire = throttle(() => this.onDidConnectionUpdate.fire(undefined), 500)
+        // when triggered, and multiple events can fire at the same time so we debounce.
+        const debouncedFire = debounce(() => this.onDidConnectionUpdate.fire(undefined), 500)
 
         events.forEach(event =>
             event(() => {
-                throttledFire()
+                debouncedFire()
             })
         )
     }

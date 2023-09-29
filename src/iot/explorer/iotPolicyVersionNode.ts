@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as moment from 'moment'
+import moment from 'moment'
 import { Iot } from 'aws-sdk'
 import { IotClient, IotPolicy } from '../../shared/clients/iotClient'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'

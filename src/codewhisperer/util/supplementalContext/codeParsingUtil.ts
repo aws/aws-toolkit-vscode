@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import path = require('path')
 import { DependencyGraph } from '../dependencyGraph/dependencyGraph'
-import * as vscode from 'vscode'
+import { normalize } from '../../../shared/utilities/pathUtils'
 
 export interface utgLanguageConfig {
     extension: string
@@ -19,7 +20,7 @@ export const utgLanguageConfigs: Record<string, utgLanguageConfig> = {
     // Java regexes are not working efficiently for class or function extraction
     java: {
         extension: '.java',
-        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java)$/,
+        testFilenamePattern: /(?:Test([^/\\]+)\.java|([^/\\]+)Test\.java|([^/\\]+)Tests\.java)$/,
         functionExtractionPattern:
             /(?:(?:public|private|protected)\s+)(?:static\s+)?(?:[\w<>]+\s+)?(\w+)\s*\([^)]*\)\s*(?:(?:throws\s+\w+)?\s*)[{;]/gm, // TODO: Doesn't work for generice <T> T functions.
         classExtractionPattern: /(?<=^|\n)\s*public\s+class\s+(\w+)/gm, // TODO: Verify these.
@@ -68,29 +69,34 @@ export function countSubstringMatches(arr1: string[], arr2: string[]): number {
     return count
 }
 
-export async function isTestFile(editor: vscode.TextEditor, dependencyGraph: DependencyGraph): Promise<boolean> {
-    const languageConfig = utgLanguageConfigs[editor.document.languageId]
-    if (!languageConfig) {
-        // We have enabled the support only for python and Java for this check
-        // as we depend on Regex for this validation.
-        return false
+export async function isTestFile(
+    filePath: string,
+    languageConfig: {
+        languageId: vscode.TextDocument['languageId']
+        dependencyGraph?: DependencyGraph
+        fileContent?: string
     }
+): Promise<boolean> {
+    const normalizedFilePath = normalize(filePath)
+    const pathContainsTest =
+        normalizedFilePath.includes('tests/') ||
+        normalizedFilePath.includes('test/') ||
+        normalizedFilePath.includes('tst/')
+    const fileNameMatchTestPatterns = isTestFileByName(normalizedFilePath, languageConfig.languageId)
 
-    // TODO (Metrics): Add total number of calls to isTestFile
-    if (isTestFileByName(editor.document.uri.fsPath, editor.document.languageId)) {
+    if (pathContainsTest || fileNameMatchTestPatterns) {
         return true
     }
 
-    // TODO (Metrics): Add metrics for isTestFileByName Failure
-    // (to help us determine if people follow naming conventions)
-    if (await dependencyGraph.isTestFile(editor.document.getText())) {
-        return true
-    }
-
-    return false
+    // This run slowly thus lazily execute
+    const fileHasTestDependency =
+        languageConfig.dependencyGraph && languageConfig.fileContent
+            ? await languageConfig.dependencyGraph.isTestFile(languageConfig.fileContent)
+            : false
+    return fileHasTestDependency
 }
 
-export function isTestFileByName(filePath: string, language: string): boolean {
+function isTestFileByName(filePath: string, language: vscode.TextDocument['languageId']): boolean {
     const languageConfig = utgLanguageConfigs[language]
     if (!languageConfig) {
         // We have enabled the support only for python and Java for this check
@@ -100,8 +106,6 @@ export function isTestFileByName(filePath: string, language: string): boolean {
     const testFilenamePattern = languageConfig.testFilenamePattern
 
     const filename = path.basename(filePath)
-    if (testFilenamePattern.test(filename)) {
-        return true
-    }
-    return false
+
+    return testFilenamePattern.test(filename)
 }

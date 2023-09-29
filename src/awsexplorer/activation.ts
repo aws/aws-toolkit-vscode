@@ -19,8 +19,7 @@ import { downloadStateMachineDefinition } from '../stepFunctions/commands/downlo
 import { executeStateMachine } from '../stepFunctions/vue/executeStateMachine/executeStateMachine'
 import { StateMachineNode } from '../stepFunctions/explorer/stepFunctionsNodes'
 import { AwsExplorer } from './awsExplorer'
-import { copyArnCommand } from './commands/copyArn'
-import { copyNameCommand } from './commands/copyName'
+import { copyTextCommand } from './commands/copyText'
 import { loadMoreChildrenCommand } from './commands/loadMoreChildren'
 import { checkExplorerForDefaultRegion } from './defaultRegion'
 import { createLocalExplorerView } from './localExplorer'
@@ -56,6 +55,9 @@ export async function activate(args: {
                 bucket: element.element.bucket,
                 folder: element.element.folder,
             })
+        }
+        if (element.element.serviceId) {
+            telemetry.aws_expandExplorerNode.emit({ serviceType: element.element.serviceId })
         }
     })
     globals.context.subscriptions.push(view)
@@ -117,8 +119,12 @@ async function registerAwsExplorerCommands(
                 telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
-        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async () => {
-            await submitFeedback(context)
+        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async id => {
+            if (id === 'CodeWhisperer') {
+                await submitFeedback(context, 'CodeWhisperer')
+            } else {
+                await submitFeedback(context, 'AWS Toolkit')
+            }
         }),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
@@ -156,8 +162,8 @@ async function registerAwsExplorerCommands(
                     isPreviewAndRender: true,
                 })
         ),
-        Commands.register('aws.copyArn', async (node: AWSResourceNode) => await copyArnCommand(node)),
-        Commands.register('aws.copyName', async (node: AWSResourceNode) => await copyNameCommand(node)),
+        Commands.register('aws.copyArn', async (node: AWSResourceNode) => await copyTextCommand(node, 'ARN')),
+        Commands.register('aws.copyName', async (node: AWSResourceNode) => await copyTextCommand(node, 'name')),
         Commands.register('aws.refreshAwsExplorerNode', async (element: AWSTreeNodeBase | undefined) => {
             awsExplorer.refresh(element)
         }),

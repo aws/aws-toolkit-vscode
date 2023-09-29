@@ -38,7 +38,7 @@
                 &nbsp; &nbsp;
                 <div style="display: flex; flex-direction: row; color: #ffffff">
                     Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName() }}</span
-                    >! Switch between existing connections in the&nbsp;<a
+                    >! See connections in the&nbsp;<a
                         v-on:click="showConnectionQuickPick()"
                         style="cursor: pointer; color: rgb(147, 196, 255)"
                         >Toolkit panel</a
@@ -232,7 +232,7 @@ export default defineComponent({
     },
     methods: {
         isLandscape() {
-            return this.currWindowWidth > 1120
+            return this.currWindowWidth > 1170
         },
         isAnyServiceSelected(): boolean {
             return serviceItemsState.selected !== undefined
@@ -389,8 +389,7 @@ export default defineComponent({
 }
 
 #left-column {
-    min-width: 500px;
-    max-width: 500px;
+    width: 550px;
     box-sizing: border-box;
     margin-top: 10px;
 }

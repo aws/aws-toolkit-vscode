@@ -19,6 +19,11 @@ export class CodeWhispererUserGroupSettings {
         }
     }
 
+    // Visible for testing, DO NOT use on production
+    public set userGroup(userGroup: UserGroup) {
+        this._userGroup = userGroup
+    }
+
     public get version(): string | undefined {
         return this._version
     }
@@ -52,7 +57,8 @@ export class CodeWhispererUserGroupSettings {
 
     private guessUserGroup(): UserGroup {
         const randomNum = Math.random()
-        const result = randomNum <= 1 / 2 ? UserGroup.Control : UserGroup.CrossFile
+        const result =
+            randomNum <= 1 / 3 ? UserGroup.Control : randomNum <= 2 / 3 ? UserGroup.Classifier : UserGroup.CrossFile
 
         return result
     }

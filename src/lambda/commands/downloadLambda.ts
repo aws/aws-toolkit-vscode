@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as AdmZip from 'adm-zip'
+import AdmZip from 'adm-zip'
 import * as fs from 'fs-extra'
 import * as _ from 'lodash'
 import * as path from 'path'
@@ -42,7 +42,10 @@ async function runDownloadLambda(functionNode: LambdaFunctionNode): Promise<Resu
 
     if (workspaceFolders.length === 0) {
         vscode.window.showErrorMessage(
-            localize('AWS.lambda.download.noWorkspaceFolders', 'Open a workspace before downloading a Lambda function.')
+            localize(
+                'AWS.lambda.download.noWorkspaceFolders',
+                'Open a workspace and add a folder to it before downloading a Lambda function.'
+            )
         )
         return 'Cancelled'
     }

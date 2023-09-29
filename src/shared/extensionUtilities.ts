@@ -340,11 +340,9 @@ export function getToolkitEnvironmentDetails(): string {
 /**
  * Returns the Cloud9 compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9.
  */
-export async function initializeComputeRegion(
-    metadata: Ec2MetadataClient = new DefaultEc2MetadataClient(),
-    isC9: boolean = isCloud9()
-): Promise<void> {
+export async function initializeComputeRegion(metadata?: Ec2MetadataClient, isC9: boolean = isCloud9()): Promise<void> {
     if (isC9) {
+        metadata ??= new DefaultEc2MetadataClient()
         try {
             const identity = await metadata.getInstanceIdentity()
             computeRegion = identity.region || 'unknown'
@@ -363,4 +361,126 @@ export function getComputeRegion(): string | undefined {
     }
 
     return computeRegion
+}
+
+/**
+ * Provides an {@link vscode.Event} that is triggered when the user interacts with the extension.
+ * This will help to be notified of user activity.
+ */
+export class ExtensionUserActivity implements vscode.Disposable {
+    private disposables: vscode.Disposable[] = []
+    private activityEvent = new vscode.EventEmitter<void>()
+    /** The event that is triggered when the user interacts with the extension */
+    onUserActivity = this.activityEvent.event
+
+    /**
+     * @param delay The delay until a throttled user activity event is fired in milliseconds.
+     * @param customEvents For testing purposes. The events that trigger the user activity.
+     * @returns
+     */
+    constructor(delay: number = 10_000, customEvents?: vscode.Event<any>[]) {
+        // This ensures we don't fire a user activity event more than once per delay.
+        const throttledEmit = _.throttle(
+            (event: vscode.Event<any>) => {
+                this.activityEvent.fire()
+                getLogger().debug(`ExtensionUserActivity: event fired "${event.name}"`)
+            },
+            delay,
+            { leading: true, trailing: false }
+        )
+
+        if (customEvents) {
+            customEvents.forEach(event =>
+                this.register(
+                    event(() => {
+                        throttledEmit(event)
+                    })
+                )
+            )
+        } else {
+            this.registerAllEvents(throttledEmit)
+        }
+
+        this.disposables.push(this.activityEvent)
+    }
+
+    /**
+     * Registers events that have conditions if they should even fire
+     */
+    private registerAllEvents(throttledEmit: (e: vscode.Event<any>) => any) {
+        this.activityEvents.forEach(event =>
+            this.register(
+                event(() => {
+                    throttledEmit(event)
+                })
+            )
+        )
+
+        /** ---- Events with edge cases ---- */
+        this.register(
+            vscode.window.onDidChangeWindowState(e => {
+                if ((e as any).active === false) {
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeWindowState)
+            })
+        )
+
+        this.register(
+            vscode.workspace.onDidChangeTextDocument(e => {
+                // Our extension may change a file in the background (eg: log file)
+                const uriOfDocumentUserIsEditing = vscode.window.activeTextEditor?.document?.uri
+                if (!uriOfDocumentUserIsEditing) {
+                    // User was not editing any file themselves
+                    return
+                }
+                if (uriOfDocumentUserIsEditing !== e.document.uri) {
+                    // File changed was not the one the user was actively working on
+                    return
+                }
+                throttledEmit(vscode.workspace.onDidChangeTextDocument)
+            })
+        )
+
+        this.register(
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                if (e.textEditor.document.uri.scheme === 'output') {
+                    // Ignore `output` scheme as text editors from output panel autoscroll
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTextEditorSelection)
+            })
+        )
+
+        this.register(
+            vscode.window.onDidChangeTextEditorVisibleRanges(e => {
+                if (e.textEditor.document.uri.scheme === 'output') {
+                    // Ignore `output` scheme as text editors from output panel autoscroll
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTextEditorVisibleRanges)
+            })
+        )
+    }
+
+    private activityEvents: vscode.Event<any>[] = [
+        vscode.window.onDidChangeActiveColorTheme,
+        vscode.window.onDidChangeActiveTextEditor,
+        vscode.window.onDidChangeActiveTerminal,
+        vscode.window.onDidChangeVisibleTextEditors,
+        vscode.window.onDidChangeTextEditorOptions,
+        vscode.window.onDidOpenTerminal,
+        vscode.window.onDidCloseTerminal,
+        vscode.window.onDidChangeTerminalState,
+        vscode.window.onDidChangeTextEditorViewColumn,
+        vscode.workspace.onDidOpenTextDocument,
+    ]
+
+    private register(disposable: vscode.Disposable) {
+        this.disposables.push(disposable)
+    }
+
+    dispose() {
+        this.disposables.forEach(d => d.dispose())
+    }
 }

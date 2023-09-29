@@ -10,8 +10,8 @@ import { Prompter } from '../../shared/ui/prompter'
 import { toTitleCase } from '../../shared/utilities/textUtilities'
 
 const devenvOptions = settings['environment']
-export type InstanceType = keyof typeof devenvOptions['instanceType']
-export type SubscriptionType = typeof subscriptionTypes[number]
+export type InstanceType = keyof (typeof devenvOptions)['instanceType']
+export type SubscriptionType = (typeof subscriptionTypes)[number]
 
 const subscriptionTypes = ['FREE', 'STANDARD'] as const
 

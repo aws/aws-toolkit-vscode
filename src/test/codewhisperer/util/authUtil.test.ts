@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { AuthUtil, defaultCwScopes } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'

@@ -6,8 +6,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import * as assert from 'assert'
-import * as moment from 'moment'
+import assert from 'assert'
+import moment from 'moment'
 import {
     SelectLogStreamWizardContext,
     SelectLogStreamWizard,

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { AWSError, Request, Iot } from 'aws-sdk'
 import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import { DefaultIotClient, ListThingCertificatesResponse } from '../../../shared/clients/iotClient'

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import {
     cliVersionStepFunctionsTemplate,
     getSamCliTemplateParameter,
@@ -24,7 +24,7 @@ import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 
 let validTemplateOptions: Set<SamTemplate>
 let validPythonTemplateOptions: Set<SamTemplate>
-let validNode12TemplateOptions: Set<SamTemplate>
+let validNodeTemplateOptions: Set<SamTemplate>
 let validGoTemplateOptions: Set<SamTemplate>
 let defaultTemplateOptions: Set<SamTemplate>
 
@@ -46,7 +46,7 @@ before(function () {
         stepFunctionsSampleApp,
     ])
 
-    validNode12TemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp, typeScriptBackendTemplate])
+    validNodeTemplateOptions = Set([helloWorldTemplate, stepFunctionsSampleApp, typeScriptBackendTemplate])
 
     validGoTemplateOptions = Set([
         helloWorldTemplate,
@@ -67,17 +67,18 @@ describe('getSamTemplateWizardOption', function () {
                 case 'python3.8':
                 case 'python3.9':
                 case 'python3.10':
+                case 'python3.11':
                     assert.deepStrictEqual(
                         result,
                         validPythonTemplateOptions,
                         'Python 3.x supports additional template options'
                     )
                     break
-                case 'nodejs12.x':
+                case 'nodejs16.x':
                     assert.deepStrictEqual(
                         result,
-                        validNode12TemplateOptions,
-                        'Node12.x supports default and TS template options'
+                        validNodeTemplateOptions,
+                        'Node supports default and TS template options'
                     )
                     break
                 case 'go1.x':

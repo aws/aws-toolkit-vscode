@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { TreeItem, Command, TreeItemCollapsibleState, EventEmitter } from 'vscode'
 import { loadMoreCommand, ResourceTreeNode } from '../../../shared/treeview/resource'
 import { TreeNode } from '../../../shared/treeview/resourceTreeDataProvider'
@@ -11,7 +11,7 @@ import { toCollection } from '../../../shared/utilities/asyncCollection'
 
 type Replace<T, K extends keyof T, U> = Omit<T, K> & { [P in K]: U }
 type BoundCommand<T extends any[]> = Replace<Command, 'arguments', T>
-type LoadMoreBoundCommand = BoundCommand<Parameters<typeof loadMoreCommand['execute']>>
+type LoadMoreBoundCommand = BoundCommand<Parameters<(typeof loadMoreCommand)['execute']>>
 type LoadMoreNode = Replace<TreeNode, 'getTreeItem', () => Replace<TreeItem, 'command', LoadMoreBoundCommand>>
 
 function isLoadMoreNode(node: TreeNode): node is LoadMoreNode {

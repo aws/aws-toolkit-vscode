@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { vsCodeState, ConfigurationEntry } from '../models/model'
+import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -15,6 +15,7 @@ import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
+import { session } from '../util/codeWhispererSession'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -35,66 +36,68 @@ export async function invokeRecommendation(
         vscode.window.showWarningMessage('Turn on "editor.suggest.showMethods" to use CodeWhisperer')
         return
     }
-    if (editor) {
-        /**
-         * Skip when output channel gains focus and invoke
-         */
-        if (editor.document.languageId === 'Log') {
+    if (!editor) {
+        return
+    }
+
+    /**
+     * Skip when output channel gains focus and invoke
+     */
+    if (editor.document.languageId === 'Log') {
+        return
+    }
+    /**
+     * When using intelliSense, if invocation position changed, reject previous active recommendations
+     */
+    if (vsCodeState.isIntelliSenseActive && editor.selection.active !== session.startPos) {
+        resetIntelliSenseState(
+            config.isManualTriggerEnabled,
+            config.isAutomatedTriggerEnabled,
+            RecommendationHandler.instance.isValidResponse()
+        )
+    }
+
+    if (isCloud9('any')) {
+        if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
             return
         }
-        /**
-         * When using intelliSense, if invocation position changed, reject previous active recommendations
-         */
-        if (vsCodeState.isIntelliSenseActive && editor.selection.active !== RecommendationHandler.instance.startPos) {
-            resetIntelliSenseState(
-                config.isManualTriggerEnabled,
-                config.isAutomatedTriggerEnabled,
-                RecommendationHandler.instance.isValidResponse()
-            )
-        }
-        if (isCloud9('any')) {
-            if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
-                return
-            }
-            vsCodeState.isIntelliSenseActive = false
-            RecommendationHandler.instance.isGenerateRecommendationInProgress = true
-            try {
-                RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
-                RecommendationHandler.instance.clearRecommendations()
-                if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                    await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        'OnDemand',
-                        config,
-                        undefined,
-                        false
-                    )
-                } else {
-                    if (AuthUtil.instance.isConnectionExpired()) {
-                        await AuthUtil.instance.showReauthenticatePrompt()
-                    }
-                    await RecommendationHandler.instance.getRecommendations(
-                        client,
-                        editor,
-                        'OnDemand',
-                        config,
-                        undefined,
-                        true
-                    )
+        vsCodeState.isIntelliSenseActive = false
+        RecommendationHandler.instance.isGenerateRecommendationInProgress = true
+        try {
+            let response: GetRecommendationsResponse
+            if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
+                response = await RecommendationHandler.instance.getRecommendations(
+                    client,
+                    editor,
+                    'OnDemand',
+                    config,
+                    undefined,
+                    false
+                )
+            } else {
+                if (AuthUtil.instance.isConnectionExpired()) {
+                    await AuthUtil.instance.showReauthenticatePrompt()
                 }
-                if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true)) {
-                    await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                        vsCodeState.isIntelliSenseActive = true
-                    })
-                }
-            } finally {
-                RecommendationHandler.instance.isGenerateRecommendationInProgress = false
+                response = await RecommendationHandler.instance.getRecommendations(
+                    client,
+                    editor,
+                    'OnDemand',
+                    config,
+                    undefined,
+                    true
+                )
             }
-        } else if (isInlineCompletionEnabled()) {
-            TelemetryHelper.instance.setInvokeSuggestionStartTime()
-            ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
-            await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
+            if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true, response)) {
+                await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
+                    vsCodeState.isIntelliSenseActive = true
+                })
+            }
+        } finally {
+            RecommendationHandler.instance.isGenerateRecommendationInProgress = false
         }
+    } else if (isInlineCompletionEnabled()) {
+        TelemetryHelper.instance.setInvokeSuggestionStartTime()
+        ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
+        await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
     }
 }

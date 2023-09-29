@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
@@ -19,6 +19,8 @@ import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
 import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrigger'
+import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -47,6 +49,7 @@ describe('keyStrokeHandler', function () {
         })
         afterEach(function () {
             sinon.restore()
+            CodeWhispererUserGroupSettings.instance.reset()
         })
 
         it('Whatever the input is, should skip when automatic trigger is turned off, should not call invokeAutomatedTrigger', async function () {
@@ -188,13 +191,14 @@ describe('keyStrokeHandler', function () {
             assert.ok(!startTimerSpy.called)
         })
 
-        it('Should start idle trigger timer when inputing non-special characters for non-classifier language', async function () {
+        it('Should start idle trigger timer when inputing non-special characters for not all classifier languages for non-classifier group', async function () {
             const mockEditor = createMockTextEditor('def addTwo', 'test.rb', 'ruby')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
                 'a'
             )
+            CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(startTimerSpy.called)
         })

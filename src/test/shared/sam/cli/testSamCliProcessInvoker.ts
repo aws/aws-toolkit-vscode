@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { SpawnOptions } from 'child_process'
 
 import { isError } from 'lodash'
@@ -94,12 +94,9 @@ export async function assertLogContainsBadExitInformation(
 ): Promise<void> {
     const expectedTexts = [
         {
-            text: `Unexpected exitcode (${errantChildProcessResult.exitCode}), expecting (${expectedExitCode})`,
+            text: `SAM CLI failed (exitcode: ${errantChildProcessResult.exitCode}, expected ${expectedExitCode}`,
             verifyMessage: 'Log message missing for exit code',
         },
-        { text: `Error: ${errantChildProcessResult.error}`, verifyMessage: 'Log message missing for error' },
-        { text: `stderr: ${errantChildProcessResult.stderr}`, verifyMessage: 'Log message missing for stderr' },
-        { text: `stdout: ${errantChildProcessResult.stdout}`, verifyMessage: 'Log message missing for stdout' },
     ]
 
     const logText = logger

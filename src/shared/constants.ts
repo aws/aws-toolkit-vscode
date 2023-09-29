@@ -21,6 +21,9 @@ export const samInstallUrl = vscode.Uri.parse(
 export const samUpgradeUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/manage-sam-cli-versions.html#manage-sam-cli-versions-upgrade'
 )
+export const samTroubleshootingUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-troubleshooting.html'
+)
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
 export const documentationUrl: string = isCloud9()
@@ -98,10 +101,12 @@ export const debugNewSamAppUrl: string = isCloud9()
 export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
 export const ecsExecToolkitGuideUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/ecs-exec.html'
-export const ecsRequiredTaskPermissionsUrl: string =
+export const ecsTaskPermissionsUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-enabling-and-using'
-export const ecsRequiredIamPermissionsUrl: string =
+)
+export const ecsIamPermissionsUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html#ecs-exec-best-practices-limit-access-execute-command'
+)
 
 /**
  * Moment format for rendering readable dates.

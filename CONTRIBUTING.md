@@ -35,15 +35,21 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-You can run the extension from Visual Studio Code:
+To run the extension from VSCode as a Node.js app:
 
 1. Select the Run panel from the sidebar.
 2. From the dropdown at the top of the Run pane, choose `Extension`.
-3. Press `F5` to launch a new instance of Visual Studio Code with the extension installed and the debugger attached.
+3. Press `F5` to launch a new instance of VSCode with the extension installed and the debugger attached.
+
+To run the extension from VSCode in "web mode" (a browser app, or "PWA"):
+
+1. Select the Run panel from the sidebar.
+2. From the dropdown at the top of the Run pane, choose `Extension (web)`.
+3. Press `F5` to launch a new instance of VSCode (web mode) with the extension installed and the debugger attached.
 
 ### Build
 
-When you launch the extension or run tests from Visual Studio Code, it will automatically build the extension and watch for changes.
+When you launch the extension or run tests from VSCode, it will automatically build the extension and watch for changes.
 
 You can also use these NPM tasks (see `npm run` for the full list):
 
@@ -118,7 +124,7 @@ You can also use these NPM tasks (see `npm run` for the full list):
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from Visual Studio Code:
+You can run tests directly from VSCode:
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -153,6 +159,19 @@ To run a single test in VSCode, do any one of:
     ```
     rootTestsPath: __dirname + '/shared/sam/debugger/'
     ```
+
+### Debug failing integration tests
+
+-   Check for recent changes in each of these projects:
+    -   https://github.com/microsoft/vscode-python (releases)
+    -   https://github.com/aws/aws-sam-cli/releases
+    -   https://github.com/aws/aws-sam-cli-app-templates/ (`master` branch, not releases!)
+
+### Browser Support
+
+Running the extension in the browser (eg: [vscode.dev](https://vscode.dev/)).
+
+[See documentation here](./src/browser/README.md).
 
 ### Coverage report
 
@@ -254,6 +273,21 @@ then following the log with:
 
     tail -F ~/awstoolkit.log
 
+### Telemetry
+
+See [aws-toolkit-common/telemetry](https://github.com/aws/aws-toolkit-common/tree/main/telemetry#telemetry) for full details about defining telemetry metrics.
+
+-   You can define new metrics during development by adding items to
+    [telemetry/vscodeTelemetry.json](https://github.com/aws/aws-toolkit-vscode/blob/21ca0fca26d677f105caef81de2638b2e4796804/src/shared/telemetry/vscodeTelemetry.json).
+    -   Building the project will trigger the `generateClients` build task, which generates new symbols in `shared/telemetry/telemetry`, which you can import via:
+        ```
+        import { telemetry } from '../../shared/telemetry/telemetry'
+        ```
+    -   The metrics defined in `vscodeTelemetry.json` should be upstreamed to [aws-toolkit-common](https://github.com/aws/aws-toolkit-common/blob/main/telemetry/definitions/commonDefinitions.json) after launch (at the latest).
+-   Metrics are dropped (not posted to the service) if the extension is running in [CI or other
+    automation tasks](https://github.com/aws/aws-toolkit-vscode/blob/21ca0fca26d677f105caef81de2638b2e4796804/src/shared/vscode/env.ts#L71-L73).
+    -   You can always _test_ telemetry via [assertTelemetry()](https://github.com/aws/aws-toolkit-vscode/blob/21ca0fca26d677f105caef81de2638b2e4796804/src/test/testUtil.ts#L164), regardless of the current environment.
+
 ### Service Endpoints
 
 Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
@@ -265,13 +299,6 @@ Example:
     "s3": "http://example.com"
 }
 ```
-
-### Telemetry and Automation
-
-Metrics are only emitted if the extension is assumed to be ran from an actual user rather than automation scripts.
-This condition is checked through an environment variable `AWS_TOOLKIT_AUTOMATION` which is set by test entry points.
-If any truthy value is present, telemetry will be dropped if the current build is not a release version. Utility functions,
-such as `assertTelemetry`, can be used to test specific telemetry emits even in automation.
 
 ### SAM/CFN ("goformation") JSON schema
 
@@ -343,7 +370,7 @@ Webviews can be hot-reloaded (updated without restarting the extension) by runni
 
 ### Font generation
 
-For extensions to contribute their own codicons, VS Code requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
+For extensions to contribute their own codicons, VSCode requires a font file as well as how that font maps to codicon IDs. The mapping is found in `package.json` under the `icons` contribution point. Icons located in `resources/icons` are stitched together at build-time into a single font, automatically adding mappings to `package.json`. More information can be found [here](docs/icons.md).
 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 
@@ -354,10 +381,6 @@ As a simple example, let's say I wanted to add a new icon for CloudWatch log str
     ```ts
     getIcon('aws-cloudwatch-log-stream')
     ```
-
-### Beta artifacts
-
-The Toolkit codebase contains logic in `src/dev/beta.ts` to support development during private betas. Creating a beta artifact requires a _stable_ URL to source Toolkit builds from. This URL should be added to `src/dev/config.ts`. Subsequent Toolkit artifacts will have their version set to `1.999.0` with a commit hash. Builds will automatically query the URL to check for a new build once a day and on every reload.
 
 ### VSCode Marketplace
 
@@ -373,9 +396,9 @@ Note therefore:
 2. `HEAD` implies that the URL depends on the current _default branch_ (i.e.
    `master`). Changes to other branches won't affect the marketplace page.
 
-## Importing icons from other open source repos
+### Importing icons from other projects
 
-If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps:
+If you are contribuing visual assets from other open source repos, the source repo must have a compatible license (such as MIT), and we need to document the source of the images. Follow these steps ([example: #227](https://github.com/aws/aws-toolkit-vscode/pull/227)):
 
 1. Use a separate location in this repo for every repo/organization where images are sourced from. See `resources/icons/vscode` as an example.
 1. Copy the source repo's licence into this destination location's LICENSE.txt file
@@ -391,7 +414,39 @@ If you are contribuing visual assets from other open source repos, the source re
 
 1. Add an entry [here](docs/icons.md#third-party) summarizing the new destination location, where the assets were sourced from, and a brief rationale.
 
-[PR #227](https://github.com/aws/aws-toolkit-vscode/pull/227) shows an example.
+## Using new vscode APIs
+
+The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
+is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+
+But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
+
+1. Check the vscode version: `semver.gte(vscode.version, '1.64.0')`
+2. Disable the feature if is too old. That could mean just skipping the code entirely, or showing a different UI.
+
+Full example: https://github.com/aws/aws-toolkit-vscode/blob/7cb97a2ef0a765862d21842693967070b0dcdd49/src/shared/credentials/defaultCredentialSelectionDataProvider.ts#L54-L76
+
+## Preview Releases and Experiments
+
+There are several ways to make pre-production changes available on a "preview" or "experimental" basis:
+
+-   **Experimental features:** settings defined in [aws.experiments](https://github.com/aws/aws-toolkit-vscode/blob/4dcee33931693380739eaa5d44e92fa4545a9666/package.json#L228-L241)
+    are available in the vscode settings UI so that customers **can discover and enable them.**
+    This mechanism is intended for non-production features which are ready for
+    early access / preview feedback from interested customers.
+-   **Developer-only features:** the `aws.dev.forceDevMode` setting can be used as
+    a condition to enable features only for users who have
+    `"aws.dev.forceDevMode": true` in their settings. These features are intended
+    to be part of the mainline branch, but are _not_ presented to customers in the
+    VSCode settings UI. Example: [EC2 commands were gated on `aws.isDevMode`](https://github.com/aws/aws-toolkit-vscode/blob/4dcee33931693380739eaa5d44e92fa4545a9666/package.json#L1115-L1126)
+    so the functionality could be merged to mainline while it was under development.
+-   **Beta artifacts:** For a "private beta" launch, `src/dev/beta.ts` contains
+    logic to check a hardcoded, stable URL serving the latest `.vsix` build for
+    the private beta. The hardcoded URL defined in [`dev/config.ts:betaUrl`](https://github.com/aws/aws-toolkit-vscode/blob/d9c27234c0732b021d07e184a865213d6efde8ec/src/dev/config.ts#L9)
+    also forces the Toolkit to declare version `1.999.0` (since "private beta"
+    has no semver and would conflict with the VSCode marketplace version,
+    causing unwanted auto-updating by VSCode). Beta builds of the Toolkit
+    automatically query the URL once per session per day.
 
 ## Code of Conduct
 

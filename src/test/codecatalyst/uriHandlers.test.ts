@@ -5,7 +5,7 @@
 
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
-import * as assert from 'assert'
+import assert from 'assert'
 import { register } from '../../codecatalyst/uriHandlers'
 import { UriHandler } from '../../shared/vscode/uriHandler'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'

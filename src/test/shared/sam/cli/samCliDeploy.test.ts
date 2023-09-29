@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as assert from 'assert'
+import assert from 'assert'
 import { makeUnexpectedExitCodeError } from '../../../../shared/sam/cli/samCliInvokerUtils'
 import { runSamCliDeploy, SamCliDeployParameters } from '../../../../shared/sam/cli/samCliDeploy'
 import { getTestLogger } from '../../../globalSetup.test'

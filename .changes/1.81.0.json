@@ -1,0 +1,14 @@
+{
+	"date": "2023-07-13",
+	"version": "1.81.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "codewhisperer: improper request format when sending empty supplemental context"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: Improve suggestion quality with enhanced file context fetching"
+		}
+	]
+}

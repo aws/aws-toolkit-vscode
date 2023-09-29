@@ -47,7 +47,6 @@ interface GitConfig {
     [key: string]: string | undefined
 }
 
-const execFileAsync = promisify(execFile)
 const minGitFilterVersion = new SemVer('2.27.0')
 
 // Arbitrary limit for the in-mem buffer when downloading files via `git cat-file`
@@ -74,6 +73,8 @@ export class GitExtension {
     private _onDidOpenRepository = new vscode.EventEmitter<Repository>()
     private _activationPromise?: Thenable<void>
     private static _instance?: GitExtension
+
+    private execFileAsync = promisify(execFile)
 
     public readonly onDidOpenRepository = this._onDidOpenRepository.event
 
@@ -257,7 +258,7 @@ export class GitExtension {
         // TODO: make a promise 'pipe' function
         if (branches.length === 0) {
             try {
-                const { stdout } = await execFileAsync(api.git.path, [
+                const { stdout } = await this.execFileAsync(api.git.path, [
                     'ls-remote',
                     '--heads',
                     '--',
@@ -290,7 +291,7 @@ export class GitExtension {
         } else if (repository) {
             ;(await repository.getConfigs()).forEach(({ key, value }) => (config[key] = value))
         } else {
-            const { stdout } = await execFileAsync(api.git.path, ['config', '--list', `--global`]).catch(err => {
+            const { stdout } = await this.execFileAsync(api.git.path, ['config', '--list', `--global`]).catch(err => {
                 getLogger().verbose(`git: failed to read config: %s`, err)
                 return { stdout: '' }
             })
@@ -312,7 +313,7 @@ export class GitExtension {
         }
 
         try {
-            const { stdout } = await execFileAsync(api.git.path, ['--version'])
+            const { stdout } = await this.execFileAsync(api.git.path, ['--version'])
             const match = stdout.trim().match(/[0-9]+.[0-9]+.[0-9]+/g)
             if (!match) {
                 throw new Error(`Unable to parse git output for version: ${stdout}`)
@@ -351,12 +352,12 @@ export class GitExtension {
         pushIf(args, remote.branch !== undefined, '--branch', remote.branch).push(remote.fetchUrl, tmpDir)
 
         try {
-            const { stderr } = await execFileAsync(api.git.path, args)
+            const { stderr } = await this.execFileAsync(api.git.path, args)
 
             // try to parse some stats from the clone
             const downloadSize = (stderr.match(/Receiving objects: 100% \([0-9]+\/[0-9]+\), (.*)\|/) ?? [])[1]
 
-            const { stdout } = await execFileAsync(api.git.path, ['ls-tree', '-r', '-z', 'HEAD'], {
+            const { stdout } = await this.execFileAsync(api.git.path, ['ls-tree', '-r', '-z', 'HEAD'], {
                 cwd: tmpDir,
             })
 
@@ -372,7 +373,7 @@ export class GitExtension {
                             new Error(`git: api was disabled while reading file "${name}" from "${remote.fetchUrl}"`)
                         )
 
-                        return execFileAsync(api.git.path, ['cat-file', type, hash], {
+                        return this.execFileAsync(api.git.path, ['cat-file', type, hash], {
                             cwd: tmpDir,
                             maxBuffer: 1024 * 1024 * maxBufferSizeInMB,
                         }).then(({ stdout }) => stdout)

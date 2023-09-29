@@ -15,6 +15,7 @@ import {
     createFreeTierLimitMetNode,
     createReconnectNode,
 } from './codewhispererChildrenNodes'
+import { createGettingStartedNode } from '../commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -67,14 +68,13 @@ export class CodeWhispererNode implements RootNode {
     public getChildren() {
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
-
+        if (AuthUtil.instance.isConnectionExpired()) {
+            return [createReconnectNode(), createLearnMore()]
+        }
         if (!AuthUtil.instance.isConnected()) {
             return [createSsoSignIn(), createLearnMore()]
         }
-
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnectNode(), createLearnMore()]
-        } else if (this._showFreeTierLimitReachedNode) {
+        if (this._showFreeTierLimitReachedNode) {
             if (isCloud9()) {
                 return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
             } else {
@@ -88,6 +88,7 @@ export class CodeWhispererNode implements RootNode {
                     createAutoSuggestionsNode(autoTriggerEnabled),
                     createSecurityScanNode(),
                     createOpenReferenceLogNode(),
+                    createGettingStartedNode(), // "Learn" node : opens Learn CodeWhisperer page
                 ]
             }
         }

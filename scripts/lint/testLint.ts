@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { glob } from 'glob'
-import * as Mocha from 'mocha'
+import glob from 'glob'
+import Mocha from 'mocha'
 ;(async () => {
     try {
         console.log('Running linting tests...')

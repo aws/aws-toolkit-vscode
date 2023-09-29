@@ -7,14 +7,27 @@ import * as vscode from 'vscode'
 import { getLogger } from '../logger/logger'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
-import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
+import { globDirs, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
+import { Settings } from '../settings'
+import { once } from '../utilities/functionUtils'
 
 /**
  * Prevent `findFiles()` from recursing into these directories.
  *
  * `findFiles()` defaults to the vscode `files.exclude` setting, which by default does not exclude "node_modules/".
  */
-const alwaysExclude = '**/{.aws-sam,.git,.svn,.hg,.rvm,.gem,.project,node_modules,venv,bower_components}/'
+const alwaysExclude = {
+    '.aws-sam': true,
+    '.git': true,
+    '.svn': true,
+    '.hg': true,
+    '.rvm': true,
+    '.gem': true,
+    '.project': true,
+    node_modules: true,
+    venv: true,
+    bower_components: true,
+}
 
 export interface WatchedItem<T> {
     /**
@@ -26,6 +39,21 @@ export interface WatchedItem<T> {
      */
     item: T
 }
+
+/** Builds an exclude pattern based on vscode global settings and the `alwaysExclude` default. */
+export function getExcludePattern() {
+    const vscodeFilesExclude = Settings.instance.get<object>('files.exclude', Object, {})
+    const vscodeSearchExclude = Settings.instance.get<object>('search.exclude', Object, {})
+    const vscodeWatcherExclude = Settings.instance.get<object>('files.watcherExclude', Object, {})
+    const all = [
+        ...Object.keys(alwaysExclude),
+        ...Object.keys(vscodeFilesExclude),
+        ...Object.keys(vscodeSearchExclude),
+        ...Object.keys(vscodeWatcherExclude),
+    ]
+    return globDirs(all)
+}
+const getExcludePatternOnce = once(getExcludePattern)
 
 /**
  * WatchedFiles lets us index files in the current registry. It is used
@@ -230,10 +258,19 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      */
     public async rebuild(): Promise<void> {
         this.reset()
+
+        const exclude = getExcludePatternOnce()
         for (const glob of this.globs) {
-            const itemUris = await vscode.workspace.findFiles(glob, alwaysExclude)
-            for (const item of itemUris) {
-                await this.addItemToRegistry(item, true)
+            try {
+                const found = await vscode.workspace.findFiles(glob, exclude)
+                for (const item of found) {
+                    await this.addItemToRegistry(item, true)
+                }
+            } catch (e) {
+                const err = e as Error
+                if (err.name !== 'Canceled') {
+                    getLogger().error('watchedFiles: findFiles("%s", "%s"): %s', glob, exclude, err.message)
+                }
             }
         }
     }
