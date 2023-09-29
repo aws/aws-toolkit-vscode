@@ -1,3 +1,5 @@
+# _1.79_ (2023-09-15)
+
 # _1.78_ (2023-09-08)
 - **(Bug Fix)** Fix 'not recognzied as an ... command' when connecting to CodeCatalyst Dev Environments on Windows
 
