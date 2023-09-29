@@ -25,7 +25,7 @@ import globals from '../../shared/extensionGlobals'
  * Magic path on the Docker image.
  * https://github.com/aws/aws-sam-cli/blob/2201b17bff0a438b934abbb53f6c76eff9ccfa6d/samcli/local/docker/lambda_container.py#L25
  */
-export const dotnetCoreDebuggerPath = '/tmp/lambci_debug_files/vsdbg'
+export const dotnetDebuggerPath = '/tmp/lambci_debug_files/vsdbg'
 export const goDebuggerPath = '/tmp/lambci_debug_files'
 
 export interface NodejsDebugConfiguration extends SamLaunchRequestArgs {
@@ -68,8 +68,8 @@ export interface PythonCloud9DebugConfiguration extends SamLaunchRequestArgs {
     readonly remoteRoot: string
 }
 
-export interface DotNetCoreDebugConfiguration extends SamLaunchRequestArgs {
-    readonly runtimeFamily: RuntimeFamily.DotNetCore
+export interface DotNetDebugConfiguration extends SamLaunchRequestArgs {
+    readonly runtimeFamily: RuntimeFamily.DotNet
     processName: string
     pipeTransport: PipeTransport
     windows: {
@@ -90,7 +90,7 @@ export interface GoDebugConfiguration extends SamLaunchRequestArgs {
 export interface PipeTransport {
     pipeProgram: 'sh' | 'powershell'
     pipeArgs: string[]
-    debuggerPath: typeof dotnetCoreDebuggerPath
+    debuggerPath: typeof dotnetDebuggerPath
     pipeCwd: string
 }
 

@@ -1617,7 +1617,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
@@ -1783,7 +1783,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
@@ -1936,7 +1936,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 awsCredentials: fakeCredentials,
                 request: 'attach', // Input "direct-invoke", output "attach".
                 runtime: 'dotnet6', // lambdaModel.dotNetRuntimes[0],
-                runtimeFamily: lambdaModel.RuntimeFamily.DotNetCore,
+                runtimeFamily: lambdaModel.RuntimeFamily.DotNet,
                 useIkpdb: false,
                 type: AWS_SAM_DEBUG_TYPE,
                 workspaceFolder: {
