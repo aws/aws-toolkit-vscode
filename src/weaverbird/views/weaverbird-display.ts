@@ -66,19 +66,8 @@ export class WeaverbirdDisplay {
                     const chatPrompt = JSON.parse(msg.data)
                     const interactions = await session.send(chatPrompt.prompt)
 
-                    for (const interaction of interactions) {
-                        if (typeof interaction.content === 'string') {
-                            this.sendDataToUI(
-                                panelId,
-                                createChatContent(interaction.content),
-                                MessageActionType.CHAT_ANSWER
-                            )
-                        } else {
-                            // TODO show the file picker view here instead
-                            for (const content of interaction.content) {
-                                this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
-                            }
-                        }
+                    for (const content of interactions.content) {
+                        this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
                     }
 
                     const followUpOptions = this.followUpOptions(session.state.phase)
