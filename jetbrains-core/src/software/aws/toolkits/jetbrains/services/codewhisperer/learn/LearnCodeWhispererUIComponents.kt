@@ -288,8 +288,8 @@ object LearnCodeWhispererUIComponents {
                 addActionListener {
                     val currentLanguage = LearnCodeWhispererManager.getInstance(project).language
                     val fileContext = tryExampleFileContexts[taskType]?.get(currentLanguage) ?: return@addActionListener
-                    val fileContent = fileContext[0] as String
-                    val caretOffset = fileContext[1] as Int
+                    val fileContent = fileContext.first
+                    val caretOffset = fileContext.second
                     CodeWhispererTelemetryService.getInstance().sendOnboardingClickEvent(currentLanguage, taskType)
                     val fileExtension = LearnCodeWhispererManager.getInstance(project).getFileExtension()
                     val fullFilename = "${tryExampleRowContext.filename}$fileExtension"
@@ -298,6 +298,7 @@ object LearnCodeWhispererUIComponents {
                     (editor.foldingModel as FoldingModelImpl).isFoldingEnabled = false
                     (editor.foldingModel as FoldingModelImpl).rebuild()
                     (editor as EditorImpl).resetSizes()
+                    editor.caretModel.updateVisualPosition()
                     if (fileExists) return@addActionListener
                     editor.caretModel.moveToOffset(caretOffset)
                 }

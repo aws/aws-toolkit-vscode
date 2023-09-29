@@ -24,7 +24,6 @@ import com.intellij.ui.dsl.builder.Row
 import com.intellij.ui.dsl.builder.TopGap
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.gridLayout.Gaps
-import groovy.lang.Tuple
 import icons.AwsIcons
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp
@@ -44,7 +43,6 @@ import software.aws.toolkits.resources.message
 import java.awt.Font
 import java.beans.PropertyChangeListener
 import javax.swing.BorderFactory
-import javax.swing.Icon
 import javax.swing.ImageIcon
 import javax.swing.JButton
 import javax.swing.JComponent
@@ -178,15 +176,15 @@ class LearnCodeWhispererEditor(val project: Project, val virtualFile: VirtualFil
 
     private fun Row.learnCodeWhispererLanguageButton(buttonLanguage: CodeWhispererProgrammingLanguage): Cell<JButton> {
         val buttonContext = when (buttonLanguage) {
-            CodeWhispererJava.INSTANCE -> Tuple("Java ", AwsIcons.Misc.JAVA)
-            CodeWhispererPython.INSTANCE -> Tuple("Python ", AwsIcons.Misc.PYTHON)
-            CodeWhispererJavaScript.INSTANCE -> Tuple("JavaScript ", AwsIcons.Misc.JAVASCRIPT)
-            CodeWhispererTypeScript.INSTANCE -> Tuple("TypeScript ", AwsIcons.Misc.TYPESCRIPT)
-            CodeWhispererCsharp.INSTANCE -> Tuple("C# ", AwsIcons.Misc.CSHARP)
-            else -> Tuple("Java ", AwsIcons.Misc.JAVA)
+            CodeWhispererJava.INSTANCE -> "Java " to AwsIcons.Misc.JAVA
+            CodeWhispererPython.INSTANCE -> "Python " to AwsIcons.Misc.PYTHON
+            CodeWhispererJavaScript.INSTANCE -> "JavaScript " to AwsIcons.Misc.JAVASCRIPT
+            CodeWhispererTypeScript.INSTANCE -> "TypeScript " to AwsIcons.Misc.TYPESCRIPT
+            CodeWhispererCsharp.INSTANCE -> "C# " to AwsIcons.Misc.CSHARP
+            else -> "Java " to AwsIcons.Misc.JAVA
         }
-        val text = buttonContext[0] as String
-        val buttonIcon = buttonContext[1] as Icon
+        val text = buttonContext.first
+        val buttonIcon = buttonContext.second
 
         return button(text) {
             LearnCodeWhispererManager.getInstance(project).language = buttonLanguage

@@ -189,12 +189,7 @@ class FeedbackDialog(
 
     init {
         super.init()
-
-        title = if (!isCodeWhisperer) {
-            message("feedback.title")
-        } else {
-            message("feedback.title.codewhisperer")
-        }
+        title = message("feedback.title", productName)
         setOKButtonText(message("feedback.submit_button"))
     }
 
@@ -221,7 +216,7 @@ class FeedbackDialog(
     }
 }
 
-class ShowFeedbackDialogAction : DumbAwareAction(message("feedback.title"), message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
+class ShowFeedbackDialogAction : DumbAwareAction(message("feedback.title", "Toolkit"), message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
     override fun actionPerformed(e: AnActionEvent) {
         runInEdt {
             FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT)).show()

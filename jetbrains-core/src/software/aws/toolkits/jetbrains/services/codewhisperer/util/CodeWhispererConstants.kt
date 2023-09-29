@@ -6,7 +6,6 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.util
 import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
-import groovy.lang.Tuple
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
@@ -285,39 +284,39 @@ public class SumFunction
 
         val tryExampleFileContexts = mapOf(
             CodewhispererGettingStartedTask.AutoTrigger to mapOf(
-                CodeWhispererJava.INSTANCE to Tuple(AUTO_TRIGGER_CONTENT_JAVA, AUTO_TRIGGER_CONTENT_JAVA.length - 8),
-                CodeWhispererPython.INSTANCE to Tuple(AUTO_TRIGGER_CONTENT_PYTHON, AUTO_TRIGGER_CONTENT_PYTHON.length),
-                CodeWhispererJavaScript.INSTANCE to Tuple(AUTO_TRIGGER_CONTENT_TS_JS, AUTO_TRIGGER_CONTENT_TS_JS.length),
-                CodeWhispererTypeScript.INSTANCE to Tuple(AUTO_TRIGGER_CONTENT_TS_JS, AUTO_TRIGGER_CONTENT_TS_JS.length),
-                CodeWhispererCsharp.INSTANCE to Tuple(AUTO_TRIGGER_CONTENT_CSHARP, AUTO_TRIGGER_CONTENT_CSHARP.length - 8)
+                CodeWhispererJava.INSTANCE to (AUTO_TRIGGER_CONTENT_JAVA to AUTO_TRIGGER_CONTENT_JAVA.length - 8),
+                CodeWhispererPython.INSTANCE to (AUTO_TRIGGER_CONTENT_PYTHON to AUTO_TRIGGER_CONTENT_PYTHON.length),
+                CodeWhispererJavaScript.INSTANCE to (AUTO_TRIGGER_CONTENT_TS_JS to AUTO_TRIGGER_CONTENT_TS_JS.length),
+                CodeWhispererTypeScript.INSTANCE to (AUTO_TRIGGER_CONTENT_TS_JS to AUTO_TRIGGER_CONTENT_TS_JS.length),
+                CodeWhispererCsharp.INSTANCE to (AUTO_TRIGGER_CONTENT_CSHARP to AUTO_TRIGGER_CONTENT_CSHARP.length - 8)
             ),
             CodewhispererGettingStartedTask.ManualTrigger to mapOf(
-                CodeWhispererJava.INSTANCE to Tuple(MANUAL_TRIGGER_CONTENT_JAVA, MANUAL_TRIGGER_CONTENT_JAVA.length - 8),
-                CodeWhispererPython.INSTANCE to Tuple(MANUAL_TRIGGER_CONTENT_PYTHON, MANUAL_TRIGGER_CONTENT_PYTHON.length),
-                CodeWhispererJavaScript.INSTANCE to Tuple(MANUAL_TRIGGER_CONTENT_TS_JS, MANUAL_TRIGGER_CONTENT_TS_JS.length),
-                CodeWhispererTypeScript.INSTANCE to Tuple(MANUAL_TRIGGER_CONTENT_TS_JS, MANUAL_TRIGGER_CONTENT_TS_JS.length),
-                CodeWhispererCsharp.INSTANCE to Tuple(MANUAL_TRIGGER_CONTENT_CSHARP, MANUAL_TRIGGER_CONTENT_CSHARP.length - 8)
+                CodeWhispererJava.INSTANCE to (MANUAL_TRIGGER_CONTENT_JAVA to MANUAL_TRIGGER_CONTENT_JAVA.length - 8),
+                CodeWhispererPython.INSTANCE to (MANUAL_TRIGGER_CONTENT_PYTHON to MANUAL_TRIGGER_CONTENT_PYTHON.length),
+                CodeWhispererJavaScript.INSTANCE to (MANUAL_TRIGGER_CONTENT_TS_JS to MANUAL_TRIGGER_CONTENT_TS_JS.length),
+                CodeWhispererTypeScript.INSTANCE to (MANUAL_TRIGGER_CONTENT_TS_JS to MANUAL_TRIGGER_CONTENT_TS_JS.length),
+                CodeWhispererCsharp.INSTANCE to (MANUAL_TRIGGER_CONTENT_CSHARP to MANUAL_TRIGGER_CONTENT_CSHARP.length - 8)
             ),
             CodewhispererGettingStartedTask.CommentAsPrompt to mapOf(
-                CodeWhispererJava.INSTANCE to Tuple(COMMENT_AS_PROMPT_CONTENT_NON_PYTHON, COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length),
-                CodeWhispererPython.INSTANCE to Tuple(COMMENT_AS_PROMPT_CONTENT_PYTHON, COMMENT_AS_PROMPT_CONTENT_PYTHON.length),
-                CodeWhispererJavaScript.INSTANCE to Tuple(COMMENT_AS_PROMPT_CONTENT_NON_PYTHON, COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length),
-                CodeWhispererTypeScript.INSTANCE to Tuple(COMMENT_AS_PROMPT_CONTENT_NON_PYTHON, COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length),
-                CodeWhispererCsharp.INSTANCE to Tuple(COMMENT_AS_PROMPT_CONTENT_NON_PYTHON, COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length)
+                CodeWhispererJava.INSTANCE to (COMMENT_AS_PROMPT_CONTENT_NON_PYTHON to COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length),
+                CodeWhispererPython.INSTANCE to (COMMENT_AS_PROMPT_CONTENT_PYTHON to COMMENT_AS_PROMPT_CONTENT_PYTHON.length),
+                CodeWhispererJavaScript.INSTANCE to (COMMENT_AS_PROMPT_CONTENT_NON_PYTHON to COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length),
+                CodeWhispererTypeScript.INSTANCE to (COMMENT_AS_PROMPT_CONTENT_NON_PYTHON to COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length),
+                CodeWhispererCsharp.INSTANCE to (COMMENT_AS_PROMPT_CONTENT_NON_PYTHON to COMMENT_AS_PROMPT_CONTENT_NON_PYTHON.length)
             ),
             CodewhispererGettingStartedTask.Navigation to mapOf(
-                CodeWhispererJava.INSTANCE to Tuple(NAVIGATION_CONTENT_NON_PYTHON, NAVIGATION_CONTENT_NON_PYTHON.length),
-                CodeWhispererPython.INSTANCE to Tuple(NAVIGATION_CONTENT_PYTHON, NAVIGATION_CONTENT_PYTHON.length),
-                CodeWhispererJavaScript.INSTANCE to Tuple(NAVIGATION_CONTENT_NON_PYTHON, NAVIGATION_CONTENT_NON_PYTHON.length),
-                CodeWhispererTypeScript.INSTANCE to Tuple(NAVIGATION_CONTENT_NON_PYTHON, NAVIGATION_CONTENT_NON_PYTHON.length),
-                CodeWhispererCsharp.INSTANCE to Tuple(NAVIGATION_CONTENT_NON_PYTHON, NAVIGATION_CONTENT_NON_PYTHON.length)
+                CodeWhispererJava.INSTANCE to (NAVIGATION_CONTENT_NON_PYTHON to NAVIGATION_CONTENT_NON_PYTHON.length),
+                CodeWhispererPython.INSTANCE to (NAVIGATION_CONTENT_PYTHON to NAVIGATION_CONTENT_PYTHON.length),
+                CodeWhispererJavaScript.INSTANCE to (NAVIGATION_CONTENT_NON_PYTHON to NAVIGATION_CONTENT_NON_PYTHON.length),
+                CodeWhispererTypeScript.INSTANCE to (NAVIGATION_CONTENT_NON_PYTHON to NAVIGATION_CONTENT_NON_PYTHON.length),
+                CodeWhispererCsharp.INSTANCE to (NAVIGATION_CONTENT_NON_PYTHON to NAVIGATION_CONTENT_NON_PYTHON.length)
             ),
             CodewhispererGettingStartedTask.UnitTest to mapOf(
-                CodeWhispererJava.INSTANCE to Tuple(UNIT_TEST_CONTENT_JAVA, UNIT_TEST_CONTENT_JAVA.length - 2),
-                CodeWhispererPython.INSTANCE to Tuple(UNIT_TEST_CONTENT_PYTHON, UNIT_TEST_CONTENT_PYTHON.length),
-                CodeWhispererJavaScript.INSTANCE to Tuple(UNIT_TEST_CONTENT_TS_JS, UNIT_TEST_CONTENT_TS_JS.length),
-                CodeWhispererTypeScript.INSTANCE to Tuple(UNIT_TEST_CONTENT_TS_JS, UNIT_TEST_CONTENT_TS_JS.length),
-                CodeWhispererCsharp.INSTANCE to Tuple(UNIT_TEST_CONTENT_CSHARP, UNIT_TEST_CONTENT_CSHARP.length - 8)
+                CodeWhispererJava.INSTANCE to (UNIT_TEST_CONTENT_JAVA to UNIT_TEST_CONTENT_JAVA.length - 2),
+                CodeWhispererPython.INSTANCE to (UNIT_TEST_CONTENT_PYTHON to UNIT_TEST_CONTENT_PYTHON.length),
+                CodeWhispererJavaScript.INSTANCE to (UNIT_TEST_CONTENT_TS_JS to UNIT_TEST_CONTENT_TS_JS.length),
+                CodeWhispererTypeScript.INSTANCE to (UNIT_TEST_CONTENT_TS_JS to UNIT_TEST_CONTENT_TS_JS.length),
+                CodeWhispererCsharp.INSTANCE to (UNIT_TEST_CONTENT_CSHARP to UNIT_TEST_CONTENT_CSHARP.length - 8)
             )
         )
     }

@@ -16,7 +16,7 @@ class LearnCodeWhispererVirtualFile : LightVirtualFile("Learn CodeWhisperer") {
     override fun isWritable(): Boolean = false
 
     // This along with hashCode() is to make sure only one editor for this is opened at a time
-    override fun equals(other: Any?) = this.hashCode() == other.hashCode()
+    override fun equals(other: Any?) = other is LearnCodeWhispererVirtualFile && this.hashCode() == other.hashCode()
 
     override fun hashCode(): Int = presentableName.hashCode()
 }
