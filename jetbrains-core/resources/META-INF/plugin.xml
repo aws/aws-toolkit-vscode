@@ -299,6 +299,7 @@ with what features/services are supported.
         <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager"/>
         <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.util.FileContextProvider"
                         serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.util.DefaultCodeWhispererFileContextProvider"/>
+        <projectService serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererManager" />
 
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.core.credentials.CredentialsFileHelpNotificationProvider"/>
         <editorNotificationProvider implementation="software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceFileActionProvider"/>
@@ -407,6 +408,7 @@ with what features/services are supported.
         <editorFactoryListener implementation="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorListener"/>
         <editorActionHandler action="EditorEnter" implementationClass="software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEnterHandler" order="first, before editorEnter"/>
         <actionPromoter order="last" implementation="software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererActionPromoter"/>
+        <fileEditorProvider implementation="software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider"/>
     </extensions>
 
     <extensions defaultExtensionNs="aws.toolkit">

@@ -30,6 +30,39 @@ object CodeWhispererLayoutConfig {
     val kebabMenuConstraints = GridBagConstraints().apply {
         anchor = EAST
     }
+    val tryExampleLabelConstraints = GridBagConstraints().apply {
+        anchor = WEST
+        insets = JBInsets.create(0, 10)
+    }
+    val tryExampleButtonConstraints = GridBagConstraints().apply {
+        anchor = EAST
+        insets = JBInsets.create(0, 10)
+    }
+    val commandDescriptionConstraints = GridBagConstraints().apply {
+        anchor = WEST
+        insets = JBInsets.create(0, 10)
+    }
+    val commandKeyShortcutConstraints = GridBagConstraints().apply {
+        anchor = EAST
+        insets = JBInsets.create(0, 10)
+    }
+    val tryExampleRowConstraints = GridBagConstraints().apply {
+        gridx = 0
+        weightx = 1.0
+        fill = HORIZONTAL
+        ipadx = 8
+        ipady = 26
+    }
+    val commandRowConstraints = GridBagConstraints().apply {
+        gridx = 0
+        weightx = 1.0
+        fill = HORIZONTAL
+        ipadx = 8
+        ipady = 12
+    }
+    val componentPanelConstraints = (horizontalPanelConstraints.clone() as GridBagConstraints).apply {
+        insets = JBInsets(0, 0, 10, 0)
+    }
     private val horizontalGlueConstraints = GridBagConstraints().apply {
         gridy = 0
         weightx = 1.0

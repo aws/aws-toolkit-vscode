@@ -13,6 +13,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.importadder.CodeWhispererImportAdderListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.CodeWhispererPopupManager.Companion.CODEWHISPERER_USER_ACTION_PERFORMED
 import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -49,7 +50,15 @@ class CodeWhispererProjectStartupActivity : StartupActivity.DumbAware {
 
         // show notification to accountless users
         showAccountlessNotificationIfNeeded(project)
+
+        if (!CodeWhispererExplorerActionManager.getInstance().hasShownNewOnboardingPage()) {
+            showOnboardingPage(project)
+        }
         runOnce = true
+    }
+
+    private fun showOnboardingPage(project: Project) {
+        LearnCodeWhispererEditorProvider.openEditor(project)
     }
 
     private fun showAccountlessNotificationIfNeeded(project: Project) {

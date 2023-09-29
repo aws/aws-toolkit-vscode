@@ -22,6 +22,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWh
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CodeWhispererReconnectNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.FreeTierUsageLimitHitNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.GetStartedNode
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.LearnCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.OpenCodeReferenceNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.PauseCodeWhispererNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.ResumeCodeWhispererNode
@@ -57,6 +58,7 @@ class CodeWhispererServiceNode(
 
         FreeTierUsageLimitHitNode(nodeProject, formatter.format(date))
     }
+    private val learnCodeWhispererNode by lazy { LearnCodeWhispererNode(nodeProject) }
 
     init {
         ApplicationManager.getApplication().messageBus.connect().subscribe(
@@ -91,9 +93,9 @@ class CodeWhispererServiceNode(
                 if (manager.isSuspended(nodeProject)) {
                     listOf(freeTierUsageLimitHitNode, runCodeScanNode, openCodeReferenceNode)
                 } else if (manager.isAutoEnabled()) {
-                    listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode)
+                    listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
                 } else {
-                    listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode)
+                    listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
                 }
             }
         }

@@ -26,6 +26,8 @@ object AwsIcons {
         @JvmField val CODE_CATALYST_SMALL = load("/icons/logos/Amazon_CodeCatalyst_Small.svg") // 16x16
 
         @JvmField val EVENT_BRIDGE = load("/icons/logos/EventBridge.svg") // 13x13
+
+        @JvmField val CODEWHISPERER_LARGE = load("/icons/logos/CodeWhisperer_Large.svg") // 54x54
     }
 
     object Misc {
@@ -34,6 +36,18 @@ object AwsIcons {
         @JvmField val SMILE_GREY = load("/icons/misc/smile_grey.svg") // 16x16
 
         @JvmField val FROWN = load("/icons/misc/frown.svg") // 16x16
+
+        @JvmField val LEARN = load("/icons/misc/learn.svg") // 16x16
+
+        @JvmField val JAVA = load("/icons/misc/java.svg") // 16x16
+
+        @JvmField val PYTHON = load("/icons/misc/python.svg") // 16x16
+
+        @JvmField val JAVASCRIPT = load("/icons/misc/javaScript.svg") // 16x16
+
+        @JvmField val TYPESCRIPT = load("/icons/misc/typeScript.svg") // 16x16
+
+        @JvmField val CSHARP = load("/icons/misc/csharp.svg") // 16x16
     }
 
     object Resources {

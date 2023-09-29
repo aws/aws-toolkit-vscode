@@ -17,6 +17,7 @@ import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
@@ -31,9 +32,11 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestCon
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getGettingStartedTaskType
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
+import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
 import software.aws.toolkits.telemetry.CodewhispererLanguage
 import software.aws.toolkits.telemetry.CodewhispererPreviousSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
@@ -88,9 +91,8 @@ class CodeWhispererTelemetryService {
         latency: Double,
         exceptionType: String?
     ) {
-        val (project, _, triggerTypeInfo, caretPosition) = requestContext
-        val (triggerType, automatedTriggerType) = triggerTypeInfo
-        val (offset, line) = caretPosition
+        val (triggerType, automatedTriggerType) = requestContext.triggerTypeInfo
+        val (offset, line) = requestContext.caretPosition
 
         // since python now only supports UTG but not cross file context
         val supContext = if (requestContext.fileContextInfo.programmingLanguage.isUTGSupported() &&
@@ -108,10 +110,11 @@ class CodeWhispererTelemetryService {
         val codewhispererLanguage = requestContext.fileContextInfo.programmingLanguage.toTelemetryType()
         val startUrl = getConnectionStartUrl(requestContext.connection)
         CodewhispererTelemetry.serviceInvocation(
-            project = project,
+            project = requestContext.project,
             codewhispererAutomatedTriggerType = automatedTriggerType.telemetryType,
             codewhispererCompletionType = CodewhispererCompletionType.Line,
             codewhispererCursorOffset = offset,
+            codewhispererGettingStartedTask = getGettingStartedTaskType(requestContext.editor),
             codewhispererLanguage = codewhispererLanguage,
             codewhispererLastSuggestionIndex = lastRecommendationIndex,
             codewhispererLineNumber = line,
@@ -157,6 +160,7 @@ class CodeWhispererTelemetryService {
         CodewhispererTelemetry.userDecision(
             project = project,
             codewhispererCompletionType = detailContext.completionType,
+            codewhispererGettingStartedTask = getGettingStartedTaskType(requestContext.editor),
             codewhispererLanguage = codewhispererLanguage,
             codewhispererPaginationProgress = numOfRecommendations,
             codewhispererRequestId = requestId,
@@ -276,7 +280,8 @@ class CodeWhispererTelemetryService {
             codewhispererSupplementalContextLength = supplementalContext?.contentLength,
             codewhispererSupplementalContextTimeout = supplementalContext?.isProcessTimeout,
             codewhispererSupplementalContextStrategyId = supplementalContext?.strategy.toString(),
-            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
+            codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name,
+            codewhispererGettingStartedTask = getGettingStartedTaskType(requestContext.editor)
         )
     }
 
@@ -465,6 +470,11 @@ class CodeWhispererTelemetryService {
             credentialStartUrl = startUrl,
             codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
         )
+    }
+
+    fun sendOnboardingClickEvent(language: CodeWhispererProgrammingLanguage, taskType: CodewhispererGettingStartedTask) {
+        // Project instance is not needed. We look at these metrics for each clientId.
+        CodewhispererTelemetry.onboardingClick(null as Project?, language.toTelemetryType(), taskType)
     }
 
     fun recordSuggestionState(

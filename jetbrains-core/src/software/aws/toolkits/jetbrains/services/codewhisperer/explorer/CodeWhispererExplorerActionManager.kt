@@ -54,10 +54,12 @@ class CodeWhispererExplorerActionManager : PersistentStateComponent<CodeWhispere
         actionState.value[CodeWhispererExploreStateType.IsAutoEnabled] = isAutoEnabled
     }
 
-    fun hasShownHowToUseCodeWhisperer(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.HasShownHowToUseCodeWhisperer, false)
+    fun hasShownOldOnboardingPage(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.HasShownHowToUseCodeWhisperer, false)
 
-    fun setHasShownHowToUseCodeWhisperer(hasShownHowToUseCodeWhisperer: Boolean) {
-        actionState.value[CodeWhispererExploreStateType.HasShownHowToUseCodeWhisperer] = hasShownHowToUseCodeWhisperer
+    fun hasShownNewOnboardingPage(): Boolean = actionState.value.getOrDefault(CodeWhispererExploreStateType.HasShownNewOnboardingPage, false)
+
+    fun setHasShownNewOnboardingPage(hasShownNewOnboardingPage: Boolean) {
+        actionState.value[CodeWhispererExploreStateType.HasShownNewOnboardingPage] = hasShownNewOnboardingPage
     }
 
     fun setAccountlessNotificationWarnTimestamp() {
@@ -185,6 +187,7 @@ enum class CodeWhispererExploreStateType {
     IsManualEnabled,
     HasAcceptedTermsOfServices,
     HasShownHowToUseCodeWhisperer,
+    HasShownNewOnboardingPage,
     DoNotShowAgainWarn,
     DoNotShowAgainError,
     AccountlessNullified,
