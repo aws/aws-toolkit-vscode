@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "SAM: local debugging of a .NET lambda may fail if `containerbuild=true`"
+}
