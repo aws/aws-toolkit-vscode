@@ -135,20 +135,24 @@ export class RecommendationHandler {
         }
     }
 
-    async getTaskTypeFromEditorFileName(fileName: string): Promise<CodewhispererGettingStartedTask> {
-        const parts = fileName.split('/')
-        const name = parts[parts.length - 1]
-        if (name.startsWith('CodeWhisperer_generate_suggestion')) {
+    async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask> {
+        if (filePath.includes('CodeWhisperer_generate_suggestion')) {
             return 'autoTrigger'
-        } else if (name.startsWith('CodeWhisperer_manual_invoke')) {
+        } else if (filePath.startsWith('CodeWhisperer_manual_invoke')) {
             return 'manualTrigger'
-        } else if (name.startsWith('CodeWhisperer_use_comments')) {
+        } else if (filePath.startsWith('CodeWhisperer_use_comments')) {
             return 'commentAsPrompt'
-        } else if (name.startsWith('CodeWhisperer_navigate_suggestions')) {
+        } else if (filePath.startsWith('CodeWhisperer_navigate_suggestions')) {
             return 'navigation'
         } else {
             return 'unitTest'
         }
+
+        /**
+         * else if (fileName.startsWith('Generate_unit_tests')){
+            return 'unitTest'
+        }
+         */
     }
 
     async getRecommendations(
@@ -178,7 +182,15 @@ export class RecommendationHandler {
         let nextToken = ''
         let shouldRecordServiceInvocation = true
         session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
-        session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
+        if (
+            editor.document.fileName.includes('CodeWhisperer_generate_suggestion') ||
+            editor.document.fileName.includes('CodeWhisperer_manual_invoke') ||
+            editor.document.fileName.includes('CodeWhisperer_use_comments') ||
+            editor.document.fileName.includes('CodeWhisperer_navigate_suggestions') ||
+            editor.document.fileName.includes('Generate_unit_tests')
+        ) {
+            session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
+        }
 
         if (pagination) {
             if (page === 0) {

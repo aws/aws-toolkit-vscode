@@ -13,6 +13,7 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getLogger } from '../../shared/logger'
+import { PromptSettings } from '../../shared/settings'
 export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
     public readonly id = 'CodeWhispererWebview'
@@ -156,6 +157,12 @@ export async function showCodeWhispererWebview(
                 subscriptions = undefined
             }),
         ]
-        telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })
+        const prompts = PromptSettings.instance
+        //To check the condition If the user has already seen the welcome message
+        if (await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
+            telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })
+        } else {
+            telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: false })
+        }
     }
 }

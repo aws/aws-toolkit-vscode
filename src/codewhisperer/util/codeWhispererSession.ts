@@ -27,7 +27,6 @@ class CodeWhispererSession {
     } = { request: {} as any, supplementalMetadata: {} as any }
     language: CodewhispererLanguage = 'java'
     taskType: CodewhispererGettingStartedTask = 'autoTrigger'
-    // Various states of recommendations
     recommendations: Recommendation[] = []
     suggestionStates = new Map<number, string>()
     completionTypes = new Map<number, CodewhispererCompletionType>()
