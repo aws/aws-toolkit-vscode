@@ -1,4 +1,0 @@
-{
-	"type": "Deprecation",
-	"description": "SAM: removed support for .NET core 3.1 [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)"
-}

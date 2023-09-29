@@ -1,4 +1,0 @@
-{
-	"type": "Deprecation",
-	"description": "SAM: removed support for Node.js 12.x [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)"
-}
