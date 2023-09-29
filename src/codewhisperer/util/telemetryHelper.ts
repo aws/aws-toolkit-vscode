@@ -430,8 +430,6 @@ export class TelemetryHelper {
         this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
-        this.suggestionReferenceNumber = 0
-        this.generatedLines = 0
     }
 
     private getAggregatedCompletionType(
