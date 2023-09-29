@@ -36,6 +36,12 @@ export const vsCodeState: VsCodeState = {
     lastUserModificationTime: 0,
 }
 
+// This response struct can contain more info as needed
+export interface GetRecommendationsResponse {
+    readonly result: 'Succeeded' | 'Failed'
+    readonly errorMessage: string | undefined
+}
+
 export interface AcceptedSuggestionEntry {
     readonly time: Date
     readonly fileUrl: vscode.Uri

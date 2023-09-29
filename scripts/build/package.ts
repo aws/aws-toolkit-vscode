@@ -24,7 +24,7 @@ import * as fs from 'fs-extra'
 import { betaUrl } from '../../src/dev/config'
 
 const packageJsonFile = './package.json'
-const webpackConfigJsFile = './webpack.config.js'
+const webpackConfigJsFile = './webpack.base.config.js'
 
 function parseArgs() {
     // Invoking this script with argument "foo":
@@ -68,11 +68,12 @@ function parseArgs() {
 }
 
 /**
- * If the current commit is tagged then it is a "release build", else it is
- * a prerelease/nightly/edge/preview build.
+ * If the _current_ commit is tagged as a release ("v1.26.0") then it is a "release build", else it
+ * is a prerelease/nightly/edge/preview build.
  */
 function isRelease(): boolean {
-    return child_process.execSync('git tag -l --contains HEAD').toString() !== ''
+    const tag = child_process.execSync('git tag -l --contains HEAD').toString()
+    return !!tag?.match(/v\d+\.\d+\.\d+/)
 }
 
 /**

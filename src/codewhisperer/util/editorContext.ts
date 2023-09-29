@@ -90,13 +90,14 @@ export async function buildListRecommendationRequest(
 
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
 
-    const suppelmetalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
+    const supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
         supplementalContexts
             ? {
                   isUtg: supplementalContexts.isUtg,
                   isProcessTimeout: supplementalContexts.isProcessTimeout,
                   contentsLength: supplementalContexts.contentsLength,
                   latency: supplementalContexts.latency,
+                  strategy: supplementalContexts.strategy,
               }
             : undefined
 
@@ -117,7 +118,7 @@ export async function buildListRecommendationRequest(
                 supplementalContexts: supplementalContext,
                 customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             },
-            supplementalMetadata: suppelmetalMetadata,
+            supplementalMetadata: supplementalMetadata,
         }
     }
 
@@ -131,7 +132,7 @@ export async function buildListRecommendationRequest(
             supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         },
-        supplementalMetadata: suppelmetalMetadata,
+        supplementalMetadata: supplementalMetadata,
     }
 }
 
@@ -146,14 +147,15 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    let supplemetalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+    let supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 
     if (supplementalContexts) {
-        supplemetalMetadata = {
+        supplementalMetadata = {
             isUtg: supplementalContexts.isUtg,
             isProcessTimeout: supplementalContexts.isProcessTimeout,
             contentsLength: supplementalContexts.contentsLength,
             latency: supplementalContexts.latency,
+            strategy: supplementalContexts.strategy,
         }
     }
 
@@ -165,7 +167,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
             maxResults: CodeWhispererConstants.maxRecommendations,
             supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
         },
-        supplementalMetadata: supplemetalMetadata,
+        supplementalMetadata: supplementalMetadata,
     }
 }
 

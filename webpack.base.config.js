@@ -51,17 +51,25 @@ const baseConfig = {
                 test: /\.ts$/,
                 exclude: /node_modules|testFixtures/,
                 use: [
+                    // This creates nls-metadata.json in dist/, but we don't need this functionality currently.
+                    // If we want to have language locale support later we should look to re-enable this.
+                    // This was disabled since it caused issues with the browser version of the toolkit.
+                    // THe localize() func does not work in the browser when used this loader, we got
+                    // the error from
+                    // https://github.com/microsoft/vscode-nls/blob/6f88c23c3ab630e9d4c60f65ed33839bd4a0cec2/src/browser/main.ts#L15
+                    // Now, with this disabled we do not create externalized strings.
+                    // {
+                    //     loader: require.resolve('vscode-nls-dev/lib/webpack-loader'),
+                    //     options: {
+                    //         base: path.join(__dirname, 'src'),
+                    //     },
+                    // },
                     {
-                        loader: 'vscode-nls-dev/lib/webpack-loader',
-                        options: {
-                            base: path.join(__dirname, 'src'),
-                        },
-                    },
-                    {
+                        // This transpiles our typescript to javascript.
                         loader: 'esbuild-loader',
                         options: {
                             loader: 'ts',
-                            target: 'es2018',
+                            target: 'es2021',
                         },
                     },
                 ],
@@ -86,7 +94,7 @@ const baseConfig = {
         minimize: true,
         minimizer: [
             new ESBuildMinifyPlugin({
-                target: 'es2018',
+                target: 'es2021',
             }),
         ],
     },

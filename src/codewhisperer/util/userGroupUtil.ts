@@ -57,7 +57,8 @@ export class CodeWhispererUserGroupSettings {
 
     private guessUserGroup(): UserGroup {
         const randomNum = Math.random()
-        const result = randomNum <= 1 / 2 ? UserGroup.Control : UserGroup.CrossFile
+        const result =
+            randomNum <= 1 / 3 ? UserGroup.Control : randomNum <= 2 / 3 ? UserGroup.Classifier : UserGroup.CrossFile
 
         return result
     }

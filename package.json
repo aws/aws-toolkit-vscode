@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.87.0-SNAPSHOT",
+    "version": "1.92.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -215,6 +215,10 @@
                             "default": false
                         },
                         "remoteConnected": {
+                            "type": "boolean",
+                            "default": false
+                        },
+                        "codeWhispererNewWelcomeMessage": {
                             "type": "boolean",
                             "default": false
                         },
@@ -3452,115 +3456,122 @@
                     "fontCharacter": "\\f1ae"
                 }
             },
-            "aws-ecr-registry": {
+            "aws-codewhisperer-learn": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1af"
                 }
             },
-            "aws-ecs-cluster": {
+            "aws-ecr-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b0"
                 }
             },
-            "aws-ecs-container": {
+            "aws-ecs-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b1"
                 }
             },
-            "aws-ecs-service": {
+            "aws-ecs-container": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b2"
                 }
             },
-            "aws-generic-attach-file": {
+            "aws-ecs-service": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b3"
                 }
             },
-            "aws-iot-certificate": {
+            "aws-generic-attach-file": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b4"
                 }
             },
-            "aws-iot-policy": {
+            "aws-iot-certificate": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b5"
                 }
             },
-            "aws-iot-thing": {
+            "aws-iot-policy": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b6"
                 }
             },
-            "aws-lambda-function": {
+            "aws-iot-thing": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b7"
                 }
             },
-            "aws-s3-bucket": {
+            "aws-lambda-function": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b8"
                 }
             },
-            "aws-s3-create-bucket": {
+            "aws-s3-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b9"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-s3-create-bucket": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ba"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-schemas-registry": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bb"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-schemas-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bc"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1bd"
                 }
             }
         }
     },
     "scripts": {
         "prepare": "ts-node ./scripts/build/prepare.ts",
-        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles -- --webpacked",
+        "vscode:prepublish": "npm run clean && npm run buildScripts && webpack --mode production && npm run copyFiles",
         "clean": "ts-node ./scripts/clean.ts dist",
         "reset": "npm run clean -- node_modules && npm install",
         "copyFiles": "ts-node ./scripts/build/copyFiles.ts",
         "buildScripts": "npm run generateClients && npm run generatePackage && npm run generateNonCodeFiles && npm run copyFiles",
-        "buildBrowser": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js --mode production && npm run copyFiles -- --webpacked",
-        "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles -- --webpacked",
+        "buildBrowser": "npm run clean && npm run buildScripts && webpack --config webpack.browser.config.js --mode production && npm run copyFiles",
+        "compile": "npm run clean && npm run buildScripts && webpack --mode development && npm run copyFiles",
         "watch": "npm run clean && npm run buildScripts && tsc -watch -p ./",
         "postinstall": "npm run generateTelemetry && npm run generateConfigurationAttributes",
         "testCompile": "npm run buildScripts && tsc -p ./ && npm run instrument",
@@ -3583,7 +3594,7 @@
         "report": "nyc report --reporter=html --reporter=json"
     },
     "devDependencies": {
-        "@aws-toolkits/telemetry": "^1.0.136",
+        "@aws-toolkits/telemetry": "^1.0.144",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
         "@types/adm-zip": "^0.4.34",
@@ -3607,6 +3618,7 @@
         "@types/uuid": "^9.0.1",
         "@types/vscode": "^1.65.0",
         "@types/vscode-webview": "^1.57.1",
+        "@types/webpack-env": "^1.18.1",
         "@types/xml2js": "^0.4.11",
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
@@ -3654,7 +3666,7 @@
         "@aws-sdk/util-arn-parser": "^3.46.0",
         "@iarna/toml": "^2.2.5",
         "adm-zip": "^0.5.10",
-        "amazon-states-language-service": "^1.10.0",
+        "amazon-states-language-service": "^1.11.0",
         "async-lock": "^1.4.0",
         "aws-sdk": "^2.1384.0",
         "aws-ssm-document-language-service": "^1.0.0",

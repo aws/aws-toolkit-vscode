@@ -56,9 +56,20 @@ async function cloneJsSdk(dir: string): Promise<void> {
             ? // Local repo exists already: just update it and checkout the tag.
               // Fetch only the tag we need.
               //      git fetch origin tag v2.950.0 --no-tags
-              ['-C', dir, 'fetch', 'origin', 'tag', tag, '--no-tags']
+              ['-C', dir, 'fetch', '--quiet', 'origin', 'tag', tag, '--no-tags']
             : // Local repo does not exist: clone it.
-              ['clone', '-b', tag, '--depth', '1', 'https://github.com/aws/aws-sdk-js.git', dir]
+              [
+                  '-c',
+                  'advice.detachedHead=false',
+                  'clone',
+                  '--quiet',
+                  '-b',
+                  tag,
+                  '--depth',
+                  '1',
+                  'https://github.com/aws/aws-sdk-js.git',
+                  dir,
+              ]
 
         const gitCmd = child_process.execFile('git', gitArgs, { encoding: 'utf8' })
 
@@ -69,7 +80,15 @@ async function cloneJsSdk(dir: string): Promise<void> {
             gitCmd.stdout?.removeAllListeners()
 
             // Only needed for the "update" case, but harmless for "clone".
-            const gitCheckout = child_process.spawnSync('git', ['-C', dir, 'checkout', '--force', tag])
+            const gitCheckout = child_process.spawnSync('git', [
+                '-c',
+                'advice.detachedHead=false',
+                '-C',
+                dir,
+                'checkout',
+                '--force',
+                tag,
+            ])
             if (gitCheckout.status !== undefined && gitCheckout.status !== 0) {
                 console.log(`error: git: status=${gitCheckout.status} output=${gitCheckout.output.toString()}`)
             }

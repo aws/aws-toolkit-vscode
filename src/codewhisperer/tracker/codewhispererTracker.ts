@@ -11,7 +11,6 @@ import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
-// import { TelemetryHelper } from '../util/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
