@@ -279,7 +279,7 @@
                 },
                 "aws.weaverbird.debateRounds": {
                     "type": "number",
-                    "minimum": 1,
+                    "minimum": 0,
                     "maximum": 5,
                     "default": 2,
                     "description": "The max number of times for the LLMs to debate the code change before responding"
@@ -304,9 +304,12 @@
                 "aws.weaverbird.model": {
                     "type": "string",
                     "enum": [
-                        "claude-2"
+                        "bedrock-claude-v2",
+                        "bedrock-claude-instant-v1",
+                        "anthropic-claude-v2",
+                        "anthropic-claude-instant-v1"
                     ],
-                    "default": "claude-2",
+                    "default": "bedrock-claude-v2",
                     "description": "The large language model to use"
                 },
                 "aws.weaverbird.modelTemperature": {

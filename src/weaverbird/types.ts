@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { FileMetadata } from './client/weaverbirdclient'
+import WeaverbirdClient, { FileMetadata } from './client/weaverbirdclient'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import type { CancellationTokenSource } from 'vscode'
@@ -16,11 +16,7 @@ export function isGenerationFlowOption(value: string): value is GenerationFlowOp
     return GenerationFlowOptions.includes(value as GenerationFlowOption)
 }
 
-export interface LLMConfig {
-    model: string
-    maxTokensToSample: number
-    temperature: number
-    debateRounds: number
+export interface LLMConfig extends Required<WeaverbirdClient.Config> {
     generationFlow: GenerationFlowOption
 }
 

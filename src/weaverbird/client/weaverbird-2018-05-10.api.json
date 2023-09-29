@@ -275,7 +275,12 @@
         },
         "Model": {
             "type": "string",
-            "enum": ["claude-2"]
+            "enum": [
+                "anthropic-claude-v2",
+                "anthropic-claude-instant-v1",
+                "bedrock-claude-instant-v1",
+                "bedrock-claude-v2"
+            ]
         },
         "String": { "type": "string" }
     }
