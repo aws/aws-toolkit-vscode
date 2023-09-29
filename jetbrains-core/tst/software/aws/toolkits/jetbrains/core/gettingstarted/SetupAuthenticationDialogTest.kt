@@ -76,6 +76,40 @@ class SetupAuthenticationDialogTest {
     }
 
     @Test
+    fun `login to IdC tab and request role`() {
+        mockkStatic(::loginSso)
+        every { loginSso(any(), any(), any(), any()) } answers { mockk() }
+
+        val startUrl = aString()
+        val region = mockRegionProvider.createAwsRegion()
+        val scopes = listOf(aString(), aString(), aString())
+        mockRegionProvider.addService(
+            "sso",
+            Service(
+                endpoints = mapOf(region.id to Endpoint()),
+                isRegionalized = true,
+                partitionEndpoint = region.partitionId
+            )
+        )
+
+        val state = SetupAuthenticationDialogState().apply {
+            idcTabState.apply {
+                this.startUrl = startUrl
+                this.region = region
+            }
+        }
+
+        runInEdtAndWait {
+            SetupAuthenticationDialog(projectExtension.project, scopes = scopes, state = state, promptForIdcPermissionSet = true)
+                .doOKAction()
+        }
+
+        verify {
+            loginSso(projectExtension.project, startUrl, region.id, scopes + "sso:account:access")
+        }
+    }
+
+    @Test
     fun `login to Builder ID tab`() {
         mockkStatic(::loginSso)
         every { loginSso(any(), any(), any(), any()) } answers { mockk() }

@@ -7,6 +7,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.observable.properties.PropertyGraph
 import com.intellij.openapi.project.Project
@@ -28,6 +29,7 @@ import com.intellij.util.ui.components.BorderLayoutPanel
 import org.jetbrains.annotations.VisibleForTesting
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
 import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
+import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.sso.model.RoleInfo
@@ -36,7 +38,8 @@ import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
-import software.aws.toolkits.jetbrains.core.credentials.SsoSessionConfigurationManager
+import software.aws.toolkits.jetbrains.core.credentials.ConfigFilesFacade
+import software.aws.toolkits.jetbrains.core.credentials.DefaultConfigFilesFacade
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
@@ -106,6 +109,7 @@ class SetupAuthenticationDialog(
     private val state: SetupAuthenticationDialogState = SetupAuthenticationDialogState(),
     private val tabSettings: Map<SetupAuthenticationTabs, AuthenticationTabSettings> = emptyMap(),
     private val promptForIdcPermissionSet: Boolean = false,
+    private val configFilesFacade: ConfigFilesFacade = DefaultConfigFilesFacade()
 ) : DialogWrapper(project) {
     private val rootTabPane = JBTabbedPane()
     private val idcTab = idcTab()
@@ -232,11 +236,12 @@ class SetupAuthenticationDialog(
         }
 
         applyFields()
-        val scopesList = if (promptForIdcPermissionSet) {
+        val scopes = if (promptForIdcPermissionSet) {
             (scopes + IDENTITY_CENTER_ROLE_ACCESS_SCOPE).toSet().toList()
         } else {
             scopes
         }
+
         when (selectedTab()) {
             SetupAuthenticationTabs.IDENTITY_CENTER -> {
                 val tokenProvider = loginSso(project, state.idcTabState.startUrl, state.idcTabState.region.id, scopes)
@@ -247,9 +252,7 @@ class SetupAuthenticationDialog(
 
                 val rolePopup = IdcRolePopup(project, state.idcTabState.region.id, tokenProvider, state.idcTabState.rolePopupState)
 
-                // not using showAndGet() because it throws in test mode
-                rolePopup.show()
-                if (!rolePopup.isOK) {
+                if (!rolePopup.showAndGet()) {
                     // don't close window if role is needed but was not confirmed
                     return
                 }
@@ -260,17 +263,25 @@ class SetupAuthenticationDialog(
             }
 
             SetupAuthenticationTabs.IAM_LONG_LIVED -> {
+                val profileName = state.iamTabState.profileName
+                if (configFilesFacade.readAllProfiles().containsKey(profileName)) {
+                    setErrorText(message("gettingstarted.setup.iam.profile.exists", profileName))
+                    return
+                }
+
+                val profile = Profile.builder()
+                    .name(profileName)
+                    .properties(
+                        mapOf(
+                            "aws_access_key_id" to state.iamTabState.accessKey,
+                            "aws_secret_access_key" to state.iamTabState.secretKey
+                        )
+                    )
+                    .build()
+
+                configFilesFacade.appendProfileToCredentials(profile)
             }
         }
-
-        SsoSessionConfigurationManager().updateSsoSessionProfileToConfigFile(
-            state.idcTabState.profileName,
-            state.idcTabState.region.id,
-            state.idcTabState.startUrl,
-            scopesList,
-            state.idcTabState.rolePopupState.roleInfo?.accountId().orEmpty(),
-            state.idcTabState.rolePopupState.roleInfo?.roleName().orEmpty()
-        )
 
         close(OK_EXIT_CODE)
     }
@@ -364,6 +375,14 @@ class IdcRolePopup(
     init {
         title = message("gettingstarted.setup.idc.role.title")
         init()
+    }
+
+    override fun showAndGet(): Boolean {
+        if (ApplicationManager.getApplication().isUnitTestMode) {
+            return false
+        }
+
+        return super.showAndGet()
     }
 
     override fun createCenterPanel() = panel {

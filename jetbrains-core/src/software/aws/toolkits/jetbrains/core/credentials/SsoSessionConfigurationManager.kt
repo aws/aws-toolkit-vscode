@@ -18,7 +18,7 @@ import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConst
 import java.io.File
 import java.util.Optional
 
-class SsoSessionConfigurationManager {
+object SsoSessionConfigurationManager {
 
     val profileFile = ProfileFileLocation.configurationFilePath().toFile()
     private fun writeSsoSessionProfileToConfigFile(
