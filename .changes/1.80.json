@@ -1,0 +1,14 @@
+{
+  "date" : "2023-09-29",
+  "version" : "1.80",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Authentication: When signing in to AWS Builder Id or IAM Identity Center (SSO), verify the device code matches instead of copy-pasting it"
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Improve the onboarding experience by showing a new onboarding tutorial to first-time users."
+  }, {
+    "type" : "bugfix",
+    "description" : "Fix issue displaying SSO code on new UI in Windows"
+  } ]
+}
