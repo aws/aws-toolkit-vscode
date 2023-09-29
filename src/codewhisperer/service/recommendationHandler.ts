@@ -149,12 +149,6 @@ export class RecommendationHandler {
         } else {
             return undefined
         }
-
-        /**
-         * else if (fileName.startsWith('Generate_unit_tests')){
-            return 'unitTest'
-        }
-         */
     }
 
     async getRecommendations(
