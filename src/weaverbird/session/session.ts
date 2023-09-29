@@ -4,7 +4,6 @@
  */
 
 import * as path from 'path'
-import { getLogger } from '../../shared/logger/logger'
 import { collectFiles } from '../util/files'
 import { CodeGenState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
@@ -25,18 +24,6 @@ export class Session {
         this._state = new RefinementState(this.getSessionStateConfig(), '')
 
         this.addToChat = addToChat
-    }
-
-    async send(msg: string): Promise<Interaction> {
-        try {
-            getLogger().info(`Received message from chat view: ${msg}`)
-            return await this.sendUnsafe(msg)
-        } catch (e: any) {
-            getLogger().error(e)
-            return {
-                content: [],
-            }
-        }
     }
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
@@ -66,7 +53,7 @@ export class Session {
         await this.nextInteraction(undefined)
     }
 
-    async sendUnsafe(msg: string): Promise<Interaction> {
+    async send(msg: string): Promise<Interaction> {
         const sessionStageConfig = this.getSessionStateConfig()
 
         if (msg === 'CLEAR') {

@@ -61,37 +61,40 @@ export class WeaverbirdDisplay {
                     this.uiReady[panelId] = true
                     break
                 case MessageActionType.PROMPT: {
-                    // Ok here's a new prompt catched from the UI user interaction
-                    // Lets roll the spinner
                     this.sendDataToUI(panelId, true, MessageActionType.SPINNER_STATE)
 
-                    const chatPrompt = JSON.parse(msg.data)
-                    const interactions = await session.send(chatPrompt.prompt)
+                    try {
+                        const chatPrompt = JSON.parse(msg.data)
+                        const interactions = await session.send(chatPrompt.prompt)
 
-                    for (const content of interactions.content) {
-                        this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
-                    }
-                    for (const filePath of interactions.filePaths ?? []) {
-                        this.sendDataToUI(
-                            panelId,
-                            createChatContent(filePath, ChatItemType.CODE_RESULT),
-                            MessageActionType.CHAT_ANSWER
-                        )
-                    }
+                        for (const content of interactions.content) {
+                            this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
+                        }
+                        for (const filePath of interactions.filePaths ?? []) {
+                            this.sendDataToUI(
+                                panelId,
+                                createChatContent(filePath, ChatItemType.CODE_RESULT),
+                                MessageActionType.CHAT_ANSWER
+                            )
+                        }
 
-                    const followUpOptions = this.followUpOptions(session.state.phase)
-                    if (followUpOptions.length > 0) {
-                        this.sendDataToUI(
-                            panelId,
-                            {
-                                type: ChatItemType.ANSWER,
-                                followUp: {
-                                    text: 'Followup options',
-                                    options: followUpOptions,
+                        const followUpOptions = this.followUpOptions(session.state.phase)
+                        if (followUpOptions.length > 0) {
+                            this.sendDataToUI(
+                                panelId,
+                                {
+                                    type: ChatItemType.ANSWER,
+                                    followUp: {
+                                        text: 'Followup options',
+                                        options: followUpOptions,
+                                    },
                                 },
-                            },
-                            MessageActionType.CHAT_ANSWER
-                        )
+                                MessageActionType.CHAT_ANSWER
+                            )
+                        }
+                    } catch (err: any) {
+                        const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+                        this.sendDataToUI(panelId, createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
                     }
 
                     // Spinner is no longer neccessary
