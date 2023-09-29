@@ -12,9 +12,13 @@ import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
+import software.aws.toolkits.jetbrains.services.codewhisperer.learn.LearnCodeWhispererEditorProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.status.CodeWhispererStatusBarWidgetFactory
 import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhispererCodeReferenceManager
@@ -22,7 +26,8 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.toolwindow.CodeWhi
 class CodeWhispererProjectStartupSettingsListener(private val project: Project) :
     CodeWhispererActivationChangedListener,
     ToolWindowManagerListener,
-    ToolkitConnectionManagerListener {
+    ToolkitConnectionManagerListener,
+    BearerTokenProviderListener {
     override fun activationChanged(value: Boolean) {
         project.service<StatusBarWidgetsManager>().updateWidget(CodeWhispererStatusBarWidgetFactory::class.java)
         CodeWhispererCodeReferenceManager.getInstance(project).toolWindow?.isAvailable = value
@@ -52,5 +57,12 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
         } else {
             CodeWhispererCodeScanManager.getInstance(project).removeCodeScanUI()
         }
+    }
+
+    override fun onChange(providerId: String) {
+        if (CodeWhispererExplorerActionManager.getInstance().hasShownNewOnboardingPage() || isCodeWhispererExpired(project)) {
+            return
+        }
+        LearnCodeWhispererEditorProvider.openEditor(project)
     }
 }
