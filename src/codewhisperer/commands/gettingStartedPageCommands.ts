@@ -6,7 +6,9 @@ import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../../shared/vscode/commands2'
 import { showCodeWhispererWebview, CodeWhispererSource } from '../vue/backend'
 import { telemetry } from '../../shared/telemetry/telemetry'
+
 import { PromptSettings } from '../../shared/settings'
+
 /**
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
@@ -18,7 +20,6 @@ export class CodeWhispererCommandBackend {
         if (!(await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage'))) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick', passive: true })
         }
-
         return showCodeWhispererWebview(this.extContext, source)
     }
 }

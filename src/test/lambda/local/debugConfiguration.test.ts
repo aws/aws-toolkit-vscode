@@ -10,7 +10,7 @@ import * as fs from 'fs-extra'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
-import { makeCoreCLRDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
+import { makeDotnetDebugConfiguration } from '../../../shared/sam/debugger/csharpSamDebug'
 import * as testutil from '../../testUtil'
 import { SamLaunchRequestArgs } from '../../../shared/sam/debugger/awsSamDebugger'
 import * as pathutil from '../../../shared/utilities/pathUtils'
@@ -43,7 +43,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
             codeRoot: fakeWorkspaceFolder.uri.fsPath,
-            runtimeFamily: RuntimeFamily.DotNetCore,
+            runtimeFamily: RuntimeFamily.DotNet,
             type: 'coreclr',
             request: 'attach',
             // cfnTemplate?: CloudFormation.Template
@@ -73,7 +73,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
 
     async function makeConfig({ codeUri = tempFolder }: { codeUri?: string; port?: number }) {
         const fakeLaunchConfig = await makeFakeSamLaunchConfig()
-        return makeCoreCLRDebugConfiguration(fakeLaunchConfig, codeUri)
+        return makeDotnetDebugConfiguration(fakeLaunchConfig, codeUri)
     }
 
     describe('windows', function () {
@@ -144,7 +144,7 @@ describe('isImageLambdaConfig', function () {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
             codeRoot: fakeWorkspaceFolder.uri.fsPath,
-            runtimeFamily: RuntimeFamily.DotNetCore,
+            runtimeFamily: RuntimeFamily.DotNet,
             request: 'launch',
             type: 'launch',
             runtime: 'fakedotnet' as Runtime,
@@ -173,7 +173,7 @@ describe('isImageLambdaConfig', function () {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
             codeRoot: fakeWorkspaceFolder.uri.fsPath,
-            runtimeFamily: RuntimeFamily.DotNetCore,
+            runtimeFamily: RuntimeFamily.DotNet,
             request: 'launch',
             type: 'launch',
             runtime: 'fakedotnet' as Runtime,
@@ -199,7 +199,7 @@ describe('isImageLambdaConfig', function () {
             name: 'fake-launch-config',
             workspaceFolder: fakeWorkspaceFolder,
             codeRoot: fakeWorkspaceFolder.uri.fsPath,
-            runtimeFamily: RuntimeFamily.DotNetCore,
+            runtimeFamily: RuntimeFamily.DotNet,
             request: 'launch',
             type: 'launch',
             runtime: 'fakedotnet' as Runtime,
