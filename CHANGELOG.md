@@ -1,3 +1,9 @@
+## 1.92.0 2023-09-29
+
+- **Deprecation** SAM: removed support for Node.js 12.x [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
+- **Deprecation** SAM: removed support for .NET core 3.1 [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)
+- **Feature** CodeWhisperer: new onboarding tutorial for first-time users
+
 ## 1.91.0 2023-09-22
 
 - **Bug Fix** SAM: Debugging a nodejs Lambda always hits breakpoint in nodejs async_hooks module before reaching the user-specified breakpoint
