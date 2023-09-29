@@ -20,6 +20,7 @@ object CodeWhispererColorUtil {
     val TOOLWINDOW_CODE = JBColor(0x629623, 0x629623)
     val EDITOR_CODE_REFERENCE_HOVER = JBColor(0x4B4D4D, 0x4B4D4D)
     val INACTIVE_TEXT_COLOR = UIUtil.getInactiveTextColor().getHexString()
+    val TRY_EXAMPLE_EVEN_ROW_COLOR = JBColor(0xCACACA, 0x252525)
 
     fun Color.getHexString() = String.format("#%02x%02x%02x", this.red, this.green, this.blue)
 }

@@ -41,7 +41,12 @@ import software.aws.toolkits.telemetry.FeedbackTelemetry
 import software.aws.toolkits.telemetry.Result
 import java.net.URLEncoder
 
-class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentiment.POSITIVE, initialComment: String = "") : DialogWrapper(project) {
+class FeedbackDialog(
+    val project: Project,
+    initialSentiment: Sentiment = Sentiment.POSITIVE,
+    initialComment: String = "",
+    val isCodeWhisperer: Boolean = false
+) : DialogWrapper(project) {
     private val coroutineScope = projectCoroutineScope(project)
     private var sentiment = initialSentiment
     private val smileIcon = IconUtil.scale(AwsIcons.Misc.SMILE, null, 3f)
@@ -49,10 +54,13 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
     private var commentText: String = initialComment
     private lateinit var comment: Cell<JBTextArea>
     private var lengthLimitLabel = JBLabel(message("feedback.comment.textbox.initial.length")).also { it.foreground = UIUtil.getLabelInfoForeground() }
+    private val productName = if (!isCodeWhisperer) "Toolkit" else "CodeWhisperer"
 
     private val dialogPanel = panel {
-        row {
-            text(message("feedback.initial.help.text"))
+        if (!isCodeWhisperer) {
+            row {
+                text(message("feedback.initial.help.text"))
+            }
         }
         group(message("feedback.connect.with.github.title")) {
             row {
@@ -89,7 +97,7 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
                 }
             }.bind({ sentiment }, { sentiment = it })
 
-            row(message("feedback.comment.textbox.title")) {}
+            row(message("feedback.comment.textbox.title", productName)) {}
             row { comment(message("feedback.customer.alert.info")) }
             row {
                 comment = textArea().rows(6).columns(52).bindText(::commentText).applyToComponent {
@@ -125,11 +133,24 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
             coroutineScope.launch {
                 val edtContext = getCoroutineUiContext()
                 try {
-                    TelemetryService.getInstance().sendFeedback(sentiment, commentText)
+                    if (isCodeWhisperer) {
+                        TelemetryService.getInstance().sendFeedback(
+                            sentiment,
+                            "CodeWhisperer onboarding: $commentText",
+                            mapOf(FEEDBACK_SOURCE to "CodeWhisperer onboarding")
+                        )
+                    } else {
+                        TelemetryService.getInstance().sendFeedback(sentiment, commentText)
+                    }
                     withContext(edtContext) {
                         close(OK_EXIT_CODE)
                     }
-                    notifyInfo(message("aws.notification.title"), message("feedback.submit_success"), project)
+                    val notificationTitle = if (!isCodeWhisperer) {
+                        message("aws.notification.title")
+                    } else {
+                        message("aws.notification.title.codewhisperer")
+                    }
+                    notifyInfo(notificationTitle, message("feedback.submit_success"), project)
                 } catch (e: Exception) {
                     withContext(edtContext) {
                         Messages.showMessageDialog(message("feedback.submit_failed", e), message("feedback.submit_failed_title"), null)
@@ -168,11 +189,14 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
 
     init {
         super.init()
-        title = message("feedback.title")
+        title = message("feedback.title", productName)
         setOKButtonText(message("feedback.submit_button"))
     }
 
-    override fun getHelpId(): String? = HelpIds.AWS_TOOLKIT_GETTING_STARTED.id
+    override fun getHelpId(): String? = if (!isCodeWhisperer) {
+        HelpIds.AWS_TOOLKIT_GETTING_STARTED.id
+    } else
+        HelpIds.CODEWHISPERER_TOKEN.id
 
     @TestOnly
     fun getFeedbackDialog() = dialogPanel
@@ -192,7 +216,7 @@ class FeedbackDialog(val project: Project, initialSentiment: Sentiment = Sentime
     }
 }
 
-class ShowFeedbackDialogAction : DumbAwareAction(message("feedback.title"), message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
+class ShowFeedbackDialogAction : DumbAwareAction(message("feedback.title", "Toolkit"), message("feedback.description"), AwsIcons.Misc.SMILE_GREY) {
     override fun actionPerformed(e: AnActionEvent) {
         runInEdt {
             FeedbackDialog(e.getRequiredData(LangDataKeys.PROJECT)).show()

@@ -223,7 +223,7 @@ class CodeWhispererPopupManager {
         // the event if it's at the pagination end.
         // 3. User scrolling (so popup is changing positions), we should not update the latency end time and should not
         // emit any events.
-        // 4. User nagivating through the completions or typing as the completion shows. We should not update the latency
+        // 4. User navigating through the completions or typing as the completion shows. We should not update the latency
         // end time and should not emit any events in this case.
         if (!isRecommendationAdded) {
             showPopup(states, sessionContext, states.popup, caretPoint, overlappingLinesCount)
