@@ -102,7 +102,7 @@ export const getBracketsToRemove = (
     const toBeRemoved: number[] = []
 
     while (i < recommendationBrackets.length && j < rightContextBrackets.length) {
-        const { char: char1, count: level1, idx: idx1, position: position1 } = recommendationBrackets[i]
+        const { char: char1, count: level1, idx: _, position: position1 } = recommendationBrackets[i]
         const { char: char2, count: level2, idx: idx2, position: position2 } = rightContextBrackets[j]
         if (char1 !== char2 || level1 !== level2) {
             i++
