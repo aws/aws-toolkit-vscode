@@ -87,13 +87,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState: new RefinementIterationState(testConfig, testApproach),
-                interactions: [
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: `${testApproach}\n`,
-                    },
-                ],
+                interactions: {
+                    content: [`${testApproach}\n`],
+                },
             })
         })
 
@@ -106,13 +102,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState: new RefinementIterationState(testConfig, invokeFailureApproach),
-                interactions: [
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: `${invokeFailureApproach}\n`,
-                    },
-                ],
+                interactions: {
+                    content: [`${invokeFailureApproach}\n`],
+                },
             })
         })
     })
@@ -126,18 +118,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState,
-                interactions: [
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Changes to files done. Please review:',
-                    },
-                    {
-                        origin: 'ai',
-                        type: 'codegen',
-                        content: [],
-                    },
-                ],
+                interactions: {
+                    content: ['Changes to files done. Please review:'],
+                },
             })
         })
     })
@@ -154,7 +137,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState,
-                interactions: [],
+                interactions: {
+                    content: [],
+                },
             })
             assert.strictEqual(
                 addToChatSpy.calledWithMatch(
@@ -183,7 +168,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState,
-                interactions: [],
+                interactions: {
+                    content: [],
+                },
             })
             assert.strictEqual(
                 addToChatSpy.calledWithMatch(
@@ -211,18 +198,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(interactionResult, {
                 nextState: new CodeGenIterationState(testConfig, testApproach, []),
-                interactions: [
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Changes to files done. Please review:',
-                    },
-                    {
-                        origin: 'ai',
-                        type: 'codegen',
-                        content: [],
-                    },
-                ],
+                interactions: {
+                    content: ['Changes to files done. Please review:'],
+                },
             })
         })
 
@@ -235,13 +213,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(interactionResult, {
                 nextState: new RefinementIterationState(testConfig, testApproach),
-                interactions: [
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: `${testApproach}\n`,
-                    },
-                ],
+                interactions: {
+                    content: [`${testApproach}\n`],
+                },
             })
         })
     })
@@ -256,13 +230,9 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(codeGenIterationStateResult, {
                 nextState: codeGenIterationState,
-                interactions: [
-                    {
-                        origin: 'ai',
-                        type: 'message',
-                        content: 'Changes to files done',
-                    },
-                ],
+                interactions: {
+                    content: ['Changes to files done'],
+                },
             })
         })
     })

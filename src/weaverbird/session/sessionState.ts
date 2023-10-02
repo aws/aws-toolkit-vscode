@@ -71,13 +71,9 @@ export class RefinementState implements SessionState {
                 },
                 this.approach
             ),
-            interactions: [
-                {
-                    origin: 'ai',
-                    type: 'message',
-                    content: `${this.approach}\n`,
-                },
-            ],
+            interactions: {
+                content: [`${this.approach}\n`],
+            },
         }
     }
 }
@@ -117,18 +113,14 @@ export class RefinementIterationState implements SessionState {
 
         return {
             nextState: new RefinementIterationState(this.config, this.approach),
-            interactions: [
-                {
-                    origin: 'ai',
-                    type: 'message',
-                    content: `${this.approach}\n`,
-                },
-            ],
+            interactions: {
+                content: [`${this.approach}\n`],
+            },
         }
     }
 }
 
-async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileContents): Promise<Interaction[]> {
+async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileContents): Promise<Interaction> {
     const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
         const encoder = new TextEncoder()
@@ -138,18 +130,9 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
         filePaths.push(filePath)
     }
 
-    return [
-        {
-            origin: 'ai',
-            type: 'message',
-            content: 'Changes to files done. Please review:',
-        },
-        {
-            origin: 'ai',
-            type: 'codegen',
-            content: filePaths,
-        },
-    ]
+    return {
+        content: ['Changes to files done. Please review:', ...filePaths],
+    }
 }
 
 abstract class CodeGenBase {
@@ -190,15 +173,8 @@ abstract class CodeGenBase {
                 case 'ready': {
                     const newFiles = codegenResult.result?.newFileContents ?? []
                     const changes = await createChanges(params.fs, newFiles)
-                    for (const change of changes) {
-                        // TODO Fix the types. Having content: string and string[] overcomplicates everything
-                        if (typeof change.content === 'string') {
-                            params.addToChat(createChatContent(change.content), MessageActionType.CHAT_ANSWER)
-                        } else {
-                            for (const content of change.content) {
-                                params.addToChat(createChatContent(content), MessageActionType.CHAT_ANSWER)
-                            }
-                        }
+                    for (const change of changes.content) {
+                        params.addToChat(createChatContent(change), MessageActionType.CHAT_ANSWER)
                     }
                     return newFiles
                 }
@@ -271,7 +247,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
         return {
             nextState,
-            interactions: [],
+            interactions: {
+                content: [],
+            },
         }
     }
 }
@@ -354,7 +332,9 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
 
         return {
             nextState: this,
-            interactions: [{ origin: 'ai', type: 'message', content: 'Changes to files done' }],
+            interactions: {
+                content: ['Changes to files done'],
+            },
         }
     }
 }

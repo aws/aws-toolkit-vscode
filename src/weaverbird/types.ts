@@ -24,24 +24,14 @@ export interface LLMConfig {
     generationFlow: GenerationFlowOption
 }
 
-export interface UserInteraction {
-    origin: 'user' | 'ai'
-    type: 'message'
-    content: string
-}
-
-export interface CodeGenInteraction {
-    origin: 'ai'
-    type: 'codegen'
+export type Interaction = {
+    // content to be sent back to the chat UI
     content: string[]
-    status?: 'accepted' | 'rejected' | 'iterating'
 }
-
-export type Interaction = UserInteraction | CodeGenInteraction
 
 export interface SessionStateInteraction {
     nextState: SessionState | undefined
-    interactions: Interaction[]
+    interactions: Interaction
 }
 
 export enum FollowUpTypes {

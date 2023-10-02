@@ -27,19 +27,15 @@ export class Session {
         this.addToChat = addToChat
     }
 
-    async send(msg: string): Promise<Interaction[]> {
+    async send(msg: string): Promise<Interaction> {
         try {
             getLogger().info(`Received message from chat view: ${msg}`)
             return await this.sendUnsafe(msg)
         } catch (e: any) {
             getLogger().error(e)
-            return [
-                {
-                    origin: 'ai',
-                    type: 'message',
-                    content: `Received error: ${e.code} and status code: ${e.statusCode} [${e.message}] when trying to send the request to the Weaverbird API`,
-                },
-            ]
+            return {
+                content: [],
+            }
         }
     }
 
@@ -70,7 +66,7 @@ export class Session {
         await this.nextInteraction(undefined)
     }
 
-    async sendUnsafe(msg: string): Promise<Interaction[]> {
+    async sendUnsafe(msg: string): Promise<Interaction> {
         const sessionStageConfig = this.getSessionStateConfig()
 
         if (msg === 'CLEAR') {
@@ -79,13 +75,9 @@ export class Session {
             this._state = new RefinementState(sessionStageConfig, this.approach)
             const message =
                 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
-            return [
-                {
-                    origin: 'ai',
-                    type: 'message',
-                    content: message,
-                },
-            ]
+            return {
+                content: [message],
+            }
         }
 
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
