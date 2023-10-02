@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 
-import { collectFiles } from '../util/files'
+import { collectFiles, getFilePaths } from '../util/files'
 import {
     FileMetadata,
     GenerateApproachInput,
@@ -217,8 +217,11 @@ abstract class CodeGenBase {
 }
 
 export class CodeGenState extends CodeGenBase implements SessionState {
+    public filePaths?: string[]
+
     constructor(config: SessionStateConfig, public approach: string) {
         super(config)
+        this.filePaths = []
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -249,8 +252,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
             getLogger().error(`Failed to generate code`)
             return []
         })
+        this.filePaths = getFilePaths(newFileContents)
 
-        const nextState = new CodeGenIterationState(this.config, this.approach, newFileContents)
+        const nextState = new CodeGenIterationState(this.config, this.approach, newFileContents, this.filePaths)
 
         return {
             nextState,
@@ -263,9 +267,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
+    public filePaths?: string[]
 
     constructor(private config: Omit<SessionStateConfig, 'conversationId'>, public approach: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.filePaths = []
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -282,6 +288,7 @@ export class MockCodeGenState implements SessionState {
                     filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,
                 }))
+                this.filePaths = getFilePaths(newFileContents)
             }
         } catch (e) {
             // TODO: handle this error properly, double check what would be expected behaviour if mock code does not work.
@@ -297,7 +304,12 @@ export class MockCodeGenState implements SessionState {
 }
 
 export class CodeGenIterationState extends CodeGenBase implements SessionState {
-    constructor(config: SessionStateConfig, public approach: string, private newFileContents: FileMetadata[]) {
+    constructor(
+        config: SessionStateConfig,
+        public approach: string,
+        private newFileContents: FileMetadata[],
+        public filePaths: string[]
+    ) {
         super(config)
     }
 
@@ -337,6 +349,7 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
             getLogger().error(`Failed to generate code`)
             return []
         })
+        this.filePaths = getFilePaths(this.newFileContents)
 
         return {
             nextState: this,

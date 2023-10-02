@@ -9,7 +9,14 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { ExtensionContext } from 'vscode'
 import { weaverbirdScheme } from '../constants'
-import { ChatItemType, MessageActionType, NotificationType, createChatContent, messageIdentifier } from '../models'
+import {
+    messageIdentifier,
+    MessageActionType,
+    NotificationType,
+    createChatContent,
+    ChatItemType,
+    AddToChat,
+} from '../models'
 import { Session } from '../session/session'
 import { createSessionConfig } from '../session/sessionConfigFactory'
 import { PanelStore } from '../stores/panelStore'
@@ -78,20 +85,7 @@ export class WeaverbirdDisplay {
                             )
                         }
 
-                        const followUpOptions = this.followUpOptions(session.state.phase)
-                        if (followUpOptions.length > 0) {
-                            this.sendDataToUI(
-                                panelId,
-                                {
-                                    type: ChatItemType.ANSWER,
-                                    followUp: {
-                                        text: 'Followup options',
-                                        options: followUpOptions,
-                                    },
-                                },
-                                MessageActionType.CHAT_ANSWER
-                            )
-                        }
+                        this.addFollowUpOptionsToChat(addToChat, session.state.phase)
                     } catch (err: any) {
                         const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
                         this.sendDataToUI(panelId, createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
@@ -138,8 +132,37 @@ export class WeaverbirdDisplay {
 
                     const data = JSON.parse(msg.data)
                     switch (data?.type) {
-                        case FollowUpTypes.WriteCode:
-                            await session.startCodegen()
+                        // Followups after any approach phase state
+                        case FollowUpTypes.WriteCode: {
+                            try {
+                                await session.startCodegen()
+                                this.addFollowUpOptionsToChat(addToChat, session.state.phase)
+                            } catch (err: any) {
+                                const errorMessage = `Weaverbird API request failed: ${
+                                    err.cause?.message ?? err.message
+                                }`
+                                this.sendDataToUI(
+                                    panelId,
+                                    createChatContent(errorMessage),
+                                    MessageActionType.CHAT_ANSWER
+                                )
+                            }
+                            break
+                        }
+                        // Followups after any codegen state
+                        case FollowUpTypes.AcceptCode:
+                            try {
+                                await session.acceptChanges()
+                            } catch (err: any) {
+                                this.sendDataToUI(
+                                    panelId,
+                                    createChatContent(`Failed to accept code changes: ${err.message}`),
+                                    MessageActionType.CHAT_ANSWER
+                                )
+                            }
+                            break
+                        case FollowUpTypes.RejectCode:
+                            // TODO what we want to do here still needs to be discussed
                             break
                     }
 
@@ -182,7 +205,23 @@ export class WeaverbirdDisplay {
         this.generatePanel(panelId)
     }
 
-    private followUpOptions(phase: SessionStatePhase | undefined): ChatItemFollowUp[] {
+    private addFollowUpOptionsToChat(addToChat: AddToChat, phase?: SessionStatePhase) {
+        const followUpOptions = this.getFollowUpOptions(phase)
+        if (followUpOptions.length > 0) {
+            addToChat(
+                {
+                    type: ChatItemType.ANSWER,
+                    followUp: {
+                        text: 'Followup options',
+                        options: followUpOptions,
+                    },
+                },
+                MessageActionType.CHAT_ANSWER
+            )
+        }
+    }
+
+    private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemFollowUp[] {
         switch (phase) {
             case SessionStatePhase.Approach:
                 return [
@@ -192,7 +231,16 @@ export class WeaverbirdDisplay {
                     },
                 ]
             case SessionStatePhase.Codegen:
-                return []
+                return [
+                    {
+                        pillText: 'Accept changes',
+                        type: FollowUpTypes.AcceptCode,
+                    },
+                    {
+                        pillText: 'Reject and discuss',
+                        type: FollowUpTypes.RejectCode,
+                    },
+                ]
             default:
                 return []
         }
