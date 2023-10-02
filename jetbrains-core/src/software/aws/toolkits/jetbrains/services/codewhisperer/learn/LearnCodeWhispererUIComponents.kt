@@ -319,7 +319,9 @@ object LearnCodeWhispererUIComponents {
                 message("codewhisperer.learn_page.examples.description.part_2"),
                 CODEWHISPERER_SUPPORTED_LANG_URI
             ).apply {
-                UiTelemetry.click(null as Project?, "codewhisperer_GenerateSuggestions_LearnMore")
+                addActionListener {
+                    UiTelemetry.click(null as Project?, "codewhisperer_GenerateSuggestions_LearnMore")
+                }
             },
             inlineLabelConstraints
         )
