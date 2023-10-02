@@ -8,6 +8,7 @@ import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { codeWhispererClient as client, RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
 import {
+    CodewhispererGettingStartedTask,
     CodewhispererLanguage,
     CodewhispererPreviousSuggestionState,
     CodewhispererServiceInvocation,
@@ -87,6 +88,7 @@ export class TelemetryHelper {
         duration: number | undefined,
         lineNumber: number | undefined,
         language: CodewhispererLanguage,
+        taskType: CodewhispererGettingStartedTask | undefined,
         reason: string,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
@@ -101,6 +103,7 @@ export class TelemetryHelper {
             codewhispererLineNumber: lineNumber || 0,
             codewhispererCursorOffset: this.cursorOffset || 0,
             codewhispererLanguage: language,
+            CodewhispererGettingStartedTask: taskType,
             reason: reason ? reason.substring(0, 200) : undefined,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererImportRecommendationEnabled: CodeWhispererSettings.instance.isImportRecommendationEnabled(),
@@ -247,6 +250,7 @@ export class TelemetryHelper {
             credentialStartUrl: events[0].credentialStartUrl,
             codewhispererCompletionType: this.getAggregatedCompletionType(events),
             codewhispererLanguage: events[0].codewhispererLanguage,
+            codewhispererGettingStartedTask: session.taskType,
             codewhispererTriggerType: events[0].codewhispererTriggerType,
             codewhispererSuggestionCount: events.length,
             codewhispererAutomatedTriggerType: serviceInvocation.codewhispererAutomatedTriggerType,
@@ -292,7 +296,7 @@ export class TelemetryHelper {
             credentialStartUrl: this.sessionDecisions[0].credentialStartUrl,
             codewhispererCompletionType: aggregatedCompletionType,
             codewhispererLanguage: language,
-            codewhispererGettingStartedTask: this.sessionDecisions[0].codewhispererGettingStartedTask,
+            codewhispererGettingStartedTask: session.taskType,
             codewhispererTriggerType: this.sessionDecisions[0].codewhispererTriggerType,
             codewhispererSuggestionCount: this.sessionDecisions
                 .map(e => e.codewhispererSuggestionCount)
