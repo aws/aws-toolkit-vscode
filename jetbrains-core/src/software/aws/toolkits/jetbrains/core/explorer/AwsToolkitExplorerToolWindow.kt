@@ -11,16 +11,13 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
-import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.wm.ToolWindowManager
-import com.intellij.ui.GotItTooltip
 import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.components.BorderLayoutPanel
 import software.aws.toolkits.jetbrains.core.credentials.CredsComboBoxActionGroup
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.resources.message
 import java.awt.Component
-import javax.swing.JComponent
 
 class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true) {
     private val tabPane = JBTabbedPane()
@@ -68,12 +65,6 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
             val onTabChange = {
                 toolkitToolWindowListener.tabChanged(tabPane.getTitleAt(tabPane.selectedIndex))
             }
-            val codeWhispererTooltip = GotItTooltip("aws.toolkit.devtool.tab.whatsnew", message("codewhisperer.explorer.tooltip.comment"), project)
-                .withHeader(message("codewhisperer.explorer.tooltip.title"))
-                .withPosition(Balloon.Position.above)
-            getTabLabelComponent(DEVTOOLS_TAB_ID)?.let {
-                codeWhispererTooltip.show(it as JComponent, GotItTooltip.TOP_MIDDLE)
-            }
             tabPane.model.addChangeListener {
                 onTabChange()
             }
@@ -81,39 +72,20 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
         }
     }
 
-    fun setDevToolsTabVisible(visible: Boolean) {
-        val index = tabPane.indexOfTab(DEVTOOLS_TAB_ID)
+    fun selectTab(tabName: String): Component? {
+        val index = tabPane.indexOfTab(tabName)
         if (index == -1) {
-            if (!visible) {
-                // if we don't need to be visible we're done
-                return
-            }
-
-            // else we need content
-            tabComponents.onEachIndexed { i, (name, contentProvider) ->
-                if (name == DEVTOOLS_TAB_ID) {
-                    tabPane.insertTab(name, null, contentProvider(), null, i)
-                    tabPane.selectedIndex = i
-                    return
-                }
-            }
+            return null
         }
 
-        // we have content
-        val content = tabPane.getComponentAt(index)
-        if (!visible) {
-            // remove if we want it gone
-            content?.let {
-                // only hide the compoenet instead of disposing all of them
-                tabPane.removeTabAt(index)
-            }
-            return
+        val component = tabPane.getComponentAt(index)
+        if (component != null) {
+            tabPane.selectedComponent = tabPane.getComponentAt(index)
+
+            return component
         }
 
-        // otherwise select the tab
-        content?.let {
-            tabPane.selectedIndex = index
-        }
+        return null
     }
 
     fun getTabLabelComponent(tabName: String): Component? {
@@ -126,7 +98,7 @@ class AwsToolkitExplorerToolWindow(private val project: Project) : SimpleToolWin
     }
 
     companion object {
-        private val EXPLORER_TAB_ID = message("explorer.toolwindow.title")
+        val EXPLORER_TAB_ID = message("explorer.toolwindow.title")
         val DEVTOOLS_TAB_ID = message("aws.developer.tools.tab.title")
 
         fun getInstance(project: Project) = project.service<AwsToolkitExplorerToolWindow>()

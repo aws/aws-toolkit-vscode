@@ -14,19 +14,29 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.popup.Balloon
+import com.intellij.ui.GotItTooltip
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.components.JBLabel
+import com.intellij.ui.components.panels.Wrapper
+import com.intellij.ui.dsl.builder.AlignX
+import com.intellij.ui.dsl.builder.BottomGap
 import com.intellij.ui.dsl.builder.TopGap
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.util.ui.JBFont
+import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import com.intellij.util.ui.components.BorderLayoutPanel
 import icons.AwsIcons
+import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.BULLET_PANEL_HEIGHT
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.GOT_IT_ID_PREFIX
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_TITLE_FONT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_WIDTH
@@ -35,11 +45,14 @@ import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsFor
 import software.aws.toolkits.jetbrains.services.caws.CawsEndpoints
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.CODEWHISPERER_LEARN_MORE_URI
 import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
+import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
 import javax.swing.Icon
+import javax.swing.JComponent
 
 class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
+    private val infoBanner = ConnectionInfoBanner()
     init {
         addToCenter(
             panel {
@@ -53,8 +66,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                                 }
                             }
                             row {
-                                browserLink(message("aws.onboarding.getstarted.panel.comment_link_doc"), url = PanelConstants.AWS_TOOLKIT_DOC)
-                                browserLink(message("aws.onboarding.getstarted.panel.comment_link_github"), url = PanelConstants.GITHUB_LINK)
+                                browserLink(message("aws.onboarding.getstarted.panel.comment_link_doc"), url = AwsToolkit.AWS_DOCS_URL)
+                                browserLink(message("aws.onboarding.getstarted.panel.comment_link_github"), url = AwsToolkit.GITHUB_URL)
                                 text(message("aws.onboarding.getstarted.panel.share_feedback")) { hyperlinkEvent ->
                                     val actionEvent = AnActionEvent.createFromInputEvent(
                                         hyperlinkEvent.inputEvent,
@@ -65,7 +78,15 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                                 }
                             }
                         }
-                    }.topGap(TopGap.MEDIUM)
+                    }
+
+                    row {
+                        cell(infoBanner)
+                            .align(AlignX.FILL)
+
+                        topGap(TopGap.MEDIUM)
+                        bottomGap(BottomGap.MEDIUM)
+                    }
 
                     group(
                         JBLabel(message("aws.onboarding.getstarted.panel.group_title"))
@@ -165,9 +186,22 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                 }
             }
         )
+
+        border = JBUI.Borders.empty(JBUI.scale(32), JBUI.scale(16))
+    }
+
+    private fun showGotIt(tabName: String, tooltip: GotItTooltip) {
+        AwsToolkitExplorerToolWindow.toolWindow(project).activate {
+            AwsToolkitExplorerToolWindow.getInstance(project).selectTab(tabName)?.let {
+                tooltip.show(it as JComponent, GotItTooltip.TOP_MIDDLE)
+            }
+        }
     }
 
     private inner class CodeCatalystPanel : FeatureDescriptionPanel() {
+        override val loginSuccessTitle = message("gettingstarted.setup.auth.success.title", message("caws.devtoolPanel.title"))
+        override val loginSuccessBody = message("gettingstarted.setup.auth.success.body", message("caws.devtoolPanel.title"))
+
         init {
             addToCenter(
                 panel {
@@ -197,7 +231,23 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         row {
                             button(message("caws.getstarted.panel.login")) {
-                                loginSso(project, SONO_URL, SONO_REGION, CODECATALYST_SCOPES)
+                                val loginSuccess = tryOrNull {
+                                    loginSso(project, SONO_URL, SONO_REGION, CODECATALYST_SCOPES)
+                                } != null
+
+                                handleLogin(loginSuccess)
+
+                                if (loginSuccess) {
+                                    val tooltip = GotItTooltip(
+                                        "aws.toolkit.devtool.tab.whatsnew",
+                                        message("gettingstarted.explorer.gotit.codecatalyst.body"),
+                                        project
+                                    )
+                                        .withHeader(message("gettingstarted.explorer.gotit.codecatalyst.title"))
+                                        .withPosition(Balloon.Position.above)
+
+                                    showGotIt(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID, tooltip)
+                                }
                             }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
@@ -216,6 +266,9 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
     }
 
     private inner class ResourceExplorerPanel : FeatureDescriptionPanel() {
+        override val loginSuccessTitle = message("gettingstarted.setup.auth.success.iam.title")
+        override val loginSuccessBody = message("gettingstarted.setup.auth.success.iam.body")
+
         init {
             addToCenter(
                 panel {
@@ -247,7 +300,16 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         row {
                             button(message("aws.onboarding.getstarted.panel.button_iam_login")) {
-                                requestCredentialsForExplorer(project)
+                                val loginSuccess = requestCredentialsForExplorer(project)
+                                handleLogin(loginSuccess)
+
+                                if (loginSuccess) {
+                                    val tooltip = GotItTooltip("$GOT_IT_ID_PREFIX.explorer", message("gettingstarted.explorer.gotit.explorer.body"), project)
+                                        .withHeader(message("gettingstarted.explorer.gotit.explorer.title"))
+                                        .withPosition(Balloon.Position.below)
+
+                                    showGotIt(AwsToolkitExplorerToolWindow.EXPLORER_TAB_ID, tooltip)
+                                }
                             }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
@@ -268,6 +330,9 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
     }
 
     private inner class CodeWhispererPanel : FeatureDescriptionPanel() {
+        override val loginSuccessTitle = message("gettingstarted.setup.auth.success.title", message("codewhisperer.experiment"))
+        override val loginSuccessBody = message("gettingstarted.setup.auth.success.body", message("codewhisperer.experiment"))
+
         init {
             addToCenter(
                 panel {
@@ -296,7 +361,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 
                         row {
                             button(message("codewhisperer.gettingstarted.panel.login_button")) {
-                                requestCredentialsForCodeWhisperer(project, popupBuilderIdTab = true)
+                                handleCodeWhispererLogin(requestCredentialsForCodeWhisperer(project, popupBuilderIdTab = true))
                             }.applyToComponent {
                                 putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
                             }
@@ -309,16 +374,27 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
                         }
                         row {
                             text(message("aws.onboarding.getstarted.panel.login_with_iam")) {
-                                requestCredentialsForCodeWhisperer(project, popupBuilderIdTab = false)
+                                handleCodeWhispererLogin(requestCredentialsForCodeWhisperer(project, popupBuilderIdTab = false))
                             }
                         }
                     }
                 }
             )
         }
+
+        private fun handleCodeWhispererLogin(authResult: Boolean) {
+            handleLogin(authResult)
+            if (authResult) {
+                val tooltip = GotItTooltip("$GOT_IT_ID_PREFIX.codewhisperer", message("codewhisperer.explorer.tooltip.comment"), project)
+                    .withHeader(message("codewhisperer.explorer.tooltip.title"))
+                    .withPosition(Balloon.Position.above)
+
+                showGotIt(AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID, tooltip)
+            }
+        }
     }
 
-    private class PanelAuthBullets(private val panelTitle: String, bullets: List<AuthPanelBullet>) : FeatureDescriptionPanel() {
+    private class PanelAuthBullets(private val panelTitle: String, bullets: List<AuthPanelBullet>) : GettingStartedBorderedPanel() {
         init {
             preferredSize = Dimension(PANEL_WIDTH, BULLET_PANEL_HEIGHT)
 
@@ -348,7 +424,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         }
     }
 
-    private open class FeatureDescriptionPanel : BorderLayoutPanel() {
+    private abstract class GettingStartedBorderedPanel : BorderLayoutPanel() {
         init {
             preferredSize = Dimension(PANEL_WIDTH, PANEL_HEIGHT)
 
@@ -358,11 +434,76 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
         }
     }
 
+    private abstract inner class FeatureDescriptionPanel : GettingStartedBorderedPanel() {
+        abstract val loginSuccessTitle: String
+        abstract val loginSuccessBody: String
+
+        protected fun handleLogin(authResult: Boolean) {
+            if (!authResult) {
+                infoBanner.setConnectionFailedMessage()
+            } else {
+                infoBanner.setSuccessMessage(loginSuccessTitle, loginSuccessBody)
+            }
+        }
+    }
+
+    private class ConnectionInfoBanner : BorderLayoutPanel(10, 0) {
+        private val wrapper = Wrapper()
+        init {
+            addToCenter(wrapper)
+        }
+
+        fun setSuccessMessage(title: String, body: String) = setMessage(title, body, false)
+
+        fun setErrorMessage(title: String, body: String) = setMessage(title, body, true)
+
+        fun setConnectionFailedMessage() = setErrorMessage(
+            message("gettingstarted.setup.auth.failure.title"),
+            message("gettingstarted.setup.auth.failure.body")
+        )
+
+        private fun setMessage(title: String, body: String, isError: Boolean) {
+            wrapper.setContent(
+                panel {
+                    row {
+                        val icon = if (isError) AllIcons.General.ErrorDialog else AllIcons.General.SuccessDialog
+                        icon(icon)
+                        panel {
+                            row {
+                                text(title).applyToComponent {
+                                    font = JBFont.label().asBold()
+                                }
+                            }
+                            row {
+                                text(body)
+                            }
+                        }
+                    }
+                }.apply {
+                    isOpaque = false
+                }
+            )
+
+            val (borderColor, backgroundColor) = if (isError) {
+                JBUI.CurrentTheme.Banner.ERROR_BORDER_COLOR to JBUI.CurrentTheme.Banner.ERROR_BACKGROUND
+            } else {
+                JBUI.CurrentTheme.Banner.SUCCESS_BORDER_COLOR to JBUI.CurrentTheme.Banner.SUCCESS_BACKGROUND
+            }
+
+            border = editorNotificationCompoundBorder(
+                IdeBorderFactory.createRoundedBorder().apply {
+                    setColor(borderColor)
+                }
+            )
+
+            background = backgroundColor
+        }
+    }
+
     private object PanelConstants {
+        const val GOT_IT_ID_PREFIX = "aws.toolkit.gettingstarted"
         const val RESOURCE_EXPLORER_LEARN_MORE = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/working-with-aws.html"
         const val RESOURCE_EXPLORER_SIGNUP_DOC = "https://aws.amazon.com/free/"
-        const val AWS_TOOLKIT_DOC = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html"
-        const val GITHUB_LINK = "https://github.com/aws/aws-toolkit-jetbrains"
         const val SHARE_FEEDBACK_LINK = "FeedbackDialog"
         val COMMIT_ICON = AllIcons.General.InspectionsOK
         val CANCEL_ICON = AllIcons.Ide.Notification.Close
@@ -391,7 +532,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
 }
 
 class ShareFeedbackInGetStarted : DumbAwareAction() {
-
     override fun actionPerformed(e: AnActionEvent) {
         runInEdt {
             FeedbackDialog(DefaultProjectFactory.getInstance().defaultProject).show()

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.annotations.TestOnly
 import software.amazon.awssdk.services.toolkittelemetry.model.Sentiment
+import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.coroutines.getCoroutineUiContext
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
 import software.aws.toolkits.jetbrains.core.help.HelpIds
@@ -203,8 +204,8 @@ class FeedbackDialog(
 
     companion object {
         const val MAX_LENGTH = 2000 // backend restriction
-        private const val GITHUB_LINK_BASE = "https://github.com/aws/aws-toolkit-jetbrains/issues/new?body="
-        private const val TOOLKIT_REPOSITORY_LINK = "https://github.com/aws/aws-toolkit-jetbrains"
+        private const val TOOLKIT_REPOSITORY_LINK = AwsToolkit.GITHUB_URL
+        private const val GITHUB_LINK_BASE = "$TOOLKIT_REPOSITORY_LINK/issues/new?body="
         private val toolkitMetadata = ClientMetadata.DEFAULT_METADATA.let {
             """
                 ---
