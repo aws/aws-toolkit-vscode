@@ -22,7 +22,6 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { PromptSettings } from '../../shared/settings'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -57,14 +56,6 @@ export const enableCodeSuggestions = Commands.declare(
         await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        const prompts = PromptSettings.instance
-
-        const shouldShow = await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')
-        //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-        if (shouldShow) {
-            vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted', createGettingStartedNode())
-            prompts.update('codeWhispererNewWelcomeMessage', true)
-        }
         if (!isCloud9()) {
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
         }
