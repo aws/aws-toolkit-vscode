@@ -11,7 +11,11 @@ import CodeWhispererUserClient, {
     TelemetryEvent,
 } from '../../../codewhisperer/client/codewhispereruserclient'
 import globals from '../../../shared/extensionGlobals'
-import { AWSError, Request } from 'aws-sdk'
+import { AWSError, Request, Service } from 'aws-sdk'
+import { DefaultAWSClientBuilder, ServiceOptions } from '../../../shared/awsClientBuilder'
+import { FakeAwsContext } from '../../utilities/fakeAwsContext'
+import userApiConfig = require('./../../../codewhisperer/client/user-service-2.json')
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhisperer', async function () {
     let clientSpy: CodeWhispererUserClient
@@ -19,7 +23,12 @@ describe('codewhisperer', async function () {
 
     beforeEach(async function () {
         sinon.restore()
-        clientSpy = spy(await codeWhispererClient.createUserSdkClient())
+        const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+        clientSpy = spy(
+            (await builder.createAwsService(Service, {
+                apiConfig: userApiConfig,
+            } as ServiceOptions)) as CodeWhispererUserClient
+        )
         sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
@@ -86,6 +95,7 @@ describe('codewhisperer', async function () {
                 }),
         } as Request<SendTelemetryEventResponse, AWSError>)
 
+        sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
         globals.telemetry.telemetryEnabled = true
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: payload })
         sinon.assert.calledWith(stub, sinon.match({ optOutPreference: 'OPTIN' }))
