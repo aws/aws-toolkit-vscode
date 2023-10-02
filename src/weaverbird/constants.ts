@@ -6,7 +6,7 @@
 import { LLMConfig } from './types'
 
 export const defaultLlmConfig: LLMConfig = {
-    model: 'claude-2',
+    model: 'bedrock-claude-v2',
     generationFlow: 'stepFunction',
     maxTokensToSample: 50000,
     temperature: 0.0,
