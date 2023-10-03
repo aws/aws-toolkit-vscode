@@ -22,7 +22,7 @@ const localize = nls.loadMessageBundle()
 const vscodeAppname = 'Visual Studio Code'
 const cloud9Appname = 'AWS Cloud9'
 const cloud9CnAppname = 'Amazon Cloud9'
-const sageMakerAppname = 'aws-sagemaker-vscode-oss'
+const sageMakerAppname = 'Code - OSS'
 const notInitialized = 'notInitialized'
 
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
@@ -100,8 +100,8 @@ export function getIdeProperties(): IdeProperties {
 
 function createSageMakerProperties(company: string): IdeProperties {
     return {
-        shortName: localize('AWS.vscode.shortName', '{0} VS Code - OSS', company),
-        longName: localize('AWS.vscode.longName', '{0} SageMaker VS Code - OSS', company),
+        shortName: localize('AWS.vscode.shortName', '{0} Code Editor', company),
+        longName: localize('AWS.vscode.longName', '{0} SageMaker Code Editor', company),
         commandPalette: localize('AWS.vscode.commandPalette', 'Command Palette'),
         codelens: localize('AWS.vscode.codelens', 'CodeLens'),
         codelenses: localize('AWS.vscode.codelenses', 'CodeLenses'),
