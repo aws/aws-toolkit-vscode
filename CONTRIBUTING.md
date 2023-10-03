@@ -275,7 +275,7 @@ then following the log with:
 
 ### Telemetry
 
-[Click here for telemetry documentation.](./docs/telemetry.md)
+See [docs/telemetry.md](./docs/telemetry.md) for notes on emitting telemetry in this project.
 
 ### Service Endpoints
 
