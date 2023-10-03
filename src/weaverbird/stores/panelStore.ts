@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { WebviewPanel } from 'vscode'
+import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 
 export interface Panel {
     webviewPanel: WebviewPanel
+    fs: VirtualFileSystem
 }
 
 export class PanelStore {

@@ -159,7 +159,11 @@ export class WeaverbirdDisplay {
                         vscode.commands.executeCommand(
                             'vscode.diff',
                             left,
-                            vscode.Uri.from({ scheme: weaverbirdScheme, path: diffParams.rightPath })
+                            vscode.Uri.from({
+                                scheme: weaverbirdScheme,
+                                path: diffParams.rightPath,
+                                query: `panelId=${panelId}`,
+                            })
                         )
                     }
 
@@ -174,7 +178,7 @@ export class WeaverbirdDisplay {
             this.panelStore.deletePanel(panelId)
         })
 
-        this.panelStore.savePanel(panelId, { webviewPanel: panel })
+        this.panelStore.savePanel(panelId, { webviewPanel: panel, fs: sessionConfig.fs })
 
         this.generatePanel(panelId)
     }

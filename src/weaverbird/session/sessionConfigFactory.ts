@@ -11,8 +11,6 @@ import { defaultLlmConfig, weaverbirdScheme } from '../constants'
 import { getConfig } from '../config'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { getLogger } from '../../shared/logger'
-import globals from '../../shared/extensionGlobals'
 
 /**
  * Factory method for creating session configurations
@@ -42,26 +40,6 @@ export async function createSessionConfig(params?: {
         vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty' }),
         new VirtualMemoryFile(new Uint8Array())
     )
-
-    const weaverbirdProvider = new (class implements vscode.TextDocumentContentProvider {
-        async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-            try {
-                const content = await fs.readFile(uri)
-                const decodedContent = new TextDecoder().decode(content)
-                return decodedContent
-            } catch (e) {
-                getLogger().error(`Unable to find: ${uri}`)
-                return ''
-            }
-        }
-    })()
-
-    const textDocumentProvider = vscode.workspace.registerTextDocumentContentProvider(
-        weaverbirdScheme,
-        weaverbirdProvider
-    )
-
-    globals.context.subscriptions.push(textDocumentProvider)
 
     return new SessionConfig(lambdaClient, llmConfig, workspace, backendConfig, fs)
 }
