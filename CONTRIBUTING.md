@@ -275,18 +275,7 @@ then following the log with:
 
 ### Telemetry
 
-See [aws-toolkit-common/telemetry](https://github.com/aws/aws-toolkit-common/tree/main/telemetry#telemetry) for full details about defining telemetry metrics.
-
--   You can define new metrics during development by adding items to
-    [telemetry/vscodeTelemetry.json](https://github.com/aws/aws-toolkit-vscode/blob/21ca0fca26d677f105caef81de2638b2e4796804/src/shared/telemetry/vscodeTelemetry.json).
-    -   Building the project will trigger the `generateClients` build task, which generates new symbols in `shared/telemetry/telemetry`, which you can import via:
-        ```
-        import { telemetry } from '../../shared/telemetry/telemetry'
-        ```
-    -   The metrics defined in `vscodeTelemetry.json` should be upstreamed to [aws-toolkit-common](https://github.com/aws/aws-toolkit-common/blob/main/telemetry/definitions/commonDefinitions.json) after launch (at the latest).
--   Metrics are dropped (not posted to the service) if the extension is running in [CI or other
-    automation tasks](https://github.com/aws/aws-toolkit-vscode/blob/21ca0fca26d677f105caef81de2638b2e4796804/src/shared/vscode/env.ts#L71-L73).
-    -   You can always _test_ telemetry via [assertTelemetry()](https://github.com/aws/aws-toolkit-vscode/blob/21ca0fca26d677f105caef81de2638b2e4796804/src/test/testUtil.ts#L164), regardless of the current environment.
+See [docs/telemetry.md](./docs/telemetry.md) for notes on emitting telemetry in this project.
 
 ### Service Endpoints
 
