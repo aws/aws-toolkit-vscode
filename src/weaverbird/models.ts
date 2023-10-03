@@ -12,6 +12,7 @@ export enum ChatItemType {
     ANSWER = 'answer',
     ANSWER_STREAM = 'answer-stream',
     ANSWER_PART = 'answer-part',
+    CODE_RESULT = 'code-result',
 }
 export enum NotificationType {
     INFO = 'info',
@@ -20,10 +21,10 @@ export enum NotificationType {
     ERROR = 'error',
 }
 
-export function createChatContent(content: string) {
+export function createChatContent(content: string, type = ChatItemType.ANSWER) {
     return {
         body: content,
-        type: ChatItemType.ANSWER,
+        type,
     }
 }
 
@@ -42,4 +43,5 @@ export enum MessageActionType {
     STOP_STREAM = 'stop-stream',
     NOTIFY = 'show-notification',
     FOLLOW_UP_CLICKED = 'follow-up-clicked',
+    OPEN_DIFF = 'open-diff',
 }

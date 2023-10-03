@@ -23,6 +23,7 @@ export interface LLMConfig extends Required<WeaverbirdClient.Config> {
 export type Interaction = {
     // content to be sent back to the chat UI
     content: string[]
+    filePaths?: string[]
 }
 
 export interface SessionStateInteraction {

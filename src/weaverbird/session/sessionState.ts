@@ -35,7 +35,7 @@ import {
     SessionStatePhase,
 } from '../types'
 import { invoke } from '../util/invoke'
-import { MessageActionType, AddToChat, createChatContent } from '../models'
+import { MessageActionType, AddToChat, createChatContent, ChatItemType } from '../models'
 
 const fs = FileSystemCommon.instance
 
@@ -131,7 +131,8 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
     }
 
     return {
-        content: ['Changes to files done. Please review:', ...filePaths],
+        content: ['Changes to files done. Please review:'],
+        filePaths,
     }
 }
 
@@ -175,6 +176,12 @@ abstract class CodeGenBase {
                     const changes = await createChanges(params.fs, newFiles)
                     for (const change of changes.content) {
                         params.addToChat(createChatContent(change), MessageActionType.CHAT_ANSWER)
+                    }
+                    for (const newFile of newFiles) {
+                        params.addToChat(
+                            createChatContent(newFile.filePath, ChatItemType.CODE_RESULT),
+                            MessageActionType.CHAT_ANSWER
+                        )
                     }
                     return newFiles
                 }
@@ -257,7 +264,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
 
-    constructor(private config: SessionStateConfig, public approach: string) {
+    constructor(private config: Omit<SessionStateConfig, 'conversationId'>, public approach: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -282,7 +289,8 @@ export class MockCodeGenState implements SessionState {
         }
 
         return {
-            nextState: new CodeGenIterationState(this.config, this.approach, newFileContents),
+            // no point in iterating after a mocked code gen
+            nextState: new RefinementState(this.config, this.approach),
             interactions: await createChanges(action.fs, newFileContents),
         }
     }

@@ -99,6 +99,13 @@ export const createWeaverbirdUI = (): MynahUI => {
                 action: MessageActionType.CLEAR,
             })
         },
+
+        onOpenDiff: (leftPath: string, rightPath: string) => {
+            extensionCommunicator.sendMessageToExtension({
+                action: MessageActionType.OPEN_DIFF,
+                data: { leftPath, rightPath },
+            })
+        },
     })
 
     return mynahUI

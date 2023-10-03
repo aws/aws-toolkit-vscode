@@ -3,14 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 /* eslint-disable no-extra-bind */
-import * as vscode from 'vscode'
+import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { existsSync } from 'fs'
 import * as path from 'path'
+import * as vscode from 'vscode'
 import { ExtensionContext } from 'vscode'
-import { PanelStore } from '../stores/panelStore'
-import { messageIdentifier, MessageActionType, NotificationType, createChatContent, ChatItemType } from '../models'
+import { weaverbirdScheme } from '../constants'
+import { ChatItemType, MessageActionType, NotificationType, createChatContent, messageIdentifier } from '../models'
 import { Session } from '../session/session'
 import { createSessionConfig } from '../session/sessionConfigFactory'
-import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { PanelStore } from '../stores/panelStore'
 import { FollowUpTypes, SessionStatePhase } from '../types'
 
 export interface MynahDisplayProps {
@@ -68,6 +70,13 @@ export class WeaverbirdDisplay {
 
                     for (const content of interactions.content) {
                         this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
+                    }
+                    for (const filePath of interactions.filePaths ?? []) {
+                        this.sendDataToUI(
+                            panelId,
+                            createChatContent(filePath, ChatItemType.CODE_RESULT),
+                            MessageActionType.CHAT_ANSWER
+                        )
                     }
 
                     const followUpOptions = this.followUpOptions(session.state.phase)
@@ -135,6 +144,26 @@ export class WeaverbirdDisplay {
                     this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
                     break
                 }
+                case MessageActionType.OPEN_DIFF:
+                    {
+                        const diffParams = JSON.parse(msg.data)
+                        const workspaceRoot = session.config.workspaceRoot ?? ''
+                        const originalPath = path.join(workspaceRoot, diffParams.rightPath)
+                        let left
+                        if (existsSync(originalPath)) {
+                            left = vscode.Uri.file(originalPath)
+                        } else {
+                            left = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty' })
+                        }
+
+                        vscode.commands.executeCommand(
+                            'vscode.diff',
+                            left,
+                            vscode.Uri.from({ scheme: weaverbirdScheme, path: diffParams.rightPath })
+                        )
+                    }
+
+                    break
             }
         })
 

@@ -17,6 +17,7 @@ export interface ExtensionCommunicatorProps {
         type?: NotificationType
         duration?: 2500
     }) => void
+    onOpenDiff?: (props: { leftPath: string; rightPath: string; title: string }) => void
 }
 
 export class ExtensionCommunicator {
@@ -52,6 +53,9 @@ export class ExtensionCommunicator {
                     if (this.props.onNotificationRequestRecieved !== undefined) {
                         this.props.onNotificationRequestRecieved(messageData.data)
                     }
+                    break
+                case MessageActionType.OPEN_DIFF:
+                    this.props.onOpenDiff?.(messageData.data)
                     break
             }
         }

@@ -30,7 +30,7 @@ const mockSessionStateAction = ({ msg, addToChat }: MockSessionStateActionInput)
         msg: msg ?? 'test-msg',
         files: [],
         fs: new VirtualFileSystem(),
-        addToChat: addToChat ?? function (data: any, action: MessageActionType) {},
+        addToChat: addToChat ?? function () {},
     }
 }
 
@@ -110,16 +110,17 @@ describe('sessionState', () => {
     })
 
     describe('MockCodeGenState', () => {
-        it('transitions to generate CodeGenIterationState', async () => {
+        it('transitions to generate RefinementState', async () => {
             const testAction = mockSessionStateAction({})
             const state = new MockCodeGenState(testConfig, testApproach)
             const result = await state.interact(testAction)
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+            const nextState = new RefinementState(testConfig, testApproach)
 
             assert.deepStrictEqual(result, {
-                nextState,
+                nextState: nextState,
                 interactions: {
                     content: ['Changes to files done. Please review:'],
+                    filePaths: [],
                 },
             })
         })
@@ -197,9 +198,10 @@ describe('sessionState', () => {
             const interactionResult = await refinementIterationState.interact(testAction)
 
             assert.deepStrictEqual(interactionResult, {
-                nextState: new CodeGenIterationState(testConfig, testApproach, []),
+                nextState: new RefinementState(testConfig, testApproach),
                 interactions: {
                     content: ['Changes to files done. Please review:'],
+                    filePaths: [],
                 },
             })
         })
