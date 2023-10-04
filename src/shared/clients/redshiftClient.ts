@@ -25,6 +25,7 @@ import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
 import { ToolkitError } from '../errors'
 import { getLogger } from '../logger/logger'
+import { Cluster } from '../../ecs/model'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
@@ -51,7 +52,11 @@ export class DefaultRedshiftClient {
             Marker: nextToken,
             MaxRecords: 20,
         }
-        return redshiftClient.describeClusters(request).promise()
+        const response = await redshiftClient.describeClusters(request).promise()
+        if (response.Clusters) {
+            response.Clusters = response.Clusters.filter(cluster => cluster.ClusterAvailabilityStatus === 'Available')
+        }
+        return response
     }
 
     public async listServerlessWorkgroups(nextToken?: string): Promise<ListWorkgroupsResponse> {
@@ -60,7 +65,11 @@ export class DefaultRedshiftClient {
             nextToken: nextToken,
             maxResults: 20,
         }
-        return redshiftServerlessClient.listWorkgroups(request).promise()
+        const response = await redshiftServerlessClient.listWorkgroups(request).promise()
+        if (response.workgroups) {
+            response.workgroups = response.workgroups.filter(workgroup => workgroup.status === 'AVAILABLE')
+        }
+        return response
     }
 
     public async listDatabases(connectionParams: ConnectionParams, nextToken?: string): Promise<ListDatabasesResponse> {
