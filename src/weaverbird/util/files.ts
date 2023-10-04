@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { FileMetadata } from '../client/weaverbirdclient'
+import WeaverbirdClient, { FileMetadata } from '../client/weaverbirdclient'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { getExcludePattern } from '../../shared/fs/watchedFiles'
 import { getWorkspaceRelativePath } from '../../shared/utilities/workspaceUtils'
@@ -26,4 +26,8 @@ export async function collectFiles(rootPath: string): Promise<FileMetadata[]> {
         }
     }
     return storage
+}
+
+export function getFilePaths(fileContents: WeaverbirdClient.FileMetadataList): string[] {
+    return fileContents.map(metadata => metadata.filePath)
 }

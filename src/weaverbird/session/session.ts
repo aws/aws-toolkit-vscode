@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as path from 'path'
 import { collectFiles } from '../util/files'
 import { CodeGenState, RefinementState } from './sessionState'
@@ -10,6 +11,10 @@ import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { AddToChat } from '../models'
 import { SessionConfig } from './sessionConfig'
 import { ConversationIdNotFoundError } from '../errors'
+import { weaverbirdScheme } from '../constants'
+import { FileSystemCommon } from '../../srcShared/fs'
+
+const fs = FileSystemCommon.instance
 
 export class Session {
     private _state: SessionState
@@ -102,6 +107,19 @@ export class Session {
         }
 
         return resp.interactions
+    }
+
+    public async acceptChanges() {
+        for (const filePath of this._state.filePaths ?? []) {
+            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
+
+            const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
+            const content = await this.config.fs.readFile(uri)
+            const decodedContent = new TextDecoder().decode(content)
+
+            await fs.mkdir(path.dirname(absolutePath))
+            await fs.writeFile(absolutePath, decodedContent)
+        }
     }
 
     get state() {

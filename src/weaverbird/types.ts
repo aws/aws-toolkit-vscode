@@ -33,6 +33,8 @@ export interface SessionStateInteraction {
 
 export enum FollowUpTypes {
     WriteCode = 'WriteCode',
+    AcceptCode = 'AcceptCode',
+    RejectCode = 'RejectCode',
 }
 
 export enum SessionStatePhase {
@@ -42,6 +44,7 @@ export enum SessionStatePhase {
 
 export interface SessionState {
     readonly conversationId?: string
+    readonly filePaths?: string[]
     readonly phase?: SessionStatePhase
     approach: string
     readonly tokenSource: CancellationTokenSource

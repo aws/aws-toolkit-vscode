@@ -134,7 +134,7 @@ describe('sessionState', () => {
             const state = new CodeGenState(testConfig, testApproach)
             const result = await state.interact(testAction)
 
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [])
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -165,7 +165,7 @@ describe('sessionState', () => {
             const state = new CodeGenState(testConfig, testApproach)
             const result = await state.interact(testAction)
 
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [])
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [])
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -227,7 +227,7 @@ describe('sessionState', () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
             const testAction = mockSessionStateAction({})
 
-            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [])
+            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], [])
             const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
 
             assert.deepStrictEqual(codeGenIterationStateResult, {
