@@ -1,4 +1,16 @@
-<svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M9.9761 9.63754H4.69067V10.6946H9.9761V9.63754Z" fill="#C5C5C5"/>
-  <path fill-rule="evenodd" clip-rule="evenodd" d="M5.74779 3.29503L6.80488 2.23795H14.2045L15.2616 3.29503V10.6946L14.2045 11.7517H12.0903V13.8659L11.0332 14.923H3.63362L2.57654 13.8659V6.46629L3.63362 5.4092H11.0332L12.0903 6.46629V11.7517H12.0903V10.6946H14.2045V3.29503H6.80488V5.40918H5.74779V3.29503ZM11.0332 11.7517V6.46629H3.63362V13.8659H11.0332V11.7517H6.80488L6.80486 11.7517H11.0332Z" fill="#C5C5C5"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 17.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" id="Layer_1" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns"
+	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 20 20"
+	 enable-background="new 0 0 20 20" xml:space="preserve">
+<title>Shape</title>
+<desc>Created with Sketch.</desc>
+<g id="Page-1" sketch:type="MSPage">
+	<g id="Artboard-1" transform="translate(0.000000, -1.000000)" sketch:type="MSArtboardGroup">
+		<path id="Shape" sketch:type="MSShapeGroup" d="M19,2H1C0.4,2,0,2.5,0,3v16c0,0.5,0.4,1,1,1h18c0.5,0,1-0.5,1-1V3
+			C20,2.5,19.5,2,19,2L19,2z M7,18H2v-3h5V18L7,18z M7,14H2v-3h5V14L7,14z M7,10H2V7h5V10L7,10z M18,18H8v-3h10V18L18,18z M18,14H8
+			v-3h10V14L18,14z M18,10H8V7h10V10L18,10z"/>
+	</g>
+</g>
 </svg>

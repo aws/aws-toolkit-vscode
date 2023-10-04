@@ -20,6 +20,7 @@ import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { deleteConnection, getConnectionParamsState, updateConnectionParamsState } from './redshiftState'
 
 export class CreateNotebookNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -94,7 +95,11 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     newChildren: childNodes,
                 }
             } catch (error) {
-                getLogger().error(`Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${error}`)
+                getLogger().error(
+                    `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
+                        (error as Error).message
+                    }`
+                )
                 return Promise.reject(error)
             }
         })
@@ -104,28 +109,44 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         return await makeChildrenNodes({
             getChildNodes: async () => {
                 this.childLoader.clearChildren()
-                const connectionParams = await this.connectionWizard!.run()
-                if (!connectionParams) {
-                    return this.getRetryNode()
+                const existingConnectionParams = getConnectionParamsState(this.arn)
+                if (existingConnectionParams && existingConnectionParams === deleteConnection) {
+                    // connection is deleted but explorer is not refreshed: return empty children list
+                    await updateConnectionParamsState(this.arn, this.connectionParams)
+                    return [] as AWSTreeNodeBase[]
+                } else if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
+                    // valid connectionParams: update the redshiftWarehouseNode
+                    this.connectionParams = existingConnectionParams as ConnectionParams
                 } else {
-                    this.connectionParams = connectionParams
-                    this.iconPath = getIcon('aws-redshift-cluster-connected')
-                    let secretArnFetched = ''
-                    if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
-                        secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(connectionParams)
+                    // No connectionParams: trigger connection wizard to get user input
+                    this.connectionParams = await this.connectionWizard!.run()
+                    if (!this.connectionParams) {
+                        return this.getRetryNode()
+                    }
+
+                    if (this.connectionParams.connectionType === ConnectionType.DatabaseUser) {
+                        const secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(
+                            this.connectionParams
+                        )
                         if (!secretArnFetched) {
                             throw new Error('secret arn could not be fetched')
                         }
-                        connectionParams.secret = secretArnFetched
+                        this.connectionParams.secret = secretArnFetched
                     }
-                    try {
-                        const childNodes = await this.childLoader.getChildren()
-                        const startButtonNode = new CreateNotebookNode(this)
-                        childNodes.unshift(startButtonNode)
-                        return childNodes
-                    } catch {
-                        return this.getRetryNode()
-                    }
+                    await updateConnectionParamsState(this.arn, this.connectionParams)
+                }
+                try {
+                    const childNodes = await this.childLoader.getChildren()
+                    const startButtonNode = new CreateNotebookNode(this)
+                    childNodes.unshift(startButtonNode)
+                    return childNodes
+                } catch (error) {
+                    getLogger().error(
+                        `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
+                            (error as Error).message
+                        }`
+                    )
+                    return this.getRetryNode()
                 }
             },
             getNoChildrenPlaceholderNode: async () =>
