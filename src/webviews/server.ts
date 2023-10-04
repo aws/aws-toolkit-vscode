@@ -8,7 +8,7 @@ import { getLogger } from '../shared/logger'
 import { Message } from './client'
 import { AsyncResource } from 'async_hooks'
 import { ToolkitError } from '../shared/errors'
-import { showErrorToUser } from '../shared/utilities/errorUtils'
+import { logAndShowError } from '../shared/utilities/errorUtils'
 
 interface Command<T extends any[] = any, R = any> {
     (...args: T): R | never
@@ -80,7 +80,7 @@ export function registerWebviewServer(
 
                 // A command failed in the backend/server, this will surface the error to the user as a vscode error message.
                 // This is the base error handler that will end up catching all unhandled errors.
-                showLoggedErrorToUser(err, webviewId, command)
+                logAndShowWebviewError(err, webviewId, command)
             }
 
             // TODO: check if webview has been disposed of before posting message (not necessary but nice)
@@ -99,14 +99,11 @@ export function registerWebviewServer(
  * @param webviewId Arbitrary value that identifies which webview had the error
  * @param command The high level command/function that was run which triggered the error
  */
-export function showLoggedErrorToUser(err: unknown, webviewId: string, command: string) {
+export function logAndShowWebviewError(err: unknown, webviewId: string, command: string) {
     // HACK: The following implementation is a hack, influenced by the implementation of handleError().
     // The userFacingError message will be seen in the UI, and the detailedError message will provide the
     // detailed information in the logs.
-    const detailedError = ToolkitError.chain(
-        err,
-        `The backend command "${command}()" failed when executed by the webview.`
-    )
-    const userFacingError = ToolkitError.chain(detailedError, 'A webview had an error.')
-    showErrorToUser(userFacingError, `webviewId="${webviewId}"`, 'A webview had an error.')
+    const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
+    const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
+    logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error')
 }

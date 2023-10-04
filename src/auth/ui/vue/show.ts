@@ -43,7 +43,7 @@ import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
-import { showLoggedErrorToUser } from '../../../webviews/server'
+import { logAndShowWebviewError } from '../../../webviews/server'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -247,7 +247,7 @@ export class AuthWebview extends VueWebview {
             // If SSO setup fails we want to be able to show the user an error in the UI, due to this we cannot
             // throw an error here. So instead this will additionally show an error message that provides more
             // detailed information.
-            showLoggedErrorToUser(e, this.id, methodName)
+            logAndShowWebviewError(e, this.id, methodName)
 
             return { id: 'defaultFailure', text: 'Failed to setup.' }
         }

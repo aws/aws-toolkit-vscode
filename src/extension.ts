@@ -67,7 +67,7 @@ import { UriHandler } from './shared/vscode/uriHandler'
 import { telemetry } from './shared/telemetry/telemetry'
 import { Auth } from './auth/auth'
 import { openUrl } from './shared/utilities/vsCodeUtils'
-import { showErrorToUser } from './shared/utilities/errorUtils'
+import { logAndShowError } from './shared/utilities/errorUtils'
 
 let localize: nls.LocalizeFunc
 
@@ -89,7 +89,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
     registerErrorHandler((info, error) => {
         const defaultMessage = localize('AWS.generic.message.error', 'Failed to run command: {0}', info.id)
-        showErrorToUser(error, info.id, defaultMessage)
+        logAndShowError(error, info.id, defaultMessage)
     })
 
     if (isCloud9()) {

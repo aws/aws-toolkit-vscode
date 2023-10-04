@@ -43,12 +43,9 @@ export class Logging {
             return
         }
 
-        // HACK: The editor.document.getText() was returning a stale cached version of the logs,
-        // and due to this highlighting the new log would fail on subsequent calls of this function.T
-        // The following performs an action on the currently active file
-        // (which is why this command is right after the document is shown)
-        // and causes it to not use the cached getText() result.
-        // There is no guarantee for this behaviour in the future
+        // HACK: editor.document.getText() may return "stale" content, then
+        // subsequent calls to openLogId() fail to highlight the specific log.
+        // Invoke "revert" on the current file to force vscode to read from disk.
         await vscode.commands.executeCommand('workbench.action.files.revert')
 
         // Retrieve where the message starts by counting number of newlines
