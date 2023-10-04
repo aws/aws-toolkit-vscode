@@ -25,7 +25,6 @@ import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
 import { ToolkitError } from '../errors'
 import { getLogger } from '../logger/logger'
-import { Cluster } from '../../ecs/model'
 
 export interface ExecuteQueryResponse {
     statementResultResponse: GetStatementResultResponse
