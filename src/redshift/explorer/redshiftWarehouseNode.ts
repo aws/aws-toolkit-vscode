@@ -106,49 +106,47 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
-            getChildNodes: async () => {
-                this.childLoader.clearChildren()
-                const existingConnectionParams = getConnectionParamsState(this.arn)
-                if (existingConnectionParams && existingConnectionParams === deleteConnection) {
-                    // connection is deleted but explorer is not refreshed: return empty children list
-                    await updateConnectionParamsState(this.arn, this.connectionParams)
-                    return [] as AWSTreeNodeBase[]
-                } else if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
-                    // valid connectionParams: update the redshiftWarehouseNode
-                    this.connectionParams = existingConnectionParams as ConnectionParams
-                } else {
-                    // No connectionParams: trigger connection wizard to get user input
-                    this.connectionParams = await this.connectionWizard!.run()
-                    if (!this.connectionParams) {
-                        return this.getRetryNode()
-                    }
-
-                    if (this.connectionParams.connectionType === ConnectionType.DatabaseUser) {
-                        const secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(
-                            this.connectionParams
-                        )
-                        if (!secretArnFetched) {
-                            throw new Error('secret arn could not be fetched')
-                        }
-                        this.connectionParams.secret = secretArnFetched
-                    }
-                    await updateConnectionParamsState(this.arn, this.connectionParams)
-                }
-                try {
-                    const childNodes = await this.childLoader.getChildren()
-                    const startButtonNode = new CreateNotebookNode(this)
-                    childNodes.unshift(startButtonNode)
-                    return childNodes
-                } catch (error) {
-                    getLogger().error(
-                        `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
-                            (error as Error).message
-                        }`
-                    )
+        const handleConnectionParams = async () => {
+            const existingConnectionParams = getConnectionParamsState(this.arn)
+            if (existingConnectionParams && existingConnectionParams === deleteConnection) {
+                await updateConnectionParamsState(this.arn, this.connectionParams)
+                return [] as AWSTreeNodeBase[]
+            } else if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
+                this.connectionParams = existingConnectionParams as ConnectionParams
+            } else {
+                this.connectionParams = await this.connectionWizard!.run()
+                if (!this.connectionParams) {
                     return this.getRetryNode()
                 }
-            },
+                if (this.connectionParams.connectionType === ConnectionType.DatabaseUser) {
+                    const secretArnFetched = await this.redshiftClient.createSecretFromConnectionParams(
+                        this.connectionParams
+                    )
+                    if (!secretArnFetched) {
+                        throw new Error('secret arn could not be fetched')
+                    }
+                    this.connectionParams.secret = secretArnFetched
+                }
+                await updateConnectionParamsState(this.arn, this.connectionParams)
+            }
+            const childNodes = await this.childLoader.getChildren()
+            const startButtonNode = new CreateNotebookNode(this)
+            childNodes.unshift(startButtonNode)
+            return childNodes
+        }
+        // Check if disconnected
+        const existingConnectionParams = getConnectionParamsState(this.arn)
+        if (existingConnectionParams && existingConnectionParams === deleteConnection) {
+            this.iconPath = getIcon('aws-redshift-cluster')
+            this.label = `${this.name} (Disconnected)`
+        } else {
+            this.iconPath = getIcon('aws-redshift-cluster-connected')
+            this.label = `${this.name} (Connected to the database)`
+        }
+        this.refresh()
+        this.childLoader.clearChildren()
+        return await makeChildrenNodes({
+            getChildNodes: handleConnectionParams,
             getNoChildrenPlaceholderNode: async () =>
                 new PlaceholderNode(
                     this,
