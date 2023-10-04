@@ -77,10 +77,10 @@ export class WeaverbirdDisplay {
                         for (const content of interactions.content) {
                             this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
                         }
-                        for (const filePath of interactions.filePaths ?? []) {
+                        if (interactions.filePaths != undefined && interactions.filePaths.length > 0) {
                             this.sendDataToUI(
                                 panelId,
-                                createChatContent(filePath, ChatItemType.CODE_RESULT),
+                                createChatContent(interactions.filePaths, ChatItemType.CODE_RESULT),
                                 MessageActionType.CHAT_ANSWER
                             )
                         }
