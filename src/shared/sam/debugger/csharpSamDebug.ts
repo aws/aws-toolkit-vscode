@@ -55,6 +55,10 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
         runtimeFamily: RuntimeFamily.DotNet,
     }
 
+    if (config.sam?.containerBuild) {
+        config.mountWith = 'write'
+    }
+
     if (!config.noDebug) {
         config = await makeDotnetDebugConfiguration(config, originalCodeRoot)
     }
