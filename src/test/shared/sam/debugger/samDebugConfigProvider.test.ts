@@ -1761,6 +1761,9 @@ describe('SamDebugConfigurationProvider', async function () {
                     templatePath: 'template.yaml',
                     logicalId: 'HelloWorldFunction',
                 },
+                sam: {
+                    containerBuild: true, // #3864
+                },
                 lambda: {
                     environmentVariables: {
                         'test-envvar-1': 'test value 1',
@@ -1800,12 +1803,14 @@ describe('SamDebugConfigurationProvider', async function () {
                 documentUri: vscode.Uri.file(''), // TODO: remove or test.
                 handlerName: 'HelloWorld::HelloWorld.Function::FunctionHandler',
                 invokeTarget: { ...input.invokeTarget },
+                sam: { ...input.sam },
                 lambda: {
                     ...input.lambda,
                 },
                 name: input.name,
                 architecture: 'x86_64',
                 templatePath: pathutil.normalize(path.join(path.dirname(templatePath.fsPath), 'template.yaml')),
+                mountWith: 'write',
 
                 //
                 // Csharp-related fields

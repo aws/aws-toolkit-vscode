@@ -40,6 +40,8 @@ export interface SamCliBuildInvocationArguments {
      * - false: Lambda will be built on local machine instead of in a Docker image.
      */
     useContainer?: boolean
+    /** sam cli "--mount-with" option. */
+    mountWith?: 'read' | 'write'
     /**
      * Specifies the name or id of an existing Docker network to Lambda Docker containers should connect to,
      * along with the default bridge network.
@@ -106,6 +108,7 @@ export class SamCliBuildInvocation {
         pushIf(invokeArgs, !!this.args.baseDir, '--base-dir', this.args.baseDir!)
         pushIf(invokeArgs, !!this.args.dockerNetwork, '--docker-network', this.args.dockerNetwork!)
         pushIf(invokeArgs, !!this.args.useContainer, '--use-container')
+        pushIf(invokeArgs, !!this.args.mountWith, '--mount-with', this.args.mountWith?.toUpperCase())
         pushIf(invokeArgs, !!this.args.skipPullImage, '--skip-pull-image')
         pushIf(invokeArgs, !!this.args.manifestPath, '--manifest', this.args.manifestPath!)
         pushIf(
