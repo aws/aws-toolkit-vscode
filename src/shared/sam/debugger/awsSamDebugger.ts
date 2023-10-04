@@ -144,6 +144,9 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /** Path to (generated) directory used as a working/staging area for SAM. */
     baseBuildDir?: string
 
+    /** sam cli "--mount-with" option. */
+    mountWith?: 'read' | 'write'
+
     /**
      * URI of the current editor document.
      * Used as a last resort for deciding `codeRoot` (when there is no `launch.json` nor `template.yaml`)

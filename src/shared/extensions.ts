@@ -21,6 +21,7 @@ export const VSCODE_EXTENSION_ID = {
     go: 'golang.go',
     java: 'redhat.java',
     javadebug: 'vscjava.vscode-java-debug',
+    dotnet: 'ms-dotnettools.csdevkit',
     git: 'vscode.git',
     remotessh: 'ms-vscode-remote.remote-ssh',
 }
