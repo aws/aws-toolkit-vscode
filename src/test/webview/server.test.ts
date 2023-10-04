@@ -5,9 +5,9 @@
 
 import { SinonStub, stub } from 'sinon'
 import { Logger, setLogger } from '../../shared/logger/logger'
-import { logAndShowWebviewError } from '../../webviews/server'
 import assert from 'assert'
 import { ToolkitError } from '../../shared/errors'
+import { handleWebviewError } from '../../webviews/server'
 
 describe('logAndShowWebviewError()', function () {
     let logError: SinonStub<[message: string, ...meta: any[]], number>
@@ -30,7 +30,7 @@ describe('logAndShowWebviewError()', function () {
 
         const inputError = new Error('Random Error')
 
-        logAndShowWebviewError(inputError, myWebviewId, myCommand)
+        handleWebviewError(inputError, myWebviewId, myCommand)
 
         assert.strictEqual(logError.callCount, 1)
 
