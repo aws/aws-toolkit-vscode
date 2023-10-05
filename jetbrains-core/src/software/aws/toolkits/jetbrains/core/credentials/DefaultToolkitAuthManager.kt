@@ -72,6 +72,15 @@ class DefaultToolkitAuthManager : ToolkitAuthManager, PersistentStateComponent<T
 
     override fun listConnections(): List<ToolkitConnection> = connections.toList() + transientConnections
 
+    override fun tryCreateTransientSsoConnection(profile: AuthProfile, callback: (BearerSsoConnection) -> Unit): BearerSsoConnection {
+        val connection = (connectionFromProfile(profile) as BearerSsoConnection).also {
+            callback(it)
+            transientConnections.add(it)
+        }
+
+        return connection
+    }
+
     override fun getOrCreateSsoConnection(profile: UserConfigSsoSessionProfile): BearerSsoConnection {
         (transientConnections.firstOrNull { it.id == profile.id } as? BearerSsoConnection)?.let {
             return it

@@ -20,7 +20,7 @@ class ManagedBearerSsoConnection(
     label: String? = null
 ) : BearerSsoConnection, Disposable {
     override val id: String = id ?: ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
-    override val label: String = label ?: ToolkitBearerTokenProvider.ssoDisplayName(startUrl, region)
+    override val label: String = label ?: ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
     private val provider =
         tokenConnection(

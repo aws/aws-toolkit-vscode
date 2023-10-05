@@ -7,13 +7,10 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
 import com.intellij.openapi.actionSystem.PlatformDataKeys
-import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.observable.properties.PropertyGraph
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.openapi.ui.ValidationInfo
-import com.intellij.openapi.util.Disposer
 import com.intellij.ui.SimpleListCellRenderer
 import com.intellij.ui.components.BrowserLink
 import com.intellij.ui.components.JBTabbedPane
@@ -25,27 +22,19 @@ import com.intellij.ui.dsl.builder.toNullableProperty
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.components.BorderLayoutPanel
 import org.jetbrains.annotations.VisibleForTesting
-import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
-import software.amazon.awssdk.auth.token.credentials.SdkTokenProvider
 import software.amazon.awssdk.profiles.Profile
-import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.sso.SsoClient
-import software.amazon.awssdk.services.sso.model.RoleInfo
 import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.jetbrains.ToolkitPlaces
-import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.BearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ConfigFilesFacade
 import software.aws.toolkits.jetbrains.core.credentials.DefaultConfigFilesFacade
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
-import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
-import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
-import software.aws.toolkits.jetbrains.ui.AsyncComboBox
 import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
@@ -233,13 +222,38 @@ class SetupAuthenticationDialog(
 
         when (selectedTab()) {
             SetupAuthenticationTabs.IDENTITY_CENTER -> {
-                val tokenProvider = loginSso(project, state.idcTabState.startUrl, state.idcTabState.region.id, scopes)
-
-                if (!promptForIdcPermissionSet) {
+                val profileName = state.idcTabState.profileName
+                if (configFilesFacade.readSsoSessions().containsKey(profileName)) {
+                    setErrorText(message("gettingstarted.setup.iam.session.exists", profileName))
                     return
                 }
 
-                val rolePopup = IdcRolePopup(project, state.idcTabState.region.id, tokenProvider, state.idcTabState.rolePopupState)
+                val profile = UserConfigSsoSessionProfile(
+                    configSessionName = profileName,
+                    ssoRegion = state.idcTabState.region.id,
+                    startUrl = state.idcTabState.startUrl,
+                    scopes = scopes
+                )
+
+                val connection = authAndUpdateConfig(project, profile, configFilesFacade) {
+                    setErrorText(it)
+                } ?: return
+
+                if (!promptForIdcPermissionSet) {
+                    ToolkitConnectionManager.getInstance(project).switchConnection(connection)
+                    close(OK_EXIT_CODE)
+                    return
+                }
+
+                val tokenProvider = connection.getConnectionSettings().tokenProvider
+                val rolePopup = IdcRolePopup(
+                    project,
+                    state.idcTabState.region.id,
+                    profileName,
+                    tokenProvider,
+                    state.idcTabState.rolePopupState,
+                    configFilesFacade = configFilesFacade
+                )
 
                 if (!rolePopup.showAndGet()) {
                     // don't close window if role is needed but was not confirmed
@@ -291,6 +305,7 @@ class SetupAuthenticationDialog(
                 .comment(message("gettingstarted.setup.idc.startUrl.comment"))
                 .align(AlignX.FILL)
                 .errorOnApply(message("gettingstarted.setup.error.not_empty")) { it.text.isBlank() }
+                .errorOnApply(message("gettingstarted.setup.idc.no_builder_id")) { it.text == SONO_URL }
                 .bindText(state.idcTabState::startUrl)
         }
 
@@ -350,135 +365,3 @@ class SetupAuthenticationDialog(
         }
     }
 }
-
-data class IdcRolePopupState(
-    var roleInfo: RoleInfo? = null
-)
-
-class IdcRolePopup(
-    project: Project,
-    private val region: String,
-    private val tokenProvider: SdkTokenProvider,
-    val state: IdcRolePopupState = IdcRolePopupState()
-) : DialogWrapper(project) {
-    init {
-        title = message("gettingstarted.setup.idc.role.title")
-        init()
-    }
-
-    override fun showAndGet(): Boolean {
-        if (ApplicationManager.getApplication().isUnitTestMode) {
-            return false
-        }
-
-        return super.showAndGet()
-    }
-
-    override fun createCenterPanel() = panel {
-        row {
-            label(message("gettingstarted.setup.idc.roleLabel"))
-        }
-
-        row {
-            val combo = AsyncComboBox<RoleInfo> { label, value, _ ->
-                value ?: return@AsyncComboBox
-                label.text = "${value.roleName()} (${value.accountId()})"
-            }
-
-            Disposer.register(myDisposable, combo)
-            combo.proposeModelUpdate { model ->
-                val token = tokenProvider.resolveToken().token()
-                val client = AwsClientManager.getInstance().createUnmanagedClient<SsoClient>(
-                    AnonymousCredentialsProvider.create(),
-                    Region.of(region)
-                )
-
-                client.listAccounts { it.accessToken(token) }
-                    .accountList()
-                    .flatMap { account ->
-                        client.listAccountRoles {
-                            it.accessToken(token)
-                            it.accountId(account.accountId())
-                        }.roleList()
-                    }.forEach {
-                        model.addElement(it)
-                    }
-            }
-
-            cell(combo)
-                .align(AlignX.FILL)
-                .errorOnApply(message("gettingstarted.setup.error.not_selected")) { it.selected() == null }
-                .bindItem(state::roleInfo.toNullableProperty())
-        }
-    }
-}
-
-fun rolePopupFromConnection(project: Project, connection: AwsBearerTokenConnection) {
-    runInEdt {
-        if (connection.isSono()) {
-            requestCredentialsForExplorer(project)
-        } else {
-            val tokenProvider = if (connection is BearerSsoConnection && !connection.scopes.contains(IDENTITY_CENTER_ROLE_ACCESS_SCOPE)) {
-                loginSso(project, connection.startUrl, connection.region, connection.scopes + IDENTITY_CENTER_ROLE_ACCESS_SCOPE)
-            } else {
-                connection.getConnectionSettings().tokenProvider
-            }
-
-            IdcRolePopup(project, connection.region, tokenProvider).show()
-        }
-    }
-}
-
-fun requestCredentialsForCodeWhisperer(project: Project, popupBuilderIdTab: Boolean = true) =
-    SetupAuthenticationDialog(
-        project,
-        state = SetupAuthenticationDialogState().also {
-            if (popupBuilderIdTab) {
-                it.selectedTab.set(SetupAuthenticationTabs.BUILDER_ID)
-            }
-        },
-        tabSettings = mapOf(
-            SetupAuthenticationTabs.IDENTITY_CENTER to AuthenticationTabSettings(
-                disabled = false,
-                notice = SetupAuthenticationNotice(
-                    SetupAuthenticationNotice.NoticeType.WARNING,
-                    message("gettingstarted.setup.codewhisperer.use_builder_id"),
-                    "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
-                )
-            ),
-            SetupAuthenticationTabs.BUILDER_ID to AuthenticationTabSettings(
-                disabled = false,
-                notice = SetupAuthenticationNotice(
-                    SetupAuthenticationNotice.NoticeType.WARNING,
-                    message("gettingstarted.setup.codewhisperer.use_identity_center"),
-                    "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
-                )
-            ),
-            SetupAuthenticationTabs.IAM_LONG_LIVED to AuthenticationTabSettings(
-                disabled = true,
-                notice = SetupAuthenticationNotice(
-                    SetupAuthenticationNotice.NoticeType.ERROR,
-                    message("gettingstarted.setup.codewhisperer.no_iam"),
-                    "https://docs.aws.amazon.com/codewhisperer/latest/userguide/codewhisperer-auth.html"
-                )
-            )
-        ),
-        scopes = CODEWHISPERER_SCOPES,
-        promptForIdcPermissionSet = false
-    ).showAndGet()
-
-fun requestCredentialsForExplorer(project: Project) =
-    SetupAuthenticationDialog(
-        project,
-        tabSettings = mapOf(
-            SetupAuthenticationTabs.BUILDER_ID to AuthenticationTabSettings(
-                disabled = true,
-                notice = SetupAuthenticationNotice(
-                    SetupAuthenticationNotice.NoticeType.ERROR,
-                    message("gettingstarted.setup.explorer.no_builder_id"),
-                    "https://docs.aws.amazon.com/signin/latest/userguide/differences-aws_builder_id.html"
-                )
-            )
-        ),
-        promptForIdcPermissionSet = true
-    ).showAndGet()

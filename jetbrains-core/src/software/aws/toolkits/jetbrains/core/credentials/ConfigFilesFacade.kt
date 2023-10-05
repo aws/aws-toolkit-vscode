@@ -10,10 +10,12 @@ import software.aws.toolkits.core.utils.appendText
 import software.aws.toolkits.core.utils.createParentDirectories
 import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.inputStreamIfExists
 import software.aws.toolkits.core.utils.touch
 import software.aws.toolkits.core.utils.tryDirOp
 import software.aws.toolkits.core.utils.tryFileOp
 import software.aws.toolkits.core.utils.writeText
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ssoSessions
 import java.nio.file.Path
 
 interface ConfigFilesFacade {
@@ -25,12 +27,14 @@ interface ConfigFilesFacade {
      * This should follow the same semantics of [software.amazon.awssdk.profiles.ProfileFile.profiles]
      */
     fun readAllProfiles(): Map<String, Profile>
+    fun readSsoSessions(): Map<String, Profile>
 
     fun createConfigFile()
 
     fun appendProfileToConfig(profile: Profile)
     fun appendProfileToCredentials(profile: Profile)
     fun appendSectionToConfig(sectionName: String, profile: Profile)
+    fun updateSectionInConfig(sectionName: String, profile: Profile)
 }
 
 class DefaultConfigFilesFacade(
@@ -105,7 +109,7 @@ class DefaultConfigFilesFacade(
             """.trimIndent()
     }
 
-    override fun readAllProfiles(): Map<String, Profile> = ProfileFile.aggregator()
+    private fun aggregateProfiles() = ProfileFile.aggregator()
         .applyMutation {
             if (credentialsPath.exists()) {
                 it.addFile(
@@ -127,7 +131,10 @@ class DefaultConfigFilesFacade(
             }
         }
         .build()
-        .profiles()
+
+    override fun readAllProfiles(): Map<String, Profile> = aggregateProfiles().profiles()
+
+    override fun readSsoSessions(): Map<String, Profile> = aggregateProfiles().ssoSessions()
 
     override fun createConfigFile() {
         configPath.tryDirOp(LOG) { createParentDirectories() }
@@ -146,6 +153,40 @@ class DefaultConfigFilesFacade(
 
     override fun appendSectionToConfig(sectionName: String, profile: Profile) =
         appendSection(configPath, sectionName, profile)
+
+    override fun updateSectionInConfig(sectionName: String, profile: Profile) {
+        assert(sectionName == "sso-session") { "Method only supports updating sso-session" }
+        configPath.tryFileOp(LOG) {
+            touch(restrictToOwner = true)
+            val lines = inputStreamIfExists()?.reader()?.readLines().orEmpty()
+            val profileHeaderLine = lines.indexOfFirst { it.startsWith("[$sectionName ${profile.name()}]") }
+            if (profileHeaderLine == -1) {
+                // does not have profile, just write directly to end
+                appendSectionToConfig(sectionName, profile)
+            } else {
+                // has profile
+                val nextHeaderLine = lines.subList(profileHeaderLine + 1, lines.size).indexOfFirst { it.startsWith("[") }
+                val endIndex = if (nextHeaderLine == -1) {
+                    // is last profile in file
+                    lines.size
+                } else {
+                    nextHeaderLine + profileHeaderLine + 1
+                }
+
+                // update contents between profileHeaderLine and nextHeaderLine
+                val profileLines = lines.subList(profileHeaderLine, endIndex).toMutableList()
+                profile.properties().forEach { key, value ->
+                    val line = profileLines.indexOfLast { it.startsWith("$key=") }
+                    if (line == -1) {
+                        profileLines.add("$key=$value")
+                    } else {
+                        profileLines[line] = "$key=$value"
+                    }
+                }
+                writeText((lines.subList(0, profileHeaderLine) + profileLines + lines.subList(endIndex, lines.size)).joinToString("\n"))
+            }
+        }
+    }
 
     private fun appendSection(path: Path, sectionName: String, profile: Profile) {
         val isConfigFile = path.fileName.toString() != "credentials"

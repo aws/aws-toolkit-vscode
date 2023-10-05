@@ -23,12 +23,7 @@ data class Profiles(
 fun validateAndGetProfiles(): Profiles {
     val profileFile = ProfileFile.defaultProfileFile()
     val allProfiles = profileFile.profiles().orEmpty()
-    // we could also manually parse the file to avoid reflection, but the SDK encodes a lot of logic that we don't want to try to duplicate
-    val rawProfilesField = profileFile.javaClass.declaredFields.first { it.name == "profilesAndSectionsMap" }.apply {
-        isAccessible = true
-    }
-    val rawProfiles = rawProfilesField.get(profileFile) as Map<String, Map<String, Profile>>
-    val ssoSessions = rawProfiles.get("sso-session").orEmpty()
+    val ssoSessions = profileFile.ssoSessions()
 
     val validProfiles = mutableMapOf<String, Profile>()
     val invalidProfiles = mutableMapOf<String, Exception>()
@@ -118,4 +113,13 @@ private fun validateSsoProfile(profile: Profile) {
 private fun validateSsoSession(profile: Profile) {
     profile.requiredProperty(ProfileProperty.SSO_START_URL)
     profile.requiredProperty(ProfileProperty.SSO_REGION)
+}
+
+internal fun ProfileFile.ssoSessions(): Map<String, Profile> {
+    // we could also manually parse the file to avoid reflection, but the SDK encodes a lot of logic that we don't want to try to duplicate
+    val rawProfilesField = javaClass.declaredFields.first { it.name == "profilesAndSectionsMap" }.apply {
+        isAccessible = true
+    }
+    val rawProfiles = rawProfilesField.get(this) as Map<String, Map<String, Profile>>
+    return rawProfiles.get(SSO_SESSION_SECTION_NAME).orEmpty()
 }

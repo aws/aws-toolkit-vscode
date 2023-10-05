@@ -88,6 +88,12 @@ interface ToolkitAuthManager {
     fun listConnections(): List<ToolkitConnection>
 
     fun createConnection(profile: AuthProfile): ToolkitConnection
+
+    /**
+     * Creates a connection that is not visible to the rest of the toolkit unless authentication succeeds
+     * @return [BearerSsoConnection] on success
+     */
+    fun tryCreateTransientSsoConnection(profile: AuthProfile, callback: (BearerSsoConnection) -> Unit): BearerSsoConnection
     fun getOrCreateSsoConnection(profile: UserConfigSsoSessionProfile): BearerSsoConnection
 
     fun deleteConnection(connection: ToolkitConnection)
@@ -117,6 +123,7 @@ interface ToolkitConnectionManager : Disposable {
 /**
  * Individual service should subscribe [ToolkitConnectionManagerListener.TOPIC] to fire their service activation / UX update
  */
+@Deprecated("Connections created through this function are not written to the user's ~/.aws/config file")
 fun loginSso(project: Project?, startUrl: String, region: String, requestedScopes: List<String>): BearerTokenProvider {
     val connectionId = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
 

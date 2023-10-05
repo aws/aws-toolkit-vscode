@@ -37,6 +37,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcess
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.profiles.Ec2MetadataConfigProvider.getEc2MedataEndpoint
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY
+import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.ProfilesNotification
@@ -83,7 +84,7 @@ data class ProfileSsoSessionIdentifier(
     override val ssoRegion: String,
     override val scopes: Set<String>
 ) : SsoSessionIdentifier {
-    override val id = "sso-session:$profileName"
+    override val id = "$SSO_SESSION_SECTION_NAME:$profileName"
 }
 
 class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCache) : CredentialProviderFactory {

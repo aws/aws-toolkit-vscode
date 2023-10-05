@@ -165,6 +165,7 @@ class ExplorerToolWindow(private val project: Project) :
     }
 
     override fun settingsStateChanged(newState: ConnectionState) {
+        // we use the active connection to ignore changes to AwsConnectionManager when it's not the active connection
         connectionChanged(connectionManager.activeConnection())
     }
 

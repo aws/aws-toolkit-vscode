@@ -221,6 +221,95 @@ class DefaultConfigFilesFacadeTest {
         assertThat(creds).doesNotExist()
     }
 
+    @Test
+    fun `update section in config -- single section in config`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session sectionName]
+            key1=value1
+            key2=value2
+            """.trimIndent()
+        )
+        val sut = DefaultConfigFilesFacade(configPath = config)
+
+        sut.updateSectionInConfig(
+            "sso-session",
+            Profile.builder()
+                .name("sectionName")
+                .properties(
+                    mapOf(
+                        "key1" to "newValue1",
+                        "key3" to "value3",
+                        "key4" to "value4"
+                    )
+                )
+                .build()
+        )
+
+        assertThat(config).hasContent(
+            """
+            [sso-session sectionName]
+            key1=newValue1
+            key2=value2
+            key3=value3
+            key4=value4
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `update section in config -- multiple sections in config`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [profile preceding]
+            a=b
+            [sso-session sectionName]
+            key1=value1
+            key2=value2[
+            [somethinginvalid
+            [profile profile]
+            key=value
+            """.trimIndent()
+        )
+        val sut = DefaultConfigFilesFacade(configPath = config)
+
+        sut.updateSectionInConfig(
+            "sso-session",
+            Profile.builder()
+                .name("sectionName")
+                .properties(
+                    mapOf(
+                        "key1" to "newValue1",
+                        "key2" to "value2[",
+                        "key3" to "value3",
+                        "key4" to "value4"
+                    )
+                )
+                .build()
+        )
+
+        assertThat(config).hasContent(
+            """
+            [profile preceding]
+            a=b
+            [sso-session sectionName]
+            key1=newValue1
+            key2=value2[
+            key3=value3
+            key4=value4
+            [somethinginvalid
+            [profile profile]
+            key=value
+            """.trimIndent()
+        )
+    }
+
     private fun IterableAssert<PosixFilePermission>.matches(permissionString: String) {
         containsOnly(*PosixFilePermissions.fromString(permissionString).toTypedArray())
     }
