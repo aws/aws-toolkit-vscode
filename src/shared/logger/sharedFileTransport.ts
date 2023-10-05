@@ -52,7 +52,7 @@ export class SharedFileTransport extends TransportStream {
 
     /**
      * @returns a promise that resolves once a batch of logs are written to
-     *          the log file. 
+     *          the log file.
      */
     public override log(logEntry: LogEntry, next: () => void): Promise<void> {
         this.bufferedLogEntries.push(logEntry)
