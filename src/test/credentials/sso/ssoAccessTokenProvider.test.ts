@@ -10,7 +10,7 @@ import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider
 import { installFakeClock } from '../../testUtil'
 import { getCache } from '../../../auth/sso/cache'
 
-import { instance, mock, when, anything, reset } from '../../utilities/mockito'
+import { instance, mock, when, anything, reset, deepEqual } from '../../utilities/mockito'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import { ClientRegistration, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
@@ -199,13 +199,15 @@ describe('SsoAccessTokenProvider', function () {
             getOpenExternalStub().resolves(userClicked)
         }
 
-        function setupFlow() {
+        function setupFlow(opts?: { skipAuthorization: boolean }) {
             const token = createToken(hourInMs)
             const registration = createRegistration(hourInMs)
             const authorization = createAuthorization(hourInMs)
 
             when(oidcClient.registerClient(anything())).thenResolve(registration)
-            when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
+            if (!opts?.skipAuthorization) {
+                when(oidcClient.startDeviceAuthorization(anything())).thenResolve(authorization)
+            }
             when(oidcClient.createToken(anything())).thenResolve(token)
 
             return { token, registration, authorization }
@@ -249,6 +251,49 @@ describe('SsoAccessTokenProvider', function () {
             await clock.tickAsync(750)
             assert.ok(!progress.visible)
             await assert.rejects(resp, ToolkitError)
+        })
+
+        /**
+         * Saves an expired client registration to the cache.
+         */
+        async function saveExpiredRegistrationToCache(): Promise<{
+            key: { region: string; scopes: string[] }
+            registration: ClientRegistration
+        }> {
+            const key = { region, scopes: [] }
+            const registration = {
+                clientId: 'myExpiredClientId',
+                clientSecret: 'myExpiredClientSecret',
+                expiresAt: new clock.Date(clock.Date.now() - 1), // expired date
+            }
+            await cache.registration.save(key, registration)
+            return { key, registration }
+        }
+
+        it('registers a new client registration if the existing client registration is expired', async function () {
+            const { token, registration: validRegistration, authorization } = setupFlow({ skipAuthorization: true })
+            stubOpen()
+
+            const { key: registrationKey, registration: expiredRegistration } = await saveExpiredRegistrationToCache()
+            // If we do not invalidate the expired registration, startDeviceAuthorization()
+            // will be given expired registration values. The following ensures we only
+            // return a value when startDeviceAuthorization() is given valid registration values.
+            when(
+                oidcClient.startDeviceAuthorization(
+                    deepEqual({
+                        startUrl: startUrl,
+                        clientId: validRegistration.clientId,
+                        clientSecret: validRegistration.clientSecret,
+                    })
+                )
+            ).thenResolve(authorization)
+
+            // sanity check we have expired registration in cache
+            assert.deepStrictEqual(await cache.registration.load(registrationKey), expiredRegistration)
+            const result = await sut.createToken()
+            // a valid registration should be cached since the previous was expired
+            assert.deepStrictEqual(await cache.registration.load(registrationKey), validRegistration)
+            assert.deepStrictEqual(result, { ...token, identity: startUrl }) // verify final result
         })
 
         describe('Exceptions', function () {
