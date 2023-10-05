@@ -24,6 +24,7 @@ import { showTimedMessage } from '../../shared/utilities/messages'
 import {
     CodewhispererAutomatedTriggerType,
     CodewhispererCompletionType,
+    CodewhispererGettingStartedTask,
     CodewhispererTriggerType,
     telemetry,
 } from '../../shared/telemetry/telemetry'
@@ -109,7 +110,6 @@ export class RecommendationHandler {
         const timeoutMessage = hasVendedIamCredentials()
             ? `Generate recommendation timeout.`
             : `List recommendation timeout`
-        try {
             if (
                 isManualTriggerOn &&
                 triggerType === 'OnDemand' &&
@@ -135,8 +135,21 @@ export class RecommendationHandler {
                 timeoutMessage,
                 CodeWhispererConstants.promiseTimeoutLimit * 1000
             )
-        } catch (error) {
-            throw new Error(`${error instanceof Error ? error.message : error}`)
+    }
+
+    async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask | undefined> {
+        if (filePath.includes('CodeWhisperer_generate_suggestion')) {
+            return 'autoTrigger'
+        } else if (filePath.includes('CodeWhisperer_manual_invoke')) {
+            return 'manualTrigger'
+        } else if (filePath.includes('CodeWhisperer_use_comments')) {
+            return 'commentAsPrompt'
+        } else if (filePath.includes('CodeWhisperer_navigate_suggestions')) {
+            return 'navigation'
+        } else if (filePath.includes('Generate_unit_tests')) {
+            return 'unitTest'
+        } else {
+            return undefined
         }
     }
 
@@ -168,6 +181,7 @@ export class RecommendationHandler {
         let nextToken = ''
         let shouldRecordServiceInvocation = true
         session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+        session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
             if (page === 0) {
@@ -297,6 +311,7 @@ export class RecommendationHandler {
                     latency,
                     session.startPos.line,
                     session.language,
+                    session.taskType,
                     reason,
                     session.requestContext.supplementalMetadata
                 )

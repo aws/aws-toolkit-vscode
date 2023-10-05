@@ -15,6 +15,7 @@ import {
     createFreeTierLimitMetNode,
     createReconnectNode,
 } from './codewhispererChildrenNodes'
+import { createGettingStartedNode } from '../commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { hasVendedIamCredentials } from '../../shared/extensionUtilities'
@@ -91,6 +92,7 @@ export class CodeWhispererNode implements RootNode {
                     createAutoSuggestionsNode(autoTriggerEnabled),
                     createSecurityScanNode(),
                     createOpenReferenceLogNode(),
+                    createGettingStartedNode(), // "Learn" node : opens Learn CodeWhisperer page
                 ]
             }
         }

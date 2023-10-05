@@ -3,7 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CodewhispererCompletionType, CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
+import {
+    CodewhispererCompletionType,
+    CodewhispererLanguage,
+    CodewhispererGettingStartedTask,
+} from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
@@ -22,7 +26,7 @@ class CodeWhispererSession {
         supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     } = { request: {} as any, supplementalMetadata: {} as any }
     language: CodewhispererLanguage = 'java'
-
+    taskType: CodewhispererGettingStartedTask | undefined
     // Various states of recommendations
     recommendations: Recommendation[] = []
     suggestionStates = new Map<number, string>()

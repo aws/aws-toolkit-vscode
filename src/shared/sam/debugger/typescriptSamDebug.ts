@@ -79,8 +79,9 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     const isImageLambda = isImageLambdaConfig(config)
 
     if (isImageLambda && !config.noDebug) {
+        // Need --inspect to enable debugging. SAM CLI doesn't send env vars for "Image" packagetype.
         config.containerEnvVars = {
-            NODE_OPTIONS: `--inspect-brk=0.0.0.0:${config.debugPort} --max-http-header-size 81920`,
+            NODE_OPTIONS: `--inspect=0.0.0.0:${config.debugPort} --max-http-header-size 81920`,
         }
     }
 
@@ -110,7 +111,11 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
         remoteRoot: remoteRoot ?? '/var/task',
         protocol: 'inspector',
         // Stop at first user breakpoint, not the runtime bootstrap file.
-        stopOnEntry: config.stopOnEntry === undefined ? false : !!config.stopOnEntry,
+        stopOnEntry: config.stopOnEntry ?? false,
+        // See `continueOnAttach` at: https://code.visualstudio.com/docs/nodejs/nodejs-debugging
+        // Workaround SAM CLI's outdated settings: https://github.com/aws/aws-sam-cli/blob/1adc080b82476288804c41c553c5e2ad86f28298/samcli/local/docker/lambda_debug_settings.py#L165
+        // Not needed (but harmless) for "Image" packagetype: we set "NODE_OPTIONS:--inspect=…" above.
+        continueOnAttach: config.continueOnAttach ?? true,
         skipFiles: ['/var/runtime/node_modules/**/*.js', '<node_internals>/**/*.js'],
     }
 

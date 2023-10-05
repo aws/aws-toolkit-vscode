@@ -194,10 +194,14 @@ export class DefaultCodeWhispererClient {
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
+        const requestWithOptOut: SendTelemetryEventRequest = {
+            ...request,
+            optOutPreference: globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT',
+        }
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
             return
         }
-        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(request).promise()
+        const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
     }
 }

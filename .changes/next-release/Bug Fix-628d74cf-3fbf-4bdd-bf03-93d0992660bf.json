@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "BuilderID/IdentityCenter: Fix 'Invalid Client' error in the browser when re-authenticating"
+}
