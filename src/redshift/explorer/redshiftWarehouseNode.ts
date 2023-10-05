@@ -117,13 +117,9 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                 } else if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
                     // valid connectionParams: update the redshiftWarehouseNode
                     this.connectionParams = existingConnectionParams as ConnectionParams
-                    this.iconPath = getIcon('aws-redshift-cluster')
-                    this.label = `${this.name} (Disconnected)`
                 } else {
                     // No connectionParams: trigger connection wizard to get user input
                     this.connectionParams = await this.connectionWizard!.run()
-                    this.iconPath = getIcon('aws-redshift-cluster-connected')
-                    this.label = `${this.name} (Connected to the database)`
                     if (!this.connectionParams) {
                         return this.getRetryNode()
                     }
