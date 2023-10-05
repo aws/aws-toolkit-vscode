@@ -309,6 +309,7 @@ export class RecommendationHandler {
                     latency,
                     session.startPos.line,
                     session.language,
+                    session.taskType,
                     reason,
                     session.requestContext.supplementalMetadata
                 )
