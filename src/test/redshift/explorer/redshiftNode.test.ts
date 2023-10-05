@@ -23,7 +23,9 @@ function success<T>(output?: T): Request<T, AWSError> {
 
 function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage {
     const response = {
-        Clusters: [{ ClusterNamespaceArn: 'testArn', ClusterIdentifier: 'testId' }] as ClusterList,
+        Clusters: [
+            { ClusterNamespaceArn: 'testArn', ClusterIdentifier: 'testId', ClusterAvailabilityStatus: 'available' },
+        ] as ClusterList,
     } as ClustersMessage
     if (withNextToken) {
         response.Marker = 'next'
@@ -33,7 +35,7 @@ function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage
 
 function getExpectedServerlessResponse(withNextToken: boolean): ListWorkgroupsResponse {
     const response = {
-        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup' }] as WorkgroupList,
+        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'available' }] as WorkgroupList,
     } as ListWorkgroupsResponse
     if (withNextToken) {
         response.nextToken = 'next'
