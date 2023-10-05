@@ -108,31 +108,23 @@ export class RecommendationHandler {
         promise: Promise<any>
     ): Promise<any> {
         const timeoutMessage = isCloud9() ? `Generate recommendation timeout.` : `List recommendation timeout`
-        try {
-            if (isManualTriggerOn && triggerType === 'OnDemand' && (isCloud9() || isFirstPaginationCall)) {
-                return vscode.window.withProgress(
-                    {
-                        location: vscode.ProgressLocation.Notification,
-                        title: CodeWhispererConstants.pendingResponse,
-                        cancellable: false,
-                    },
-                    async () => {
-                        return await asyncCallWithTimeout(
-                            promise,
-                            timeoutMessage,
-                            CodeWhispererConstants.promiseTimeoutLimit * 1000
-                        )
-                    }
-                )
-            }
-            return await asyncCallWithTimeout(
-                promise,
-                timeoutMessage,
-                CodeWhispererConstants.promiseTimeoutLimit * 1000
+        if (isManualTriggerOn && triggerType === 'OnDemand' && (isCloud9() || isFirstPaginationCall)) {
+            return vscode.window.withProgress(
+                {
+                    location: vscode.ProgressLocation.Notification,
+                    title: CodeWhispererConstants.pendingResponse,
+                    cancellable: false,
+                },
+                async () => {
+                    return await asyncCallWithTimeout(
+                        promise,
+                        timeoutMessage,
+                        CodeWhispererConstants.promiseTimeoutLimit * 1000
+                    )
+                }
             )
-        } catch (error) {
-            throw new Error(`${error instanceof Error ? error.message : error}`)
         }
+        return await asyncCallWithTimeout(promise, timeoutMessage, CodeWhispererConstants.promiseTimeoutLimit * 1000)
     }
 
     async getTaskTypeFromEditorFileName(filePath: string): Promise<CodewhispererGettingStartedTask | undefined> {
