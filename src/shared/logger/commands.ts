@@ -43,6 +43,11 @@ export class Logging {
             return
         }
 
+        // HACK: editor.document.getText() may return "stale" content, then
+        // subsequent calls to openLogId() fail to highlight the specific log.
+        // Invoke "revert" on the current file to force vscode to read from disk.
+        await vscode.commands.executeCommand('workbench.action.files.revert')
+
         // Retrieve where the message starts by counting number of newlines
         const text = editor.document.getText()
         const textStart = text.indexOf(msg)
