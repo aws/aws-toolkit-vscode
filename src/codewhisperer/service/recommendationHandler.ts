@@ -131,7 +131,7 @@ export class RecommendationHandler {
                 CodeWhispererConstants.promiseTimeoutLimit * 1000
             )
         } catch (error) {
-            throw new Error(`${error instanceof Error ? error.message : error}`)
+            throw error
         }
     }
 
