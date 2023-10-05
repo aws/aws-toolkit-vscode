@@ -21,8 +21,13 @@ export interface Protocol {
  *
  * @param webview Target webview to add the event hook.
  * @param commands Commands to register.
+ * @param webviewId A human readable string that will identify the webview
  */
-export function registerWebviewServer(webview: vscode.Webview, commands: Protocol): vscode.Disposable {
+export function registerWebviewServer(
+    webview: vscode.Webview,
+    commands: Protocol,
+    webviewId: string
+): vscode.Disposable {
     const eventListeners: vscode.Disposable[] = []
     const disposeListeners = () => {
         while (eventListeners.length) {
@@ -64,13 +69,16 @@ export function registerWebviewServer(webview: vscode.Webview, commands: Protoco
                 result = await handler.call(webview, ...data)
             } catch (err) {
                 if (!(err instanceof Error)) {
-                    getLogger().debug(`Webview server threw on comamnd "${command}" but it was not an error: `, err)
+                    getLogger().debug(`Webview server threw on command "${command}" but it was not an error: `, err)
                     return
                 }
                 result = JSON.stringify(err, Object.getOwnPropertyNames(err))
                 delete result.stack // Not relevant to frontend code, we only care about the message
                 metadata.error = true
-                getLogger().debug(`Webview server failed on command "${command}": %s`, err.message)
+
+                // A command failed in the backend/server, this will surface the error to the user as a vscode error message.
+                // This is the base error handler that will end up catching all unhandled errors.
+                handleWebviewError(err, webviewId, command)
             }
 
             // TODO: check if webview has been disposed of before posting message (not necessary but nice)
@@ -80,4 +88,25 @@ export function registerWebviewServer(webview: vscode.Webview, commands: Protoco
     )
 
     return { dispose: () => (messageListener.dispose(), disposeListeners()) }
+}
+
+let errorHandler: (error: unknown, webviewId: string, command: string) => void
+/**
+ * Registers the handler for errors thrown by the webview backend/server code.
+ */
+export function registerWebviewErrorHandler(handler: typeof errorHandler): void {
+    if (errorHandler !== undefined) {
+        throw new TypeError('Webview error handler has already been registered')
+    }
+
+    errorHandler = handler
+}
+/**
+ * Invokes the registered webview error handler.
+ */
+export function handleWebviewError(error: unknown, webviewId: string, command: string): void {
+    if (errorHandler === undefined) {
+        throw new Error('Webview error handler not registered')
+    }
+    return errorHandler(error, webviewId, command)
 }

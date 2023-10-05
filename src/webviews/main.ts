@@ -227,7 +227,7 @@ export abstract class VueWebview {
                     webviewJs: this.instance.source,
                     ...params,
                 })
-                const server = registerWebviewServer(panel.webview, this.instance.protocol)
+                const server = registerWebviewServer(panel.webview, this.instance.protocol, this.instance.id)
                 this.instance.onDidDispose(() => {
                     server.dispose()
                     this.panel?.dispose()
@@ -282,7 +282,11 @@ export abstract class VueWebview {
                         if (!this.resolvedView) {
                             this.resolvedView = view
 
-                            const server = registerWebviewServer(this.resolvedView.webview, this.instance.protocol)
+                            const server = registerWebviewServer(
+                                this.resolvedView.webview,
+                                this.instance.protocol,
+                                this.instance.id
+                            )
                             this.resolvedView.onDidDispose(() => {
                                 server.dispose()
                                 this.resolvedView = undefined
