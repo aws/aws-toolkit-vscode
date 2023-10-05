@@ -11,6 +11,7 @@ import { v4 as uuid } from 'uuid'
 import { weaverbirdScheme } from './constants'
 import { getLogger } from '../shared/logger'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
+import { PanelIdNotFoundError, PanelNotFoundError, TabIdNotFoundError, TabNotFoundError } from './errors'
 
 /**
  * Activate Weaverbird functionality for the extension.
@@ -24,27 +25,34 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const weaverbirdProvider = new (class implements vscode.TextDocumentContentProvider {
         async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-            try {
-                const params = fromQueryToParameters(uri.query)
-                const panelId = params.get('panelId')
-                if (!panelId) {
-                    getLogger().error(`Unable to find panelId from ${uri.query}`)
-                    return ''
-                }
-
-                const panel = panelStore.getPanel(panelId)
-                if (!panel) {
-                    getLogger().error('Unable to find panel')
-                    return ''
-                }
-
-                const content = await panel.fs.readFile(uri)
-                const decodedContent = new TextDecoder().decode(content)
-                return decodedContent
-            } catch (e) {
-                getLogger().error(`Unable to find: ${uri}`)
-                return ''
+            const params = fromQueryToParameters(uri.query)
+            const panelId = params.get('panelId')
+            if (!panelId) {
+                getLogger().error(`Unable to find panelId from ${uri.query}`)
+                throw new PanelIdNotFoundError(uri.query)
             }
+
+            const panel = panelStore.getPanel(panelId)
+            if (!panel) {
+                getLogger().error('Unable to find panel')
+                throw new PanelNotFoundError()
+            }
+
+            const tabId = params.get('tabId')
+            if (!tabId) {
+                getLogger().error(`Unable to find tabId from ${uri.query}`)
+                throw new TabIdNotFoundError(uri.query)
+            }
+
+            const tab = panelStore.getTab(panelId, tabId)
+            if (!tab) {
+                getLogger().error('Unable to find tab')
+                throw new TabNotFoundError()
+            }
+
+            const content = await tab.session.config.fs.readFile(uri)
+            const decodedContent = new TextDecoder().decode(content)
+            return decodedContent
         }
     })()
 

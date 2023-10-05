@@ -46,6 +46,18 @@ export const createWeaverbirdUI = (): MynahUI => {
                 action: MessageActionType.UI_LOADED,
             })
         },
+        onTabAdd(tabId) {
+            extensionCommunicator.sendMessageToExtension({
+                action: MessageActionType.TAB_ADDED,
+                tabId,
+            })
+        },
+        onTabRemove(tabId) {
+            extensionCommunicator.sendMessageToExtension({
+                action: MessageActionType.TAB_REMOVED,
+                tabId,
+            })
+        },
         // If you connect to this event, it will show a button under the three dots menu
         // on the left of the send button which will open a feedback panel.
         onSendFeedback: (tabId: string, feedback) => {

@@ -209,10 +209,12 @@ abstract class CodeGenBase {
                 }
             }
         }
-        // still in progress
-        const errorMessage = `Code generation did not finish withing the expected time :(`
-        getLogger().error(errorMessage)
-        params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+        if (!this.tokenSource.token.isCancellationRequested) {
+            // still in progress
+            const errorMessage = `Code generation did not finish withing the expected time :(`
+            getLogger().error(errorMessage)
+            params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+        }
         return []
     }
 }

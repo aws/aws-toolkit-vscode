@@ -8,7 +8,7 @@ import * as path from 'path'
 import { collectFiles } from '../util/files'
 import { CodeGenState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
-import { AddToChatTab } from '../models'
+import { AddToChat } from '../models'
 import { SessionConfig } from './sessionConfig'
 import { ConversationIdNotFoundError } from '../errors'
 import { weaverbirdScheme } from '../constants'
@@ -22,9 +22,9 @@ export class Session {
     private approach: string = ''
     public readonly config: SessionConfig
 
-    private addToChat: AddToChatTab
+    private addToChat: AddToChat
 
-    constructor(sessionConfig: SessionConfig, addToChat: AddToChatTab) {
+    constructor(sessionConfig: SessionConfig, addToChat: AddToChat) {
         this.config = sessionConfig
         this._state = new RefinementState(this.getSessionStateConfig(), '')
 
@@ -43,7 +43,7 @@ export class Session {
     /**
      * Triggered by the Write Code follow up button to start the code generation phase
      */
-    async startCodegen(tabId: string): Promise<void> {
+    async startCodegen(): Promise<void> {
         if (!this.state.conversationId) {
             throw new ConversationIdNotFoundError()
         }
@@ -55,10 +55,10 @@ export class Session {
             },
             this.approach
         )
-        await this.nextInteraction(tabId, undefined)
+        await this.nextInteraction(undefined)
     }
 
-    async send(tabId: string, msg: string): Promise<Interaction> {
+    async send(msg: string): Promise<Interaction> {
         const sessionStageConfig = this.getSessionStateConfig()
 
         if (msg === 'CLEAR') {
@@ -77,10 +77,10 @@ export class Session {
             this.task = msg
         }
 
-        return this.nextInteraction(tabId, msg)
+        return this.nextInteraction(msg)
     }
 
-    private async nextInteraction(tabId: string, msg: string | undefined) {
+    private async nextInteraction(msg: string | undefined) {
         const files = await collectFiles(path.join(this.config.workspaceRoot, 'src'))
 
         const resp = await this.state.interact({
@@ -88,7 +88,7 @@ export class Session {
             task: this.task,
             msg,
             fs: this.config.fs,
-            addToChat: this.addToChat.bind(this, tabId),
+            addToChat: this.addToChat,
         })
 
         if (resp.nextState) {

@@ -28,7 +28,6 @@ export function createChatContent(content: string | string[], type = ChatItemTyp
     }
 }
 
-export type AddToChatTab = (tabId: string, data: any, action: MessageActionType) => void
 export type AddToChat = (data: any, action: MessageActionType) => void
 
 // You can configure below items as you like
@@ -45,4 +44,6 @@ export enum MessageActionType {
     NOTIFY = 'show-notification',
     FOLLOW_UP_CLICKED = 'follow-up-clicked',
     OPEN_DIFF = 'open-diff',
+    TAB_ADDED = 'tab-added',
+    TAB_REMOVED = 'tab-removed',
 }
