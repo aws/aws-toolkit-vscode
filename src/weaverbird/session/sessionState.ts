@@ -177,9 +177,10 @@ abstract class CodeGenBase {
                     for (const change of changes.content) {
                         params.addToChat(createChatContent(change), MessageActionType.CHAT_ANSWER)
                     }
-                    for (const newFile of newFiles) {
+                    if (changes.filePaths && changes.filePaths.length > 0) {
+                        // Show the file tree component when file paths are present
                         params.addToChat(
-                            createChatContent(newFile.filePath, ChatItemType.CODE_RESULT),
+                            createChatContent(changes.filePaths, ChatItemType.CODE_RESULT),
                             MessageActionType.CHAT_ANSWER
                         )
                     }

@@ -28,6 +28,7 @@ export function createChatContent(content: string | string[], type = ChatItemTyp
     }
 }
 
+export type AddToChatTab = (tabId: string, data: any, action: MessageActionType) => void
 export type AddToChat = (data: any, action: MessageActionType) => void
 
 // You can configure below items as you like
