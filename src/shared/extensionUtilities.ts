@@ -22,7 +22,7 @@ const localize = nls.loadMessageBundle()
 const vscodeAppname = 'Visual Studio Code'
 const cloud9Appname = 'AWS Cloud9'
 const cloud9CnAppname = 'Amazon Cloud9'
-const sageMakerAppname = 'Code - OSS'
+const sageMakerAppname = 'SageMaker Code Editor'
 const notInitialized = 'notInitialized'
 
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
