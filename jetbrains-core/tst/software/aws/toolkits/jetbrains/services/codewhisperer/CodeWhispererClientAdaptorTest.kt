@@ -8,10 +8,12 @@ import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
 import com.intellij.testFramework.replaceService
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doReturnConsecutively
@@ -42,6 +44,9 @@ import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysi
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
+import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisResponse
 import software.amazon.awssdk.services.codewhispererruntime.paginators.GenerateCompletionsIterable
@@ -62,6 +67,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl
+import software.aws.toolkits.jetbrains.settings.AwsSettings
 
 class CodeWhispererClientAdaptorTest {
     val projectRule = ProjectRule()
@@ -80,6 +86,7 @@ class CodeWhispererClientAdaptorTest {
 
     private lateinit var sut: CodeWhispererClientAdaptor
     private lateinit var connectionManager: ToolkitConnectionManager
+    private var isTelemetryEnabledDefault: Boolean = false
 
     @Before
     fun setup() {
@@ -99,6 +106,7 @@ class CodeWhispererClientAdaptorTest {
             on { startCodeAnalysis(any<StartCodeAnalysisRequest>()) } doReturn startCodeAnalysisResponse
             on { getCodeAnalysis(any<GetCodeAnalysisRequest>()) } doReturn getCodeAnalysisResponse
             on { listCodeAnalysisFindings(any<ListCodeAnalysisFindingsRequest>()) } doReturn listCodeAnalysisFindingsResponse
+            on { sendTelemetryEvent(any<SendTelemetryEventRequest>()) } doReturn sendtelemetryEventResponse
         }
 
         val mockConnection = mock<BearerSsoConnection>()
@@ -110,6 +118,13 @@ class CodeWhispererClientAdaptorTest {
             } doReturn authManagerRule.createConnection(ManagedSsoProfile("us-east-1", aString(), emptyList())) as AwsBearerTokenConnection
         }
         projectRule.project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
+
+        isTelemetryEnabledDefault = AwsSettings.getInstance().isTelemetryEnabled
+    }
+
+    @After
+    fun tearDown() {
+        AwsSettings.getInstance().isTelemetryEnabled = isTelemetryEnabledDefault
     }
 
     @Test
@@ -239,6 +254,55 @@ class CodeWhispererClientAdaptorTest {
         }
     }
 
+    @Test
+    fun `sendTelemetryEvent for userTriggerDecision respects telemetry optin status`() {
+        sendTelemetryEventOptOutCheckHelper {
+            sut.putUserTriggerDecisionTelemetry(
+                aRequestContext(projectRule.project),
+                aResponseContext(),
+                aCompletionType(),
+                aSuggestionState(),
+                0,
+                1
+            )
+        }
+    }
+
+    @Test
+    fun `sendTelemetryEvent for codePercentage respects telemetry optin status`() {
+        sendTelemetryEventOptOutCheckHelper {
+            sut.putCodePercentageTelemetry(aProgrammingLanguage(), 0, 1)
+        }
+    }
+
+    @Test
+    fun `sendTelemetryEvent for codeScan respects telemetry optin status`() {
+        sendTelemetryEventOptOutCheckHelper {
+            sut.sendCodeScanTelemetry(aProgrammingLanguage(), null)
+        }
+    }
+
+    @Test
+    fun `sendTelemetryEvent for userModification respects telemetry optin status`() {
+        sendTelemetryEventOptOutCheckHelper {
+            sut.sendUserModificationTelemetry(aString(), aString(), aProgrammingLanguage(), 0.0)
+        }
+    }
+
+    private fun sendTelemetryEventOptOutCheckHelper(mockApiCall: () -> Unit) {
+        AwsSettings.getInstance().isTelemetryEnabled = true
+        mockApiCall()
+        verify(bearerClient).sendTelemetryEvent(
+            argThat<SendTelemetryEventRequest> { optOutPreference() == OptOutPreference.OPTIN }
+        )
+
+        AwsSettings.getInstance().isTelemetryEnabled = false
+        mockApiCall()
+        verify(bearerClient).sendTelemetryEvent(
+            argThat<SendTelemetryEventRequest> { optOutPreference() == OptOutPreference.OPTOUT }
+        )
+    }
+
     private companion object {
         val createCodeScanRequest = CreateCodeScanRequest.builder()
             .artifacts(mapOf(ArtifactType.SOURCE_CODE to "foo"))
@@ -293,6 +357,8 @@ class CodeWhispererClientAdaptorTest {
             .responseMetadata(metadata)
             .sdkHttpResponse(sdkHttpResponse)
             .build() as ListCodeAnalysisFindingsResponse
+
+        val sendtelemetryEventResponse = SendTelemetryEventResponse.builder().build()
 
         private val generateCompletionsPaginatorResponse: GenerateCompletionsIterable = mock()
 
