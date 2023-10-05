@@ -178,8 +178,8 @@
             ],
             "members":{
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
-                "acceptedCharacterCount":{"shape":"Integer"},
-                "totalCharacterCount":{"shape":"Integer"},
+                "acceptedCharacterCount":{"shape":"SensitiveInteger"},
+                "totalCharacterCount":{"shape":"SensitiveInteger"},
                 "timestamp":{"shape":"Timestamp"}
             }
         },
@@ -221,7 +221,8 @@
             "enum":[
                 "BLOCK",
                 "LINE"
-            ]
+            ],
+            "sensitive":true
         },
         "Completions":{
             "type":"list",
@@ -262,10 +263,6 @@
                 "kmsKeyArn":{"shape":"ResourceArn"}
             }
         },
-        "Double":{
-            "type":"double",
-            "box":true
-        },
         "FileContext":{
             "type":"structure",
             "required":[
@@ -284,7 +281,8 @@
         "FileContextFilenameString":{
             "type":"string",
             "max":1024,
-            "min":1
+            "min":1,
+            "sensitive":true
         },
         "FileContextLeftFileContentString":{
             "type":"string",
@@ -371,10 +369,6 @@
             "max":10,
             "min":0
         },
-        "Integer":{
-            "type":"integer",
-            "box":true
-        },
         "InternalServerException":{
             "type":"structure",
             "required":["message"],
@@ -409,6 +403,14 @@
                 "nextToken":{"shape":"PaginationToken"},
                 "codeAnalysisFindings":{"shape":"String"}
             }
+        },
+        "OptOutPreference":{
+            "type":"string",
+            "enum":[
+                "OPTIN",
+                "OPTOUT"
+            ],
+            "sensitive":true
         },
         "PaginationToken":{
             "type":"string",
@@ -499,13 +501,22 @@
                     "shape":"IdempotencyToken",
                     "idempotencyToken":true
                 },
-                "telemetryEvent":{"shape":"TelemetryEvent"}
+                "telemetryEvent":{"shape":"TelemetryEvent"},
+                "optOutPreference":{"shape":"OptOutPreference"}
             }
         },
         "SendTelemetryEventResponse":{
             "type":"structure",
             "members":{
             }
+        },
+        "SensitiveDouble":{
+            "type":"double",
+            "sensitive":true
+        },
+        "SensitiveInteger":{
+            "type":"integer",
+            "sensitive":true
         },
         "Span":{
             "type":"structure",
@@ -569,7 +580,8 @@
                 "REJECT",
                 "DISCARD",
                 "EMPTY"
-            ]
+            ],
+            "sensitive":true
         },
         "SupplementalContext":{
             "type":"structure",
@@ -643,7 +655,7 @@
                 "sessionId":{"shape":"UUID"},
                 "requestId":{"shape":"UUID"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
-                "modificationPercentage":{"shape":"Double"},
+                "modificationPercentage":{"shape":"SensitiveDouble"},
                 "timestamp":{"shape":"Timestamp"}
             }
         },
@@ -664,10 +676,10 @@
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "completionType":{"shape":"CompletionType"},
                 "suggestionState":{"shape":"SuggestionState"},
-                "recommendationLatencyMilliseconds":{"shape":"Double"},
+                "recommendationLatencyMilliseconds":{"shape":"SensitiveDouble"},
                 "timestamp":{"shape":"Timestamp"},
-                "suggestionReferenceCount":{"shape":"Integer"},
-                "generatedLine":{"shape":"Integer"}
+                "suggestionReferenceCount":{"shape":"SensitiveInteger"},
+                "generatedLine":{"shape":"SensitiveInteger"}
             }
         },
         "ValidationException":{
