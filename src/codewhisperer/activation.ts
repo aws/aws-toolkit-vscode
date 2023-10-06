@@ -33,6 +33,8 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
+    selectCustomization,
+    notifyNewCustomizationsCmd,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -49,6 +51,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -177,6 +180,10 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
+        // select customization
+        selectCustomization.register(),
+        // notify new customizations
+        notifyNewCustomizationsCmd.register(),
         /**
          * On recommendation acceptance
          */
@@ -209,6 +216,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt()
+    }
+    if (auth.isValidEnterpriseSsoInUse()) {
+        await notifyNewCustomizations()
     }
 
     function activateSecurityScan() {
