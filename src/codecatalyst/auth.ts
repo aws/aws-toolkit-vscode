@@ -66,7 +66,7 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public get isUsingSavedConnection() {
-        return this.secondaryAuth.isUsingSavedConnection
+        return this.secondaryAuth.hasSavedConnection
     }
 
     public isConnectionValid(): boolean {
