@@ -16,6 +16,7 @@ import com.intellij.openapi.vfs.VirtualFile
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
+import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.telemetry.UiTelemetry
 
 class LearnCodeWhispererEditorProvider : FileEditorProvider, DumbAware {
@@ -33,6 +34,8 @@ class LearnCodeWhispererEditorProvider : FileEditorProvider, DumbAware {
 
         // Will be called every time the getting started page is opened
         fun openEditor(project: Project) {
+            if (isRunningOnRemoteBackend()) return
+
             val virtualFile = LearnCodeWhispererVirtualFile()
 
             // The "hasShown" status will be passed as local states to the page rendering process each time
