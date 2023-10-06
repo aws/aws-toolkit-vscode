@@ -21,6 +21,7 @@ import { Session } from '../session/session'
 import { createSessionConfig } from '../session/sessionConfigFactory'
 import { PanelStore } from '../stores/panelStore'
 import { FollowUpTypes, SessionStatePhase } from '../types'
+import { PanelLoadError } from '../errors'
 
 export interface MynahDisplayProps {
     panelStore: PanelStore
@@ -30,6 +31,7 @@ export class WeaverbirdDisplay {
     private readonly assetsPath: vscode.Uri
     private readonly panelStore: PanelStore
     private uiReady: Record<string, boolean> = {}
+    private loadingPanelTimeout = 3
 
     constructor(context: ExtensionContext, props: MynahDisplayProps) {
         this.assetsPath = vscode.Uri.joinPath(context.extensionUri)
@@ -50,52 +52,67 @@ export class WeaverbirdDisplay {
             }
         )
 
-        const addToChat = this.sendDataToUI.bind(this, panelId)
-
-        const sessionConfig = await createSessionConfig()
-        const session = new Session(sessionConfig, addToChat)
-
         // Handle when a message recieved from the UI layer
         panel.webview.onDidReceiveMessage(async msg => {
             const panel = this.panelStore.getPanel(panelId)
             if (panel === undefined) {
                 return
             }
-            switch (msg.action) {
-                case MessageActionType.UI_LOADED:
-                    // Since this example is currently allowing multiple panels to run at the same time
-                    // Keep them in a list that which is loaded and which is not
-                    this.uiReady[panelId] = true
-                    break
-                case MessageActionType.PROMPT: {
-                    this.sendDataToUI(panelId, true, MessageActionType.SPINNER_STATE)
 
+            const addToChat = this.sendDataToUI.bind(this, panelId, msg.tabId)
+
+            /**
+             * Loading a panel/tab has to come before we can actually do any "session" related events
+             */
+            if (msg.action === MessageActionType.UI_LOADED) {
+                this.uiReady[panelId] = true
+                return
+            } else if (msg.action === MessageActionType.TAB_ADDED) {
+                const sessionConfig = await createSessionConfig()
+                const session = new Session(sessionConfig, addToChat)
+                this.panelStore.saveTab(panelId, msg.tabId, {
+                    session,
+                })
+                return
+            }
+
+            const tab = this.panelStore.getTab(panelId, msg.tabId)
+            if (tab === undefined) {
+                return
+            }
+
+            switch (msg.action) {
+                case MessageActionType.PROMPT: {
+                    this.sendDataToUI(panelId, msg.tabId, true, MessageActionType.SPINNER_STATE)
                     try {
                         const chatPrompt = JSON.parse(msg.data)
-                        const interactions = await session.send(chatPrompt.prompt)
+                        const interactions = await tab.session.send(chatPrompt.prompt)
 
                         for (const content of interactions.content) {
-                            this.sendDataToUI(panelId, createChatContent(content), MessageActionType.CHAT_ANSWER)
-                        }
-                        for (const filePath of interactions.filePaths ?? []) {
                             this.sendDataToUI(
                                 panelId,
-                                createChatContent(filePath, ChatItemType.CODE_RESULT),
+                                msg.tabId,
+                                createChatContent(content),
                                 MessageActionType.CHAT_ANSWER
                             )
                         }
 
-                        this.addFollowUpOptionsToChat(addToChat, session.state.phase)
+                        this.addFollowUpOptionsToChat(addToChat, tab.session.state.phase)
                     } catch (err: any) {
                         const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
-                        this.sendDataToUI(panelId, createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+                        this.sendDataToUI(
+                            panelId,
+                            msg.tabId,
+                            createChatContent(errorMessage),
+                            MessageActionType.CHAT_ANSWER
+                        )
                     }
 
                     // Spinner is no longer neccessary
-                    this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
+                    this.sendDataToUI(panelId, msg.tabId, false, MessageActionType.SPINNER_STATE)
                     break
                 }
-                case MessageActionType.CLEAR:
+                case MessageActionType.CLEAR: {
                     // OK there is a new UI user interaction
                     // Which is the clear
                     // You can clear the chat screen directly from the UI code however you may also want to do sth else
@@ -104,6 +121,7 @@ export class WeaverbirdDisplay {
                     // If it is a system related message still use the native idea notifications btw.
                     this.sendDataToUI(
                         panelId,
+                        msg.tabId,
                         {
                             title: 'Cleared the chat cache',
                             content: `Chat is also cleared from the cache but it is not real of course. 
@@ -113,9 +131,11 @@ export class WeaverbirdDisplay {
                         MessageActionType.NOTIFY
                     )
                     break
-                case MessageActionType.STOP_STREAM:
+                }
+                case MessageActionType.STOP_STREAM: {
                     this.sendDataToUI(
                         panelId,
+                        msg.tabId,
                         {
                             title: 'Request cancelled',
                             content: '',
@@ -124,25 +144,31 @@ export class WeaverbirdDisplay {
                         MessageActionType.NOTIFY
                     )
 
-                    session.state.tokenSource.cancel()
+                    tab.session.state.tokenSource.cancel()
                     break
+                }
                 case MessageActionType.FOLLOW_UP_CLICKED: {
                     // Lock the chat box
-                    this.sendDataToUI(panelId, true, MessageActionType.SPINNER_STATE)
+                    this.sendDataToUI(panelId, msg.tabId, true, MessageActionType.SPINNER_STATE)
 
                     const data = JSON.parse(msg.data)
                     switch (data?.type) {
                         // Followups after any approach phase state
                         case FollowUpTypes.WriteCode: {
                             try {
-                                await session.startCodegen()
-                                this.addFollowUpOptionsToChat(addToChat, session.state.phase)
+                                await tab.session.startCodegen()
+
+                                // Only add the follow up when the tab hasn't been closed/request hasn't been cancelled
+                                if (!tab.session.state.tokenSource.token.isCancellationRequested) {
+                                    this.addFollowUpOptionsToChat(addToChat, tab.session.state.phase)
+                                }
                             } catch (err: any) {
                                 const errorMessage = `Weaverbird API request failed: ${
                                     err.cause?.message ?? err.message
                                 }`
                                 this.sendDataToUI(
                                     panelId,
+                                    msg.tabId,
                                     createChatContent(errorMessage),
                                     MessageActionType.CHAT_ANSWER
                                 )
@@ -152,10 +178,11 @@ export class WeaverbirdDisplay {
                         // Followups after any codegen state
                         case FollowUpTypes.AcceptCode:
                             try {
-                                await session.acceptChanges()
+                                await tab.session.acceptChanges()
                             } catch (err: any) {
                                 this.sendDataToUI(
                                     panelId,
+                                    msg.tabId,
                                     createChatContent(`Failed to accept code changes: ${err.message}`),
                                     MessageActionType.CHAT_ANSWER
                                 )
@@ -167,13 +194,13 @@ export class WeaverbirdDisplay {
                     }
 
                     // Unlock the chat box
-                    this.sendDataToUI(panelId, false, MessageActionType.SPINNER_STATE)
+                    this.sendDataToUI(panelId, msg.tabId, false, MessageActionType.SPINNER_STATE)
                     break
                 }
                 case MessageActionType.OPEN_DIFF:
                     {
                         const diffParams = JSON.parse(msg.data)
-                        const workspaceRoot = session.config.workspaceRoot ?? ''
+                        const workspaceRoot = tab.session.config.workspaceRoot ?? ''
                         const originalPath = path.join(workspaceRoot, diffParams.rightPath)
                         let left
                         if (existsSync(originalPath)) {
@@ -188,12 +215,17 @@ export class WeaverbirdDisplay {
                             vscode.Uri.from({
                                 scheme: weaverbirdScheme,
                                 path: diffParams.rightPath,
-                                query: `panelId=${panelId}`,
+                                query: `panelId=${panelId}&tabId=${msg.tabId}`,
                             })
                         )
                     }
 
                     break
+                case MessageActionType.TAB_REMOVED: {
+                    tab.session.state.tokenSource.cancel()
+                    this.panelStore.deleteTab(panelId, msg.tabId)
+                    break
+                }
             }
         })
 
@@ -204,7 +236,7 @@ export class WeaverbirdDisplay {
             this.panelStore.deletePanel(panelId)
         })
 
-        this.panelStore.savePanel(panelId, { webviewPanel: panel, fs: sessionConfig.fs })
+        this.panelStore.savePanel(panelId, { webviewPanel: panel, tab: new Map() })
 
         this.generatePanel(panelId)
     }
@@ -268,10 +300,21 @@ export class WeaverbirdDisplay {
     }
 
     // This is the message sender, which will send messages to UI
-    private sendDataToUI(panelId: string, data: any, action: MessageActionType): void {
+    private sendDataToUI(
+        panelId: string,
+        tabId: string,
+        data: any,
+        action: MessageActionType,
+        timeoutAttempts = 0
+    ): void {
         const panel = this.panelStore.getPanel(panelId)
 
         if (panel === undefined) {
+            return
+        }
+
+        const tab = this.panelStore.getTab(panelId, tabId)
+        if (tab === undefined) {
             return
         }
 
@@ -284,13 +327,18 @@ export class WeaverbirdDisplay {
                     sender: messageIdentifier,
                     action,
                     data,
+                    tabId,
                 })
             )
         } else {
+            if (timeoutAttempts > this.loadingPanelTimeout) {
+                throw new PanelLoadError()
+            }
+
             // If the ui for this panel is not ready yet, we're waiting it to be ready first.
             // until it gets ready
             setTimeout(() => {
-                this.sendDataToUI(panelId, data, action)
+                this.sendDataToUI(panelId, tabId, data, action, timeoutAttempts + 1)
             }, 50)
         }
     }

@@ -8,9 +8,9 @@ import { messageIdentifier, MessageActionType } from '../models'
 window.ideApi = acquireVsCodeApi()
 
 export interface ExtensionCommunicatorProps {
-    onChatItemRecieved: (chatItem: ChatItem) => void
-    onChatStreamRecieved: (chatStream: string) => void
-    onLoadingStateChangeRecieved: (loadingState: boolean) => void
+    onChatItemRecieved: (tabId: string, chatItem: ChatItem) => void
+    onChatStreamRecieved: (tabId: string, chatStream: string) => void
+    onLoadingStateChangeRecieved: (tabId: string, loadingState: boolean) => void
     onNotificationRequestRecieved?: (notification: {
         title: string
         content: string
@@ -41,13 +41,13 @@ export class ExtensionCommunicator {
         if (messageData && messageData.sender === messageIdentifier) {
             switch (messageData.action) {
                 case MessageActionType.CHAT_ANSWER:
-                    this.props.onChatItemRecieved(messageData.data)
+                    this.props.onChatItemRecieved(messageData.tabId, messageData.data)
                     break
                 case MessageActionType.CHAT_STREAM:
-                    this.props.onChatStreamRecieved(messageData.data)
+                    this.props.onChatStreamRecieved(messageData.tabId, messageData.data)
                     break
                 case MessageActionType.SPINNER_STATE:
-                    this.props.onLoadingStateChangeRecieved(messageData.data)
+                    this.props.onLoadingStateChangeRecieved(messageData.tabId, messageData.data)
                     break
                 case MessageActionType.NOTIFY:
                     if (this.props.onNotificationRequestRecieved !== undefined) {
@@ -61,10 +61,11 @@ export class ExtensionCommunicator {
         }
     }
 
-    public sendMessageToExtension = (message: { action: MessageActionType; data?: any }): void => {
+    public sendMessageToExtension = (message: { action: MessageActionType; data?: any; tabId?: string }): void => {
         this.postMessageToExtension({
             action: message.action,
             data: JSON.stringify(message.data),
+            tabId: message.tabId,
         })
     }
 }

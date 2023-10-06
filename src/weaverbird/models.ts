@@ -21,7 +21,7 @@ export enum NotificationType {
     ERROR = 'error',
 }
 
-export function createChatContent(content: string, type = ChatItemType.ANSWER) {
+export function createChatContent(content: string | string[], type = ChatItemType.ANSWER) {
     return {
         body: content,
         type,
@@ -44,4 +44,6 @@ export enum MessageActionType {
     NOTIFY = 'show-notification',
     FOLLOW_UP_CLICKED = 'follow-up-clicked',
     OPEN_DIFF = 'open-diff',
+    TAB_ADDED = 'tab-added',
+    TAB_REMOVED = 'tab-removed',
 }

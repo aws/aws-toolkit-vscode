@@ -177,9 +177,10 @@ abstract class CodeGenBase {
                     for (const change of changes.content) {
                         params.addToChat(createChatContent(change), MessageActionType.CHAT_ANSWER)
                     }
-                    for (const newFile of newFiles) {
+                    if (changes.filePaths && changes.filePaths.length > 0) {
+                        // Show the file tree component when file paths are present
                         params.addToChat(
-                            createChatContent(newFile.filePath, ChatItemType.CODE_RESULT),
+                            createChatContent(changes.filePaths, ChatItemType.CODE_RESULT),
                             MessageActionType.CHAT_ANSWER
                         )
                     }
@@ -208,10 +209,12 @@ abstract class CodeGenBase {
                 }
             }
         }
-        // still in progress
-        const errorMessage = `Code generation did not finish withing the expected time :(`
-        getLogger().error(errorMessage)
-        params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+        if (!this.tokenSource.token.isCancellationRequested) {
+            // still in progress
+            const errorMessage = `Code generation did not finish withing the expected time :(`
+            getLogger().error(errorMessage)
+            params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+        }
         return []
     }
 }
