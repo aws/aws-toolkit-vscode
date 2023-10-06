@@ -8,7 +8,6 @@ import { CodeCatalystClient, createClient } from '../shared/clients/codecatalyst
 import { Auth } from '../auth/auth'
 import { getSecondaryAuth } from '../auth/secondaryAuth'
 import { getLogger } from '../shared/logger'
-import * as localizedText from '../shared/localizedText'
 import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -123,14 +122,22 @@ export class CodeCatalystAuthenticationProvider {
         throw new ToolkitError('Not onboarded with CodeCatalyst', { code: 'NotOnboarded', cancelled: true })
     }
 
-    public async promptNotConnected(): Promise<SsoConnection> {
+    /**
+     * Return a Builder ID connection that works with CodeCatalyst.
+     *
+     * This cannot create a Builder ID, but will return an existing Builder ID,
+     * upgrading the scopes if necessary.
+     */
+    public async tryGetBuilderIdConnection(): Promise<SsoConnection> {
+        if (this.activeConnection && isBuilderIdConnection(this.activeConnection)) {
+            return this.activeConnection
+        }
+
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
-        const continueItem: vscode.MessageItem = { title: localizedText.continueText }
-        const cancelItem: vscode.MessageItem = { title: localizedText.cancel, isCloseAffordance: true }
 
         if (conn === undefined) {
             telemetry.record({
@@ -153,20 +160,10 @@ export class CodeCatalystAuthenticationProvider {
             return this.secondaryAuth.addScopes(conn, defaultScopes)
         }
 
-        if (isBuilderIdConnection(conn) && this.auth.activeConnection?.id !== conn.id) {
+        if (this.auth.activeConnection?.id !== conn.id) {
             telemetry.record({
                 codecatalyst_connectionFlow: 'Switch',
             } satisfies ConnectionFlowEvent as MetricShapes[MetricName])
-
-            const resp = await vscode.window.showInformationMessage(
-                'CodeCatalyst requires an AWS Builder ID connection.\n\n Switch to it now?',
-                { modal: true },
-                continueItem,
-                cancelItem
-            )
-            if (resp !== continueItem) {
-                throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnection', cancelled: true })
-            }
 
             if (isUpgradeableConnection(conn)) {
                 await upgrade()
