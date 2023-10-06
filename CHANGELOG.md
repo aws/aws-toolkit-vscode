@@ -3,6 +3,8 @@
 - **(Feature)** CodeWhisperer: Improve the onboarding experience by showing a new onboarding tutorial to first-time users.
 - **(Bug Fix)** Fix issue displaying SSO code on new UI in Windows
 
+# _1.81_ (2023-09-29)
+
 # _1.79_ (2023-09-15)
 
 # _1.78_ (2023-09-08)
