@@ -42,7 +42,7 @@ const vueConfig = {
     target: 'web',
     entry: {
         ...createVueEntries(),
-        'src/mynah/ui/mynah-ui': './src/mynah/ui/main.ts',
+        'src/awsq/webview/ui/awsq-ui': './src/awsq/webview/ui/main.ts',
         'src/weaverbird/ui/weaverbird-ui': './src/weaverbird/ui/main.ts',
     },
     output: {

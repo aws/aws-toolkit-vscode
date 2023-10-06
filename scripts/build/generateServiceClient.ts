@@ -245,14 +245,6 @@ ${fileContents}
             serviceJsonPath: 'src/weaverbird/client/weaverbird-2018-05-10.api.json',
             serviceName: 'WeaverbirdClient',
         },
-        {
-            serviceJsonPath: 'src/mynah/client/service-2.json',
-            serviceName: 'MynahClient',
-        },
-        {
-            serviceJsonPath: 'src/mynah/autocomplete-client/service-2.json',
-            serviceName: 'AutoCompleteClient',
-        },
     ]
     await generateServiceClients(serviceClientDefinitions)
 })()

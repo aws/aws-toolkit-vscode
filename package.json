@@ -272,11 +272,6 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
-                "aws.mynah.enableImplicitSearch": {
-                    "type": "boolean",
-                    "default": true,
-                    "description": "Enables the Live Search Suggestions. A reload of the application is necessary for this change to take effect."
-                },
                 "aws.weaverbird.debateRounds": {
                     "type": "number",
                     "minimum": 0,
@@ -747,6 +742,11 @@
         "views": {
             "aws-explorer": [
                 {
+                    "type": "webview",
+                    "id": "aws.AWSQChatView",
+                    "name": "AWS Q"
+                },
+                {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%"
                 },
@@ -1182,9 +1182,6 @@
                 {
                     "command": "aws.dev.openMenu",
                     "when": "aws.isDevMode || isCloud9"
-                },
-                {
-                    "command": "Mynah.show"
                 }
             ],
             "editor/title": [
@@ -1232,17 +1229,6 @@
                     "command": "aws.resources.saveResource",
                     "when": "resourcePath =~ /^.+(awsResource.json)$/",
                     "group": "navigation"
-                },
-                {
-                    "command": "Mynah.show",
-                    "group": "navigation"
-                }
-            ],
-            "editor/context": [
-                {
-                    "command": "Mynah.show",
-                    "group": "4_search",
-                    "args": "{\"inputTrigger\": \"MENU\"}"
                 }
             ],
             "editor/title/context": [
@@ -3357,15 +3343,6 @@
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "Mynah.show",
-                "title": "Show Mynah Search",
-                "category": "Mynah",
-                "icon": {
-                    "light": "resources/icons/aws/mynah/MynahIconBlack.svg",
-                    "dark": "resources/icons/aws/mynah//MynahIconWhite.svg"
-                }
-            },
-            {
                 "command": "Weaverbird.show",
                 "title": "Show Weaverbird Chat",
                 "category": "Weaverbird",
@@ -3454,12 +3431,6 @@
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
                 "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
-            },
-            {
-                "command": "Mynah.show",
-                "key": "ctrl+m",
-                "mac": "cmd+m",
-                "args": "{\"inputTrigger\": \"KEYBOARD\"}"
             }
         ],
         "grammars": [
@@ -3708,6 +3679,7 @@
         "@types/mime-types": "^2.1.1",
         "@types/mocha": "^10.0.0",
         "@types/node": "^14.18.5",
+        "@types/node-fetch": "^2.6.6",
         "@types/prismjs": "^1.26.0",
         "@types/readline-sync": "^1.4.3",
         "@types/sanitize-html": "2.3.1",
@@ -3772,7 +3744,6 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui": "1.4.0",
         "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.6.1",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
@@ -3793,6 +3764,7 @@
         "lodash": "^4.17.21",
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
+        "node-fetch": "^2.7.0",
         "portfinder": "^1.0.32",
         "sanitize-html": "^2.3.3",
         "semver": "^7.5.4",
