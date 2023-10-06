@@ -12,16 +12,22 @@ interface bracketMapType {
     [k: string]: string
 }
 
+const quotes = ["'", '"']
+
 const closing: bracketMapType = {
     ')': '(',
     ']': '[',
     '}': '{',
+    '"': '"',
+    "'": "'",
 }
 
 const openning: bracketMapType = {
     '(': ')',
     '[': ']',
     '{': '}',
+    '"': '"',
+    "'": "'",
 }
 
 export const calculateBracketsLevel = (
@@ -35,6 +41,8 @@ export const calculateBracketsLevel = (
         ['(', 0],
         ['[', 0],
         ['{', 0],
+        ['"', 0],
+        ["'", 0],
     ])
     const bracketsIndexLevel: { char: string; count: number; idx: number; position: vscode.Position }[] = []
     let position: vscode.Position
@@ -117,7 +125,7 @@ export const getBracketsToRemove = (
 
             const isSameLine = !(char in openning)
                 ? false
-                : isPairedParenthesis(char, char2) && start.line === editor.document.positionAt(originalOffset).line
+                : isPairedSymbol(char, char2) && start.line === editor.document.positionAt(originalOffset).line
 
             let hasSameIndentation: boolean
             const indent1 = editor.document.getText(
@@ -222,6 +230,10 @@ export async function handleExtraBrackets(
     }
 }
 
+function isPairedSymbol(char1: string, char2: string) {
+    return isPairedParenthesis(char1, char2) || isPairedQuotes(char1, char2)
+}
+
 function isPairedParenthesis(char1: string, char2: string) {
     if (char1.length !== 1 || char2.length !== 1) {
         return false
@@ -235,6 +247,21 @@ function isPairedParenthesis(char1: string, char2: string) {
     const condition2 = char1 in closing && char2 in openning
 
     return condition1 || condition2
+}
+
+function isPairedQuotes(char1: string, char2: string) {
+    if (char1.length !== 1 || char2.length !== 1) {
+        return false
+    }
+
+    if (!quotes.includes(char1) || !quotes.includes(char2)) {
+        return false
+    }
+
+    const condition1 = char1 in openning && char2 in closing
+    const condition2 = char1 in closing && char2 in openning
+
+    return char1 === char2 && (condition1 || condition2)
 }
 
 function findFirstNonClosedOpneingParen(str: string, reverseSearch: boolean): string | undefined {

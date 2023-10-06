@@ -10,78 +10,82 @@ import { openATextEditorWithText } from '../../testUtil'
 
 // TODO: refactor test cases
 describe('closingBracketUtil', function () {
+    /**
+     *             leftContext + recommendation + rightContext
+     * startStart             start            end              endEnd
+     */
     describe('handleExtraBrackets', function () {
-        it('case 1 should remove extra closing', async function () {
-            const leftContext = 'function add2Numbers('
-            const rightContext = ')'
-            const recommendation = 'a: number, b: number) {\n    return a + b\n}'
-
+        async function assertClosingSymbolsHandler(
+            leftContext: string,
+            rightContext: string,
+            recommendation: string,
+            expected: string
+        ) {
             const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
+            const document = editor.document
 
-            await handleExtraBrackets(editor, recommendation, new vscode.Position(2, 1), new vscode.Position(0, 21))
+            const startStart = document.positionAt(0)
+            const endEnd = document.positionAt(editor.document.getText().length)
+            const start = document.positionAt(leftContext.length)
+            const end = document.positionAt(leftContext.length + recommendation.length)
 
-            assert.strictEqual(
-                editor.document.getText(),
-                'function add2Numbers(a: number, b: number) {\n    return a + b\n}'
+            const left = document.getText(new vscode.Range(startStart, start))
+            const right = document.getText(new vscode.Range(end, endEnd))
+            const reco = document.getText(new vscode.Range(start, end))
+
+            assert.strictEqual(left, leftContext)
+            assert.strictEqual(right, rightContext)
+            assert.strictEqual(reco, recommendation)
+
+            await handleExtraBrackets(editor, recommendation, end, start)
+
+            assert.strictEqual(editor.document.getText(), expected)
+        }
+
+        it('should remove extra closing symbol', async function () {
+            await assertClosingSymbolsHandler(
+                'function add2Numbers(',
+                ')',
+                'a: number, b: number) {\n    return a + b\n}',
+                `function add2Numbers(a: number, b: number) {\n    return a + b\n}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'function sum(a: number, b: number, ',
+                ')',
+                'c: number) {\n    return a + b + c\n}',
+                `function sum(a: number, b: number, c: number) {\n    return a + b + c\n}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'const aString = "',
+                '"',
+                'hello world";',
+                `const aString = "hello world";`
             )
         })
 
-        it('case 2 should remove extra closing', async function () {
-            const leftContext = 'function sum(a: number, b: number, '
-            const rightContext = ')'
-            const recommendation = 'c: number) {\n    return a + b + c\n}'
+        it('should not remove extra closing symbol', async function () {
+            await assertClosingSymbolsHandler(
+                'function add2Numbers(',
+                '',
+                'a: number, b: number) {\n  return a + b;\n}',
+                `function add2Numbers(a: number, b: number) {\n  return a + b;\n}`
+            )
 
-            const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
+            await assertClosingSymbolsHandler(
+                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: ',
+                '\n};',
+                '{ launchTemplateId: "lt-3456", launchTemplateName: "baz" },',
+                `export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};`
+            )
 
-            await handleExtraBrackets(editor, recommendation, new vscode.Position(2, 1), new vscode.Position(0, 35))
-
-            assert.strictEqual(editor.document.getText(), leftContext + recommendation)
-        })
-
-        it('case 2 should not remove', async function () {
-            const leftContext = 'function add2Numbers('
-            const rightContext = ''
-            const recommendation = 'a: number, b: number) {\n  return a + b;\n}'
-
-            const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
-
-            // const pos = editor.document.positionAt(editor.document.getText().length)
-            // editor.selection = new vscode.Selection(pos, pos)
-            // await editor.edit(
-            //     editBuilder => {
-            //         editBuilder.insert(pos, rightContext)
-            //     }
-            // )
-
-            await handleExtraBrackets(editor, recommendation, new vscode.Position(2, 1), new vscode.Position(0, 21))
-
-            assert.strictEqual(editor.document.getText(), leftContext + recommendation + rightContext)
-        })
-
-        it('case 3 should not remove', async function () {
-            const leftContext =
-                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: '
-            const rightContext = '\n};'
-            const recommendation = '{ launchTemplateId: "lt-3456", launchTemplateName: "baz" },'
-
-            const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
-
-            await handleExtraBrackets(editor, recommendation, new vscode.Position(3, 68), new vscode.Position(3, 9))
-
-            assert.strictEqual(editor.document.getText(), leftContext + recommendation + rightContext)
-        })
-
-        it('case 4 should not remove', async function () {
-            const leftContext =
-                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    '
-            const rightContext = '\n};'
-            const recommendation = 'lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },'
-
-            const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
-
-            await handleExtraBrackets(editor, recommendation, new vscode.Position(3, 68), new vscode.Position(3, 4))
-
-            assert.strictEqual(editor.document.getText(), leftContext + recommendation + rightContext)
+            await assertClosingSymbolsHandler(
+                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    ',
+                '\n};',
+                'lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },',
+                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};'
+            )
         })
     })
 })
