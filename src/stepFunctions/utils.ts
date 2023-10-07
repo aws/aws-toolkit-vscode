@@ -24,8 +24,8 @@ import { fromExtensionManifest } from '../shared/settings'
 const documentSettings: DocumentLanguageSettings = { comments: 'error', trailingCommas: 'error' }
 const languageService = getLanguageService({})
 
-const visualizationScriptUrl = 'https://do0of8uwbahzz.cloudfront.net/sfn-0.1.5.js'
-const visualizationCssUrl = 'https://do0of8uwbahzz.cloudfront.net/graph-0.1.5.css'
+const visualizationScriptUrl = 'https://d3p8cpu0nuk1gf.cloudfront.net/sfn-0.1.8.js'
+const visualizationCssUrl = 'https://d3p8cpu0nuk1gf.cloudfront.net/graph-0.1.8.css'
 
 const scriptsLastDownloadedUrl = 'SCRIPT_LAST_DOWNLOADED_URL'
 const cssLastDownloadedUrl = 'CSS_LAST_DOWNLOADED_URL'
