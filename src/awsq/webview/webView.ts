@@ -10,13 +10,13 @@ import {
     WebviewViewResolveContext,
     CancellationToken,
     Uri,
+    EventEmitter,
     Webview,
 } from 'vscode'
 import { registerAssetsHttpsFileSystem } from './assets/assetsHandler'
 import { WebViewContentGenerator } from './generators/webViewContent'
-import { ActionListener } from './actions/actionListener'
+import { ActionListener, AppsUIInputEventEmitters } from './actions/actionListener'
 import { Connector } from './connector/connector'
-import { EventEmitter } from 'stream'
 
 export class AwsQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AWSQChatView'
@@ -28,8 +28,8 @@ export class AwsQChatViewProvider implements WebviewViewProvider {
 
     constructor(
         private readonly extensionContext: ExtensionContext,
-        private readonly cwChatUIInputEventEmitter: EventEmitter,
-        private readonly uiConnectorEventEmitter: EventEmitter
+        private readonly appUIInputEventEmitter: AppsUIInputEventEmitters,
+        private readonly uiConnectorEventEmitter: EventEmitter<any>
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
         this.webViewContentGenerator = new WebViewContentGenerator()
@@ -47,7 +47,7 @@ export class AwsQChatViewProvider implements WebviewViewProvider {
 
         this.actionListener.bind({
             webview: webviewView.webview,
-            cwChatUIInputEventEmitter: this.cwChatUIInputEventEmitter,
+            appsUIInputEventEmitters: this.appUIInputEventEmitter,
         })
         this.connector = new Connector(webviewView.webview, this.uiConnectorEventEmitter)
 

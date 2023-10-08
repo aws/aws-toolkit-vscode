@@ -4,11 +4,11 @@
  */
 
 import { Timestamp } from 'aws-sdk/clients/apigateway'
-import { EventEmitter } from 'stream'
+import { EventEmitter } from 'vscode'
 
 class UiMessage {
     readonly time: number = Date.now()
-    readonly sender: string = 'AWS Mynah'
+    readonly sender: string = 'CWChat'
     readonly type: string = ''
 
     public constructor(protected tabID: string) {}
@@ -132,15 +132,15 @@ export interface FollowUp {
 }
 
 export class Connector {
-    constructor(private readonly outputUIEventEmitter: EventEmitter) {
+    constructor(private readonly outputUIEventEmitter: EventEmitter<any>) {
         this.outputUIEventEmitter = outputUIEventEmitter
     }
 
     public sendErrorMessage(message: ErrorMessage) {
-        this.outputUIEventEmitter.emit('postMessage', message)
+        this.outputUIEventEmitter.fire(message)
     }
 
     public sendChatMessage(message: ChatMessage) {
-        this.outputUIEventEmitter.emit('postMessage', message)
+        this.outputUIEventEmitter.fire(message)
     }
 }

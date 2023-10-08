@@ -4,9 +4,9 @@
  */
 
 export interface JavaImport {
-    tld: string
-    organisation?: string
-    packages?: string[]
+    readonly tld: string
+    readonly organisation?: string
+    readonly packages?: string[]
 }
 
 export function extractContextFromJavaImports(names: any): string[] {

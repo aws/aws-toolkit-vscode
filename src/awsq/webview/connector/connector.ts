@@ -3,15 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from 'stream'
-import { Webview } from 'vscode'
+import { Webview, EventEmitter } from 'vscode'
 
 export class Connector {
-    constructor(private readonly webView: Webview, private readonly eventEmitter: EventEmitter) {
+    constructor(private readonly webView: Webview, private readonly eventEmitter: EventEmitter<any>) {
         this.webView = webView
         this.eventEmitter = eventEmitter
 
-        this.eventEmitter.addListener('postMessage', data => {
+        this.eventEmitter.event(data => {
             this.postMessage(data)
         })
     }

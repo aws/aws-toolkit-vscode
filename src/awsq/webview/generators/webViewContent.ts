@@ -34,9 +34,9 @@ export class WebViewContentGenerator {
         return `
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
-        const init = () => {
-            createMynahUI();
-        }
+            const init = () => {
+                createMynahUI();
+            }
     </script>
         `
     }

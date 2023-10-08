@@ -6,5 +6,5 @@
 import { FileContext } from './file/model'
 
 export interface EditorContext {
-    activeFileContext: FileContext | undefined
+    readonly activeFileContext: FileContext | undefined
 }

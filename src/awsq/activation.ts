@@ -3,29 +3,33 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, window } from 'vscode'
+import { ExtensionContext, window, EventEmitter } from 'vscode'
 import { AwsQChatViewProvider } from './webview/webView'
 import { ChatController as CwChatController } from '../codewhispererChat/controllers/chat/controller'
-import { EventEmitter } from 'stream'
 import { ActionListener as CwChatActionListener } from '../codewhispererChat/view/actions/actionListener'
 
 export async function activate(context: ExtensionContext) {
-    const uiOutputEventEmitter = new EventEmitter()
-    const uiInputEventEmitter = new EventEmitter()
+    const uiOutputEventEmitter = new EventEmitter<any>()
+
+    const appsUIInputEventEmitters = {
+        cwChat: new EventEmitter<any>(),
+    }
 
     // CWChat
-    const cwChatControllerEventEmitter = new EventEmitter()
-    const chatController = new CwChatController(cwChatControllerEventEmitter, uiOutputEventEmitter)
+    const cwChatControllerEventEmitters = {
+        processHumanChatMessage: new EventEmitter<any>(),
+    }
+    const chatController = new CwChatController(cwChatControllerEventEmitters, uiOutputEventEmitter)
     chatController.run()
     const cwChatActionListener = new CwChatActionListener()
     cwChatActionListener.bind({
-        chatControllerEventEmitter: cwChatControllerEventEmitter,
-        inputUIEventEmitter: uiInputEventEmitter,
+        chatControllerEventEmitters: cwChatControllerEventEmitters,
+        inputUIEventEmitter: appsUIInputEventEmitters.cwChat,
     })
 
     // TODO: WB
 
-    const provider = new AwsQChatViewProvider(context, uiInputEventEmitter, uiOutputEventEmitter)
+    const provider = new AwsQChatViewProvider(context, appsUIInputEventEmitters, uiOutputEventEmitter)
 
     context.subscriptions.push(
         window.registerWebviewViewProvider(AwsQChatViewProvider.viewType, provider, {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from 'stream'
+import { EventEmitter } from 'vscode'
 import { EditorContextExtractor, TriggerType } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { ChatRequest, EditorContext, IdeTriggerRequest } from '../../clients/chat/v0/model'
@@ -11,20 +11,24 @@ import { Messenger } from './messenger/messenger'
 import { PromptMessage, ChatTriggerType, TriggerPayload } from './model'
 import { Connector } from '../../view/connector/connector'
 
+export interface ChatControllerEventEmitters {
+    readonly processHumanChatMessage: EventEmitter<PromptMessage>
+}
+
 export class ChatController {
     private readonly sessionStorage: ChatSessionStorage
     private readonly messenger: Messenger
     private readonly editorContextExtractor: EditorContextExtractor
 
     public constructor(
-        private readonly chatControllerInputEventEmitter: EventEmitter,
-        uiOutputEventEmitter: EventEmitter
+        private readonly chatControllerEventEmitters: ChatControllerEventEmitters,
+        uiOutputEventEmitter: EventEmitter<any>
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.messenger = new Messenger(new Connector(uiOutputEventEmitter))
         this.editorContextExtractor = new EditorContextExtractor()
 
-        this.chatControllerInputEventEmitter.addListener('processHumanChatMessage', data => {
+        this.chatControllerEventEmitters.processHumanChatMessage.event(data => {
             this.processHumanChatMessage(data)
         })
     }

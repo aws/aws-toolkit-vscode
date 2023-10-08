@@ -6,18 +6,18 @@ export type ContextKey = string
 export type ContextKeys = ContextKey[]
 
 export interface MatchPolicy {
-    should?: ContextKeys
-    must?: ContextKeys
-    mustNot?: ContextKeys
+    readonly should?: ContextKeys
+    readonly must?: ContextKeys
+    readonly mustNot?: ContextKeys
 }
 
 export interface Context {
-    matchPolicy?: MatchPolicy
+    readonly matchPolicy?: MatchPolicy
 }
 
 export interface FullyQualifiedName {
-    source?: SourceIdentifier
-    symbol?: SymbolIdentifier
+    readonly source?: SourceIdentifier
+    readonly symbol?: SymbolIdentifier
 }
 
 export type FullyQualifiedNamesUsages = FullyQualifiedName[]
@@ -29,24 +29,24 @@ export type SymbolIdentifier = Name[]
 export type SourceIdentifier = Name[]
 export type FullyQualifiedNames = FullyQualifiedName[]
 export interface FullyQualifiedNamesDeclarationsUsages {
-    used?: FullyQualifiedNamesUsages
+    readonly used?: FullyQualifiedNamesUsages
 }
 
 export type SimpleName = string
 export type SimpleNames = SimpleName[]
 
 export interface CodeQuery {
-    simpleNames?: SimpleNames
-    fullyQualifiedNames?: FullyQualifiedNamesDeclarationsUsages
+    readonly simpleNames?: SimpleNames
+    readonly fullyQualifiedNames?: FullyQualifiedNamesDeclarationsUsages
 }
 
 export interface EditorContext {
-    fileContent?: string
-    language?: string
-    query?: string
-    code?: string
-    context?: Context
-    codeQuery?: CodeQuery
+    readonly fileContent?: string
+    readonly language?: string
+    readonly query?: string
+    readonly code?: string
+    readonly context?: Context
+    readonly codeQuery?: CodeQuery
 }
 
 export enum ApiDocsType {
@@ -63,33 +63,33 @@ class CanonicalExample {
 }
 
 export interface ChatApiDocsSuggestion {
-    url?: string
-    title?: string
-    body?: string
-    ancestor?: string | null
-    type: ApiDocsType
-    metadata?: ApiDocsMetadata
+    readonly url?: string
+    readonly title?: string
+    readonly body?: string
+    readonly ancestor?: string | null
+    readonly type: ApiDocsType
+    readonly metadata?: ApiDocsMetadata
 }
 
 export interface ChatSuggestion {
-    url: string
-    title: string
-    body: string
-    context: string[]
-    metadata: SuggestionMetadata
-    type: string
+    readonly url: string
+    readonly title: string
+    readonly body: string
+    readonly context: string[]
+    readonly metadata: SuggestionMetadata
+    readonly type: string
 }
 
 interface StackExchangeMetadata {
-    answerCount: number
-    isAccepted: boolean
-    score: number
-    lastActivityDate: number
+    readonly answerCount: number
+    readonly isAccepted: boolean
+    readonly score: number
+    readonly lastActivityDate: number
 }
 
 interface SuggestionMetadata {
-    StackOverflow?: StackExchangeMetadata
-    StackExchange?: StackExchangeMetadata
+    readonly StackOverflow?: StackExchangeMetadata
+    readonly StackExchange?: StackExchangeMetadata
 }
 
 export interface FollowUp {
@@ -117,18 +117,18 @@ export interface IdeTriggerRequest {
 
 // @ts-ignore
 export interface ChatEvent {
-    messageId: string
-    header?: Header
-    token?: string
-    followUps?: SuggestedFollowUp[]
-    suggestions?: ChatSuggestion[]
-    query?: string
+    readonly messageId: string
+    readonly header?: Header
+    readonly token?: string
+    readonly followUps?: SuggestedFollowUp[]
+    readonly suggestions?: ChatSuggestion[]
+    readonly query?: string
 }
 
 interface Header {
-    sender: string
-    responseTo: string
-    sequenceId: string
+    readonly sender: string
+    readonly responseTo: string
+    readonly sequenceId: string
 }
 
 export enum FollowUpType {
@@ -143,10 +143,10 @@ export enum FollowUpType {
 }
 
 interface SuggestedFollowUp {
-    type: FollowUpType
-    pillText?: string
-    prompt?: string
-    message?: string
-    attachedSuggestions?: ChatSuggestion[]
-    attachedApiDocsSuggestions?: ChatApiDocsSuggestion[]
+    readonly type: FollowUpType
+    readonly pillText?: string
+    readonly prompt?: string
+    readonly message?: string
+    readonly attachedSuggestions?: ChatSuggestion[]
+    readonly attachedApiDocsSuggestions?: ChatApiDocsSuggestion[]
 }

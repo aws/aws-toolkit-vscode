@@ -3,24 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from 'stream'
-
-export const cwChatEvent = 'cwChatEvent'
+import { EventEmitter } from 'vscode'
+import { ChatControllerEventEmitters } from '../../controllers/chat/controller'
 
 export interface ActionsListenerProps {
-    chatControllerEventEmitter: EventEmitter
-    inputUIEventEmitter: EventEmitter
+    readonly chatControllerEventEmitters: ChatControllerEventEmitters
+    readonly inputUIEventEmitter: EventEmitter<any>
 }
 
 export class ActionListener {
-    private chatControllerEventsEmmiter: EventEmitter | undefined
-    private inputUIEventEmmiter: EventEmitter | undefined
+    private chatControllerEventsEmmiters: ChatControllerEventEmitters | undefined
+    private inputUIEventEmmiter: EventEmitter<any> | undefined
 
     public bind(props: ActionsListenerProps) {
-        this.chatControllerEventsEmmiter = props.chatControllerEventEmitter
+        this.chatControllerEventsEmmiters = props.chatControllerEventEmitters
         this.inputUIEventEmmiter = props.inputUIEventEmitter
 
-        this.inputUIEventEmmiter.on(cwChatEvent, msg => {
+        this.inputUIEventEmmiter.event(msg => {
             this.handleMessage(msg)
         })
     }
@@ -34,7 +33,7 @@ export class ActionListener {
     }
 
     private processChatMessage(msg: any) {
-        this.chatControllerEventsEmmiter?.emit('processHumanChatMessage', {
+        this.chatControllerEventsEmmiters?.processHumanChatMessage.fire({
             message: msg.chatMessage,
             tabID: msg.tabID,
         })

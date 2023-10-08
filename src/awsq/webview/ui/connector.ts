@@ -116,6 +116,7 @@ export class Connector {
             }
         }
     }
+
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
         // eslint-disable-next-line no-debugger
         if (message.data === undefined) {
@@ -123,7 +124,7 @@ export class Connector {
         }
         const messageData = JSON.parse(message.data)
 
-        if (messageData !== undefined && messageData.sender === 'AWS Mynah') {
+        if (messageData !== undefined && messageData.sender === 'CWChat') {
             if (messageData.type === 'errorMessage') {
                 this.onError(messageData.tabID, messageData.message, messageData.title)
                 return

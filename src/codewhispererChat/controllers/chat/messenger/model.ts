@@ -4,7 +4,7 @@
  */
 
 interface ChatException {
-    errorMessage: string | undefined
-    sessionID: string | undefined
-    statusCode: string | undefined
+    readonly errorMessage: string | undefined
+    readonly sessionID: string | undefined
+    readonly statusCode: string | undefined
 }

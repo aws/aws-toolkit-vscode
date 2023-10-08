@@ -6,7 +6,7 @@
 import { MatchPolicy } from '../../../clients/chat/v0/model'
 
 export interface FileContext {
-    fileText: string | undefined
-    fileLanguage: string | undefined
-    matchPolicy: MatchPolicy | undefined
+    readonly fileText: string | undefined
+    readonly fileLanguage: string | undefined
+    readonly matchPolicy: MatchPolicy | undefined
 }
