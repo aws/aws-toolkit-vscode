@@ -109,6 +109,56 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
+        tabs: {
+            'tab-1': {
+                tabTitle: 'Welcome to Q',
+                isSelected: true,
+                store: {
+                    ...initialData,
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: `<span markdown="1">Hi, I am Q!          
+          Ask me any software development questions. I can help explain, debug, or optimize code. 
+          Or you can type \`/\` to see some suggested tasks.`,
+                        },
+                    ],
+                    showChatAvatars: false,
+                    quickActionCommands: [
+                        {
+                            groupName: 'Quick Action',
+                            commands: [
+                                {
+                                    command: '/explain',
+                                    description: 'Explain selected code or an active file',
+                                },
+                                {
+                                    command: '/fix',
+                                    description: 'Debug selected code and suggest fix',
+                                },
+                                {
+                                    command: '/refactor',
+                                    description: 'Refactor selected code',
+                                },
+                                {
+                                    command: '/optimize',
+                                    description: 'Optimize selected code',
+                                },
+                            ],
+                        },
+                        {
+                            commands: [
+                                {
+                                    command: '/clear',
+                                    description: 'Clear this session',
+                                },
+                            ],
+                        },
+                    ],
+                    promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+                },
+            },
+        },
     })
 }
 

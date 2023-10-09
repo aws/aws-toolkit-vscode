@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
+import { ChatItem, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
+import { Connector as CWChatConnector } from './apps/cwChatConnector'
 
 interface ChatPayload {
     chatMessage: string
@@ -22,33 +23,20 @@ export interface ConnectorProps {
 export class Connector {
     private readonly postMessageHandler
     private readonly onMessageReceived
-    private readonly onError
-    private readonly onWarning
-    private readonly onChatAnswerReceived
+    private readonly cwChatConnector
 
     private isUIReady = false
-
-    private searchId = undefined
 
     constructor(props: ConnectorProps) {
         this.postMessageHandler = props.postMessageHandler
         this.onMessageReceived = props.onMessageReceived
-        this.onChatAnswerReceived = props.onChatAnswerReceived
-        this.onWarning = props.onWarning
-        this.onError = props.onError
+        this.cwChatConnector = new CWChatConnector(props)
     }
 
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             if (this.isUIReady) {
-                this.postMessageHandler({
-                    searchId: this.searchId,
-                    tabID: tabID,
-                    command: 'processChatMessage',
-                    chatMessage: payload.chatMessage,
-                    attachedAPIDocsSuggestion: payload.attachedAPIDocsSuggestion,
-                    attachedVanillaSuggestion: payload.attachedVanillaSuggestion,
-                })
+                this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
             } else {
                 setTimeout(() => {
                     this.requestGenerativeAIAnswer(tabID, payload)
@@ -57,87 +45,18 @@ export class Connector {
             }
         })
 
-    private sendTriggerMessageProcessed = async (requestID: any): Promise<void> => {
-        this.postMessageHandler({
-            command: 'triggerMessageProcessed',
-            requestID: requestID,
-        })
-    }
-
-    private processChatMessage = async (messageData: any): Promise<void> => {
-        if (this.onChatAnswerReceived !== undefined) {
-            if (messageData.message !== undefined || messageData.relatedSuggestions !== undefined) {
-                const followUps =
-                    messageData.followUps !== undefined
-                        ? {
-                              text: 'Would you like to follow up with one of these?',
-                              options: messageData.followUps,
-                          }
-                        : undefined
-
-                const answer: ChatItem = {
-                    type: messageData.messageType,
-                    body:
-                        messageData.message !== undefined
-                            ? `<span markdown="1">${messageData.message}</span>`
-                            : undefined,
-                    followUp: followUps,
-                }
-
-                if (messageData.relatedSuggestions !== undefined) {
-                    answer.suggestions = {
-                        title: 'Web results',
-                        suggestions: messageData.relatedSuggestions,
-                    }
-                }
-                this.onChatAnswerReceived(messageData.tabID, answer)
-
-                // Exit the function if we received an answer from AI
-                if (
-                    messageData.messageType === ChatItemType.SYSTEM_PROMPT ||
-                    messageData.messageType === ChatItemType.AI_PROMPT
-                ) {
-                    await this.sendTriggerMessageProcessed(messageData.requestID)
-                }
-            } else if (messageData.messageType === ChatItemType.ANSWER) {
-                const answer: ChatItem = {
-                    type: messageData.messageType,
-                    body: undefined,
-                    relatedContent: undefined,
-                    followUp:
-                        messageData.followUps !== undefined
-                            ? {
-                                  text: 'Would you like to follow up with one of these?',
-                                  options: messageData.followUps,
-                              }
-                            : undefined,
-                }
-                this.onChatAnswerReceived(messageData.tabID, answer)
-            }
-        }
-    }
-
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
-        // eslint-disable-next-line no-debugger
         if (message.data === undefined) {
             return
         }
         const messageData = JSON.parse(message.data)
 
-        if (messageData !== undefined && messageData.sender === 'CWChat') {
-            if (messageData.type === 'errorMessage') {
-                this.onError(messageData.tabID, messageData.message, messageData.title)
-                return
-            }
-            if (messageData.type === 'showInvalidTokenNotification') {
-                this.onWarning(messageData.tabID, messageData.message, messageData.title)
-                return
-            }
+        if (messageData == undefined) {
+            return
+        }
 
-            if (messageData.type === 'chatMessage') {
-                await this.processChatMessage(messageData)
-                return
-            }
+        if (messageData.sender === 'CWChat') {
+            this.cwChatConnector.handleMessageReceive(messageData)
         }
     }
 
