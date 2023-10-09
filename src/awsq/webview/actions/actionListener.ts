@@ -5,9 +5,7 @@
 
 import { Webview, EventEmitter } from 'vscode'
 
-export interface AppsUIInputEventEmitters {
-    readonly cwChat: EventEmitter<any>
-}
+export type AppsUIInputEventEmitters = EventEmitter<any>[]
 
 export interface ActionsListenerProps {
     readonly appsUIInputEventEmitters: AppsUIInputEventEmitters
@@ -25,8 +23,8 @@ export class ActionListener {
     }
 
     private handleMessage(msg: any) {
-        // TODO:
-        // switch msg.tabType
-        this.appsUIInputEventEmitters?.cwChat.fire(msg)
+        this.appsUIInputEventEmitters?.forEach(emmiter => {
+            emmiter.fire(msg)
+        })
     }
 }

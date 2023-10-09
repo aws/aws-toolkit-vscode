@@ -7,13 +7,12 @@ import { ExtensionContext, window, EventEmitter } from 'vscode'
 import { AwsQChatViewProvider } from './webview/webView'
 import { ChatController as CwChatController } from '../codewhispererChat/controllers/chat/controller'
 import { ActionListener as CwChatActionListener } from '../codewhispererChat/view/actions/actionListener'
+import { AppsUIInputEventEmitters } from './webview/actions/actionListener'
 
 export async function activate(context: ExtensionContext) {
     const uiOutputEventEmitter = new EventEmitter<any>()
 
-    const appsUIInputEventEmitters = {
-        cwChat: new EventEmitter<any>(),
-    }
+    const appsUIInputEventEmitters: AppsUIInputEventEmitters = []
 
     // CWChat
     const cwChatControllerEventEmitters = {
@@ -22,9 +21,11 @@ export async function activate(context: ExtensionContext) {
     const chatController = new CwChatController(cwChatControllerEventEmitters, uiOutputEventEmitter)
     chatController.run()
     const cwChatActionListener = new CwChatActionListener()
+    const cwChatUIInputEventEmmiter = new EventEmitter<any>()
+    appsUIInputEventEmitters.push(cwChatUIInputEventEmmiter)
     cwChatActionListener.bind({
         chatControllerEventEmitters: cwChatControllerEventEmitters,
-        inputUIEventEmitter: appsUIInputEventEmitters.cwChat,
+        inputUIEventEmitter: cwChatUIInputEventEmmiter,
     })
 
     // TODO: WB
