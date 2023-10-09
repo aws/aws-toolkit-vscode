@@ -50,7 +50,7 @@ export function getIdeType(): IDE {
         return IDE.sagemaker
     }
 
-    // Theis doesn't necessarily have all env properties
+    // Theia doesn't necessarily have all env properties
     // so we should be defensive and assume appName is nullable.
     if (vscode.env.appName?.startsWith(vscodeAppname)) {
         return IDE.vscode
@@ -137,8 +137,7 @@ export function isSageMaker(): boolean {
 }
 
 /**
- * Helper function to determine if Cloud9 or Sagemaker are being used. Both use IAM roles
- * on hosting instance for auth
+ * Returns true if credentials are provided by the environment (ex. via ~/.aws/)
  *
  * @param isC9 boolean for if Cloud9 is host
  * @param isSM boolean for if SageMaker is host
