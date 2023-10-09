@@ -93,6 +93,7 @@ export const supportedLanguages = [
     'csharp',
     'c',
     'cpp',
+    'c_cpp', // Cloud9 reports C++ files with this language-id.
     'go',
     'kotlin',
     'php',
