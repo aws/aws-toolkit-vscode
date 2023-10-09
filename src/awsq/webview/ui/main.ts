@@ -11,7 +11,6 @@ import './styles/source-thumbs.scss'
 import './styles/frequent-apis.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 
-// @ts-ignore
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
@@ -21,10 +20,20 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             ideApi.postMessage(message)
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
-            if (item.type === 'answer-part' && typeof item.body === 'string') {
-                mynahUI.updateLastChatAnswerStream(tabID, item.body)
+            if (item.type === 'answer-part') {
+                if (typeof item.body === 'string') {
+                    mynahUI.updateLastChatAnswerStream(tabID, item.body)
+                }
+                if (item.relatedContent !== undefined) {
+                    mynahUI.updateLastChatAnswerStream(tabID, {
+                        title: item.relatedContent.title,
+                        suggestions: item.relatedContent.content,
+                    })
+                }
+
                 return
             }
+
             if (item.body !== undefined || item.relatedContent !== undefined || item.followUp !== undefined) {
                 mynahUI.addChatAnswer(tabID, item)
             }
@@ -161,5 +170,3 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         },
     })
 }
-
-//createMynahUI({});

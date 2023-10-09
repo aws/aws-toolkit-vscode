@@ -100,10 +100,15 @@ export class SearchView extends UiMessage {
 
 export interface ChatMessageProps {
     readonly message: string | undefined
-    readonly messageType: string
+    readonly messageType: ChatMessageType
     readonly followUps: FollowUp[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
-    readonly searchResults: Suggestion[] | undefined
+}
+
+export enum ChatMessageType {
+    BeginStream = 'answer-stream',
+    StreamPart = 'answer-part',
+    Answer = 'answer',
 }
 
 export class ChatMessage extends UiMessage {
@@ -121,7 +126,6 @@ export class ChatMessage extends UiMessage {
         this.messageType = props.messageType
         this.followUps = props.followUps
         this.relatedSuggestions = props.relatedSuggestions
-        this.searchResults = props.searchResults
     }
 }
 

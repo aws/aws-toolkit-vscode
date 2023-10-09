@@ -71,9 +71,9 @@ export class Connector {
                 }
 
                 if (messageData.relatedSuggestions !== undefined) {
-                    answer.suggestions = {
-                        title: 'Web results',
-                        suggestions: messageData.relatedSuggestions,
+                    answer.relatedContent = {
+                        title: 'Sources',
+                        content: messageData.relatedSuggestions,
                     }
                 }
                 this.onChatAnswerReceived(messageData.tabID, answer)

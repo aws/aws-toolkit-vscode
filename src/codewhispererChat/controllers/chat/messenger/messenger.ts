@@ -4,7 +4,14 @@
  */
 
 import { ChatEvent } from '../../../clients/chat/v0/model'
-import { ChatMessage, Connector, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
+import {
+    ChatMessage,
+    ChatMessageType,
+    Connector,
+    ErrorMessage,
+    FollowUp,
+    Suggestion,
+} from '../../../view/connector/connector'
 
 export class Messenger {
     public constructor(private readonly connector: Connector) {}
@@ -14,9 +21,8 @@ export class Messenger {
             new ChatMessage(
                 {
                     message: '',
-                    messageType: 'answer-stream',
+                    messageType: ChatMessageType.BeginStream,
                     followUps: undefined,
-                    searchResults: undefined,
                     relatedSuggestions: undefined,
                 },
                 tabID
@@ -25,6 +31,7 @@ export class Messenger {
 
         let message = ''
         const followUps: FollowUp[] = []
+        const relatedSuggestions: Suggestion[] = []
 
         for await (const chatEvent of response) {
             if (chatEvent.token != undefined) {
@@ -34,10 +41,9 @@ export class Messenger {
                     new ChatMessage(
                         {
                             message: message,
-                            messageType: 'answer-part',
+                            messageType: ChatMessageType.StreamPart,
                             followUps: undefined,
                             relatedSuggestions: undefined,
-                            searchResults: undefined,
                         },
                         tabID
                     )
@@ -45,7 +51,6 @@ export class Messenger {
             }
 
             if (chatEvent.suggestions != undefined) {
-                const relatedSuggestions: Suggestion[] = []
                 let suggestionIndex = 0
                 const newSuggestions: Suggestion[] = chatEvent.suggestions.map(
                     s =>
@@ -59,20 +64,6 @@ export class Messenger {
                         })
                 )
                 relatedSuggestions.push(...newSuggestions)
-
-                this.connector.sendChatMessage(
-                    new ChatMessage(
-                        {
-                            message: undefined,
-                            messageType: 'answer-part',
-                            followUps: undefined,
-                            // TODO: Fix it on the backend side and delete this workaround
-                            searchResults: undefined,
-                            relatedSuggestions: relatedSuggestions.length == 0 ? undefined : relatedSuggestions,
-                        },
-                        tabID
-                    )
-                )
             }
 
             if (chatEvent.followUps != undefined) {
@@ -94,18 +85,28 @@ export class Messenger {
                     }
                 })
             }
+        }
 
-            //TODO: reassigne the query
+        if (relatedSuggestions.length !== 0) {
+            this.connector.sendChatMessage(
+                new ChatMessage(
+                    {
+                        message: undefined,
+                        messageType: ChatMessageType.StreamPart,
+                        followUps: undefined,
+                        relatedSuggestions,
+                    },
+                    tabID
+                )
+            )
         }
 
         this.connector.sendChatMessage(
             new ChatMessage(
                 {
                     message: undefined,
-                    messageType: 'answer',
+                    messageType: ChatMessageType.Answer,
                     followUps: followUps,
-                    // TODO: Fix it on the backend side and delete this workaround
-                    searchResults: undefined,
                     relatedSuggestions: undefined,
                 },
                 tabID
