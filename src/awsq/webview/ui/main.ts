@@ -7,7 +7,6 @@ import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/variables.scss'
 import './styles/dark.scss'
-import './styles/icons.scss'
 import './styles/source-thumbs.scss'
 import './styles/frequent-apis.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
@@ -45,6 +44,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             if (item.type === ChatItemType.ANSWER) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: false,
+                    promptInputDisabledState: false,
                 })
             }
         },
