@@ -10,6 +10,8 @@
 
         <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
         <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.DevEnvStatusWatcher"/>
+
         <dynamicActionConfigurationCustomizer implementation="software.aws.toolkits.jetbrains.services.caws.RebuildActionConfigurationCustomizer"/>
         <gateway.customization.tab implementation="software.aws.toolkits.jetbrains.services.caws.UpdateWorkspaceSettingsTab"/>
     </extensions>

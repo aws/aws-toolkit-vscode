@@ -69,4 +69,23 @@ class CawsEnvironmentClientTest {
 
         assertThat(sut.getStatus().status).isEqualTo(GetStatusResponse.Status.IMAGES_UPDATE_AVAILABLE)
     }
+
+    @Test
+    fun `getActivity returns timestamp`() {
+        wireMockRule.stubFor(
+            WireMock.any(WireMock.urlPathEqualTo("/activity"))
+                .willReturn(
+                    WireMock.aResponse().withBody(
+                        // language=JSON
+                        """
+                            {
+                                "timestamp": "112222444455555"
+                            }
+                        """.trimIndent()
+                    )
+                )
+        )
+
+        assertThat(sut.getActivity()?.timestamp).isEqualTo("112222444455555")
+    }
 }
