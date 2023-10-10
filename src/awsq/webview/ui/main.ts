@@ -118,6 +118,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
+        onFollowUpClicked: connector.followUpClicked,
         tabs: {
             'tab-1': {
                 tabTitle: 'Welcome to Q',

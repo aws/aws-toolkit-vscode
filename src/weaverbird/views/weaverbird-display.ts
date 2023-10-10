@@ -69,7 +69,7 @@ export class WeaverbirdDisplay {
                 return
             } else if (msg.action === MessageActionType.TAB_ADDED) {
                 const sessionConfig = await createSessionConfig()
-                const session = new Session(sessionConfig, addToChat)
+                const session = new Session(sessionConfig, {} as any, msg.tabId)
                 this.panelStore.saveTab(panelId, msg.tabId, {
                     session,
                 })

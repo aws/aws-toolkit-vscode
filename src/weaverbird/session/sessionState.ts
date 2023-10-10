@@ -35,7 +35,7 @@ import {
     SessionStatePhase,
 } from '../types'
 import { invoke } from '../util/invoke'
-import { MessageActionType, AddToChat, createChatContent, ChatItemType } from '../models'
+import { Messenger } from '../controllers/chat/messenger/messenger'
 
 const fs = FileSystemCommon.instance
 
@@ -43,7 +43,11 @@ export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = SessionStatePhase.Approach
 
-    constructor(private config: Omit<SessionStateConfig, 'conversationId'>, public approach: string) {
+    constructor(
+        private config: Omit<SessionStateConfig, 'conversationId'>,
+        public approach: string,
+        public tabID: string
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
@@ -69,7 +73,8 @@ export class RefinementState implements SessionState {
                     ...this.config,
                     conversationId: response.conversationId,
                 },
-                this.approach
+                this.approach,
+                this.tabID
             ),
             interactions: {
                 content: [`${this.approach}\n`],
@@ -83,14 +88,14 @@ export class RefinementIterationState implements SessionState {
     public readonly phase = SessionStatePhase.Approach
     public readonly conversationId: string
 
-    constructor(private config: SessionStateConfig, public approach: string) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
-            return new MockCodeGenState(this.config, this.approach).interact(action)
+            return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
         }
 
         const payload: IterateApproachInput = {
@@ -112,7 +117,7 @@ export class RefinementIterationState implements SessionState {
             response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
 
         return {
-            nextState: new RefinementIterationState(this.config, this.approach),
+            nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
             interactions: {
                 content: [`${this.approach}\n`],
             },
@@ -142,7 +147,7 @@ abstract class CodeGenBase {
     public phase = SessionStatePhase.Codegen
     public readonly conversationId: string
 
-    constructor(protected config: SessionStateConfig) {
+    constructor(protected config: SessionStateConfig, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
     }
@@ -150,7 +155,7 @@ abstract class CodeGenBase {
     async generateCode(params: {
         getResultLambdaArn: string
         fs: VirtualFileSystem
-        addToChat: AddToChat
+        messenger: Messenger
         generationId: string
     }) {
         for (
@@ -175,14 +180,16 @@ abstract class CodeGenBase {
                     const newFiles = codegenResult.result?.newFileContents ?? []
                     const changes = await createChanges(params.fs, newFiles)
                     for (const change of changes.content) {
-                        params.addToChat(createChatContent(change), MessageActionType.CHAT_ANSWER)
+                        params.messenger.sendResponse(
+                            {
+                                message: change,
+                            },
+                            this.tabID
+                        )
                     }
                     if (changes.filePaths && changes.filePaths.length > 0) {
                         // Show the file tree component when file paths are present
-                        params.addToChat(
-                            createChatContent(changes.filePaths, ChatItemType.CODE_RESULT),
-                            MessageActionType.CHAT_ANSWER
-                        )
+                        params.messenger.sendFilePaths(changes.filePaths, this.tabID)
                     }
                     return newFiles
                 }
@@ -198,13 +205,13 @@ abstract class CodeGenBase {
                 case 'debate-failed':
                 case 'failed': {
                     getLogger().error('Failed to generate code')
-                    params.addToChat(createChatContent('Code generation failed\n'), MessageActionType.CHAT_ANSWER)
+                    params.messenger.sendErrorMessage('Code generation failed\n', this.tabID)
                     return []
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`
                     getLogger().error(errorMessage)
-                    params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+                    params.messenger.sendErrorMessage(errorMessage, this.tabID)
                     return []
                 }
             }
@@ -213,7 +220,7 @@ abstract class CodeGenBase {
             // still in progress
             const errorMessage = `Code generation did not finish withing the expected time :(`
             getLogger().error(errorMessage)
-            params.addToChat(createChatContent(errorMessage), MessageActionType.CHAT_ANSWER)
+            params.messenger.sendErrorMessage(errorMessage, this.tabID)
         }
         return []
     }
@@ -222,8 +229,8 @@ abstract class CodeGenBase {
 export class CodeGenState extends CodeGenBase implements SessionState {
     public filePaths?: string[]
 
-    constructor(config: SessionStateConfig, public approach: string) {
-        super(config)
+    constructor(config: SessionStateConfig, public approach: string, tabID: string) {
+        super(config, tabID)
         this.filePaths = []
     }
 
@@ -244,12 +251,17 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
         const genId = response.generationId
 
-        action.addToChat(createChatContent('Code generation started\n'), MessageActionType.CHAT_ANSWER)
+        action.messenger.sendResponse(
+            {
+                message: 'Code generation started\n',
+            },
+            this.tabID
+        )
 
         const newFileContents = await this.generateCode({
             getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
             fs: action.fs,
-            addToChat: action.addToChat,
+            messenger: action.messenger,
             generationId: genId,
         }).catch(_ => {
             getLogger().error(`Failed to generate code`)
@@ -257,7 +269,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         })
         this.filePaths = getFilePaths(newFileContents)
 
-        const nextState = new CodeGenIterationState(this.config, this.approach, newFileContents, this.filePaths)
+        const nextState = new CodeGenIterationState(
+            this.config,
+            this.approach,
+            newFileContents,
+            this.filePaths,
+            this.tabID
+        )
 
         return {
             nextState,
@@ -272,7 +290,11 @@ export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public filePaths?: string[]
 
-    constructor(private config: Omit<SessionStateConfig, 'conversationId'>, public approach: string) {
+    constructor(
+        private config: Omit<SessionStateConfig, 'conversationId'>,
+        public approach: string,
+        public tabID: string
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
     }
@@ -300,7 +322,7 @@ export class MockCodeGenState implements SessionState {
 
         return {
             // no point in iterating after a mocked code gen
-            nextState: new RefinementState(this.config, this.approach),
+            nextState: new RefinementState(this.config, this.approach, this.tabID),
             interactions: await createChanges(action.fs, newFileContents),
         }
     }
@@ -311,9 +333,10 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
         config: SessionStateConfig,
         public approach: string,
         private newFileContents: FileMetadata[],
-        public filePaths: string[]
+        public filePaths: string[],
+        tabID: string
     ) {
-        super(config)
+        super(config, tabID)
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -341,12 +364,17 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
 
         const genId = response.generationId
 
-        action.addToChat(createChatContent('Code generation started\n'), MessageActionType.CHAT_ANSWER)
+        action.messenger.sendResponse(
+            {
+                message: 'Code generation started\n',
+            },
+            this.tabID
+        )
 
         this.newFileContents = await this.generateCode({
             getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getIterationResults,
             fs: action.fs,
-            addToChat: action.addToChat,
+            messenger: action.messenger,
             generationId: genId,
         }).catch(_ => {
             getLogger().error(`Failed to generate code`)

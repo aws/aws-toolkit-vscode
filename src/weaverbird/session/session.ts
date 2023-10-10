@@ -8,11 +8,11 @@ import * as path from 'path'
 import { collectFiles } from '../util/files'
 import { CodeGenState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
-import { AddToChat } from '../models'
 import { SessionConfig } from './sessionConfig'
 import { ConversationIdNotFoundError } from '../errors'
 import { weaverbirdScheme } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
+import { Messenger } from '../controllers/chat/messenger/messenger'
 
 const fs = FileSystemCommon.instance
 
@@ -21,14 +21,16 @@ export class Session {
     private task: string = ''
     private approach: string = ''
     public readonly config: SessionConfig
+    private readonly tabID: string
 
-    private addToChat: AddToChat
+    private messenger: Messenger
 
-    constructor(sessionConfig: SessionConfig, addToChat: AddToChat) {
+    constructor(sessionConfig: SessionConfig, messenger: Messenger, tabID: string) {
         this.config = sessionConfig
-        this._state = new RefinementState(this.getSessionStateConfig(), '')
+        this.tabID = tabID
+        this._state = new RefinementState(this.getSessionStateConfig(), '', tabID)
 
-        this.addToChat = addToChat
+        this.messenger = messenger
     }
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
@@ -53,7 +55,8 @@ export class Session {
                 ...this.getSessionStateConfig(),
                 conversationId: this.state.conversationId,
             },
-            this.approach
+            this.approach,
+            this.tabID
         )
         await this.nextInteraction(undefined)
     }
@@ -64,7 +67,7 @@ export class Session {
         if (msg === 'CLEAR') {
             this.task = ''
             this.approach = ''
-            this._state = new RefinementState(sessionStageConfig, this.approach)
+            this._state = new RefinementState(sessionStageConfig, this.approach, this.tabID)
             const message =
                 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
             return {
@@ -88,7 +91,7 @@ export class Session {
             task: this.task,
             msg,
             fs: this.config.fs,
-            addToChat: this.addToChat,
+            messenger: this.messenger,
         })
 
         if (resp.nextState) {

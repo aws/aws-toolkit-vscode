@@ -43,7 +43,6 @@ const vueConfig = {
     entry: {
         ...createVueEntries(),
         'src/awsq/webview/ui/awsq-ui': './src/awsq/webview/ui/main.ts',
-        'src/weaverbird/ui/weaverbird-ui': './src/weaverbird/ui/main.ts',
     },
     output: {
         ...baseConfig.output,

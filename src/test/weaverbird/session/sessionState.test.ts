@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
 import {
@@ -17,20 +18,26 @@ import * as invokeModule from '../../../weaverbird/util/invoke'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
 import { GenerateApproachOutput, GenerateCodeOutput } from '../../../weaverbird/client/weaverbirdclient'
-import { MessageActionType, AddToChat, createChatContent } from '../../../weaverbird/models'
+import { Messenger } from '../../../weaverbird/controllers/chat/messenger/messenger'
+import { AppToWebViewMessageDispatcher } from '../../../weaverbird/views/connector/connector'
+import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
 
 interface MockSessionStateActionInput {
     msg?: 'MOCK CODE' | 'OTHER'
-    addToChat?: AddToChat
+    messengerEvent?: vscode.EventEmitter<any>
 }
 
-const mockSessionStateAction = ({ msg, addToChat }: MockSessionStateActionInput): SessionStateAction => {
+const mockSessionStateAction = ({ msg, messengerEvent }: MockSessionStateActionInput): SessionStateAction => {
     return {
         task: 'test-task',
         msg: msg ?? 'test-msg',
         files: [],
         fs: new VirtualFileSystem(),
-        addToChat: addToChat ?? function () {},
+        messenger: new Messenger(
+            new AppToWebViewMessageDispatcher(
+                new MessagePublisher<any>(messengerEvent ?? new vscode.EventEmitter<any>())
+            )
+        ),
     }
 }
 
@@ -67,6 +74,7 @@ describe('sessionState', () => {
     const testApproach = 'test-approach'
     const generationId = 'test-id'
     const conversationId = 'conversation-id'
+    const tabId = 'tab-id'
     const testConfig = mockSessionStateConfig({ conversationId })
 
     beforeEach(() => {})
@@ -82,11 +90,11 @@ describe('sessionState', () => {
             sinon
                 .stub(invokeModule, 'invoke')
                 .resolves({ approach: testApproach, conversationId } satisfies GenerateApproachOutput)
-            const state = new RefinementState(testConfig, testApproach)
+            const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
             assert.deepStrictEqual(result, {
-                nextState: new RefinementIterationState(testConfig, testApproach),
+                nextState: new RefinementIterationState(testConfig, testApproach, tabId),
                 interactions: {
                     content: [`${testApproach}\n`],
                 },
@@ -95,13 +103,13 @@ describe('sessionState', () => {
 
         it('transitions to RefinementIterationState but does not return an approach', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ conversationId } satisfies GenerateApproachOutput)
-            const state = new RefinementState(testConfig, testApproach)
+            const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
             const invokeFailureApproach =
                 "There has been a problem generating an approach. Please type 'CLEAR' and start over."
 
             assert.deepStrictEqual(result, {
-                nextState: new RefinementIterationState(testConfig, invokeFailureApproach),
+                nextState: new RefinementIterationState(testConfig, invokeFailureApproach, tabId),
                 interactions: {
                     content: [`${invokeFailureApproach}\n`],
                 },
@@ -112,9 +120,9 @@ describe('sessionState', () => {
     describe('MockCodeGenState', () => {
         it('transitions to generate RefinementState', async () => {
             const testAction = mockSessionStateAction({})
-            const state = new MockCodeGenState(testConfig, testApproach)
+            const state = new MockCodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
-            const nextState = new RefinementState(testConfig, testApproach)
+            const nextState = new RefinementState(testConfig, testApproach, tabId)
 
             assert.deepStrictEqual(result, {
                 nextState: nextState,
@@ -129,12 +137,12 @@ describe('sessionState', () => {
     describe('CodeGenState', () => {
         it('transitions to  generate CodeGenIterationState when codeGenerationStatus ready ', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
-            const addToChatSpy = sinon.spy()
-            const testAction = mockSessionStateAction({ addToChat: addToChatSpy })
-            const state = new CodeGenState(testConfig, testApproach)
+            const testEmitter = sinon.createStubInstance(vscode.EventEmitter)
+            const testAction = mockSessionStateAction({ messengerEvent: testEmitter })
+            const state = new CodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [])
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -142,30 +150,29 @@ describe('sessionState', () => {
                     content: [],
                 },
             })
+            assert.strictEqual(testEmitter.fire.getCalls().length, 2)
             assert.strictEqual(
-                addToChatSpy.calledWithMatch(
-                    createChatContent('Code generation started\n'),
-                    MessageActionType.CHAT_ANSWER
-                ),
+                testEmitter.fire.calledWithMatch({
+                    message: 'Code generation started\n',
+                }),
                 true
             )
             assert.strictEqual(
-                addToChatSpy.calledWithMatch(
-                    createChatContent('Changes to files done. Please review:'),
-                    MessageActionType.CHAT_ANSWER
-                ),
+                testEmitter.fire.calledWithMatch({
+                    message: 'Changes to files done. Please review:',
+                }),
                 true
             )
         })
 
         it('transitions to  generate CodeGenIterationState when codeGenerationStatus failed ', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'failed' })
-            const addToChatSpy = sinon.spy()
-            const testAction = mockSessionStateAction({ addToChat: addToChatSpy })
-            const state = new CodeGenState(testConfig, testApproach)
+            const testEmitter = sinon.createStubInstance(vscode.EventEmitter)
+            const testAction = mockSessionStateAction({ messengerEvent: testEmitter })
+            const state = new CodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [])
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -173,32 +180,31 @@ describe('sessionState', () => {
                     content: [],
                 },
             })
+            assert.strictEqual(testEmitter.fire.getCalls().length, 2)
             assert.strictEqual(
-                addToChatSpy.calledWithMatch(
-                    createChatContent('Code generation started\n'),
-                    MessageActionType.CHAT_ANSWER
-                ),
+                testEmitter.fire.calledWithMatch({
+                    message: 'Code generation started\n',
+                }),
                 true
             )
             assert.strictEqual(
-                addToChatSpy.calledWithMatch(
-                    createChatContent('Code generation failed\n'),
-                    MessageActionType.CHAT_ANSWER
-                ),
+                testEmitter.fire.calledWithMatch({
+                    message: 'Code generation failed\n',
+                }),
                 true
             )
         })
     })
 
     describe('RefinementIterationState', () => {
-        const refinementIterationState = new RefinementIterationState(testConfig, testApproach)
+        const refinementIterationState = new RefinementIterationState(testConfig, testApproach, tabId)
 
         it('transitions after interaction to MockCodeGenState if action is MOCK CODE', async () => {
             const testAction = mockSessionStateAction({ msg: 'MOCK CODE' })
             const interactionResult = await refinementIterationState.interact(testAction)
 
             assert.deepStrictEqual(interactionResult, {
-                nextState: new RefinementState(testConfig, testApproach),
+                nextState: new RefinementState(testConfig, testApproach, tabId),
                 interactions: {
                     content: ['Changes to files done. Please review:'],
                     filePaths: [],
@@ -214,7 +220,7 @@ describe('sessionState', () => {
             const interactionResult = await refinementIterationState.interact(testAction)
 
             assert.deepStrictEqual(interactionResult, {
-                nextState: new RefinementIterationState(testConfig, testApproach),
+                nextState: new RefinementIterationState(testConfig, testApproach, tabId),
                 interactions: {
                     content: [`${testApproach}\n`],
                 },
@@ -227,7 +233,7 @@ describe('sessionState', () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
             const testAction = mockSessionStateAction({})
 
-            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], [])
+            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
             const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
 
             assert.deepStrictEqual(codeGenIterationStateResult, {

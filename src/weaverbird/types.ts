@@ -7,7 +7,7 @@ import WeaverbirdClient, { FileMetadata } from './client/weaverbirdclient'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import { LambdaClient } from '../shared/clients/lambdaClient'
 import type { CancellationTokenSource } from 'vscode'
-import { AddToChat } from './models'
+import { Messenger } from './controllers/chat/messenger/messenger'
 
 const GenerationFlowOptions = ['fargate', 'lambda', 'stepFunction'] as const
 type GenerationFlowOption = (typeof GenerationFlowOptions)[number]
@@ -48,6 +48,7 @@ export interface SessionState {
     readonly phase?: SessionStatePhase
     approach: string
     readonly tokenSource: CancellationTokenSource
+    readonly tabID: string
     interact(action: SessionStateAction): Promise<SessionStateInteraction>
 }
 
@@ -63,7 +64,7 @@ export interface SessionStateAction {
     task: string
     files: FileMetadata[]
     msg?: string
-    addToChat: AddToChat
+    messenger: Messenger
     fs: VirtualFileSystem
 }
 

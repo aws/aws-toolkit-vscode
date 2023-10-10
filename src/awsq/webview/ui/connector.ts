@@ -3,8 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
+import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
+import { weaverbirdChat } from '../../../weaverbird/views/actions/uiMessageListener'
 
 interface ChatPayload {
     chatMessage: string
@@ -24,6 +26,7 @@ export class Connector {
     private readonly postMessageHandler
     private readonly onMessageReceived
     private readonly cwChatConnector
+    private readonly weaverbirdChatConnector
 
     private isUIReady = false
 
@@ -31,6 +34,7 @@ export class Connector {
         this.postMessageHandler = props.postMessageHandler
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props)
+        this.weaverbirdChatConnector = new WeaverbirdChatConnector(props)
     }
 
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
@@ -57,6 +61,8 @@ export class Connector {
 
         if (messageData.sender === 'CWChat') {
             this.cwChatConnector.handleMessageReceive(messageData)
+        } else if (messageData.sender === weaverbirdChat) {
+            this.weaverbirdChatConnector.handleMessageReceive(messageData)
         }
     }
 
@@ -101,5 +107,13 @@ export class Connector {
         //     selectedText: engagement.selectionDistanceTraveled?.selectedText,
         //     hoverDuration: engagement.engagementDurationTillTrigger / 1000, // seconds
         // })
+    }
+
+    followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+        this.postMessageHandler({
+            command: 'followUpClicked',
+            followUp,
+            tabID,
+        })
     }
 }
