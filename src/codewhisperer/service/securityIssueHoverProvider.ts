@@ -21,7 +21,7 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         document: vscode.TextDocument,
         position: vscode.Position,
         _token: vscode.CancellationToken
-    ): vscode.ProviderResult<vscode.Hover> {
+    ): vscode.Hover {
         const contents: vscode.MarkdownString[] = []
 
         for (const group of this._issues) {
