@@ -5,6 +5,10 @@
 
 import { MatchPolicy } from '../../clients/chat/v0/model'
 
+export interface TabClosedMessage {
+    tabID: string
+}
+
 export interface PromptMessage {
     message: string | undefined
     tabID: string

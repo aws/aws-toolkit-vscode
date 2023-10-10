@@ -3,20 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatControllerEventEmitters } from '../../controllers/chat/controller'
 import { MessageListener } from '../../../awsq/messages/messageListener'
+import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 
 export interface UIMessageListenerProps {
-    readonly chatControllerEventEmitters: ChatControllerEventEmitters
+    readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
     readonly webViewMessageListener: MessageListener<any>
 }
 
 export class UIMessageListener {
-    private chatControllerEventsEmmiters: ChatControllerEventEmitters | undefined
+    private chatControllerMessagePublishers: ChatControllerMessagePublishers
     private webViewMessageListener: MessageListener<any>
 
     constructor(props: UIMessageListenerProps) {
-        this.chatControllerEventsEmmiters = props.chatControllerEventEmitters
+        this.chatControllerMessagePublishers = props.chatControllerMessagePublishers
         this.webViewMessageListener = props.webViewMessageListener
 
         this.webViewMessageListener.onMessage(msg => {
@@ -29,11 +29,27 @@ export class UIMessageListener {
             case 'processChatMessage':
                 this.processChatMessage(msg)
                 break
+            case 'newTabWasCreated':
+                this.processNewTabWasCreated(msg)
+                break
+            case 'tabWasRemoved':
+                this.processTabWasRemoved(msg)
+                break
         }
     }
 
+    private processTabWasRemoved(msg: any) {
+        this.chatControllerMessagePublishers.processTabClosedMessage.publish({
+            tabID: msg.tabID,
+        })
+    }
+
+    private processNewTabWasCreated(msg: any) {
+        return
+    }
+
     private processChatMessage(msg: any) {
-        this.chatControllerEventsEmmiters?.processHumanChatMessage.fire({
+        this.chatControllerMessagePublishers.processPromptChatMessage.publish({
             message: msg.chatMessage,
             tabID: msg.tabID,
         })

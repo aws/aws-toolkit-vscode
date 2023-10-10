@@ -3,17 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from 'vscode'
 import { EditorContextExtractor, TriggerType } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { ChatRequest, EditorContext, IdeTriggerRequest } from '../../clients/chat/v0/model'
 import { Messenger } from './messenger/messenger'
-import { PromptMessage, ChatTriggerType, TriggerPayload } from './model'
+import { PromptMessage, ChatTriggerType, TriggerPayload, TabClosedMessage } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
+import { MessageListener } from '../../../awsq/messages/messageListener'
 
-export interface ChatControllerEventEmitters {
-    readonly processHumanChatMessage: EventEmitter<PromptMessage>
+export interface ChatControllerMessagePublishers {
+    readonly processPromptChatMessage: MessagePublisher<PromptMessage>
+    readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
+}
+
+export interface ChatControllerMessageListeners {
+    readonly processPromptChatMessage: MessageListener<PromptMessage>
+    readonly processTabClosedMessage: MessageListener<TabClosedMessage>
 }
 
 export class ChatController {
@@ -22,21 +28,27 @@ export class ChatController {
     private readonly editorContextExtractor: EditorContextExtractor
 
     public constructor(
-        private readonly chatControllerEventEmitters: ChatControllerEventEmitters,
+        private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
         appsToWebViewMessagePublisher: MessagePublisher<any>
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.messenger = new Messenger(new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher))
         this.editorContextExtractor = new EditorContextExtractor()
 
-        this.chatControllerEventEmitters.processHumanChatMessage.event(data => {
+        this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
+        })
+
+        this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
+            this.processTabCloseMessage(data)
         })
     }
 
-    public run() {}
+    private async processTabCloseMessage(message: TabClosedMessage) {
+        this.sessionStorage.deleteSession(message.tabID)
+    }
 
-    public async processPromptChatMessage(message: PromptMessage) {
+    private async processPromptChatMessage(message: PromptMessage) {
         if (message.message == undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
             return

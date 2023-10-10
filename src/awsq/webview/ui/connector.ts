@@ -60,6 +60,20 @@ export class Connector {
         }
     }
 
+    onTabAdd = (tabID: string): void => {
+        this.postMessageHandler({
+            tabID: tabID,
+            command: 'newTabWasCreated',
+        })
+    }
+
+    onTabRemove = (tabID: string): void => {
+        this.postMessageHandler({
+            tabID: tabID,
+            command: 'tabWasRemoved',
+        })
+    }
+
     uiReady = (): void => {
         this.isUIReady = true
         this.postMessageHandler({

@@ -9,18 +9,38 @@ import { UIMessageListener } from './view/messages/actionListener'
 import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
+import { PromptMessage, TabClosedMessage } from './controllers/chat/model'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
-        processHumanChatMessage: new EventEmitter<any>(),
+        processPromptChatMessage: new EventEmitter<PromptMessage>(),
+        processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
     }
 
-    new CwChatController(cwChatControllerEventEmitters, appContext.getAppsToWebViewMessagePublisher())
+    const cwChatControllerMessageListeners = {
+        processPromptChatMessage: new MessageListener<PromptMessage>(
+            cwChatControllerEventEmitters.processPromptChatMessage
+        ),
+        processTabClosedMessage: new MessageListener<TabClosedMessage>(
+            cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+    }
+
+    const cwChatControllerMessagePublishers = {
+        processPromptChatMessage: new MessagePublisher<PromptMessage>(
+            cwChatControllerEventEmitters.processPromptChatMessage
+        ),
+        processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
+            cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+    }
+
+    new CwChatController(cwChatControllerMessageListeners, appContext.getAppsToWebViewMessagePublisher())
 
     const cwChatUIInputEventEmmiter = new EventEmitter<any>()
 
     new UIMessageListener({
-        chatControllerEventEmitters: cwChatControllerEventEmitters,
+        chatControllerMessagePublishers: cwChatControllerMessagePublishers,
         webViewMessageListener: new MessageListener<any>(cwChatUIInputEventEmmiter),
     })
 

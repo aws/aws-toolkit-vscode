@@ -88,6 +88,8 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 
     mynahUI = new MynahUI({
         onReady: connector.uiReady,
+        onTabAdd: connector.onTabAdd,
+        onTabRemove: connector.onTabRemove,
         onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
             mynahUI.updateStore(tabID, {
                 loadingChat: true,
