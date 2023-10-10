@@ -15,6 +15,7 @@ import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoade
 import { getIcon } from '../../shared/icons'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
@@ -64,8 +65,9 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
                     newContinuationToken: listSchemaResponse.NextToken,
                 }
             } catch (error) {
-                this.logger.error(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
-                vscode.window.showErrorMessage(`Failed to fetch schemas for ${this.databaseName}: ${error}`)
+                const msg = `Redshift: Failed to fetch schemas for ${this.databaseName}: ${(error as Error).message}`
+                this.logger.error(msg)
+                showViewLogsMessage(msg)
                 return Promise.reject(error)
             }
         })

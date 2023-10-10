@@ -18,9 +18,10 @@ import { FileSystemCommon } from '../srcShared/fs'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
 import { ToolkitError } from '../shared/errors'
 import { deleteConnection, updateConnectionParamsState } from './explorer/redshiftState'
+import globals from '../shared/extensionGlobals'
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    const outputChannel = vscode.window.createOutputChannel('Redshift Connection')
+    const outputChannel = globals.outputChannel
     outputChannel.show(true)
 
     if ('NotebookEdit' in vscode) {
@@ -151,16 +152,17 @@ function getEditConnectionHandler(outputChannel: vscode.OutputChannel) {
                     }
                     connectionParams.secret = secretArnFetched
                 }
-                await redshiftWarehouseNode.redshiftClient.listDatabases(connectionParams!)
                 redshiftWarehouseNode.setConnectionParams(connectionParams)
                 await updateConnectionParamsState(redshiftWarehouseNode.arn, redshiftWarehouseNode.connectionParams)
+                await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', redshiftWarehouseNode)
             }
         } catch (error) {
             outputChannel.appendLine(
-                `Redshift: the new credentials failed: ${redshiftWarehouseNode.name} - ${(error as Error).message}`
+                `Redshift: Failed to fetch databases for warehouse ${redshiftWarehouseNode.name} - ${
+                    (error as Error).message
+                }`
             )
         }
-        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', redshiftWarehouseNode)
     }
 }
 

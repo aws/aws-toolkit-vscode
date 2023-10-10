@@ -15,6 +15,7 @@ import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { getIcon } from '../../shared/icons'
+import { showViewLogsMessage } from '../../shared/utilities/messages'
 
 export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
@@ -63,8 +64,9 @@ export class RedshiftSchemaNode extends AWSTreeNodeBase implements LoadMoreNode 
                     newContinuationToken: listTablesResponse.NextToken,
                 }
             } catch (error) {
-                this.logger.error(`Failed to fetch tables for ${this.schemaName}: ${error}`)
-                vscode.window.showErrorMessage(`Failed to fetch tables for ${this.schemaName}: ${error}`)
+                const msg = `Redshift: Failed to fetch tables for ${this.schemaName}: ${(error as Error).message}`
+                this.logger.error(msg)
+                showViewLogsMessage(msg)
                 return Promise.reject(error)
             }
         })

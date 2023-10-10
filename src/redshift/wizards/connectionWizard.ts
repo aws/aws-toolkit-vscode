@@ -18,6 +18,7 @@ import { ClustersMessage } from 'aws-sdk/clients/redshift'
 import { Prompter } from '../../shared/ui/prompter'
 import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
+import { redshiftHelpUrl } from '../../shared/constants'
 
 export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
     public constructor(
@@ -40,13 +41,7 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
             },
         })
         this.form.connectionType.bindPrompter(
-            state => {
-                if (state?.warehouseType === 1) {
-                    return getConnectionTypePrompterServerless()
-                } else {
-                    return getConnectionTypePrompter()
-                }
-            },
+            state => getConnectionTypePrompter(node.connectionParams?.connectionType, state?.warehouseType),
             {
                 relativeOrder: 1,
             }
@@ -126,19 +121,9 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 }
             }
         })
-
-        this.form.connectionType.bindPrompter(
-            state => {
-                if (state.warehouseIdentifier?.startsWith('serverless'.toLowerCase())) {
-                    return getConnectionTypePrompterServerless()
-                } else {
-                    return getConnectionTypePrompter()
-                }
-            },
-            {
-                relativeOrder: 3,
-            }
-        )
+        this.form.connectionType.bindPrompter(state => getConnectionTypePrompterNB(state?.warehouseType), {
+            relativeOrder: 1,
+        })
 
         this.form.database.bindPrompter(getDatabasePrompter, { relativeOrder: 4 })
         this.form.username.bindPrompter(getUsernamePrompter, {
@@ -163,7 +148,7 @@ function getUsernamePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
         title: localize('AWS.redshift.username', 'Enter the username you want to use to connect to the database'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(redshiftHelpUrl),
         placeholder: 'Enter username',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.usernameValidation', 'Username cannot be empty')
@@ -175,7 +160,7 @@ function getPasswordPrompter(): Prompter<string> {
     return createInputBox({
         value: '',
         title: localize('AWS.redshift.password', 'Enter password'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(redshiftHelpUrl),
         placeholder: 'Enter password',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.passwordValidation', 'Password cannot be empty')
@@ -188,7 +173,7 @@ function getDatabasePrompter(): Prompter<string> {
     return createInputBox({
         value: '',
         title: localize('AWS.redshift.database', 'Enter the name of the database you want to connect to'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(redshiftHelpUrl),
         placeholder: 'Enter database name',
         validateInput: value => {
             return value.trim() ? undefined : localize('AWS.redshift.databaseValidation', 'Database cannot be empty')
@@ -196,27 +181,50 @@ function getDatabasePrompter(): Prompter<string> {
     })
 }
 
-function getConnectionTypePrompter(): Prompter<ConnectionType> {
-    const items: DataQuickPickItem<ConnectionType>[] = Object.values(ConnectionType).map(type => ({
-        label: type,
-        data: type,
-    }))
+function createSelectConnectionQuickPick(items: DataQuickPickItem<ConnectionType>[]): Prompter<ConnectionType> {
     return createQuickPick(items, {
         title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(redshiftHelpUrl),
         placeholder: 'Select Connection Type',
     })
 }
-function getConnectionTypePrompterServerless(): Prompter<ConnectionType> {
+
+function getConnectionTypePrompter(
+    existingConnectionType: ConnectionType | undefined,
+    warehouseType?: RedshiftWarehouseType
+): Prompter<ConnectionType> {
     const items: DataQuickPickItem<ConnectionType>[] = Object.values(ConnectionType).map(type => ({
         label: type,
         data: type,
     }))
-    return createQuickPick([items[0], items[1]], {
-        title: localize('AWS.redshift.connectionType', 'Select Connection Type'),
-        buttons: createCommonButtons(),
-        placeholder: 'Select Connection Type',
-    })
+    if (existingConnectionType) {
+        const updatedItems = items.map(item => {
+            if (item.data === existingConnectionType) {
+                return {
+                    ...item,
+                    label: `${existingConnectionType} - current`,
+                }
+            }
+            return item
+        })
+        const selectedUpdatedItems =
+            warehouseType === RedshiftWarehouseType.SERVERLESS ? [updatedItems[0], updatedItems[1]] : updatedItems
+        return createSelectConnectionQuickPick(selectedUpdatedItems)
+    } else {
+        // Determine which items to use based on warehouseType
+        const selectedItems = warehouseType === RedshiftWarehouseType.SERVERLESS ? [items[0], items[1]] : items
+        return createSelectConnectionQuickPick(selectedItems)
+    }
+}
+
+function getConnectionTypePrompterNB(warehouseType?: RedshiftWarehouseType): Prompter<ConnectionType> {
+    const items: DataQuickPickItem<ConnectionType>[] = Object.values(ConnectionType).map(type => ({
+        label: type,
+        data: type,
+    }))
+    // Determine which items to use based on warehouseType
+    const selectedItems = warehouseType === RedshiftWarehouseType.SERVERLESS ? [items[0], items[1]] : items
+    return createSelectConnectionQuickPick(selectedItems)
 }
 
 async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
@@ -269,7 +277,7 @@ function getWarehouseIdentifierPrompter(region: string): QuickPickPrompter<strin
 
     return createQuickPick(fetchWarehouses(redshiftClient), {
         title: localize('AWS.redshift.chooseAWarehousePrompt', 'Choose a warehouse to connect to'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(redshiftHelpUrl),
         placeholder: 'Choose a warehouse to connect to',
     })
 }
@@ -278,7 +286,7 @@ function getSecretPrompter(region: string): QuickPickPrompter<string> {
     const secretsManagerClient = new SecretsManagerClient(region)
     return createQuickPick(fetchSecretList(secretsManagerClient), {
         title: localize('AWS.redshift.chooseSecretPrompt', 'Choose a secret'),
-        buttons: createCommonButtons(),
+        buttons: createCommonButtons(redshiftHelpUrl),
         placeholder: 'Choose a secret',
     })
 }
