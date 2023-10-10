@@ -50,6 +50,7 @@ import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
+import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -202,6 +203,10 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.supportedLanguages, { scheme: 'untitled' }],
             ImportAdderProvider.instance
+        ),
+        vscode.languages.registerHoverProvider(
+            [...CodeWhispererConstants.supportedLanguages],
+            SecurityIssueHoverProvider.instance
         )
     )
 

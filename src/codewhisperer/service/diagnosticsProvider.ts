@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
+import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
 
 interface SecurityScanRender {
     securityDiagnosticCollection: vscode.DiagnosticCollection | undefined
@@ -26,6 +27,7 @@ export function initSecurityScanRender(
         updateSecurityDiagnosticCollection(securityRecommendation)
     })
     securityScanRender.initialized = true
+    SecurityIssueHoverProvider.instance.issues = securityRecommendationList
 }
 
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {
