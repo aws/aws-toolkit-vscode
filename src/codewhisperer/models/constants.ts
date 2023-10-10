@@ -156,6 +156,8 @@ export const learnMoreUriGeneral = 'https://aws.amazon.com/codewhisperer/'
 
 export const learnMoreUri = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codewhisperer.html'
 
+export const customLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/customizations.html'
+
 export const securityScanLearnMoreUri = 'https://docs.aws.amazon.com/codewhisperer/latest/userguide/security-scans.html'
 
 export const identityPoolID = 'us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9'

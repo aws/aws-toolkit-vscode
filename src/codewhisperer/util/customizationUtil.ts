@@ -5,7 +5,7 @@
 
 import globals from '../../shared/extensionGlobals'
 import {
-    learnMoreUri,
+    customLearnMoreUri,
     newCustomizationAvailableKey,
     newCustomizationMessage,
     persistedCustomizationsKey,
@@ -72,7 +72,7 @@ export async function notifyNewCustomizations() {
             showCustomizationPrompt().then()
         } else if (resp === learnMore) {
             // TODO: figure out the right uri
-            openUrl(vscode.Uri.parse(learnMoreUri))
+            openUrl(vscode.Uri.parse(customLearnMoreUri))
         }
     })
 }
@@ -194,7 +194,7 @@ const createCustomizationItems = async () => {
                 'AWS.codewhisperer.customization.noCustomizations.description',
                 'You dont have access to any CodeWhisperer customization. Contact your admin for access.'
             ),
-            learnMoreUri,
+            customLearnMoreUri,
             localize('AWS.codewhisperer.customization.notification.new_customizations.learn_more', 'Learn More'),
             'info'
         )
