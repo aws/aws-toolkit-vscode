@@ -1,3 +1,9 @@
+## 1.93.0 2023-10-05
+
+- **Bug Fix** SAM: local debugging of a .NET lambda may fail if `containerbuild=true`
+- **Bug Fix** BuilderID/IdentityCenter: Fix 'Invalid Client' error in the browser when re-authenticating
+- **Feature** CodeWhisperer: remove unnecessary "Proceed to login" prompt
+
 ## 1.92.0 2023-09-29
 
 - **Deprecation** SAM: removed support for Node.js 12.x [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)

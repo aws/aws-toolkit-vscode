@@ -1,0 +1,18 @@
+{
+	"date": "2023-10-05",
+	"version": "1.93.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM: local debugging of a .NET lambda may fail if `containerbuild=true`"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "BuilderID/IdentityCenter: Fix 'Invalid Client' error in the browser when re-authenticating"
+		},
+		{
+			"type": "Feature",
+			"description": "CodeWhisperer: remove unnecessary \"Proceed to login\" prompt"
+		}
+	]
+}

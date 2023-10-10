@@ -43,6 +43,7 @@ import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
+import { handleWebviewError } from '../../../webviews/server'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -129,11 +130,11 @@ export class AuthWebview extends VueWebview {
     }
 
     async startCodeWhispererBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup(() => awsIdSignIn())
+        return this.ssoSetup('startCodeWhispererBuilderIdSetup', () => awsIdSignIn())
     }
 
     async startCodeCatalystBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup(() => setupCodeCatalystBuilderId(this.codeCatalystAuth))
+        return this.ssoSetup('startCodeCatalystBuilderIdSetup', () => setupCodeCatalystBuilderId(this.codeCatalystAuth))
     }
 
     isCodeWhispererBuilderIdConnected(): boolean {
@@ -193,7 +194,7 @@ export class AuthWebview extends VueWebview {
             const ssoProfile = createSsoProfile(startUrl, regionId)
             await Auth.instance.createConnection(ssoProfile)
         }
-        return this.ssoSetup(setupFunc)
+        return this.ssoSetup('createIdentityCenterConnection', setupFunc)
     }
 
     /**
@@ -203,10 +204,17 @@ export class AuthWebview extends VueWebview {
         const setupFunc = () => {
             return connectToEnterpriseSso(startUrl, regionId)
         }
-        return this.ssoSetup(setupFunc)
+        return this.ssoSetup('startCWIdentityCenterSetup', setupFunc)
     }
 
-    private async ssoSetup(setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
+    /**
+     * This wraps the execution of the given setupFunc() and handles common errors from the SSO setup process.
+     *
+     * @param methodName A value that will help identify which high level function called this method.
+     * @param setupFunc The function which will be executed in a try/catch so that we can handle common errors.
+     * @returns
+     */
+    private async ssoSetup(methodName: string, setupFunc: () => Promise<any>): Promise<AuthError | undefined> {
         try {
             await setupFunc()
             return
@@ -236,7 +244,11 @@ export class AuthWebview extends VueWebview {
                 return { id: 'badStartUrl', text: `Connection failed. Please verify your start URL.` }
             }
 
-            getLogger().error('AuthWebview: Failed to setup: %s', (e as Error).message)
+            // If SSO setup fails we want to be able to show the user an error in the UI, due to this we cannot
+            // throw an error here. So instead this will additionally show an error message that provides more
+            // detailed information.
+            handleWebviewError(e, this.id, methodName)
+
             return { id: 'defaultFailure', text: 'Failed to setup.' }
         }
     }
