@@ -3,28 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, window, EventEmitter } from 'vscode'
+import { ExtensionContext, window } from 'vscode'
 import { AwsQChatViewProvider } from './webview/webView'
-import { AppsUIInputEventEmitters } from './webview/actions/actionListener'
-import { CWChatApp } from '../codewhispererChat/app'
+import { init as cwChatAppInit } from '../codewhispererChat/app'
+import { AwsQAppInitContext, DefaultAwsQAppInitContext } from './apps/initContext'
 
 export async function activate(context: ExtensionContext) {
-    const uiOutputEventEmitter = new EventEmitter<any>()
+    const appInitConext = new DefaultAwsQAppInitContext()
 
-    const appsUIInputEventEmitters: AppsUIInputEventEmitters = []
+    registerApps(appInitConext)
 
-    // CWChat
-
-    const cwChatUIInputEventEmmiter = new EventEmitter<any>()
-    appsUIInputEventEmitters.push(cwChatUIInputEventEmmiter)
-
-    const cwChatApp = new CWChatApp()
-
-    cwChatApp.start(cwChatUIInputEventEmmiter, uiOutputEventEmitter)
-
-    // TODO: WB
-
-    const provider = new AwsQChatViewProvider(context, appsUIInputEventEmitters, uiOutputEventEmitter)
+    const provider = new AwsQChatViewProvider(
+        context,
+        appInitConext.getWebViewToAppsMessagePublishers(),
+        appInitConext.getAppsToWebViewMessageListener()
+    )
 
     context.subscriptions.push(
         window.registerWebviewViewProvider(AwsQChatViewProvider.viewType, provider, {
@@ -33,4 +26,9 @@ export async function activate(context: ExtensionContext) {
             },
         })
     )
+}
+
+function registerApps(appInitConext: AwsQAppInitContext) {
+    cwChatAppInit(appInitConext)
+    // TODO: Register Weaverbird
 }

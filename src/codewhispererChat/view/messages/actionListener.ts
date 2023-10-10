@@ -3,23 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EventEmitter } from 'vscode'
 import { ChatControllerEventEmitters } from '../../controllers/chat/controller'
+import { MessageListener } from '../../../awsq/messages/messageListener'
 
-export interface ActionsListenerProps {
+export interface UIMessageListenerProps {
     readonly chatControllerEventEmitters: ChatControllerEventEmitters
-    readonly inputUIEventEmitter: EventEmitter<any>
+    readonly webViewMessageListener: MessageListener<any>
 }
 
-export class ActionListener {
+export class UIMessageListener {
     private chatControllerEventsEmmiters: ChatControllerEventEmitters | undefined
-    private inputUIEventEmmiter: EventEmitter<any> | undefined
+    private webViewMessageListener: MessageListener<any>
 
-    public bind(props: ActionsListenerProps) {
+    constructor(props: UIMessageListenerProps) {
         this.chatControllerEventsEmmiters = props.chatControllerEventEmitters
-        this.inputUIEventEmmiter = props.inputUIEventEmitter
+        this.webViewMessageListener = props.webViewMessageListener
 
-        this.inputUIEventEmmiter.event(msg => {
+        this.webViewMessageListener.onMessage(msg => {
             this.handleMessage(msg)
         })
     }

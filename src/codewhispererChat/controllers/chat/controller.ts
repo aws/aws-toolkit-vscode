@@ -9,7 +9,8 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import { ChatRequest, EditorContext, IdeTriggerRequest } from '../../clients/chat/v0/model'
 import { Messenger } from './messenger/messenger'
 import { PromptMessage, ChatTriggerType, TriggerPayload } from './model'
-import { Connector } from '../../view/connector/connector'
+import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
+import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<PromptMessage>
@@ -22,27 +23,27 @@ export class ChatController {
 
     public constructor(
         private readonly chatControllerEventEmitters: ChatControllerEventEmitters,
-        uiOutputEventEmitter: EventEmitter<any>
+        appsToWebViewMessagePublisher: MessagePublisher<any>
     ) {
         this.sessionStorage = new ChatSessionStorage()
-        this.messenger = new Messenger(new Connector(uiOutputEventEmitter))
+        this.messenger = new Messenger(new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher))
         this.editorContextExtractor = new EditorContextExtractor()
 
         this.chatControllerEventEmitters.processHumanChatMessage.event(data => {
-            this.processHumanChatMessage(data)
+            this.processPromptChatMessage(data)
         })
     }
 
     public run() {}
 
-    public async processHumanChatMessage(message: PromptMessage) {
+    public async processPromptChatMessage(message: PromptMessage) {
         if (message.message == undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
             return
         }
 
         try {
-            await this.processHumanMessageAsNewThread(message)
+            await this.processPromptMessageAsNewThread(message)
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)
@@ -52,7 +53,7 @@ export class ChatController {
         }
     }
 
-    private async processHumanMessageAsNewThread(message: PromptMessage) {
+    private async processPromptMessageAsNewThread(message: PromptMessage) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
                 this.generateResponse(
@@ -109,6 +110,6 @@ export class ChatController {
             response = this.sessionStorage.getSession(tabID).ideTrigger(ideTriggerRequest)
         }
 
-        this.messenger.sendResponse(response, tabID)
+        this.messenger.sendAIResponse(response, tabID)
     }
 }

@@ -4,7 +4,7 @@
  */
 
 import { Timestamp } from 'aws-sdk/clients/apigateway'
-import { EventEmitter } from 'vscode'
+import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -135,16 +135,14 @@ export interface FollowUp {
     readonly prompt: string
 }
 
-export class Connector {
-    constructor(private readonly outputUIEventEmitter: EventEmitter<any>) {
-        this.outputUIEventEmitter = outputUIEventEmitter
-    }
+export class AppToWebViewMessageDispatcher {
+    constructor(private readonly appsToWebViewMessagePublisher: MessagePublisher<any>) {}
 
     public sendErrorMessage(message: ErrorMessage) {
-        this.outputUIEventEmitter.fire(message)
+        this.appsToWebViewMessagePublisher.publish(message)
     }
 
     public sendChatMessage(message: ChatMessage) {
-        this.outputUIEventEmitter.fire(message)
+        this.appsToWebViewMessagePublisher.publish(message)
     }
 }

@@ -8,6 +8,7 @@ import { Response } from 'node-fetch'
 import * as model from './model'
 
 const chatServiceUrl = 'https://beta-chat.mynah.dx.aws.dev'
+const sessionIDHeader = 'x-codewhisperer-chat-session-id'
 const chatUrl: URL = new URL(`${chatServiceUrl}/api/chat`)
 const followUpUrl: URL = new URL(`${chatServiceUrl}/api/follow-up`)
 const ideTriggerUrl: URL = new URL(`${chatServiceUrl}/api/ide-trigger`)
@@ -27,25 +28,29 @@ async function* linesAsyncIterator(response: Response) {
     }
 }
 
-// TODO: attach chatSession to the panel
 export class ChatSession {
     private sessionId?: string
 
     constructor(private readonly apiKey: string) {}
 
     async *send(request: string, url: URL): AsyncGenerator<model.ChatEvent, any, any> {
-        const resp = await fetch(url, {
+        const requestInit = {
             body: request,
             method: 'POST',
-            headers: {
-                'x-amzn-requester': 'AWS Toolkits VSCode',
-                'x-amzn-chat-session-id': this.sessionId ? this.sessionId : '',
-                'x-codewhisperer-chat-api-key': this.apiKey,
-                'Content-Type': 'application/json',
-            },
-        })
+            headers: [
+                ['x-amzn-requester', 'AWS Toolkits VSCode'],
+                ['x-codewhisperer-chat-api-key', this.apiKey],
+                ['Content-Type', 'application/json'],
+            ],
+        }
 
-        this.sessionId = resp.headers.get('x-amzn-chat-session-id')!
+        if (this.sessionId !== undefined) {
+            requestInit.headers.push([sessionIDHeader, this.sessionId])
+        }
+
+        const resp = await fetch(url, requestInit)
+
+        this.sessionId = resp.headers.get(sessionIDHeader)!
 
         for await (const line of linesAsyncIterator(resp)) {
             if (line.trim() == '') {

@@ -7,17 +7,17 @@ import { ChatEvent } from '../../../clients/chat/v0/model'
 import {
     ChatMessage,
     ChatMessageType,
-    Connector,
+    AppToWebViewMessageDispatcher,
     ErrorMessage,
     FollowUp,
     Suggestion,
 } from '../../../view/connector/connector'
 
 export class Messenger {
-    public constructor(private readonly connector: Connector) {}
+    public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
-    async sendResponse(response: AsyncGenerator<ChatEvent>, tabID: string) {
-        this.connector.sendChatMessage(
+    async sendAIResponse(response: AsyncGenerator<ChatEvent>, tabID: string) {
+        this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
                     message: '',
@@ -37,7 +37,7 @@ export class Messenger {
             if (chatEvent.token != undefined) {
                 message += chatEvent.token
 
-                this.connector.sendChatMessage(
+                this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
                             message: message,
@@ -88,7 +88,7 @@ export class Messenger {
         }
 
         if (relatedSuggestions.length !== 0) {
-            this.connector.sendChatMessage(
+            this.dispatcher.sendChatMessage(
                 new ChatMessage(
                     {
                         message: undefined,
@@ -101,7 +101,7 @@ export class Messenger {
             )
         }
 
-        this.connector.sendChatMessage(
+        this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
                     message: undefined,
@@ -137,7 +137,7 @@ export class Messenger {
         if (e.sessionID != undefined) {
             message += '\n\nSession ID: ' + e.sessionID
         }
-        this.connector.sendErrorMessage(
+        this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
         )
     }
