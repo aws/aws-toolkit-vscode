@@ -6,8 +6,13 @@
 import * as vscode from 'vscode'
 import WeaverbirdClient, { FileMetadata } from '../client/weaverbirdclient'
 import { SystemUtilities } from '../../shared/systemUtilities'
-import { getExcludePattern } from '../../shared/fs/watchedFiles'
+import { getGlobDirExcludedPatterns } from '../../shared/fs/watchedFiles'
 import { getWorkspaceRelativePath } from '../../shared/utilities/workspaceUtils'
+export function getExcludePattern() {
+    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/`)
+    const extraPatterns = ['**/*.zip', '**/*.bin', '**/package-lock.json', '**/*.png', '**/*.jpg', '**/*.svg']
+    return `{${[...globAlwaysExcludedDirs, ...extraPatterns].join(',')}}`
+}
 
 export async function collectFiles(rootPath: string): Promise<FileMetadata[]> {
     const files = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'), getExcludePattern())
