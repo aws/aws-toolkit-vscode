@@ -123,10 +123,15 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public get activeConnection(): T | undefined {
-        return (
-            this.#savedConnection ??
-            (this.#activeConnection && this.isUsable(this.#activeConnection) ? this.#activeConnection : undefined)
-        )
+        if (this.#savedConnection) {
+            return this.#savedConnection
+        }
+
+        if (this.#activeConnection && this.isUsable(this.#activeConnection)) {
+            return this.#activeConnection
+        }
+
+        return undefined
     }
 
     public get hasSavedConnection() {
