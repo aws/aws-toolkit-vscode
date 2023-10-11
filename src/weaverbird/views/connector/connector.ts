@@ -4,7 +4,7 @@
  */
 
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
-import { weaverbirdChat } from '../actions/uiMessageListener'
+import { weaverbirdChat } from '../../constants'
 import { ChatItemType } from '../../models'
 import { ChatItemFollowUp, Suggestion } from '@aws/mynah-ui-chat'
 
@@ -48,7 +48,7 @@ export interface ChatMessageProps {
 
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
-    readonly messageType: string
+    readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly requestID!: string

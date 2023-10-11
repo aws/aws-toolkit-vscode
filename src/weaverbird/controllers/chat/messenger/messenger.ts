@@ -5,7 +5,6 @@
 
 import { ChatMessage, ErrorMessage, FilePathMessage } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
-import { ChatItemType } from '../../../models'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 
 export interface ResponseProps {
@@ -21,7 +20,7 @@ export class Messenger {
             new ChatMessage(
                 {
                     message: response.message,
-                    messageType: ChatItemType.ANSWER,
+                    messageType: 'answer',
                     followUps: response.followUps,
                     relatedSuggestions: undefined,
                 },

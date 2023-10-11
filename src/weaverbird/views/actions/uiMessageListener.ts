@@ -7,8 +7,6 @@ import { ChatControllerEventEmitters } from '../../controllers/chat/controller'
 import { MessageListener } from '../../../awsq/messages/messageListener'
 import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
 
-export const weaverbirdChat = 'weaverbirdChat'
-
 export interface UIMessageListenerProps {
     readonly chatControllerEventEmitters: ChatControllerEventEmitters
     readonly webViewMessageListener: MessageListener<any>
