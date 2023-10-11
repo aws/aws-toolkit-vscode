@@ -36,9 +36,24 @@ export class UIMessageListener {
             case 'tab-was-removed':
                 this.processTabWasRemoved(msg)
                 break
+            case 'code_was_copied_to_clipboard':
+                this.processCodeWasCopiedToClipboard(msg)
+                break
+            case 'insert_code_at_cursor_position':
+                this.processInsertCodeAtCursorPosition(msg)
+                break
         }
     }
 
+    private processInsertCodeAtCursorPosition(msg: any) {
+        this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
+            code: msg.code,
+        })
+    }
+
+    private processCodeWasCopiedToClipboard(msg: any) {
+        return
+    }
     private processTabWasRemoved(msg: any) {
         this.chatControllerMessagePublishers.processTabClosedMessage.publish({
             tabID: msg.tabID,

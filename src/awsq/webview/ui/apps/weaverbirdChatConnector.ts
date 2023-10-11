@@ -35,6 +35,24 @@ export class Connector {
         this.onError = props.onError
     }
 
+    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            code,
+            command: 'insert_code_at_cursor_position',
+            tabType: TabType.WeaverBird,
+        })
+    }
+
+    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            code,
+            command: 'code_was_copied_to_clipboard',
+            tabType: TabType.WeaverBird,
+        })
+    }
+
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
         this.sendMessageToExtension({
             command: 'open-diff',

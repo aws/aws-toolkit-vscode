@@ -7,25 +7,29 @@ import { EditorContextExtractor, TriggerType } from '../../editor/context/extrac
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { ChatRequest, EditorContext, IdeTriggerRequest } from '../../clients/chat/v0/model'
 import { Messenger } from './messenger/messenger'
-import { PromptMessage, ChatTriggerType, TriggerPayload, TabClosedMessage } from './model'
+import { PromptMessage, ChatTriggerType, TriggerPayload, TabClosedMessage, InsertCodeAtCursorPostion } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
 import { MessageListener } from '../../../awsq/messages/messageListener'
+import { EditorContentController } from '../../editor/context/contentController'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
+    readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPostion>
 }
 
 export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
+    readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPostion>
 }
 
 export class ChatController {
     private readonly sessionStorage: ChatSessionStorage
     private readonly messenger: Messenger
     private readonly editorContextExtractor: EditorContextExtractor
+    private readonly editorContentController: EditorContentController
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -34,6 +38,7 @@ export class ChatController {
         this.sessionStorage = new ChatSessionStorage()
         this.messenger = new Messenger(new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher))
         this.editorContextExtractor = new EditorContextExtractor()
+        this.editorContentController = new EditorContentController()
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
@@ -42,6 +47,14 @@ export class ChatController {
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
             this.processTabCloseMessage(data)
         })
+
+        this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
+            this.processInsertCodeAtCursorPosition(data)
+        })
+    }
+
+    private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPostion) {
+        this.editorContentController.insertTextAtCursorPosition(message.code)
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {

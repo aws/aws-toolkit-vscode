@@ -5,17 +5,18 @@
 
 import { EventEmitter } from 'vscode'
 import { ChatController as CwChatController } from '../codewhispererChat/controllers/chat/controller'
-import { UIMessageListener } from './view/messages/actionListener'
+import { UIMessageListener } from './view/messages/messageListener'
 import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
-import { PromptMessage, TabClosedMessage } from './controllers/chat/model'
+import { InsertCodeAtCursorPostion, PromptMessage, TabClosedMessage } from './controllers/chat/model'
 import { TabType } from '../awsq/webview/ui/storages/tabTypeStorage'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
+        processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPostion>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -25,6 +26,9 @@ export function init(appContext: AwsQAppInitContext) {
         processTabClosedMessage: new MessageListener<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
         ),
+        processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPostion>(
+            cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -33,6 +37,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+        processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPostion>(
+            cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
         ),
     }
 

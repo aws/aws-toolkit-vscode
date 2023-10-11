@@ -154,6 +154,8 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }, 2000)
         },
         onSendFeedback: undefined, //connector.sendFeedback,
+        onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
+        onCopyCodeToClipboard: connector.onCopyCodeToClipboard,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
         onSuggestionInteraction: (eventName, suggestion, mouseEvent) => {
             // mouseEvent?.preventDefault();

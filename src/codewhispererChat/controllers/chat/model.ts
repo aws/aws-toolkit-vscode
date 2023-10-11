@@ -9,6 +9,10 @@ export interface TabClosedMessage {
     tabID: string
 }
 
+export interface InsertCodeAtCursorPostion {
+    code: string
+}
+
 export interface PromptMessage {
     message: string | undefined
     tabID: string

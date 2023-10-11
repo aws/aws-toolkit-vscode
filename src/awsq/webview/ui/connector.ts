@@ -91,11 +91,33 @@ export class Connector {
         }
     }
 
+    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        switch (this.tabTypesStorage.getTabType(tabID)) {
+            case TabType.CodeWhispererChat:
+                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, code, type)
+                break
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type)
+                break
+        }
+    }
+
+    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        switch (this.tabTypesStorage.getTabType(tabID)) {
+            case TabType.CodeWhispererChat:
+                this.cwChatConnector.onCopyCodeToClipboard(tabID, code, type)
+                break
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type)
+                break
+        }
+    }
+
     onTabRemove = (tabID: string): void => {
         const tabType = this.tabTypesStorage.getTabType(tabID)
         this.tabTypesStorage.deleteTab(tabID)
         switch (tabType) {
-            default:
+            case TabType.CodeWhispererChat:
                 this.cwChatConnector.onTabRemove(tabID)
                 break
         }
@@ -111,7 +133,7 @@ export class Connector {
         }
     }
 
-    triggerSuggestionEngagement = (engagement: SuggestionEngagement): void => {
+    triggerSuggestionEngagement = (tabID: string, engagement: SuggestionEngagement): void => {
         // let command: string = 'hoverSuggestion'
         // if (
         //     engagement.engagementType === EngagementType.INTERACTION &&

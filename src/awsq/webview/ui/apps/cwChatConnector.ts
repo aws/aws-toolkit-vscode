@@ -52,6 +52,24 @@ export class Connector {
         })
     }
 
+    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            code,
+            command: 'insert_code_at_cursor_position',
+            tabType: TabType.CodeWhispererChat,
+        })
+    }
+
+    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            code,
+            command: 'code_was_copied_to_clipboard',
+            tabType: TabType.CodeWhispererChat,
+        })
+    }
+
     onTabRemove = (tabID: string): void => {
         this.sendMessageToExtension({
             tabID: tabID,
