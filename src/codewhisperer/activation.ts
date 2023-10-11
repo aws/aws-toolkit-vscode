@@ -35,6 +35,7 @@ import {
     refreshStatusBar,
     selectCustomization,
     notifyNewCustomizationsCmd,
+    connectIdCenter,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -158,6 +159,8 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         // show introduction
         showIntroduction.register(),
+        // CodeWhisperer Identity Center connection setup
+        connectIdCenter.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions

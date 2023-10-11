@@ -12,6 +12,7 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { codeScanState } from '../models/model'
+import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
@@ -112,6 +113,22 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
     await showConnectionPrompt()
 })
+
+// Shortcut command to directly connect to Identity Center or prompt start URL entry
+// Customization is not yet supported.
+export const connectIdCenter = Commands.declare(
+    'aws.codeWhisperer.connect',
+    () => async (startUrl?: string, region?: string) => {
+        // This command expects two arguments: startUrl and region (both strings).
+        // If these arguments are provided, they will be used.
+        // Otherwise, the commands prompts for them interactively.
+        if (startUrl && region) {
+            await connectToEnterpriseSso(startUrl, region)
+        } else {
+            await getStartUrl()
+        }
+    }
+)
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
