@@ -124,13 +124,9 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
-                        this.startIdleTimeTriggerTimer(event, editor, client, config)
-                    } else {
-                        triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
-                            ? 'Classifier'
-                            : undefined
-                    }
+                    triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
+                        ? 'Classifier'
+                        : undefined
                     break
                 }
                 default: {
@@ -156,7 +152,6 @@ export class KeyStrokeHandler {
         if (!editor) {
             return
         }
-        ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         if (isCloud9('any')) {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
