@@ -272,7 +272,8 @@ export class RecommendationHandler {
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
 
-            let msg = indent(4, true, `Request ID: ${requestId},
+            let msg = indent(
+                `codewhisperer: request-id: ${requestId},
                 timestamp(epoch): ${Date.now()},
                 timezone: ${timezone},
                 datetime: ${new Date().toLocaleString([], { timeZone: timezone })},
@@ -283,9 +284,12 @@ export class RecommendationHandler {
                 line number: ${session.startPos.line},
                 character location: ${session.startPos.character},
                 latency: ${latency} ms.
-                Recommendations:`).trimStart()
+                Recommendations:`,
+                4,
+                true
+            ).trimStart()
             recommendations.forEach((item, index) => {
-                msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(8, true, item.content).trim()}`
+                msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
             })
             getLogger().debug(msg)
 

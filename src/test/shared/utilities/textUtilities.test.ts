@@ -62,11 +62,11 @@ describe('textUtilities', async function () {
     })
 
     it('indent()', async function () {
-        assert.deepStrictEqual(indent(2, false, 'abc\n123'), '  abc\n  123')
-        assert.deepStrictEqual(indent(2, false, 'abc\n 123\n'), '  abc\n   123\n')
-        assert.deepStrictEqual(indent(2, true, 'abc\n 123\n'), '  abc\n  123\n')
-        assert.deepStrictEqual(indent(4, false, '   abc\n\n  \n123\nfoo\n'), '       abc\n\n      \n    123\n    foo\n')
-        assert.deepStrictEqual(indent(4, true, '   abc\n\n    \n123\nfoo\n'), '    abc\n\n    \n    123\n    foo\n')
+        assert.deepStrictEqual(indent('abc\n123', 2, false), '  abc\n  123')
+        assert.deepStrictEqual(indent('abc\n 123\n', 2, false), '  abc\n   123\n')
+        assert.deepStrictEqual(indent('abc\n 123\n', 2, true), '  abc\n  123\n')
+        assert.deepStrictEqual(indent('   abc\n\n  \n123\nfoo\n', 4, false), '       abc\n\n      \n    123\n    foo\n')
+        assert.deepStrictEqual(indent('   abc\n\n    \n123\nfoo\n', 4, true), '    abc\n\n    \n    123\n    foo\n')
     })
 })
 

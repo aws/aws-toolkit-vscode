@@ -37,7 +37,7 @@ export function truncate(s: string, n: number, suffix?: string): string {
  * @param clear Clear existing whitespace, if any.
  * @param s Text to indent.
  */
-export function indent(size: number, clear: boolean, s: string): string {
+export function indent(s: string, size: number = 4, clear: boolean = false): string {
     const n = Math.abs(size)
     const spaces = ''.padEnd(n, ' ')
     if (size < 0) {
