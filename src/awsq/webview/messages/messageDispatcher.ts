@@ -6,15 +6,18 @@
 import { Webview } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
+import { TabType } from '../ui/storages/tabTypeStorage'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
-    WebViewToAppsMessagePublishers: MessagePublisher<any>[]
+    webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>>
 ) {
     webview.onDidReceiveMessage(msg => {
-        WebViewToAppsMessagePublishers.forEach(publisher => {
-            publisher.publish(msg)
-        })
+        const appMessagePublisher = webViewToAppsMessagePublishers.get(msg.tabType)
+        if (appMessagePublisher === undefined) {
+            return
+        }
+        appMessagePublisher.publish(msg)
     })
 }
 

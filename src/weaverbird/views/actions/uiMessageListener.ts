@@ -5,6 +5,7 @@
 
 import { ChatControllerEventEmitters } from '../../controllers/chat/controller'
 import { MessageListener } from '../../../awsq/messages/messageListener'
+import { MessageCommand } from '../../../awsq/webview/ui/commands'
 
 export const weaverbirdChat = 'weaverbirdChat'
 
@@ -29,13 +30,13 @@ export class UIMessageListener {
 
     private handleMessage(msg: any) {
         switch (msg.command) {
-            case 'processChatMessage':
+            case MessageCommand.CHAT_PROMPT:
                 this.processChatMessage(msg)
                 break
-            case 'followUpClicked':
+            case MessageCommand.FOLLOW_UP_WAS_CLICKED:
                 this.followUpClicked(msg)
                 break
-            case 'openDiff':
+            case MessageCommand.OPEN_DIFF:
                 this.openDiff(msg)
                 break
         }

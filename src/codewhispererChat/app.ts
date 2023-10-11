@@ -10,6 +10,7 @@ import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import { PromptMessage, TabClosedMessage } from './controllers/chat/model'
+import { TabType } from '../awsq/webview/ui/storages/tabTypeStorage'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -44,5 +45,8 @@ export function init(appContext: AwsQAppInitContext) {
         webViewMessageListener: new MessageListener<any>(cwChatUIInputEventEmmiter),
     })
 
-    appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(cwChatUIInputEventEmmiter))
+    appContext.registerWebViewToAppMessagePublisher(
+        new MessagePublisher<any>(cwChatUIInputEventEmmiter),
+        TabType.CodeWhispererChat
+    )
 }

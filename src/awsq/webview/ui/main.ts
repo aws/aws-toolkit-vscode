@@ -8,13 +8,18 @@ import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } f
 import './styles/dark.scss'
 import './styles/frequent-apis.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
+import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
 
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     const ideApi = acquireVsCodeApi()
+    const tabTypeStorage = new TabTypeStorage()
+    // Adding the first tab as CWC tab
+    tabTypeStorage.addTab('tab-1', TabType.CodeWhispererChat)
     const connector = new Connector({
-        postMessageHandler: message => {
+        tabTypeStorage,
+        sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
@@ -91,19 +96,58 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onTabAdd: connector.onTabAdd,
         onTabRemove: connector.onTabRemove,
         onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
+            if (prompt.prompt === undefined) {
+                return
+            }
+            if (prompt.prompt.match(/\/assign/)) {
+                const realPromptText = prompt.prompt?.replace('/assign', '').trim()
+
+                const newTabId = mynahUI.updateStore('', {
+                    chatItems: [
+                        ...(realPromptText !== ''
+                            ? [
+                                  {
+                                      type: ChatItemType.PROMPT,
+                                      body: realPromptText,
+                                  },
+                              ]
+                            : [
+                                  {
+                                      type: ChatItemType.ANSWER,
+                                      body: `<span markdown>How this works:
+                            1. Provide a brief problem statement for a task
+                            2. Discuss the problem with Q
+                            3. Agree on an approach
+                            4. Q will generate code suggestions for your project
+                            5. Review code suggestions, provide feedback for another revision if needed</span>`,
+                                  },
+                              ]),
+                    ],
+                })
+
+                tabTypeStorage.updateTab(newTabId, TabType.WeaverBird)
+
+                if (realPromptText !== '') {
+                    connector.requestGenerativeAIAnswer(newTabId, {
+                        chatMessage: realPromptText,
+                    })
+                }
+
+                return
+            }
+
+            if (tabTypeStorage.getTabType(tabID) === TabType.Unknown) {
+                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
+            }
+
             mynahUI.updateStore(tabID, {
                 loadingChat: true,
                 promptInputDisabledState: true,
             })
+
             setTimeout(() => {
                 const chatPayload = {
                     chatMessage: prompt.prompt ?? '',
-                    ...(prompt.attachment !== undefined && prompt.attachment.type == 'ApiDocsSuggestion'
-                        ? { attachedAPIDocsSuggestion: prompt.attachment }
-                        : {}),
-                    ...(prompt.attachment !== undefined && prompt.attachment.type !== 'ApiDocsSuggestion'
-                        ? { attachedVanillaSuggestion: prompt.attachment }
-                        : {}),
                 }
 
                 connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
@@ -137,6 +181,14 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     showChatAvatars: false,
                     quickActionCommands: [
                         {
+                            commands: [
+                                {
+                                    command: '/assign',
+                                    description: 'WB entrypoint',
+                                },
+                            ],
+                        },
+                        {
                             groupName: 'Quick Action',
                             commands: [
                                 {
@@ -154,6 +206,10 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                                 {
                                     command: '/optimize',
                                     description: 'Optimize selected code',
+                                },
+                                {
+                                    command: '/assign',
+                                    description: 'WB entrypoint',
                                 },
                             ],
                         },

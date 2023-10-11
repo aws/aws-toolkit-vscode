@@ -7,6 +7,8 @@ import { ChatItem, ChatItemFollowUp, Suggestion, SuggestionEngagement } from '@a
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
 import { weaverbirdChat } from '../../../weaverbird/views/actions/uiMessageListener'
+import { MessageCommand } from './commands'
+import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
 
 interface ChatPayload {
     chatMessage: string
@@ -15,32 +17,42 @@ interface ChatPayload {
 }
 
 export interface ConnectorProps {
-    postMessageHandler: (message: Record<string, any>) => void
+    sendMessageToExtension: (message: Record<string, any>) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    tabTypeStorage: TabTypeStorage
 }
 
 export class Connector {
-    private readonly postMessageHandler
+    private readonly sendMessageToExtension
     private readonly onMessageReceived
     private readonly cwChatConnector
     private readonly weaverbirdChatConnector
+    private readonly tabTypesStorage
 
     private isUIReady = false
 
     constructor(props: ConnectorProps) {
-        this.postMessageHandler = props.postMessageHandler
+        this.sendMessageToExtension = props.sendMessageToExtension
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props)
         this.weaverbirdChatConnector = new WeaverbirdChatConnector(props)
+        this.tabTypesStorage = props.tabTypeStorage
     }
 
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             if (this.isUIReady) {
-                this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                switch (this.tabTypesStorage.getTabType(tabID)) {
+                    case TabType.WeaverBird:
+                        this.weaverbirdChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        break
+                    default:
+                        this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        break
+                }
             } else {
                 setTimeout(() => {
                     this.requestGenerativeAIAnswer(tabID, payload)
@@ -67,23 +79,32 @@ export class Connector {
     }
 
     onTabAdd = (tabID: string): void => {
-        this.postMessageHandler({
-            tabID: tabID,
-            command: 'newTabWasCreated',
-        })
+        const currentTabType = this.tabTypesStorage.getTabType(tabID)
+        if (currentTabType === undefined) {
+            this.tabTypesStorage.addTab(tabID, TabType.Unknown)
+        }
+
+        switch (currentTabType) {
+            case TabType.CodeWhispererChat:
+                this.cwChatConnector.onTabAdd(tabID)
+                break
+        }
     }
 
     onTabRemove = (tabID: string): void => {
-        this.postMessageHandler({
-            tabID: tabID,
-            command: 'tabWasRemoved',
-        })
+        const tabType = this.tabTypesStorage.getTabType(tabID)
+        this.tabTypesStorage.deleteTab(tabID)
+        switch (tabType) {
+            default:
+                this.cwChatConnector.onTabRemove(tabID)
+                break
+        }
     }
 
     uiReady = (): void => {
         this.isUIReady = true
-        this.postMessageHandler({
-            command: 'uiReady',
+        this.sendMessageToExtension({
+            command: MessageCommand.UI_IS_READY,
         })
         if (this.onMessageReceived !== undefined) {
             window.addEventListener('message', this.handleMessageReceive.bind(this))
@@ -98,7 +119,7 @@ export class Connector {
         // ) {
         //     command = 'selectSuggestionText'
         // }
-        // this.postMessageHandler({
+        // this.sendMessageToExtension({
         //     command,
         //     searchId: this.searchId,
         //     suggestionId: engagement.suggestion.url,
@@ -110,19 +131,21 @@ export class Connector {
     }
 
     followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
-        this.postMessageHandler({
-            command: 'followUpClicked',
-            followUp,
-            tabID,
-        })
+        switch (this.tabTypesStorage.getTabType(tabID)) {
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.followUpClicked(tabID, followUp)
+                break
+            default:
+                this.cwChatConnector.followUpClicked(tabID, followUp)
+                break
+        }
     }
 
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
-        this.postMessageHandler({
-            command: 'openDiff',
-            tabID,
-            leftPath,
-            rightPath,
-        })
+        switch (this.tabTypesStorage.getTabType(tabID)) {
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.onOpenDiff(tabID, leftPath, rightPath)
+                break
+        }
     }
 }

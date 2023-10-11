@@ -4,6 +4,7 @@
  */
 
 import { MessageListener } from '../../../awsq/messages/messageListener'
+import { MessageCommand } from '../../../awsq/webview/ui/commands'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 
 export interface UIMessageListenerProps {
@@ -26,13 +27,13 @@ export class UIMessageListener {
 
     private handleMessage(msg: any) {
         switch (msg.command) {
-            case 'processChatMessage':
+            case MessageCommand.CHAT_PROMPT:
                 this.processChatMessage(msg)
                 break
-            case 'newTabWasCreated':
+            case MessageCommand.NEW_TAB_WAS_CREATED:
                 this.processNewTabWasCreated(msg)
                 break
-            case 'tabWasRemoved':
+            case MessageCommand.TAB_WAS_REMOVED:
                 this.processTabWasRemoved(msg)
                 break
         }

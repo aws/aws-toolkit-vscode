@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
+import { MessageCommand } from '../commands'
+import { TabType, TabTypeStorage } from '../storages/tabTypeStorage'
 
 interface ChatPayload {
     chatMessage: string
@@ -12,34 +14,53 @@ interface ChatPayload {
 }
 
 export interface ConnectorProps {
-    postMessageHandler: (message: Record<string, any>) => void
+    sendMessageToExtension: (message: Record<string, any>) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    tabTypeStorage: TabTypeStorage
 }
 
 export class Connector {
-    private readonly postMessageHandler
+    private readonly sendMessageToExtension
     private readonly onError
     private readonly onWarning
     private readonly onChatAnswerReceived
 
     constructor(props: ConnectorProps) {
-        this.postMessageHandler = props.postMessageHandler
+        this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
         this.onWarning = props.onWarning
         this.onError = props.onError
     }
 
+    onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
+        this.sendMessageToExtension({
+            command: MessageCommand.OPEN_DIFF,
+            tabID,
+            leftPath,
+            rightPath,
+            tabType: TabType.WeaverBird,
+        })
+    }
+
+    followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+        this.sendMessageToExtension({
+            command: MessageCommand.FOLLOW_UP_WAS_CLICKED,
+            followUp,
+            tabID,
+            tabType: TabType.WeaverBird,
+        })
+    }
+
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
-            this.postMessageHandler({
+            this.sendMessageToExtension({
                 tabID: tabID,
-                command: 'processChatMessage',
+                command: MessageCommand.CHAT_PROMPT,
                 chatMessage: payload.chatMessage,
-                attachedAPIDocsSuggestion: payload.attachedAPIDocsSuggestion,
-                attachedVanillaSuggestion: payload.attachedVanillaSuggestion,
+                tabType: TabType.WeaverBird,
             })
         })
 

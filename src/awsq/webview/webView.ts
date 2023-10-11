@@ -17,6 +17,7 @@ import { WebViewContentGenerator } from './generators/webViewContent'
 import { dispatchAppsMessagesToWebView, dispatchWebViewMessagesToApps } from './messages/messageDispatcher'
 import { MessageListener } from '../messages/messageListener'
 import { MessagePublisher } from '../messages/messagePublisher'
+import { TabType } from './ui/storages/tabTypeStorage'
 
 export class AwsQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AWSQChatView'
@@ -26,7 +27,7 @@ export class AwsQChatViewProvider implements WebviewViewProvider {
 
     constructor(
         private readonly extensionContext: ExtensionContext,
-        private readonly webViewToAppsMessagesPublishers: MessagePublisher<any>[],
+        private readonly webViewToAppsMessagesPublishers: Map<TabType, MessagePublisher<any>>,
         private readonly appsMessagesListener: MessageListener<any>
     ) {
         registerAssetsHttpsFileSystem(extensionContext)
