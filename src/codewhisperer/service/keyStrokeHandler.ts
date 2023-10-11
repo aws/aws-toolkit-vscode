@@ -124,13 +124,9 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
-                        this.startIdleTimeTriggerTimer(event, editor, client, config)
-                    } else {
-                        triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
-                            ? 'Classifier'
-                            : undefined
-                    }
+                    triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
+                        ? 'Classifier'
+                        : undefined
                     break
                 }
                 default: {
@@ -156,16 +152,19 @@ export class KeyStrokeHandler {
         if (!editor) {
             return
         }
-        ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         if (isCloud9('any')) {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                 return
             }
+            RecommendationHandler.instance.checkAndResetCancellationTokens()
             vsCodeState.isIntelliSenseActive = false
             RecommendationHandler.instance.isGenerateRecommendationInProgress = true
             try {
-                let response: GetRecommendationsResponse
+                let response: GetRecommendationsResponse = {
+                    result: 'Failed',
+                    errorMessage: undefined,
+                }
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
                         client,
