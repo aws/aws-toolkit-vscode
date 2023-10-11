@@ -3,17 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
+import * as path from 'path'
+import { existsSync } from 'fs'
 import { EventEmitter } from 'vscode'
 import { Messenger } from './messenger/messenger'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
-import { AppToWebViewMessageDispatcher } from '../../views/connector/connector'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { weaverbirdScheme } from '../../constants'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
     readonly followUpClicked: EventEmitter<any>
+    readonly openDiff: EventEmitter<any>
 }
 
 export class WeaverbirdController {
@@ -22,10 +25,11 @@ export class WeaverbirdController {
 
     public constructor(
         private readonly chatControllerInputEventEmitter: ChatControllerEventEmitters,
-        appsToWebViewMessagePublisher: MessagePublisher<any>
+        messenger: Messenger,
+        sessionStorage: ChatSessionStorage
     ) {
-        this.messenger = new Messenger(new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher))
-        this.sessionStorage = new ChatSessionStorage(this.messenger)
+        this.messenger = messenger
+        this.sessionStorage = sessionStorage
 
         this.chatControllerInputEventEmitter.processHumanChatMessage.event(data => {
             this.processHumanChatMessage(data)
@@ -42,6 +46,9 @@ export class WeaverbirdController {
                     // TODO figure out what we want to do here
                     break
             }
+        })
+        this.chatControllerInputEventEmitter.openDiff.event(data => {
+            this.openDiff(data)
         })
     }
 
@@ -125,5 +132,27 @@ export class WeaverbirdController {
             default:
                 return []
         }
+    }
+
+    private async openDiff(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabID)
+        const workspaceRoot = session.config.workspaceRoot ?? ''
+        const originalPath = path.join(workspaceRoot, message.rightPath)
+        let left
+        if (existsSync(originalPath)) {
+            left = vscode.Uri.file(originalPath)
+        } else {
+            left = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty' })
+        }
+
+        vscode.commands.executeCommand(
+            'vscode.diff',
+            left,
+            vscode.Uri.from({
+                scheme: weaverbirdScheme,
+                path: message.rightPath,
+                query: `tabID=${message.tabID}`,
+            })
+        )
     }
 }

@@ -11,27 +11,9 @@ export class ConversationIdNotFoundError extends ToolkitError {
     }
 }
 
-export class PanelIdNotFoundError extends ToolkitError {
-    constructor(query: string) {
-        super(`Panel id was not found from ${query}`, { code: 'PanelIdNotFound' })
-    }
-}
-
-export class PanelNotFoundError extends ToolkitError {
-    constructor() {
-        super(`Panel was not found`, { code: 'PanelNotFound' })
-    }
-}
-
 export class TabIdNotFoundError extends ToolkitError {
     constructor(query: string) {
         super(`Tab id was not found from ${query}`, { code: 'TabIdNotFound' })
-    }
-}
-
-export class TabNotFoundError extends ToolkitError {
-    constructor() {
-        super(`Tab was not found`, { code: 'TabNotFound' })
     }
 }
 

@@ -116,4 +116,13 @@ export class Connector {
             tabID,
         })
     }
+
+    onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
+        this.postMessageHandler({
+            command: 'openDiff',
+            tabID,
+            leftPath,
+            rightPath,
+        })
+    }
 }

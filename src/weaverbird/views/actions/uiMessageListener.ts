@@ -35,6 +35,9 @@ export class UIMessageListener {
             case 'followUpClicked':
                 this.followUpClicked(msg)
                 break
+            case 'openDiff':
+                this.openDiff(msg)
+                break
         }
     }
 
@@ -49,6 +52,14 @@ export class UIMessageListener {
         this.weaverbirdControllerEventsEmitters?.followUpClicked.fire({
             followUp: msg.followUp,
             tabID: msg.tabID,
+        })
+    }
+
+    private openDiff(msg: any) {
+        this.weaverbirdControllerEventsEmitters?.openDiff.fire({
+            tabID: msg.tabID,
+            leftPath: msg.leftPath,
+            rightPath: msg.rightPath,
         })
     }
 }

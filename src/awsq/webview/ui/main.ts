@@ -119,6 +119,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         },
         onResetStore: () => {},
         onFollowUpClicked: connector.followUpClicked,
+        onOpenDiff: connector.onOpenDiff,
         tabs: {
             'tab-1': {
                 tabTitle: 'Welcome to Q',

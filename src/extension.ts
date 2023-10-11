@@ -16,7 +16,6 @@ import { CredentialsProviderManager } from './auth/providers/credentialsProvider
 import { SharedCredentialsProviderFactory } from './auth/providers/sharedCredentialsProviderFactory'
 import { activate as activateSchemas } from './eventSchemas/activation'
 import { activate as activateLambda } from './lambda/activation'
-import { activate as activateWeaverbird } from './weaverbird/activation'
 import { DefaultAWSClientBuilder } from './shared/awsClientBuilder'
 import { activate as activateCloudFormationTemplateRegistry } from './shared/cloudformation/activation'
 import { documentationUrl, endpointsFileUrl, githubCreateIssueUrl, githubUrl } from './shared/constants'
@@ -255,8 +254,6 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateCWChat(extContext.extensionContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
-
-        await activateWeaverbird(context)
 
         showWelcomeMessage(context)
 
