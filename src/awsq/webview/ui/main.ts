@@ -114,7 +114,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                             : [
                                   {
                                       type: ChatItemType.ANSWER,
-                                      body: `<span markdown>How this works:
+                                      body: `<span markdown="1">How this works:
                             1. Provide a brief problem statement for a task
                             2. Discuss the problem with Q
                             3. Agree on an approach
@@ -183,14 +183,6 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     showChatAvatars: false,
                     quickActionCommands: [
                         {
-                            commands: [
-                                {
-                                    command: '/assign',
-                                    description: 'WB entrypoint',
-                                },
-                            ],
-                        },
-                        {
                             groupName: 'Quick Action',
                             commands: [
                                 {
@@ -211,7 +203,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                                 },
                                 {
                                     command: '/assign',
-                                    description: 'WB entrypoint',
+                                    description: 'Iteratively solve a problem',
                                 },
                             ],
                         },
