@@ -93,6 +93,7 @@ export const supportedLanguages = [
     'csharp',
     'c',
     'cpp',
+    'c_cpp', // Cloud9 reports C++ files with this language-id.
     'go',
     'kotlin',
     'php',
@@ -122,8 +123,6 @@ export const licenseFilter = 'CodeWhisperer suggestions were filtered due to ref
 export const welcomeCodeWhispererReadmeFileSource = 'resources/markdown/WelcomeToCodeWhisperer.md'
 
 export const welcomeCodeWhispererCloud9Readme = 'resources/markdown/WelcomeToCodeWhispererCloud9.md'
-
-export const welcomeMessageKey = 'CODEWHISPERER_WELCOME_MESSAGE'
 
 /**
  * Key bindings JSON file path
