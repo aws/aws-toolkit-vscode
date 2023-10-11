@@ -18,14 +18,6 @@ import {
 import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 
-/**
- *
- *
- * For information on how to use "span" related code see docs/telemetry.md
- *
- *
- */
-
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
     class<T> {
@@ -92,6 +84,13 @@ function getValidatedState(state: Partial<MetricBase>, definition: MetricDefinit
     return missingFields.length !== 0 ? Object.assign({ missingFields }, state) : state
 }
 
+/**
+ * A span represents a "unit of work" captured for logging/telemetry.
+ * It can contain other spans recursively, then it's called a "trace" or "flow".
+ * https://opentelemetry.io/docs/concepts/signals/traces/
+ *
+ * See also: docs/telemetry.md
+ */
 export class TelemetrySpan<T extends MetricBase = MetricBase> {
     #startTime?: Date
 
