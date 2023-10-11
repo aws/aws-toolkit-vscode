@@ -81,6 +81,14 @@ function mapToAggregatedList(
                                 : issue.endLine,
                         endLine: issue.endLine,
                         comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
+                        title: issue.title,
+                        description: issue.description,
+                        // TODO: Update this to use the actual values
+                        detectorId: '',
+                        detectorName: '',
+                        relatedVulnerabilities: [],
+                        severity: '',
+                        suggestedFixes: [],
                     }
                 }),
             }

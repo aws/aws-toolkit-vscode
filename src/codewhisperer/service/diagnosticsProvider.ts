@@ -45,7 +45,7 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
     const range = new vscode.Range(securityIssue.startLine, 0, securityIssue.endLine, 0)
     const securityDiagnostic: vscode.Diagnostic = new vscode.Diagnostic(
         range,
-        securityIssue.comment,
+        securityIssue.title,
         vscode.DiagnosticSeverity.Warning
     )
     securityDiagnostic.source = 'Detected by CodeWhisperer '
