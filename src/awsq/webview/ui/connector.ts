@@ -7,7 +7,7 @@ import { ChatItem, ChatItemFollowUp, Suggestion, SuggestionEngagement } from '@a
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
 import { weaverbirdChat } from '../../../weaverbird/views/actions/uiMessageListener'
-import { MessageCommand } from './commands'
+import { ExtensionMessage } from './commands'
 import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
 
 interface ChatPayload {
@@ -17,7 +17,7 @@ interface ChatPayload {
 }
 
 export interface ConnectorProps {
-    sendMessageToExtension: (message: Record<string, any>) => void
+    sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onError: (tabID: string, message: string, title: string) => void
@@ -104,7 +104,7 @@ export class Connector {
     uiReady = (): void => {
         this.isUIReady = true
         this.sendMessageToExtension({
-            command: MessageCommand.UI_IS_READY,
+            command: 'ui-is-ready',
         })
         if (this.onMessageReceived !== undefined) {
             window.addEventListener('message', this.handleMessageReceive.bind(this))

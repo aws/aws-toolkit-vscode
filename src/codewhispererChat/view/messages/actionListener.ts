@@ -4,7 +4,7 @@
  */
 
 import { MessageListener } from '../../../awsq/messages/messageListener'
-import { MessageCommand } from '../../../awsq/webview/ui/commands'
+import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 
 export interface UIMessageListenerProps {
@@ -25,15 +25,15 @@ export class UIMessageListener {
         })
     }
 
-    private handleMessage(msg: any) {
+    private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
-            case MessageCommand.CHAT_PROMPT:
+            case 'chat-prompt':
                 this.processChatMessage(msg)
                 break
-            case MessageCommand.NEW_TAB_WAS_CREATED:
+            case 'new-tab-was-created':
                 this.processNewTabWasCreated(msg)
                 break
-            case MessageCommand.TAB_WAS_REMOVED:
+            case 'tab-was-removed':
                 this.processTabWasRemoved(msg)
                 break
         }
