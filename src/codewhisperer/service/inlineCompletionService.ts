@@ -85,9 +85,8 @@ export class InlineCompletionService {
         // Call report user decisions once to report recommendations leftover from last invocation.
         RecommendationHandler.instance.reportUserDecisions(-1)
 
-        if (ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
-            ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
-        }
+        ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
+
         const triggerChar = event?.contentChanges[0]?.text
         if (autoTriggerType === 'SpecialCharacters' && triggerChar) {
             TelemetryHelper.instance.setTriggerCharForUserTriggerDecision(triggerChar)
