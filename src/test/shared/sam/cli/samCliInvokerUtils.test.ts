@@ -85,6 +85,7 @@ describe('addTelemetryEnvVar', async function () {
             cwd: '/foo',
             env: {
                 AWS_TOOLING_USER_AGENT: result.env?.['AWS_TOOLING_USER_AGENT'],
+                SAM_CLI_TELEMETRY: '0',
                 AWS_REGION: 'us-east-1',
             },
         })

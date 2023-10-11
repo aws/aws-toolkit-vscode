@@ -108,14 +108,15 @@ export class SsoAccessTokenProvider {
     }
 
     private async runFlow() {
-        const cacheKey = this.registrationCacheKey
-        const registration = await loadOr(this.cache.registration, cacheKey, () => this.registerClient())
-
+        const registration = await this.getValidatedClientRegistration()
         try {
             return await this.authorize(registration)
         } catch (err) {
             if (err instanceof SSOOIDCServiceException && isClientFault(err)) {
-                await this.cache.registration.clear(cacheKey, `client fault: SSOOIDCServiceException: ${err.message}`)
+                await this.cache.registration.clear(
+                    this.registrationCacheKey,
+                    `client fault: SSOOIDCServiceException: ${err.message}`
+                )
             }
 
             throw err
@@ -166,6 +167,7 @@ export class SsoAccessTokenProvider {
     }
 
     private async authorize(registration: ClientRegistration) {
+        // This will NOT throw on expired clientId/Secret, but WILL throw on invalid clientId/Secret
         const authorization = await this.oidc.startDeviceAuthorization({
             startUrl: this.profile.startUrl,
             clientId: registration.clientId,
@@ -185,6 +187,23 @@ export class SsoAccessTokenProvider {
 
         const token = await pollForTokenWithProgress(() => this.oidc.createToken(tokenRequest), authorization)
         return this.formatToken(token, registration)
+    }
+
+    /**
+     * If the registration already exists locally, it
+     * will be validated before being returned. Otherwise, a client registration is
+     * created and returned.
+     */
+    private async getValidatedClientRegistration(): Promise<ClientRegistration> {
+        const cacheKey = this.registrationCacheKey
+        const cachedRegistration = await this.cache.registration.load(cacheKey)
+
+        // Clear cached if registration is expired
+        if (cachedRegistration && isExpired(cachedRegistration)) {
+            await this.invalidate()
+        }
+
+        return loadOr(this.cache.registration, cacheKey, () => this.registerClient())
     }
 
     private async registerClient(): Promise<ClientRegistration> {

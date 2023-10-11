@@ -144,6 +144,9 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
     /** Path to (generated) directory used as a working/staging area for SAM. */
     baseBuildDir?: string
 
+    /** sam cli "--mount-with" option. */
+    mountWith?: 'read' | 'write'
+
     /**
      * URI of the current editor document.
      * Used as a last resort for deciding `codeRoot` (when there is no `launch.json` nor `template.yaml`)
@@ -636,7 +639,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 launchConfig = await pythonDebug.makePythonDebugConfig(launchConfig)
                 break
             }
-            case RuntimeFamily.DotNetCore: {
+            case RuntimeFamily.DotNet: {
                 // Make a DotNet launch-config from the generic config.
                 launchConfig = await csharpDebug.makeCsharpConfig(launchConfig)
                 break
@@ -711,7 +714,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 config.type = 'python'
                 return await pythonDebug.invokePythonLambda(this.ctx, config as PythonDebugConfiguration)
             }
-            case RuntimeFamily.DotNetCore: {
+            case RuntimeFamily.DotNet: {
                 config.type = 'coreclr'
                 return await csharpDebug.invokeCsharpLambda(this.ctx, config)
             }

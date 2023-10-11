@@ -22,8 +22,11 @@ export class FeedbackWebview extends VueWebview {
     public readonly id = 'submitFeedback'
     public readonly source = 'src/feedback/vue/index.js'
 
-    public constructor(private readonly telemetry: TelemetryService) {
+    public constructor(private readonly telemetry: TelemetryService, private readonly feedbackName: string) {
         super()
+    }
+    public async getFeedbackName(): Promise<string | void> {
+        return this.feedbackName
     }
 
     public async submit(message: FeedbackMessage): Promise<string | void> {
@@ -59,12 +62,11 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-const Panel = VueWebview.compilePanel(FeedbackWebview)
-
 let activeWebview: VueWebviewPanel | undefined
 
-export async function submitFeedback(context: ExtContext) {
-    activeWebview ??= new Panel(context.extensionContext, globals.telemetry)
+export async function submitFeedback(context: ExtContext, feedbackName: string) {
+    const Panel = VueWebview.compilePanel(FeedbackWebview)
+    activeWebview ??= new Panel(context.extensionContext, globals.telemetry, feedbackName)
 
     const webviewPanel = await activeWebview.show({
         title: localize('AWS.submitFeedback.title', 'Send Feedback'),

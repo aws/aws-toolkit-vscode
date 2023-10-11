@@ -3,7 +3,7 @@
 <template>
     <div>
         <div class="container button-container" style="justify-content: space-between">
-            <h1>Feedback for AWS Toolkit</h1>
+            <h1>Feedback for {{ feedbackName }}</h1>
             <div id="error" v-if="error !== ''" style="margin-right: 10px">
                 <strong>{{ error }}</strong>
             </div>
@@ -70,21 +70,32 @@ export default defineComponent({
             sentiment: '',
             isSubmitting: false,
             error: '',
+            feedbackName: '',
         }
+    },
+    created() {
+        this.getName()
     },
     methods: {
         async submitFeedback() {
             this.error = ''
             this.isSubmitting = true
             console.log('Submitting feedback...')
-
+            // identifier to help us (internally) know that feedback came from either CodeWhisperer or AWS Toolkit
             const resp = await client.submit({
-                comment: this.comment,
+                comment:
+                    this.feedbackName === 'CodeWhisperer' ? 'CodeWhisperer onboarding: ' + this.comment : this.comment,
                 sentiment: this.sentiment,
             })
 
             this.error = resp ?? ''
             this.isSubmitting = false
+        },
+        async getName() {
+            const fbName = await client.getFeedbackName()
+            if (typeof fbName === 'string') {
+                this.feedbackName = fbName
+            }
         },
     },
     mixins: [saveData],
