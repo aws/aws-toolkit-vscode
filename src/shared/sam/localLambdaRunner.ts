@@ -532,7 +532,7 @@ export function shouldAppendRelativePathToFuncHandler(runtime: string): boolean 
         case RuntimeFamily.NodeJS:
         case RuntimeFamily.Python:
             return true
-        case RuntimeFamily.DotNetCore:
+        case RuntimeFamily.DotNet:
             return false
         // if the runtime exists but for some reason we forgot to cover it here, throw anyway so we remember to cover it
         default:

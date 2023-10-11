@@ -8,6 +8,8 @@ import { getLogger } from '../../logger'
 import { getUserAgent } from '../../telemetry/util'
 import { ChildProcessResult, ChildProcessOptions } from '../../utilities/childProcess'
 import { ErrorInformation, ToolkitError } from '../../errors'
+import globals from '../../extensionGlobals'
+import { isAutomation } from '../../vscode/env'
 
 /** Generic SAM CLI invocation error. */
 export class SamCliError extends ToolkitError.named('SamCliError') {
@@ -125,10 +127,14 @@ function matchSamError(text: string): string {
 }
 
 export async function addTelemetryEnvVar(options: SpawnOptions | undefined): Promise<SpawnOptions> {
+    const telemetryEnabled = globals.telemetry.telemetryEnabled && !isAutomation()
+    // If AWS Toolkit telemetry was disabled, implicit dependencies (such as SAM CLI) should inherit that choice.
+    const samEnv = telemetryEnabled ? {} : { SAM_CLI_TELEMETRY: '0' }
     return {
         ...options,
         env: {
             AWS_TOOLING_USER_AGENT: await getUserAgent({ includeClientId: false }),
+            ...samEnv,
             ...options?.env,
         },
     }

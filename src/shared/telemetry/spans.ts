@@ -18,6 +18,14 @@ import {
 import { getTelemetryReason, getTelemetryResult } from '../errors'
 import { entries, NumericKeys } from '../utilities/tsUtils'
 
+/**
+ *
+ *
+ * For information on how to use "span" related code see docs/telemetry.md
+ *
+ *
+ */
+
 const AsyncLocalStorage: typeof AsyncLocalStorageClass =
     require('async_hooks').AsyncLocalStorage ??
     class<T> {
