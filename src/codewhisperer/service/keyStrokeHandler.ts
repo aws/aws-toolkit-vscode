@@ -157,10 +157,14 @@ export class KeyStrokeHandler {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                 return
             }
+            RecommendationHandler.instance.checkAndResetCancellationTokens()
             vsCodeState.isIntelliSenseActive = false
             RecommendationHandler.instance.isGenerateRecommendationInProgress = true
             try {
-                let response: GetRecommendationsResponse
+                let response: GetRecommendationsResponse = {
+                    result: 'Failed',
+                    errorMessage: undefined,
+                }
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
                         client,
