@@ -57,29 +57,22 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
         } ?: CodeWhispererUnknownLanguage.INSTANCE
 
         // we need classifier result for any type of triggering for classifier group for supported languages
-        return if (
-            (language.isClassifierSupported() && CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.Classifier) ||
-            language.isAllClassifier()
-        ) {
-            triggerType.calculationResult = classifierResult.calculatedResult
+        triggerType.calculationResult = classifierResult.calculatedResult
 
-            when (triggerType) {
-                // only invoke service if result > threshold for classifier trigger
-                is CodeWhispererAutomatedTriggerType.Classifier -> run {
-                    if (classifierResult.shouldTrigger) {
-                        invoke(editor, triggerType)
-                    } else {
-                        null
-                    }
-                }
-
-                // invoke whatever the result is for char / enter based trigger
-                else -> run {
+        return when (triggerType) {
+            // only invoke service if result > threshold for classifier trigger
+            is CodeWhispererAutomatedTriggerType.Classifier -> run {
+                if (classifierResult.shouldTrigger) {
                     invoke(editor, triggerType)
+                } else {
+                    null
                 }
             }
-        } else {
-            invoke(editor, triggerType)
+
+            // invoke whatever the result is for char / enter based trigger
+            else -> run {
+                invoke(editor, triggerType)
+            }
         }
     }
 
@@ -151,11 +144,6 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
         } ?: CodeWhispererUnknownLanguage.INSTANCE
         val caretPosition = runReadAction { CodeWhispererEditorUtil.getCaretPosition(editor) }
 
-        // tryClassifier with only the supported language
-        if (!language.isClassifierSupported()) {
-            return ClassifierResult(false)
-        }
-
         val leftContextLines = caretContext.leftFileContext.split(Regex("\r?\n"))
         val leftContextLength = caretContext.leftFileContext.length
         val leftContextAtCurrentLine = if (leftContextLines.size - 1 >= 0) leftContextLines[leftContextLines.size - 1] else ""
@@ -175,54 +163,30 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
         val rightContext = caretContext.rightFileContext
         val lengthOfRight = rightContext.trim().length
 
-        val isExperimentGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.Classifier
-
-        val triggerTypeCoefficient = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.triggerTypeCoefficientMapExp[automatedTriggerType] ?: 0.0
-        } else CodeWhispererClassifierConstants.triggerTypeCoefficientMap[automatedTriggerType] ?: 0.0
+        val triggerTypeCoefficient = CodeWhispererClassifierConstants.triggerTypeCoefficientMap[automatedTriggerType] ?: 0.0
 
         val osCoefficient: Double = if (SystemInfo.isMac) {
-            if (isExperimentGroup) {
-                CodeWhispererClassifierConstants.osMapExp["Mac OS X"] ?: 0.0
-            } else CodeWhispererClassifierConstants.osMap["Mac OS X"] ?: 0.0
+            CodeWhispererClassifierConstants.osMap["Mac OS X"] ?: 0.0
         } else if (SystemInfo.isWindows) {
             val osVersion = SystemInfo.OS_VERSION
             if (osVersion.contains("11", true) || osVersion.contains("10", true)) {
-                if (isExperimentGroup) {
-                    CodeWhispererClassifierConstants.osMapExp["Windows 10"]
-                } else {
-                    CodeWhispererClassifierConstants.osMap["Windows 10"]
-                }
-            } else if (osVersion.contains("7", true)) {
-                if (isExperimentGroup) {
-                    CodeWhispererClassifierConstants.osMapExp["Windows"]
-                } else {
-                    CodeWhispererClassifierConstants.osMap["Windows 7"]
-                }
+                CodeWhispererClassifierConstants.osMap["Windows 10"]
             } else {
-                if (isExperimentGroup) CodeWhispererClassifierConstants.osMapExp["Windows"] else 0.0
+                CodeWhispererClassifierConstants.osMap["Windows"]
             }
         } else {
             0.0
         } ?: 0.0
 
         val lastCharCoefficient = if (leftContextAtCurrentLine.length - 1 >= 0) {
-            if (isExperimentGroup) {
-                CodeWhispererClassifierConstants.coefficientsMapExp[leftContextAtCurrentLine[leftContextAtCurrentLine.length - 1].toString()] ?: 0.0
-            } else CodeWhispererClassifierConstants.coefficientsMap[leftContextAtCurrentLine[leftContextAtCurrentLine.length - 1].toString()] ?: 0.0
+            CodeWhispererClassifierConstants.coefficientsMap[leftContextAtCurrentLine[leftContextAtCurrentLine.length - 1].toString()] ?: 0.0
         } else {
             0.0
         }
 
-        val keywordCoefficient = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.coefficientsMapExp[keyword] ?: 0.0
-        } else CodeWhispererClassifierConstants.coefficientsMap[keyword] ?: 0.0
-        val languageCoefficient = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.languageMapExp[language] ?: 0.0
-        } else CodeWhispererClassifierConstants.languageMap[language] ?: 0.0
+        val keywordCoefficient = CodeWhispererClassifierConstants.coefficientsMap[keyword] ?: 0.0
+        val languageCoefficient = CodeWhispererClassifierConstants.languageMap[language] ?: 0.0
         val ideCoefficient = 0.0
-
-        val lineDiff = if (isExperimentGroup) 0.0 else lastInvocationLineNum?.let { (caretPosition.line.toDouble() - it) } ?: 0.0
 
         var previousOneAccept: Double = 0.0
         var previousOneReject: Double = 0.0
@@ -235,17 +199,13 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
         } else {
             previousOneAccept =
                 if (previousOneDecision == CodewhispererPreviousSuggestionState.Accept) {
-                    if (isExperimentGroup) {
-                        CodeWhispererClassifierConstants.prevDecisionAcceptCoefficientExp
-                    } else CodeWhispererClassifierConstants.prevDecisionAcceptCoefficient
+                    CodeWhispererClassifierConstants.prevDecisionAcceptCoefficient
                 } else {
                     0.0
                 }
             previousOneReject =
                 if (previousOneDecision == CodewhispererPreviousSuggestionState.Reject) {
-                    if (isExperimentGroup) {
-                        CodeWhispererClassifierConstants.prevDecisionRejectCoefficientExp
-                    } else CodeWhispererClassifierConstants.prevDecisionRejectCoefficient
+                    CodeWhispererClassifierConstants.prevDecisionRejectCoefficient
                 } else {
                     0.0
                 }
@@ -254,61 +214,45 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
                     previousOneDecision != CodewhispererPreviousSuggestionState.Accept &&
                     previousOneDecision != CodewhispererPreviousSuggestionState.Reject
                 ) {
-                    if (isExperimentGroup) {
-                        CodeWhispererClassifierConstants.prevDecisionOtherCoefficientExp
-                    } else CodeWhispererClassifierConstants.prevDecisionOtherCoefficient
+                    CodeWhispererClassifierConstants.prevDecisionOtherCoefficient
                 } else {
                     0.0
                 }
         }
 
         var leftContextLengthCoefficient: Double = 0.0
-        if (isExperimentGroup) {
-            leftContextLengthCoefficient = when (leftContextLength) {
-                in 0..4 -> CodeWhispererClassifierConstants.lengthLeft0To5Exp
-                in 5..9 -> CodeWhispererClassifierConstants.lengthLeft5To10Exp
-                in 10..19 -> CodeWhispererClassifierConstants.lengthLeft10To20Exp
-                in 20..29 -> CodeWhispererClassifierConstants.lengthLeft20To30Exp
-                in 30..39 -> CodeWhispererClassifierConstants.lengthLeft30To40Exp
-                in 40..49 -> CodeWhispererClassifierConstants.lengthLeft40To50Exp
-                else -> 0.0
-            }
+
+        leftContextLengthCoefficient = when (leftContextLength) {
+            in 0..4 -> CodeWhispererClassifierConstants.lengthLeft0To5
+            in 5..9 -> CodeWhispererClassifierConstants.lengthLeft5To10
+            in 10..19 -> CodeWhispererClassifierConstants.lengthLeft10To20
+            in 20..29 -> CodeWhispererClassifierConstants.lengthLeft20To30
+            in 30..39 -> CodeWhispererClassifierConstants.lengthLeft30To40
+            in 40..49 -> CodeWhispererClassifierConstants.lengthLeft40To50
+            else -> 0.0
         }
 
-        val normalizedLengthOfRight = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.lengthofRightCoefficientExp * VariableTypeNeedNormalize.LenRight.normalizeExp(lengthOfRight.toDouble())
-        } else CodeWhispererClassifierConstants.lengthofRightCoefficient * VariableTypeNeedNormalize.LenRight.normalize(lengthOfRight.toDouble())
+        val normalizedLengthOfRight = CodeWhispererClassifierConstants.lengthofRightCoefficient * VariableTypeNeedNormalize.LenRight.normalize(
+            lengthOfRight.toDouble()
+        )
 
-        val normalizedLengthOfLeftCurrent = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.lengthOfLeftCurrentCoefficientExp *
-                VariableTypeNeedNormalize.LenLeftCur.normalizeExp(lengthOfLeftCurrent.toDouble())
-        } else CodeWhispererClassifierConstants.lengthOfLeftCurrentCoefficient * VariableTypeNeedNormalize.LenLeftCur.normalize(lengthOfLeftCurrent.toDouble())
+        val normalizedLengthOfLeftCurrent = CodeWhispererClassifierConstants.lengthOfLeftCurrentCoefficient * VariableTypeNeedNormalize.LenLeftCur.normalize(
+            lengthOfLeftCurrent.toDouble()
+        )
 
-        val normalizedLengthOfPrev = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.lengthOfLeftPrevCoefficientExp * VariableTypeNeedNormalize.LenLeftPrev.normalizeExp(lengthOfLeftPrev)
-        } else CodeWhispererClassifierConstants.lengthOfLeftPrevCoefficient * VariableTypeNeedNormalize.LenLeftPrev.normalize(lengthOfLeftPrev)
+        val normalizedLengthOfPrev = CodeWhispererClassifierConstants.lengthOfLeftPrevCoefficient * VariableTypeNeedNormalize.LenLeftPrev.normalize(
+            lengthOfLeftPrev
+        )
 
-        val normalizedLineNum = if (isExperimentGroup) {
-            CodeWhispererClassifierConstants.lineNumCoefficientExp * VariableTypeNeedNormalize.LineNum.normalizeExp(caretPosition.line.toDouble())
-        } else CodeWhispererClassifierConstants.lineNumCoefficient * VariableTypeNeedNormalize.LineNum.normalize(caretPosition.line.toDouble())
+        val normalizedLineNum = CodeWhispererClassifierConstants.lineNumCoefficient * VariableTypeNeedNormalize.LineNum.normalize(caretPosition.line.toDouble())
 
-        val normalizedCursor = if (isExperimentGroup) {
-            0.0
-        } else CodeWhispererClassifierConstants.cursorOffsetCoefficient * VariableTypeNeedNormalize.Cursor.normalize(caretPosition.offset.toDouble())
-
-        val normalizedLineDiff = if (isExperimentGroup) {
-            0.0
-        } else CodeWhispererClassifierConstants.lineDiffCoefficient * VariableTypeNeedNormalize.LineDiff.normalize(lineDiff)
-
-        val intercept = if (isExperimentGroup) CodeWhispererClassifierConstants.interceptExp else CodeWhispererClassifierConstants.intercept
+        val intercept = CodeWhispererClassifierConstants.intercept
 
         val resultBeforeSigmoid =
             normalizedLengthOfRight +
                 normalizedLengthOfLeftCurrent +
                 normalizedLengthOfPrev +
                 normalizedLineNum +
-                normalizedCursor +
-                normalizedLineDiff +
                 languageCoefficient +
                 osCoefficient +
                 triggerTypeCoefficient +
@@ -322,22 +266,18 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
                 intercept
 
         val shouldTrigger = sigmoid(resultBeforeSigmoid) > getThreshold()
+
         return ClassifierResult(shouldTrigger, sigmoid(resultBeforeSigmoid))
     }
 
     override fun dispose() {}
 
     companion object {
-        private const val triggerThreshold: Double = 0.4
-        private const val triggerThresholdExp: Double = 0.43
+        private const val triggerThreshold: Double = 0.43
 
         fun getInstance(): CodeWhispererAutoTriggerService = service()
 
-        fun getThreshold(): Double = if (CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.Classifier) {
-            triggerThresholdExp
-        } else {
-            triggerThreshold
-        }
+        fun getThreshold(): Double = triggerThreshold
 
         fun sigmoid(x: Double): Double = 1 / (1 + exp(-x))
     }
@@ -345,43 +285,27 @@ class CodeWhispererAutoTriggerService : CodeWhispererAutoTriggerHandler, Disposa
 
 private enum class VariableTypeNeedNormalize {
     Cursor {
-        override fun normalize(value: Double): Double = (value - minn.cursor) / (maxx.cursor - minn.cursor)
-        override fun normalizeExp(value: Double): Double = 0.0
+        override fun normalize(value: Double): Double = 0.0
     },
     LineNum {
         override fun normalize(value: Double): Double = (value - minn.lineNum) / (maxx.lineNum - minn.lineNum)
-        override fun normalizeExp(value: Double): Double = (value - minnExp.lineNum) / (maxxExp.lineNum - minnExp.lineNum)
     },
     LenLeftCur {
         override fun normalize(value: Double): Double = (value - minn.lenLeftCur) / (maxx.lenLeftCur - minn.lenLeftCur)
-        override fun normalizeExp(value: Double): Double = (value - minnExp.lenLeftCur) / (maxxExp.lenLeftCur - minnExp.lenLeftCur)
     },
     LenLeftPrev {
         override fun normalize(value: Double): Double = (value - minn.lenLeftPrev) / (maxx.lenLeftPrev - minn.lenLeftPrev)
-        override fun normalizeExp(value: Double): Double = (value - minnExp.lenLeftPrev) / (maxxExp.lenLeftPrev - minnExp.lenLeftPrev)
     },
     LenRight {
         override fun normalize(value: Double): Double = (value - minn.lenRight) / (maxx.lenRight - minn.lenRight)
-        override fun normalizeExp(value: Double): Double = (value - minnExp.lenRight) / (maxxExp.lenRight - minnExp.lenRight)
     },
     LineDiff {
-        override fun normalize(value: Double): Double = (value - minn.lineDiff) / (maxx.lineDiff - minn.lineDiff)
-        override fun normalizeExp(value: Double): Double = 0.0
+        override fun normalize(value: Double): Double = 0.0
     };
 
-    abstract fun normalize(value: Double): Double
-    abstract fun normalizeExp(toDouble: Double): Double
+    abstract fun normalize(toDouble: Double): Double
 
     data class NormalizedCoefficients(
-        val cursor: Double,
-        val lineNum: Double,
-        val lenLeftCur: Double,
-        val lenLeftPrev: Double,
-        val lenRight: Double,
-        val lineDiff: Double,
-    )
-
-    data class NormalizedCoefficientsExp(
         val lineNum: Double,
         val lenLeftCur: Double,
         val lenLeftPrev: Double,
@@ -390,15 +314,6 @@ private enum class VariableTypeNeedNormalize {
 
     companion object {
         private val maxx = NormalizedCoefficients(
-            cursor = 84716.0,
-            lineNum = 2033.0,
-            lenLeftCur = 157.0,
-            lenLeftPrev = 157.0,
-            lenRight = 10239.0,
-            lineDiff = 270.0,
-        )
-
-        private val maxxExp = NormalizedCoefficientsExp(
             lineNum = 4631.0,
             lenLeftCur = 157.0,
             lenLeftPrev = 176.0,
@@ -406,15 +321,6 @@ private enum class VariableTypeNeedNormalize {
         )
 
         private val minn = NormalizedCoefficients(
-            cursor = 1.0,
-            lineNum = 0.0,
-            lenLeftCur = 0.0,
-            lenLeftPrev = 0.0,
-            lenRight = 0.0,
-            lineDiff = -28336.0,
-        )
-
-        private val minnExp = NormalizedCoefficientsExp(
             lineNum = 0.0,
             lenLeftCur = 0.0,
             lenLeftPrev = 0.0,

@@ -11,8 +11,6 @@ class CodeWhispererPlainText private constructor() : CodeWhispererProgrammingLan
 
     override fun toTelemetryType(): CodewhispererLanguage = CodewhispererLanguage.Plaintext
 
-    override fun isClassifierSupported(): Boolean = false
-
     companion object {
         const val ID = "plaintext"
 

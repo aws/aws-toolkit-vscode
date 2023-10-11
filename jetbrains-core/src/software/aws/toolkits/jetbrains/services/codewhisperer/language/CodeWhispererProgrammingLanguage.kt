@@ -28,10 +28,6 @@ abstract class CodeWhispererProgrammingLanguage {
 
     open fun isImportAdderSupported(): Boolean = false
 
-    open fun isClassifierSupported(): Boolean = true
-
-    open fun isAllClassifier(): Boolean = false
-
     open fun isSupplementalContextSupported(): Boolean = false
 
     open fun isUTGSupported(): Boolean = false

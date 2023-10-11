@@ -26,7 +26,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionConte
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutoTriggerService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
@@ -201,20 +200,9 @@ class CodeWhispererTelemetryService {
 
         val language = requestContext.fileContextInfo.programmingLanguage
 
-        val shouldIncludeClassifier = language.isAllClassifier() ||
-            (language.isClassifierSupported() && CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.Classifier)
+        val classifierResult = requestContext.triggerTypeInfo.automatedTriggerType.calculationResult
 
-        val classifierResult = if (shouldIncludeClassifier) {
-            requestContext.triggerTypeInfo.automatedTriggerType.calculationResult
-        } else {
-            null
-        }
-
-        val classifierThreshold = if (shouldIncludeClassifier) {
-            CodeWhispererAutoTriggerService.getThreshold()
-        } else {
-            null
-        }
+        val classifierThreshold = CodeWhispererAutoTriggerService.getThreshold()
 
         val supplementalContext = requestContext.supplementalContext
         val completionType = if (recommendationContext.details.any {
