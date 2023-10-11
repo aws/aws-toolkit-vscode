@@ -3345,15 +3345,6 @@
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
-            },
-            {
-                "command": "Weaverbird.show",
-                "title": "Show Weaverbird Chat",
-                "category": "Weaverbird",
-                "icon": {
-                    "light": "assets/MynahIconBlack.svg",
-                    "dark": "assets/MynahIconWhite.svg"
-                }
             }
         ],
         "jsonValidation": [
