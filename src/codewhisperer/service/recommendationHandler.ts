@@ -38,6 +38,7 @@ import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
+import { indent } from '../../shared/utilities/textUtilities'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -270,8 +271,8 @@ export class RecommendationHandler {
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-            getLogger().debug(
-                `Request ID: ${requestId},
+
+            let msg = indent(4, true, `Request ID: ${requestId},
                 timestamp(epoch): ${Date.now()},
                 timezone: ${timezone},
                 datetime: ${new Date().toLocaleString([], { timeZone: timezone })},
@@ -281,12 +282,13 @@ export class RecommendationHandler {
                 left context of line:  '${session.leftContextOfCurrentLine}',
                 line number: ${session.startPos.line},
                 character location: ${session.startPos.character},
-                latency: ${latency} ms.`
-            )
-            getLogger().verbose('Recommendations:')
+                latency: ${latency} ms.
+                Recommendations:`).trimStart()
             recommendations.forEach((item, index) => {
-                getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
+                msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(8, true, item.content).trim()}`
             })
+            getLogger().debug(msg)
+
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
             }
