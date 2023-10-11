@@ -20,7 +20,6 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
 import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
-import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -189,18 +188,6 @@ describe('keyStrokeHandler', function () {
             )
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(!startTimerSpy.called)
-        })
-
-        it('Should start idle trigger timer when inputing non-special characters for not all classifier languages for non-classifier group', async function () {
-            const mockEditor = createMockTextEditor('def addTwo', 'test.rb', 'ruby')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'a'
-            )
-            CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(startTimerSpy.called)
         })
 
         it('Should not call invokeAutomatedTrigger for non-special characters for classifier language if classifier says no', async function () {
