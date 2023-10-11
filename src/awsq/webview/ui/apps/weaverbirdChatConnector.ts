@@ -4,7 +4,7 @@
  */
 
 import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
-import { MessageCommand } from '../commands'
+import { ExtensionMessage } from '../commands'
 import { TabType, TabTypeStorage } from '../storages/tabTypeStorage'
 
 interface ChatPayload {
@@ -14,7 +14,7 @@ interface ChatPayload {
 }
 
 export interface ConnectorProps {
-    sendMessageToExtension: (message: Record<string, any>) => void
+    sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onError: (tabID: string, message: string, title: string) => void
@@ -37,7 +37,7 @@ export class Connector {
 
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
         this.sendMessageToExtension({
-            command: MessageCommand.OPEN_DIFF,
+            command: 'open-diff',
             tabID,
             leftPath,
             rightPath,
@@ -47,7 +47,7 @@ export class Connector {
 
     followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
         this.sendMessageToExtension({
-            command: MessageCommand.FOLLOW_UP_WAS_CLICKED,
+            command: 'follow-up-was-clicked',
             followUp,
             tabID,
             tabType: TabType.WeaverBird,
@@ -58,7 +58,7 @@ export class Connector {
         new Promise((resolve, reject) => {
             this.sendMessageToExtension({
                 tabID: tabID,
-                command: MessageCommand.CHAT_PROMPT,
+                command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
                 tabType: TabType.WeaverBird,
             })
