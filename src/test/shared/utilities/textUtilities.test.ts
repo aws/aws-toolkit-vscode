@@ -10,6 +10,7 @@ import {
     removeAnsi,
     truncate,
     truncateProps,
+    indent,
 } from '../../../shared/utilities/textUtilities'
 
 describe('textUtilities', async function () {
@@ -58,6 +59,14 @@ describe('textUtilities', async function () {
         assert.deepStrictEqual(truncate('abc 123', 0), '…')
         assert.deepStrictEqual(truncate('abc 123', 99), 'abc 123')
         assert.deepStrictEqual(truncate('abc 123', -99), 'abc 123')
+    })
+
+    it('indent()', async function () {
+        assert.deepStrictEqual(indent('abc\n123', 2, false), '  abc\n  123')
+        assert.deepStrictEqual(indent('abc\n 123\n', 2, false), '  abc\n   123\n')
+        assert.deepStrictEqual(indent('abc\n 123\n', 2, true), '  abc\n  123\n')
+        assert.deepStrictEqual(indent('   abc\n\n  \n123\nfoo\n', 4, false), '       abc\n\n      \n    123\n    foo\n')
+        assert.deepStrictEqual(indent('   abc\n\n    \n123\nfoo\n', 4, true), '    abc\n\n    \n    123\n    foo\n')
     })
 })
 
