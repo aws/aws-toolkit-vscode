@@ -37,6 +37,9 @@ export class UIMessageListener {
             case 'open-diff':
                 this.openDiff(msg)
                 break
+            case 'stop-response':
+                this.stopResponse(msg)
+                break
         }
     }
 
@@ -59,6 +62,12 @@ export class UIMessageListener {
             tabID: msg.tabID,
             leftPath: msg.leftPath,
             rightPath: msg.rightPath,
+        })
+    }
+
+    private stopResponse(msg: any) {
+        this.weaverbirdControllerEventsEmitters?.stopResponse.fire({
+            tabID: msg.tabID,
         })
     }
 }

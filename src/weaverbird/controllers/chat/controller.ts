@@ -17,6 +17,7 @@ export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
     readonly followUpClicked: EventEmitter<any>
     readonly openDiff: EventEmitter<any>
+    readonly stopResponse: EventEmitter<any>
 }
 
 export class WeaverbirdController {
@@ -49,6 +50,9 @@ export class WeaverbirdController {
         })
         this.chatControllerInputEventEmitter.openDiff.event(data => {
             this.openDiff(data)
+        })
+        this.chatControllerInputEventEmitter.stopResponse.event(data => {
+            this.stopResponse(data)
         })
     }
 
@@ -154,5 +158,10 @@ export class WeaverbirdController {
                 query: `tabID=${message.tabID}`,
             })
         )
+    }
+
+    private async stopResponse(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabID)
+        session.state.tokenSource.cancel()
     }
 }

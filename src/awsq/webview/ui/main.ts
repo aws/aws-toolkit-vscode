@@ -274,6 +274,12 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }
         },
         onOpenDiff: connector.onOpenDiff,
+        onStopChatResponse: (tabID: string) => {
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+            })
+            connector.onStopChatResponse(tabID)
+        },
         tabs: {
             'tab-1': {
                 isSelected: true,
