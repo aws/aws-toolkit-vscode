@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "StepFunctions: Support rendering SFN graph with ItemProcessor field"
+}
