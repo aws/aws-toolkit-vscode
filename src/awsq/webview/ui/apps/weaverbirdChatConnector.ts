@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabType, TabTypeStorage } from '../storages/tabTypeStorage'
 
@@ -17,6 +17,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     tabTypeStorage: TabTypeStorage
@@ -107,6 +108,9 @@ export class Connector {
                 body: messageData.filePaths,
                 relatedContent: undefined,
                 followUp: undefined,
+                canBeVoted: true,
+                // TODO get the backend to store a message id in addition to conversationID
+                messageId: messageData.conversationID,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
         }
@@ -147,5 +151,9 @@ export class Connector {
             command: 'tab-was-removed',
             tabType: TabType.WeaverBird,
         })
+    }
+
+    sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
+        // TODO implement telemetry
     }
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, FeedbackPayload, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
 import { ExtensionMessage } from './commands'
@@ -178,6 +178,13 @@ export class Connector {
         switch (this.tabTypesStorage.getTabType(tabID)) {
             case TabType.WeaverBird:
                 this.weaverbirdChatConnector.onStopChatResponse(tabID)
+        }
+    }
+
+    sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
+        switch (this.tabTypesStorage.getTabType(tabId)) {
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.sendFeedback(tabId, feedbackPayload)
                 break
         }
     }
