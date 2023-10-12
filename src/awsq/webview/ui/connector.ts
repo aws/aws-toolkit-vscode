@@ -6,9 +6,9 @@
 import { ChatItem, ChatItemFollowUp, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
-import { weaverbirdChat } from '../../../weaverbird/views/actions/uiMessageListener'
 import { ExtensionMessage } from './commands'
 import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
+import { weaverbirdChat } from '../../../weaverbird/constants'
 
 interface ChatPayload {
     chatMessage: string
