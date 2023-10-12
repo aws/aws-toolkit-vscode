@@ -22,6 +22,10 @@ describe('AuthUtil', async function () {
         authUtil = new AuthUtil(auth)
     })
 
+    afterEach(async function () {
+        await auth.logout()
+    })
+
     it('if there is no valid AwsBuilderID conn, it will create one and use it', async function () {
         getTestWindow().onDidShowQuickPick(async picker => {
             await picker.untilReady()
@@ -83,22 +87,20 @@ describe('AuthUtil', async function () {
         )
     })
 
-    it('prompts to attach connection to CodeWhisperer when switching to an unsupported connection', async function () {
+    it('CodeWhisperer uses fallback connection when switching to an unsupported connection', async function () {
         const supportedConn = await auth.createConnection(createBuilderIdProfile({ scopes: codewhispererScopes }))
         const unsupportedConn = await auth.createConnection(createSsoProfile())
-
-        getTestWindow().onDidShowQuickPick(picker => {
-            assert.ok(picker.title?.startsWith(`Some tools you've been using don't work with ${unsupportedConn.label}`))
-            const keepUsing = picker.findItemOrThrow(new RegExp(`keep using ${supportedConn.label}`))
-            picker.acceptItem(keepUsing)
-        })
 
         await auth.useConnection(supportedConn)
         assert.ok(authUtil.isConnected())
         assert.strictEqual(auth.activeConnection?.id, authUtil.conn?.id)
 
+        // Switch to unsupported connection
+        const cwAuthUpdatedConnection = captureEventOnce(authUtil.secondaryAuth.onDidChangeActiveConnection)
         await auth.useConnection(unsupportedConn)
-        await captureEventOnce(authUtil.secondaryAuth.onDidChangeActiveConnection)
+        await cwAuthUpdatedConnection
+
+        // Is using the fallback connection
         assert.ok(authUtil.isConnected())
         assert.ok(authUtil.isUsingSavedConnection)
         assert.notStrictEqual(auth.activeConnection?.id, authUtil.conn?.id)
@@ -114,13 +116,7 @@ describe('AuthUtil', async function () {
         assert.strictEqual((await auth.listConnections()).filter(isSsoConnection).length, 1)
     })
 
-    it('prompts to upgrade connections if they do not have the required scopes', async function () {
-        getTestWindow().onDidShowMessage(message => {
-            assert.ok(message.modal)
-            message.assertMessage(/CodeWhisperer requires access to your/)
-            message.selectItem('Proceed')
-        })
-
+    it('automatically upgrades connections if they do not have the required scopes', async function () {
         const upgradeableConn = await auth.createConnection(createBuilderIdProfile())
         await auth.useConnection(upgradeableConn)
         assert.strictEqual(authUtil.isConnected(), false)

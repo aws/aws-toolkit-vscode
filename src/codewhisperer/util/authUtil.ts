@@ -122,7 +122,7 @@ export class AuthUtil {
     }
 
     public get isUsingSavedConnection() {
-        return this.conn !== undefined && this.secondaryAuth.isUsingSavedConnection
+        return this.conn !== undefined && this.secondaryAuth.hasSavedConnection
     }
 
     public isConnected(): boolean {
