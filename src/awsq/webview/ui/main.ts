@@ -6,10 +6,56 @@
 import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
-import './styles/frequent-apis.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
 
+const WelcomeMessage = `<span markdown="1">Hi, I am Q!          
+Ask me any software development questions. I can help explain, debug, or optimize code. 
+Or you can type \`/\` to see some suggested tasks.`
+const QuickActionCommands = [
+    {
+        groupName: 'Start a workflow',
+        commands: [
+            {
+                command: '/assign',
+                description: 'Give Q a coding task',
+            },
+        ],
+    },
+    {
+        groupName: 'Quick Action',
+        commands: [
+            {
+                command: '/explain',
+                promptText: 'Explain',
+                description: 'Explain selected code or an active file',
+            },
+            {
+                command: '/fix',
+                promptText: 'Fix',
+                description: 'Debug selected code and suggest fix',
+            },
+            {
+                command: '/refactor',
+                promptText: 'Refactor',
+                description: 'Refactor selected code',
+            },
+            {
+                command: '/optimize',
+                promptText: 'Optimize',
+                description: 'Optimize selected code',
+            },
+        ],
+    },
+    {
+        commands: [
+            {
+                command: '/clear',
+                description: 'Clear this session',
+            },
+        ],
+    },
+]
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
@@ -100,35 +146,42 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 return
             }
             if (prompt.prompt.match(/\/assign/)) {
+                let affectedTabId = tabID
                 const realPromptText = prompt.prompt?.replace('/assign', '').trim()
 
-                const newTabId = mynahUI.updateStore('', {
-                    chatItems: [
-                        ...(realPromptText !== ''
-                            ? [
-                                  {
-                                      type: ChatItemType.PROMPT,
-                                      body: realPromptText,
-                                  },
-                              ]
-                            : [
-                                  {
-                                      type: ChatItemType.ANSWER,
-                                      body: `<span markdown="1">How this works:
-                            1. Provide a brief problem statement for a task
-                            2. Discuss the problem with Q
-                            3. Agree on an approach
-                            4. Q will generate code suggestions for your project
-                            5. Review code suggestions, provide feedback for another revision if needed</span>`,
-                                  },
-                              ]),
-                    ],
+                if (tabTypeStorage.getTabType(affectedTabId) !== TabType.Unknown) {
+                    affectedTabId = mynahUI.updateStore('', {
+                        chatItems: [
+                            ...(realPromptText !== ''
+                                ? [
+                                      {
+                                          type: ChatItemType.PROMPT,
+                                          body: realPromptText,
+                                      },
+                                  ]
+                                : [
+                                      {
+                                          type: ChatItemType.ANSWER,
+                                          body: `<span markdown="1">How this works:
+                                1. Provide a brief problem statement for a task
+                                2. Discuss the problem with Q
+                                3. Agree on an approach
+                                4. Q will generate code suggestions for your project
+                                5. Review code suggestions, provide feedback for another revision if needed</span>`,
+                                      },
+                                  ]),
+                        ],
+                    })
+                }
+                tabTypeStorage.updateTab(affectedTabId, TabType.WeaverBird)
+
+                mynahUI.updateStore(affectedTabId, {
+                    quickActionCommands: [],
+                    promptInputPlaceholder: 'Assign a code task',
                 })
 
-                tabTypeStorage.updateTab(newTabId, TabType.WeaverBird)
-
                 if (realPromptText !== '') {
-                    connector.requestGenerativeAIAnswer(newTabId, {
+                    connector.requestGenerativeAIAnswer(affectedTabId, {
                         chatMessage: realPromptText,
                     })
                 }
@@ -145,15 +198,13 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 promptInputDisabledState: true,
             })
 
-            setTimeout(() => {
-                const chatPayload = {
-                    chatMessage: prompt.prompt ?? '',
-                }
+            const chatPayload = {
+                chatMessage: prompt.prompt ?? '',
+            }
 
-                connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
-            }, 2000)
+            connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
         },
-        onSendFeedback: undefined, //connector.sendFeedback,
+        // onSendFeedback: undefined, //connector.sendFeedback,
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
         onCopyCodeToClipboard: connector.onCopyCodeToClipboard,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
@@ -175,50 +226,28 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     chatItems: [
                         {
                             type: ChatItemType.ANSWER,
-                            body: `<span markdown="1">Hi, I am Q!          
-          Ask me any software development questions. I can help explain, debug, or optimize code. 
-          Or you can type \`/\` to see some suggested tasks.`,
+                            body: WelcomeMessage,
                         },
                     ],
                     showChatAvatars: false,
-                    quickActionCommands: [
-                        {
-                            groupName: 'Quick Action',
-                            commands: [
-                                {
-                                    command: '/explain',
-                                    description: 'Explain selected code or an active file',
-                                },
-                                {
-                                    command: '/fix',
-                                    description: 'Debug selected code and suggest fix',
-                                },
-                                {
-                                    command: '/refactor',
-                                    description: 'Refactor selected code',
-                                },
-                                {
-                                    command: '/optimize',
-                                    description: 'Optimize selected code',
-                                },
-                                {
-                                    command: '/assign',
-                                    description: 'Iteratively solve a problem',
-                                },
-                            ],
-                        },
-                        {
-                            commands: [
-                                {
-                                    command: '/clear',
-                                    description: 'Clear this session',
-                                },
-                            ],
-                        },
-                    ],
+                    quickActionCommands: QuickActionCommands,
                     promptInputPlaceholder: 'Ask a question or "/" for capabilities',
                 },
             },
+        },
+        defaults: {
+            store: {
+                chatItems: [
+                    {
+                        type: ChatItemType.ANSWER,
+                        body: WelcomeMessage,
+                    },
+                ],
+                showChatAvatars: false,
+                quickActionCommands: QuickActionCommands,
+                promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+            },
+            tabTitle: 'AWS Q',
         },
     })
 }
