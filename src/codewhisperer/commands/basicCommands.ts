@@ -19,7 +19,12 @@ import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
-import { notifyNewCustomizations, showCustomizationPrompt } from '../util/customizationUtil'
+import {
+    getPersistedCustomizations,
+    notifyNewCustomizations,
+    selectCustomization,
+    showCustomizationPrompt,
+} from '../util/customizationUtil'
 import { get, set } from '../util/commonUtil'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
@@ -40,7 +45,7 @@ export const toggleCodeSuggestions = Commands.declare(
         })
     }
 )
-/* 
+/*
 createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
 onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
 */
@@ -100,7 +105,7 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const selectCustomization = Commands.declare('aws.codeWhisperer.selectCustomization', () => async () => {
+export const selectCustomizationPrompt = Commands.declare('aws.codeWhisperer.selectCustomization', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
     showCustomizationPrompt().then()
 })
@@ -115,19 +120,37 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 })
 
 // Shortcut command to directly connect to Identity Center or prompt start URL entry
-// Customization is not yet supported.
-export const connectIdCenter = Commands.declare(
+// It can optionally set a customization too.
+export const connectWithCustomization = Commands.declare(
     'aws.codeWhisperer.connect',
-    () => async (startUrl?: string, region?: string) => {
-        // This command expects two arguments: startUrl and region (both strings).
-        // If these arguments are provided, they will be used.
-        // Otherwise, the commands prompts for them interactively.
-        if (startUrl && region) {
-            await connectToEnterpriseSso(startUrl, region)
-        } else {
-            await getStartUrl()
+    () =>
+        async (
+            startUrl?: string,
+            region?: string,
+            customizationArn?: string,
+            customizationName?: string,
+            customizationDescription?: string
+        ) => {
+            // This command supports two sets of arguments:
+            //  * startUrl and region. If both arguments are provided they will be used, otherwise
+            //    the command prompts for them interactively.
+            //  * customization{Arn, Name, Description}. If at least customizationArn is provided,
+            //    the command selects this customization.
+            if (startUrl && region) {
+                await connectToEnterpriseSso(startUrl, region)
+            } else {
+                await getStartUrl()
+            }
+            if (customizationArn) {
+                const match = getPersistedCustomizations().find(c => c.arn == customizationArn)
+                const customization = {
+                    arn: customizationArn,
+                    name: customizationName ?? match?.name ?? 'unknown',
+                    description: customizationDescription ?? match?.description ?? 'unknown',
+                }
+                await selectCustomization(customization)
+            }
         }
-    }
 )
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {

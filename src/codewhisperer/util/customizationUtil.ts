@@ -279,7 +279,7 @@ const createCustomizationItem = (
     } as DataQuickPickItem<string>
 }
 
-const selectCustomization = async (customization: Customization) => {
+export const selectCustomization = async (customization: Customization) => {
     // If the newly selected customization is same as the old one, do nothing
     const selectedCustomization = getSelectedCustomization()
     if (selectedCustomization.arn === customization.arn) {
