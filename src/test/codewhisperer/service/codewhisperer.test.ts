@@ -20,6 +20,17 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 describe('codewhisperer', async function () {
     let clientSpy: CodeWhispererUserClient
     let telemetryEnabledDefault: boolean
+    const userTriggerDecisionPayload: TelemetryEvent = {
+        userTriggerDecisionEvent: {
+            sessionId: anyString(),
+            requestId: anyString(),
+            programmingLanguage: { languageName: 'python' },
+            completionType: 'BLOCK',
+            suggestionState: 'ACCEPT',
+            recommendationLatencyMilliseconds: 1,
+            timestamp: new Date(),
+        },
+    }
 
     beforeEach(async function () {
         sinon.restore()
@@ -39,42 +50,37 @@ describe('codewhisperer', async function () {
     })
 
     it('sendTelemetryEvent for userTriggerDecision should respect telemetry optout status', async function () {
-        await sendTelemetryEventOptoutCheckHelper({
-            userTriggerDecisionEvent: {
-                sessionId: anyString(),
-                requestId: anyString(),
-                programmingLanguage: { languageName: 'python' },
-                completionType: 'BLOCK',
-                suggestionState: 'ACCEPT',
-                recommendationLatencyMilliseconds: 1,
-                timestamp: new Date(),
-            },
-        })
+        await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, true, true)
+        await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, true, false)
     })
 
     it('sendTelemetryEvent for codeScan should respect telemetry optout status', async function () {
-        await sendTelemetryEventOptoutCheckHelper({
+        const payload = {
             codeScanEvent: {
                 programmingLanguage: { languageName: 'python' },
                 codeScanJobId: anyString(),
                 timestamp: new Date(),
             },
-        })
+        }
+        await sendTelemetryEventOptoutCheckHelper(payload, true, true)
+        await sendTelemetryEventOptoutCheckHelper(payload, true, false)
     })
 
     it('sendTelemetryEvent for codePercentage should respect telemetry optout status', async function () {
-        await sendTelemetryEventOptoutCheckHelper({
+        const payload = {
             codeCoverageEvent: {
                 programmingLanguage: { languageName: 'python' },
                 acceptedCharacterCount: 0,
                 totalCharacterCount: 1,
                 timestamp: new Date(),
             },
-        })
+        }
+        await sendTelemetryEventOptoutCheckHelper(payload, true, true)
+        await sendTelemetryEventOptoutCheckHelper(payload, true, false)
     })
 
     it('sendTelemetryEvent for userModification should respect telemetry optout status', async function () {
-        await sendTelemetryEventOptoutCheckHelper({
+        const payload = {
             userModificationEvent: {
                 sessionId: anyString(),
                 requestId: anyString(),
@@ -82,11 +88,33 @@ describe('codewhisperer', async function () {
                 modificationPercentage: 2.0,
                 timestamp: new Date(),
             },
-        })
+        }
+        await sendTelemetryEventOptoutCheckHelper(payload, true, true)
+        await sendTelemetryEventOptoutCheckHelper(payload, true, false)
     })
 
-    async function sendTelemetryEventOptoutCheckHelper(payload: TelemetryEvent) {
-        const stub = sinon.stub(clientSpy, 'sendTelemetryEvent').returns({
+    it('sendTelemetryEvent should be called for SSO user who optin telemetry', async function () {
+        await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, true, true)
+    })
+
+    it('sendTelemetryEvent should be called for SSO user who optout telemetry', async function () {
+        await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, true, false)
+    })
+
+    it('sendTelemetryEvent should be called for Builder ID user who optin telemetry', async function () {
+        await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, false, true)
+    })
+
+    it('sendTelemetryEvent should NOT be called for Builder ID user who optout telemetry', async function () {
+        await sendTelemetryEventOptoutCheckHelper(userTriggerDecisionPayload, false, false)
+    })
+
+    async function sendTelemetryEventOptoutCheckHelper(
+        payload: TelemetryEvent,
+        isSso: boolean,
+        isTelemetryEnabled: boolean
+    ) {
+        const clientSpyStub = sinon.stub(clientSpy, 'sendTelemetryEvent').returns({
             promise: () =>
                 Promise.resolve({
                     $response: {
@@ -95,13 +123,16 @@ describe('codewhisperer', async function () {
                 }),
         } as Request<SendTelemetryEventResponse, AWSError>)
 
-        sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
-        globals.telemetry.telemetryEnabled = true
+        const authUtilStub = sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(isSso)
+        globals.telemetry.telemetryEnabled = isTelemetryEnabled
         await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: payload })
-        sinon.assert.calledWith(stub, sinon.match({ optOutPreference: 'OPTIN' }))
-
-        globals.telemetry.telemetryEnabled = false
-        await codeWhispererClient.sendTelemetryEvent({ telemetryEvent: payload })
-        sinon.assert.calledWith(stub, sinon.match({ optOutPreference: 'OPTOUT' }))
+        const expectedOptOutPreference = isTelemetryEnabled ? 'OPTIN' : 'OPTOUT'
+        if (isSso || isTelemetryEnabled) {
+            sinon.assert.calledWith(clientSpyStub, sinon.match({ optOutPreference: expectedOptOutPreference }))
+        } else {
+            sinon.assert.notCalled(clientSpyStub)
+        }
+        clientSpyStub.restore()
+        authUtilStub.restore()
     }
 })
