@@ -23,7 +23,9 @@ const makeIssue = (overrides?: Partial<CodeScanIssue>): CodeScanIssue => ({
     detectorName: 'detectorName',
     relatedVulnerabilities: [],
     severity: 'High',
-    suggestedFixes: [{ description: 'fix', code: 'first line\n-second line\n+third line\nfourth line' }],
+    suggestedFixes: [
+        { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
+    ],
     ...overrides,
 })
 

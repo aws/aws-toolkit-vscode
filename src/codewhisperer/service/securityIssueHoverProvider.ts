@@ -95,46 +95,25 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
      */
     private _makeCodeBlock(code: string, language?: string) {
         // Add some padding so that each line has the same number of chars
-        const lines = code.split('\n')
+        const lines = code.split('\n').slice(1) // Ignore the first line for diff header
         const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
-        const paddedCode = lines.map(line => line.padEnd(maxLineChars + 2)).join('\n')
+        const paddedLines = lines.map(line => line.padEnd(maxLineChars + 2))
 
-        // Split the code into sections of prefix, deletion, addition, suffix which will show
-        // up in that order. However, since a code diff might only have deletion or addition and
-        // not both, we need some additional checks to ensure our substrings are grouped properly.
-        const deletionIndex = paddedCode.indexOf('\n-')
-        const additionIndex = paddedCode.indexOf('\n+')
-        let prefix = ''
-        let deletion = ''
-        let addition = ''
-        let suffix = ''
-        if (deletionIndex) {
-            prefix = paddedCode.substring(0, deletionIndex)
-            if (additionIndex) {
-                // Found both deletion and addition
-                deletion = paddedCode.substring(deletionIndex + 1, additionIndex)
-                const suffixIndex = paddedCode.indexOf('\n', paddedCode.lastIndexOf('\n+') + 1)
-                addition = paddedCode.substring(additionIndex + 1, suffixIndex)
-                suffix = paddedCode.substring(suffixIndex + 1)
+        // Group the lines into sections so consecutive lines of the same type can be placed in
+        // the same span below
+        const sections = [paddedLines[0]]
+        let i = 1
+        while (i < paddedLines.length) {
+            if (paddedLines[i][0] === sections[sections.length - 1][0]) {
+                sections[sections.length - 1] += '\n' + paddedLines[i]
             } else {
-                // Found only deletion and no addition
-                deletion = paddedCode.substring(
-                    deletionIndex + 1,
-                    paddedCode.indexOf('\n', paddedCode.lastIndexOf('\n-') + 1)
-                )
-                const suffixIndex = paddedCode.indexOf('\n', paddedCode.lastIndexOf('\n-') + 1)
-                suffix = paddedCode.substring(suffixIndex + 1)
+                sections.push(paddedLines[i])
             }
-        } else {
-            // No deletions, so there must only be additions
-            prefix = paddedCode.substring(0, additionIndex)
-            const suffixIndex = paddedCode.indexOf('\n', paddedCode.lastIndexOf('\n+') + 1)
-            addition = paddedCode.substring(additionIndex + 1, suffixIndex)
-            suffix = paddedCode.substring(suffixIndex + 1)
+            i++
         }
 
         // Return each section with the correct syntax highlighting and background color
-        return [prefix, deletion, addition, suffix]
+        return sections
             .map(
                 section => `
 <span class="codicon codicon-none" style="background-color:var(${
