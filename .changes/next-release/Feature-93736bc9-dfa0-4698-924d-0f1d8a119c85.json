@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "auth: reduce user prompts when adding additional connections"
+}
