@@ -107,10 +107,14 @@ export class ChatController {
         const editorContext: EditorContext = {
             fileContent: triggerPayload.fileText,
             language: triggerPayload.fileLanguage,
-            query: triggerPayload.query,
+            query: triggerPayload.query ?? triggerPayload.message,
             code: triggerPayload.code, // or codeSelection
             context: {
-                matchPolicy: triggerPayload.matchPolicy,
+                matchPolicy: triggerPayload.matchPolicy ?? {
+                    should: [],
+                    must: [],
+                    mustNot: [],
+                },
             },
             // todo: codeQuery
         }
