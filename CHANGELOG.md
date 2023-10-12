@@ -1,3 +1,9 @@
+## 1.94.0 2023-10-12
+
+- **Feature** CodeWhisperer: improve auto-suggestions for additional languages
+- **Feature** StepFunctions: Support rendering SFN graph with ItemProcessor field
+- **Feature** auth: Adding or switching connections in CodeWhisperer, CodeCatalyst and Explorer is now faster and requires fewer steps
+
 ## 1.93.0 2023-10-05
 
 - **Bug Fix** SAM: local debugging of a .NET lambda may fail if `containerbuild=true`
