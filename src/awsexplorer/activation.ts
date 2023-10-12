@@ -27,11 +27,9 @@ import { telemetry } from '../shared/telemetry/telemetry'
 import { cdkNode, CdkRootNode } from '../cdk/explorer/rootNode'
 import { CodeWhispererNode, codewhispererNode } from '../codewhisperer/explorer/codewhispererNode'
 import { once } from '../shared/utilities/functionUtils'
-import { Auth } from '../auth/auth'
 import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
-import { AuthNode } from '../auth/utils'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 
 /**
@@ -78,9 +76,8 @@ export async function activate(args: {
     )
 
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
-    const authNode = new AuthNode(Auth.instance)
     const codecatalystNode = isCloud9('classic') ? [] : [new CodeCatalystRootNode(authProvider)]
-    const nodes = [authNode, ...codecatalystNode, cdkNode, codewhispererNode]
+    const nodes = [...codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 
@@ -99,7 +96,6 @@ export async function activate(args: {
     })
 
     registerDeveloperToolsCommands(args.context.extensionContext, developerTools, {
-        auth: authNode,
         codeCatalyst: codecatalystNode ? codecatalystNode[0] : undefined,
         codeWhisperer: codewhispererNode,
     })
@@ -175,7 +171,6 @@ async function registerDeveloperToolsCommands(
     ctx: vscode.ExtensionContext,
     developerTools: vscode.TreeView<TreeNode>,
     nodes: {
-        auth: AuthNode
         codeWhisperer: CodeWhispererNode
         codeCatalyst: CodeCatalystRootNode | undefined
     }
@@ -203,10 +198,9 @@ async function registerDeveloperToolsCommands(
         )
     }
 
-    registerShowDeveloperToolsNode('CodeWhisperer', codewhispererNode)
+    registerShowDeveloperToolsNode('CodeWhisperer', nodes.codeWhisperer)
 
-    const codeCatalystNode = nodes.codeCatalyst
-    if (codeCatalystNode) {
-        registerShowDeveloperToolsNode('CodeCatalyst', codeCatalystNode)
+    if (nodes.codeCatalyst) {
+        registerShowDeveloperToolsNode('CodeCatalyst', nodes.codeCatalyst)
     }
 }
