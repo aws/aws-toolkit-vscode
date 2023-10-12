@@ -4,6 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue } from '../models/model'
+import globals from '../../shared/extensionGlobals'
 
 export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -41,6 +42,94 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     }
 
     private _getContent(issue: CodeScanIssue) {
-        return new vscode.MarkdownString('TBD')
+        const markdownString = new vscode.MarkdownString()
+        markdownString.isTrusted = true
+        markdownString.supportHtml = true
+        markdownString.supportThemeIcons = true
+
+        const [suggestedFix] = issue.suggestedFixes ?? []
+
+        if (suggestedFix) {
+            markdownString.appendMarkdown(
+                `## Suggested Fix for ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`
+            )
+        } else {
+            markdownString.appendMarkdown(`## ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`)
+        }
+
+        markdownString.appendMarkdown(`${issue.description.markdown}\n\n`)
+
+        const viewDetailsCommand = vscode.Uri.parse('command:aws.codewhisperer.viewSecurityIssue')
+        const applyFixCommand = vscode.Uri.parse('command:aws.codewhisperer.applySecurityFix')
+        markdownString.appendMarkdown(`[$(eye) View Details](${viewDetailsCommand})\n`)
+
+        if (suggestedFix) {
+            markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand})\n`)
+            markdownString.appendMarkdown(
+                `${this._makeCodeBlock(suggestedFix.code, issue.detectorId.split('/').shift())}\n`
+            )
+        }
+
+        return markdownString
+    }
+
+    private _makeSeverityBadge(severity: string) {
+        if (!severity) {
+            return ''
+        }
+        return `![${severity}](${vscode.Uri.joinPath(
+            globals.context.extensionUri,
+            `src/codewhisperer/images/severity-${severity.toLowerCase()}.svg`
+        )})`
+    }
+
+    /**
+     * Creates a markdown string to render a code diff block for a given code block. Lines
+     * that are highlighted red indicate deletion while lines highlighted in green indicate
+     * addition. An optional language can be provided for syntax highlighting on lines which are
+     * not additions or deletions.
+     *
+     * @param code The code containing the diff
+     * @param language The language for syntax highlighting
+     * @returns The markdown string
+     */
+    private _makeCodeBlock(code: string, language?: string) {
+        // Add some padding so that each line has the same number of chars
+        const lines = code.split('\n').slice(1) // Ignore the first line for diff header
+        const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
+        const paddedLines = lines.map(line => line.padEnd(maxLineChars + 2))
+
+        // Group the lines into sections so consecutive lines of the same type can be placed in
+        // the same span below
+        const sections = [paddedLines[0]]
+        let i = 1
+        while (i < paddedLines.length) {
+            if (paddedLines[i][0] === sections[sections.length - 1][0]) {
+                sections[sections.length - 1] += '\n' + paddedLines[i]
+            } else {
+                sections.push(paddedLines[i])
+            }
+            i++
+        }
+
+        // Return each section with the correct syntax highlighting and background color
+        return sections
+            .map(
+                section => `
+<span class="codicon codicon-none" style="background-color:var(${
+                    section.startsWith('-')
+                        ? '--vscode-diffEditor-removedTextBackground'
+                        : section.startsWith('+')
+                        ? '--vscode-diffEditor-insertedTextBackground'
+                        : '--vscode-textCodeBlock-background'
+                });">
+
+\`\`\`${section.startsWith('-') || section.startsWith('+') ? 'diff' : language}
+${section}
+\`\`\`
+
+</span>`
+            )
+            .join('')
     }
 }
