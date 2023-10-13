@@ -18,9 +18,10 @@ export class PromptsGenerator {
     public getPromptForContextMenuCommand(command: EditorContextCommand, selectedCode: string): string {
         return [
             this.editorContextMenuCommandVerbs.get(command),
-            ' the following part of my code to me:  ```',
+            ' the following part of my code to me:',
+            '```\n ',
             selectedCode,
-            '```',
+            '\n```',
         ].join('')
     }
 }
