@@ -150,7 +150,7 @@ export class WeaverbirdController {
         if (existsSync(originalPath)) {
             left = vscode.Uri.file(originalPath)
         } else {
-            left = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty' })
+            left = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty', query: `tabID=${message.tabID}` })
         }
 
         vscode.commands.executeCommand(

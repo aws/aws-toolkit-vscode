@@ -38,8 +38,8 @@ export function init(appContext: AwsQAppInitContext) {
 
             const tabID = params.get('tabID')
             if (!tabID) {
-                getLogger().error(`Unable to find tabID from ${uri.query}`)
-                throw new TabIdNotFoundError(uri.query)
+                getLogger().error(`Unable to find tabID from ${uri.toString()}`)
+                throw new TabIdNotFoundError(uri.toString())
             }
 
             const session = await sessionStorage.getSession(tabID)
