@@ -9,7 +9,7 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry } from './models/model'
+import { vsCodeState, ConfigurationEntry, CodeScanIssue } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -33,6 +33,7 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
+    openSecurityIssuePanel,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -51,6 +52,7 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
+import { SecurityIssuePanel } from './views/securityIssuePanel'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -162,6 +164,8 @@ export async function activate(context: ExtContext): Promise<void> {
         enableCodeSuggestions.register(context),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
+        // show security issue webview panel
+        openSecurityIssuePanel.register(),
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
         // show reconnect prompt
@@ -207,7 +211,18 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerHoverProvider(
             [...CodeWhispererConstants.supportedLanguages],
             SecurityIssueHoverProvider.instance
-        )
+        ),
+        vscode.window.registerWebviewPanelSerializer(SecurityIssuePanel.viewType, {
+            async deserializeWebviewPanel(panel: vscode.WebviewPanel, issue: CodeScanIssue) {
+                panel.webview.options = {
+                    enableScripts: true,
+                    localResourceRoots: [context.extensionContext.extensionUri],
+                }
+
+                SecurityIssuePanel.revive(panel)
+                SecurityIssuePanel.instance?.update(issue)
+            },
+        })
     )
 
     await auth.restore()

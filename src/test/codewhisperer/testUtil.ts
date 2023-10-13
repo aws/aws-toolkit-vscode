@@ -140,3 +140,26 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
         ],
     }
 }
+
+export function createMockWebviewPanel(): vscode.WebviewPanel {
+    return {
+        viewType: '',
+        title: '',
+        webview: {
+            cspSource: '',
+            html: '',
+            options: {},
+            asWebviewUri: sinon.spy(),
+            onDidReceiveMessage: sinon.spy(),
+            postMessage: sinon.spy(),
+        },
+        options: {},
+        viewColumn: undefined,
+        active: false,
+        visible: false,
+        onDidChangeViewState: sinon.spy(),
+        onDidDispose: sinon.spy(),
+        reveal: sinon.spy(),
+        dispose: sinon.spy(),
+    }
+}

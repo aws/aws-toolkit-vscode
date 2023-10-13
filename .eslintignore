@@ -7,3 +7,4 @@ src/codewhisperer/client/codewhispereruserclient.d.ts
 src/testFixtures/workspaceFolder/ts-plain-sam-app/
 dist/**
 types/*.d.ts
+src/webview.ts

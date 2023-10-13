@@ -12,7 +12,7 @@ import { getLogger } from '../../shared/logger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { codeScanState } from '../models/model'
+import { CodeScanIssue, codeScanState } from '../models/model'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
@@ -22,6 +22,7 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { SecurityIssuePanel } from '../views/securityIssuePanel'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -38,7 +39,7 @@ export const toggleCodeSuggestions = Commands.declare(
         })
     }
 )
-/* 
+/*
 createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
 onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
 */
@@ -147,5 +148,13 @@ export const refreshStatusBar = Commands.declare(
         } else {
             InlineCompletionService.instance.hideCodeWhispererStatusBar()
         }
+    }
+)
+
+export const openSecurityIssuePanel = Commands.declare(
+    'aws.codeWhisperer.openSecurityIssuePanel',
+    () => async (issue: CodeScanIssue) => {
+        SecurityIssuePanel.render()
+        SecurityIssuePanel.instance?.update(issue)
     }
 )

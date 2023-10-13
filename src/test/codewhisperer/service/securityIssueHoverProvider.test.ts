@@ -36,13 +36,14 @@ describe('securityIssueHoverProvider', () => {
 
             const securityIssueHoverProvider = new SecurityIssueHoverProvider()
             const mockDocument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
+            const issues = [
+                makeIssue({ startLine: 0, endLine: 1 }),
+                makeIssue({ startLine: 0, endLine: 1, suggestedFixes: [] }),
+            ]
             securityIssueHoverProvider.issues = [
                 {
                     filePath: mockDocument.fileName,
-                    issues: [
-                        makeIssue({ startLine: 0, endLine: 1 }),
-                        makeIssue({ startLine: 0, endLine: 1, suggestedFixes: [] }),
-                    ],
+                    issues,
                 },
             ]
 
@@ -54,8 +55,10 @@ describe('securityIssueHoverProvider', () => {
                 (actual.contents[0] as vscode.MarkdownString).value,
                 '## Suggested Fix for title ![High](file:///myPath)\n' +
                     'description\n\n' +
-                    '[$(eye) View Details](command:aws.codewhisperer.viewSecurityIssue)\n' +
-                    ' | [$(wrench) Apply Fix](command:aws.codewhisperer.applySecurityFix)\n\n' +
+                    `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                        JSON.stringify(issues[0])
+                    )} "Open security issue")\n` +
+                    ' | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix "Apply suggested fix")\n\n' +
                     '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
                     '```language\n' +
                     'first line    \n' +
@@ -81,7 +84,9 @@ describe('securityIssueHoverProvider', () => {
                 (actual.contents[1] as vscode.MarkdownString).value,
                 '## title ![High](file:///myPath)\n' +
                     'description\n\n' +
-                    '[$(eye) View Details](command:aws.codewhisperer.viewSecurityIssue)\n'
+                    `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                        JSON.stringify(issues[1])
+                    )} "Open security issue")\n`
             )
         })
 
