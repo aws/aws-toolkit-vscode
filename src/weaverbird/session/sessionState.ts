@@ -36,6 +36,7 @@ import {
 } from '../types'
 import { invoke } from '../util/invoke'
 import { Messenger } from '../controllers/chat/messenger/messenger'
+import globals from '../../shared/extensionGlobals'
 
 const fs = FileSystemCommon.instance
 
@@ -143,6 +144,7 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
 
 abstract class CodeGenBase {
     private pollCount = 60
+    private requestDelay = 10000
     readonly tokenSource: vscode.CancellationTokenSource
     public phase = SessionStatePhase.Codegen
     public readonly conversationId: string
@@ -194,11 +196,11 @@ abstract class CodeGenBase {
                     return newFiles
                 }
                 case 'predict-ready': {
-                    await new Promise(f => setTimeout(f, 10000))
+                    await new Promise(f => globals.clock.setTimeout(f, this.requestDelay))
                     break
                 }
                 case 'in-progress': {
-                    await new Promise(f => setTimeout(f, 10000))
+                    await new Promise(f => globals.clock.setTimeout(f, this.requestDelay))
                     break
                 }
                 case 'predict-failed':
