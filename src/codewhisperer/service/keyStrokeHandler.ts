@@ -19,6 +19,8 @@ import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
+import { extractContextForCodeWhisperer } from '../util/editorContext'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -109,6 +111,20 @@ export class KeyStrokeHandler {
                 if (event.contentChanges[0].text === session.recommendations[0].content) {
                     return
                 }
+            }
+
+            const { rightFileContent } = extractContextForCodeWhisperer(editor)
+            const rightContextLines = rightFileContent.split(/\r?\n/)
+            const rightContextAtCurrentLine = rightContextLines[0]
+            // we do not want to trigger when there is immediate right context on the same line
+            // with "}" being an exception because of IDE auto-complete
+            if (
+                CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.RightContext &&
+                rightContextAtCurrentLine.length &&
+                !rightContextAtCurrentLine.startsWith(' ') &&
+                rightContextAtCurrentLine.trim() !== '}'
+            ) {
+                return
             }
 
             let triggerType: CodewhispererAutomatedTriggerType | undefined
