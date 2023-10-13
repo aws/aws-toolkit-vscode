@@ -38,6 +38,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhisp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.telemetry.isTelemetryEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.transform
 import software.aws.toolkits.jetbrains.settings.AwsSettings
@@ -76,7 +77,7 @@ interface CodeWhispererClientAdaptor : Disposable {
         isSigv4: Boolean = shouldUseSigv4Client(project)
     ): ListCodeScanFindingsResponse
 
-    fun putUserTriggerDecisionTelemetry(
+    fun sendUserTriggerDecisionTelemetry(
         requestContext: RequestContext,
         responseContext: ResponseContext,
         completionType: CodewhispererCompletionType,
@@ -85,7 +86,7 @@ interface CodeWhispererClientAdaptor : Disposable {
         lineCount: Int
     ): SendTelemetryEventResponse
 
-    fun putCodePercentageTelemetry(
+    fun sendCodePercentageTelemetry(
         language: CodeWhispererProgrammingLanguage,
         acceptedTokenCount: Int,
         totalTokenCount: Int
@@ -180,7 +181,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
             bearerClient().listCodeAnalysisFindings(request.transform()).transform()
         }
 
-    override fun putUserTriggerDecisionTelemetry(
+    override fun sendUserTriggerDecisionTelemetry(
         requestContext: RequestContext,
         responseContext: ResponseContext,
         completionType: CodewhispererCompletionType,
@@ -217,7 +218,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         }
     }
 
-    override fun putCodePercentageTelemetry(
+    override fun sendCodePercentageTelemetry(
         language: CodeWhispererProgrammingLanguage,
         acceptedTokenCount: Int,
         totalTokenCount: Int

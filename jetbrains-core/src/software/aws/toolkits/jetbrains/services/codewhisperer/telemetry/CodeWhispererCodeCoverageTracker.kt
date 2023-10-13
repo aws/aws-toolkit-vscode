@@ -30,7 +30,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererService
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.TOTAL_SECONDS_IN_MINUTE
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIamIdentityCenterConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
 import java.time.Duration
 import java.time.Instant
@@ -203,9 +203,9 @@ abstract class CodeWhispererCodeCoverageTracker(
             }
         }
 
-        runIfIamIdentityCenterConnection(project) {
+        runIfIdcConnectionOrTelemetryEnabled(project) {
             try {
-                val response = CodeWhispererClientAdaptor.getInstance(project).putCodePercentageTelemetry(
+                val response = CodeWhispererClientAdaptor.getInstance(project).sendCodePercentageTelemetry(
                     language,
                     acceptedTokensSize,
                     totalTokensSize

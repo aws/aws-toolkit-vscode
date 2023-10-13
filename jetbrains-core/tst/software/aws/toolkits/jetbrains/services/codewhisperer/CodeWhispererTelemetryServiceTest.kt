@@ -16,14 +16,17 @@ import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.atLeastOnce
+import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
@@ -31,9 +34,8 @@ import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
@@ -72,6 +74,7 @@ class CodeWhispererTelemetryServiceTest {
     private lateinit var sut: CodeWhispererTelemetryService
     private lateinit var telemetryServiceSpy: TelemetryService
     private lateinit var batcher: TelemetryBatcher
+    private lateinit var mockClient: CodeWhispererClientAdaptor
 
     @Before
     fun setup() {
@@ -93,6 +96,16 @@ class CodeWhispererTelemetryServiceTest {
             )
         }
         ApplicationManager.getApplication().replaceService(CodeWhispererUserGroupSettings::class.java, groupSettings, disposableRule.disposable)
+
+        mockClient = spy(CodeWhispererClientAdaptor.getInstance(projectRule.project))
+        mockClient.stub {
+            onGeneric {
+                sendUserTriggerDecisionTelemetry(any(), any(), any(), any(), any(), any())
+            }.doAnswer {
+                mock<SendTelemetryEventResponse>()
+            }
+        }
+        projectRule.project.replaceService(CodeWhispererClientAdaptor::class.java, mockClient, disposableRule.disposable)
     }
 
     @After
@@ -424,82 +437,7 @@ class CodeWhispererTelemetryServiceTest {
         assertThat(decisionQueue).hasSize(3)
     }
 
-    @Test
-    fun `should invoke putTelemetryEvent when sending userTriggerDecision for pro tier users and optin data sharing`() {
-        val project = projectRule.project
-
-        val mockClient = spy(MockCodeWhispererClientAdaptor(project))
-        project.replaceService(
-            CodeWhispererClientAdaptor::class.java,
-            mockClient,
-            disposableRule.disposable
-        )
-
-        ApplicationManager.getApplication().replaceService(
-            CodeWhispererExplorerActionManager::class.java,
-            mock { on { checkActiveCodeWhispererConnectionType(any()) } doReturn CodeWhispererLoginType.SSO },
-            disposableRule.disposable
-        )
-
-        AwsSettings.getInstance().isTelemetryEnabled = true
-
-        val mockSsoConnection = mock<ManagedBearerSsoConnection> {
-            on { this.startUrl } doReturn "fake sso url"
-        }
-
-        project.replaceService(
-            ToolkitConnectionManager::class.java,
-            mock { on { activeConnectionForFeature(eq(CodeWhispererConnection.getInstance())) } doReturn mockSsoConnection },
-            disposableRule.disposable
-        )
-        assertThat(AwsSettings.getInstance().isTelemetryEnabled).isTrue
-
-        val requestContext = aRequestContext(project)
-        val responseContext = aResponseContext()
-        val recommendationContext = aRecommendationContext()
-        val suggestionState = CodewhispererSuggestionState.Accept
-        val duration = Duration.ofSeconds(1)
-        val suggestionReferenceCount = 1
-        val lineCount = 30
-
-        sut.sendUserTriggerDecisionEvent(
-            requestContext,
-            responseContext,
-            recommendationContext,
-            suggestionState,
-            duration,
-            suggestionReferenceCount,
-            lineCount
-        )
-
-        val completionType = if (recommendationContext.details.any {
-                it.completionType == CodewhispererCompletionType.Block
-            }
-        ) {
-            CodewhispererCompletionType.Block
-        } else CodewhispererCompletionType.Line
-
-        verify(mockClient).putUserTriggerDecisionTelemetry(
-            eq(requestContext),
-            eq(responseContext),
-            eq(completionType),
-            eq(suggestionState),
-            eq(suggestionReferenceCount),
-            eq(lineCount),
-        )
-    }
-
-    @Test
-    fun `should not invoke putTelemetryEvent if opt out telemetry`() {
-        val project = projectRule.project
-
-        val mockClient = mock<CodeWhispererClientAdaptor>()
-        project.replaceService(
-            CodeWhispererClientAdaptor::class.java,
-            mockClient,
-            disposableRule.disposable
-        )
-
+    private fun testSendTelemetryEventWithDifferentConfigsHelper(isProTier: Boolean, isTelemetryEnabled: Boolean) {
         val mockStatesManager = mock<CodeWhispererExplorerActionManager>()
         ApplicationManager.getApplication().replaceService(
             CodeWhispererExplorerActionManager::class.java,
@@ -507,62 +445,71 @@ class CodeWhispererTelemetryServiceTest {
             disposableRule.disposable
         )
 
-        fun configureMock(isProTier: Boolean, isTelemetryEnabled: Boolean) {
-            if (isProTier) {
-                whenever(mockStatesManager.checkActiveCodeWhispererConnectionType(any())).doReturn(CodeWhispererLoginType.SSO)
-            } else {
-                whenever(mockStatesManager.checkActiveCodeWhispererConnectionType(any())).doReturn(CodeWhispererLoginType.Sono)
-            }
-
-            AwsSettings.getInstance().isTelemetryEnabled = isTelemetryEnabled
+        val mockSsoConnection = mock<ManagedBearerSsoConnection> {
+            on { this.startUrl } doReturn if (isProTier) "fake sso url" else SONO_URL
         }
 
-        // case 1
-        configureMock(isProTier = true, isTelemetryEnabled = false)
+        projectRule.project.replaceService(
+            ToolkitConnectionManager::class.java,
+            mock { on { activeConnectionForFeature(eq(CodeWhispererConnection.getInstance())) } doReturn mockSsoConnection },
+            disposableRule.disposable
+        )
+        AwsSettings.getInstance().isTelemetryEnabled = isTelemetryEnabled
+
+        val expectedRequestContext = aRequestContext(projectRule.project)
+        val expectedResponseContext = aResponseContext()
+        val expectedRecommendationContext = aRecommendationContext()
+        val expectedSuggestionState = aSuggestionState()
+        val expectedDuration = Duration.ofSeconds(1)
+        val expectedSuggestionReferenceCount = 1
+        val expectedGeneratedLineCount = 50
+        val expectedCompletionType = if (expectedRecommendationContext.details.any {
+                it.completionType == CodewhispererCompletionType.Block
+            }
+        ) {
+            CodewhispererCompletionType.Block
+        } else CodewhispererCompletionType.Line
         sut.sendUserTriggerDecisionEvent(
-            aRequestContext(project),
-            aResponseContext(),
-            aRecommendationContext(),
-            CodewhispererSuggestionState.Accept,
-            Duration.ofSeconds(
-                1
-            ),
-            1,
-            50
+            expectedRequestContext,
+            expectedResponseContext,
+            expectedRecommendationContext,
+            expectedSuggestionState,
+            expectedDuration,
+            expectedSuggestionReferenceCount,
+            expectedGeneratedLineCount
         )
 
-        verifyNoInteractions(mockClient)
+        if (isProTier || isTelemetryEnabled) {
+            verify(mockClient).sendUserTriggerDecisionTelemetry(
+                eq(expectedRequestContext),
+                eq(expectedResponseContext),
+                eq(expectedCompletionType),
+                eq(expectedSuggestionState),
+                eq(expectedSuggestionReferenceCount),
+                eq(expectedGeneratedLineCount)
+            )
+        } else {
+            verifyNoInteractions(mockClient)
+        }
+    }
 
-        // case 2
-        configureMock(isProTier = false, isTelemetryEnabled = true)
-        sut.sendUserTriggerDecisionEvent(
-            aRequestContext(project),
-            aResponseContext(),
-            aRecommendationContext(),
-            CodewhispererSuggestionState.Accept,
-            Duration.ofSeconds(
-                1
-            ),
-            1,
-            50,
-        )
+    @Test
+    fun `should invoke sendTelemetryEvent if opt out telemetry, for SSO users`() {
+        testSendTelemetryEventWithDifferentConfigsHelper(isProTier = true, isTelemetryEnabled = false)
+    }
 
-        verifyNoInteractions(mockClient)
+    @Test
+    fun `should not invoke sendTelemetryEvent if opt out telemetry, for Builder ID users`() {
+        testSendTelemetryEventWithDifferentConfigsHelper(isProTier = false, isTelemetryEnabled = false)
+    }
 
-        // case 3
-        configureMock(isProTier = false, isTelemetryEnabled = false)
-        sut.sendUserTriggerDecisionEvent(
-            aRequestContext(project),
-            aResponseContext(),
-            aRecommendationContext(),
-            CodewhispererSuggestionState.Accept,
-            Duration.ofSeconds(
-                1
-            ),
-            1,
-            50
-        )
+    @Test
+    fun `should invoke sendTelemetryEvent if opt in telemetry, for SSO users`() {
+        testSendTelemetryEventWithDifferentConfigsHelper(isProTier = true, isTelemetryEnabled = true)
+    }
 
-        verifyNoInteractions(mockClient)
+    @Test
+    fun `should invoke sendTelemetryEvent if opt in telemetry, for Builder ID users`() {
+        testSendTelemetryEventWithDifferentConfigsHelper(isProTier = false, isTelemetryEnabled = true)
     }
 }
