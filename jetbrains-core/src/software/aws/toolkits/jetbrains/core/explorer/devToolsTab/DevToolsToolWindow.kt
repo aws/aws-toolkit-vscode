@@ -110,8 +110,7 @@ class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         redrawContent()
 
-        // TODO: does this expansion need to be conditional?
-        TreeUtil.expand(tree, 2)
+        makeServiceChildrenVisible()
     }
 
     override fun dispose() {}
@@ -153,6 +152,10 @@ class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         val state = TreeState.createOn(tree)
         treeModel.invalidate()
         state.applyTo(tree)
+    }
+
+    fun makeServiceChildrenVisible() {
+        TreeUtil.expand(tree, 2)
     }
 
     companion object {

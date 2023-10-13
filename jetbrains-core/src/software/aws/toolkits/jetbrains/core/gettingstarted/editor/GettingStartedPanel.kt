@@ -35,6 +35,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.explorer.AwsToolkitExplorerToolWindow
+import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWindow
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.BULLET_PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.GOT_IT_ID_PREFIX
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_HEIGHT
@@ -193,6 +194,9 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel() {
     private fun showGotIt(tabName: String, tooltip: GotItTooltip) {
         AwsToolkitExplorerToolWindow.toolWindow(project).activate {
             AwsToolkitExplorerToolWindow.getInstance(project).selectTab(tabName)?.let {
+                if (tabName == AwsToolkitExplorerToolWindow.DEVTOOLS_TAB_ID) {
+                    DevToolsToolWindow.getInstance(project).makeServiceChildrenVisible()
+                }
                 tooltip.show(it as JComponent, GotItTooltip.TOP_MIDDLE)
             }
         }
