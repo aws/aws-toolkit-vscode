@@ -65,6 +65,10 @@ interface CredentialIdentifier {
     val defaultRegionId: String? get() = null
 }
 
+interface SsoSessionBackedCredentialIdentifier {
+    val sessionIdentifier: String
+}
+
 interface SsoSessionIdentifier {
     val id: String
     val startUrl: String

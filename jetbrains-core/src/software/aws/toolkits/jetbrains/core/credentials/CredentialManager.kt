@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.extensions.ExtensionPointName
@@ -14,12 +15,14 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
 import software.aws.toolkits.core.credentials.CredentialProviderNotFoundException
+import software.aws.toolkits.core.credentials.SsoSessionBackedCredentialIdentifier
 import software.aws.toolkits.core.credentials.SsoSessionIdentifier
 import software.aws.toolkits.core.credentials.ToolkitCredentialsChangeListener
 import software.aws.toolkits.core.credentials.ToolkitCredentialsProvider
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.AwsTelemetry
@@ -59,6 +62,14 @@ abstract class CredentialManager : SimpleModificationTracker() {
 
         incModificationCount()
         ApplicationManager.getApplication().messageBus.syncPublisher(CREDENTIALS_CHANGED).providerModified(identifier)
+    }
+
+    protected fun modifyDependentProviders(providerId: String) {
+        providerIds.values.forEach {
+            if (it is SsoSessionBackedCredentialIdentifier && it.sessionIdentifier == providerId) {
+                modifyProvider(it)
+            }
+        }
     }
 
     protected fun removeProvider(identifier: CredentialIdentifier) {
@@ -135,7 +146,7 @@ abstract class CredentialManager : SimpleModificationTracker() {
     }
 }
 
-class DefaultCredentialManager : CredentialManager() {
+class DefaultCredentialManager : CredentialManager(), Disposable {
     private val extensionMap: Map<String, CredentialProviderFactory>
         get() = EP_NAME.extensionList.associateBy {
             it.id
@@ -179,7 +190,23 @@ class DefaultCredentialManager : CredentialManager() {
                 }
             }
         }
+
+        // sync bearer changes back to any profiles with a dependency
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            BearerTokenProviderListener.TOPIC,
+            object : BearerTokenProviderListener {
+                override fun onChange(providerId: String) {
+                    modifyDependentProviders(providerId)
+                }
+
+                override fun invalidate(providerId: String) {
+                    modifyDependentProviders(providerId)
+                }
+            }
+        )
     }
+
+    override fun dispose() {}
 
     override fun factoryMapping(): Map<String, CredentialProviderFactory> = extensionMap
 

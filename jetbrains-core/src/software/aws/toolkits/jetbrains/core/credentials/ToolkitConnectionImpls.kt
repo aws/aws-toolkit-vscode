@@ -27,7 +27,8 @@ class ManagedBearerSsoConnection(
             InteractiveBearerTokenProvider(
                 startUrl,
                 region,
-                scopes
+                scopes,
+                id
             ),
             region
         )

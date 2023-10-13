@@ -46,8 +46,13 @@ class IdcRolePopupTest {
         mockClientManager.create<SsoClient>()
 
         runInEdtAndWait {
-            val validation = IdcRolePopup(projectExtension.project, aString(), aString(), mockk(), state, mockk())
-                .performValidateAll()
+            val validation = IdcRolePopup(projectExtension.project, aString(), aString(), mockk(), state, mockk()).run {
+                try {
+                    performValidateAll()
+                } finally {
+                    close(0)
+                }
+            }
 
             assertThat(validation).singleElement().satisfies {
                 assertThat(it.okEnabled).isFalse()
@@ -82,7 +87,11 @@ class IdcRolePopupTest {
                 state = state,
                 configFilesFacade = configFilesFacade
             )
-            sut.doOkActionWithRoleInfo(roleInfo)
+            try {
+                sut.doOkActionWithRoleInfo(roleInfo)
+            } finally {
+                sut.close(0)
+            }
 
             verify {
                 configFilesFacade.appendProfileToConfig(

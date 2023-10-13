@@ -19,6 +19,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
+import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
@@ -64,7 +65,7 @@ data class UserConfigSsoSessionProfile(
     var scopes: List<String> = emptyList()
 ) : AuthProfile {
     val id
-        get() = "sso-session:$configSessionName"
+        get() = "$SSO_SESSION_SECTION_NAME:$configSessionName"
 }
 
 data class DetectedDiskSsoSessionProfile(
