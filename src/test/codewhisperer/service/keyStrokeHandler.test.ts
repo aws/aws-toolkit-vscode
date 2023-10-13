@@ -20,6 +20,7 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
 import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -213,6 +214,62 @@ describe('keyStrokeHandler', function () {
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(invokeSpy.called)
         })
+
+        it('Should skip invoking if there is immediate right context on the same line and not a single } for the user group', async function () {
+            const casesForSuppressTokenFilling = [
+                {
+                    rightContext: 'add',
+                    shouldInvoke: false,
+                },
+                {
+                    rightContext: '}',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '}    ',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: ' add',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '    ',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '\naddTwo',
+                    shouldInvoke: true,
+                },
+            ]
+            casesForSuppressTokenFilling.forEach(async ({ rightContext, shouldInvoke }) => {
+                await testIfRightContextShouldInvoke(
+                    rightContext,
+                    shouldInvoke,
+                    CodeWhispererConstants.UserGroup.RightContext
+                )
+            })
+        })
+
+        it('Should not skip invoking based on right context for control group', async function () {
+            await testIfRightContextShouldInvoke('add', true, CodeWhispererConstants.UserGroup.Control)
+        })
+
+        async function testIfRightContextShouldInvoke(
+            rightContext: string,
+            shouldTrigger: boolean,
+            userGroup: CodeWhispererConstants.UserGroup
+        ) {
+            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript', 1, 1)
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                '{'
+            )
+            CodeWhispererUserGroupSettings.instance.userGroup = userGroup
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.strictEqual(invokeSpy.called, shouldTrigger)
+        }
     })
 
     describe('invokeAutomatedTrigger', function () {

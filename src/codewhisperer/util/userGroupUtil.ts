@@ -56,7 +56,9 @@ export class CodeWhispererUserGroupSettings {
     }
 
     private guessUserGroup(): UserGroup {
-        return UserGroup.Control
+        const randomNum = Math.random()
+        const result = randomNum <= 1 / 2 ? UserGroup.Control : UserGroup.RightContext
+        return result
     }
 
     static #instance: CodeWhispererUserGroupSettings | undefined
