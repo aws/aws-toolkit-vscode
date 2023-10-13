@@ -9,9 +9,19 @@ import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
 
-const WelcomeMessage = `<span markdown="1">Hi, I am Q!          
-Ask me any software development questions. I can help explain, debug, or optimize code. 
-Or you can type \`/\` to see some suggested tasks.`
+const WelcomeMessage = `<span markdown="1">
+Hi, I am AWS Q. I can answer your software development questions. 
+Ask me to explain, debug, or optimize your code. 
+You can enter \`/\` to see a list of quick actions.
+</span>`
+const WeaverBirdWelcomeMessage = `<span markdown="1">
+### How \`/assign\` works:
+1. Describe your job to be done
+2. Agree on an approach
+3. Q generate code
+4. Review code suggestions, provide feedback if needed
+</span>`
+
 const QuickActionCommands = [
     {
         groupName: 'Start a workflow',
@@ -162,12 +172,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                                 : [
                                       {
                                           type: ChatItemType.ANSWER,
-                                          body: `<span markdown="1">How this works:
-                                1. Provide a brief problem statement for a task
-                                2. Discuss the problem with Q
-                                3. Agree on an approach
-                                4. Q will generate code suggestions for your project
-                                5. Review code suggestions, provide feedback for another revision if needed</span>`,
+                                          body: WeaverBirdWelcomeMessage,
                                       },
                                   ]),
                         ],
@@ -176,6 +181,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 tabTypeStorage.updateTab(affectedTabId, TabType.WeaverBird)
 
                 mynahUI.updateStore(affectedTabId, {
+                    tabTitle: 'Q- Task',
                     quickActionCommands: [],
                     promptInputPlaceholder: 'Assign a code task',
                 })
@@ -183,6 +189,11 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 if (realPromptText !== '') {
                     connector.requestGenerativeAIAnswer(affectedTabId, {
                         chatMessage: realPromptText,
+                    })
+                } else if (affectedTabId === tabID) {
+                    mynahUI.addChatAnswer(affectedTabId, {
+                        type: ChatItemType.ANSWER,
+                        body: WeaverBirdWelcomeMessage,
                     })
                 }
 
@@ -219,10 +230,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onOpenDiff: connector.onOpenDiff,
         tabs: {
             'tab-1': {
-                tabTitle: 'Welcome to Q',
                 isSelected: true,
                 store: {
-                    ...initialData,
+                    tabTitle: 'Chat',
                     chatItems: [
                         {
                             type: ChatItemType.ANSWER,
@@ -232,11 +242,13 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     showChatAvatars: false,
                     quickActionCommands: QuickActionCommands,
                     promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+                    ...initialData,
                 },
             },
         },
         defaults: {
             store: {
+                tabTitle: 'Chat',
                 chatItems: [
                     {
                         type: ChatItemType.ANSWER,
@@ -247,7 +259,6 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 quickActionCommands: QuickActionCommands,
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             },
-            tabTitle: 'AWS Q',
         },
     })
 }
