@@ -120,6 +120,9 @@ export class Connector {
             case TabType.CodeWhispererChat:
                 this.cwChatConnector.onTabRemove(tabID)
                 break
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.onTabRemove(tabID)
+                break
         }
     }
 

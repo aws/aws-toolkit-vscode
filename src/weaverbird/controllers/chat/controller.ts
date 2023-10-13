@@ -18,6 +18,7 @@ export interface ChatControllerEventEmitters {
     readonly followUpClicked: EventEmitter<any>
     readonly openDiff: EventEmitter<any>
     readonly stopResponse: EventEmitter<any>
+    readonly tabClosed: EventEmitter<any>
 }
 
 export class WeaverbirdController {
@@ -25,17 +26,17 @@ export class WeaverbirdController {
     private readonly sessionStorage: ChatSessionStorage
 
     public constructor(
-        private readonly chatControllerInputEventEmitter: ChatControllerEventEmitters,
+        private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
         sessionStorage: ChatSessionStorage
     ) {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
 
-        this.chatControllerInputEventEmitter.processHumanChatMessage.event(data => {
+        this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processHumanChatMessage(data)
         })
-        this.chatControllerInputEventEmitter.followUpClicked.event(data => {
+        this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
                 case FollowUpTypes.WriteCode:
                     this.writeCodeClicked(data)
@@ -48,11 +49,14 @@ export class WeaverbirdController {
                     break
             }
         })
-        this.chatControllerInputEventEmitter.openDiff.event(data => {
+        this.chatControllerMessageListeners.openDiff.event(data => {
             this.openDiff(data)
         })
-        this.chatControllerInputEventEmitter.stopResponse.event(data => {
+        this.chatControllerMessageListeners.stopResponse.event(data => {
             this.stopResponse(data)
+        })
+        this.chatControllerMessageListeners.tabClosed.event(data => {
+            this.tabClosed(data)
         })
     }
 
@@ -163,5 +167,9 @@ export class WeaverbirdController {
     private async stopResponse(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
         session.state.tokenSource.cancel()
+    }
+
+    private tabClosed(message: any) {
+        this.sessionStorage.deleteSession(message.tabID)
     }
 }

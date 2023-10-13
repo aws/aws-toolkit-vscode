@@ -140,4 +140,12 @@ export class Connector {
             command: 'stop-response',
         })
     }
+
+    onTabRemove = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'tab-was-removed',
+            tabType: TabType.WeaverBird,
+        })
+    }
 }
