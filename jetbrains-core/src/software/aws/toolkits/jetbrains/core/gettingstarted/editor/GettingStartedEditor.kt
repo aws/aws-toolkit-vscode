@@ -8,6 +8,7 @@ import com.intellij.openapi.fileEditor.FileEditorState
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.UserDataHolderBase
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.ui.components.JBScrollPane
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 
@@ -15,7 +16,7 @@ class GettingStartedEditor(private val project: Project, private val file: Virtu
     override fun dispose() {
     }
 
-    override fun getComponent(): JComponent = GettingStartedPanel(project)
+    override fun getComponent(): JComponent = JBScrollPane(GettingStartedPanel(project))
 
     override fun getFile(): VirtualFile = file
 
