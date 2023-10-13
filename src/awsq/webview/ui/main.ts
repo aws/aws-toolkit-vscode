@@ -22,6 +22,24 @@ const WeaverBirdWelcomeMessage = `<span markdown="1">
 4. Review code suggestions, provide feedback if needed
 </span>`
 
+const WelcomeFollowupType = {
+    chat: 'continue-to-chat',
+    assign: 'assign-code-task',
+}
+const WelcomeFollowUps = {
+    text: 'Or you can select one of these',
+    options: [
+        {
+            pillText: 'I want to assign a code task',
+            type: WelcomeFollowupType.assign,
+        },
+        {
+            pillText: 'I have a software development question',
+            type: WelcomeFollowupType.chat,
+        },
+    ],
+}
+
 const QuickActionCommands = [
     {
         groupName: 'Start a workflow',
@@ -226,7 +244,35 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: connector.followUpClicked,
+        onFollowUpClicked: (tabID, followUp) => {
+            if (followUp.type === WelcomeFollowupType.assign) {
+                const newTabId = mynahUI.updateStore('', {
+                    tabTitle: 'Q- Task',
+                    quickActionCommands: [],
+                    promptInputPlaceholder: 'Assign a code task',
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: WeaverBirdWelcomeMessage,
+                        },
+                    ],
+                })
+                tabTypeStorage.updateTab(newTabId, TabType.WeaverBird)
+                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
+            } else if (followUp.type === WelcomeFollowupType.chat) {
+                mynahUI.updateStore(tabID, {
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: 'Ok, please write your question below.',
+                        },
+                    ],
+                })
+                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
+            } else {
+                connector.followUpClicked(tabID, followUp)
+            }
+        },
         onOpenDiff: connector.onOpenDiff,
         tabs: {
             'tab-1': {
@@ -237,6 +283,10 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                         {
                             type: ChatItemType.ANSWER,
                             body: WelcomeMessage,
+                        },
+                        {
+                            type: ChatItemType.ANSWER,
+                            followUp: WelcomeFollowUps,
                         },
                     ],
                     showChatAvatars: false,
@@ -253,6 +303,10 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     {
                         type: ChatItemType.ANSWER,
                         body: WelcomeMessage,
+                    },
+                    {
+                        type: ChatItemType.ANSWER,
+                        followUp: WelcomeFollowUps,
                     },
                 ],
                 showChatAvatars: false,
