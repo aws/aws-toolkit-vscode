@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.gettingstarted
 
+import com.intellij.openapi.ui.TestDialog
+import com.intellij.openapi.ui.TestDialogManager
 import com.intellij.testFramework.DisposableExtension
 import com.intellij.testFramework.ProjectExtension
 import com.intellij.testFramework.runInEdtAndWait
@@ -13,9 +15,17 @@ import io.mockk.mockkStatic
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.stub
+import org.mockito.kotlin.whenever
+import software.amazon.awssdk.profiles.Profile
+import software.amazon.awssdk.services.sts.StsClient
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityRequest
+import software.amazon.awssdk.services.sts.model.GetCallerIdentityResponse
+import software.amazon.awssdk.services.sts.model.StsException
 import software.aws.toolkits.core.region.Endpoint
 import software.aws.toolkits.core.region.Service
 import software.aws.toolkits.core.utils.test.aString
@@ -26,6 +36,7 @@ import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderExtension
+import software.aws.toolkits.resources.message
 
 @ExtendWith(MockKExtension::class)
 class SetupAuthenticationDialogTest {
@@ -64,7 +75,7 @@ class SetupAuthenticationDialogTest {
         )
 
         val configFacade = mockk<ConfigFilesFacade>(relaxed = true)
-
+        TestDialogManager.setTestDialog(TestDialog.OK)
         val state = SetupAuthenticationDialogState().apply {
             idcTabState.apply {
                 this.startUrl = startUrl
@@ -99,7 +110,7 @@ class SetupAuthenticationDialogTest {
         )
 
         val configFacade = mockk<ConfigFilesFacade>(relaxed = true)
-
+        TestDialogManager.setTestDialog(TestDialog.OK)
         val state = SetupAuthenticationDialogState().apply {
             idcTabState.apply {
                 this.startUrl = startUrl
@@ -197,6 +208,64 @@ class SetupAuthenticationDialogTest {
                     assertThat(error.message).contains("Must not be empty")
                 }
             }
+        }
+    }
+
+    @Test
+    fun `validate IAM tab fails if credentials are invalid`() {
+        val state = SetupAuthenticationDialogState().apply {
+            selectedTab.set(SetupAuthenticationTabs.IAM_LONG_LIVED)
+            iamTabState.apply {
+                profileName = "test"
+                accessKey = "invalid"
+                secretKey = "invalid"
+            }
+        }
+
+        mockClientManager.create<StsClient>().stub {
+            whenever(it.getCallerIdentity(any<GetCallerIdentityRequest>())).thenThrow(StsException.builder().message("Some service exception message").build())
+        }
+
+        runInEdtAndWait {
+            val sut = SetupAuthenticationDialog(projectExtension.project, state = state)
+            val exception = assertThrows<Exception> { sut.doOKAction() }
+            assertThat(exception.message).isEqualTo(message("gettingstarted.setup.iam.profile.invalid_credentials"))
+        }
+    }
+
+    @Test
+    fun `validate IAM tab succeeds if credentials are invalid`() {
+        val state = SetupAuthenticationDialogState().apply {
+            selectedTab.set(SetupAuthenticationTabs.IAM_LONG_LIVED)
+            iamTabState.apply {
+                profileName = "test"
+                accessKey = "validAccess"
+                secretKey = "validSecret"
+            }
+        }
+
+        mockClientManager.create<StsClient>().stub {
+            whenever(it.getCallerIdentity(any<GetCallerIdentityRequest>())).thenReturn(GetCallerIdentityResponse.builder().build())
+        }
+
+        val configFacade = mockk<ConfigFilesFacade>(relaxed = true)
+        runInEdtAndWait {
+            SetupAuthenticationDialog(projectExtension.project, state = state, configFilesFacade = configFacade)
+                .doOKAction()
+        }
+
+        verify {
+            configFacade.appendProfileToCredentials(
+                Profile.builder()
+                    .name("test")
+                    .properties(
+                        mapOf(
+                            "aws_access_key_id" to "validAccess",
+                            "aws_secret_access_key" to "validSecret"
+                        )
+                    )
+                    .build()
+            )
         }
     }
 }
