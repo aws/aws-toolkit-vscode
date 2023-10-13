@@ -33,9 +33,9 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
-    selectCustomization,
+    selectCustomizationPrompt,
     notifyNewCustomizationsCmd,
-    connectIdCenter,
+    connectWithCustomization,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -159,8 +159,8 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         // show introduction
         showIntroduction.register(),
-        // CodeWhisperer Identity Center connection setup
-        connectIdCenter.register(),
+        // direct CodeWhisperer connection setup with customization
+        connectWithCustomization.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
@@ -184,7 +184,7 @@ export async function activate(context: ExtContext): Promise<void> {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
         // select customization
-        selectCustomization.register(),
+        selectCustomizationPrompt.register(),
         // notify new customizations
         notifyNewCustomizationsCmd.register(),
         /**
