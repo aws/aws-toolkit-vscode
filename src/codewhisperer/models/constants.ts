@@ -101,6 +101,7 @@ export const supportedLanguages = [
     'rust',
     'scala',
     'shellscript',
+    'sh', // Cloud9 reports bash files with this language-id
     'sql',
 ] as const
 
