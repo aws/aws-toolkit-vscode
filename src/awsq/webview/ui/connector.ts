@@ -170,4 +170,12 @@ export class Connector {
                 break
         }
     }
+
+    onStopChatResponse = (tabID: string): void => {
+        switch (this.tabTypesStorage.getTabType(tabID)) {
+            case TabType.WeaverBird:
+                this.weaverbirdChatConnector.onStopChatResponse(tabID)
+                break
+        }
+    }
 }

@@ -133,4 +133,11 @@ export class Connector {
             return
         }
     }
+
+    onStopChatResponse = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'stop-response',
+        })
+    }
 }

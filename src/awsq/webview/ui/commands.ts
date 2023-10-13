@@ -13,5 +13,6 @@ type MessageCommand =
     | 'open-diff'
     | 'code_was_copied_to_clipboard'
     | 'insert_code_at_cursor_position'
+    | 'stop-response'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }
