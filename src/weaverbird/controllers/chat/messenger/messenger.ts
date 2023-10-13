@@ -35,7 +35,7 @@ export class Messenger {
         )
     }
 
-    public sendFilePaths(filePaths: string[], tabID: string) {
-        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID))
+    public sendFilePaths(filePaths: string[], tabID: string, sessionID: string) {
+        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID, sessionID))
     }
 }

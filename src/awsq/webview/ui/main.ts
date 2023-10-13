@@ -233,7 +233,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 
             connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
         },
-        // onSendFeedback: undefined, //connector.sendFeedback,
+        onSendFeedback: connector.sendFeedback,
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
         onCopyCodeToClipboard: connector.onCopyCodeToClipboard,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,

@@ -191,7 +191,7 @@ abstract class CodeGenBase {
                     }
                     if (changes.filePaths && changes.filePaths.length > 0) {
                         // Show the file tree component when file paths are present
-                        params.messenger.sendFilePaths(changes.filePaths, this.tabID)
+                        params.messenger.sendFilePaths(changes.filePaths, this.tabID, this.config.conversationId)
                     }
                     return newFiles
                 }
