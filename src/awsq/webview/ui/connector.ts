@@ -87,21 +87,12 @@ export class Connector {
     }
 
     onTabAdd = (tabID: string): void => {
-        const currentTabFromStorage = this.tabsStorage.getTab(tabID)
-        if (currentTabFromStorage === undefined) {
-            this.tabsStorage.addTab({
-                id: tabID,
-                type: 'unknown',
-                status: 'free',
-                isSelected: true,
-            })
-        }
-
-        switch (currentTabFromStorage?.type) {
-            case 'cwc':
-                this.cwChatConnector.onTabAdd(tabID)
-                break
-        }
+        this.tabsStorage.addTab({
+            id: tabID,
+            type: 'unknown',
+            status: 'free',
+            isSelected: true,
+        })
     }
 
     onTabChange = (tabId: string): void => {
@@ -172,8 +163,11 @@ export class Connector {
         // })
     }
 
-    followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+    onFollowUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
+            // TODO: We cannot rely on the tabType here,
+            // It can come up at a later point depending on the future UX designs,
+            // We should decide it depending on the followUp.type
             case 'unknown':
                 this.awsqCommonsConnector.followUpClicked(tabID, followUp)
                 break

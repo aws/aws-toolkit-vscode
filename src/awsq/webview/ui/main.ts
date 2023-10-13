@@ -137,7 +137,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
             if (welcomeFollowUpType === 'assign-code-task') {
                 const newTabId = mynahUI.updateStore('', {
-                    tabTitle: 'Q- Task',
+                    tabTitle: 'Q - Task',
                     quickActionCommands: [],
                     promptInputPlaceholder: 'Assign a code task',
                     chatItems: [
@@ -147,13 +147,17 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                         },
                     ],
                 })
-                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
+                // It means that it cannot trigger after the updateStore function returns.
                 tabsStorage.addTab({
                     id: newTabId,
-                    status: 'free',
-                    type: 'wb',
+                    status: 'busy',
+                    type: 'unknown',
                     isSelected: true,
                 })
+
+                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
                 return
             }
 
@@ -326,7 +330,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: connector.followUpClicked,
+        onFollowUpClicked: connector.onFollowUpClicked,
         onOpenDiff: connector.onOpenDiff,
         onStopChatResponse: (tabID: string) => {
             mynahUI.updateStore(tabID, {
