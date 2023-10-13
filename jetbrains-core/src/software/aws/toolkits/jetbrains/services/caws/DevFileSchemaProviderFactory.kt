@@ -26,8 +26,7 @@ class DevFileSchemaProviderFactory : JsonSchemaProviderFactory {
             override fun getSchemaVersion(): JsonSchemaVersion = JsonSchemaVersion.SCHEMA_7
         }
     )
-
     private companion object {
-        const val schemaUrl: String = "https://github.com/devfile/api/releases/latest/download/devfile.json"
+        const val schemaUrl: String = "https://raw.githubusercontent.com/devfile/api/v2.2.1/schemas/latest/devfile.json"
     }
 }
