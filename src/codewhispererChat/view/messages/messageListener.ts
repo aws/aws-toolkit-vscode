@@ -42,7 +42,17 @@ export class UIMessageListener {
             case 'insert_code_at_cursor_position':
                 this.processInsertCodeAtCursorPosition(msg)
                 break
+            case 'trigger-tabID-received':
+                this.processTriggerTabIDReceived(msg)
+                break
         }
+    }
+
+    private processTriggerTabIDReceived(msg: any) {
+        this.chatControllerMessagePublishers.processTriggerTabIDReceived.publish({
+            tabID: msg.tabID,
+            triggerID: msg.triggerID,
+        })
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {

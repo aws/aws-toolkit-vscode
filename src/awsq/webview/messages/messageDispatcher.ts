@@ -6,7 +6,7 @@
 import { Webview } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
-import { TabType } from '../ui/storages/tabTypeStorage'
+import { TabType } from '../ui/storages/tabsStorage'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,

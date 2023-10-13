@@ -11,7 +11,7 @@ class UiMessage {
     readonly sender: string = 'CWChat'
     readonly type: string = ''
 
-    public constructor(protected tabID: string) {}
+    public constructor(protected tabID: string | undefined) {}
 }
 
 export class ErrorMessage extends UiMessage {
@@ -98,26 +98,23 @@ export class SearchView extends UiMessage {
     override type = 'drawNewSearchViewState'
 }
 
+export type ChatMessageType = 'answer-stream' | 'answer-part' | 'answer'
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
     readonly followUps: FollowUp[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
-}
-
-export enum ChatMessageType {
-    BeginStream = 'answer-stream',
-    StreamPart = 'answer-part',
-    Answer = 'answer',
+    readonly triggerID: string
 }
 
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
-    readonly messageType: string
+    readonly messageType: ChatMessageType
     readonly followUps: FollowUp[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly searchResults: Suggestion[] | undefined
-    readonly requestID!: string
+    readonly triggerID: string
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -126,6 +123,7 @@ export class ChatMessage extends UiMessage {
         this.messageType = props.messageType
         this.followUps = props.followUps
         this.relatedSuggestions = props.relatedSuggestions
+        this.triggerID = props.triggerID
     }
 }
 
@@ -133,6 +131,23 @@ export interface FollowUp {
     readonly type: string
     readonly pillText: string
     readonly prompt: string
+}
+
+export interface EditorContextCommandMessageProps {
+    readonly message: string
+    readonly triggerID: string
+}
+
+export class EditorContextCommandMessage extends UiMessage {
+    readonly message: string
+    readonly triggerID: string
+    override type = 'editorContextCommandMessage'
+
+    constructor(props: EditorContextCommandMessageProps) {
+        super(undefined)
+        this.message = props.message
+        this.triggerID = props.triggerID
+    }
 }
 
 export class AppToWebViewMessageDispatcher {
@@ -143,6 +158,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendChatMessage(message: ChatMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendEditorContextCommandMessage(message: EditorContextCommandMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

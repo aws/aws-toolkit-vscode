@@ -14,5 +14,6 @@ type MessageCommand =
     | 'code_was_copied_to_clipboard'
     | 'insert_code_at_cursor_position'
     | 'stop-response'
+    | 'trigger-tabID-received'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

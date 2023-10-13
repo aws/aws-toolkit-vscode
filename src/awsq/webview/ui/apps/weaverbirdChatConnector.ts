@@ -5,7 +5,7 @@
 
 import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
-import { TabType, TabTypeStorage } from '../storages/tabTypeStorage'
+import { TabsStorage } from '../storages/tabsStorage'
 
 interface ChatPayload {
     chatMessage: string
@@ -20,7 +20,7 @@ export interface ConnectorProps {
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
-    tabTypeStorage: TabTypeStorage
+    tabsStorage: TabsStorage
 }
 
 export class Connector {
@@ -41,7 +41,7 @@ export class Connector {
             tabID: tabID,
             code,
             command: 'insert_code_at_cursor_position',
-            tabType: TabType.WeaverBird,
+            tabType: 'wb',
         })
     }
 
@@ -50,7 +50,7 @@ export class Connector {
             tabID: tabID,
             code,
             command: 'code_was_copied_to_clipboard',
-            tabType: TabType.WeaverBird,
+            tabType: 'wb',
         })
     }
 
@@ -60,7 +60,7 @@ export class Connector {
             tabID,
             leftPath,
             rightPath,
-            tabType: TabType.WeaverBird,
+            tabType: 'wb',
         })
     }
 
@@ -69,7 +69,7 @@ export class Connector {
             command: 'follow-up-was-clicked',
             followUp,
             tabID,
-            tabType: TabType.WeaverBird,
+            tabType: 'wb',
         })
     }
 
@@ -79,7 +79,7 @@ export class Connector {
                 tabID: tabID,
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
-                tabType: TabType.WeaverBird,
+                tabType: 'wb',
             })
         })
 
@@ -149,7 +149,7 @@ export class Connector {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'tab-was-removed',
-            tabType: TabType.WeaverBird,
+            tabType: 'wb',
         })
     }
 

@@ -17,7 +17,6 @@ import { Messenger } from './controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from './views/connector/connector'
 import globals from '../shared/extensionGlobals'
 import { ChatSessionStorage } from './storages/chatSession'
-import { TabType } from '../awsq/webview/ui/storages/tabTypeStorage'
 
 export function init(appContext: AwsQAppInitContext) {
     const weaverbirdChatControllerEventEmitters = {
@@ -64,8 +63,5 @@ export function init(appContext: AwsQAppInitContext) {
         webViewMessageListener: new MessageListener<any>(weaverbirdChatUIInputEventEmitter),
     })
 
-    appContext.registerWebViewToAppMessagePublisher(
-        new MessagePublisher<any>(weaverbirdChatUIInputEventEmitter),
-        TabType.WeaverBird
-    )
+    appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(weaverbirdChatUIInputEventEmitter), 'wb')
 }

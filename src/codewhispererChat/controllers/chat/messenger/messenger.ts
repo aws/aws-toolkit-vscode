@@ -6,24 +6,25 @@
 import { ChatEvent } from '../../../clients/chat/v0/model'
 import {
     ChatMessage,
-    ChatMessageType,
     AppToWebViewMessageDispatcher,
     ErrorMessage,
     FollowUp,
     Suggestion,
+    EditorContextCommandMessage,
 } from '../../../view/connector/connector'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
-    async sendAIResponse(response: AsyncGenerator<ChatEvent>, tabID: string) {
+    async sendAIResponse(response: AsyncGenerator<ChatEvent>, tabID: string, triggerID: string) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
                     message: '',
-                    messageType: ChatMessageType.BeginStream,
+                    messageType: 'answer-stream',
                     followUps: undefined,
                     relatedSuggestions: undefined,
+                    triggerID,
                 },
                 tabID
             )
@@ -41,9 +42,10 @@ export class Messenger {
                     new ChatMessage(
                         {
                             message: message,
-                            messageType: ChatMessageType.StreamPart,
+                            messageType: 'answer-part',
                             followUps: undefined,
                             relatedSuggestions: undefined,
+                            triggerID,
                         },
                         tabID
                     )
@@ -92,9 +94,10 @@ export class Messenger {
                 new ChatMessage(
                     {
                         message: undefined,
-                        messageType: ChatMessageType.StreamPart,
+                        messageType: 'answer-part',
                         followUps: undefined,
                         relatedSuggestions,
+                        triggerID,
                     },
                     tabID
                 )
@@ -105,9 +108,10 @@ export class Messenger {
             new ChatMessage(
                 {
                     message: undefined,
-                    messageType: ChatMessageType.Answer,
+                    messageType: 'answer',
                     followUps: followUps,
                     relatedSuggestions: undefined,
+                    triggerID,
                 },
                 tabID
             )
@@ -123,6 +127,10 @@ export class Messenger {
             },
             tabID
         )
+    }
+
+    public sendEditorContextCommandMessage(message: string, triggerID: string) {
+        this.dispatcher.sendEditorContextCommandMessage(new EditorContextCommandMessage({ message, triggerID }))
     }
 
     private showChatExceptionMessage(e: ChatException, tabID: string) {

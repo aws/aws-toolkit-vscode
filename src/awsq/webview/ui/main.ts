@@ -7,7 +7,8 @@ import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
-import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
+import { TabsStorage } from './storages/tabsStorage'
+import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 
 const WelcomeMessage = `<span markdown="1">
 Hi, I am AWS Q. I can answer your software development questions. 
@@ -22,20 +23,16 @@ const WeaverBirdWelcomeMessage = `<span markdown="1">
 4. Review code suggestions, provide feedback if needed
 </span>`
 
-const WelcomeFollowupType = {
-    chat: 'continue-to-chat',
-    assign: 'assign-code-task',
-}
 const WelcomeFollowUps = {
     text: 'Or you can select one of these',
     options: [
         {
             pillText: 'I want to assign a code task',
-            type: WelcomeFollowupType.assign,
+            type: 'assign-code-task',
         },
         {
             pillText: 'I have a software development question',
-            type: WelcomeFollowupType.chat,
+            type: 'continue-to-chat',
         },
     ],
 }
@@ -88,11 +85,91 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     const ideApi = acquireVsCodeApi()
-    const tabTypeStorage = new TabTypeStorage()
+    const tabsStorage = new TabsStorage()
     // Adding the first tab as CWC tab
-    tabTypeStorage.addTab('tab-1', TabType.CodeWhispererChat)
+    tabsStorage.addTab({
+        id: 'tab-1',
+        status: 'free',
+        type: 'unknown',
+        isSelected: true,
+    })
     const connector = new Connector({
-        tabTypeStorage,
+        tabsStorage,
+        onCWCContextCommandMessage: (message: ChatItem): string => {
+            const selectedTab = tabsStorage.getSelectedTab()
+            if (selectedTab !== undefined && selectedTab.type === 'cwc' && selectedTab.status === 'free') {
+                mynahUI.updateStore(selectedTab.id, {
+                    loadingChat: true,
+                    promptInputDisabledState: true,
+                })
+                mynahUI.addChatAnswer(selectedTab.id, message)
+                tabsStorage.updateTabStatus(selectedTab.id, 'busy')
+
+                return selectedTab.id
+            }
+
+            const newTabID = mynahUI.updateStore('', {
+                tabTitle: 'Chat',
+                chatItems: [message],
+                showChatAvatars: false,
+                quickActionCommands: QuickActionCommands,
+                promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+            })
+
+            mynahUI.updateStore(newTabID, {
+                loadingChat: true,
+                promptInputDisabledState: true,
+            })
+
+            // We have race condition here with onTabAdd Ui event. This way we need to update store twice to be sure
+            tabsStorage.addTab({
+                id: newTabID,
+                type: 'cwc',
+                status: 'busy',
+                isSelected: true,
+            })
+
+            tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')
+            tabsStorage.updateTabStatus(newTabID, 'busy')
+
+            return newTabID
+        },
+        onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
+            if (welcomeFollowUpType === 'assign-code-task') {
+                const newTabId = mynahUI.updateStore('', {
+                    tabTitle: 'Q- Task',
+                    quickActionCommands: [],
+                    promptInputPlaceholder: 'Assign a code task',
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: WeaverBirdWelcomeMessage,
+                        },
+                    ],
+                })
+                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                tabsStorage.addTab({
+                    id: newTabId,
+                    status: 'free',
+                    type: 'wb',
+                    isSelected: true,
+                })
+                return
+            }
+
+            if (welcomeFollowUpType === 'continue-to-chat') {
+                mynahUI.updateStore(tabID, {
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: 'Ok, please write your question below.',
+                        },
+                    ],
+                })
+                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                return
+            }
+        },
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
@@ -124,6 +201,8 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
+
+                tabsStorage.updateTabStatus(tabID, 'busy')
                 return
             }
 
@@ -132,6 +211,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     loadingChat: false,
                     promptInputDisabledState: false,
                 })
+                tabsStorage.updateTabStatus(tabID, 'free')
             }
         },
         onMessageReceived: (tabID: string, messageData: MynahUIDataModel) => {
@@ -147,6 +227,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 loadingChat: false,
                 promptInputDisabledState: false,
             })
+            tabsStorage.updateTabStatus(tabID, 'free')
         },
         onError: (tabID: string, message: string, title: string) => {
             const answer: ChatItem = {
@@ -161,6 +242,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 loadingChat: false,
                 promptInputDisabledState: false,
             })
+            tabsStorage.updateTabStatus(tabID, 'free')
             return
         },
     })
@@ -169,6 +251,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onReady: connector.uiReady,
         onTabAdd: connector.onTabAdd,
         onTabRemove: connector.onTabRemove,
+        onTabChange: connector.onTabChange,
         onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
             if (prompt.prompt === undefined) {
                 return
@@ -177,7 +260,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 let affectedTabId = tabID
                 const realPromptText = prompt.prompt?.replace('/assign', '').trim()
 
-                if (tabTypeStorage.getTabType(affectedTabId) !== TabType.Unknown) {
+                if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
                     affectedTabId = mynahUI.updateStore('', {
                         chatItems: [
                             ...(realPromptText !== ''
@@ -196,7 +279,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                         ],
                     })
                 }
-                tabTypeStorage.updateTab(affectedTabId, TabType.WeaverBird)
+                tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
 
                 mynahUI.updateStore(affectedTabId, {
                     tabTitle: 'Q- Task',
@@ -218,15 +301,14 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 return
             }
 
-            if (tabTypeStorage.getTabType(tabID) === TabType.Unknown) {
-                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
-            }
+            tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
 
             mynahUI.updateStore(tabID, {
                 loadingChat: true,
                 promptInputDisabledState: true,
             })
 
+            tabsStorage.updateTabStatus(tabID, 'busy')
             const chatPayload = {
                 chatMessage: prompt.prompt ?? '',
             }
@@ -244,35 +326,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: (tabID, followUp) => {
-            if (followUp.type === WelcomeFollowupType.assign) {
-                const newTabId = mynahUI.updateStore('', {
-                    tabTitle: 'Q- Task',
-                    quickActionCommands: [],
-                    promptInputPlaceholder: 'Assign a code task',
-                    chatItems: [
-                        {
-                            type: ChatItemType.ANSWER,
-                            body: WeaverBirdWelcomeMessage,
-                        },
-                    ],
-                })
-                tabTypeStorage.updateTab(newTabId, TabType.WeaverBird)
-                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
-            } else if (followUp.type === WelcomeFollowupType.chat) {
-                mynahUI.updateStore(tabID, {
-                    chatItems: [
-                        {
-                            type: ChatItemType.ANSWER,
-                            body: 'Ok, please write your question below.',
-                        },
-                    ],
-                })
-                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
-            } else {
-                connector.followUpClicked(tabID, followUp)
-            }
-        },
+        onFollowUpClicked: connector.followUpClicked,
         onOpenDiff: connector.onOpenDiff,
         onStopChatResponse: (tabID: string) => {
             mynahUI.updateStore(tabID, {
