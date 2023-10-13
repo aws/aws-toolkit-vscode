@@ -6,10 +6,84 @@
 import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
-import './styles/frequent-apis.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabType, TabTypeStorage } from './storages/tabTypeStorage'
 
+const WelcomeMessage = `<span markdown="1">
+Hi, I am AWS Q. I can answer your software development questions. 
+Ask me to explain, debug, or optimize your code. 
+You can enter \`/\` to see a list of quick actions.
+</span>`
+const WeaverBirdWelcomeMessage = `<span markdown="1">
+### How \`/assign\` works:
+1. Describe your job to be done
+2. Agree on an approach
+3. Q generate code
+4. Review code suggestions, provide feedback if needed
+</span>`
+
+const WelcomeFollowupType = {
+    chat: 'continue-to-chat',
+    assign: 'assign-code-task',
+}
+const WelcomeFollowUps = {
+    text: 'Or you can select one of these',
+    options: [
+        {
+            pillText: 'I want to assign a code task',
+            type: WelcomeFollowupType.assign,
+        },
+        {
+            pillText: 'I have a software development question',
+            type: WelcomeFollowupType.chat,
+        },
+    ],
+}
+
+const QuickActionCommands = [
+    {
+        groupName: 'Start a workflow',
+        commands: [
+            {
+                command: '/assign',
+                description: 'Give Q a coding task',
+            },
+        ],
+    },
+    {
+        groupName: 'Quick Action',
+        commands: [
+            {
+                command: '/explain',
+                promptText: 'Explain',
+                description: 'Explain selected code or an active file',
+            },
+            {
+                command: '/fix',
+                promptText: 'Fix',
+                description: 'Debug selected code and suggest fix',
+            },
+            {
+                command: '/refactor',
+                promptText: 'Refactor',
+                description: 'Refactor selected code',
+            },
+            {
+                command: '/optimize',
+                promptText: 'Optimize',
+                description: 'Optimize selected code',
+            },
+        ],
+    },
+    {
+        commands: [
+            {
+                command: '/clear',
+                description: 'Clear this session',
+            },
+        ],
+    },
+]
 export const createMynahUI = (initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
@@ -100,36 +174,44 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 return
             }
             if (prompt.prompt.match(/\/assign/)) {
+                let affectedTabId = tabID
                 const realPromptText = prompt.prompt?.replace('/assign', '').trim()
 
-                const newTabId = mynahUI.updateStore('', {
-                    chatItems: [
-                        ...(realPromptText !== ''
-                            ? [
-                                  {
-                                      type: ChatItemType.PROMPT,
-                                      body: realPromptText,
-                                  },
-                              ]
-                            : [
-                                  {
-                                      type: ChatItemType.ANSWER,
-                                      body: `<span markdown="1">How this works:
-                            1. Provide a brief problem statement for a task
-                            2. Discuss the problem with Q
-                            3. Agree on an approach
-                            4. Q will generate code suggestions for your project
-                            5. Review code suggestions, provide feedback for another revision if needed</span>`,
-                                  },
-                              ]),
-                    ],
+                if (tabTypeStorage.getTabType(affectedTabId) !== TabType.Unknown) {
+                    affectedTabId = mynahUI.updateStore('', {
+                        chatItems: [
+                            ...(realPromptText !== ''
+                                ? [
+                                      {
+                                          type: ChatItemType.PROMPT,
+                                          body: realPromptText,
+                                      },
+                                  ]
+                                : [
+                                      {
+                                          type: ChatItemType.ANSWER,
+                                          body: WeaverBirdWelcomeMessage,
+                                      },
+                                  ]),
+                        ],
+                    })
+                }
+                tabTypeStorage.updateTab(affectedTabId, TabType.WeaverBird)
+
+                mynahUI.updateStore(affectedTabId, {
+                    tabTitle: 'Q- Task',
+                    quickActionCommands: [],
+                    promptInputPlaceholder: 'Assign a code task',
                 })
 
-                tabTypeStorage.updateTab(newTabId, TabType.WeaverBird)
-
                 if (realPromptText !== '') {
-                    connector.requestGenerativeAIAnswer(newTabId, {
+                    connector.requestGenerativeAIAnswer(affectedTabId, {
                         chatMessage: realPromptText,
+                    })
+                } else if (affectedTabId === tabID) {
+                    mynahUI.addChatAnswer(affectedTabId, {
+                        type: ChatItemType.ANSWER,
+                        body: WeaverBirdWelcomeMessage,
                     })
                 }
 
@@ -145,15 +227,13 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 promptInputDisabledState: true,
             })
 
-            setTimeout(() => {
-                const chatPayload = {
-                    chatMessage: prompt.prompt ?? '',
-                }
+            const chatPayload = {
+                chatMessage: prompt.prompt ?? '',
+            }
 
-                connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
-            }, 2000)
+            connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
         },
-        onSendFeedback: undefined, //connector.sendFeedback,
+        // onSendFeedback: undefined, //connector.sendFeedback,
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
         onCopyCodeToClipboard: connector.onCopyCodeToClipboard,
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
@@ -164,60 +244,74 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: connector.followUpClicked,
-        onOpenDiff: connector.onOpenDiff,
-        tabs: {
-            'tab-1': {
-                tabTitle: 'Welcome to Q',
-                isSelected: true,
-                store: {
-                    ...initialData,
+        onFollowUpClicked: (tabID, followUp) => {
+            if (followUp.type === WelcomeFollowupType.assign) {
+                const newTabId = mynahUI.updateStore('', {
+                    tabTitle: 'Q- Task',
+                    quickActionCommands: [],
+                    promptInputPlaceholder: 'Assign a code task',
                     chatItems: [
                         {
                             type: ChatItemType.ANSWER,
-                            body: `<span markdown="1">Hi, I am Q!          
-          Ask me any software development questions. I can help explain, debug, or optimize code. 
-          Or you can type \`/\` to see some suggested tasks.`,
+                            body: WeaverBirdWelcomeMessage,
+                        },
+                    ],
+                })
+                tabTypeStorage.updateTab(newTabId, TabType.WeaverBird)
+                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
+            } else if (followUp.type === WelcomeFollowupType.chat) {
+                mynahUI.updateStore(tabID, {
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: 'Ok, please write your question below.',
+                        },
+                    ],
+                })
+                tabTypeStorage.updateTab(tabID, TabType.CodeWhispererChat)
+            } else {
+                connector.followUpClicked(tabID, followUp)
+            }
+        },
+        onOpenDiff: connector.onOpenDiff,
+        tabs: {
+            'tab-1': {
+                isSelected: true,
+                store: {
+                    tabTitle: 'Chat',
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: WelcomeMessage,
+                        },
+                        {
+                            type: ChatItemType.ANSWER,
+                            followUp: WelcomeFollowUps,
                         },
                     ],
                     showChatAvatars: false,
-                    quickActionCommands: [
-                        {
-                            groupName: 'Quick Action',
-                            commands: [
-                                {
-                                    command: '/explain',
-                                    description: 'Explain selected code or an active file',
-                                },
-                                {
-                                    command: '/fix',
-                                    description: 'Debug selected code and suggest fix',
-                                },
-                                {
-                                    command: '/refactor',
-                                    description: 'Refactor selected code',
-                                },
-                                {
-                                    command: '/optimize',
-                                    description: 'Optimize selected code',
-                                },
-                                {
-                                    command: '/assign',
-                                    description: 'Iteratively solve a problem',
-                                },
-                            ],
-                        },
-                        {
-                            commands: [
-                                {
-                                    command: '/clear',
-                                    description: 'Clear this session',
-                                },
-                            ],
-                        },
-                    ],
+                    quickActionCommands: QuickActionCommands,
                     promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+                    ...initialData,
                 },
+            },
+        },
+        defaults: {
+            store: {
+                tabTitle: 'Chat',
+                chatItems: [
+                    {
+                        type: ChatItemType.ANSWER,
+                        body: WelcomeMessage,
+                    },
+                    {
+                        type: ChatItemType.ANSWER,
+                        followUp: WelcomeFollowUps,
+                    },
+                ],
+                showChatAvatars: false,
+                quickActionCommands: QuickActionCommands,
+                promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             },
         },
     })
