@@ -122,7 +122,7 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
             }
         })
         this.form.connectionType.bindPrompter(state => getConnectionTypePrompterNB(state?.warehouseType), {
-            relativeOrder: 1,
+            relativeOrder: 3,
         })
 
         this.form.database.bindPrompter(getDatabasePrompter, { relativeOrder: 4 })
