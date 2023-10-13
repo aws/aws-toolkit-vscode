@@ -255,9 +255,9 @@ class CodeWhispererClientAdaptorTest {
     }
 
     @Test
-    fun `sendTelemetryEvent for userTriggerDecision respects telemetry optin status`() {
+    fun `sendTelemetryEvent for userTriggerDecision respects telemetry optin status, for SSO users`() {
         sendTelemetryEventOptOutCheckHelper {
-            sut.putUserTriggerDecisionTelemetry(
+            sut.sendUserTriggerDecisionTelemetry(
                 aRequestContext(projectRule.project),
                 aResponseContext(),
                 aCompletionType(),
@@ -271,7 +271,7 @@ class CodeWhispererClientAdaptorTest {
     @Test
     fun `sendTelemetryEvent for codePercentage respects telemetry optin status`() {
         sendTelemetryEventOptOutCheckHelper {
-            sut.putCodePercentageTelemetry(aProgrammingLanguage(), 0, 1)
+            sut.sendCodePercentageTelemetry(aProgrammingLanguage(), 0, 1)
         }
     }
 

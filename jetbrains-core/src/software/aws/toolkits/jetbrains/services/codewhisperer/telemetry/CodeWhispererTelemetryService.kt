@@ -32,7 +32,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseCo
 import software.aws.toolkits.jetbrains.services.codewhisperer.settings.CodeWhispererSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getConnectionStartUrl
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getGettingStartedTaskType
-import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIamIdentityCenterConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.runIfIdcConnectionOrTelemetryEnabled
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.telemetry.CodewhispererCompletionType
 import software.aws.toolkits.telemetry.CodewhispererGettingStartedTask
@@ -187,6 +187,7 @@ class CodeWhispererTelemetryService {
         suggestionReferenceCount: Int,
         generatedLineCount: Int
     ) {
+        val project = requestContext.project
         val totalImportCount = recommendationContext.details.fold(0) { grandTotal, detail ->
             grandTotal + detail.recommendation.mostRelevantMissingImports().size
         }
@@ -213,11 +214,11 @@ class CodeWhispererTelemetryService {
         } else CodewhispererCompletionType.Line
 
         // only send if it's a pro tier user
-        projectCoroutineScope(requestContext.project).launch {
-            runIfIamIdentityCenterConnection(requestContext.project) {
+        projectCoroutineScope(project).launch {
+            runIfIdcConnectionOrTelemetryEnabled(project) {
                 try {
-                    val response = CodeWhispererClientAdaptor.getInstance(requestContext.project)
-                        .putUserTriggerDecisionTelemetry(
+                    val response = CodeWhispererClientAdaptor.getInstance(project)
+                        .sendUserTriggerDecisionTelemetry(
                             requestContext,
                             responseContext,
                             completionType,
@@ -238,7 +239,7 @@ class CodeWhispererTelemetryService {
         }
 
         CodewhispererTelemetry.userTriggerDecision(
-            project = requestContext.project,
+            project = project,
             codewhispererSessionId = responseContext.sessionId,
             codewhispererFirstRequestId = requestContext.latencyContext.firstRequestId,
             credentialStartUrl = getConnectionStartUrl(requestContext.connection),
