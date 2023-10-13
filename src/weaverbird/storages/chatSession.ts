@@ -24,4 +24,8 @@ export class ChatSessionStorage {
 
         return session
     }
+
+    public deleteSession(tabID: string) {
+        this.sessions.delete(tabID)
+    }
 }

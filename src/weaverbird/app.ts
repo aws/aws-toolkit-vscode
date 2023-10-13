@@ -25,6 +25,7 @@ export function init(appContext: AwsQAppInitContext) {
         followUpClicked: new vscode.EventEmitter<any>(),
         openDiff: new vscode.EventEmitter<any>(),
         stopResponse: new vscode.EventEmitter<any>(),
+        tabClosed: new vscode.EventEmitter<any>(),
     }
 
     const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
