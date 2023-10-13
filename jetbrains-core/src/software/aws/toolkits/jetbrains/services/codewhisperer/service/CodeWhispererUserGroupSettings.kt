@@ -78,7 +78,10 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
 
     @VisibleForTesting
     fun determineUserGroup(): CodeWhispererUserGroup {
-        val group = CodeWhispererUserGroup.Control
+        val randomNum = Math.random()
+        val group = if (randomNum < 1 / 2.0) {
+            CodeWhispererUserGroup.Control
+        } else CodeWhispererUserGroup.RightContext
 
         settings[USER_GROUP_KEY] = group.name
         version = AwsToolkit.PLUGIN_VERSION
@@ -125,7 +128,8 @@ interface CodeWhispererGroup
 enum class CodeWhispererUserGroup : CodeWhispererGroup {
     Control,
     CrossFile,
-    Classifier
+    Classifier,
+    RightContext,
 }
 
 enum class CodeWhispererExpThresholdGroup : CodeWhispererGroup {
