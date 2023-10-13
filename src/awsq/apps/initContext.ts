@@ -6,7 +6,7 @@
 import { EventEmitter } from 'vscode'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { MessageListener } from '../messages/messageListener'
-import { TabType } from '../webview/ui/storages/tabTypeStorage'
+import { TabType } from '../webview/ui/storages/tabsStorage'
 
 export interface AwsQAppInitContext {
     registerWebViewToAppMessagePublisher(eventEmitter: MessagePublisher<any>, tabType: TabType): void

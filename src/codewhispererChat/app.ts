@@ -9,14 +9,21 @@ import { UIMessageListener } from './view/messages/messageListener'
 import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
-import { InsertCodeAtCursorPostion, PromptMessage, TabClosedMessage } from './controllers/chat/model'
-import { TabType } from '../awsq/webview/ui/storages/tabTypeStorage'
+import {
+    InsertCodeAtCursorPostion,
+    PromptMessage,
+    TabClosedMessage,
+    TriggerTabIDReceived,
+} from './controllers/chat/model'
+import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPostion>(),
+        processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
+        processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -28,6 +35,12 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPostion>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
+        ),
+        processContextMenuCommand: new MessageListener<EditorContextCommand>(
+            cwChatControllerEventEmitters.processContextMenuCommand
+        ),
+        processTriggerTabIDReceived: new MessageListener<TriggerTabIDReceived>(
+            cwChatControllerEventEmitters.processTriggerTabIDReceived
         ),
     }
 
@@ -41,6 +54,12 @@ export function init(appContext: AwsQAppInitContext) {
         processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPostion>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
         ),
+        processContextMenuCommand: new MessagePublisher<EditorContextCommand>(
+            cwChatControllerEventEmitters.processContextMenuCommand
+        ),
+        processTriggerTabIDReceived: new MessagePublisher<TriggerTabIDReceived>(
+            cwChatControllerEventEmitters.processTriggerTabIDReceived
+        ),
     }
 
     new CwChatController(cwChatControllerMessageListeners, appContext.getAppsToWebViewMessagePublisher())
@@ -52,8 +71,7 @@ export function init(appContext: AwsQAppInitContext) {
         webViewMessageListener: new MessageListener<any>(cwChatUIInputEventEmmiter),
     })
 
-    appContext.registerWebViewToAppMessagePublisher(
-        new MessagePublisher<any>(cwChatUIInputEventEmmiter),
-        TabType.CodeWhispererChat
-    )
+    appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(cwChatUIInputEventEmmiter), 'cwc')
+
+    registerCommands(cwChatControllerMessagePublishers)
 }

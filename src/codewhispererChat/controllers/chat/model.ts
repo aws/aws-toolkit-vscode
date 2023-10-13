@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MatchPolicy } from '../../clients/chat/v0/model'
+import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 
+export interface TriggerTabIDReceived {
+    tabID: string
+    triggerID: string
+}
 export interface TabClosedMessage {
     tabID: string
 }
@@ -30,6 +34,5 @@ export interface TriggerPayload {
     readonly fileLanguage: string | undefined
     readonly message: string | undefined
     readonly matchPolicy: MatchPolicy | undefined
-    // var codeSelection: UICodeSelection? = null,
-    // var codeQuery: CodeQuery? = null,
+    readonly codeQuery: CodeQuery | undefined
 }
