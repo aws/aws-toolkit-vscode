@@ -20,7 +20,7 @@ import { S3Node } from './explorer/s3Nodes'
 import { S3FileNode } from './explorer/s3FileNode'
 import { ExtContext } from '../shared/extensions'
 import { S3FileViewerManager, s3EditScheme, s3ReadScheme } from './fileViewerManager'
-import { VirualFileSystem } from '../shared/virtualFilesystem'
+import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import { Commands } from '../shared/vscode/commands2'
 
 import * as nls from 'vscode-nls'
@@ -32,7 +32,7 @@ const localize = nls.loadMessageBundle()
  */
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    const fs = new VirualFileSystem(
+    const fs = new VirtualFileSystem(
         localize('AWS.s3.fileViewer.genericError', 'Unable to open S3 file, try reopening from the explorer')
     )
     const manager = new S3FileViewerManager(region => new DefaultS3Client(region), fs)

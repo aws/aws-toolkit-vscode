@@ -1,0 +1,287 @@
+{
+    "version": "2.0",
+    "metadata": {
+        "apiVersion": "2018-05-10",
+        "endpointPrefix": "weaverbirdservice",
+        "jsonVersion": "1.1",
+        "protocol": "rest-json",
+        "serviceFullName": "A beautiful and amazing WeaverbirdService",
+        "serviceId": "Weaverbird",
+        "signatureVersion": "v4",
+        "signingName": "execute-api",
+        "uid": "weaverbird-2018-05-10"
+    },
+    "operations": {
+        "Echo": {
+            "name": "Echo",
+            "http": {
+                "method": "POST",
+                "requestUri": "/echo",
+                "responseCode": 200
+            },
+            "input": { "shape": "EchoInput" },
+            "output": { "shape": "EchoOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GenerateApproach": {
+            "name": "GenerateApproach",
+            "http": {
+                "method": "POST",
+                "requestUri": "/generateApproach",
+                "responseCode": 200
+            },
+            "input": { "shape": "GenerateApproachInput" },
+            "output": { "shape": "GenerateApproachOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GenerateCode": {
+            "name": "GenerateCode",
+            "http": {
+                "method": "POST",
+                "requestUri": "/generateCode",
+                "responseCode": 200
+            },
+            "input": { "shape": "GenerateCodeInput" },
+            "output": { "shape": "GenerateCodeOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GetCodeGenerationResult": {
+            "name": "GetCodeGenerationResult",
+            "http": {
+                "method": "POST",
+                "requestUri": "/getCodeGenerationResult",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetCodeGenerationResultInput" },
+            "output": { "shape": "GetCodeGenerationResultOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GetCodeIterationResult": {
+            "name": "GetCodeIterationResult",
+            "http": {
+                "method": "POST",
+                "requestUri": "/getCodeIterationResult",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetCodeIterationResultInput" },
+            "output": { "shape": "GetCodeIterationResultOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "IterateApproach": {
+            "name": "IterateApproach",
+            "http": {
+                "method": "POST",
+                "requestUri": "/iterateApproach",
+                "responseCode": 200
+            },
+            "input": { "shape": "IterateApproachInput" },
+            "output": { "shape": "IterateApproachOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "IterateCode": {
+            "name": "IterateCode",
+            "http": {
+                "method": "POST",
+                "requestUri": "/iterateCode",
+                "responseCode": 200
+            },
+            "input": { "shape": "IterateCodeInput" },
+            "output": { "shape": "IterateCodeOutput" },
+            "errors": [{ "shape": "InvalidInputException" }]
+        }
+    },
+    "shapes": {
+        "Boolean": {
+            "type": "boolean",
+            "box": true
+        },
+        "CodeGenerationResult": {
+            "type": "structure",
+            "members": {
+                "newFileContents": { "shape": "FileMetadataList" },
+                "deletedFiles": { "shape": "DeletedFilesList" }
+            }
+        },
+        "CodeGenerationStatus": {
+            "type": "string",
+            "enum": ["ready", "failed", "in-progress"]
+        },
+        "Config": {
+            "type": "structure",
+            "members": {
+                "model": { "shape": "Model" },
+                "maxTokensToSample": { "shape": "Integer" },
+                "temperature": { "shape": "Double" },
+                "debateRounds": { "shape": "Integer" }
+            }
+        },
+        "DeletedFilesList": {
+            "type": "list",
+            "member": { "shape": "String" }
+        },
+        "Double": {
+            "type": "double",
+            "box": true
+        },
+        "EchoInput": {
+            "type": "structure",
+            "members": {
+                "string": { "shape": "String" }
+            }
+        },
+        "EchoOutput": {
+            "type": "structure",
+            "members": {
+                "string": { "shape": "String" }
+            }
+        },
+        "FileMetadata": {
+            "type": "structure",
+            "required": ["filePath", "fileContent"],
+            "members": {
+                "filePath": { "shape": "String" },
+                "fileContent": { "shape": "String" }
+            }
+        },
+        "FileMetadataList": {
+            "type": "list",
+            "member": { "shape": "FileMetadata" }
+        },
+        "GenerateApproachInput": {
+            "type": "structure",
+            "required": ["originalFileContents", "task"],
+            "members": {
+                "originalFileContents": { "shape": "FileMetadataList" },
+                "task": { "shape": "String" },
+                "config": { "shape": "Config" }
+            }
+        },
+        "GenerateApproachOutput": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "approach": { "shape": "String" },
+                "background": { "shape": "String" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GenerateCodeInput": {
+            "type": "structure",
+            "required": ["originalFileContents", "task", "approach", "conversationId"],
+            "members": {
+                "originalFileContents": { "shape": "FileMetadataList" },
+                "task": { "shape": "String" },
+                "approach": { "shape": "String" },
+                "lambdaFlowEnabled": { "shape": "Boolean" },
+                "config": { "shape": "Config" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GenerateCodeOutput": {
+            "type": "structure",
+            "required": ["generationId"],
+            "members": {
+                "generationId": { "shape": "String" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GetCodeGenerationResultInput": {
+            "type": "structure",
+            "required": ["generationId", "conversationId"],
+            "members": {
+                "generationId": { "shape": "String" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GetCodeGenerationResultOutput": {
+            "type": "structure",
+            "required": ["codeGenerationStatus"],
+            "members": {
+                "codeGenerationStatus": { "shape": "CodeGenerationStatus" },
+                "result": { "shape": "CodeGenerationResult" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GetCodeIterationResultInput": {
+            "type": "structure",
+            "required": ["generationId", "conversationId"],
+            "members": {
+                "generationId": { "shape": "String" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "GetCodeIterationResultOutput": {
+            "type": "structure",
+            "required": ["codeGenerationStatus"],
+            "members": {
+                "codeGenerationStatus": { "shape": "CodeGenerationStatus" },
+                "result": { "shape": "CodeGenerationResult" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "Integer": {
+            "type": "integer",
+            "box": true
+        },
+        "InvalidInputException": {
+            "type": "structure",
+            "members": {
+                "message": { "shape": "String" }
+            },
+            "error": {
+                "httpStatusCode": 400,
+                "senderFault": true
+            },
+            "exception": true
+        },
+        "IterateApproachInput": {
+            "type": "structure",
+            "required": ["originalFileContents", "task", "approach", "request", "conversationId"],
+            "members": {
+                "originalFileContents": { "shape": "FileMetadataList" },
+                "task": { "shape": "String" },
+                "approach": { "shape": "String" },
+                "request": { "shape": "String" },
+                "config": { "shape": "Config" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "IterateApproachOutput": {
+            "type": "structure",
+            "members": {
+                "conversationId": { "shape": "String" },
+                "approach": { "shape": "String" }
+            }
+        },
+        "IterateCodeInput": {
+            "type": "structure",
+            "required": ["originalFileContents", "task", "approach", "comment", "conversationId"],
+            "members": {
+                "originalFileContents": { "shape": "FileMetadataList" },
+                "task": { "shape": "String" },
+                "approach": { "shape": "String" },
+                "comment": { "shape": "String" },
+                "config": { "shape": "Config" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "IterateCodeOutput": {
+            "type": "structure",
+            "required": ["generationId"],
+            "members": {
+                "generationId": { "shape": "String" },
+                "conversationId": { "shape": "String" }
+            }
+        },
+        "Model": {
+            "type": "string",
+            "enum": [
+                "anthropic-claude-v2",
+                "anthropic-claude-instant-v1",
+                "bedrock-claude-instant-v1",
+                "bedrock-claude-v2"
+            ]
+        },
+        "String": { "type": "string" }
+    }
+}

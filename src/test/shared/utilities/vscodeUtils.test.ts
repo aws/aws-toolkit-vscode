@@ -22,9 +22,17 @@ describe('vscodeUtils', async function () {
         assert.deepStrictEqual(vscodeUtil.isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit), true)
     })
 
-    it('globDirs()', async function () {
+    it('globDirPatterns()', async function () {
         const input = ['foo', '**/bar/**', '*baz*', '**/*with.star*/**', '/zub', 'zim/', '/zoo/']
-        assert.deepStrictEqual(vscodeUtil.globDirs(input), '**/{foo,bar,baz,*with.star*,zub,zim,zoo}/')
+        assert.deepStrictEqual(vscodeUtil.globDirPatterns(input), [
+            'foo',
+            'bar',
+            'baz',
+            '*with.star*',
+            'zub',
+            'zim',
+            'zoo',
+        ])
     })
 
     it('watchedFiles.getExcludePattern()', async function () {
