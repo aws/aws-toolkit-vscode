@@ -3,78 +3,89 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import assert from 'assert'
-import * as sinon from 'sinon'
-import {
-    calculateBracketsLevel,
-    getBracketsToRemove,
-    removeBracketsFromRightContext,
-} from '../../../codewhisperer/util/closingBracketUtil'
-import { createMockTextEditor } from '../testUtil'
-import { getLogger } from '../../../shared/logger/logger'
-import { Position } from 'vscode'
+import { handleExtraBrackets } from '../../../codewhisperer/util/closingBracketUtil'
+import { openATextEditorWithText } from '../../testUtil'
 
+// TODO: refactor test cases
 describe('closingBracketUtil', function () {
-    describe('calculateBracketsLevel', function () {
-        it('Should return expected bracket level with index', function () {
-            const actual = calculateBracketsLevel('{{()')
-            const expected = [
-                {
-                    char: '{',
-                    count: 1,
-                    idx: 0,
-                },
-                {
-                    char: '{',
-                    count: 2,
-                    idx: 1,
-                },
-                {
-                    char: '(',
-                    count: 1,
-                    idx: 2,
-                },
-                {
-                    char: '(',
-                    count: 0,
-                    idx: 3,
-                },
-            ]
-            assert.deepStrictEqual(expected, actual)
-        })
-    })
+    /**
+     *             leftContext + recommendation + rightContext
+     * startStart             start            end              endEnd
+     */
+    describe('handleExtraBrackets', function () {
+        async function assertClosingSymbolsHandler(
+            leftContext: string,
+            rightContext: string,
+            recommendation: string,
+            expected: string
+        ) {
+            const editor = await openATextEditorWithText(leftContext + recommendation + rightContext, 'test.txt')
+            const document = editor.document
 
-    describe('removeBracketsFromRightContext', function () {
-        afterEach(function () {
-            sinon.restore()
-        })
-        it('Should remove the brackets from corresponding index', async function () {
-            const mockEditor = createMockTextEditor()
-            const mockPosition = new Position(0, 0)
-            const mockIdx = [0, 1]
+            const startStart = document.positionAt(0)
+            const endEnd = document.positionAt(editor.document.getText().length)
+            const start = document.positionAt(leftContext.length)
+            const end = document.positionAt(leftContext.length + recommendation.length)
 
-            const loggerSpy = sinon.spy(getLogger(), 'info')
-            await removeBracketsFromRightContext(mockEditor, mockIdx, mockPosition)
-            assert.ok(loggerSpy.called)
-            const actual = loggerSpy.getCall(0).args[0]
-            assert.strictEqual(actual, `delete [{"line":0,"character":0},{"line":0,"character":1}]`)
-        })
-    })
+            const left = document.getText(new vscode.Range(startStart, start))
+            const right = document.getText(new vscode.Range(end, endEnd))
+            const reco = document.getText(new vscode.Range(start, end))
 
-    describe('getBracketsToRemove', function () {
-        it('Should return an empty array if there is no extra bracket matched', function () {
-            const actual = getBracketsToRemove('return a+b}', '')
-            assert.ok(actual.length === 0)
+            assert.strictEqual(left, leftContext)
+            assert.strictEqual(right, rightContext)
+            assert.strictEqual(reco, recommendation)
+
+            await handleExtraBrackets(editor, recommendation, end, start)
+
+            assert.strictEqual(editor.document.getText(), expected)
+        }
+
+        it('should remove extra closing symbol', async function () {
+            await assertClosingSymbolsHandler(
+                'function add2Numbers(',
+                ')',
+                'a: number, b: number) {\n    return a + b\n}',
+                `function add2Numbers(a: number, b: number) {\n    return a + b\n}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'function sum(a: number, b: number, ',
+                ')',
+                'c: number) {\n    return a + b + c\n}',
+                `function sum(a: number, b: number, c: number) {\n    return a + b + c\n}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'const aString = "',
+                '"',
+                'hello world";',
+                `const aString = "hello world";`
+            )
         })
-        it('Should return expected bracket to remove', function () {
-            const actual = getBracketsToRemove('{return a+b}', '}')
-            const expected = [0]
-            assert.deepStrictEqual(actual, expected)
-        })
-        it('Should return expected bracket to remove if there are multiple matches', function () {
-            const actual = getBracketsToRemove(') {return a+b}', '){}')
-            const expected = [0, 1, 2]
-            assert.deepStrictEqual(actual, expected)
+
+        it('should not remove extra closing symbol', async function () {
+            await assertClosingSymbolsHandler(
+                'function add2Numbers(',
+                '',
+                'a: number, b: number) {\n  return a + b;\n}',
+                `function add2Numbers(a: number, b: number) {\n  return a + b;\n}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: ',
+                '\n};',
+                '{ launchTemplateId: "lt-3456", launchTemplateName: "baz" },',
+                `export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};`
+            )
+
+            await assertClosingSymbolsHandler(
+                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    ',
+                '\n};',
+                'lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },',
+                'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};'
+            )
         })
     })
 })
