@@ -35,14 +35,9 @@ export class SecurityIssuePanel {
                     localResourceRoots: [globals.context.extensionUri],
                 }
             )
-            const iconUri = vscode.Uri.joinPath(
-                globals.context.extensionUri,
-                // TODO: Update to the correct icon
-                'resources/icons/aws/codewhisperer/learn.svg'
-            )
             panel.iconPath = {
-                light: iconUri,
-                dark: iconUri,
+                light: vscode.Uri.joinPath(globals.context.extensionUri, 'resources/icons/vscode/light/shield.svg'),
+                dark: vscode.Uri.joinPath(globals.context.extensionUri, 'resources/icons/vscode/dark/shield.svg'),
             }
             SecurityIssuePanel.instance = new SecurityIssuePanel(panel)
         }
@@ -76,6 +71,9 @@ export class SecurityIssuePanel {
         const cssUri = this._panel.webview.asWebviewUri(
             vscode.Uri.joinPath(globals.context.extensionUri, 'src/codewhisperer/views/css/securityIssuePanel.css')
         )
+        const iconsUri = this._panel.webview.asWebviewUri(
+            vscode.Uri.joinPath(globals.context.extensionUri, 'resources/css/icons.css')
+        )
         const nonce = getNonce()
 
         return /*html*/ `
@@ -86,8 +84,9 @@ export class SecurityIssuePanel {
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'nonce-${nonce}'; style-src ${
             this._panel.webview.cspSource
-        }; img-src vscode-resource: 'self';">
+        } 'unsafe-inline'; img-src vscode-resource: 'self'; font-src vscode-resource: 'self';">
             <link rel="stylesheet" href="${cssUri}">
+            <link rel="stylesheet" href="${iconsUri}">
           </head>
           <body>
           ${this._getHtmlBody()}
@@ -107,31 +106,55 @@ export class SecurityIssuePanel {
                 `src/codewhisperer/images/severity-${issue?.severity.toLowerCase()}.svg`
             )
         )
-        const [suggestedFix] = issue.suggestedFixes ?? []
+        const [suggestedFix] = issue.remediation.suggestedFixes ?? []
+        const codeFixAvailable = suggestedFix
+            ? /*html*/ `<p style="color:var(--vscode-charts-green);"><span class="icon icon-sm icon-vscode-pass-filled"></span> Yes</p>`
+            : /*html*/ `<p style="color:var(--vscode-charts-red);"><span class="icon icon-sm icon-vscode-circle-slash"></span> No</p>`
 
         let body = /*html*/ `
-        <h1>
-          <a href="https://docs.aws.amazon.com/codeguru/detector-library/${issue.detectorId.split('@').shift()}">${
-            issue.detectorName
-        }
-          </a>
+        <h1 class="page-header">
+          ${issue.detectorName}
           <img src="${severityImgUri}" />
         </h1>
         <p>${md.render(issue.description.markdown)}</p>
-        ${issue.relatedVulnerabilities
-            .map(
-                cwe =>
-                    /*html*/ `<span><a href="https://cwe.mitre.org/data/definitions/${cwe
-                        .split('-')
-                        .pop()}.html"><vscode-tag>${cwe}</vscode-tag></a></span>`
-            )
-            .join(' ')}`
+        <vscode-divider></vscode-divider>
+
+        <div class="flex-container detector-details">
+          <div>
+            <b>Common Weakness Enumeration (CWE)</b>
+            <p>${issue.relatedVulnerabilities
+                .map(
+                    cwe =>
+                        /*html*/ `<vscode-link href="https://cwe.mitre.org/data/definitions/${cwe
+                            .split('-')
+                            .pop()}">${cwe} <span class="icon icon-sm icon-vscode-link-external"></span></vscode-link>`
+                )
+                .join(', ')}</p>
+          </div>
+          <div>
+            <b>Code fix available</b>
+            ${codeFixAvailable}
+          </div>
+          <div>
+            <b>Detector library</b>
+            <p><vscode-link href="https://docs.aws.amazon.com/codeguru/detector-library/${issue.detectorId
+                .split('@')
+                .shift()}">${
+            issue.detectorName
+        } <span class="icon icon-sm icon-vscode-link-external"></span></vscode-link></p>
+          </div>
+        </div>
+
+        <vscode-divider></vscode-divider>
+        <h3>Suggested remediation</h3>
+        <p>${md.render(issue.remediation.recommendation.text)}</p>`
 
         if (suggestedFix) {
             body += /*html*/ `
-            <h2>Suggested Fix</h2>
-            <p>${suggestedFix.description}</p>
+            <h3>Suggested code fix</h3>
             ${md.render('```diff\n' + suggestedFix.code + '\n```')}
+            <h3>Why are we recommending this?</h3>
+            <p>${suggestedFix.description}</p>
             <div align="right">
               <vscode-button appearance="secondary">Ignore</vscode-button>
               <vscode-button>Apply Fix</vscode-button>

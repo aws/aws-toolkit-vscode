@@ -3,9 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { provideVSCodeDesignSystem, vsCodeButton, vsCodeTag, vsCodeLink } from '@vscode/webview-ui-toolkit'
+import {
+    provideVSCodeDesignSystem,
+    vsCodeButton,
+    vsCodeTag,
+    vsCodeLink,
+    vsCodeDivider,
+} from '@vscode/webview-ui-toolkit'
 
-provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeLink(), vsCodeTag())
+provideVSCodeDesignSystem().register(vsCodeButton(), vsCodeLink(), vsCodeTag(), vsCodeDivider())
 
 const vscode = acquireVsCodeApi()
 

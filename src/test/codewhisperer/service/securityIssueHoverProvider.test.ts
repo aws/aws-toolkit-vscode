@@ -23,9 +23,12 @@ const makeIssue = (overrides?: Partial<CodeScanIssue>): CodeScanIssue => ({
     detectorName: 'detectorName',
     relatedVulnerabilities: [],
     severity: 'High',
-    suggestedFixes: [
-        { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
-    ],
+    remediation: {
+        recommendation: { text: 'recommendation', url: '' },
+        suggestedFixes: [
+            { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
+        ],
+    },
     ...overrides,
 })
 
@@ -38,7 +41,11 @@ describe('securityIssueHoverProvider', () => {
             const mockDocument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
             const issues = [
                 makeIssue({ startLine: 0, endLine: 1 }),
-                makeIssue({ startLine: 0, endLine: 1, suggestedFixes: [] }),
+                makeIssue({
+                    startLine: 0,
+                    endLine: 1,
+                    remediation: { recommendation: { text: '', url: '' }, suggestedFixes: [] },
+                }),
             ]
             securityIssueHoverProvider.issues = [
                 {

@@ -23,6 +23,7 @@ const issue: CodeScanIssue = {
     detectorName: '',
     relatedVulnerabilities: [],
     severity: '',
+    remediation: { recommendation: { text: '', url: '' } },
 }
 
 describe('securityIssuePanel', () => {

@@ -477,3 +477,35 @@ pre {
 .vscode-light .hljs-strong {
     font-weight: bold;
 }
+
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.flex-container > div {
+    flex: 33%;
+}
+
+@media screen and (max-width: 900px) {
+    .flex-container > div {
+        flex: 50%;
+    }
+}
+
+@media screen and (max-width: 400px) {
+    .flex-container {
+        flex-direction: column;
+    }
+}
+
+.page-header {
+    padding-bottom: unset;
+    border-bottom-width: unset;
+    border-bottom-style: unset;
+}
+
+.detector-details {
+    padding-top: 10px;
+}

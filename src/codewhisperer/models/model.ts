@@ -196,7 +196,12 @@ export interface CodeScanIssue {
     detectorName: string
     relatedVulnerabilities: string[]
     severity: string
-    suggestedFixes?: SuggestedFix[]
+    remediation: Remediation
+}
+
+export interface Remediation {
+    recommendation: { text: string; url: string }
+    suggestedFixes?: { description: string; code: string }[]
 }
 
 export interface AggregatedCodeScanIssue {

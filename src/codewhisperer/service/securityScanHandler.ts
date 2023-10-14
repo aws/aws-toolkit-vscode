@@ -88,7 +88,10 @@ function mapToAggregatedList(
                         detectorName: '',
                         relatedVulnerabilities: [],
                         severity: '',
-                        suggestedFixes: [],
+                        remediation: {
+                            recommendation: { text: '', url: '' },
+                            suggestedFixes: [],
+                        },
                     }
                 }),
             }
