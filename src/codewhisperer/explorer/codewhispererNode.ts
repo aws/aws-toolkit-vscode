@@ -91,6 +91,7 @@ export class CodeWhispererNode implements RootNode {
                         createSecurityScanNode(),
                         createSelectCustomizationNode(),
                         createOpenReferenceLogNode(),
+                        createGettingStartedNode(), // "Learn" node : opens Learn CodeWhisperer page
                     ]
                 }
                 return [
