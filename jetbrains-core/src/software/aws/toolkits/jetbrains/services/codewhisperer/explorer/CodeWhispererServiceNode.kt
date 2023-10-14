@@ -5,19 +5,14 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.explorer
 
 import com.intellij.ide.projectView.PresentationData
 import com.intellij.ide.util.treeView.AbstractTreeNode
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.ui.SimpleTextAttributes
 import com.intellij.util.text.DateTimeFormatManager
 import software.aws.toolkits.core.utils.tryOrNull
-import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractActionTreeNode
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.ActionGroupOnRightClick
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
-import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CodeWhispererReconnectNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.FreeTierUsageLimitHitNode
@@ -59,21 +54,6 @@ class CodeWhispererServiceNode(
         FreeTierUsageLimitHitNode(nodeProject, formatter.format(date))
     }
     private val learnCodeWhispererNode by lazy { LearnCodeWhispererNode(nodeProject) }
-
-    init {
-        ApplicationManager.getApplication().messageBus.connect().subscribe(
-            ToolkitConnectionManagerListener.TOPIC,
-            object : ToolkitConnectionManagerListener {
-                override fun activeConnectionChanged(newConnection: ToolkitConnection?) {
-                    // TODO: Move this IF block into nullifyAccountlessCredentialIfNeeded()
-                    if (newConnection is AwsBearerTokenConnection) {
-                        CodeWhispererExplorerActionManager.getInstance().nullifyAccountlessCredentialIfNeeded()
-                    }
-                    project.refreshDevToolTree()
-                }
-            }
-        )
-    }
 
     override fun onDoubleClick(event: MouseEvent) {}
 

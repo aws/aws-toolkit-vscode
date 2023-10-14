@@ -10,9 +10,11 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
+import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
@@ -57,6 +59,12 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
         } else {
             CodeWhispererCodeScanManager.getInstance(project).removeCodeScanUI()
         }
+
+        // TODO: Move this IF block into nullifyAccountlessCredentialIfNeeded()
+        if (newConnection is AwsBearerTokenConnection) {
+            CodeWhispererExplorerActionManager.getInstance().nullifyAccountlessCredentialIfNeeded()
+        }
+        project.refreshDevToolTree()
     }
 
     override fun onChange(providerId: String) {
