@@ -1,3 +1,15 @@
+## 1.94.0 2023-10-12
+
+- **Feature** CodeWhisperer: improve auto-suggestions for additional languages
+- **Feature** StepFunctions: Support rendering SFN graph with ItemProcessor field
+- **Feature** auth: Adding or switching connections in CodeWhisperer, CodeCatalyst and Explorer is now faster and requires fewer steps
+
+## 1.93.0 2023-10-05
+
+- **Bug Fix** SAM: local debugging of a .NET lambda may fail if `containerbuild=true`
+- **Bug Fix** BuilderID/IdentityCenter: Fix 'Invalid Client' error in the browser when re-authenticating
+- **Feature** CodeWhisperer: remove unnecessary "Proceed to login" prompt
+
 ## 1.92.0 2023-09-29
 
 - **Deprecation** SAM: removed support for Node.js 12.x [Lambda runtime](https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtimes.html)

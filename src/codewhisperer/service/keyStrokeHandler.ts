@@ -19,6 +19,8 @@ import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
+import { extractContextForCodeWhisperer } from '../util/editorContext'
+import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -111,6 +113,20 @@ export class KeyStrokeHandler {
                 }
             }
 
+            const { rightFileContent } = extractContextForCodeWhisperer(editor)
+            const rightContextLines = rightFileContent.split(/\r?\n/)
+            const rightContextAtCurrentLine = rightContextLines[0]
+            // we do not want to trigger when there is immediate right context on the same line
+            // with "}" being an exception because of IDE auto-complete
+            if (
+                CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.RightContext &&
+                rightContextAtCurrentLine.length &&
+                !rightContextAtCurrentLine.startsWith(' ') &&
+                rightContextAtCurrentLine.trim() !== '}'
+            ) {
+                return
+            }
+
             let triggerType: CodewhispererAutomatedTriggerType | undefined
             const changedSource = new DefaultDocumentChangedType(event.contentChanges).checkChangeSource()
 
@@ -124,13 +140,9 @@ export class KeyStrokeHandler {
                     break
                 }
                 case DocumentChangedSource.RegularKey: {
-                    if (!ClassifierTrigger.instance.shouldInvokeClassifier(editor.document.languageId)) {
-                        this.startIdleTimeTriggerTimer(event, editor, client, config)
-                    } else {
-                        triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
-                            ? 'Classifier'
-                            : undefined
-                    }
+                    triggerType = ClassifierTrigger.instance.shouldTriggerFromClassifier(event, editor, triggerType)
+                        ? 'Classifier'
+                        : undefined
                     break
                 }
                 default: {
@@ -156,16 +168,19 @@ export class KeyStrokeHandler {
         if (!editor) {
             return
         }
-        ClassifierTrigger.instance.setLastInvocationLineNumber(editor.selection.active.line)
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         if (isCloud9('any')) {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                 return
             }
+            RecommendationHandler.instance.checkAndResetCancellationTokens()
             vsCodeState.isIntelliSenseActive = false
             RecommendationHandler.instance.isGenerateRecommendationInProgress = true
             try {
-                let response: GetRecommendationsResponse
+                let response: GetRecommendationsResponse = {
+                    result: 'Failed',
+                    errorMessage: undefined,
+                }
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
                         client,

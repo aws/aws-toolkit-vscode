@@ -198,7 +198,7 @@ export class DefaultCodeWhispererClient {
             ...request,
             optOutPreference: globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT',
         }
-        if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
+        if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()

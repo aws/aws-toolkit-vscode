@@ -191,18 +191,6 @@ describe('keyStrokeHandler', function () {
             assert.ok(!startTimerSpy.called)
         })
 
-        it('Should start idle trigger timer when inputing non-special characters for not all classifier languages for non-classifier group', async function () {
-            const mockEditor = createMockTextEditor('def addTwo', 'test.rb', 'ruby')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'a'
-            )
-            CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(startTimerSpy.called)
-        })
-
         it('Should not call invokeAutomatedTrigger for non-special characters for classifier language if classifier says no', async function () {
             const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
@@ -226,6 +214,62 @@ describe('keyStrokeHandler', function () {
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
             assert.ok(invokeSpy.called)
         })
+
+        it('Should skip invoking if there is immediate right context on the same line and not a single } for the user group', async function () {
+            const casesForSuppressTokenFilling = [
+                {
+                    rightContext: 'add',
+                    shouldInvoke: false,
+                },
+                {
+                    rightContext: '}',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '}    ',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: ' add',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '    ',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '\naddTwo',
+                    shouldInvoke: true,
+                },
+            ]
+            casesForSuppressTokenFilling.forEach(async ({ rightContext, shouldInvoke }) => {
+                await testIfRightContextShouldInvoke(
+                    rightContext,
+                    shouldInvoke,
+                    CodeWhispererConstants.UserGroup.RightContext
+                )
+            })
+        })
+
+        it('Should not skip invoking based on right context for control group', async function () {
+            await testIfRightContextShouldInvoke('add', true, CodeWhispererConstants.UserGroup.Control)
+        })
+
+        async function testIfRightContextShouldInvoke(
+            rightContext: string,
+            shouldTrigger: boolean,
+            userGroup: CodeWhispererConstants.UserGroup
+        ) {
+            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript', 1, 1)
+            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
+                mockEditor.document,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                '{'
+            )
+            CodeWhispererUserGroupSettings.instance.userGroup = userGroup
+            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
+            assert.strictEqual(invokeSpy.called, shouldTrigger)
+        }
     })
 
     describe('invokeAutomatedTrigger', function () {
