@@ -322,6 +322,7 @@ export class TelemetryHelper {
             codewhispererSupplementalContextLength: supplementalContextMetadata?.contentsLength,
             // eslint-disable-next-line id-length
             codewhispererSupplementalContextStrategyId: supplementalContextMetadata?.strategy,
+            codewhispererCharactersAccepted: acceptedRecommendationContent.length,
         }
         telemetry.codewhisperer_userTriggerDecision.emit(aggregated)
         this.prevTriggerDecision = this.getAggregatedSuggestionState(this.sessionDecisions)
