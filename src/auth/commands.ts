@@ -6,7 +6,8 @@ import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
 import { AuthSource, showAuthWebview } from './ui/vue/show'
 import { ServiceItemId, isServiceItemId } from './ui/vue/types'
-import { showConnectionsPageCommand } from './utils'
+import { addConnection, showConnectionsPageCommand } from './utils'
+import { isCloud9 } from '../shared/extensionUtilities'
 
 /**
  * The methods with backend logic for the Auth commands.
@@ -14,7 +15,13 @@ import { showConnectionsPageCommand } from './utils'
 export class AuthCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext) {}
 
-    public showConnectionsPage(source: AuthSource, serviceToShow?: ServiceItemId) {
+    public showManageConnections(source: AuthSource, serviceToShow?: ServiceItemId) {
+        // The auth webview page does not make sense to use in C9,
+        // so show the auth quick pick instead.
+        if (isCloud9('any')) {
+            return addConnection.execute()
+        }
+
         // Edge case where called by vscode UI and non ServiceItemId object
         // is passed in.
         if (typeof source !== 'string') {
@@ -41,7 +48,7 @@ export class AuthCommandDeclarations implements CommandDeclarations<AuthCommandB
     private constructor() {}
 
     public readonly declared = {
-        showConnectionsPage: Commands.from(AuthCommandBackend).declareShowConnectionsPage({
+        showManageConnections: Commands.from(AuthCommandBackend).declareShowManageConnections({
             id: showConnectionsPageCommand,
         }),
     } as const
