@@ -44,6 +44,7 @@ export class RuntimeLanguageContext {
             ruby: 'ruby',
             rust: 'rust',
             scala: 'scala',
+            sh: 'shell',
             shellscript: 'shell',
             sql: 'sql',
         })
@@ -64,6 +65,7 @@ export class RuntimeLanguageContext {
             ruby: 'rb',
             rust: 'rs',
             scala: 'scala',
+            sh: 'sh',
             shellscript: 'sh',
             sql: 'sql',
         })
