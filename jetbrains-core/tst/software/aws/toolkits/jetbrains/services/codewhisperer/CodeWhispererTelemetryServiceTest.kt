@@ -240,6 +240,7 @@ class CodeWhispererTelemetryServiceTest {
         val suggestionState = CodewhispererSuggestionState.Reject
         val suggestionReferenceCount = Random.nextInt(2)
         val lineCount = Random.nextInt(0, 100)
+        val charCount = Random.nextInt(0, 100)
 
         val expectedTotalImportCount = recommendationContext.details.fold(0) { grandTotal, detail ->
             grandTotal + detail.recommendation.mostRelevantMissingImports().size
@@ -252,7 +253,8 @@ class CodeWhispererTelemetryServiceTest {
             suggestionState,
             popupShownDuration,
             suggestionReferenceCount,
-            lineCount
+            lineCount,
+            charCount
         )
 
         argumentCaptor<MetricEvent>().apply {
@@ -284,14 +286,15 @@ class CodeWhispererTelemetryServiceTest {
                 "codewhispererUserGroup" to "Control",
                 "codewhispererSupplementalContextTimeout" to supplementalContextInfo.isProcessTimeout,
                 "codewhispererSupplementalContextIsUtg" to supplementalContextInfo.isUtg,
-                "codewhispererSupplementalContextLength" to supplementalContextInfo.contentLength
+                "codewhispererSupplementalContextLength" to supplementalContextInfo.contentLength,
+                "codewhispererCharactersAccepted" to charCount
             )
         }
     }
 
     @Test
     fun `sendUserDecisionEventForAll will send userDecision event for all suggestions`() {
-        doNothing().whenever(sut).sendUserTriggerDecisionEvent(any(), any(), any(), any(), any(), any(), any())
+        doNothing().whenever(sut).sendUserTriggerDecisionEvent(any(), any(), any(), any(), any(), any(), any(), any())
         val eventCount = mutableMapOf<CodewhispererSuggestionState, Int>()
         var totalEventCount = 0
         val requestContext = aRequestContext(projectRule.project)
@@ -463,6 +466,7 @@ class CodeWhispererTelemetryServiceTest {
         val expectedDuration = Duration.ofSeconds(1)
         val expectedSuggestionReferenceCount = 1
         val expectedGeneratedLineCount = 50
+        val expectedCharCount = 100
         val expectedCompletionType = if (expectedRecommendationContext.details.any {
                 it.completionType == CodewhispererCompletionType.Block
             }
@@ -476,7 +480,8 @@ class CodeWhispererTelemetryServiceTest {
             expectedSuggestionState,
             expectedDuration,
             expectedSuggestionReferenceCount,
-            expectedGeneratedLineCount
+            expectedGeneratedLineCount,
+            expectedCharCount
         )
 
         if (isProTier || isTelemetryEnabled) {
