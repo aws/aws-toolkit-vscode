@@ -38,6 +38,7 @@ import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -266,6 +267,18 @@ export class RecommendationHandler {
                 requestId = error.requestId || ''
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
+
+                if (error?.code === 'AccessDeniedException') {
+                    getLogger().error('CodeWhisperer AccessDeniedException : %s', (error as Error).message)
+                    vscode.window
+                        .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
+                        .then(async resp => {
+                            if (resp === CodeWhispererConstants.settingsLearnMore) {
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                            }
+                        })
+                    await vscode.commands.executeCommand('aws.codeWhisperer.disableCodeSuggestions')
+                }
             } else {
                 errorMessage = error as string
                 reason = error ? String(error) : 'unknown'

@@ -62,6 +62,19 @@ export const enableCodeSuggestions = Commands.declare(
     }
 )
 
+export const disableCodeSuggestions = Commands.declare(
+    'aws.codeWhisperer.disableCodeSuggestions',
+    (context: ExtContext) => async () => {
+        await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
+        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+
+        if (!isCloud9()) {
+            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+        }
+    }
+)
+
 export const showReferenceLog = Commands.declare(
     'aws.codeWhisperer.openReferencePanel',
     (context: ExtContext) => async () => {

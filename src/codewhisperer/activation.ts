@@ -23,6 +23,7 @@ import { getLogger } from '../shared/logger'
 import { isCloud9 } from '../shared/extensionUtilities'
 import {
     enableCodeSuggestions,
+    disableCodeSuggestions,
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
@@ -159,6 +160,8 @@ export async function activate(context: ExtContext): Promise<void> {
         toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
         enableCodeSuggestions.register(context),
+        // disable code suggestions
+        disableCodeSuggestions.register(context),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
         // sign in with sso or AWS ID
