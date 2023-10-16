@@ -1,4 +1,4 @@
 {
 	"type": "Feature",
-	"description": "public preview for CodeWhisperer Enterprise: enabling users to select their desired customization which will customize the code suggestions from CodeWhisperer for their own organizations' needs"
+	"description": "Public preview for CodeWhisperer Enterprise: Enterprise customers can now customize CodeWhisperer to adopt and suggest code based on organization specific codebases."
 }
