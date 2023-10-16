@@ -151,6 +151,7 @@ describe('telemetryHelper', function () {
                 codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Block',
                 codewhispererTypeaheadLength: 0,
+                codewhispererCharactersAccepted: aCompletion().content.length,
             })
         })
 
@@ -184,6 +185,7 @@ describe('telemetryHelper', function () {
                 codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
+                codewhispererCharactersAccepted: aCompletion().content.length,
             })
         })
 
@@ -202,7 +204,7 @@ describe('telemetryHelper', function () {
                 ])
             )
 
-            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content, 0)
+            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', '', 0)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -217,6 +219,7 @@ describe('telemetryHelper', function () {
                 codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
+                codewhispererCharactersAccepted: 0,
             })
         })
     })
