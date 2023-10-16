@@ -35,7 +35,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
-            AuthCommandDeclarations.instance.declared.showConnectionsPage
+            AuthCommandDeclarations.instance.declared.showManageConnections
                 .build('codecatalystDeveloperTools', 'codecatalyst')
                 .asTreeNode({
                     label: 'Start',

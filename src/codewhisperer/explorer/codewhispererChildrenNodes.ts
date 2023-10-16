@@ -59,7 +59,7 @@ export const createSecurityScanNode = () => {
 }
 
 export const createSsoSignIn = () =>
-    AuthCommandDeclarations.instance.declared.showConnectionsPage
+    AuthCommandDeclarations.instance.declared.showManageConnections
         .build('codewhispererDeveloperTools', 'codewhisperer')
         .asTreeNode({
             label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
