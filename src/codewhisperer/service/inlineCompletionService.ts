@@ -144,7 +144,10 @@ export class InlineCompletionService {
 
     setCodeWhispererStatusBarLoading() {
         this._isPaginationRunning = true
-        this.statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer`
+        const selectedCustomization = getSelectedCustomization()
+        this.statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer${
+            selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
+        }`
         this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
