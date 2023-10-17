@@ -43,6 +43,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         })
     }
 
+    public enableDebugConsole(): void {
+        this.logToDebugConsole()
+    }
+
     public setLogLevel(logLevel: LogLevel) {
         if (this.logger.level === logLevel) {
             return

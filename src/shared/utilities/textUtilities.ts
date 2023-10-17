@@ -15,7 +15,7 @@ import { getLogger } from '../logger'
  * If `n` is negative, truncates at start instead of end.
  *
  * @param s String to truncate
- * @param n Truncate top-level string properties exceeding this length
+ * @param n Truncate after this length
  * @param suffix String appended to truncated value (default: "…")
  */
 export function truncate(s: string, n: number, suffix?: string): string {

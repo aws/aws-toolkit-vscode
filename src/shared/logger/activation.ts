@@ -50,7 +50,7 @@ export async function activate(
     setLogger(mainLogger)
     getLogger().info(`log level: ${getLogLevel()}`)
 
-    // channel logger
+    // Logs to "AWS Toolkit" output channel.
     setLogger(
         makeLogger(
             {
@@ -62,11 +62,11 @@ export async function activate(
         'channel'
     )
 
-    // debug channel logger
+    // Logs to vscode Debug Console.
     setLogger(
         makeLogger(
             {
-                staticLogLevel: 'verbose', // verbose will log anything
+                staticLogLevel: 'debug',
                 outputChannels: [outputChannel, chan],
                 useDebugConsole: true,
             },
