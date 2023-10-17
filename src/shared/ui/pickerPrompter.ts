@@ -61,6 +61,8 @@ export type ExtendedQuickPickOptions<T> = Omit<
     // TODO: this could optionally be a callback accepting the error and returning an item
     /** Item to show if there was an error loading items */
     errorItem?: DataQuickPickItem<T>
+    /** Description for recently used item */
+    recentlyUsed?: string
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
@@ -143,7 +145,7 @@ export function createQuickPick<T>(
             ? new FilterBoxQuickPickPrompter<T>(picker, mergedOptions)
             : new QuickPickPrompter<T>(picker, mergedOptions)
 
-    prompter.loadItems(items)
+    prompter.loadItems(items, false, mergedOptions.recentlyUsed)
 
     return prompter
 }
@@ -340,7 +342,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
     /**
      * Appends items to the current array, keeping track of the previous selection
      */
-    private appendItems(items: DataQuickPickItem<T>[]): void {
+    private appendItems(items: DataQuickPickItem<T>[], recentlyUsedDescription: string = recentlyUsed): void {
         const picker = this.quickPick
         const recent = picker.activeItems
         const mergedItems = picker.items.concat(items)
@@ -349,17 +351,21 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         if (recentlyUsedItem !== undefined) {
             if (items.includes(recentlyUsedItem)) {
                 const prefix = recentlyUsedItem.description
-                recentlyUsedItem.description = prefix ? `${prefix} (${recentlyUsed})` : `(${recentlyUsed})`
+                const recent = recentlyUsedDescription === recentlyUsed ? `(${recentlyUsed})` : recentlyUsedDescription
+                recentlyUsedItem.description = prefix ? `${prefix} ${recent}` : recent
             }
 
             picker.items = mergedItems.sort((a, b) => {
+                // Always prioritize specified comparator if there's any
+                if (this.options.compare) {
+                    return this.options.compare(a, b)
+                }
                 if (a === recentlyUsedItem) {
                     return -1
                 } else if (b === recentlyUsedItem) {
                     return 1
-                } else {
-                    return this.options.compare?.(a, b) ?? 0
                 }
+                return 0
             })
 
             picker.activeItems = [recentlyUsedItem]
@@ -384,9 +390,14 @@ export class QuickPickPrompter<T> extends Prompter<T> {
      *
      * @param items DataQuickPickItems or a promise for said items
      * @param disableInput Disables the prompter until the items have been loaded, only relevant for async loads (default: true)
+     * @param recentlyUsedDescription Description to display for the recently used item (default: 'Recently Used')
      * @returns A promise that is resolved when loading has finished
      */
-    public async loadItems(items: ItemLoadTypes<T>, disableInput: boolean = false): Promise<void> {
+    public async loadItems(
+        items: ItemLoadTypes<T>,
+        disableInput: boolean = false,
+        recentlyUsedDescription: string = recentlyUsed
+    ): Promise<void> {
         // This code block assumes that callers never try to load items in parallel
         // For now this okay since we don't have any pickers that require that capability
 
@@ -437,7 +448,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
             checkHidden.dispose()
         } else if (items instanceof Promise) {
             try {
-                this.appendItems(await items)
+                this.appendItems(await items, recentlyUsedDescription)
             } catch (err) {
                 getLogger().error('QuickPickPrompter: loading items from Promise failed: %s', err)
                 addErrorItem(err as Error)
@@ -450,7 +461,7 @@ export class QuickPickPrompter<T> extends Prompter<T> {
         this.enabled = true
 
         // Currently needed for the cases where async loads did not load any items, forcing a `noItemsFoundItem`
-        this.appendItems([])
+        this.appendItems([], recentlyUsedDescription)
     }
 
     /**
