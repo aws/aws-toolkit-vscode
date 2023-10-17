@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import { ChatEvent } from '../../../clients/chat/v0/model'
 import {
     ChatMessage,
@@ -34,70 +35,66 @@ export class Messenger {
         const followUps: FollowUp[] = []
         const relatedSuggestions: Suggestion[] = []
 
-        let timerFinished = false
-        const timer = setTimeout(() => {
-            timerFinished = true
-        }, 10000)
-        for await (const chatEvent of response) {
-            if (timerFinished) {
-                break
-            }
-            if (chatEvent.token != undefined) {
-                message += chatEvent.token
+        await waitUntil(
+            async () => {
+                for await (const chatEvent of response) {
+                    if (chatEvent.token != undefined) {
+                        message += chatEvent.token
 
-                this.dispatcher.sendChatMessage(
-                    new ChatMessage(
-                        {
-                            message: message,
-                            messageType: 'answer-part',
-                            followUps: undefined,
-                            relatedSuggestions: undefined,
-                            triggerID,
-                        },
-                        tabID
-                    )
-                )
-            }
-
-            if (chatEvent.suggestions != undefined) {
-                let suggestionIndex = 0
-                const newSuggestions: Suggestion[] = chatEvent.suggestions.map(
-                    s =>
-                        new Suggestion({
-                            title: s.title,
-                            url: s.url,
-                            body: s.body,
-                            id: suggestionIndex++,
-                            type: s.type,
-                            context: s.context,
-                        })
-                )
-                relatedSuggestions.push(...newSuggestions)
-            }
-
-            if (chatEvent.followUps != undefined) {
-                chatEvent.followUps.forEach(element => {
-                    if (element.pillText !== undefined) {
-                        followUps.push({
-                            type: element.type.toString(),
-                            pillText: element.pillText,
-                            prompt: element.prompt ?? element.pillText,
-                        })
+                        this.dispatcher.sendChatMessage(
+                            new ChatMessage(
+                                {
+                                    message: message,
+                                    messageType: 'answer-part',
+                                    followUps: undefined,
+                                    relatedSuggestions: undefined,
+                                    triggerID,
+                                },
+                                tabID
+                            )
+                        )
                     }
 
-                    if (element.message !== undefined) {
-                        followUps.push({
-                            type: element.type.toString(),
-                            pillText: element.message,
-                            prompt: element.message,
+                    if (chatEvent.suggestions != undefined) {
+                        let suggestionIndex = 0
+                        const newSuggestions: Suggestion[] = chatEvent.suggestions.map(
+                            s =>
+                                new Suggestion({
+                                    title: s.title,
+                                    url: s.url,
+                                    body: s.body,
+                                    id: suggestionIndex++,
+                                    type: s.type,
+                                    context: s.context,
+                                })
+                        )
+                        relatedSuggestions.push(...newSuggestions)
+                    }
+
+                    if (chatEvent.followUps != undefined) {
+                        chatEvent.followUps.forEach(element => {
+                            if (element.pillText !== undefined) {
+                                followUps.push({
+                                    type: element.type.toString(),
+                                    pillText: element.pillText,
+                                    prompt: element.prompt ?? element.pillText,
+                                })
+                            }
+
+                            if (element.message !== undefined) {
+                                followUps.push({
+                                    type: element.type.toString(),
+                                    pillText: element.message,
+                                    prompt: element.message,
+                                })
+                            }
                         })
                     }
-                })
-            }
-        }
-        if (!timerFinished) {
-            clearTimeout(timer)
-        }
+                }
+                return true
+            },
+            { timeout: 10000, truthy: true }
+        )
 
         if (relatedSuggestions.length !== 0) {
             this.dispatcher.sendChatMessage(
