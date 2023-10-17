@@ -106,6 +106,9 @@ export class CodeWhispererTracker {
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
             })
+            // TODO:
+            // Temperary comment out user modification event, need further discussion on how to calculate this metric
+            // TelemetryHelper.instance.sendUserModificationEvent(suggestion, percentage)
         }
     }
 
