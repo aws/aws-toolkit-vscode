@@ -84,7 +84,9 @@ export class Session {
     }
 
     private async nextInteraction(msg: string | undefined) {
-        const files = await collectFiles(path.join(this.config.workspaceRoot, 'src'))
+        const srcRoot = path.join(this.config.workspaceRoot, 'src')
+        const srcFound = await fs.stat(srcRoot)
+        const files = await collectFiles(srcFound !== undefined ? srcRoot : this.config.workspaceRoot)
 
         const resp = await this.state.interact({
             files,
