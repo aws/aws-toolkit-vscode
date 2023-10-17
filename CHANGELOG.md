@@ -1,3 +1,6 @@
+# _1.83_ (2023-10-13)
+- **(Feature)** CodeWhisperer: improve auto-suggestions for additional languages
+
 # _1.82_ (2023-10-06)
 - **(Bug Fix)** CodeWhisperer: Fixed an issue where the "Learn CodeWhisperer" page is shown for Gateway host
 

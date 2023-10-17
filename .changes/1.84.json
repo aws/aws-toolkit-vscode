@@ -1,0 +1,8 @@
+{
+  "date" : "2023-10-17",
+  "version" : "1.84",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Public preview for CodeWhisperer Enterprise: Enterprise customers can now customize CodeWhisperer to adopt and suggest code based on organization specific codebases."
+  } ]
+}
