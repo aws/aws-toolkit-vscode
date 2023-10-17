@@ -5,6 +5,7 @@
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
+import { getLineOffset } from './diagnosticsProvider'
 
 export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -39,6 +40,32 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         }
 
         return new vscode.Hover(contents)
+    }
+
+    public updateRanges(event: vscode.TextDocumentChangeEvent) {
+        const changedRange = event.contentChanges[0].range
+        const changedText = event.contentChanges[0].text
+        const lineOffset = getLineOffset(changedRange, changedText)
+
+        this._issues = this._issues.map(issues => this._applyRangeOffset(event.document.fileName, issues, lineOffset))
+    }
+
+    private _applyRangeOffset(
+        fileName: string,
+        aggregatedIssues: AggregatedCodeScanIssue,
+        lineOffset: number
+    ): AggregatedCodeScanIssue {
+        if (aggregatedIssues.filePath !== fileName) {
+            return aggregatedIssues
+        }
+        return {
+            ...aggregatedIssues,
+            issues: aggregatedIssues.issues.map(issue => ({
+                ...issue,
+                startLine: issue.startLine + lineOffset,
+                endLine: issue.endLine + lineOffset,
+            })),
+        }
     }
 
     private _getContent(issue: CodeScanIssue) {
@@ -94,10 +121,24 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
      * @returns The markdown string
      */
     private _makeCodeBlock(code: string, language?: string) {
-        // Add some padding so that each line has the same number of chars
         const lines = code.split('\n').slice(1) // Ignore the first line for diff header
+        // Get the length of the longest line to pad each line to be the same length
         const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
-        const paddedLines = lines.map(line => line.padEnd(maxLineChars + 2))
+        // Get the number of leading whitespaces that can be removed to hide unnecessary indentation
+        const minLeadingWhitespaces = lines.reduce((acc, curr) => {
+            const numWhitespaces = curr.slice(1).search(/\S/)
+            if (numWhitespaces < 0) {
+                return acc
+            }
+            return Math.min(acc, numWhitespaces)
+        }, maxLineChars)
+        const paddedLines = lines.map((line, i) => {
+            const paddedLine = line.padEnd(maxLineChars + 2)
+            if (minLeadingWhitespaces > 1) {
+                return paddedLine[0] + paddedLine.slice(minLeadingWhitespaces)
+            }
+            return paddedLine
+        })
 
         // Group the lines into sections so consecutive lines of the same type can be placed in
         // the same span below
@@ -128,8 +169,9 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
 ${section}
 \`\`\`
 
-</span>`
+</span>
+`
             )
-            .join('')
+            .join('<br />')
     }
 }

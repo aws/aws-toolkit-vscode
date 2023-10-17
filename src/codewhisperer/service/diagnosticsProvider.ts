@@ -94,7 +94,7 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
     securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
 }
 
-function getLineOffset(range: vscode.Range, text: string) {
+export function getLineOffset(range: vscode.Range, text: string) {
     const originLines = range.end.line - range.start.line + 1
     const changedLines = text.split('\n').length
     return changedLines - originLines

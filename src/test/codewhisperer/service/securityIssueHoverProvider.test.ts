@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
-import { createMockDocument } from '../testUtil'
+import { createMockDocument, createTextDocumentChangeEvent } from '../testUtil'
 import assert from 'assert'
 import { CodeScanIssue } from '../../../codewhisperer/models/model'
 import sinon from 'sinon'
@@ -61,21 +61,24 @@ describe('securityIssueHoverProvider', () => {
                     'first line    \n' +
                     '```\n\n' +
                     '</span>\n' +
+                    '<br />\n' +
                     '<span class="codicon codicon-none" style="background-color:var(--vscode-diffEditor-removedTextBackground);">\n\n' +
                     '```diff\n' +
                     '-second line  \n' +
                     '```\n\n' +
                     '</span>\n' +
+                    '<br />\n' +
                     '<span class="codicon codicon-none" style="background-color:var(--vscode-diffEditor-insertedTextBackground);">\n\n' +
                     '```diff\n' +
                     '+third line   \n' +
                     '```\n\n' +
                     '</span>\n' +
+                    '<br />\n' +
                     '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
                     '```language\n' +
                     'fourth line   \n' +
                     '```\n\n' +
-                    '</span>\n'
+                    '</span>\n\n'
             )
             assert.strictEqual(
                 (actual.contents[1] as vscode.MarkdownString).value,
@@ -98,6 +101,31 @@ describe('securityIssueHoverProvider', () => {
             const token = new vscode.CancellationTokenSource()
             const actual = securityIssueHoverProvider.provideHover(mockDocument, new vscode.Position(2, 0), token.token)
             assert.strictEqual(actual.contents.length, 0)
+        })
+
+        it('should update ranges if text document changed', () => {
+            const securityIssueHoverProvider = new SecurityIssueHoverProvider()
+            const mockDocument = createMockDocument('def two_sum(nums, target):\nfor', 'test.py', 'python')
+            securityIssueHoverProvider.issues = [
+                {
+                    filePath: mockDocument.fileName,
+                    issues: [makeIssue({ startLine: 0, endLine: 1 })],
+                },
+            ]
+
+            const changeEvent = createTextDocumentChangeEvent(
+                mockDocument,
+                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
+                '\n'
+            )
+            securityIssueHoverProvider.updateRanges(changeEvent)
+
+            const token = new vscode.CancellationTokenSource()
+            let actual = securityIssueHoverProvider.provideHover(mockDocument, new vscode.Position(0, 0), token.token)
+            assert.strictEqual(actual.contents.length, 0)
+
+            actual = securityIssueHoverProvider.provideHover(mockDocument, new vscode.Position(1, 0), token.token)
+            assert.strictEqual(actual.contents.length, 1)
         })
     })
 })
