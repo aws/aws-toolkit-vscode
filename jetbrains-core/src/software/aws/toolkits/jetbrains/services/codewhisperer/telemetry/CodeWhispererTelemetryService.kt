@@ -64,6 +64,7 @@ class CodeWhispererTelemetryService {
     companion object {
         fun getInstance(): CodeWhispererTelemetryService = service()
         val LOG = getLogger<CodeWhispererTelemetryService>()
+        const val NO_ACCEPTED_INDEX = -1
     }
 
     fun sendFailedServiceInvocationEvent(project: Project, exceptionType: String?) {
@@ -129,6 +130,7 @@ class CodeWhispererTelemetryService {
             codewhispererSupplementalContextIsUtg = supContext?.isUtg,
             codewhispererSupplementalContextLatency = supContext?.latency?.toDouble(),
             codewhispererSupplementalContextLength = supContext?.contentLength,
+            codewhispererCustomizationArn = requestContext.customizationArn,
             codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
         )
     }
@@ -266,6 +268,7 @@ class CodeWhispererTelemetryService {
             codewhispererSuggestionState = suggestionState,
             codewhispererClassifierResult = classifierResult,
             codewhispererClassifierThreshold = classifierThreshold,
+            codewhispererCustomizationArn = requestContext.customizationArn,
             codewhispererSupplementalContextIsUtg = supplementalContext?.isUtg,
             codewhispererSupplementalContextLength = supplementalContext?.contentLength,
             codewhispererSupplementalContextTimeout = supplementalContext?.isProcessTimeout,
@@ -398,6 +401,7 @@ class CodeWhispererTelemetryService {
      * - Accept if there is an Accept
      * - Reject if there is a Reject
      * - Empty if all decisions are Empty
+     * - Record the accepted suggestion index
      * - Discard otherwise
      */
     fun aggregateUserDecision(decisions: List<CodewhispererSuggestionState>): CodewhispererPreviousSuggestionState {

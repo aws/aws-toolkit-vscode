@@ -10,12 +10,16 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.wm.ToolWindow
 import com.intellij.openapi.wm.ex.ToolWindowManagerListener
 import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager
-import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomizationListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererActivationChangedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
@@ -29,7 +33,8 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
     CodeWhispererActivationChangedListener,
     ToolWindowManagerListener,
     ToolkitConnectionManagerListener,
-    BearerTokenProviderListener {
+    BearerTokenProviderListener,
+    CodeWhispererCustomizationListener {
     override fun activationChanged(value: Boolean) {
         project.service<StatusBarWidgetsManager>().updateWidget(CodeWhispererStatusBarWidgetFactory::class.java)
         CodeWhispererCodeReferenceManager.getInstance(project).toolWindow?.isAvailable = value
@@ -60,10 +65,11 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
             CodeWhispererCodeScanManager.getInstance(project).removeCodeScanUI()
         }
 
-        // TODO: Move this IF block into nullifyAccountlessCredentialIfNeeded()
-        if (newConnection is AwsBearerTokenConnection) {
-            CodeWhispererExplorerActionManager.getInstance().nullifyAccountlessCredentialIfNeeded()
+        ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let {
+            // re-check the allowlist status
+            CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(project, forceUpdate = true)
         }
+
         project.refreshDevToolTree()
     }
 
@@ -72,5 +78,15 @@ class CodeWhispererProjectStartupSettingsListener(private val project: Project) 
             return
         }
         LearnCodeWhispererEditorProvider.openEditor(project)
+    }
+
+    override fun refreshUi() {
+        ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let { curConnection ->
+            if (curConnection.isSono()) {
+                return
+            }
+
+            project.refreshDevToolTree()
+        }
     }
 }

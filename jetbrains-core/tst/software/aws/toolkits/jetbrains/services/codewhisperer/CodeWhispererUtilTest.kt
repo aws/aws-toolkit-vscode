@@ -62,6 +62,7 @@ class CodeWhispererUtilTest {
         val oldCount = modificationTracker.modificationCount
 
         val ssoConn = ManagedBearerSsoConnection(startUrl = "fake url", region = "us-east-1", scopes = CODEWHISPERER_SCOPES)
+
         runIfIdcConnectionOrTelemetryEnabled(ssoConn) { modificationTracker.incModificationCount() }
 
         val newCount = modificationTracker.modificationCount

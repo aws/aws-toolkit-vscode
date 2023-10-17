@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
+import com.intellij.openapi.util.Disposer
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.RuleChain
@@ -125,6 +126,11 @@ class CodeWhispererClientAdaptorTest {
     @After
     fun tearDown() {
         AwsSettings.getInstance().isTelemetryEnabled = isTelemetryEnabledDefault
+    }
+
+    @After
+    fun cleanup() {
+        Disposer.dispose(sut)
     }
 
     @Test
@@ -271,7 +277,7 @@ class CodeWhispererClientAdaptorTest {
     @Test
     fun `sendTelemetryEvent for codePercentage respects telemetry optin status`() {
         sendTelemetryEventOptOutCheckHelper {
-            sut.sendCodePercentageTelemetry(aProgrammingLanguage(), 0, 1)
+            sut.sendCodePercentageTelemetry(aProgrammingLanguage(), aString(), 0, 1)
         }
     }
 
@@ -285,7 +291,7 @@ class CodeWhispererClientAdaptorTest {
     @Test
     fun `sendTelemetryEvent for userModification respects telemetry optin status`() {
         sendTelemetryEventOptOutCheckHelper {
-            sut.sendUserModificationTelemetry(aString(), aString(), aProgrammingLanguage(), 0.0)
+            sut.sendUserModificationTelemetry(aString(), aString(), aProgrammingLanguage(), aString(), 0.0)
         }
     }
 

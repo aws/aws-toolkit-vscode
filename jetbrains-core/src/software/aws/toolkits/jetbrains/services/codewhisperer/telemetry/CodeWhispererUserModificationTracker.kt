@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.telemetry
-
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.components.service
@@ -63,7 +62,7 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
         }
     }
 
-    private fun isTelemetryEnabled(): Boolean = TELEMETRY_ENABLED and AwsSettings.getInstance().isTelemetryEnabled
+    private fun isTelemetryEnabled(): Boolean = AwsSettings.getInstance().isTelemetryEnabled
 
     fun enqueue(event: AcceptedSuggestionEntry) {
         if (!isTelemetryEnabled()) {
@@ -102,8 +101,11 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
 
     private fun emitTelemetryOnSuggestion(acceptedSuggestion: AcceptedSuggestionEntry) {
         val file = acceptedSuggestion.vFile
+
         if (file == null || (!file.isValid)) {
             sendModificationTelemetry(acceptedSuggestion, 1.0)
+            // temp remove event sent as further discussion needed for metric calculation
+            // sendUserModificationTelemetryToServiceAPI(acceptedSuggestion, 1.0)
         } else {
             try {
                 /**
@@ -115,9 +117,14 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
                 val currentString = document?.getText(
                     TextRange(acceptedSuggestion.range.startOffset, acceptedSuggestion.range.endOffset)
                 )
-                sendModificationTelemetry(acceptedSuggestion, checkDiff(currentString?.trim(), acceptedSuggestion.suggestion.trim()))
+                val modificationPercentage = checkDiff(currentString?.trim(), acceptedSuggestion.suggestion.trim())
+                sendModificationTelemetry(acceptedSuggestion, modificationPercentage)
+                // temp remove event sent as further discussion needed for metric calculation
+                // sendUserModificationTelemetryToServiceAPI(acceptedSuggestion, modificationPercentage)
             } catch (e: Exception) {
                 sendModificationTelemetry(acceptedSuggestion, 1.0)
+                // temp remove event sent as further discussion needed for metric calculation
+                // sendUserModificationTelemetryToServiceAPI(acceptedSuggestion, 1.0)
             }
         }
     }
@@ -156,13 +163,54 @@ class CodeWhispererUserModificationTracker(private val project: Project) : Dispo
         )
     }
 
+    // temp disable user modfication event for further discussion on metric calculation
+//    private fun sendUserModificationTelemetryToServiceAPI(
+//        suggestion: AcceptedSuggestionEntry,
+//        modificationPercentage: Double
+//    ) {
+//        calculateIfIamIdentityCenterConnection(project) {
+//            val response = try {
+//                CodeWhispererClientAdaptor.getInstance(project)
+//                    .sendUserModificationTelemetry(
+//                        suggestion.sessionId,
+//                        suggestion.requestId,
+//                        suggestion.vFile?.let { CodeWhispererLanguageManager.getInstance().getLanguage(suggestion.vFile) },
+//                        CodeWhispererModelConfigurator.getInstance().activeCustomization(project)?.arn.orEmpty(),
+//                        modificationPercentage
+//                    )
+//            } catch (e: Exception) {
+//                when (e) {
+//                    is CodeWhispererRuntimeException -> {
+//                        LOG.info(e) {
+//                            "Failed to send code scan telemetry with Code Whisperer Runtime Exception"
+//                        }
+//                    }
+//
+//                    is CodeWhispererException -> {
+//                        LOG.info(e) {
+//                            "Failed to send code scan telemetry with Code Whisperer Exception"
+//                        }
+//                    }
+//
+//                    else -> {
+//                        LOG.info(e) { "Failed to send user modification telemetry." }
+//                    }
+//                }
+//                null
+//            }
+//
+//            response?.let {
+//                LOG.debug { "Successfully sent user modification telemetry. RequestId: ${it.responseMetadata().requestId()}" }
+//            }
+//        }
+//    }
+
     companion object {
         private val DEFAULT_CHECK_INTERVAL = Duration.ofMinutes(1)
         private const val DEFAULT_MAX_QUEUE_SIZE = 10000
         private const val DEFAULT_MODIFICATION_INTERVAL_IN_SECONDS = 300 // 5 minutes
-        private const val TELEMETRY_KEY = "aws.toolkits.enableTelemetry"
+
         private val checker = Levenshtein()
-        private val TELEMETRY_ENABLED = System.getProperty(TELEMETRY_KEY)?.toBoolean() ?: true
 
         private val LOG = getLogger<CodeWhispererUserModificationTracker>()
 

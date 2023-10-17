@@ -242,7 +242,8 @@ fun aRequestContext(
             Random.nextLong(),
             Random.nextLong(),
             aString()
-        )
+        ),
+        customizationArn = null
     )
 }
 

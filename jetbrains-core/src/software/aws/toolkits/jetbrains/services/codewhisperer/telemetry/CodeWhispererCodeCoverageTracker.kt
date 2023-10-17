@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererR
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.InvocationContext
@@ -38,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 
+// TODO: reset code coverage calculator on logging out connection?
 abstract class CodeWhispererCodeCoverageTracker(
     private val project: Project,
     private val timeWindowInSec: Long,
@@ -202,11 +204,13 @@ abstract class CodeWhispererCodeCoverageTracker(
                 incrementAcceptedTokens(rangeMarker.document, delta)
             }
         }
+        val customizationArn: String? = CodeWhispererModelConfigurator.getInstance().activeCustomization(project)?.arn
 
         runIfIdcConnectionOrTelemetryEnabled(project) {
             try {
                 val response = CodeWhispererClientAdaptor.getInstance(project).sendCodePercentageTelemetry(
                     language,
+                    customizationArn,
                     acceptedTokensSize,
                     totalTokensSize
                 )
@@ -228,6 +232,7 @@ abstract class CodeWhispererCodeCoverageTracker(
                 percentage,
                 totalTokensSize,
                 successCount = myServiceInvocationCount.get(),
+                codewhispererCustomizationArn = customizationArn,
                 codewhispererUserGroup = CodeWhispererUserGroupSettings.getInstance().getUserGroup().name
             )
         }
@@ -287,6 +292,7 @@ class DefaultCodeWhispererCodeCoverageTracker(project: Project, language: CodeWh
 class CodeCoverageTokens(totalTokens: Int = 0, acceptedTokens: Int = 0) {
     val totalTokens: AtomicInteger
     val acceptedTokens: AtomicInteger
+
     init {
         this.totalTokens = AtomicInteger(totalTokens)
         this.acceptedTokens = AtomicInteger(acceptedTokens)
