@@ -25,7 +25,7 @@ export const defaultSsoRegion = 'us-east-1'
 
 type SsoType =
     | 'any' // any type of sso
-    | 'base' // AWS Identity Center
+    | 'idc' // AWS Identity Center
     | 'builderId'
 
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
@@ -35,12 +35,11 @@ export const isSsoConnection = (conn?: Connection, type: SsoType = 'any'): conn 
     }
     // At this point the conn is an SSO conn, but now we must determine the specific type
     switch (type) {
-        case 'base':
-            // Any SSO type is considered an SSO connection, but in this case
-            // we only want an Identity Center connection. So we return true
-            // as long as the connection is none of the other connection types.
-
-            // IMPORTANT: This condition should grow as more SsoType's get added.
+        case 'idc':
+            // An Identity Center SSO connection is the Base/Root and doesn't
+            // have any unique identifiers, so we must eliminate the other SSO
+            // types to determine if this is Identity Center.
+            // This condition should grow as more SsoType's get added.
             return !isBuilderIdConnection(conn)
         case 'builderId':
             return conn.startUrl === builderIdStartUrl
@@ -49,7 +48,7 @@ export const isSsoConnection = (conn?: Connection, type: SsoType = 'any'): conn 
     }
 }
 export const isAnySsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'any')
-export const isBaseSsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'base')
+export const isIdcSsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'idc')
 export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'builderId')
 
 export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>

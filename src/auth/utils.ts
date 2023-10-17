@@ -37,7 +37,7 @@ import {
     createSsoProfile,
     defaultSsoRegion,
     isAnySsoConnection,
-    isBaseSsoConnection,
+    isIdcSsoConnection,
     isBuilderIdConnection,
     isIamConnection,
     isValidCodeCatalystConnection,
@@ -592,13 +592,13 @@ async function findSsoConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isBaseSsoConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isIdcSsoConnection(conn) && isValidCodeWhispererConnection(conn)
             }
             break
         case 'any':
-            predicate = isBaseSsoConnection
+            predicate = isIdcSsoConnection
     }
-    return (await allConnections()).filter(predicate).filter(isBaseSsoConnection)
+    return (await allConnections()).filter(predicate).filter(isIdcSsoConnection)
 }
 
 export type BuilderIdKind = 'any' | 'codewhisperer' | 'codecatalyst'
