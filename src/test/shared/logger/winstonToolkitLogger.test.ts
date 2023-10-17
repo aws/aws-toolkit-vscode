@@ -5,7 +5,6 @@
 
 import assert from 'assert'
 import * as fs from 'fs'
-import * as path from 'path'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
 import * as vscode from 'vscode'
 import { WinstonToolkitLogger } from '../../../shared/logger/winstonToolkitLogger'
@@ -19,7 +18,7 @@ import { sleep, waitUntil } from '../../../shared/utilities/timeoutUtils'
  */
 async function checkFile(
     logger: WinstonToolkitLogger,
-    logPath: string,
+    logPath: vscode.Uri,
     expected: string[],
     unexpected: string[] = []
 ): Promise<void> {
@@ -28,10 +27,10 @@ async function checkFile(
         setTimeout(() => reject(new Error('Timed out waiting for log message')), 10_000)
 
         // Wait for file to exist
-        while (!fs.existsSync(logPath)) {
+        while (!fs.existsSync(logPath.fsPath)) {
             await sleep(200)
         }
-        const contents = fs.readFileSync(logPath)
+        const contents = fs.readFileSync(logPath.fsPath)
 
         // Error if unexpected messages are in the log file
         const explicitUnexpectedMessages = unexpected
@@ -137,12 +136,12 @@ describe('WinstonToolkitLogger', function () {
     ]
 
     describe('logs to a file', async function () {
-        let tempLogPath: string
+        let tempLogPath: vscode.Uri
         let tempFileCounter = 0
         let testLogger: WinstonToolkitLogger | undefined
 
         beforeEach(async function () {
-            tempLogPath = path.join(tempFolder, `temp-${++tempFileCounter}.log`)
+            tempLogPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), `temp-${++tempFileCounter}.log`)
         })
 
         it('does not log a lower level', async function () {
@@ -282,13 +281,13 @@ describe('WinstonToolkitLogger', function () {
 
     // Log tracking functionality testing
     describe('log tracking', function () {
-        let tempLogPath: string
+        let tempLogPath: vscode.Uri
         let tempFileCounter: number = 0
         let testLogger: WinstonToolkitLogger
 
         beforeEach(async function () {
             testLogger = new WinstonToolkitLogger('info')
-            tempLogPath = path.join(tempFolder, `temp-tracker-${tempFileCounter++}.log`)
+            tempLogPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), `temp-tracker-${tempFileCounter++}.log`)
             testLogger.logToFile(tempLogPath)
         })
 
@@ -299,13 +298,13 @@ describe('WinstonToolkitLogger', function () {
         it('get info log message', async function () {
             const logID: number = testLogger.info('test')
             await checkFile(testLogger, tempLogPath, ['test'])
-            assert.notStrictEqual(testLogger.getLogById(logID, vscode.Uri.file(tempLogPath)), undefined)
+            assert.notStrictEqual(testLogger.getLogById(logID, tempLogPath), undefined)
         })
 
         it('debug log message is undefined', async function () {
             const logID: number = testLogger.debug('debug test')
             await checkFile(testLogger, tempLogPath, [], ['debug test'])
-            assert.strictEqual(testLogger.getLogById(logID, vscode.Uri.file(tempLogPath)), undefined)
+            assert.strictEqual(testLogger.getLogById(logID, tempLogPath), undefined)
         })
 
         it('retrieve multiple unique logs with other logs', async function () {
@@ -325,19 +324,17 @@ describe('WinstonToolkitLogger', function () {
             }
 
             await checkFile(testLogger, tempLogPath, expected, unexpected)
-            idMap.forEach((msg, id) =>
-                assert.ok(testLogger.getLogById(id, vscode.Uri.file(tempLogPath))?.includes(msg))
-            )
+            idMap.forEach((msg, id) => assert.ok(testLogger.getLogById(id, tempLogPath)?.includes(msg)))
         })
 
         it('can find log from multiple files', async function () {
             const logIDs: number[] = []
-            const filePaths: string[] = []
+            const filePaths: vscode.Uri[] = []
             const expected: string[] = []
 
             // Make a bunch of files
             for (let i = 0; i < 4; i++) {
-                tempLogPath = path.join(tempFolder, `temp-tracker-${tempFileCounter++}.log`)
+                tempLogPath = vscode.Uri.joinPath(vscode.Uri.file(tempFolder), `temp-tracker-${tempFileCounter++}.log`)
                 testLogger.logToFile(tempLogPath)
                 filePaths.push(tempLogPath)
             }
@@ -350,8 +347,8 @@ describe('WinstonToolkitLogger', function () {
 
             await Promise.all(filePaths.map(log => checkFile(testLogger, log, expected)))
 
-            const middleFile: string = filePaths[Math.floor(filePaths.length / 2)]
-            const middleMsg = testLogger.getLogById(logIDs[Math.floor(logIDs.length / 2)], vscode.Uri.file(middleFile))
+            const middleFile: vscode.Uri = filePaths[Math.floor(filePaths.length / 2)]
+            const middleMsg = testLogger.getLogById(logIDs[Math.floor(logIDs.length / 2)], middleFile)
             assert.notStrictEqual(middleMsg, undefined)
         })
 
