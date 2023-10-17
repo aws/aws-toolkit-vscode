@@ -36,3 +36,6 @@ src/testFixtures/**/obj
 resources/icons/cloud9/generated/**
 resources/fonts/aws-toolkit-icons.woff
 resources/css/icons.css
+
+# Created by `npm run runInBrowser` when testing extension in the browser
+.vscode-test-web
