@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Amazon Redshift is now available in AWS Explorer. You can author and execute SQL queries from VS Code notebooks, and view your database objects in their Redshift warehouses."
-}
