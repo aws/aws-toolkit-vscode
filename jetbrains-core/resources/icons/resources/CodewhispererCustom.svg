@@ -1,0 +1,7 @@
+<svg ti:v='1' width='16' height='16' viewBox='0,0,16,16' xmlns='http://www.w3.org/2000/svg' xmlns:ti='urn:schemas-jetbrains-com:tisvg'>
+    <g>
+        <path d='M0,0L16,0L16,16L0,16Z' fill='#FFFFFF' opacity='0'/>
+        <path d='M2,3L2,14L13,14L13,8L8,8L8,3ZM2,3M7,13L3,13L3,9L7,9ZM7,13M7,8L3,8L3,4L7,4ZM7,8M12,9L12,13L8,13L8,9ZM12,9' fill='#9AA7B0'/>
+        <path d='M10,2L14,2L14,6L10,6Z' fill='#9AA7B0'/>
+    </g>
+</svg>

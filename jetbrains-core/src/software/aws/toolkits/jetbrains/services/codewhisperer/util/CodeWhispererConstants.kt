@@ -7,6 +7,8 @@ import com.intellij.openapi.editor.markup.EffectType
 import com.intellij.openapi.editor.markup.TextAttributes
 import com.intellij.ui.JBColor
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.codewhispererruntime.model.AccessDeniedException
+import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererRuntimeException
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererCsharp
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
@@ -42,6 +44,7 @@ object CodeWhispererConstants {
     const val CODEWHISPERER_SSO_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisperer-auth.html"
     const val CODEWHISPERER_LOGIN_LEARN_MORE_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codewhisper-setup-general.html"
     const val CODEWHISPERER_LOGIN_HELP_URI = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/setup-credentials.html"
+    const val CODEWHISPERER_CUSTOM_LEARN_MORE_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/customizations.html"
     const val CODEWHISPERER_WORKSHOP_URI =
         "https://catalog.us-east-1.prod.workshops.aws/workshops/6838a1a5-4516-4153-90ce-ac49ca8e1357/03-getting-started/03-02-prompts"
     const val CODEWHISPERER_SUPPORTED_LANG_URI = "https://docs.aws.amazon.com/codewhisperer/latest/userguide/language-ide-support.html"
@@ -87,6 +90,35 @@ object CodeWhispererConstants {
         val BearerClientRegion = Region.US_EAST_1
     }
 
+    object Customization {
+        private const val noAccessToCustomizationMessage = "Your account is not authorized to use CodeWhisperer Enterprise."
+        private const val invalidCustomizationMessage = "You are not authorized to access"
+        private const val customizationNotFoundMessage = "not found"
+
+        val noAccessToCustomizationExceptionPredicate: (e: Exception) -> Boolean = { e ->
+            if (e !is CodeWhispererRuntimeException) {
+                false
+            } else {
+                e is AccessDeniedException && (e.message?.contains(noAccessToCustomizationMessage, ignoreCase = true) ?: false)
+            }
+        }
+
+        val invalidCustomizationExceptionPredicate: (e: Exception) -> Boolean = { e ->
+            if (e !is CodeWhispererRuntimeException) {
+                false
+            } else {
+                e is AccessDeniedException && (e.message?.contains(invalidCustomizationMessage, ignoreCase = true) ?: false)
+            }
+        }
+
+        val customizationNotFoundExceptionPredicate: (e: Exception) -> Boolean = { e ->
+            if (e !is CodeWhispererRuntimeException) {
+                false
+            } else {
+                e is AccessDeniedException && (e.message?.contains(customizationNotFoundMessage, ignoreCase = true) ?: false)
+            }
+        }
+    }
     object CrossFile {
         const val CHUNK_SIZE = 60
     }

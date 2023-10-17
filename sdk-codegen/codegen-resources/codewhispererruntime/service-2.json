@@ -76,6 +76,21 @@
                 {"shape":"AccessDeniedException"}
             ]
         },
+        "ListAvailableCustomizations":{
+            "name":"ListAvailableCustomizations",
+            "http":{
+                "method":"POST",
+                "requestUri":"/"
+            },
+            "input":{"shape":"ListAvailableCustomizationsRequest"},
+            "output":{"shape":"ListAvailableCustomizationsResponse"},
+            "errors":[
+                {"shape":"ThrottlingException"},
+                {"shape":"InternalServerException"},
+                {"shape":"ValidationException"},
+                {"shape":"AccessDeniedException"}
+            ]
+        },
         "ListCodeAnalysisFindings":{
             "name":"ListCodeAnalysisFindings",
             "http":{
@@ -177,6 +192,7 @@
                 "timestamp"
             ],
             "members":{
+                "customizationArn":{"shape":"ResourceArn"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "acceptedCharacterCount":{"shape":"SensitiveInteger"},
                 "totalCharacterCount":{"shape":"SensitiveInteger"},
@@ -263,6 +279,34 @@
                 "kmsKeyArn":{"shape":"ResourceArn"}
             }
         },
+        "Customization":{
+            "type":"structure",
+            "required":["arn"],
+            "members":{
+                "arn":{"shape":"ResourceArn"},
+                "name":{"shape":"CustomizationName"},
+                "description":{"shape":"Description"}
+            }
+        },
+        "CustomizationName":{
+            "type":"string",
+            "max":100,
+            "min":1,
+            "pattern":"[a-zA-Z][a-zA-Z0-9_-]*"
+        },
+        "Customizations":{
+            "type":"list",
+            "member":{"shape":"Customization"}
+        },
+        "Description":{
+            "type":"string",
+            "max":256,
+            "min":0
+        },
+        "Double":{
+            "type":"double",
+            "box":true
+        },
         "FileContext":{
             "type":"structure",
             "required":[
@@ -304,7 +348,8 @@
                 "maxResults":{"shape":"GenerateCompletionsRequestMaxResultsInteger"},
                 "nextToken":{"shape":"GenerateCompletionsRequestNextTokenString"},
                 "referenceTrackerConfiguration":{"shape":"ReferenceTrackerConfiguration"},
-                "supplementalContexts":{"shape":"SupplementalContextList"}
+                "supplementalContexts":{"shape":"SupplementalContextList"},
+                "customizationArn":{"shape":"ResourceArn"}
             }
         },
         "GenerateCompletionsRequestMaxResultsInteger":{
@@ -378,6 +423,27 @@
             "exception":true,
             "fault":true,
             "retryable":{"throttling":false}
+        },
+        "ListAvailableCustomizationsRequest":{
+            "type":"structure",
+            "members":{
+                "maxResults":{"shape":"ListAvailableCustomizationsRequestMaxResultsInteger"},
+                "nextToken":{"shape":"Base64EncodedPaginationToken"}
+            }
+        },
+        "ListAvailableCustomizationsRequestMaxResultsInteger":{
+            "type":"integer",
+            "box":true,
+            "max":100,
+            "min":1
+        },
+        "ListAvailableCustomizationsResponse":{
+            "type":"structure",
+            "required":["customizations"],
+            "members":{
+                "customizations":{"shape":"Customizations"},
+                "nextToken":{"shape":"Base64EncodedPaginationToken"}
+            }
         },
         "ListCodeAnalysisFindingsRequest":{
             "type":"structure",
@@ -656,6 +722,7 @@
                 "requestId":{"shape":"UUID"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "modificationPercentage":{"shape":"SensitiveDouble"},
+                "customizationArn":{"shape":"ResourceArn"},
                 "timestamp":{"shape":"Timestamp"}
             }
         },
@@ -673,6 +740,7 @@
             "members":{
                 "sessionId":{"shape":"UUID"},
                 "requestId":{"shape":"UUID"},
+                "customizationArn":{"shape":"ResourceArn"},
                 "programmingLanguage":{"shape":"ProgrammingLanguage"},
                 "completionType":{"shape":"CompletionType"},
                 "suggestionState":{"shape":"SuggestionState"},

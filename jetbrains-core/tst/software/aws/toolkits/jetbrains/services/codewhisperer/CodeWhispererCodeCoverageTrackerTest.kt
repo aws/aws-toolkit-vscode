@@ -35,6 +35,7 @@ import org.mockito.kotlin.whenever
 import software.aws.toolkits.core.telemetry.MetricEvent
 import software.aws.toolkits.core.telemetry.TelemetryBatcher
 import software.aws.toolkits.core.telemetry.TelemetryPublisher
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonResponse
@@ -156,7 +157,8 @@ internal class CodeWhispererCodeCoverageTrackerTestPython : CodeWhispererCodeCov
             FileContextInfo(mock(), pythonFileName, CodeWhispererPython.INSTANCE),
             SupplementalContextInfo(isUtg = false, contents = emptyList(), targetFileName = "", strategy = CrossFileStrategy.Empty, latency = 0L),
             null,
-            mock()
+            mock(),
+            aString()
         )
         val responseContext = ResponseContext("sessionId")
         val recommendationContext = RecommendationContext(

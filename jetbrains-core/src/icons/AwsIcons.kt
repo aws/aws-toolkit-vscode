@@ -95,6 +95,10 @@ object AwsIcons {
 
             @JvmField val SQS_TOOL_WINDOW = load("/icons/resources/sqs/SqsToolWindow.svg") // 13x13
         }
+
+        object CodeWhisperer {
+            @JvmField val CUSTOM = load("icons/resources/CodewhispererCustom.svg") // 16 * 16
+        }
     }
 
     object Actions {

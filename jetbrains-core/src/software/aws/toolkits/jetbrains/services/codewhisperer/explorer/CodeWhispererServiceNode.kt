@@ -14,7 +14,9 @@ import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractA
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.ActionGroupOnRightClick
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CodeWhispererReconnectNode
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.CustomizationNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.FreeTierUsageLimitHitNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.GetStartedNode
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.nodes.LearnCodeWhispererNode
@@ -53,6 +55,7 @@ class CodeWhispererServiceNode(
 
         FreeTierUsageLimitHitNode(nodeProject, formatter.format(date))
     }
+    private val customizationNode by lazy { CustomizationNode(nodeProject) }
     private val learnCodeWhispererNode by lazy { LearnCodeWhispererNode(nodeProject) }
 
     override fun onDoubleClick(event: MouseEvent) {}
@@ -69,13 +72,26 @@ class CodeWhispererServiceNode(
             CodeWhispererLoginType.Logout -> listOf(whatIsCodeWhispererNode, getStartedCodeWhispererNode)
             CodeWhispererLoginType.Expired -> listOf(codeWhispererReconnectNode, whatIsCodeWhispererNode)
 
+            // We only show this customization node to SSO users who are in CodeWhisperer Gated Preview list
             else -> {
                 if (manager.isSuspended(nodeProject)) {
                     listOf(freeTierUsageLimitHitNode, runCodeScanNode, openCodeReferenceNode)
                 } else if (manager.isAutoEnabled()) {
-                    listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
+                    if (activeConnectionType == CodeWhispererLoginType.SSO &&
+                        CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(nodeProject)
+                    ) {
+                        listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, customizationNode, learnCodeWhispererNode)
+                    } else {
+                        listOf(pauseCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
+                    }
                 } else {
-                    listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
+                    if (activeConnectionType == CodeWhispererLoginType.SSO &&
+                        CodeWhispererModelConfigurator.getInstance().shouldDisplayCustomNode(nodeProject)
+                    ) {
+                        listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, customizationNode, learnCodeWhispererNode)
+                    } else {
+                        listOf(resumeCodeWhispererNode, runCodeScanNode, openCodeReferenceNode, learnCodeWhispererNode)
+                    }
                 }
             }
         }
@@ -105,6 +121,7 @@ class CodeWhispererServiceNode(
             CodeWhispererLoginType.Sono -> {
                 presentation.addText(message("codewhisperer.explorer.root_node.login_type.aws_builder_id"), SimpleTextAttributes.GRAY_ATTRIBUTES)
             }
+
             else -> {}
         }
     }
