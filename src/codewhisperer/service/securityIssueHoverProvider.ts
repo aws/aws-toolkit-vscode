@@ -5,7 +5,6 @@
 import * as vscode from 'vscode'
 import { AggregatedCodeScanIssue, CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
-import { getLineOffset } from './diagnosticsProvider'
 
 export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -45,9 +44,15 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     public updateRanges(event: vscode.TextDocumentChangeEvent) {
         const changedRange = event.contentChanges[0].range
         const changedText = event.contentChanges[0].text
-        const lineOffset = getLineOffset(changedRange, changedText)
+        const lineOffset = this._getLineOffset(changedRange, changedText)
 
         this._issues = this._issues.map(issues => this._applyRangeOffset(event.document.fileName, issues, lineOffset))
+    }
+
+    private _getLineOffset(range: vscode.Range, text: string) {
+        const originLines = range.end.line - range.start.line + 1
+        const changedLines = text.split('\n').length
+        return changedLines - originLines
     }
 
     private _applyRangeOffset(
