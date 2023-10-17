@@ -33,6 +33,9 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
+    selectCustomizationPrompt,
+    notifyNewCustomizationsCmd,
+    connectWithCustomization,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -49,6 +52,7 @@ import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
+import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -156,6 +160,8 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
         // show introduction
         showIntroduction.register(),
+        // direct CodeWhisperer connection setup with customization
+        connectWithCustomization.register(),
         // toggle code suggestions
         toggleCodeSuggestions.register(context.extensionContext.globalState),
         // enable code suggestions
@@ -178,6 +184,10 @@ export async function activate(context: ExtContext): Promise<void> {
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
         }),
+        // select customization
+        selectCustomizationPrompt.register(),
+        // notify new customizations
+        notifyNewCustomizationsCmd.register(),
         /**
          * On recommendation acceptance
          */
@@ -214,6 +224,9 @@ export async function activate(context: ExtContext): Promise<void> {
 
     if (auth.isConnectionExpired()) {
         auth.showReauthenticatePrompt()
+    }
+    if (auth.isValidEnterpriseSsoInUse()) {
+        await notifyNewCustomizations()
     }
 
     function activateSecurityScan() {

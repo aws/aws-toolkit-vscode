@@ -966,6 +966,14 @@
                     "when": "config.aws.samcli.legacyDeploy"
                 },
                 {
+                    "command": "aws.redshift.editConnection",
+                    "when": "false"
+                },
+                {
+                    "command": "aws.redshift.deleteConnection",
+                    "when": "false"
+                },
+                {
                     "command": "aws.samcli.sync",
                     "when": "!config.aws.samcli.legacyDeploy"
                 },
@@ -1409,6 +1417,16 @@
                     "command": "aws.iot.attachPolicy",
                     "when": "view == aws.explorer && viewItem =~ /^awsIotCertificateNode.(Things|Policies)/",
                     "group": "inline@1"
+                },
+                {
+                    "command": "aws.redshift.editConnection",
+                    "when": "view == aws.explorer && viewItem == awsRedshiftWarehouseNode",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.redshift.deleteConnection",
+                    "when": "view == aws.explorer && viewItem == awsRedshiftWarehouseNode",
+                    "group": "0@2"
                 },
                 {
                     "command": "aws.s3.openFile",
@@ -2437,6 +2455,16 @@
                         "category": "%AWS.title.cn%"
                     }
                 }
+            },
+            {
+                "command": "aws.redshift.editConnection",
+                "title": "Edit connection",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.redshift.deleteConnection",
+                "title": "Delete connection",
+                "category": "%AWS.title%"
             },
             {
                 "command": "aws.s3.presignedURL",
@@ -3526,42 +3554,95 @@
                     "fontCharacter": "\\f1b8"
                 }
             },
-            "aws-s3-bucket": {
+            "aws-redshift-cluster": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1b9"
                 }
             },
-            "aws-s3-create-bucket": {
+            "aws-redshift-cluster-connected": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1ba"
                 }
             },
-            "aws-schemas-registry": {
+            "aws-redshift-database": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bb"
                 }
             },
-            "aws-schemas-schema": {
+            "aws-redshift-redshift-cluster-connected": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bc"
                 }
             },
-            "aws-stepfunctions-preview": {
+            "aws-redshift-schema": {
                 "description": "AWS Contributed Icon",
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1bd"
                 }
+            },
+            "aws-redshift-table": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1be"
+                }
+            },
+            "aws-s3-bucket": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1bf"
+                }
+            },
+            "aws-s3-create-bucket": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c0"
+                }
+            },
+            "aws-schemas-registry": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c1"
+                }
+            },
+            "aws-schemas-schema": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c2"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1c3"
+                }
             }
-        }
+        },
+        "notebooks": [
+            {
+                "type": "aws-redshift-sql-notebook",
+                "displayName": "Redshift SQL notebook",
+                "selector": [
+                    {
+                        "filenamePattern": "*.redshiftnb"
+                    }
+                ]
+            }
+        ]
     },
     "scripts": {
         "prepare": "ts-node ./scripts/build/prepare.ts",
