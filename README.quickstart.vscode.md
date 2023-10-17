@@ -48,6 +48,7 @@ Unified software development service to quickly build and deliver applications o
 
 ## More features
 
+-   **Redshift** - view database objects and run SQL queries in a notebook interface
 -   **Step Functions** - work with asl files and render state machine visuals
 -   **CloudFormation** - view CloudFormation stacks
 -   **API Gateway** - invoke an API gateway endpoint
