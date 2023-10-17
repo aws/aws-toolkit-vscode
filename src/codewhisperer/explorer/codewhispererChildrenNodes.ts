@@ -14,8 +14,10 @@ import {
     showLearnMore,
     showFreeTierLimit,
     reconnect,
+    selectCustomizationPrompt,
 } from '../commands/basicCommands'
 import { codeScanState } from '../models/model'
+import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/customizationUtil'
 
 export const createEnableCodeSuggestionsNode = () =>
     enableCodeSuggestions.build().asTreeNode({
@@ -59,7 +61,7 @@ export const createSecurityScanNode = () => {
 }
 
 export const createSsoSignIn = () =>
-    AuthCommandDeclarations.instance.declared.showConnectionsPage
+    AuthCommandDeclarations.instance.declared.showManageConnections
         .build('codewhispererDeveloperTools', 'codewhisperer')
         .asTreeNode({
             label: localize('AWS.explorerNode.sSoSignInNode.label', 'Start'),
@@ -86,5 +88,17 @@ export const createFreeTierLimitMetNode = () => {
         label: localize('AWS.explorerNode.freeTierLimitMet.label', 'Free Tier Limit Met'),
         iconPath: getIcon('vscode-error'),
         description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
+    })
+}
+
+export const createSelectCustomizationNode = () => {
+    const newCustomizationsAvailable = getNewCustomizationAvailable()
+    const selectedCustomization = getSelectedCustomization()
+    const newText = newCustomizationsAvailable ? 'new!      ' : ''
+
+    return selectCustomizationPrompt.build().asTreeNode({
+        label: localize('AWS.explorerNode.selectCustomization.label', 'Select Customization'),
+        iconPath: getIcon('vscode-extensions'),
+        description: `${newText}${selectedCustomization.arn === '' ? '' : selectedCustomization.name}`,
     })
 }

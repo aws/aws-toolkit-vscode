@@ -44,6 +44,21 @@ export class AuthUtil {
 
     private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
+    private _isCustomizationFeatureEnabled: boolean = false
+
+    public get isCustomizationFeatureEnabled(): boolean {
+        return this._isCustomizationFeatureEnabled
+    }
+
+    // This boolean controls whether the Select Customization node will be visible. A change to this value
+    // means that the old UX was wrong and must refresh the devTool tree.
+    public set isCustomizationFeatureEnabled(value: boolean) {
+        if (this._isCustomizationFeatureEnabled === value) {
+            return
+        }
+        this._isCustomizationFeatureEnabled = value
+        vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    }
 
     public readonly secondaryAuth = getSecondaryAuth(
         this.auth,
@@ -63,6 +78,9 @@ export class AuthUtil {
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
             if (conn?.type === 'sso') {
                 this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
+                if (!this.isConnectionExpired() && this.usingEnterpriseSSO) {
+                    vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
+                }
             } else {
                 this.usingEnterpriseSSO = false
             }

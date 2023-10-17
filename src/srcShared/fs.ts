@@ -64,10 +64,25 @@ export class FileSystemCommon {
         return this.writeFile(path, finalContent)
     }
 
-    async fileExists(path: Uri | string): Promise<boolean> {
+    async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         path = FileSystemCommon.getUri(path)
         const stat = await this.stat(path)
-        return stat === undefined ? false : stat.type === vscode.FileType.File
+
+        // No specific filetype, so only check if anything exists
+        if (fileType === undefined) {
+            return stat !== undefined
+        }
+
+        // Check if file exists and is expected filetype
+        return stat === undefined ? false : stat.type === fileType
+    }
+
+    async fileExists(path: Uri | string): Promise<boolean> {
+        return this.exists(path, vscode.FileType.File)
+    }
+
+    async directoryExists(path: Uri | string): Promise<boolean> {
+        return this.exists(path, vscode.FileType.Directory)
     }
 
     async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {

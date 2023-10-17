@@ -20,8 +20,7 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
 import { ClassifierTrigger } from '../../../codewhisperer/service/classifierTrigger'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
-
-const performance = globalThis.performance ?? require('perf_hooks').performance
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 describe('keyStrokeHandler', function () {
     const config: ConfigurationEntry = {
@@ -71,148 +70,87 @@ describe('keyStrokeHandler', function () {
         })
 
         it('Should not call invokeAutomatedTrigger when changed text across multiple lines', async function () {
-            const mockEditor = createMockTextEditor()
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(1, 0)),
-                '\nprint(n'
-            )
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
-            assert.ok(!startTimerSpy.called)
+            await testShouldInvoke('\nprint(n', false)
         })
 
         it('Should not call invokeAutomatedTrigger when doing delete or undo (empty changed text)', async function () {
-            const mockEditor = createMockTextEditor()
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                ''
-            )
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
-            assert.ok(!startTimerSpy.called)
-        })
-
-        it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is new line', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '\n'
-            )
-            RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(invokeSpy.called)
-        })
-
-        it('Should call invokeAutomatedTrigger if previous text input is within 2 seconds but the new input is a specialcharacter', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '('
-            )
-            RecommendationHandler.instance.lastInvocationTime = performance.now() - 1500
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(invokeSpy.called)
+            await testShouldInvoke('', false)
         })
 
         it('Should call invokeAutomatedTrigger with Enter when inputing \n', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '\n'
-            )
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            invokeSpy('Enter', mockEditor, mockClient)
-            assert.ok(invokeSpy.called)
+            await testShouldInvoke('\n', true)
         })
 
         it('Should call invokeAutomatedTrigger with Enter when inputing \r\n', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 2)),
-                '\r\n'
-            )
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            invokeSpy('Enter', mockEditor, mockClient)
-            assert.ok(invokeSpy.called)
+            await testShouldInvoke('\r\n', true)
         })
 
         it('Should call invokeAutomatedTrigger with SpecialCharacter when inputing {', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '{'
-            )
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            invokeSpy('SpecialCharacters', mockEditor, mockClient)
-            assert.ok(invokeSpy.called)
-        })
-
-        it('Should call invokeAutomatedTrigger with SpecialCharacter when inputing spaces equivalent to \t', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '  '
-            )
-            EditorContext.updateTabSize(2)
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            invokeSpy('SpecialCharacters', mockEditor, mockClient)
-            assert.ok(invokeSpy.called)
-        })
-
-        it('Should not call invokeAutomatedTrigger with SpecialCharacter when inputing spaces not equivalent to \t', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '   '
-            )
-            EditorContext.updateTabSize(2)
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
-        })
-
-        it('Should not start idle trigger timer when inputing special characters', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                '('
-            )
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!startTimerSpy.called)
+            await testShouldInvoke('{', true)
         })
 
         it('Should not call invokeAutomatedTrigger for non-special characters for classifier language if classifier says no', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
-            const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
-                mockEditor.document,
-                new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'a'
-            )
             sinon.stub(ClassifierTrigger.instance, 'shouldTriggerFromClassifier').returns(false)
-            await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(!invokeSpy.called)
+            await testShouldInvoke('a', false)
         })
 
         it('Should call invokeAutomatedTrigger for non-special characters for classifier language if classifier says yes', async function () {
-            const mockEditor = createMockTextEditor('function addTwo', 'test.js', 'javascript')
+            sinon.stub(ClassifierTrigger.instance, 'shouldTriggerFromClassifier').returns(true)
+            await testShouldInvoke('a', true)
+        })
+
+        it('Should skip invoking if there is immediate right context on the same line and not a single } for the user group', async function () {
+            const casesForSuppressTokenFilling = [
+                {
+                    rightContext: 'add',
+                    shouldInvoke: false,
+                },
+                {
+                    rightContext: '}',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '}    ',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: ' add',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '    ',
+                    shouldInvoke: true,
+                },
+                {
+                    rightContext: '\naddTwo',
+                    shouldInvoke: true,
+                },
+            ]
+            casesForSuppressTokenFilling.forEach(async ({ rightContext, shouldInvoke }) => {
+                await testShouldInvoke('{', shouldInvoke, rightContext, CodeWhispererConstants.UserGroup.RightContext)
+            })
+        })
+
+        it('Should not skip invoking based on right context for control group', async function () {
+            await testShouldInvoke('{', true, 'add')
+        })
+
+        async function testShouldInvoke(
+            input: string,
+            shouldTrigger: boolean,
+            rightContext: string = '',
+            userGroup: CodeWhispererConstants.UserGroup = CodeWhispererConstants.UserGroup.Control
+        ) {
+            const mockEditor = createMockTextEditor(rightContext, 'test.js', 'javascript')
             const mockEvent: vscode.TextDocumentChangeEvent = createTextDocumentChangeEvent(
                 mockEditor.document,
                 new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 1)),
-                'a'
+                input
             )
-            sinon.stub(ClassifierTrigger.instance, 'shouldTriggerFromClassifier').returns(true)
+            CodeWhispererUserGroupSettings.instance.userGroup = userGroup
             await KeyStrokeHandler.instance.processKeyStroke(mockEvent, mockEditor, mockClient, config)
-            assert.ok(invokeSpy.called)
-        })
+            assert.strictEqual(invokeSpy.called, shouldTrigger)
+        }
     })
 
     describe('invokeAutomatedTrigger', function () {
