@@ -58,15 +58,15 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
         return compareLogLevel(currentLevel, logLevel) >= 0
     }
 
-    public logToFile(logPath: string): void {
+    public logToFile(logPath: vscode.Uri): void {
         let fileTransport: winston.transport
         if (isInBrowser()) {
-            fileTransport = new SharedFileTransport({ logFile: vscode.Uri.file(logPath) })
+            fileTransport = new SharedFileTransport({ logFile: logPath })
         } else {
-            fileTransport = new winston.transports.File({ filename: logPath })
+            fileTransport = new winston.transports.File({ filename: logPath.fsPath })
         }
 
-        const fileUri: vscode.Uri = vscode.Uri.file(normalize(logPath))
+        const fileUri: vscode.Uri = vscode.Uri.file(normalize(logPath.fsPath))
         fileTransport.on('logged', (obj: any) => this.parseLogObject(fileUri, obj))
         this.logger.add(fileTransport)
     }

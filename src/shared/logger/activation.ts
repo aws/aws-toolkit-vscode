@@ -15,13 +15,15 @@ import { waitUntil } from '../utilities/timeoutUtils'
 import { cleanLogFiles } from './util'
 import { Settings } from '../settings'
 import { Logging } from './commands'
-import { SystemUtilities } from '../systemUtilities'
 import { resolvePath } from '../utilities/pathUtils'
 import { isInBrowser } from '../../common/browserUtils'
+import { FileSystemCommon } from '../../srcShared/fs'
 
 const localize = nls.loadMessageBundle()
 
 const defaultLogLevel: LogLevel = 'info'
+
+const fsCommon = FileSystemCommon.instance
 
 /**
  * Activate Logger functionality for the extension.
@@ -37,11 +39,11 @@ export async function activate(
         ? vscode.Uri.file(resolvePath(devLogfile))
         : vscode.Uri.joinPath(extensionContext.logUri, makeLogFilename())
 
-    await SystemUtilities.createDirectory(extensionContext.logUri)
+    await fsCommon.mkdir(extensionContext.logUri)
 
     const mainLogger = makeLogger(
         {
-            logPaths: [logUri.fsPath],
+            logPaths: [logUri],
             outputChannels: [chan],
             useConsoleLog: isInBrowser(),
         },
@@ -55,7 +57,7 @@ export async function activate(
     setLogger(
         makeLogger(
             {
-                logPaths: [logUri.fsPath],
+                logPaths: [logUri],
                 outputChannels: [outputChannel, chan],
             },
             extensionContext.subscriptions
@@ -107,7 +109,7 @@ export async function activate(
 export function makeLogger(
     opts: {
         staticLogLevel?: LogLevel
-        logPaths?: string[]
+        logPaths?: vscode.Uri[]
         outputChannels?: vscode.OutputChannel[]
         useDebugConsole?: boolean
         useConsoleLog?: boolean
@@ -172,7 +174,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
         return { dispose: () => {} }
     }
 
-    const exists = await waitUntil(() => SystemUtilities.fileExists(logFile), { interval: 1000, timeout: 60000 })
+    const exists = await waitUntil(() => fsCommon.fileExists(logFile), { interval: 1000, timeout: 60000 })
 
     if (!exists) {
         getLogger().warn(`Log file ${logFile.path} does not exist!`)
@@ -189,7 +191,7 @@ async function createLogWatcher(logFile: vscode.Uri): Promise<vscode.Disposable>
             return
         }
         checking = true
-        if (!(await SystemUtilities.fileExists(logFile))) {
+        if (!(await fsCommon.fileExists(logFile))) {
             vscode.window.showWarningMessage(
                 localize('AWS.log.logFileMove', 'The log file for this session has been moved or deleted.')
             )
