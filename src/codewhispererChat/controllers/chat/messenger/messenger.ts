@@ -34,7 +34,14 @@ export class Messenger {
         const followUps: FollowUp[] = []
         const relatedSuggestions: Suggestion[] = []
 
+        let timerFinished = false
+        const timer = setTimeout(() => {
+            timerFinished = true
+        }, 10000)
         for await (const chatEvent of response) {
+            if (timerFinished) {
+                break
+            }
             if (chatEvent.token != undefined) {
                 message += chatEvent.token
 
@@ -87,6 +94,9 @@ export class Messenger {
                     }
                 })
             }
+        }
+        if (!timerFinished) {
+            clearTimeout(timer)
         }
 
         if (relatedSuggestions.length !== 0) {
