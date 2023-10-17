@@ -29,6 +29,8 @@ import {
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
+import { invalidCustomizationMessage } from '../models/constants'
+import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
@@ -151,10 +153,12 @@ export class RecommendationHandler {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
-        page: number = 0
+        page: number = 0,
+        retry: boolean = false
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
+        let errorCode: string | undefined = undefined
 
         if (!editor) {
             return Promise.resolve<GetRecommendationsResponse>({
@@ -229,7 +233,7 @@ export class RecommendationHandler {
             const resp = await this.getServerResponse(
                 triggerType,
                 config.isManualTriggerEnabled,
-                page === 0,
+                page === 0 && !retry,
                 codewhispererPromise
             )
             TelemetryHelper.instance.setSdkApiCallEndTime()
@@ -263,6 +267,7 @@ export class RecommendationHandler {
             if (isAwsError(error)) {
                 errorMessage = error.message
                 requestId = error.requestId || ''
+                errorCode = error.code
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
             } else {
@@ -295,7 +300,26 @@ export class RecommendationHandler {
 
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+            } else {
+                // TODO: Double-check with service side that this is an AccessDeniedException
+                if (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') {
+                    getLogger()
+                        .debug(`The selected customization is no longer available. Retrying with the default model.
+                    Failed request id: ${requestId}`)
+                    await switchToBaseCustomizationAndNotify()
+                    await this.getRecommendations(
+                        client,
+                        editor,
+                        triggerType,
+                        config,
+                        autoTriggerType,
+                        pagination,
+                        page,
+                        true
+                    )
+                }
             }
+
             if (shouldRecordServiceInvocation) {
                 TelemetryHelper.instance.recordServiceInvocationTelemetry(
                     requestId,
