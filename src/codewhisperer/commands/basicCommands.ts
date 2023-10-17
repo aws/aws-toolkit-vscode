@@ -23,8 +23,6 @@ import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPage
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
-// import { SecurityIssuePanel } from '../views/securityIssuePanel'
-// import { WebviewClientFactory } from '../../webviews/client'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',

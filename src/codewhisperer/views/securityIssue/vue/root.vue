@@ -60,12 +60,13 @@
 import { defineComponent } from 'vue'
 import { SecurityIssueWebview } from '../securityIssueWebview'
 import { WebviewClientFactory } from '../../../../webviews/client'
-import { md } from '../../../util/webviewUtil'
 import infoSeverity from '../../../images/severity-info.svg'
 import lowSeverity from '../../../images/severity-low.svg'
 import mediumSeverity from '../../../images/severity-medium.svg'
 import highSeverity from '../../../images/severity-high.svg'
 import criticalSeverity from '../../../images/severity-critical.svg'
+import markdownIt from 'markdown-it'
+import hljs from 'highlight.js'
 
 const client = WebviewClientFactory.create<SecurityIssueWebview>()
 const severityImages: Record<string, string> = {
@@ -75,6 +76,18 @@ const severityImages: Record<string, string> = {
     high: highSeverity,
     critical: criticalSeverity,
 }
+
+const md = markdownIt({
+    highlight: function (str, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            try {
+                return hljs.highlight(str, { language: lang }).value
+            } catch (__) {}
+        }
+
+        return ''
+    },
+})
 
 export default defineComponent({
     data() {
