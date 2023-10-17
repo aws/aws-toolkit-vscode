@@ -189,7 +189,7 @@ export class DefaultRedshiftClient {
                         throw new Error(
                             `Failed to run query: '${queryToExecute}': '${describeStatementResponse.Error}'`
                         )
-                    } else if (status === 'FINISHED') {
+                    } else if (status === 'FINISHED' && !describeStatementResponse.HasResultSet) {
                         return undefined
                     }
                     break
