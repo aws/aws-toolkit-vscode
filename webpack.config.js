@@ -10,6 +10,5 @@
 const baseConfig = require('./webpack.base.config')
 const vueConfigs = require('./webpack.vue.config')
 const browserConfigs = require('./webpack.browser.config')
-const webviewConfig = require('./webpack.webview.config')
 
-module.exports = [baseConfig, ...vueConfigs, ...browserConfigs, webviewConfig]
+module.exports = [baseConfig, ...vueConfigs, ...browserConfigs]

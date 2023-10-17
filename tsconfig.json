@@ -22,5 +22,5 @@
         "jsx": "preserve",
         "esModuleInterop": true
     },
-    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist", "src/webview.ts"]
+    "exclude": ["node_modules", ".vscode-test", "src/testFixtures", "dist"]
 }

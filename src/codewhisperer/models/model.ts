@@ -201,7 +201,7 @@ export interface CodeScanIssue {
 
 export interface Remediation {
     recommendation: { text: string; url: string }
-    suggestedFixes?: { description: string; code: string }[]
+    suggestedFixes?: SuggestedFix[]
 }
 
 export interface AggregatedCodeScanIssue {

@@ -22,7 +22,9 @@ import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { SecurityIssuePanel } from '../views/securityIssuePanel'
+import { showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
+// import { SecurityIssuePanel } from '../views/securityIssuePanel'
+// import { WebviewClientFactory } from '../../webviews/client'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -153,8 +155,7 @@ export const refreshStatusBar = Commands.declare(
 
 export const openSecurityIssuePanel = Commands.declare(
     'aws.codeWhisperer.openSecurityIssuePanel',
-    () => async (issue: CodeScanIssue) => {
-        SecurityIssuePanel.render()
-        SecurityIssuePanel.instance?.update(issue)
+    (context: ExtContext) => async (issue: CodeScanIssue) => {
+        showSecurityIssueWebview(context.extensionContext, issue)
     }
 )
