@@ -5,7 +5,7 @@
  */
 
 import * as vscode from 'vscode'
-import { DefaultRedshiftClient, ExecuteQueryResponse } from '../../shared/clients/redshiftClient'
+import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { ConnectionParams } from '../models/models'
 import { RedshiftData } from 'aws-sdk'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -84,16 +84,22 @@ export class RedshiftNotebookController {
             let nextToken: string | undefined
             // get all the pages of the result
             do {
-                const result: ExecuteQueryResponse = await this.redshiftClient!.executeQuery(
+                const result = await this.redshiftClient!.executeQuery(
                     connectionParams,
                     cell.document.getText(),
                     nextToken,
                     executionId
                 )
-                nextToken = result.statementResultResponse.NextToken
-                executionId = result.executionId
-                columnMetadata = result.statementResultResponse.ColumnMetadata
-                records.push(...result.statementResultResponse.Records)
+                if (result) {
+                    nextToken = result.statementResultResponse.NextToken
+                    executionId = result.executionId
+                    columnMetadata = result.statementResultResponse.ColumnMetadata
+                    records.push(...result.statementResultResponse.Records)
+                } else {
+                    return new vscode.NotebookCellOutput([
+                        vscode.NotebookCellOutputItem.text('No records.', 'text/plain'),
+                    ])
+                }
             } while (nextToken)
 
             if (columnMetadata) {

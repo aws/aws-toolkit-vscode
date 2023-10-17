@@ -149,7 +149,7 @@ export class DefaultRedshiftClient {
         queryToExecute: string,
         nextToken?: string,
         executionId?: string
-    ): Promise<ExecuteQueryResponse> {
+    ): Promise<ExecuteQueryResponse | undefined> {
         const redshiftData = await this.redshiftDataClientProvider(this.regionCode)
         // if executionId is not passed in, that means that we're executing and retrieving the results of the query for the first time.
         if (!executionId) {
@@ -189,6 +189,8 @@ export class DefaultRedshiftClient {
                         throw new Error(
                             `Failed to run query: '${queryToExecute}': '${describeStatementResponse.Error}'`
                         )
+                    } else if (status === 'FINISHED') {
+                        return undefined
                     }
                     break
                 } else {
