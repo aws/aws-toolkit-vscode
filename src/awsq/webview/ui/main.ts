@@ -347,6 +347,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onStopChatResponse: (tabID: string) => {
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
+                promptInputDisabledState: false,
             })
             connector.onStopChatResponse(tabID)
         },
