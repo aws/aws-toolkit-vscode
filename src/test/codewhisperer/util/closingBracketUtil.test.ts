@@ -42,6 +42,11 @@ describe('closingBracketUtil', function () {
         }
 
         it('should remove extra closing symbol', async function () {
+            /**
+             * function add2Numbers(a: number: b: number) {
+             *     return a + b
+             * })
+             */
             await assertClosingSymbolsHandler(
                 'function add2Numbers(',
                 ')',
@@ -49,6 +54,11 @@ describe('closingBracketUtil', function () {
                 `function add2Numbers(a: number, b: number) {\n    return a + b\n}`
             )
 
+            /**
+             * function sum(a: number, b: number, c: number) {
+             *     return a + b + c
+             * })
+             */
             await assertClosingSymbolsHandler(
                 'function sum(a: number, b: number, ',
                 ')',
@@ -56,6 +66,9 @@ describe('closingBracketUtil', function () {
                 `function sum(a: number, b: number, c: number) {\n    return a + b + c\n}`
             )
 
+            /**
+             * const aString = "hello world";"
+             */
             await assertClosingSymbolsHandler(
                 'const aString = "',
                 '"',
@@ -75,6 +88,16 @@ describe('closingBracketUtil', function () {
                 'department": "codewhisperer",',
                 '{\n\t"userName": "john",\n\t"department": "codewhisperer",\n}'
             )
+
+            /**
+             * const someArray = ["element1", "element2"]];
+             */
+            await assertClosingSymbolsHandler(
+                'const anArray = [',
+                ']',
+                '"element1", "element2"];',
+                `const anArray = ["element1", "element2"];`
+            )
         })
 
         it('should not remove extra closing symbol', async function () {
@@ -85,6 +108,13 @@ describe('closingBracketUtil', function () {
                 `function add2Numbers(a: number, b: number) {\n  return a + b;\n}`
             )
 
+            /**
+             * export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {
+             *     lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },
+             *     lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },
+             *     lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },
+             * }
+             */
             await assertClosingSymbolsHandler(
                 'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: ',
                 '\n};',

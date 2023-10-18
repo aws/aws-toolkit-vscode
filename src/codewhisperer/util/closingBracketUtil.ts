@@ -18,16 +18,18 @@ const closing: bracketMapType = {
     ')': '(',
     ']': '[',
     '}': '{',
-    '"': '"',
     "'": "'",
+    '"': '"',
+    '`': '`',
 }
 
 const openning: bracketMapType = {
     '(': ')',
     '[': ']',
     '{': '}',
-    '"': '"',
     "'": "'",
+    '"': '"',
+    '`': '`',
 }
 
 export const calculateBracketsLevel = (
