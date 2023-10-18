@@ -6,7 +6,7 @@
 import { SinonStub, SinonStubbedMember, stub } from 'sinon'
 import * as assert from 'assert'
 import { ConsoleLogTransport, Level, Levels } from '../../../shared/logger/consoleLogTransport'
-import { MESSAGE } from '../../../shared/logger/debugConsoleTransport'
+import { MESSAGE } from '../../../shared/logger/consoleLogTransport'
 
 describe('ConsoleLogTransport', async function () {
     let fakeConsole: { [key in Level]: SinonStub } & { log: SinonStub }

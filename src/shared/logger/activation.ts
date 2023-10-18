@@ -118,9 +118,7 @@ export function makeLogger(
 ): Logger {
     const logger = new WinstonToolkitLogger(opts.staticLogLevel ?? getLogLevel())
     // debug console can show ANSI colors, output channels can not
-    // if we're outputting to an output channel, any other output doesn't need ANSI color codes since we have a better display from them in the IDE
-    // don't alter logfile output for now since that should be more diagnostic. On the fence about this...
-    const stripAnsi = opts.useDebugConsole || false
+    const stripAnsi = opts.useDebugConsole ?? false
     for (const logPath of opts.logPaths ?? []) {
         logger.logToFile(logPath)
     }
