@@ -8,7 +8,6 @@ import assert from 'assert'
 import { handleExtraBrackets } from '../../../codewhisperer/util/closingBracketUtil'
 import { openATextEditorWithText } from '../../testUtil'
 
-// TODO: refactor test cases
 describe('closingBracketUtil', function () {
     /**
      *             leftContext + recommendation + rightContext
@@ -63,6 +62,19 @@ describe('closingBracketUtil', function () {
                 'hello world";',
                 `const aString = "hello world";`
             )
+
+            /**
+             * {
+             *     "userName": "john",
+             *     "department": "codewhisperer"",
+             * }
+             */
+            await assertClosingSymbolsHandler(
+                '{\n\t"userName": "john",\n\t"',
+                '"\n}',
+                'department": "codewhisperer",',
+                '{\n\t"userName": "john",\n\t"department": "codewhisperer",\n}'
+            )
         })
 
         it('should not remove extra closing symbol', async function () {
@@ -85,6 +97,13 @@ describe('closingBracketUtil', function () {
                 '\n};',
                 'lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },',
                 'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};'
+            )
+
+            await assertClosingSymbolsHandler(
+                'const aString = "',
+                '',
+                'hello world";',
+                'const aString = "hello world";'
             )
         })
     })
