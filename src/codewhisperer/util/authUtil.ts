@@ -182,7 +182,7 @@ export class AuthUtil {
         }
 
         const self = (this.#instance = new this())
-        Commands.register('aws.codeWhisperer.removeConnection', () => self.secondaryAuth.removeConnection())
+        Commands.register('aws.codeWhisperer.removeConnection', () => self.secondaryAuth.removeSavedConnection())
 
         return self
     }

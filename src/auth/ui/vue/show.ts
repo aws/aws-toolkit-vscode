@@ -155,7 +155,7 @@ export class AuthWebview extends VueWebview {
 
     private async deleteSavedBuilderIdConns(): Promise<void> {
         if (CodeWhispererAuth.instance.isBuilderIdInUse()) {
-            await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
+            await CodeWhispererAuth.instance.secondaryAuth.removeSavedConnection()
         }
 
         if (this.codeCatalystAuth.activeConnection) {
@@ -280,7 +280,7 @@ export class AuthWebview extends VueWebview {
             return
         }
 
-        await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
+        await CodeWhispererAuth.instance.secondaryAuth.removeSavedConnection()
         await signout(Auth.instance, activeConn) // deletes active connection
     }
 

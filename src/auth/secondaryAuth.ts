@@ -103,7 +103,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 this.#savedConnection &&
                 this.#savedConnection.id === this.#activeConnection?.id
             ) {
-                await this.removeConnection()
+                await this.removeSavedConnection()
             } else {
                 this.#activeConnection = conn
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
@@ -148,7 +148,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
-    public async removeConnection() {
+    /** Stops using the saved connection and fallsback to using the active connection, if it is usable. */
+    public async removeSavedConnection() {
         await this.memento.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
