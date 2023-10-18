@@ -12,7 +12,7 @@ interface bracketMapType {
     [k: string]: string
 }
 
-const quotes = ["'", '"']
+const quotes = ["'", '"', '`']
 
 const closing: bracketMapType = {
     ')': '(',
