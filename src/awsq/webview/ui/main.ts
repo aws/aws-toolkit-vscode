@@ -286,7 +286,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
 
                 mynahUI.updateStore(affectedTabId, {
-                    tabTitle: 'Q- Task',
+                    tabTitle: 'Q - Task',
                     quickActionCommands: [],
                     promptInputPlaceholder: 'Assign a code task',
                 })
@@ -330,7 +330,16 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: connector.onFollowUpClicked,
+        onFollowUpClicked: (tabID, followUp) => {
+            if (followUp.prompt !== undefined) {
+                mynahUI.updateStore(tabID, {
+                    loadingChat: true,
+                    promptInputDisabledState: true,
+                })
+                tabsStorage.updateTabStatus(tabID, 'busy')
+            }
+            connector.onFollowUpClicked(tabID, followUp)
+        },
         onOpenDiff: connector.onOpenDiff,
         onStopChatResponse: (tabID: string) => {
             mynahUI.updateStore(tabID, {
