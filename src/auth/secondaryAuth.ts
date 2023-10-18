@@ -120,6 +120,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
         // Register listener and handle connection immediately in case we were instantiated late
         handleConnectionChanged(this.auth.activeConnection)
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
+        this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
+            if (deletedConnId === this.#savedConnection?.id) {
+                // There is no more savedConnection since it was deleted, so stop using it
+                await this.detachConnection()
+            }
+        })
     }
 
     public get activeConnection(): T | undefined {
