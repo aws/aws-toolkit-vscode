@@ -18,25 +18,25 @@ interface LogEntry {
 }
 
 export class OutputChannelTransport extends Transport {
-    private readonly outputChannel: vscode.OutputChannel
+    private readonly outputChannel: Pick<vscode.OutputChannel, 'append' | 'appendLine'>
     private readonly stripAnsi: boolean
 
     public constructor(
         options: Transport.TransportStreamOptions & {
-            outputChannel: vscode.OutputChannel
-            stripAnsi: boolean
+            outputChannel: Pick<vscode.OutputChannel, 'append' | 'appendLine'>
+            stripAnsi?: boolean
             name?: string
         }
     ) {
         super(options)
 
         this.outputChannel = options.outputChannel
-        this.stripAnsi = options.stripAnsi
+        this.stripAnsi = options.stripAnsi ?? false
     }
 
     public override log(info: LogEntry, next: () => void): void {
         globals.clock.setImmediate(() => {
-            const msg: string = this.stripAnsi ? removeAnsi(info[MESSAGE]) : info[MESSAGE]
+            const msg = this.stripAnsi ? removeAnsi(info[MESSAGE]) : info[MESSAGE]
 
             if (info.raw) {
                 this.outputChannel.append(msg)
