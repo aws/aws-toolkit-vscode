@@ -31,6 +31,25 @@ export function truncate(s: string, n: number, suffix?: string): string {
 }
 
 /**
+ * Indents a string.
+ *
+ * @param size Indent width (number of space chars).
+ * @param clear Clear existing whitespace, if any.
+ * @param s Text to indent.
+ */
+export function indent(s: string, size: number = 4, clear: boolean = false): string {
+    const n = Math.abs(size)
+    const spaces = ''.padEnd(n, ' ')
+    if (size < 0) {
+        throw Error() // TODO: implement "dedent" for negative size.
+    }
+    if (clear) {
+        return s.replace(/^[ \t]*([^\n])/, `${spaces}$1`).replace(/(\n+)[ \t]*([^ \t\n])/g, `$1${spaces}$2`)
+    }
+    return spaces + s.replace(/(\n+)(.)/g, `$1${spaces}$2`)
+}
+
+/**
  * Creates a (shallow) clone of `obj` and truncates its top-level string properties.
  *
  * @param obj Object to copy and truncate

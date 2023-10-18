@@ -29,6 +29,8 @@ import {
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
+import { invalidCustomizationMessage } from '../models/constants'
+import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
@@ -38,6 +40,7 @@ import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
+import { indent } from '../../shared/utilities/textUtilities'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -150,10 +153,12 @@ export class RecommendationHandler {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
-        page: number = 0
+        page: number = 0,
+        retry: boolean = false
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
+        let errorCode: string | undefined = undefined
 
         if (!editor) {
             return Promise.resolve<GetRecommendationsResponse>({
@@ -228,7 +233,7 @@ export class RecommendationHandler {
             const resp = await this.getServerResponse(
                 triggerType,
                 config.isManualTriggerEnabled,
-                page === 0,
+                page === 0 && !retry,
                 codewhispererPromise
             )
             TelemetryHelper.instance.setSdkApiCallEndTime()
@@ -262,6 +267,7 @@ export class RecommendationHandler {
             if (isAwsError(error)) {
                 errorMessage = error.message
                 requestId = error.requestId || ''
+                errorCode = error.code
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
             } else {
@@ -270,8 +276,9 @@ export class RecommendationHandler {
             }
         } finally {
             const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-            getLogger().debug(
-                `Request ID: ${requestId},
+
+            let msg = indent(
+                `codewhisperer: request-id: ${requestId},
                 timestamp(epoch): ${Date.now()},
                 timezone: ${timezone},
                 datetime: ${new Date().toLocaleString([], { timeZone: timezone })},
@@ -281,15 +288,38 @@ export class RecommendationHandler {
                 left context of line:  '${session.leftContextOfCurrentLine}',
                 line number: ${session.startPos.line},
                 character location: ${session.startPos.character},
-                latency: ${latency} ms.`
-            )
-            getLogger().verbose('Recommendations:')
+                latency: ${latency} ms.
+                Recommendations:`,
+                4,
+                true
+            ).trimStart()
             recommendations.forEach((item, index) => {
-                getLogger().verbose(`[${index}]\n${item.content.trimRight()}`)
+                msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
             })
+            getLogger().debug(msg)
+
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+            } else {
+                // TODO: Double-check with service side that this is an AccessDeniedException
+                if (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') {
+                    getLogger()
+                        .debug(`The selected customization is no longer available. Retrying with the default model.
+                    Failed request id: ${requestId}`)
+                    await switchToBaseCustomizationAndNotify()
+                    await this.getRecommendations(
+                        client,
+                        editor,
+                        triggerType,
+                        config,
+                        autoTriggerType,
+                        pagination,
+                        page,
+                        true
+                    )
+                }
             }
+
             if (shouldRecordServiceInvocation) {
                 TelemetryHelper.instance.recordServiceInvocationTelemetry(
                     requestId,

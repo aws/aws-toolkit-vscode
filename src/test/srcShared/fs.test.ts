@@ -124,6 +124,25 @@ describe('FileSystem', function () {
             const nonExistantFile = await fsCommon.fileExists(createTestPath('thisDoesNotExist.txt'))
             assert.strictEqual(nonExistantFile, false)
         })
+
+        it('returns false when directory with same name exists', async function () {
+            const directoryPath = await makeFolder('thisIsDirectory')
+            const existantFile = await fsCommon.fileExists(directoryPath)
+            assert.strictEqual(existantFile, false)
+        })
+    })
+
+    describe('directoryExists()', function () {
+        it('returns true for an existing directory', async function () {
+            const dirPath = await makeFolder('myDir')
+            const existantDirectory = await fsCommon.directoryExists(dirPath)
+            assert.strictEqual(existantDirectory, true)
+        })
+
+        it('returns false for a non-existant directory', async function () {
+            const nonExistantDirectory = await fsCommon.directoryExists(createTestPath('thisDirDoesNotExist'))
+            assert.strictEqual(nonExistantDirectory, false)
+        })
     })
 
     describe('mkdir()', function () {
@@ -207,6 +226,12 @@ describe('FileSystem', function () {
         const filePath = path.join(testRootPath(), relativePath)
         writeFileSync(filePath, content ?? '', { mode: options?.mode })
         return filePath
+    }
+
+    async function makeFolder(relativeFolderPath: string) {
+        const folderPath = path.join(testRootPath(), relativeFolderPath)
+        mkdirSync(folderPath, { recursive: true })
+        return folderPath
     }
 
     function createTestPath(relativePath: string): string {

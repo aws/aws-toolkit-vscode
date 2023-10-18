@@ -2,22 +2,22 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { AWSError, Service } from 'aws-sdk'
-import apiConfig = require('./service-2.json')
-import userApiConfig = require('./user-service-2.json')
+import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
+import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
-import { Credentials } from 'aws-sdk'
 import { AuthUtil } from '../util/authUtil'
 import { isSsoConnection } from '../../auth/connection'
+import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import apiConfig = require('./service-2.json')
+import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
-import { SendTelemetryEventRequest } from './codewhispereruserclient'
 import { getLogger } from '../../shared/logger'
 
 export type ProgrammingLanguage = Readonly<
@@ -192,12 +192,19 @@ export class DefaultCodeWhispererClient {
             .promise()
     }
 
+    public async listAvailableCustomizations(): Promise<ListAvailableCustomizationsResponse[]> {
+        const client = await this.createUserSdkClient()
+        const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
+            client.listAvailableCustomizations(request).promise()
+        return pageableToCollection(requester, {}, 'nextToken').promise()
+    }
+
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
         const requestWithOptOut: SendTelemetryEventRequest = {
             ...request,
             optOutPreference: globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT',
         }
-        if (!AuthUtil.instance.isValidEnterpriseSsoInUse()) {
+        if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()

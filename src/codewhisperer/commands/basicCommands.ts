@@ -8,17 +8,24 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
-import { getLogger } from '../../shared/logger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { codeScanState } from '../models/model'
+import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import {
+    getPersistedCustomizations,
+    notifyNewCustomizations,
+    selectCustomization,
+    showCustomizationPrompt,
+} from '../util/customizationUtil'
+import { get, set } from '../util/commonUtil'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -38,7 +45,7 @@ export const toggleCodeSuggestions = Commands.declare(
         })
     }
 )
-/* 
+/*
 createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
 onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
 */
@@ -98,27 +105,53 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
+export const selectCustomizationPrompt = Commands.declare('aws.codeWhisperer.selectCustomization', () => async () => {
+    telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
+    showCustomizationPrompt().then()
+})
+
 export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
     await AuthUtil.instance.reauthenticate()
 })
-
-export function get(key: string, context: vscode.Memento): any {
-    return context.get(key)
-}
-
-export async function set(key: string, value: any, context: vscode.Memento): Promise<void> {
-    await context.update(key, value).then(
-        () => {},
-        error => {
-            getLogger().verbose(`Failed to update global state: ${error}`)
-        }
-    )
-}
 
 export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
     await showConnectionPrompt()
 })
+
+// Shortcut command to directly connect to Identity Center or prompt start URL entry
+// It can optionally set a customization too.
+export const connectWithCustomization = Commands.declare(
+    'aws.codeWhisperer.connect',
+    () =>
+        async (
+            startUrl?: string,
+            region?: string,
+            customizationArn?: string,
+            customizationName?: string,
+            customizationDescription?: string
+        ) => {
+            // This command supports two sets of arguments:
+            //  * startUrl and region. If both arguments are provided they will be used, otherwise
+            //    the command prompts for them interactively.
+            //  * customization{Arn, Name, Description}. If at least customizationArn is provided,
+            //    the command selects this customization.
+            if (startUrl && region) {
+                await connectToEnterpriseSso(startUrl, region)
+            } else {
+                await getStartUrl()
+            }
+            if (customizationArn) {
+                const match = getPersistedCustomizations().find(c => c.arn == customizationArn)
+                const customization = {
+                    arn: customizationArn,
+                    name: customizationName ?? match?.name ?? 'unknown',
+                    description: customizationDescription ?? match?.description ?? 'unknown',
+                }
+                await selectCustomization(customization)
+            }
+        }
+)
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
@@ -147,5 +180,12 @@ export const refreshStatusBar = Commands.declare(
         } else {
             InlineCompletionService.instance.hideCodeWhispererStatusBar()
         }
+    }
+)
+
+export const notifyNewCustomizationsCmd = Commands.declare(
+    { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
+    () => () => {
+        notifyNewCustomizations().then()
     }
 )

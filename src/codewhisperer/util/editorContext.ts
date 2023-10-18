@@ -16,6 +16,7 @@ import {
     fetchSupplementalContext,
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
+import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
 
 let tabSize: number = getTabSizeSetting()
@@ -102,6 +103,7 @@ export async function buildListRecommendationRequest(
 
     logSupplementalContext(supplementalContexts)
 
+    const selectedCustomization = getSelectedCustomization()
     const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map(v => {
               return selectFrom(v, 'content', 'filePath')
@@ -114,6 +116,7 @@ export async function buildListRecommendationRequest(
                 fileContext: fileContext,
                 nextToken: nextToken,
                 supplementalContexts: supplementalContext,
+                customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             },
             supplementalMetadata: supplementalMetadata,
         }
@@ -127,6 +130,7 @@ export async function buildListRecommendationRequest(
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
             supplementalContexts: supplementalContext,
+            customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         },
         supplementalMetadata: supplementalMetadata,
     }
