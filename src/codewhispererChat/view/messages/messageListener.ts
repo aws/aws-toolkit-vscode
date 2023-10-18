@@ -39,10 +39,12 @@ export class UIMessageListener {
             case 'follow-up-was-clicked':
                 // TODO if another api is available for follow ups
                 // connect to that instead of using prompt handler
-                this.processChatMessage({
-                    chatMessage: msg.followUp.prompt ?? msg.followUp.pillText,
-                    tabID: msg.tabID,
-                })
+                if (msg.followUp?.prompt !== undefined) {
+                    this.processChatMessage({
+                        chatMessage: msg.followUp.prompt,
+                        tabID: msg.tabID,
+                    })
+                }
                 break
             case 'code_was_copied_to_clipboard':
                 this.processCodeWasCopiedToClipboard(msg)
