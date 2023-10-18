@@ -48,7 +48,7 @@
             "preLaunchTask": "launchDebugBrowser",
             "port": 9229,
             "timeout": 10000,
-            "resolveSourceMapLocations": null
+            "sourceMaps": true
         },
         {
             "name": "Extension Tests",
