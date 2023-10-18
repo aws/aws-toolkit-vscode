@@ -143,7 +143,6 @@ export const getBracketsToRemove = (
                 hasSameIndentation = false
             }
 
-            // v1
             if (isSameLine && indent2.length !== 0) {
                 toBeRemoved.push(idx2)
             } else if (hasSameIndentation) {
@@ -192,10 +191,8 @@ export const removeBracketsFromRightContext = async (
 }
 
 /**
- * Denote '|' as the trigger point
- * leftContext|rightContext
- * @param endPosition
- * @param startPosition
+ * @param endPosition: end position of the recommendation
+ * @param startPosition: start position of the recommendation
  */
 export async function handleExtraBrackets(
     editor: vscode.TextEditor,
