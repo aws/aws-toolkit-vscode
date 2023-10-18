@@ -331,6 +331,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         },
         onResetStore: () => {},
         onFollowUpClicked: (tabID, followUp) => {
+            // we need to check if there is a prompt
+            // which will cause an api call
+            // then we can set the loading state to true
             if (followUp.prompt !== undefined) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
