@@ -6,7 +6,6 @@
 import { normalize } from 'path'
 import * as vscode from 'vscode'
 import winston from 'winston'
-import { DebugConsoleTransport } from './debugConsoleTransport'
 import { Logger, LogLevel, compareLogLevel } from './logger'
 import { OutputChannelTransport } from './outputChannelTransport'
 import { isSourceMappingAvailable } from '../vscode/env'
@@ -82,7 +81,10 @@ export class WinstonToolkitLogger implements Logger, vscode.Disposable {
     }
 
     public logToDebugConsole(): void {
-        const debugConsoleTransport: winston.transport = new DebugConsoleTransport({ name: 'ActiveDebugConsole' })
+        const debugConsoleTransport = new OutputChannelTransport({
+            name: 'DebugConsole',
+            outputChannel: vscode.debug.activeDebugConsole,
+        })
         const debugConsoleUri: vscode.Uri = vscode.Uri.parse('console://debug')
         debugConsoleTransport.on('logged', (obj: any) => this.parseLogObject(debugConsoleUri, obj))
         this.logger.add(debugConsoleTransport)
