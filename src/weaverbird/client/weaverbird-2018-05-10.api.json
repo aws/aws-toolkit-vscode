@@ -112,7 +112,8 @@
                 "model": { "shape": "Model" },
                 "maxTokensToSample": { "shape": "Integer" },
                 "temperature": { "shape": "Double" },
-                "debateRounds": { "shape": "Integer" }
+                "debateRounds": { "shape": "Integer" },
+                "debateParticipantsCount": { "shape": "Integer" }
             }
         },
         "DeletedFilesList": {

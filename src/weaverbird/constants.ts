@@ -11,6 +11,7 @@ export const defaultLlmConfig: LLMConfig = {
     maxTokensToSample: 50000,
     temperature: 0.0,
     debateRounds: 2,
+    debateParticipantsCount: 3,
 }
 
 // The Scheme name of the virtual documents.

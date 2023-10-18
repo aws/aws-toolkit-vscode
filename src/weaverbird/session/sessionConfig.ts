@@ -27,6 +27,13 @@ export class SessionConfig {
                     this.llmConfig.debateRounds
                 )
             }
+            if (event.affectsConfiguration('debateParticipantsCount')) {
+                this.llmConfig.debateParticipantsCount = Settings.instance.get(
+                    'aws.weaverbird.debateParticipantsCount',
+                    Number,
+                    this.llmConfig.debateParticipantsCount
+                )
+            }
             if (event.affectsConfiguration('generationFlow')) {
                 const generationFlow = Settings.instance.get(
                     'aws.weaverbird.generationFlow',

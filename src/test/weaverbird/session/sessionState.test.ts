@@ -48,6 +48,7 @@ const mockSessionStateConfig = ({ conversationId }: { conversationId: string }):
         maxTokensToSample: 1,
         temperature: 1,
         debateRounds: 1,
+        debateParticipantsCount: 3,
         generationFlow: 'lambda',
     },
     workspaceRoot: 'fake-root',
