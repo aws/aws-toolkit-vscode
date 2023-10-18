@@ -1,3 +1,8 @@
+## 1.95.0 2023-10-17
+
+- **Feature** Amazon Redshift is now available in AWS Explorer. You can author and execute SQL queries from VS Code notebooks, and view your database objects in their Redshift warehouses.
+- **Feature** Public preview for CodeWhisperer Enterprise: Enterprise customers can now customize CodeWhisperer to adopt and suggest code based on organization specific codebases.
+
 ## 1.94.0 2023-10-12
 
 - **Feature** CodeWhisperer: improve auto-suggestions for additional languages

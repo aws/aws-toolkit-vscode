@@ -52,6 +52,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
@@ -60,7 +61,6 @@ import { EcsCredentialsProvider } from './auth/providers/ecsCredentialsProvider'
 import { SchemaService } from './shared/schemas'
 import { AwsResourceManager } from './dynamicResources/awsResourceManager'
 import globals, { initialize } from './shared/extensionGlobals'
-import { join } from 'path'
 import { Experiments, Settings } from './shared/settings'
 import { isReleaseVersion } from './shared/vscode/env'
 import { Commands, registerErrorHandler as registerCommandErrorHandler } from './shared/vscode/commands2'
@@ -72,6 +72,7 @@ import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from
 import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
+import { initializeManifestPaths } from './extensionShared'
 
 let localize: nls.LocalizeFunc
 
@@ -256,6 +257,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
+        await activateRedshift(extContext)
+
         showWelcomeMessage(context)
 
         recordToolkitInitialization(activationStartedOn, getLogger())
@@ -286,13 +289,6 @@ export async function deactivate() {
     await codewhispererShutdown()
     await globals.telemetry.shutdown()
     await globals.resourceManager.dispose()
-}
-
-function initializeManifestPaths(extensionContext: vscode.ExtensionContext) {
-    globals.manifestPaths.endpoints = extensionContext.asAbsolutePath(join('resources', 'endpoints.json'))
-    globals.manifestPaths.lambdaSampleRequests = extensionContext.asAbsolutePath(
-        join('resources', 'vs-lambda-sample-request-manifest.xml')
-    )
 }
 
 function initializeCredentialsProviderManager() {
