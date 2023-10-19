@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Redshift: \"Create Notebook\" opens an untitled document instead of prompting to \"Save As\""
+}
