@@ -22,6 +22,7 @@ export class ChatSessionStorage {
         const session = new Session(sessionConfig, this.messenger, tabID)
         this.sessions.set(tabID, session)
 
+        await session.setupConversation()
         return session
     }
 

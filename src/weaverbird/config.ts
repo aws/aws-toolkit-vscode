@@ -12,6 +12,10 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
     const config = process.env.WEAVERBIRD_CONFIG
 
     const lambdaFunctionNames = {
+        setup: {
+            startConversation: 'StartConversationLambda:live',
+            createUploadUrl: 'CreateUploadUrlLambda:live',
+        },
         approach: {
             generate: 'GenerateApproachLambda:live',
             iterate: 'IterateApproachLambda:live',
@@ -24,6 +28,10 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
         },
     }
     const getLambdaArns = (env: { account: string; region: string }) => ({
+        setup: {
+            startConversation: `arn:aws:lambda:${env.region}:${env.account}:function:${lambdaFunctionNames.setup.startConversation}`,
+            createUploadUrl: `arn:aws:lambda:${env.region}:${env.account}:function:${lambdaFunctionNames.setup.createUploadUrl}`,
+        },
         approach: {
             generate: `arn:aws:lambda:${env.region}:${env.account}:function:${lambdaFunctionNames.approach.generate}`,
             iterate: `arn:aws:lambda:${env.region}:${env.account}:function:${lambdaFunctionNames.approach.iterate}`,
@@ -77,6 +85,14 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
             endpoint: (parsedConfig.endpoint as string) ?? defaultConfig.endpoint,
             region: (parsedConfig.region as string) ?? defaultConfig.region,
             lambdaArns: {
+                setup: {
+                    startConversation:
+                        (parsedConfig.lambdaArns?.setup?.startConversation as string) ??
+                        defaultConfig.lambdaArns.setup.startConversation,
+                    createUploadUrl:
+                        (parsedConfig.lambdaArns?.setup?.createUploadUrl as string) ??
+                        defaultConfig.lambdaArns.setup.createUploadUrl,
+                },
                 approach: {
                     generate:
                         (parsedConfig.lambdaArns?.approach?.generate as string) ??

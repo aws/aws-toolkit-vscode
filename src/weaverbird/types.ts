@@ -74,6 +74,10 @@ export interface LocalResolvedConfig {
     endpoint: string
     region: string
     lambdaArns: {
+        setup: {
+            startConversation: string
+            createUploadUrl: string
+        }
         approach: {
             generate: string
             iterate: string

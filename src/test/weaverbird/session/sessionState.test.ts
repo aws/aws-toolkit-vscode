@@ -56,6 +56,10 @@ const mockSessionStateConfig = ({ conversationId }: { conversationId: string }):
         endpoint: 'fake-endpoint',
         region: 'fake-region',
         lambdaArns: {
+            setup: {
+                startConversation: 'fake-start-conversation',
+                createUploadUrl: 'fake-create-upload-url',
+            },
             approach: {
                 generate: 'fake-generate-arn',
                 iterate: 'fake-iterate-arn',

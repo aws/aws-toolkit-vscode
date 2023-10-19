@@ -5,7 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { collectFiles } from '../util/files'
+
+import { collectFiles, getSourceCodePath, prepareRepoData } from '../util/files'
 import { CodeGenState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { SessionConfig } from './sessionConfig'
@@ -13,6 +14,8 @@ import { ConversationIdNotFoundError } from '../errors'
 import { weaverbirdScheme } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
+import { uploadCode } from '../util/upload'
+import { WeaverbirdLambdaClient } from '../client/weaverbird'
 
 const fs = FileSystemCommon.instance
 
@@ -22,6 +25,7 @@ export class Session {
     private approach: string = ''
     public readonly config: SessionConfig
     private readonly tabID: string
+    private lambdaClient: WeaverbirdLambdaClient
 
     private messenger: Messenger
 
@@ -29,8 +33,24 @@ export class Session {
         this.config = sessionConfig
         this.tabID = tabID
         this._state = new RefinementState(this.getSessionStateConfig(), '', tabID)
-
         this.messenger = messenger
+        this.lambdaClient = new WeaverbirdLambdaClient(sessionConfig.client, sessionConfig.backendConfig.lambdaArns)
+    }
+
+    /**
+     * setupConversation
+     *
+     * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
+     */
+    public async setupConversation() {
+        const conversationId = await this.lambdaClient.startConversation()
+
+        const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
+
+        const uploadUrl = await this.lambdaClient.generatePresignedUrl(conversationId, zipFileChecksum)
+
+        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum)
     }
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
@@ -84,9 +104,8 @@ export class Session {
     }
 
     private async nextInteraction(msg: string | undefined) {
-        const srcRoot = path.join(this.config.workspaceRoot, 'src')
-        const srcFound = await fs.stat(srcRoot)
-        const files = await collectFiles(srcFound !== undefined ? srcRoot : this.config.workspaceRoot)
+        const srcRoot = await getSourceCodePath(this.config.workspaceRoot, 'src')
+        const files = await collectFiles(srcRoot)
 
         const resp = await this.state.interact({
             files,

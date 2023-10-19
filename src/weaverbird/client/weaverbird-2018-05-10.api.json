@@ -12,6 +12,16 @@
         "uid": "weaverbird-2018-05-10"
     },
     "operations": {
+        "CreateUploadUrl": {
+            "name": "CreateUploadUrl",
+            "http": {
+                "method": "POST",
+                "requestUri": "/createUploadUrl",
+                "responseCode": 200
+            },
+            "input": { "shape": "CreateUploadUrlRequest" },
+            "output": { "shape": "CreateUploadUrlResponse" }
+        },
         "Echo": {
             "name": "Echo",
             "http": {
@@ -22,6 +32,16 @@
             "input": { "shape": "EchoInput" },
             "output": { "shape": "EchoOutput" },
             "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "ExecutePlanningInteraction": {
+            "name": "ExecutePlanningInteraction",
+            "http": {
+                "method": "POST",
+                "requestUri": "/executePlanningInteraction",
+                "responseCode": 200
+            },
+            "input": { "shape": "PlanningInteractionRequest" },
+            "output": { "shape": "PlanningInteractionResponse" }
         },
         "GenerateApproach": {
             "name": "GenerateApproach",
@@ -44,6 +64,16 @@
             "input": { "shape": "GenerateCodeInput" },
             "output": { "shape": "GenerateCodeOutput" },
             "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "GetCodeGenerationInteractionResult": {
+            "name": "GetCodeGenerationInteractionResult",
+            "http": {
+                "method": "POST",
+                "requestUri": "/getCodeGenerationInteractionResult",
+                "responseCode": 200
+            },
+            "input": { "shape": "GetCodeGenInteractionResultRequest" },
+            "output": { "shape": "GetCodeGenInteractionResultResponse" }
         },
         "GetCodeGenerationResult": {
             "name": "GetCodeGenerationResult",
@@ -88,12 +118,106 @@
             "input": { "shape": "IterateCodeInput" },
             "output": { "shape": "IterateCodeOutput" },
             "errors": [{ "shape": "InvalidInputException" }]
+        },
+        "StartCodeGenerationInteraction": {
+            "name": "StartCodeGenerationInteraction",
+            "http": {
+                "method": "POST",
+                "requestUri": "/startCodeGenerationInteraction",
+                "responseCode": 200
+            },
+            "input": { "shape": "StartCodeGenerationInteractionRequest" },
+            "output": { "shape": "StartCodeGenerationInteractionResponse" }
+        },
+        "StartConversation": {
+            "name": "StartConversation",
+            "http": {
+                "method": "POST",
+                "requestUri": "/startConversation",
+                "responseCode": 200
+            },
+            "input": { "shape": "StartConversationRequest" },
+            "output": { "shape": "StartConversationResponse" }
         }
     },
     "shapes": {
+        "AssistantResponseEvent": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "content": { "shape": "AssistantResponseEventContentString" }
+            },
+            "event": true
+        },
+        "AssistantResponseEventContentString": {
+            "type": "string",
+            "max": 10240,
+            "min": 0,
+            "sensitive": true
+        },
+        "AssistantResponseMessage": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "messageId": { "shape": "AssistantResponseMessageMessageIdString" },
+                "content": { "shape": "AssistantResponseMessageContentString" },
+                "supplementaryWebLinks": { "shape": "SupplementaryWebLinks" },
+                "references": { "shape": "References" },
+                "followupPrompt": { "shape": "FollowupPrompt" }
+            }
+        },
+        "AssistantResponseMessageContentString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
+        "AssistantResponseMessageMessageIdString": {
+            "type": "string",
+            "max": 128,
+            "min": 0
+        },
         "Boolean": {
             "type": "boolean",
             "box": true
+        },
+        "ChatHistory": {
+            "type": "list",
+            "member": { "shape": "ChatMessage" },
+            "max": 10,
+            "min": 0
+        },
+        "ChatMessage": {
+            "type": "structure",
+            "members": {
+                "userInputMessage": { "shape": "UserInputMessage" },
+                "assistantResponseMessage": { "shape": "AssistantResponseMessage" }
+            },
+            "union": true
+        },
+        "ChatResponseStream": {
+            "type": "structure",
+            "members": {
+                "messageMetadataEvent": { "shape": "MessageMetadataEvent" },
+                "assistantResponseEvent": { "shape": "AssistantResponseEvent" },
+                "codeReferenceEvent": { "shape": "CodeReferenceEvent" },
+                "supplementaryWebLinksEvent": { "shape": "SupplementaryWebLinksEvent" },
+                "followupPromptEvent": { "shape": "FollowupPromptEvent" },
+                "error": { "shape": "InternalServerException" }
+            },
+            "eventstream": true
+        },
+        "ChatTriggerType": {
+            "type": "string",
+            "enum": ["MANUAL", "DIAGNOSTIC"]
+        },
+        "CodeGenStatus": {
+            "type": "structure",
+            "required": ["status", "currentStage"],
+            "members": {
+                "status": { "shape": "CodeGenerationWorkflowStatus" },
+                "currentStage": { "shape": "CodeGenerationWorkflowStage" }
+            }
         },
         "CodeGenerationResult": {
             "type": "structure",
@@ -106,6 +230,21 @@
             "type": "string",
             "enum": ["ready", "failed", "in-progress"]
         },
+        "CodeGenerationWorkflowStage": {
+            "type": "string",
+            "enum": ["InitialCodeGeneration", "Debate"]
+        },
+        "CodeGenerationWorkflowStatus": {
+            "type": "string",
+            "enum": ["InProgress", "Complete", "Failed"]
+        },
+        "CodeReferenceEvent": {
+            "type": "structure",
+            "members": {
+                "references": { "shape": "References" }
+            },
+            "event": true
+        },
         "Config": {
             "type": "structure",
             "members": {
@@ -116,9 +255,106 @@
                 "debateParticipantsCount": { "shape": "Integer" }
             }
         },
+        "ContextTruncationScheme": {
+            "type": "string",
+            "enum": ["ANALYSIS", "GUMBY"]
+        },
+        "ConversationId": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "ConversationState": {
+            "type": "structure",
+            "required": ["currentMessage", "chatTriggerType"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "history": { "shape": "ChatHistory" },
+                "currentMessage": { "shape": "ChatMessage" },
+                "chatTriggerType": { "shape": "ChatTriggerType" }
+            }
+        },
+        "CreateUploadUrlRequest": {
+            "type": "structure",
+            "required": ["conversationId", "contentChecksumSha256", "uploadIntent"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "contentChecksumSha256": { "shape": "CreateUploadUrlRequestContentChecksumSha256String" },
+                "uploadIntent": { "shape": "UploadIntent" }
+            }
+        },
+        "CreateUploadUrlRequestContentChecksumSha256String": {
+            "type": "string",
+            "max": 64,
+            "min": 64
+        },
+        "CreateUploadUrlResponse": {
+            "type": "structure",
+            "required": ["uploadId", "uploadUrl"],
+            "members": {
+                "uploadId": { "shape": "UploadId" },
+                "uploadUrl": { "shape": "CreateUploadUrlResponseUploadUrlString" },
+                "kmsKeyArn": { "shape": "CreateUploadUrlResponseKmsKeyArnString" }
+            }
+        },
+        "CreateUploadUrlResponseKmsKeyArnString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "CreateUploadUrlResponseUploadUrlString": {
+            "type": "string",
+            "max": 2048,
+            "min": 1
+        },
+        "CursorState": {
+            "type": "structure",
+            "members": {
+                "position": { "shape": "Position" },
+                "range": { "shape": "Range" }
+            },
+            "union": true
+        },
         "DeletedFilesList": {
             "type": "list",
             "member": { "shape": "String" }
+        },
+        "Diagnostic": {
+            "type": "structure",
+            "members": {
+                "textDocumentDiagnostic": { "shape": "TextDocumentDiagnostic" },
+                "runtimeDiagnostic": { "shape": "RuntimeDiagnostic" }
+            },
+            "union": true
+        },
+        "DiagnosticSeverity": {
+            "type": "string",
+            "enum": ["ERROR", "WARNING", "INFORMATION", "HINT"]
+        },
+        "DocumentSymbol": {
+            "type": "structure",
+            "required": ["name", "type"],
+            "members": {
+                "name": { "shape": "DocumentSymbolNameString" },
+                "type": { "shape": "SymbolType" },
+                "source": { "shape": "DocumentSymbolSourceString" }
+            }
+        },
+        "DocumentSymbolNameString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "DocumentSymbolSourceString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "DocumentSymbols": {
+            "type": "list",
+            "member": { "shape": "DocumentSymbol" },
+            "max": 1000,
+            "min": 0
         },
         "Double": {
             "type": "double",
@@ -136,6 +372,14 @@
                 "string": { "shape": "String" }
             }
         },
+        "EditorState": {
+            "type": "structure",
+            "required": ["document", "cursorState"],
+            "members": {
+                "document": { "shape": "TextDocument" },
+                "cursorState": { "shape": "CursorState" }
+            }
+        },
         "FileMetadata": {
             "type": "structure",
             "required": ["filePath", "fileContent"],
@@ -147,6 +391,27 @@
         "FileMetadataList": {
             "type": "list",
             "member": { "shape": "FileMetadata" }
+        },
+        "FollowupPrompt": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "content": { "shape": "FollowupPromptContentString" },
+                "userIntent": { "shape": "UserIntent" }
+            }
+        },
+        "FollowupPromptContentString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
+        "FollowupPromptEvent": {
+            "type": "structure",
+            "members": {
+                "followupPrompt": { "shape": "FollowupPrompt" }
+            },
+            "event": true
         },
         "GenerateApproachInput": {
             "type": "structure",
@@ -186,6 +451,23 @@
                 "conversationId": { "shape": "String" }
             }
         },
+        "GetCodeGenInteractionResultRequest": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
+        },
+        "GetCodeGenInteractionResultResponse": {
+            "type": "structure",
+            "required": ["conversationId", "codeGenStatus"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "codeGenStatus": { "shape": "CodeGenStatus" },
+                "generatedCodeSummary": { "shape": "String" },
+                "generatedCode": { "shape": "SourceRepositoryFiles" }
+            }
+        },
         "GetCodeGenerationResultInput": {
             "type": "structure",
             "required": ["generationId", "conversationId"],
@@ -223,6 +505,17 @@
         "Integer": {
             "type": "integer",
             "box": true
+        },
+        "InternalServerException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": { "shape": "String" }
+            },
+            "error": { "httpStatusCode": 500 },
+            "exception": true,
+            "fault": true,
+            "retryable": { "throttling": false }
         },
         "InvalidInputException": {
             "type": "structure",
@@ -274,6 +567,18 @@
                 "conversationId": { "shape": "String" }
             }
         },
+        "MessageMetadataEvent": {
+            "type": "structure",
+            "members": {
+                "conversationId": { "shape": "MessageMetadataEventConversationIdString" }
+            },
+            "event": true
+        },
+        "MessageMetadataEventConversationIdString": {
+            "type": "string",
+            "max": 128,
+            "min": 0
+        },
         "Model": {
             "type": "string",
             "enum": [
@@ -283,6 +588,290 @@
                 "bedrock-claude-v2"
             ]
         },
-        "String": { "type": "string" }
+        "PlanningInteractionRequest": {
+            "type": "structure",
+            "required": ["conversationState", "workspaceState"],
+            "members": {
+                "conversationState": { "shape": "ConversationState" },
+                "workspaceState": { "shape": "WorkspaceState" }
+            }
+        },
+        "PlanningInteractionResponse": {
+            "type": "structure",
+            "members": {
+                "planningResponseStream": { "shape": "ChatResponseStream" }
+            },
+            "payload": "planningResponseStream"
+        },
+        "Position": {
+            "type": "structure",
+            "required": ["line", "character"],
+            "members": {
+                "line": { "shape": "Integer" },
+                "character": { "shape": "Integer" }
+            }
+        },
+        "ProgrammingLanguage": {
+            "type": "structure",
+            "required": ["languageName"],
+            "members": {
+                "languageName": { "shape": "ProgrammingLanguageLanguageNameString" }
+            }
+        },
+        "ProgrammingLanguageLanguageNameString": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
+        },
+        "Range": {
+            "type": "structure",
+            "required": ["start", "end"],
+            "members": {
+                "start": { "shape": "Position" },
+                "end": { "shape": "Position" }
+            }
+        },
+        "Reference": {
+            "type": "structure",
+            "members": {
+                "licenseName": { "shape": "ReferenceLicenseNameString" },
+                "repository": { "shape": "ReferenceRepositoryString" },
+                "url": { "shape": "ReferenceUrlString" },
+                "recommendationContentSpan": { "shape": "Span" }
+            }
+        },
+        "ReferenceLicenseNameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "ReferenceRepositoryString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "ReferenceUrlString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "References": {
+            "type": "list",
+            "member": { "shape": "Reference" },
+            "max": 10,
+            "min": 0
+        },
+        "RuntimeDiagnostic": {
+            "type": "structure",
+            "required": ["source", "severity", "message"],
+            "members": {
+                "source": { "shape": "RuntimeDiagnosticSourceString" },
+                "severity": { "shape": "DiagnosticSeverity" },
+                "message": { "shape": "RuntimeDiagnosticMessageString" }
+            }
+        },
+        "RuntimeDiagnosticMessageString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "RuntimeDiagnosticSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "SourceRepositoryFiles": {
+            "type": "list",
+            "member": { "shape": "TextDocument" },
+            "max": 100,
+            "min": 0
+        },
+        "Span": {
+            "type": "structure",
+            "members": {
+                "start": { "shape": "SpanStartInteger" },
+                "end": { "shape": "SpanEndInteger" }
+            }
+        },
+        "SpanEndInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "SpanStartInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "StartCodeGenerationInteractionRequest": {
+            "type": "structure",
+            "required": ["conversationState", "workspaceState"],
+            "members": {
+                "conversationState": { "shape": "ConversationState" },
+                "workspaceState": { "shape": "WorkspaceState" }
+            }
+        },
+        "StartCodeGenerationInteractionResponse": {
+            "type": "structure",
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
+        },
+        "StartConversationRequest": {
+            "type": "structure",
+            "members": {}
+        },
+        "StartConversationResponse": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
+        },
+        "String": { "type": "string" },
+        "SupplementaryWebLink": {
+            "type": "structure",
+            "required": ["url", "title"],
+            "members": {
+                "url": { "shape": "SupplementaryWebLinkUrlString" },
+                "title": { "shape": "SupplementaryWebLinkTitleString" },
+                "snippet": { "shape": "SupplementaryWebLinkSnippetString" }
+            }
+        },
+        "SupplementaryWebLinkSnippetString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "SupplementaryWebLinkTitleString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "SupplementaryWebLinkUrlString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "SupplementaryWebLinks": {
+            "type": "list",
+            "member": { "shape": "SupplementaryWebLink" },
+            "max": 10,
+            "min": 0
+        },
+        "SupplementaryWebLinksEvent": {
+            "type": "structure",
+            "members": {
+                "supplementaryWebLinks": { "shape": "SupplementaryWebLinks" }
+            },
+            "event": true
+        },
+        "SymbolType": {
+            "type": "string",
+            "enum": ["DECLARATION", "USAGE"]
+        },
+        "TextDocument": {
+            "type": "structure",
+            "required": ["relativeFilePath"],
+            "members": {
+                "relativeFilePath": { "shape": "TextDocumentRelativeFilePathString" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "text": { "shape": "TextDocumentTextString" },
+                "documentSymbols": { "shape": "DocumentSymbols" }
+            }
+        },
+        "TextDocumentDiagnostic": {
+            "type": "structure",
+            "required": ["document", "range", "source", "severity", "message"],
+            "members": {
+                "document": { "shape": "TextDocument" },
+                "range": { "shape": "Range" },
+                "source": { "shape": "TextDocumentDiagnosticSourceString" },
+                "severity": { "shape": "DiagnosticSeverity" },
+                "message": { "shape": "TextDocumentDiagnosticMessageString" }
+            }
+        },
+        "TextDocumentDiagnosticMessageString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "TextDocumentDiagnosticSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "TextDocumentRelativeFilePathString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
+        },
+        "TextDocumentTextString": {
+            "type": "string",
+            "max": 10240,
+            "min": 0,
+            "sensitive": true
+        },
+        "UploadId": {
+            "type": "string",
+            "max": 128,
+            "min": 1
+        },
+        "UploadIntent": {
+            "type": "string",
+            "enum": ["WeaverBirdPlanning", "WeaverBirdGeneration"]
+        },
+        "UserInputMessage": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "content": { "shape": "UserInputMessageContentString" },
+                "userInputMessageContext": { "shape": "UserInputMessageContext" },
+                "userIntent": { "shape": "UserIntent" }
+            }
+        },
+        "UserInputMessageContentString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
+        "UserInputMessageContext": {
+            "type": "structure",
+            "members": {
+                "editorState": { "shape": "EditorState" },
+                "diagnostic": { "shape": "Diagnostic" }
+            }
+        },
+        "UserIntent": {
+            "type": "string",
+            "enum": [
+                "SUGGEST_ALTERNATE_IMPLEMENTATION",
+                "APPLY_COMMON_BEST_PRACTICES",
+                "IMPROVE_CODE",
+                "SHOW_EXAMPLES",
+                "CITE_SOURCES",
+                "EXPLAIN_LINE_BY_LINE",
+                "EXPLAIN_CODE_SELECTION"
+            ]
+        },
+        "WorkspaceState": {
+            "type": "structure",
+            "required": ["uploadId", "programmingLanguage"],
+            "members": {
+                "uploadId": { "shape": "UploadId" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "contextTruncationScheme": { "shape": "ContextTruncationScheme" }
+            }
+        }
     }
 }
