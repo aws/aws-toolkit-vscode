@@ -24,7 +24,6 @@ const webConfig = {
         new webpack.ProvidePlugin({
             process: require.resolve('process/browser'),
             Buffer: ['buffer', 'Buffer'],
-            fs: require.resolve('memfs'),
         }),
         new webpack.EnvironmentPlugin({
             NODE_DEBUG: 'development',
