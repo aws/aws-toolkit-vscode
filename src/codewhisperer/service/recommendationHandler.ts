@@ -283,7 +283,7 @@ export class RecommendationHandler {
                                 openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
-                    await vscode.commands.executeCommand('aws.codeWhisperer.disableCodeSuggestions')
+                    await vscode.commands.executeCommand('aws.codeWhisperer.disableAutoTriggerOfCodeSuggestions')
                 }
             } else {
                 errorMessage = error as string

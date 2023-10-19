@@ -69,8 +69,8 @@ export const enableCodeSuggestions = Commands.declare(
     }
 )
 
-export const disableCodeSuggestions = Commands.declare(
-    'aws.codeWhisperer.disableCodeSuggestions',
+export const disableAutoTriggerOfCodeSuggestions = Commands.declare(
+    'aws.codeWhisperer.disableAutoTriggerOfCodeSuggestions',
     (context: ExtContext) => async () => {
         await set(CodeWhispererConstants.autoTriggerEnabledKey, false, context.extensionContext.globalState)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
