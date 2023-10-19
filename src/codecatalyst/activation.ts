@@ -39,7 +39,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
     )
 
-    Commands.register('aws.codecatalyst.removeConnection', () => {
+    Commands.register('aws.codecatalyst.signout', () => {
         authProvider.secondaryAuth.deleteConnection()
     })
 

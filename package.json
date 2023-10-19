@@ -781,7 +781,7 @@
                     "when": "!isCloud9"
                 },
                 {
-                    "command": "aws.codecatalyst.removeConnection",
+                    "command": "aws.codecatalyst.signout",
                     "when": "false"
                 },
                 {
@@ -1332,13 +1332,13 @@
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.codecatalyst.removeConnection",
-                    "when": "viewItem == awsCodeCatalystNodeSaved",
+                    "command": "aws.codecatalyst.signout",
+                    "when": "viewItem =~ /^awsCodeCatalystNode/ && CODECATALYST_CONNECTED && !isCloud9",
                     "group": "0@1"
                 },
                 {
-                    "command": "aws.codecatalyst.removeConnection",
-                    "when": "viewItem == awsCodeCatalystNodeSaved",
+                    "command": "aws.codecatalyst.signout",
+                    "when": "viewItem =~ /^awsCodeCatalystNode/ && CODECATALYST_CONNECTED && !isCloud9",
                     "group": "inline@1"
                 },
                 {
@@ -2104,8 +2104,8 @@
                 "enablement": "!isCloud9 && !isWeb"
             },
             {
-                "command": "aws.codecatalyst.removeConnection",
-                "title": "%AWS.command.codecatalyst.removeConnection%",
+                "command": "aws.codecatalyst.signout",
+                "title": "%AWS.command.codecatalyst.signout%",
                 "category": "AWS",
                 "icon": "$(debug-disconnect)",
                 "enablement": "!isWeb"
