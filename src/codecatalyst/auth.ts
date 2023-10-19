@@ -101,10 +101,6 @@ export class CodeCatalystAuthenticationProvider {
         }
     }
 
-    public async removeSavedConnection() {
-        await this.secondaryAuth.removeSavedConnection()
-    }
-
     public async restore() {
         await this.secondaryAuth.restoreConnection()
     }

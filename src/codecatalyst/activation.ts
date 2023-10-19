@@ -40,7 +40,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
     )
 
     Commands.register('aws.codecatalyst.removeConnection', () => {
-        authProvider.removeSavedConnection()
+        authProvider.secondaryAuth.deleteConnection()
     })
 
     if (!isCloud9()) {

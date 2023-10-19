@@ -103,7 +103,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
                 this.#savedConnection &&
                 this.#savedConnection.id === this.#activeConnection?.id
             ) {
-                await this.removeSavedConnection()
+                await this.clearSavedConnection()
             } else {
                 this.#activeConnection = conn
                 this.#onDidChangeActiveConnection.fire(this.activeConnection)
@@ -122,8 +122,8 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
         this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
             if (deletedConnId === this.#savedConnection?.id) {
-                // There is no more savedConnection since it was deleted, so stop using it
-                await this.detachConnection()
+                // Our saved connection does not exist anymore, delete the reference to it.
+                await this.clearSavedConnection()
             }
         })
     }
@@ -154,8 +154,21 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
-    /** Stops using the saved connection and fallsback to using the active connection, if it is usable. */
-    public async removeSavedConnection() {
+    /**
+     * Globally deletes the connection that this secondary auth is using,
+     * effectively doing a signout.
+     *
+     * The deletion automatically propogates to the other users of this
+     * connection, assuming they've configured the event listeners.
+     */
+    public async deleteConnection() {
+        if (this.activeConnection) {
+            await this.auth.deleteConnection(this.activeConnection)
+        }
+    }
+
+    /** Stop using the saved connection and fallback to using the active connection, if it is usable. */
+    private async clearSavedConnection() {
         await this.memento.update(this.key, undefined)
         this.#savedConnection = undefined
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
