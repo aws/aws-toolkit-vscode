@@ -62,6 +62,148 @@ describe('RegexValidationForJava', () => {
 })
 
 describe('isTestFile', () => {
+    it('validate by file path', async function () {
+        const langs = new Map<string, string>([
+            ['java', '.java'],
+            ['python', '.py'],
+            ['typescript', '.py'],
+            ['javascript', '.js'],
+            ['typescriptreact', '.tsx'],
+            ['javascriptreact', '.jsx'],
+        ])
+        const testFilePathsWithoutExt = [
+            '/test/MyClass',
+            '/test/my_class',
+            '/tst/MyClass',
+            '/tst/my_class',
+            '/tests/MyClass',
+            '/tests/my_class',
+        ]
+
+        const srcFilePathsWithoutExt = [
+            '/src/MyClass',
+            'MyClass',
+            'foo/bar/MyClass',
+            'foo/my_class',
+            'my_class',
+            'anyFolderOtherThanTest/foo/myClass',
+        ]
+
+        for (const [languageId, ext] of langs) {
+            const testFilePaths = testFilePathsWithoutExt.map(it => it + ext)
+            for (const testFilePath of testFilePaths) {
+                const actual = await isTestFile(testFilePath, { languageId: languageId })
+                assert.strictEqual(actual, true)
+            }
+
+            const srcFilePaths = srcFilePathsWithoutExt.map(it => it + ext)
+            for (const srcFilePath of srcFilePaths) {
+                const actual = await isTestFile(srcFilePath, { languageId: languageId })
+                assert.strictEqual(actual, false)
+            }
+        }
+    })
+
+    describe('typescript', function () {
+        const language = 'typescript'
+
+        it('validate by file name', async function () {
+            const testFiles = [
+                'MyClass.test.ts',
+                '/path/to/MyClass.test.ts',
+                'MyClass.spec.ts',
+                '/path/to/MyClass.spec.ts',
+            ]
+
+            for (const filePath of testFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, true)
+            }
+
+            const srcFiles = ['MyClass.ts', '/path/to/MyClass.ts', 'MyClass_test.ts', 'test_MyClass.ts']
+
+            for (const filePath of srcFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, false)
+            }
+        })
+    })
+
+    describe('javascript', function () {
+        const language = 'javascript'
+
+        it('validate by file name', async function () {
+            const testFiles = [
+                'MyClass.test.js',
+                '/path/to/MyClass.test.js',
+                'MyClass.spec.js',
+                '/path/to/MyClass.spec.js',
+            ]
+
+            for (const filePath of testFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, true)
+            }
+
+            const srcFiles = ['MyClass.js', '/path/to/MyClass.js', 'MyClass_test.js', 'test_MyClass.js']
+
+            for (const filePath of srcFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, false)
+            }
+        })
+    })
+
+    describe('tsx', function () {
+        const language = 'typescriptreact'
+
+        it('validate by file name', async function () {
+            const testFiles = [
+                'MyClass.test.tsx',
+                '/path/to/MyClass.test.tsx',
+                'MyClass.spec.tsx',
+                '/path/to/MyClass.spec.tsx',
+            ]
+
+            for (const filePath of testFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, true)
+            }
+
+            const srcFiles = ['MyClass.tsx', '/path/to/MyClass.tsx', 'MyClass_test.tsx', 'test_MyClass.tsx']
+
+            for (const filePath of srcFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, false)
+            }
+        })
+    })
+
+    describe('jsx', function () {
+        const language = 'javascriptreact'
+
+        it('validate by file name', async function () {
+            const testFiles = [
+                'MyClass.test.jsx',
+                '/path/to/MyClass.test.jsx',
+                'MyClass.spec.jsx',
+                '/path/to/MyClass.spec.jsx',
+            ]
+
+            for (const filePath of testFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, true)
+            }
+
+            const srcFiles = ['MyClass.jsx', '/path/to/MyClass.jsx', 'MyClass_test.jsx', 'test_MyClass.jsx']
+
+            for (const filePath of srcFiles) {
+                const result = await isTestFile(filePath, { languageId: language })
+                assert.strictEqual(result, false)
+            }
+        })
+    })
+
     it('should return true if the file name matches the test filename pattern - Java', async () => {
         const filePaths = ['/path/to/MyClassTest.java', '/path/to/TestMyClass.java', '/path/to/MyClassTests.java']
         const language = 'java'
