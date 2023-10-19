@@ -102,7 +102,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
-                mynahUI.addChatAnswer(selectedTab.id, message)
+                mynahUI.addChatItem(selectedTab.id, message)
                 tabsStorage.updateTabStatus(selectedTab.id, 'busy')
 
                 return selectedTab.id
@@ -178,14 +178,14 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             ideApi.postMessage(message)
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
-            if (item.type === 'answer-part') {
+            if (item.type === ChatItemType.ANSWER_PART) {
                 if (typeof item.body === 'string') {
                     mynahUI.updateLastChatAnswerStream(tabID, item.body)
                 }
                 if (item.relatedContent !== undefined) {
                     mynahUI.updateLastChatAnswerStream(tabID, {
                         title: item.relatedContent.title,
-                        suggestions: item.relatedContent.content,
+                        content: item.relatedContent.content,
                     })
                 }
 
@@ -193,7 +193,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }
 
             if (item.body !== undefined || item.relatedContent !== undefined || item.followUp !== undefined) {
-                mynahUI.addChatAnswer(tabID, item)
+                mynahUI.addChatItem(tabID, item)
             }
 
             if (
@@ -241,7 +241,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 </span>`,
             }
 
-            mynahUI.addChatAnswer(tabID, answer)
+            mynahUI.addChatItem(tabID, answer)
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
                 promptInputDisabledState: false,
@@ -296,7 +296,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                         chatMessage: realPromptText,
                     })
                 } else if (affectedTabId === tabID) {
-                    mynahUI.addChatAnswer(affectedTabId, {
+                    mynahUI.addChatItem(affectedTabId, {
                         type: ChatItemType.ANSWER,
                         body: WeaverBirdWelcomeMessage,
                     })
@@ -306,6 +306,18 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }
 
             tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+
+            mynahUI.addChatItem(tabID, {
+                type: ChatItemType.PROMPT,
+                body: prompt.prompt,
+                ...(prompt.attachment !== undefined
+                    ? {
+                          relatedContent: {
+                              content: [prompt.attachment],
+                          },
+                      }
+                    : {}),
+            })
 
             mynahUI.updateStore(tabID, {
                 loadingChat: true,
@@ -338,6 +350,10 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
+                })
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.PROMPT,
+                    body: followUp.prompt,
                 })
                 tabsStorage.updateTabStatus(tabID, 'busy')
             }
