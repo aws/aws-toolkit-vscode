@@ -13,12 +13,11 @@ import { NotebookConnectionWizard } from './wizards/connectionWizard'
 import { ConnectionParams, ConnectionType } from './models/models'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { localize } from '../shared/utilities/vsCodeUtils'
-import { SystemUtilities } from '../shared/systemUtilities'
-import { FileSystemCommon } from '../srcShared/fs'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
 import { ToolkitError } from '../shared/errors'
 import { deleteConnection, updateConnectionParamsState } from './explorer/redshiftState'
 import globals from '../shared/extensionGlobals'
+import { showViewLogsMessage } from '../shared/utilities/messages'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const outputChannel = globals.outputChannel
@@ -59,40 +58,18 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
 function getCreateNotebookClickedHandler(redshiftNotebookController: RedshiftNotebookController) {
     return async (parentNode: RedshiftWarehouseNode) => {
-        const workspaceDir = vscode.workspace.workspaceFolders
-            ? vscode.workspace.workspaceFolders[0].uri
-            : vscode.Uri.file(SystemUtilities.getHomeDirectory())
-        const selectedUri = await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.joinPath(workspaceDir),
-            filters: {
-                ['Redshift SQL Notebook']: ['.redshiftnb'],
-            },
-        })
-
-        if (selectedUri) {
-            try {
-                await FileSystemCommon.instance.writeFile(
-                    selectedUri.fsPath,
-                    `{"cells":[{"kind":2,"language":"sql","value":"","metadata":{"connectionParams":${JSON.stringify(
-                        parentNode.connectionParams
-                    )}}}]}`
-                )
-                const region = parentNode.redshiftClient.regionCode
-                await (vscode.window as any).showNotebookDocument({ uri: selectedUri } as vscode.NotebookDocument)
-                redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(region)
-
-                // TODO: Open file and close virtual doc? Is this possible?
-            } catch (e) {
-                const err = e as Error
-                vscode.window.showErrorMessage(
-                    localize(
-                        'AWS.command.saveCurrentLogDataContent.error',
-                        'Error saving current log to {0}: {1}',
-                        selectedUri.fsPath,
-                        err.message
-                    )
-                )
-            }
+        try {
+            const region = parentNode.redshiftClient.regionCode
+            const celldata = new vscode.NotebookCellData(vscode.NotebookCellKind.Code, '', 'sql')
+            celldata.metadata = { connectionParams: parentNode.connectionParams }
+            const nbdata = new vscode.NotebookData([celldata])
+            nbdata.metadata = { connectionParams: parentNode.connectionParams }
+            const nbdoc = await vscode.workspace.openNotebookDocument('aws-redshift-sql-notebook', nbdata)
+            await (vscode.window as any).showNotebookDocument(nbdoc)
+            redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(region)
+        } catch (e) {
+            const err = e as Error
+            showViewLogsMessage(localize('AWS.command.notebook.fail', 'Failed to create notebook: {0}', err.message))
         }
     }
 }
