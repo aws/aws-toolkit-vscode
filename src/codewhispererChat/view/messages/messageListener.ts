@@ -55,6 +55,9 @@ export class UIMessageListener {
             case 'trigger-tabID-received':
                 this.processTriggerTabIDReceived(msg)
                 break
+            case 'stop-response':
+                this.stopResponse(msg)
+                break
         }
     }
 
@@ -87,6 +90,12 @@ export class UIMessageListener {
     private processChatMessage(msg: any) {
         this.chatControllerMessagePublishers.processPromptChatMessage.publish({
             message: msg.chatMessage,
+            tabID: msg.tabID,
+        })
+    }
+
+    private stopResponse(msg: any) {
+        this.chatControllerMessagePublishers.processStopResponseMessage.publish({
             tabID: msg.tabID,
         })
     }

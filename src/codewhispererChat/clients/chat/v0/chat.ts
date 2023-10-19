@@ -6,6 +6,7 @@
 import fetch from 'node-fetch'
 import { Response } from 'node-fetch'
 import * as model from './model'
+import * as vscode from 'vscode'
 
 const chatServiceUrl = 'https://beta-chat.mynah.dx.aws.dev'
 const sessionIDHeader = 'x-codewhisperer-chat-session-id'
@@ -30,8 +31,15 @@ async function* linesAsyncIterator(response: Response) {
 
 export class ChatSession {
     private sessionId?: string
+    public tokenSource!: vscode.CancellationTokenSource
 
-    constructor(private readonly apiKey: string) {}
+    constructor(private readonly apiKey: string) {
+        this.createNewTokenSource()
+    }
+
+    createNewTokenSource() {
+        this.tokenSource = new vscode.CancellationTokenSource()
+    }
 
     async *send(request: string, url: URL): AsyncGenerator<model.ChatEvent, any, any> {
         const requestInit = {
@@ -52,7 +60,11 @@ export class ChatSession {
 
         this.sessionId = resp.headers.get(sessionIDHeader)!
 
-        for await (const line of linesAsyncIterator(resp)) {
+        const linesIterator = linesAsyncIterator(resp)
+        for await (const line of linesIterator) {
+            if (this.tokenSource.token.isCancellationRequested) {
+                linesIterator.return()
+            }
             if (line.trim() == '') {
                 continue
             }

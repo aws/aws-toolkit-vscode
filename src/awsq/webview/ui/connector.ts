@@ -192,6 +192,10 @@ export class Connector {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
                 this.weaverbirdChatConnector.onStopChatResponse(tabID)
+                break
+            case 'cwc':
+                this.cwChatConnector.onStopChatResponse(tabID)
+                break
         }
     }
 

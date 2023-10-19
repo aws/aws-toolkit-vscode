@@ -14,6 +14,7 @@ import {
     TabClosedMessage,
     InsertCodeAtCursorPostion,
     TriggerTabIDReceived,
+    StopResponseMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -30,6 +31,7 @@ export interface ChatControllerMessagePublishers {
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPostion>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
+    readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -38,6 +40,7 @@ export interface ChatControllerMessageListeners {
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPostion>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
+    readonly processStopResponseMessage: MessageListener<StopResponseMessage>
 }
 
 export class ChatController {
@@ -78,6 +81,15 @@ export class ChatController {
         this.chatControllerMessageListeners.processTriggerTabIDReceived.onMessage(data => {
             this.processTriggerTabIDReceived(data)
         })
+
+        this.chatControllerMessageListeners.processStopResponseMessage.onMessage(data => {
+            this.processStopResponseMessage(data)
+        })
+    }
+
+    private async processStopResponseMessage(message: StopResponseMessage) {
+        const session = this.sessionStorage.getSession(message.tabID)
+        session.tokenSource.cancel()
     }
 
     private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
@@ -229,7 +241,9 @@ export class ChatController {
                 attachedApiDocsSuggestions: [],
             }
 
-            response = this.sessionStorage.getSession(tabID).chat(chatRequest)
+            const session = this.sessionStorage.getSession(tabID)
+            session.createNewTokenSource()
+            response = session.chat(chatRequest)
         } else {
             const trigger = triggerPayload.trigger
             const ideTriggerRequest: IdeTriggerRequest = {
@@ -237,7 +251,9 @@ export class ChatController {
                 editorContext,
             }
 
-            response = this.sessionStorage.getSession(tabID).ideTrigger(ideTriggerRequest)
+            const session = this.sessionStorage.getSession(tabID)
+            session.createNewTokenSource()
+            response = session.ideTrigger(ideTriggerRequest)
         }
 
         this.messenger.sendAIResponse(response, tabID, triggerID)

@@ -12,6 +12,7 @@ import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import {
     InsertCodeAtCursorPostion,
     PromptMessage,
+    StopResponseMessage,
     TabClosedMessage,
     TriggerTabIDReceived,
 } from './controllers/chat/model'
@@ -24,6 +25,7 @@ export function init(appContext: AwsQAppInitContext) {
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPostion>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
         processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
+        processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -42,6 +44,9 @@ export function init(appContext: AwsQAppInitContext) {
         processTriggerTabIDReceived: new MessageListener<TriggerTabIDReceived>(
             cwChatControllerEventEmitters.processTriggerTabIDReceived
         ),
+        processStopResponseMessage: new MessageListener<StopResponseMessage>(
+            cwChatControllerEventEmitters.processStopResponseMessage
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -59,6 +64,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processTriggerTabIDReceived: new MessagePublisher<TriggerTabIDReceived>(
             cwChatControllerEventEmitters.processTriggerTabIDReceived
+        ),
+        processStopResponseMessage: new MessagePublisher<StopResponseMessage>(
+            cwChatControllerEventEmitters.processStopResponseMessage
         ),
     }
 

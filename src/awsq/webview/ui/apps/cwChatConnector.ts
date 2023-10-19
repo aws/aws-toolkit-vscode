@@ -81,6 +81,14 @@ export class Connector {
         })
     }
 
+    onStopChatResponse = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'stop-response',
+            tabType: 'cwc',
+        })
+    }
+
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             this.sendMessageToExtension({
@@ -123,7 +131,7 @@ export class Connector {
         }
         if (messageData.message !== undefined || messageData.relatedSuggestions !== undefined) {
             const followUps =
-                messageData.followUps !== undefined
+                messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
                           text: 'Would you like to follow up with one of these?',
                           options: messageData.followUps,
@@ -161,7 +169,7 @@ export class Connector {
                 body: undefined,
                 relatedContent: undefined,
                 followUp:
-                    messageData.followUps !== undefined
+                    messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
                               text: 'Would you like to follow up with one of these?',
                               options: messageData.followUps,

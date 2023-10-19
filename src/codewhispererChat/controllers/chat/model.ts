@@ -22,6 +22,10 @@ export interface PromptMessage {
     tabID: string
 }
 
+export interface StopResponseMessage {
+    tabID: string
+}
+
 export enum ChatTriggerType {
     ChatMessage = 'ChatMessage',
 }
