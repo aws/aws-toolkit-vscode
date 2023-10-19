@@ -41,6 +41,12 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         return new vscode.Hover(contents)
     }
 
+    /**
+     * Updates the position of each hover when the text document is changed. The underlying security issues
+     * will be updated with new line numbers to reflect the new positions of the hover.
+     *
+     * @param event Event that triggered the text document change
+     */
     public updateRanges(event: vscode.TextDocumentChangeEvent) {
         const changedRange = event.contentChanges[0].range
         const changedText = event.contentChanges[0].text
@@ -127,23 +133,8 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
      */
     private _makeCodeBlock(code: string, language?: string) {
         const lines = code.split('\n').slice(1) // Ignore the first line for diff header
-        // Get the length of the longest line to pad each line to be the same length
         const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
-        // Get the number of leading whitespaces that can be removed to hide unnecessary indentation
-        const minLeadingWhitespaces = lines.reduce((acc, curr) => {
-            const numWhitespaces = curr.slice(1).search(/\S/)
-            if (numWhitespaces < 0) {
-                return acc
-            }
-            return Math.min(acc, numWhitespaces)
-        }, maxLineChars)
-        const paddedLines = lines.map((line, i) => {
-            const paddedLine = line.padEnd(maxLineChars + 2)
-            if (minLeadingWhitespaces > 1) {
-                return paddedLine[0] + paddedLine.slice(minLeadingWhitespaces)
-            }
-            return paddedLine
-        })
+        const paddedLines = lines.map(line => line.padEnd(maxLineChars + 2))
 
         // Group the lines into sections so consecutive lines of the same type can be placed in
         // the same span below
