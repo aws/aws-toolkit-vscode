@@ -303,6 +303,8 @@ export async function activate(context: ExtContext): Promise<void> {
                  */
                 disposeSecurityDiagnostic(e)
 
+                SecurityIssueHoverProvider.instance.updateRanges(e)
+
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
                 /**
