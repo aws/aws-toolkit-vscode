@@ -58,6 +58,7 @@ export class AuthUtil {
         }
         this._isCustomizationFeatureEnabled = value
         vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
     public readonly secondaryAuth = getSecondaryAuth(
