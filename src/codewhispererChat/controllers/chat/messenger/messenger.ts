@@ -93,7 +93,7 @@ export class Messenger {
                 }
                 return true
             },
-            { timeout: 10000, truthy: true }
+            { timeout: 60000, truthy: true }
         )
 
         if (relatedSuggestions.length !== 0) {
