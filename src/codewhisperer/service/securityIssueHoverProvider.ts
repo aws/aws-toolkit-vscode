@@ -41,6 +41,51 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         return new vscode.Hover(contents)
     }
 
+    /**
+     * Handles the position of each hover when the text document is changed.
+     * Any issues that intersect with the changed range will be removed and any change that
+     * happens above an issue will offset its start and end lines.
+     *
+     * @param event Event that triggered the text document change
+     */
+    public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
+        const changedRange = event.contentChanges[0].range
+        const changedText = event.contentChanges[0].text
+        const lineOffset = this._getLineOffset(changedRange, changedText)
+
+        this._issues = this._issues.map(group => {
+            if (group.filePath !== event.document.fileName) {
+                return group
+            }
+            return {
+                ...group,
+                issues: group.issues
+                    .filter(issue => {
+                        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                        const intersection = changedRange.intersection(range)
+                        return !(intersection && (/\S/.test(changedText) || changedText === ''))
+                    })
+                    .map(issue => {
+                        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                        if (range.start.line < changedRange.end.line) {
+                            return issue
+                        }
+                        return {
+                            ...issue,
+                            startLine: issue.startLine + lineOffset,
+                            endLine: issue.endLine + lineOffset,
+                        }
+                    }),
+            }
+        })
+    }
+
+    private _getLineOffset(range: vscode.Range, text: string) {
+        const originLines = range.end.line - range.start.line + 1
+        const changedLines = text.split('\n').length
+        return changedLines - originLines
+    }
+
     private _getContent(issue: CodeScanIssue) {
         const markdownString = new vscode.MarkdownString()
         markdownString.isTrusted = true
@@ -94,7 +139,6 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
      * @returns The markdown string
      */
     private _makeCodeBlock(code: string, language?: string) {
-        // Add some padding so that each line has the same number of chars
         const lines = code.split('\n').slice(1) // Ignore the first line for diff header
         const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
         const paddedLines = lines.map(line => line.padEnd(maxLineChars + 2))
@@ -128,8 +172,9 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
 ${section}
 \`\`\`
 
-</span>`
+</span>
+`
             )
-            .join('')
+            .join('<br />')
     }
 }
