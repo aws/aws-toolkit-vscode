@@ -46,7 +46,7 @@ export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection
     isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
 
 export function setCodeCatalystConnectedContext(isConnected: boolean) {
-    return vscode.commands.executeCommand('setContext', 'CODECATALYST_CONNECTED', isConnected)
+    return vscode.commands.executeCommand('setContext', 'aws.codecatalyst.connected', isConnected)
 }
 
 export class CodeCatalystAuthenticationProvider {
