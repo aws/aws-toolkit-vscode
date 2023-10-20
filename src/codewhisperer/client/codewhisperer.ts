@@ -207,7 +207,6 @@ export class DefaultCodeWhispererClient {
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
         }
-
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
     }
