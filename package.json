@@ -728,6 +728,17 @@
                 "label": "%AWS.submenu.auth.title%",
                 "icon": "$(ellipsis)",
                 "when": "!isWeb"
+            },
+            {
+                "id": "aws.codewhisperer.submenu",
+                "label": "%AWS.codewhisperer.submenu.title%",
+                "icon": "$(ellipsis)"
+            },
+            {
+                "id": "aws.codecatalyst.submenu",
+                "label": "%AWS.codecatalyst.submenu.title%",
+                "icon": "$(ellipsis)",
+                "when": "!isWeb"
             }
         ],
         "menus": {
@@ -781,11 +792,7 @@
                     "when": "!isCloud9"
                 },
                 {
-                    "command": "aws.codecatalyst.removeConnection",
-                    "when": "false"
-                },
-                {
-                    "command": "aws.codeWhisperer.removeConnection",
+                    "command": "aws.codewhisperer.signout",
                     "when": "false"
                 },
                 {
@@ -1330,16 +1337,6 @@
                     "command": "aws.apig.invokeRemoteRestApi",
                     "when": "view == aws.explorer && viewItem =~ /^(awsApiGatewayNode)$/",
                     "group": "0@1"
-                },
-                {
-                    "command": "aws.codecatalyst.removeConnection",
-                    "when": "viewItem == awsCodeCatalystNodeSaved",
-                    "group": "0@1"
-                },
-                {
-                    "command": "aws.codecatalyst.removeConnection",
-                    "when": "viewItem == awsCodeCatalystNodeSaved",
-                    "group": "inline@1"
                 },
                 {
                     "command": "aws.ec2.openTerminal",
@@ -1907,24 +1904,9 @@
                     "when": "view == aws.explorer && viewItem == awsCloudFormationRootNode"
                 },
                 {
-                    "command": "aws.codeWhisperer.configure",
-                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9",
-                    "group": "inline@2"
-                },
-                {
                     "command": "aws.codeWhisperer.introduction",
                     "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9 && CODEWHISPERER_TERMS_ACCEPTED",
                     "group": "inline@1"
-                },
-                {
-                    "command": "aws.codeWhisperer.removeConnection",
-                    "when": "viewItem == awsCodeWhispererNodeSaved",
-                    "group": "0@1"
-                },
-                {
-                    "command": "aws.codeWhisperer.removeConnection",
-                    "when": "viewItem == awsCodeWhispererNodeSaved",
-                    "group": "inline@3"
                 },
                 {
                     "command": "aws.cdk.refresh",
@@ -1965,6 +1947,41 @@
                     "submenu": "aws.auth",
                     "when": "viewItem == awsAuthNode",
                     "group": "inline@2"
+                },
+                {
+                    "submenu": "aws.codecatalyst.submenu",
+                    "when": "viewItem =~ /^awsCodeCatalystNode/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.codecatalyst.manageConnections",
+                    "when": "viewItem =~ /^awsCodeCatalystNode/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codecatalyst.signout",
+                    "when": "viewItem =~ /^awsCodeCatalystNode/&& !isCloud9 && aws.codecatalyst.connected",
+                    "group": "0@2"
+                },
+                {
+                    "submenu": "aws.codewhisperer.submenu",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/",
+                    "group": "inline@1"
+                },
+                {
+                    "command": "aws.codewhisperer.manageConnections",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.configure",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.codewhisperer.signout",
+                    "when": "viewItem =~ /^awsCodeWhispererNode/ && !isCloud9 && CODEWHISPERER_ENABLED",
+                    "group": "0@3"
                 }
             ],
             "aws.auth": [
@@ -1979,6 +1996,32 @@
                 {
                     "command": "aws.auth.signout",
                     "enablement": "!isCloud9",
+                    "group": "0@3"
+                }
+            ],
+            "aws.codecatalyst.submenu": [
+                {
+                    "command": "aws.codecatalyst.manageConnections",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codecatalyst.signout",
+                    "when": "aws.codecatalyst.connected",
+                    "group": "0@2"
+                }
+            ],
+            "aws.codewhisperer.submenu": [
+                {
+                    "command": "aws.codewhisperer.manageConnections",
+                    "group": "0@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.configure",
+                    "group": "0@2"
+                },
+                {
+                    "command": "aws.codewhisperer.signout",
+                    "when": "CODEWHISPERER_ENABLED",
                     "group": "0@3"
                 }
             ]
@@ -2104,8 +2147,8 @@
                 "enablement": "!isCloud9 && !isWeb"
             },
             {
-                "command": "aws.codecatalyst.removeConnection",
-                "title": "%AWS.command.codecatalyst.removeConnection%",
+                "command": "aws.codecatalyst.signout",
+                "title": "%AWS.command.codecatalyst.signout%",
                 "category": "AWS",
                 "icon": "$(debug-disconnect)",
                 "enablement": "!isWeb"
@@ -2127,6 +2170,16 @@
             },
             {
                 "command": "aws.auth.manageConnections",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codecatalyst.manageConnections",
+                "title": "%AWS.command.auth.showConnectionsPage%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codewhisperer.manageConnections",
                 "title": "%AWS.command.auth.showConnectionsPage%",
                 "category": "%AWS.title%"
             },
@@ -3431,8 +3484,8 @@
                 }
             },
             {
-                "command": "aws.codeWhisperer.removeConnection",
-                "title": "%AWS.command.codewhisperer.removeConnection%",
+                "command": "aws.codewhisperer.signout",
+                "title": "%AWS.command.codewhisperer.signout%",
                 "category": "%AWS.title%",
                 "icon": "$(debug-disconnect)"
             },

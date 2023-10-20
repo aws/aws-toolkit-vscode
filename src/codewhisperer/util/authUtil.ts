@@ -8,7 +8,6 @@ import * as CodeWhispererConstants from '../models/constants'
 import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
-import { Commands } from '../../shared/vscode/commands2'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { PromptSettings } from '../../shared/settings'
 import {
@@ -182,8 +181,6 @@ export class AuthUtil {
         }
 
         const self = (this.#instance = new this())
-        Commands.register('aws.codeWhisperer.removeConnection', () => self.secondaryAuth.removeConnection())
-
         return self
     }
 
