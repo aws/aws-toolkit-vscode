@@ -90,8 +90,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Creates a watcher across all opened workspace folders (or see below to
+     * Creates watchers for each glob across all opened workspace folders (or see below to
      * watch _outside_ the workspace).
+     *
+     * Fails if the watcher is disposed, or if globs have already been set;
+     * enforce setting once to reduce rebuilds looping through all existing globs
      *
      * (since vscode 1.64):
      * - Watches RECURSIVELY if `pattern` is complex (e.g. contains `**` or
@@ -102,8 +105,8 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      *   It cannot be used to add more folders for watching, nor will it report
      *   events outside of workspace folders.
      * - To watch _outside_ the workspace, pass `vscode.RelativePattern(vscode.Uri(…))`:
-     *   - non-recursive: `addWatchPattern(new RelativePattern(Uri.file(…), '*.js'))`
-     *   - recursive: `addWatchPattern(new RelativePattern(Uri.file(…), '**x/*.js'))`
+     *   - non-recursive: `addWatchPatterns(new RelativePattern(Uri.file(…), '*.js'))`
+     *   - recursive: `addWatchPatterns(new RelativePattern(Uri.file(…), '**x/*.js'))`
      * - **Note** recursive files may be excluded by user configuration
      *   (`files.watcherExclude`, e.g. "node_modules"). To avoid that, watch
      *   simple (non-recursive) patterns.
@@ -115,19 +118,24 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * > workspace, because that would result in multiple watchers on the same
      * > paths competing against each other.
      *
-     * @param glob Pattern to match against (across all opened workspace folders)
+     * @param globs Patterns to match against (across all opened workspace folders)
      */
-    public async addWatchPattern(glob: vscode.GlobPattern): Promise<void> {
+    public async addWatchPatterns(globs: vscode.GlobPattern[]): Promise<void> {
         if (this._isDisposed) {
             throw new Error(`${this.name}: manager has already been disposed!`)
         }
-        if (typeof glob === 'string' && !vscode.workspace.workspaceFolders?.[0]) {
-            getLogger().warn(`${this.name}: addWatchPattern(${glob}): no workspace`)
+        if (this.globs.length > 0) {
+            throw new Error(`${this.name}: watch patterns have already been established`)
         }
-        this.globs.push(glob)
+        for (const glob of globs) {
+            if (typeof glob === 'string' && !vscode.workspace.workspaceFolders?.[0]) {
+                getLogger().warn(`${this.name}: addWatchPatterns(${glob}): no workspace`)
+            }
+            this.globs.push(glob)
 
-        const watcher = vscode.workspace.createFileSystemWatcher(glob)
-        this.addWatcher(watcher)
+            const watcher = vscode.workspace.createFileSystemWatcher(glob)
+            this.addWatcher(watcher)
+        }
 
         await this.rebuild()
     }
