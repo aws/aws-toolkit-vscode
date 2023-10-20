@@ -143,7 +143,7 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
 }
 
 abstract class CodeGenBase {
-    private pollCount = 60
+    private pollCount = 180
     private requestDelay = 10000
     readonly tokenSource: vscode.CancellationTokenSource
     public phase = SessionStatePhase.Codegen
