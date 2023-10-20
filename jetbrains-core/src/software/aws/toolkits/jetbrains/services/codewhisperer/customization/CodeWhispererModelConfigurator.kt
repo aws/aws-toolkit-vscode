@@ -219,36 +219,40 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
      * This method will return the result in memory first and fallback to false if there is no value exist in the memory,
      * then will try fetch the latest from the server in the background thread and update the UI correspondingly
      */
-    override fun shouldDisplayCustomNode(project: Project, forceUpdate: Boolean): Boolean = calculateIfIamIdentityCenterConnection(project) {
-        val cachedValue = connectionIdToIsAllowlisted[it.id]
-        when (cachedValue) {
-            true -> true
+    override fun shouldDisplayCustomNode(project: Project, forceUpdate: Boolean): Boolean = if (ApplicationManager.getApplication().isUnitTestMode) {
+        false
+    } else {
+        calculateIfIamIdentityCenterConnection(project) {
+            val cachedValue = connectionIdToIsAllowlisted[it.id]
+            when (cachedValue) {
+                true -> true
 
-            null -> run {
-                ApplicationManager.getApplication().executeOnPooledThread {
-                    // will update devTool tree
-                    listCustomizations(project, passive = true) != null
-                    project.refreshDevToolTree()
-                }
-
-                false
-            }
-
-            false -> run {
-                if (forceUpdate) {
+                null -> run {
                     ApplicationManager.getApplication().executeOnPooledThread {
                         // will update devTool tree
-                        val updatedValue = listCustomizations(project, passive = true) != null
-                        if (updatedValue != cachedValue) {
-                            project.refreshDevToolTree()
-                        }
+                        listCustomizations(project, passive = true)
+                        project.refreshDevToolTree()
                     }
+
+                    false
                 }
 
-                cachedValue
+                false -> run {
+                    if (forceUpdate) {
+                        ApplicationManager.getApplication().executeOnPooledThread {
+                            // will update devTool tree
+                            val updatedValue = listCustomizations(project, passive = true) != null
+                            if (updatedValue != cachedValue) {
+                                project.refreshDevToolTree()
+                            }
+                        }
+                    }
+
+                    cachedValue
+                }
             }
-        }
-    } ?: false
+        } ?: false
+    }
 
     override fun getNewUpdate(connectionId: String) = connectionToCustomizationUiItems[connectionId]
 
