@@ -42,41 +42,48 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
     }
 
     /**
-     * Updates the position of each hover when the text document is changed. The underlying security issues
-     * will be updated with new line numbers to reflect the new positions of the hover.
+     * Handles the position of each hover when the text document is changed.
+     * Any issues that intersect with the changed range will be removed and any change that
+     * happens above an issue will offset its start and end lines.
      *
      * @param event Event that triggered the text document change
      */
-    public updateRanges(event: vscode.TextDocumentChangeEvent) {
+    public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
         const changedRange = event.contentChanges[0].range
         const changedText = event.contentChanges[0].text
         const lineOffset = this._getLineOffset(changedRange, changedText)
 
-        this._issues = this._issues.map(issues => this._applyRangeOffset(event.document.fileName, issues, lineOffset))
+        this._issues = this._issues.map(group => {
+            if (group.filePath !== event.document.fileName) {
+                return group
+            }
+            return {
+                ...group,
+                issues: group.issues
+                    .filter(issue => {
+                        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                        const intersection = changedRange.intersection(range)
+                        return !(intersection && (/\S/.test(changedText) || changedText === ''))
+                    })
+                    .map(issue => {
+                        const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
+                        if (range.start.line < changedRange.end.line) {
+                            return issue
+                        }
+                        return {
+                            ...issue,
+                            startLine: issue.startLine + lineOffset,
+                            endLine: issue.endLine + lineOffset,
+                        }
+                    }),
+            }
+        })
     }
 
     private _getLineOffset(range: vscode.Range, text: string) {
         const originLines = range.end.line - range.start.line + 1
         const changedLines = text.split('\n').length
         return changedLines - originLines
-    }
-
-    private _applyRangeOffset(
-        fileName: string,
-        aggregatedIssues: AggregatedCodeScanIssue,
-        lineOffset: number
-    ): AggregatedCodeScanIssue {
-        if (aggregatedIssues.filePath !== fileName) {
-            return aggregatedIssues
-        }
-        return {
-            ...aggregatedIssues,
-            issues: aggregatedIssues.issues.map(issue => ({
-                ...issue,
-                startLine: issue.startLine + lineOffset,
-                endLine: issue.endLine + lineOffset,
-            })),
-        }
     }
 
     private _getContent(issue: CodeScanIssue) {
