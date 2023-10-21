@@ -310,7 +310,7 @@ export class MockCodeGenState implements SessionState {
         try {
             const mockDirectoryExists = await fs.stat(mockedFilesDir)
             if (mockDirectoryExists) {
-                const files = await collectFiles(mockedFilesDir)
+                const files = await collectFiles(mockedFilesDir, false)
                 newFileContents = files.map(f => ({
                     filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,

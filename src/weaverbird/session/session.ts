@@ -104,8 +104,7 @@ export class Session {
     }
 
     private async nextInteraction(msg: string | undefined) {
-        const srcRoot = await getSourceCodePath(this.config.workspaceRoot, 'src')
-        const files = await collectFiles(srcRoot)
+        const files = await collectFiles(this.config.workspaceRoot)
 
         const resp = await this.state.interact({
             files,

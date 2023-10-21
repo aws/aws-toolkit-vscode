@@ -10,18 +10,46 @@ import WeaverbirdClient, { FileMetadata } from '../client/weaverbirdclient'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { getGlobDirExcludedPatterns } from '../../shared/fs/watchedFiles'
 import { getWorkspaceRelativePath } from '../../shared/utilities/workspaceUtils'
+import { Uri } from 'vscode'
+import { GitIgnoreFilter } from './gitignore'
+
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 
-export function getExcludePattern() {
-    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/`)
-    const extraPatterns = ['**/*.zip', '**/*.bin', '**/package-lock.json', '**/*.png', '**/*.jpg', '**/*.svg']
-    return `{${[...globAlwaysExcludedDirs, ...extraPatterns].join(',')}}`
+export function getExcludePattern(additionalPatterns: string[] = []) {
+    const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
+    const extraPatterns = [
+        '**/package-lock.json',
+        '**/yarn.lock',
+        '**/*.zip',
+        '**/*.bin',
+        '**/*.png',
+        '**/*.jpg',
+        '**/*.svg',
+        '**/*.pyc',
+    ]
+    const allPatterns = [...globAlwaysExcludedDirs, ...extraPatterns, ...additionalPatterns]
+    return `{${allPatterns.join(',')}}`
 }
 
-export async function collectFiles(rootPath: string): Promise<FileMetadata[]> {
-    const files = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'), getExcludePattern())
+/**
+ * @param rootPath root folder to look for .gitignore files
+ * @returns list of glob patterns extracted from .gitignore
+ * These patterns are compatible with vscode exclude patterns
+ */
+async function filterOutGitignoredFiles(rootPath: string, files: Uri[]): Promise<Uri[]> {
+    const gitIgnoreFiles = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(rootPath, '**/.gitignore'),
+        getExcludePattern()
+    )
+    const gitIgnoreFilter = await GitIgnoreFilter.build(gitIgnoreFiles)
+    return gitIgnoreFilter.filterFiles(files)
+}
+
+export async function collectFiles(rootPath: string, respectGitIgnore: boolean = true): Promise<FileMetadata[]> {
+    const allFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'), getExcludePattern())
+    const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
 
     const storage = []
     for (const file of files) {
@@ -49,7 +77,11 @@ export function getFilePaths(fileContents: WeaverbirdClient.FileMetadataList): s
 export async function prepareRepoData(repoRootPath: string) {
     const zip = new AdmZip()
 
-    const files = await vscode.workspace.findFiles(new vscode.RelativePattern(repoRootPath, '**'), getExcludePattern())
+    const allFiles = await vscode.workspace.findFiles(
+        new vscode.RelativePattern(repoRootPath, '**'),
+        getExcludePattern()
+    )
+    const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
     for (const file of files) {
         const relativePath = getWorkspaceRelativePath(file.fsPath)
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''

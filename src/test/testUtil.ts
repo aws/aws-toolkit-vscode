@@ -19,15 +19,16 @@ import { keys, selectFrom } from '../shared/utilities/tsUtils'
 const testTempDirs: string[] = []
 
 /**
- * Writes the string form of `o` to `filepath` as UTF-8 text.
+ * Writes the string form of `o` to `filePathParts` as UTF-8 text.
  *
- * Creates parent directories in `filepath`, if necessary.
+ * Creates parent directories in `filePathParts`, if necessary.
  */
-export function toFile(o: any, filepath: string) {
+export function toFile(o: any, ...filePathParts: string[]) {
     const text = o ? o.toString() : ''
-    const dir = path.dirname(filepath)
+    const filePath = path.join(...filePathParts)
+    const dir = path.dirname(filePath)
     fsextra.mkdirpSync(dir)
-    fsextra.writeFileSync(filepath, text, 'utf8')
+    fsextra.writeFileSync(filePath, text, 'utf8')
 }
 
 /**
