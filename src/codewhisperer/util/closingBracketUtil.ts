@@ -18,6 +18,7 @@ const closing: bracketMapType = {
     ')': '(',
     ']': '[',
     '}': '{',
+    '>': '<',
     "'": "'",
     '"': '"',
     '`': '`',
@@ -27,6 +28,7 @@ const openning: bracketMapType = {
     '(': ')',
     '[': ']',
     '{': '}',
+    '<': '>',
     "'": "'",
     '"': '"',
     '`': '`',
@@ -45,6 +47,8 @@ export const calculateBracketsLevel = (
         ['{', 0],
         ['"', 0],
         ["'", 0],
+        ['<', 0],
+        ['`', 0],
     ])
     const bracketsIndexLevel: { char: string; count: number; idx: number; position: vscode.Position }[] = []
     let position: vscode.Position
