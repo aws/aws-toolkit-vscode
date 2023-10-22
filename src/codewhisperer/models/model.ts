@@ -12,6 +12,7 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
+import { CodeWhispererProgrammingLanguage } from '../language/codewhispererProgrammingLanguage'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -65,7 +66,7 @@ export interface OnRecommendationAcceptanceEntry {
     readonly sessionId: string
     readonly triggerType: CodewhispererTriggerType
     readonly completionType: CodewhispererCompletionType
-    readonly language: CodewhispererLanguage
+    readonly language: CodeWhispererProgrammingLanguage
     readonly references: References | undefined
 }
 

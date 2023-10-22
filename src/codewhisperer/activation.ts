@@ -18,7 +18,6 @@ import { ExtContext } from '../shared/extensions'
 import { TextEditorSelectionChangeKind } from 'vscode'
 import { CodeWhispererTracker } from './tracker/codewhispererTracker'
 import * as codewhispererClient from './client/codewhisperer'
-import { runtimeLanguageContext } from './util/runtimeLanguageContext'
 import { getLogger } from '../shared/logger'
 import { isCloud9 } from '../shared/extensionUtilities'
 import {
@@ -55,6 +54,8 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { getLanguage } from './language/codewhispererProgrammingLanguage'
+
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -298,7 +299,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                if (!getLanguage(e.document).isCodeCompletionSupported()) {
                     return
                 }
 
@@ -307,7 +308,7 @@ export async function activate(context: ExtContext): Promise<void> {
                  */
                 disposeSecurityDiagnostic(e)
 
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
+                CodeWhispererCodeCoverageTracker.getTracker(getLanguage(e.document))?.countTotalTokens(e)
 
                 /**
                  * Handle this keystroke event only when
@@ -366,14 +367,14 @@ export async function activate(context: ExtContext): Promise<void> {
                 if (e.document !== editor.document) {
                     return
                 }
-                if (!runtimeLanguageContext.isLanguageSupported(e.document.languageId)) {
+                if (!getLanguage(e.document).isCodeCompletionSupported()) {
                     return
                 }
                 /**
                  * CodeWhisperer security panel dynamic handling
                  */
                 securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
-                CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
+                CodeWhispererCodeCoverageTracker.getTracker(getLanguage(e.document))?.countTotalTokens(e)
 
                 if (e.contentChanges.length != 0 && !vsCodeState.isCodeWhispererEditing) {
                     return

@@ -9,7 +9,6 @@ import { RecommendationsList, DefaultCodeWhispererClient, CognitoCredentialsErro
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
@@ -41,6 +40,7 @@ import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { indent } from '../../shared/utilities/textUtilities'
+import { getLanguage } from '../language/codewhispererProgrammingLanguage'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -174,7 +174,7 @@ export class RecommendationHandler {
         let latency = 0
         let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+        session.language = getLanguage(editor.document)
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
@@ -213,7 +213,7 @@ export class RecommendationHandler {
                     JSON.stringify(request, undefined, EditorContext.getTabSize())
                 )
                 const languageName = request.fileContext.programmingLanguage.languageName
-                if (!runtimeLanguageContext.isLanguageSupported(languageName)) {
+                if (!session.language.isCodeCompletionSupported()) {
                     errorMessage = `${languageName} is currently not supported by CodeWhisperer`
                 }
                 return Promise.resolve<GetRecommendationsResponse>({
@@ -226,10 +226,9 @@ export class RecommendationHandler {
         try {
             startTime = performance.now()
             this.lastInvocationTime = startTime
-            const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise = pagination
-                ? client.listRecommendations(mappedReq)
-                : client.generateRecommendations(mappedReq)
+                ? client.listRecommendations(request)
+                : client.generateRecommendations(request)
             const resp = await this.getServerResponse(
                 triggerType,
                 config.isManualTriggerEnabled,
@@ -330,7 +329,7 @@ export class RecommendationHandler {
                     invocationResult,
                     latency,
                     session.startPos.line,
-                    session.language,
+                    session.language.id,
                     session.taskType,
                     reason,
                     session.requestContext.supplementalMetadata
@@ -380,7 +379,7 @@ export class RecommendationHandler {
                     requestId,
                     sessionId,
                     page,
-                    editor.document.languageId,
+                    session.language,
                     session.requestContext.supplementalMetadata
                 )
             }
@@ -663,15 +662,14 @@ export class RecommendationHandler {
 
     private sendPerceivedLatencyTelemetry() {
         if (vscode.window.activeTextEditor) {
-            const languageContext = runtimeLanguageContext.getLanguageContext(
-                vscode.window.activeTextEditor.document.languageId
-            )
+            const language = getLanguage(vscode.window.activeTextEditor.document)
+
             telemetry.codewhisperer_perceivedLatency.emit({
                 codewhispererRequestId: this.requestId,
                 codewhispererSessionId: session.sessionId,
                 codewhispererTriggerType: TelemetryHelper.instance.triggerType,
                 codewhispererCompletionType: session.getCompletionType(0),
-                codewhispererLanguage: languageContext.language,
+                codewhispererLanguage: language.id,
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: AuthUtil.instance.startUrl,

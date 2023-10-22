@@ -21,7 +21,6 @@ import {
     listScanResults,
     throwIfCancelled,
 } from '../service/securityScanHandler'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { codeScanState, CodeScanTelemetryEntry } from '../models/model'
 import { openSettings } from '../../shared/settings'
 import { cancel, ok, viewSettings } from '../../shared/localizedText'
@@ -32,6 +31,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
+import { getLanguage } from '../language/codewhispererProgrammingLanguage'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -70,8 +70,9 @@ export async function startSecurityScan(
      */
     const codeScanStartTime = performance.now()
     let serviceInvocationStartTime = 0
+    const language = getLanguage(editor.document)
     const codeScanTelemetryEntry: CodeScanTelemetryEntry = {
-        codewhispererLanguage: runtimeLanguageContext.getLanguageContext(editor.document.languageId).language,
+        codewhispererLanguage: language.id,
         codewhispererCodeScanSrcPayloadBytes: 0,
         codewhispererCodeScanSrcZipFileBytes: 0,
         codewhispererCodeScanLines: 0,

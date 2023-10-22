@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { getLogger } from '../../shared/logger/logger'
@@ -18,15 +17,12 @@ import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { ExtContext } from '../../shared/extensions'
 import { onAcceptance } from './onAcceptance'
 import * as codewhispererClient from '../client/codewhisperer'
-import {
-    CodewhispererCompletionType,
-    CodewhispererLanguage,
-    CodewhispererTriggerType,
-} from '../../shared/telemetry/telemetry.gen'
+import { CodewhispererCompletionType, CodewhispererTriggerType } from '../../shared/telemetry/telemetry.gen'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 import { ImportAdderProvider } from '../service/importAdderProvider'
 import { session } from '../util/codeWhispererSession'
+import { CodeWhispererProgrammingLanguage } from '../language/codewhispererProgrammingLanguage'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -39,7 +35,7 @@ export const acceptSuggestion = Commands.declare(
             sessionId: string,
             triggerType: CodewhispererTriggerType,
             completionType: CodewhispererCompletionType,
-            language: CodewhispererLanguage,
+            language: CodeWhispererProgrammingLanguage,
             references: codewhispererClient.References
         ) => {
             const editor = vscode.window.activeTextEditor
@@ -73,7 +69,6 @@ export async function onInlineAcceptance(
 
     if (acceptanceEntry.editor) {
         await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
-        const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = acceptanceEntry.editor.selection.active
 
@@ -108,10 +103,10 @@ export async function onInlineAcceptance(
             index: acceptanceEntry.acceptIndex,
             triggerType: acceptanceEntry.triggerType,
             completionType: acceptanceEntry.completionType,
-            language: languageContext.language,
+            language: acceptanceEntry.language.id,
         })
         const codeRangeAfterFormat = new vscode.Range(start, acceptanceEntry.editor.selection.active)
-        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language, globalStorage)?.countAcceptedTokens(
+        CodeWhispererCodeCoverageTracker.getTracker(acceptanceEntry.language, globalStorage)?.countAcceptedTokens(
             codeRangeAfterFormat,
             acceptanceEntry.editor.document.getText(codeRangeAfterFormat),
             acceptanceEntry.editor.document.fileName

@@ -10,13 +10,13 @@ import globals from '../../shared/extensionGlobals'
 import { vsCodeState } from '../models/model'
 import { distance } from 'fastest-levenshtein'
 import { CodewhispererLanguage, telemetry } from '../../shared/telemetry/telemetry'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codeWhispererClient as client } from '../client/codewhisperer'
 import { isAwsError } from '../../shared/errors'
+import { CodeWhispererProgrammingLanguage, getLanguage } from '../language/codewhispererProgrammingLanguage'
 
 interface CodeWhispererToken {
     range: vscode.Range
@@ -238,7 +238,7 @@ export class CodeWhispererCodeCoverageTracker {
         // only include contentChanges from user action.
         // Also ignore deletion events due to a known issue of tracking deleted CodeWhiperer tokens.
         if (
-            !runtimeLanguageContext.isLanguageSupported(e.document.languageId) ||
+            !getLanguage(e.document).isCodeCompletionSupported() ||
             vsCodeState.isCodeWhispererEditing ||
             e.contentChanges.length !== 1 ||
             e.contentChanges[0].text.length === 0
@@ -253,18 +253,14 @@ export class CodeWhispererCodeCoverageTracker {
     public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
 
     public static getTracker(
-        language: string,
+        language: CodeWhispererProgrammingLanguage | undefined,
         memeto: vscode.Memento = globals.context.globalState
     ): CodeWhispererCodeCoverageTracker | undefined {
-        if (!runtimeLanguageContext.isLanguageSupported(language)) {
+        if (!language) {
             return undefined
         }
-        const cwsprLanguage = runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(language)
-        if (!cwsprLanguage) {
-            return undefined
-        }
-        const instance = this.instances.get(language) ?? new this(cwsprLanguage)
-        this.instances.set(language, instance)
+        const instance = this.instances.get(language.id) ?? new this(language.id)
+        this.instances.set(language.id, instance)
         return instance
     }
 }

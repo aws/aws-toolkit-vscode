@@ -7,10 +7,10 @@ import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import { Recommendation } from '../client/codewhisperer'
 import { session } from '../util/codeWhispererSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
+import { getLanguage } from '../language/codewhispererProgrammingLanguage'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -116,7 +116,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     session.sessionId,
                     TelemetryHelper.instance.triggerType,
                     session.getCompletionType(index),
-                    runtimeLanguageContext.getLanguageContext(document.languageId).language,
+                    getLanguage(document),
                     r.references,
                 ],
             },

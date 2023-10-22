@@ -4,7 +4,6 @@
  */
 import globals from '../../shared/extensionGlobals'
 
-import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { codeWhispererClient as client, RecommendationsList } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
 import {
@@ -31,6 +30,7 @@ import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
+import { CodeWhispererProgrammingLanguage } from '../language/codewhispererProgrammingLanguage'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -122,10 +122,9 @@ export class TelemetryHelper {
         requestId: string,
         sessionId: string,
         paginationIndex: number,
-        languageId: string,
+        language: CodeWhispererProgrammingLanguage,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
             codewhispererRequestId: requestId,
             codewhispererSessionId: sessionId ? sessionId : undefined,
@@ -136,7 +135,7 @@ export class TelemetryHelper {
             codewhispererSuggestionReferences: undefined,
             codewhispererSuggestionReferenceCount: 0,
             codewhispererCompletionType: 'Line',
-            codewhispererLanguage: languageContext.language,
+            codewhispererLanguage: language.id,
             codewhispererGettingStartedTask: session.taskType,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -188,7 +187,7 @@ export class TelemetryHelper {
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 codewhispererSuggestionImportCount: getImportCount(_elem),
                 codewhispererCompletionType: this.getCompletionType(i, completionTypes),
-                codewhispererLanguage: session.language,
+                codewhispererLanguage: session.language.id,
                 codewhispererGettingStartedTask: session.taskType,
                 credentialStartUrl: AuthUtil.instance.startUrl,
                 codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
@@ -581,7 +580,7 @@ export class TelemetryHelper {
             codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
             codewhispererCompletionType: 'Line',
             codewhispererTriggerType: this.triggerType,
-            codewhispererLanguage: session.language,
+            codewhispererLanguage: session.language.id,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
         })

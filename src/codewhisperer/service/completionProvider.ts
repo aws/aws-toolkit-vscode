@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
 import { session } from '../util/codeWhispererSession'
+import { getLanguage } from '../language/codewhispererProgrammingLanguage'
 /**
  * completion provider for intelliSense popup
  */
@@ -42,7 +42,7 @@ export function getCompletionItem(
     completionItem.preselect = true
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
-    const languageContext = runtimeLanguageContext.getLanguageContext(document.languageId)
+
     let references = undefined
     if (recommendationDetail.references != undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references
@@ -62,7 +62,7 @@ export function getCompletionItem(
             session.sessionId,
             TelemetryHelper.instance.triggerType,
             session.getCompletionType(recommendationIndex),
-            languageContext.language,
+            getLanguage(document),
             references,
         ],
     }

@@ -10,7 +10,6 @@ import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
-import { runtimeLanguageContext } from './runtimeLanguageContext'
 import {
     CodeWhispererSupplementalContext,
     fetchSupplementalContext,
@@ -18,6 +17,11 @@ import {
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import {
+    CodeWhispererProgrammingLanguage,
+    getLanguage,
+    getLanguageExtensionForNotebook,
+} from '../language/codewhispererProgrammingLanguage'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -45,8 +49,7 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         filename: getFileNameForRequest(editor),
         programmingLanguage: {
             languageName:
-                runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(editor.document.languageId) ??
-                editor.document.languageId,
+                getLanguage(editor.document).toCodeWhispererRuntimeLanguage().id ?? editor.document.languageId,
         },
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
@@ -64,7 +67,7 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
     // For notebook files, we want to use the programming language for each cell for the code suggestions, so change
     // the filename sent in the request to reflect that language
     if (fileName.endsWith('.ipynb')) {
-        const fileExtension = runtimeLanguageContext.getLanguageExtensionForNotebook(editor.document.languageId)
+        const fileExtension = getLanguageExtensionForNotebook(editor.document.languageId)
         if (fileExtension !== undefined) {
             const filenameWithNewExtension = fileName.substring(0, fileName.length - 5) + fileExtension
             return filenameWithNewExtension.substring(0, CodeWhispererConstants.filenameCharsLimit)
@@ -178,7 +181,9 @@ export function validateRequest(
         req.fileContext.programmingLanguage.languageName == undefined ||
         req.fileContext.programmingLanguage.languageName.length < 1 ||
         req.fileContext.programmingLanguage.languageName.length > 128 ||
-        !runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)
+        !CodeWhispererProgrammingLanguage.from(
+            req.fileContext.programmingLanguage.languageName
+        ).isCodeCompletionSupported()
     )
     const isFileNameValid = !(req.fileContext.filename == undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(

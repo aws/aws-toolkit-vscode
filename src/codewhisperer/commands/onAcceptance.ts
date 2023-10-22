@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { vsCodeState, OnRecommendationAcceptanceEntry } from '../models/model'
-import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { CodeWhispererTracker } from '../tracker/codewhispererTracker'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { getLogger } from '../../shared/logger/logger'
@@ -14,6 +13,7 @@ import { handleExtraBrackets } from '../util/closingBracketUtil'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
+import { getLanguage } from '../language/codewhispererProgrammingLanguage'
 
 /**
  * This function is called when user accepts a intelliSense suggestion or an inline suggestion
@@ -24,7 +24,6 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
      * Format document
      */
     if (acceptanceEntry.editor) {
-        const languageContext = runtimeLanguageContext.getLanguageContext(acceptanceEntry.editor.document.languageId)
         const start = acceptanceEntry.range.start
         const end = isCloud9() ? acceptanceEntry.editor.selection.active : acceptanceEntry.range.end
 
@@ -60,10 +59,10 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
             index: acceptanceEntry.acceptIndex,
             triggerType: acceptanceEntry.triggerType,
             completionType: acceptanceEntry.completionType,
-            language: languageContext.language,
+            language: acceptanceEntry.language.id,
         })
         const codeRangeAfterFormat = new vscode.Range(start, acceptanceEntry.editor.selection.active)
-        CodeWhispererCodeCoverageTracker.getTracker(languageContext.language)?.countAcceptedTokens(
+        CodeWhispererCodeCoverageTracker.getTracker(acceptanceEntry.language)?.countAcceptedTokens(
             codeRangeAfterFormat,
             acceptanceEntry.editor.document.getText(codeRangeAfterFormat),
             acceptanceEntry.editor.document.fileName
