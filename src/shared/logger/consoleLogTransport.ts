@@ -5,7 +5,8 @@
 
 import TransportStream from 'winston-transport'
 import globals from '../extensionGlobals'
-import { MESSAGE } from './debugConsoleTransport'
+
+export const MESSAGE = Symbol.for('message') // eslint-disable-line @typescript-eslint/naming-convention
 
 interface LogEntry {
     level: string
