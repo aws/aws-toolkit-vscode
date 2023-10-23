@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Redshift: Fix the issue that Output panel always opens at VS Code launch."
+	"description": "Output panel always opens at VS Code launch."
 }
