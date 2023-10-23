@@ -1,4 +1,4 @@
 {
 	"type": "Bug Fix",
-	"description": "Redshift: 1. Remove the cache when the connection wizard is re-launched. 2. Modify the output message when a sql query is successful but doesn't return any record."
+	"description": "Redshift: Re-launched connection wizard shows the old (stale) connection."
 }

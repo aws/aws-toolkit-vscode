@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Redshift: The output message is not clear when a sql query is successful but returns no record."
+}
