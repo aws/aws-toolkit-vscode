@@ -97,7 +97,7 @@ export class RedshiftNotebookController {
                     records.push(...result.statementResultResponse.Records)
                 } else {
                     return new vscode.NotebookCellOutput([
-                        vscode.NotebookCellOutputItem.text('No records.', 'text/plain'),
+                        vscode.NotebookCellOutputItem.text('Query completed — No rows returned.', 'text/plain'),
                     ])
                 }
             } while (nextToken)
