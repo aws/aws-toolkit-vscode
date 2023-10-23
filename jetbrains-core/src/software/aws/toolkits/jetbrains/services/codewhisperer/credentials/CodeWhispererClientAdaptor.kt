@@ -217,7 +217,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 telemetryEventBuilder.userTriggerDecisionEvent {
                     it.requestId(requestContext.latencyContext.firstRequestId)
                     it.completionType(completionType.toCodeWhispererSdkType())
-                    it.programmingLanguage { builder -> builder.languageName(programmingLanguage.languageId) }
+                    it.programmingLanguage { builder -> builder.languageName(programmingLanguage.toCodeWhispererRuntimeLanguage().languageId) }
                     it.sessionId(responseContext.sessionId)
                     it.recommendationLatencyMilliseconds(e2eLatency)
                     it.suggestionState(suggestionState.toCodeWhispererSdkType())
@@ -238,7 +238,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
     ): SendTelemetryEventResponse = bearerClient().sendTelemetryEvent { requestBuilder ->
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.codeCoverageEvent {
-                it.programmingLanguage { languageBuilder -> languageBuilder.languageName(language.languageId) }
+                it.programmingLanguage { languageBuilder -> languageBuilder.languageName(language.toCodeWhispererRuntimeLanguage().languageId) }
                 it.customizationArn(customizationArn)
                 it.acceptedCharacterCount(acceptedTokenCount)
                 it.totalCharacterCount(totalTokenCount)
@@ -260,7 +260,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 it.sessionId(sessionId)
                 it.requestId(requestId)
                 it.programmingLanguage { languageBuilder ->
-                    languageBuilder.languageName(language.languageId)
+                    languageBuilder.languageName(language.toCodeWhispererRuntimeLanguage().languageId)
                 }
                 it.customizationArn(customizationArn)
                 it.modificationPercentage(modificationPercentage)
@@ -277,7 +277,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         requestBuilder.telemetryEvent { telemetryEventBuilder ->
             telemetryEventBuilder.codeScanEvent {
                 it.programmingLanguage { languageBuilder ->
-                    languageBuilder.languageName(language.languageId)
+                    languageBuilder.languageName(language.toCodeWhispererRuntimeLanguage().languageId)
                 }
                 it.codeScanJobId(if (codeScanJobId.isNullOrEmpty()) CodeWhispererClientAdaptor.INVALID_CODESCANJOBID else codeScanJobId)
                 it.timestamp(Instant.now())
