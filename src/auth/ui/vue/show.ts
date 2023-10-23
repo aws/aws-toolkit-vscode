@@ -146,21 +146,9 @@ export class AuthWebview extends VueWebview {
     }
 
     async signoutBuilderId(): Promise<void> {
-        await this.deleteSavedBuilderIdConns()
-
-        // Deletes active connection
         const builderIdConn = (await Auth.instance.listConnections()).find(isBuilderIdConnection)
+        // this will fire events to signal the secondary auths
         await signout(Auth.instance, builderIdConn)
-    }
-
-    private async deleteSavedBuilderIdConns(): Promise<void> {
-        if (CodeWhispererAuth.instance.isBuilderIdInUse()) {
-            await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
-        }
-
-        if (this.codeCatalystAuth.activeConnection) {
-            await this.codeCatalystAuth.removeSavedConnection()
-        }
     }
 
     async showResourceExplorer(): Promise<void> {
@@ -280,8 +268,7 @@ export class AuthWebview extends VueWebview {
             return
         }
 
-        await CodeWhispererAuth.instance.secondaryAuth.removeConnection()
-        await signout(Auth.instance, activeConn) // deletes active connection
+        await CodeWhispererAuth.instance.secondaryAuth.deleteConnection()
     }
 
     async signoutIdentityCenter(): Promise<void> {

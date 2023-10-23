@@ -45,6 +45,10 @@ export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConn
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
 
+export function setCodeCatalystConnectedContext(isConnected: boolean) {
+    return vscode.commands.executeCommand('setContext', 'aws.codecatalyst.connected', isConnected)
+}
+
 export class CodeCatalystAuthenticationProvider {
     public readonly onDidChangeActiveConnection = this.secondaryAuth.onDidChangeActiveConnection
 
@@ -58,7 +62,14 @@ export class CodeCatalystAuthenticationProvider {
             'CodeCatalyst',
             isValidCodeCatalystConnection
         )
-    ) {}
+    ) {
+        this.secondaryAuth.onDidChangeActiveConnection(async () => {
+            await setCodeCatalystConnectedContext(this.isConnectionValid())
+        })
+
+        // set initial context in case event does not trigger
+        setCodeCatalystConnectedContext(this.isConnectionValid())
+    }
 
     public get activeConnection() {
         return this.secondaryAuth.activeConnection
@@ -99,10 +110,6 @@ export class CodeCatalystAuthenticationProvider {
         } catch (err) {
             getLogger().verbose(`codecatalyst (git): failed to get credentials for user "${username}": %s`, err)
         }
-    }
-
-    public async removeSavedConnection() {
-        await this.secondaryAuth.removeConnection()
     }
 
     public async restore() {

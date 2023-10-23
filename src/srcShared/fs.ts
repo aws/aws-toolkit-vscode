@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
+import * as actualFs from 'fs'
+import { isCloud9 } from '../shared/extensionUtilities'
+import { ToolkitError } from '../shared/errors'
 
 const fs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -34,8 +37,17 @@ export class FileSystemCommon {
     }
 
     async mkdir(path: Uri | string): Promise<void> {
-        path = FileSystemCommon.getUri(path)
-        return fs.createDirectory(path)
+        const uriPath = FileSystemCommon.getUri(path)
+
+        // Certain URIs are not supported with vscode.workspace.fs in C9
+        // so revert to using `fs` which works.
+        if (isCloud9()) {
+            return actualFs.mkdir(uriPath.fsPath, { recursive: true }, err => {
+                throw new ToolkitError(`Failed mkdir() in Cloud9: ${uriPath.fsPath}: ${err}`)
+            })
+        }
+
+        return fs.createDirectory(uriPath)
     }
 
     async readFile(path: Uri | string): Promise<Uint8Array> {
@@ -64,10 +76,25 @@ export class FileSystemCommon {
         return this.writeFile(path, finalContent)
     }
 
-    async fileExists(path: Uri | string): Promise<boolean> {
+    async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         path = FileSystemCommon.getUri(path)
         const stat = await this.stat(path)
-        return stat === undefined ? false : stat.type === vscode.FileType.File
+
+        // No specific filetype, so only check if anything exists
+        if (fileType === undefined) {
+            return stat !== undefined
+        }
+
+        // Check if file exists and is expected filetype
+        return stat === undefined ? false : stat.type === fileType
+    }
+
+    async fileExists(path: Uri | string): Promise<boolean> {
+        return this.exists(path, vscode.FileType.File)
+    }
+
+    async directoryExists(path: Uri | string): Promise<boolean> {
+        return this.exists(path, vscode.FileType.Directory)
     }
 
     async writeFile(path: Uri | string, data: string | Uint8Array): Promise<void> {

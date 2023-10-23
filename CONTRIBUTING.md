@@ -119,6 +119,16 @@ You can also use these NPM tasks (see `npm run` for the full list):
     2. Put a breakpoint on it.
     3. Run all tests.
 
+---
+
+### Browser
+
+The AWS Toolkit VSCode extension has a support (with limited functionality) for running in the browser, eg [vscode.dev](https://vscode.dev).
+
+See [browser.md](./docs/browser.md) for working with the browser implementation of the extension.
+
+---
+
 ### Test
 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
