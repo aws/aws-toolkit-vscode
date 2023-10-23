@@ -83,6 +83,7 @@ export class AsyncCloudFormationTemplateRegistry {
     private isSetup = false
     /** The message that is shown to the user to indicate the registry is being set up */
     private setupProgressMessage: Thenable<void> | undefined = undefined
+    private setupPromise: Thenable<void> | undefined
 
     /**
      * @param asyncSetupFunc registry setup that will be run async
@@ -104,7 +105,10 @@ export class AsyncCloudFormationTemplateRegistry {
 
         const config = SamCliSettings.instance
         if (config.get('enableCodeLenses', false)) {
-            this.asyncSetupFunc(this.instance).then(() => {
+            if (!this.setupPromise) {
+                this.setupPromise = this.asyncSetupFunc(this.instance)
+            }
+            this.setupPromise.then(() => {
                 this.isSetup = true
                 return this.instance
             })
