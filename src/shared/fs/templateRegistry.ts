@@ -17,7 +17,7 @@ import globals from '../extensionGlobals'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { sleep } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
-import { PerfLog } from '../logger/logger'
+import { SamCliSettings } from '../sam/cli/samCliSettings'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     protected name: string = 'CloudFormationTemplateRegistry'
@@ -89,14 +89,8 @@ export class AsyncCloudFormationTemplateRegistry {
      */
     constructor(
         private readonly instance: CloudFormationTemplateRegistry,
-        asyncSetupFunc: (instance: CloudFormationTemplateRegistry) => Promise<void>
-    ) {
-        const perflog = new PerfLog('cfn: template registry setup')
-        asyncSetupFunc(instance).then(() => {
-            this.isSetup = true
-            perflog.done()
-        })
-    }
+        private readonly asyncSetupFunc: (instance: CloudFormationTemplateRegistry) => Promise<void>
+    ) {}
 
     /**
      * Returns the initial registry instance if setup has completed, otherwise
@@ -108,31 +102,37 @@ export class AsyncCloudFormationTemplateRegistry {
             return this.instance
         }
 
-        // Show user a message indicating setup is in progress
-        if (this.setupProgressMessage === undefined) {
-            this.setupProgressMessage = vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: localize(
-                        'AWS.codelens.waitingForTemplateRegistry',
-                        'Scanning CloudFormation templates... (except paths configured in [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
-                    ),
-                    cancellable: true,
-                },
-                async (progress, token) => {
-                    token.onCancellationRequested(() => {
-                        // Allows for new message to be created if templateRegistry variable attempted to be used again
-                        this.setupProgressMessage = undefined
-                    })
-                    getLogger().debug('cfn: getInstance() requested, still initializing')
-                    while (!this.isSetup) {
-                        await sleep(2000)
+        const config = SamCliSettings.instance
+        if (config.get('enableCodeLenses', false)) {
+            this.asyncSetupFunc(this.instance).then(() => {
+                this.isSetup = true
+                return this.instance
+            })
+            // Show user a message indicating setup is in progress
+            if (this.setupProgressMessage === undefined) {
+                this.setupProgressMessage = vscode.window.withProgress(
+                    {
+                        location: vscode.ProgressLocation.Notification,
+                        title: localize(
+                            'AWS.codelens.waitingForTemplateRegistry',
+                            'Scanning CloudFormation templates... (except paths configured in [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
+                        ),
+                        cancellable: true,
+                    },
+                    async (progress, token) => {
+                        token.onCancellationRequested(() => {
+                            // Allows for new message to be created if templateRegistry variable attempted to be used again
+                            this.setupProgressMessage = undefined
+                        })
+                        getLogger().debug('cfn: getInstance() requested, still initializing')
+                        while (!this.isSetup) {
+                            await sleep(2000)
+                        }
+                        getLogger().debug('cfn: getInstance() ready')
                     }
-                    getLogger().debug('cfn: getInstance() ready')
-                }
-            )
+                )
+            }
         }
-
         return new NoopWatcher() as unknown as CloudFormationTemplateRegistry
     }
 }
