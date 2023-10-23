@@ -21,21 +21,9 @@ import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 import { redshiftHelpUrl } from '../../shared/constants'
 
 export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
-    public constructor(
-        node: RedshiftWarehouseNode,
-        connectionType?: ConnectionType,
-        database?: string,
-        username?: string,
-        password?: string,
-        secret?: string
-    ) {
+    public constructor(node: RedshiftWarehouseNode) {
         super({
             initState: {
-                connectionType: connectionType ? connectionType : undefined,
-                database: database ? database : undefined,
-                username: username ? username : undefined,
-                password: password ? password : undefined,
-                secret: secret ? secret : undefined,
                 warehouseIdentifier: node.name,
                 warehouseType: node.warehouseType,
             },
@@ -48,13 +36,13 @@ export class RedshiftNodeConnectionWizard extends Wizard<ConnectionParams> {
         )
 
         this.form.database.bindPrompter(getDatabasePrompter, {
-            relativeOrder: 3,
+            relativeOrder: 2,
         })
         this.form.username.bindPrompter(getUsernamePrompter, {
             showWhen: state =>
                 (state.database !== undefined && state.connectionType === ConnectionType.TempCreds) ||
                 state.connectionType === ConnectionType.DatabaseUser,
-            relativeOrder: 2,
+            relativeOrder: 3,
         })
         this.form.password.bindPrompter(getPasswordPrompter, {
             showWhen: state => state.username !== undefined && state.connectionType === ConnectionType.DatabaseUser,
@@ -121,7 +109,7 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
                 }
             }
         })
-        this.form.connectionType.bindPrompter(state => getConnectionTypePrompterNB(state?.warehouseType), {
+        this.form.connectionType.bindPrompter(state => getConnectionTypePrompter(undefined, state?.warehouseType), {
             relativeOrder: 3,
         })
 
@@ -134,12 +122,12 @@ export class NotebookConnectionWizard extends Wizard<ConnectionParams> {
         })
         this.form.password.bindPrompter(getPasswordPrompter, {
             showWhen: state => state.username !== undefined && state.connectionType === ConnectionType.DatabaseUser,
-            relativeOrder: 5,
+            relativeOrder: 6,
         })
 
         this.form.secret.bindPrompter(state => getSecretPrompter(state.region!.id), {
             showWhen: state => state.database !== undefined && state.connectionType === ConnectionType.SecretsManager,
-            relativeOrder: 6,
+            relativeOrder: 5,
         })
     }
 }
@@ -215,16 +203,6 @@ function getConnectionTypePrompter(
         const selectedItems = warehouseType === RedshiftWarehouseType.SERVERLESS ? [items[0], items[1]] : items
         return createSelectConnectionQuickPick(selectedItems)
     }
-}
-
-function getConnectionTypePrompterNB(warehouseType?: RedshiftWarehouseType): Prompter<ConnectionType> {
-    const items: DataQuickPickItem<ConnectionType>[] = Object.values(ConnectionType).map(type => ({
-        label: type,
-        data: type,
-    }))
-    // Determine which items to use based on warehouseType
-    const selectedItems = warehouseType === RedshiftWarehouseType.SERVERLESS ? [items[0], items[1]] : items
-    return createSelectConnectionQuickPick(selectedItems)
 }
 
 async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
