@@ -58,6 +58,7 @@ export class AuthUtil {
         }
         this._isCustomizationFeatureEnabled = value
         vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
     public readonly secondaryAuth = getSecondaryAuth(
@@ -98,7 +99,7 @@ export class AuthUtil {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
                 if (shouldShow) {
                     vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
-                    prompts.update('codeWhispererNewWelcomeMessage', true)
+                    prompts.disablePrompt('codeWhispererNewWelcomeMessage')
                 }
             }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
