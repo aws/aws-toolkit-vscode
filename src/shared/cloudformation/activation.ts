@@ -69,7 +69,7 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
     const registrySetupFunc = async (registry: CloudFormationTemplateRegistry) => {
         await registry.addExcludedPattern(devfileExcludePattern)
         await registry.addExcludedPattern(templateFileExcludePattern)
-        await registry.addWatchPattern(templateFileGlobPattern)
+        await registry.addWatchPatterns([templateFileGlobPattern])
         await registry.watchUntitledFiles()
     }
 

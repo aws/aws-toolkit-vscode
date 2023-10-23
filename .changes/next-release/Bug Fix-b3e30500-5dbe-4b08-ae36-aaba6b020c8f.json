@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Improved performance of CloudFormation file watcher startup"
+}
