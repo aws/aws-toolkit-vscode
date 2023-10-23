@@ -209,17 +209,17 @@ export async function activate(context: ExtContext): Promise<void> {
         }),
 
         vscode.languages.registerHoverProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.platformLanguageIds],
             ReferenceHoverProvider.instance
         ),
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
         showReferenceLog.register(context),
         vscode.languages.registerCodeLensProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.platformLanguageIds],
             ReferenceInlineProvider.instance
         ),
         vscode.languages.registerCodeLensProvider(
-            [...CodeWhispererConstants.supportedLanguages, { scheme: 'untitled' }],
+            [...CodeWhispererConstants.platformLanguageIds, { scheme: 'untitled' }],
             ImportAdderProvider.instance
         )
     )
@@ -344,7 +344,7 @@ export async function activate(context: ExtContext): Promise<void> {
          * Manual trigger
          */
         context.extensionContext.subscriptions.push(
-            vscode.languages.registerCompletionItemProvider([...CodeWhispererConstants.supportedLanguages], {
+            vscode.languages.registerCompletionItemProvider([...CodeWhispererConstants.platformLanguageIds], {
                 async provideCompletionItems(
                     document: vscode.TextDocument,
                     position: vscode.Position,

@@ -14,41 +14,43 @@ export class RuntimeLanguageContext {
      * Key: vscLanguageId
      * Value: CodeWhispererLanguageId
      */
-    private supportedLanguageMap: ConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>
+    private supportedLanguageMap: ConstantMap<CodeWhispererConstants.PlatformLanguageId, CodewhispererLanguage>
 
     /**
      * A map storing CodeWhisperer supported programming language with key: vscLanguageId and value: language extension
      * Key: vscLanguageId
      * Value: language extension
      */
-    private supportedLanguageExtensionMap: ConstantMap<CodeWhispererConstants.SupportedLanguage, string>
+    private supportedLanguageExtensionMap: ConstantMap<CodeWhispererConstants.PlatformLanguageId, string>
 
     // A set contains vscode languageId and CodeWhispererLanguage
     private supportedLanguageSet = new Set<string>()
 
     constructor() {
-        this.supportedLanguageMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, CodewhispererLanguage>({
-            java: 'java',
-            python: 'python',
-            javascriptreact: 'jsx',
-            javascript: 'javascript',
-            typescript: 'typescript',
-            typescriptreact: 'tsx',
-            csharp: 'csharp',
-            c: 'c',
-            c_cpp: 'cpp',
-            cpp: 'cpp',
-            go: 'go',
-            kotlin: 'kotlin',
-            php: 'php',
-            ruby: 'ruby',
-            rust: 'rust',
-            scala: 'scala',
-            sh: 'shell',
-            shellscript: 'shell',
-            sql: 'sql',
-        })
-        this.supportedLanguageExtensionMap = createConstantMap<CodeWhispererConstants.SupportedLanguage, string>({
+        this.supportedLanguageMap = createConstantMap<CodeWhispererConstants.PlatformLanguageId, CodewhispererLanguage>(
+            {
+                java: 'java',
+                python: 'python',
+                javascriptreact: 'jsx',
+                javascript: 'javascript',
+                typescript: 'typescript',
+                typescriptreact: 'tsx',
+                csharp: 'csharp',
+                c: 'c',
+                c_cpp: 'cpp',
+                cpp: 'cpp',
+                go: 'go',
+                kotlin: 'kotlin',
+                php: 'php',
+                ruby: 'ruby',
+                rust: 'rust',
+                scala: 'scala',
+                sh: 'shell',
+                shellscript: 'shell',
+                sql: 'sql',
+            }
+        )
+        this.supportedLanguageExtensionMap = createConstantMap<CodeWhispererConstants.PlatformLanguageId, string>({
             java: 'java',
             python: 'py',
             javascriptreact: 'jsx',
