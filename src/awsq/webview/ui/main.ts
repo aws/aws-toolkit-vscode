@@ -162,13 +162,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }
 
             if (welcomeFollowUpType === 'continue-to-chat') {
-                mynahUI.updateStore(tabID, {
-                    chatItems: [
-                        {
-                            type: ChatItemType.ANSWER,
-                            body: 'Ok, please write your question below.',
-                        },
-                    ],
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER,
+                    body: 'Ok, please write your question below.',
                 })
                 tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
                 return
@@ -262,7 +258,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             }
             if (prompt.prompt.match(/\/assign/)) {
                 let affectedTabId = tabID
-                const realPromptText = prompt.prompt?.replace('/assign', '').trim()
+                const realPromptText = prompt.escapedPrompt?.replace('/assign', '').trim()
 
                 if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
                     affectedTabId = mynahUI.updateStore('', {
@@ -291,7 +287,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                     promptInputPlaceholder: 'Assign a code task',
                 })
 
-                if (realPromptText !== '') {
+                if (realPromptText !== undefined && realPromptText !== '') {
                     connector.requestGenerativeAIAnswer(affectedTabId, {
                         chatMessage: realPromptText,
                     })
@@ -309,7 +305,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 
             mynahUI.addChatItem(tabID, {
                 type: ChatItemType.PROMPT,
-                body: prompt.prompt,
+                body: prompt.escapedPrompt,
                 ...(prompt.attachment !== undefined
                     ? {
                           relatedContent: {
