@@ -21,7 +21,6 @@ import { showViewLogsMessage } from '../shared/utilities/messages'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     const outputChannel = globals.outputChannel
-    outputChannel.show(true)
 
     if ('NotebookEdit' in vscode) {
         ctx.extensionContext.subscriptions.push(
@@ -86,6 +85,7 @@ function getNotebookConnectClickedHandler(
             return
         }
         redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(connectionParams.region!.id)
+        outputChannel.show(true)
         try {
             const redshiftClient = (redshiftNotebookController.redshiftClient = new DefaultRedshiftClient(
                 connectionParams.region!.id
@@ -134,6 +134,7 @@ function getEditConnectionHandler(outputChannel: vscode.OutputChannel) {
                 await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', redshiftWarehouseNode)
             }
         } catch (error) {
+            outputChannel.show(true)
             outputChannel.appendLine(
                 `Redshift: Failed to fetch databases for warehouse ${redshiftWarehouseNode.name} - ${
                     (error as Error).message

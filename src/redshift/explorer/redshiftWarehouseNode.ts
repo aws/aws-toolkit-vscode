@@ -147,6 +147,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     await updateConnectionParamsState(this.arn, this.connectionParams)
                     return childNodes
                 } catch (error) {
+                    globals.outputChannel.show(true)
                     const msg = `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
                         (error as Error).message
                     }`
