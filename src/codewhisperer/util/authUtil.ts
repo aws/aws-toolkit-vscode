@@ -27,7 +27,7 @@ import { getLogger } from '../../shared/logger'
 export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
 
-export const isValidCodeWhispererConnection = (conn: Connection): conn is Connection => {
+export const isValidCodeWhispererConnection = (conn?: Connection): conn is Connection => {
     if (isCloud9('classic')) {
         return isIamConnection(conn)
     }
