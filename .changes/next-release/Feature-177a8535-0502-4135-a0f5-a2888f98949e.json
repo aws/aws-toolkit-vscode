@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "Detect and notify about invalid settings.json #3910"
+}
