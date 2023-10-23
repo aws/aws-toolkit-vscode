@@ -14,7 +14,7 @@ import {
 } from '../../shared/clients/codecatalystClient'
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
 import { Auth } from '../../auth/auth'
-import { CodeCatalystAuthenticationProvider, isValidCodeCatalystConnection } from '../../codecatalyst/auth'
+import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
@@ -30,7 +30,12 @@ import { toStream } from '../../shared/utilities/collectionUtils'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import { getLogger } from '../../shared/logger'
 import { isAwsError } from '../../shared/errors'
-import { codecatalystScopes, createBuilderIdProfile, SsoConnection } from '../../auth/connection'
+import {
+    codecatalystScopes,
+    createBuilderIdProfile,
+    isValidCodeCatalystConnection,
+    SsoConnection,
+} from '../../auth/connection'
 
 let spaceName: CodeCatalystOrg['name']
 let projectName: CodeCatalystProject['name']
