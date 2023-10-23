@@ -56,9 +56,9 @@ describe('redshiftWarehouseNode', function () {
             undefined
         )
         const redshiftNode = new RedshiftNode(redshiftClient)
-        let connectionWizardStub: RedshiftNodeConnectionWizard
         let listDatabasesStub: sinon.SinonStub
         let warehouseNode: RedshiftWarehouseNode
+        let connectionWizardStub: sinon.SinonStub
 
         beforeEach(function () {
             listDatabasesStub = sandbox.stub()
@@ -67,16 +67,11 @@ describe('redshiftWarehouseNode', function () {
 
         afterEach(function () {
             sandbox.reset()
+            connectionWizardStub.restore()
         })
-
         it('gets databases for a warehouse and adds a start button', async () => {
-            connectionWizardStub = { run: () => Promise.resolve(connectionParams) } as RedshiftNodeConnectionWizard
-            warehouseNode = new RedshiftWarehouseNode(
-                redshiftNode,
-                resourceNode,
-                RedshiftWarehouseType.PROVISIONED,
-                connectionWizardStub
-            )
+            connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(connectionParams)
+            warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
             listDatabasesStub.returns({ promise: () => Promise.resolve(expectedResponse) })
 
             const childNodes = await warehouseNode.getChildren()
@@ -85,13 +80,8 @@ describe('redshiftWarehouseNode', function () {
         })
 
         it('gets databases for a warehouse, adds a start button and a load more button if there are more results', async () => {
-            connectionWizardStub = { run: () => Promise.resolve(connectionParams) } as RedshiftNodeConnectionWizard
-            warehouseNode = new RedshiftWarehouseNode(
-                redshiftNode,
-                resourceNode,
-                RedshiftWarehouseType.PROVISIONED,
-                connectionWizardStub
-            )
+            connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(connectionParams)
+            warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
             listDatabasesStub.returns({ promise: () => Promise.resolve(expectedResponseWithNextToken) })
 
             const childNodes = await warehouseNode.getChildren()
@@ -100,25 +90,15 @@ describe('redshiftWarehouseNode', function () {
         })
 
         it('shows a node with retry if user exits wizard', async () => {
-            connectionWizardStub = { run: () => Promise.resolve(undefined) } as RedshiftNodeConnectionWizard
-            warehouseNode = new RedshiftWarehouseNode(
-                redshiftNode,
-                resourceNode,
-                RedshiftWarehouseType.PROVISIONED,
-                connectionWizardStub
-            )
+            connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(undefined)
+            warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
             const childNodes = await warehouseNode.getChildren()
             verifyRetryNode(childNodes)
         })
 
         it('shows a node with retry if there is error fetching databases', async () => {
-            connectionWizardStub = { run: () => Promise.resolve(connectionParams) } as RedshiftNodeConnectionWizard
-            warehouseNode = new RedshiftWarehouseNode(
-                redshiftNode,
-                resourceNode,
-                RedshiftWarehouseType.PROVISIONED,
-                connectionWizardStub
-            )
+            connectionWizardStub = sinon.stub(RedshiftNodeConnectionWizard.prototype, 'run').resolves(connectionParams)
+            warehouseNode = new RedshiftWarehouseNode(redshiftNode, resourceNode, RedshiftWarehouseType.PROVISIONED)
             listDatabasesStub.returns({ promise: () => Promise.reject('Failed') })
             const childNodes = await warehouseNode.getChildren()
             verifyRetryNode(childNodes)

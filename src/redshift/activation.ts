@@ -9,7 +9,7 @@ import { RedshiftNotebookSerializer } from './notebook/redshiftNotebookSerialize
 import { RedshiftNotebookController } from './notebook/redshiftNotebookController'
 import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
 import { Commands } from '../shared/vscode/commands2'
-import { NotebookConnectionWizard } from './wizards/connectionWizard'
+import { NotebookConnectionWizard, RedshiftNodeConnectionWizard } from './wizards/connectionWizard'
 import { ConnectionParams, ConnectionType } from './models/models'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { localize } from '../shared/utilities/vsCodeUtils'
@@ -119,7 +119,7 @@ function getNotebookConnectClickedHandler(
 function getEditConnectionHandler(outputChannel: vscode.OutputChannel) {
     return async (redshiftWarehouseNode: RedshiftWarehouseNode) => {
         try {
-            const connectionParams = await redshiftWarehouseNode.connectionWizard!.run()
+            const connectionParams = await new RedshiftNodeConnectionWizard(redshiftWarehouseNode).run()
             if (connectionParams) {
                 if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
                     const secretArnFetched =

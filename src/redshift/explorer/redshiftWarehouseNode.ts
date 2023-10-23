@@ -43,8 +43,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
-        public readonly warehouseType: RedshiftWarehouseType,
-        public readonly connectionWizard?: RedshiftNodeConnectionWizard
+        public readonly warehouseType: RedshiftWarehouseType
     ) {
         super(redshiftWarehouse.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = redshiftWarehouse.name
@@ -52,7 +51,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.arn = redshiftWarehouse.arn
         this.name = redshiftWarehouse.name
         this.redshiftClient = parent.redshiftClient
-        this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
         const existingConnectionParams = getConnectionParamsState(this.arn)
         if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
             this.connectionParams = existingConnectionParams as ConnectionParams
@@ -125,7 +123,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     this.connectionParams = existingConnectionParams as ConnectionParams
                 } else {
                     // No connectionParams: trigger connection wizard to get user input
-                    this.connectionParams = await this.connectionWizard!.run()
+                    this.connectionParams = await new RedshiftNodeConnectionWizard(this).run()
                     if (!this.connectionParams) {
                         return this.getClickToEstablishConnectionNode()
                     }
