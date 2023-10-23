@@ -78,6 +78,19 @@ export class RuntimeLanguageContext {
         keys.forEach(item => this.supportedLanguageSet.add(item))
     }
 
+    public mapToCodeWhispererRuntimeLanguage(language: CodewhispererLanguage): CodewhispererLanguage {
+        switch (language) {
+            case 'jsx':
+                return 'javascript'
+
+            case 'tsx':
+                return 'typescript'
+
+            default:
+                return language
+        }
+    }
+
     /**
      *
      * @param vscLanguageId : official vscode languageId

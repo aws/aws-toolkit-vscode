@@ -340,13 +340,6 @@ export class TelemetryHelper {
             e2eLatency = performance.now() - session.invokeSuggestionStartTime
         }
 
-        let codewhispererRuntimeLanguage: string = this.sessionDecisions[0].codewhispererLanguage
-        if (codewhispererRuntimeLanguage === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (codewhispererRuntimeLanguage === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -355,7 +348,9 @@ export class TelemetryHelper {
                         requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: codewhispererRuntimeLanguage,
+                            languageName: runtimeLanguageContext.mapToCodeWhispererRuntimeLanguage(
+                                this.sessionDecisions[0].codewhispererLanguage
+                            ),
                         },
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
@@ -601,7 +596,9 @@ export class TelemetryHelper {
                 telemetryEvent: {
                     codeScanEvent: {
                         programmingLanguage: {
-                            languageName: languageId,
+                            languageName: runtimeLanguageContext.mapToCodeWhispererRuntimeLanguage(
+                                languageId as CodewhispererLanguage
+                            ),
                         },
                         codeScanJobId: jobId,
                         timestamp: new Date(Date.now()),

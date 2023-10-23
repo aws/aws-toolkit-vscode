@@ -133,20 +133,13 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         })
 
-        let codewhispererRuntimeLanguage: string = this._language
-        if (this._language === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (this._language === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
                     codeCoverageEvent: {
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: codewhispererRuntimeLanguage,
+                            languageName: runtimeLanguageContext.mapToCodeWhispererRuntimeLanguage(this._language),
                         },
                         acceptedCharacterCount: acceptedTokens,
                         totalCharacterCount: totalTokens,
