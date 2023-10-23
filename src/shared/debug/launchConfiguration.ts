@@ -26,6 +26,7 @@ import { getLogger } from '../logger'
 import { makeFailedWriteMessage, showViewLogsMessage } from '../utilities/messages'
 import { launchConfigDocUrl } from '../constants'
 import { openUrl } from '../utilities/vsCodeUtils'
+import globals from '../extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
@@ -68,11 +69,12 @@ export class LaunchConfiguration {
     /**
      * Returns all valid Sam Debug Configurations.
      */
-    public getSamDebugConfigurations(): AwsSamDebuggerConfiguration[] {
+    public async getSamDebugConfigurations(): Promise<AwsSamDebuggerConfiguration[]> {
         const configs = this.getDebugConfigurations().filter(o =>
             isAwsSamDebugConfiguration(o)
         ) as AwsSamDebuggerConfiguration[]
-        return configs.filter(o => this.samValidator.validate(o)?.isValid)
+        const registry = await globals.templateRegistry
+        return configs.filter(o => this.samValidator.validate(o, registry)?.isValid)
     }
 
     /**
@@ -127,8 +129,8 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
     }
 }
 
-function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetProperties[] {
-    return _(launchConfig.getSamDebugConfigurations())
+async function getSamCodeTargets(launchConfig: LaunchConfiguration): Promise<CodeTargetProperties[]> {
+    return _(await launchConfig.getSamDebugConfigurations())
         .map(samConfig => samConfig.invokeTarget)
         .filter(isCodeTargetProperties)
         .value()
@@ -141,18 +143,18 @@ function getSamCodeTargets(launchConfig: LaunchConfiguration): CodeTargetPropert
  * @param launchConfig Launch config to check
  * @param type  target type ('api' or 'template'), or undefined for 'both'
  */
-export function getConfigsMappedToTemplates(
+export async function getConfigsMappedToTemplates(
     launchConfig: LaunchConfiguration,
     type: AwsSamTargetType | undefined
-): Set<AwsSamDebuggerConfiguration> {
+): Promise<Set<AwsSamDebuggerConfiguration>> {
     if (type === 'code') {
         throw Error()
     }
     const folder = launchConfig.workspaceFolder
     // Launch configs with target=template or target=api.
-    const templateConfigs = launchConfig
-        .getSamDebugConfigurations()
-        .filter(o => isTemplateTargetProperties(o.invokeTarget))
+    const templateConfigs = (await launchConfig.getSamDebugConfigurations()).filter(o =>
+        isTemplateTargetProperties(o.invokeTarget)
+    )
     const filtered = templateConfigs.filter(
         t =>
             (type === undefined || t.invokeTarget.target === type) &&
@@ -175,8 +177,8 @@ export function getConfigsMappedToTemplates(
  *
  * @param launchConfig Launch config to check
  */
-export function getReferencedHandlerPaths(launchConfig: LaunchConfiguration): Set<string> {
-    const existingSamCodeTargets = getSamCodeTargets(launchConfig)
+export async function getReferencedHandlerPaths(launchConfig: LaunchConfiguration): Promise<Set<string>> {
+    const existingSamCodeTargets = await getSamCodeTargets(launchConfig)
 
     return _(existingSamCodeTargets)
         .map(target => {
