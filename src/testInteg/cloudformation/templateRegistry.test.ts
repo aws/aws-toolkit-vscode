@@ -103,7 +103,7 @@ describe('CloudFormation Template Registry', async function () {
         await registry.addWatchPatterns(['first/set'])
         await assert.rejects(async () => {
             await registry.addWatchPatterns(['second/set'])
-        }, 'CloudFormationTemplateRegistry: watch patterns have already been established')
+        }, new Error('CloudFormationTemplateRegistry: watch patterns have already been established'))
     })
 })
 
