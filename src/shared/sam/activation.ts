@@ -168,14 +168,16 @@ async function activateCodeLensRegistry(context: ExtContext) {
 
         //
         // "**/…" string patterns watch recursively across _all_ workspace
-        // folders (see documentation for addWatchPattern()).
+        // folders (see documentation for addWatchPatterns()).
         //
-        await registry.addWatchPattern(pyLensProvider.pythonBasePattern)
-        await registry.addWatchPattern(jsLensProvider.javascriptBasePattern)
-        await registry.addWatchPattern(csLensProvider.csharpBasePattern)
-        await registry.addWatchPattern(goLensProvider.goBasePattern)
-        await registry.addWatchPattern(javaLensProvider.gradleBasePattern)
-        await registry.addWatchPattern(javaLensProvider.mavenBasePattern)
+        await registry.addWatchPatterns([
+            pyLensProvider.pythonBasePattern,
+            jsLensProvider.javascriptBasePattern,
+            csLensProvider.csharpBasePattern,
+            goLensProvider.goBasePattern,
+            javaLensProvider.gradleBasePattern,
+            javaLensProvider.mavenBasePattern,
+        ])
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
