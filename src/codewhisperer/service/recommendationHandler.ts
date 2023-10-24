@@ -301,8 +301,10 @@ export class RecommendationHandler {
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
             } else {
-                // TODO: Double-check with service side that this is an AccessDeniedException
-                if (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') {
+                if (
+                    (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||
+                    errorCode === 'ResourceNotFoundException'
+                ) {
                     getLogger()
                         .debug(`The selected customization is no longer available. Retrying with the default model.
                     Failed request id: ${requestId}`)
