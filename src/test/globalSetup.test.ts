@@ -62,7 +62,7 @@ export const mochaHooks = {
     async beforeEach(this: Mocha.Context) {
         // Set every test up so that TestLogger is the logger used by toolkit code
         testLogger = setupTestLogger()
-        globals.templateRegistry = new CloudFormationTemplateRegistry()
+        globals.templateRegistry = (async () => new CloudFormationTemplateRegistry())()
         globals.codelensRootRegistry = new CodelensRootRegistry()
 
         // In general, we do not want to "fake" the `vscode` API. The only exception is for things
@@ -85,7 +85,7 @@ export const mochaHooks = {
 
         await testUtil.closeAllEditors()
     },
-    afterEach(this: Mocha.Context) {
+    async afterEach(this: Mocha.Context) {
         if (openExternalStub.called && openExternalStub.returned(sinon.match.typeOf('undefined'))) {
             throw new Error(
                 `Test called openExternal(${
@@ -98,7 +98,8 @@ export const mochaHooks = {
         teardownTestLogger(this.currentTest?.fullTitle() as string)
         testLogger = undefined
         resetTestWindow()
-        globals.templateRegistry.dispose()
+        const r = await globals.templateRegistry
+        r.dispose()
         globals.codelensRootRegistry.dispose()
         globalSandbox.restore()
     },

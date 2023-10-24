@@ -167,7 +167,7 @@ describe('SamDebugConfigurationProvider', async function () {
         if (tempFolderSimilarName) {
             await remove(tempFolderSimilarName)
         }
-        globals.templateRegistry.reset()
+        ;(await globals.templateRegistry).reset()
         sandbox.restore()
     })
 
@@ -180,7 +180,7 @@ describe('SamDebugConfigurationProvider', async function () {
 
             // Malformed template.yaml:
             testutil.toFile('bogus', tempFile.fsPath)
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             assert.deepStrictEqual(await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder), [])
         })
 
@@ -188,14 +188,14 @@ describe('SamDebugConfigurationProvider', async function () {
             const bigYamlStr = `${makeSampleSamTemplateYaml(true)}\nTestResource2:\n .   Type: AWS::Serverless::Api`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
 
         it('returns one item if a template with one resource is in the workspace', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true), tempFile.fsPath)
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             assert.strictEqual(provided!.length, 1)
@@ -211,7 +211,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 resourceName: resources[0],
             })}\n${makeSampleYamlResource({ resourceName: resources[1] })}`
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
             if (provided) {
@@ -237,9 +237,9 @@ describe('SamDebugConfigurationProvider', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: resources[1] }), nestedYaml.fsPath)
             testutil.toFile(makeSampleSamTemplateYaml(true, { resourceName: badResourceName }), similarNameYaml.fsPath)
 
-            await globals.templateRegistry.addItemToRegistry(tempFile)
-            await globals.templateRegistry.addItemToRegistry(nestedYaml)
-            await globals.templateRegistry.addItemToRegistry(similarNameYaml)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(nestedYaml)
+            await (await globals.templateRegistry).addItemToRegistry(similarNameYaml)
 
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.notStrictEqual(provided, undefined)
@@ -261,7 +261,7 @@ describe('SamDebugConfigurationProvider', async function () {
                         Method: get`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 2)
             assert.strictEqual(provided![1].invokeTarget.target, API_TARGET_TYPE)
@@ -276,7 +276,7 @@ describe('SamDebugConfigurationProvider', async function () {
                     Type: HttpApi`
 
             testutil.toFile(bigYamlStr, tempFile.fsPath)
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             const provided = await debugConfigProvider.provideDebugConfigurations(fakeWorkspaceFolder)
             assert.strictEqual(provided!.length, 1)
         })
@@ -289,7 +289,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 const folder = testutil.getWorkspaceFolder(testutil.getProjectDir())
                 const launchConfig = await getConfig(
                     debugConfigProvider,
-                    globals.templateRegistry,
+                    await globals.templateRegistry,
                     'testFixtures/workspaceFolder/js-plain-sam-app/'
                 )
                 const config = launchConfig.config as AwsSamDebuggerConfiguration & {
@@ -309,7 +309,7 @@ describe('SamDebugConfigurationProvider', async function () {
         it('failure modes', async function () {
             const config = await getConfig(
                 debugConfigProvider,
-                globals.templateRegistry,
+                await globals.templateRegistry,
                 'testFixtures/workspaceFolder/csharp6-zip/'
             )
 
@@ -432,7 +432,7 @@ describe('SamDebugConfigurationProvider', async function () {
         })
 
         it("rejects when resolving template debug configurations with a template that doesn't have the set resource", async () => {
-            await createAndRegisterYaml({}, tempFile, globals.templateRegistry)
+            await createAndRegisterYaml({}, tempFile, await globals.templateRegistry)
             await assert.rejects(() =>
                 debugConfigProvider.makeConfig(undefined, createFakeConfig({ templatePath: tempFile.fsPath }))
             )
@@ -442,7 +442,7 @@ describe('SamDebugConfigurationProvider', async function () {
             await createAndRegisterYaml(
                 { resourceName, runtime: 'moreLikeRanOutOfTime' },
                 tempFile,
-                globals.templateRegistry
+                await globals.templateRegistry
             )
             await assert.rejects(
                 () =>
@@ -462,7 +462,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             await assert.rejects(() =>
                 debugConfigProvider.makeConfig(undefined, {
                     type: AWS_SAM_DEBUG_TYPE,
@@ -491,7 +491,7 @@ describe('SamDebugConfigurationProvider', async function () {
         it('supports workspace-relative template path ("./foo.yaml")', async function () {
             testutil.toFile(makeSampleSamTemplateYaml(true, { runtime: 'nodejs18.x' }), tempFile.fsPath)
             // Register with *full* path.
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             // Simulates launch.json:
             //     "invokeTarget": {
             //         "target": "./test.yaml",
@@ -853,7 +853,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -980,7 +980,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -1119,7 +1119,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -1415,7 +1415,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1514,7 +1514,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1778,7 +1778,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
@@ -1933,7 +1933,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
@@ -2242,7 +2242,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2368,7 +2368,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2460,7 +2460,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2739,7 +2739,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 useIkpdb: true,
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await globals.templateRegistry.addItemToRegistry(templatePath)
+            await (await globals.templateRegistry).addItemToRegistry(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2885,7 +2885,7 @@ describe('SamDebugConfigurationProvider', async function () {
                 }),
                 tempFile.fsPath
             )
-            await globals.templateRegistry.addItemToRegistry(tempFile)
+            await (await globals.templateRegistry).addItemToRegistry(tempFile)
             const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 
@@ -3297,7 +3297,8 @@ describe('debugConfiguration', function () {
 
     afterEach(async function () {
         await remove(tempFolder)
-        globals.templateRegistry.reset()
+        const r = await globals.templateRegistry
+        r.reset()
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=code', async function () {
@@ -3319,15 +3320,15 @@ describe('debugConfiguration', function () {
             },
         }
 
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
 
         // Config with relative path:
         config.invokeTarget.projectRoot = relativePath
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Config with absolute path:
         config.invokeTarget.projectRoot = fullPath
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=template', async function () {
@@ -3358,14 +3359,14 @@ describe('debugConfiguration', function () {
 
         // Template with relative path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
-        await globals.templateRegistry.addItemToRegistry(tempFile)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
+        await (await globals.templateRegistry).addItemToRegistry(tempFile)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
-        await globals.templateRegistry.addItemToRegistry(tempFile)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        await (await globals.templateRegistry).addItemToRegistry(tempFile)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Template with refs that don't override:
         const tempFileRefs = vscode.Uri.file(path.join(tempFolder, 'testRefs.yaml'))
@@ -3386,9 +3387,9 @@ describe('debugConfiguration', function () {
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: 'handler' }, paramStr),
             tempFileRefs.fsPath
         )
-        await globals.templateRegistry.addItemToRegistry(tempFileRefs)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
+        await (await globals.templateRegistry).addItemToRegistry(tempFileRefs)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
 
         // Template with refs that overrides handler via default parameter value in YAML template
         const tempFileDefaultRefs = vscode.Uri.file(path.join(tempFolder, 'testDefaultRefs.yaml'))
@@ -3413,9 +3414,9 @@ describe('debugConfiguration', function () {
             ),
             tempFileDefaultRefs.fsPath
         )
-        await globals.templateRegistry.addItemToRegistry(tempFileDefaultRefs)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
+        await (await globals.templateRegistry).addItemToRegistry(tempFileDefaultRefs)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
 
         // Template with refs that overrides handler via override value in launch config
         const tempFileOverrideRef = vscode.Uri.file(path.join(tempFolder, 'testOverrideRefs.yaml'))
@@ -3435,8 +3436,8 @@ describe('debugConfiguration', function () {
             makeSampleSamTemplateYaml(true, { codeUri: fullPath, handler: '!Ref override' }, paramStrNoDefaultOverride),
             tempFileOverrideRef.fsPath
         )
-        await globals.templateRegistry.addItemToRegistry(tempFileOverrideRef)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
+        await (await globals.templateRegistry).addItemToRegistry(tempFileOverrideRef)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
 })
