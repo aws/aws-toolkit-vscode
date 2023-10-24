@@ -115,14 +115,14 @@ export default defineComponent({
         async getData() {
             const issue = await client.getIssue()
             if (issue) {
-                const [suggestedFix] = issue.remediation.suggestedFixes
+                const [suggestedFix] = issue.suggestedFixes
 
                 this.title = issue.title
                 this.detectorId = issue.detectorId
                 this.detectorName = issue.detectorName
                 this.relatedVulnerabilities = issue.relatedVulnerabilities
                 this.severity = issue.severity
-                this.recommendationText = issue.remediation.recommendation.text
+                this.recommendationText = issue.recommendation.text
                 if (suggestedFix) {
                     this.isFixAvailable = true
                     this.suggestedFix = suggestedFix.code

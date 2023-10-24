@@ -43,7 +43,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.supportHtml = true
         markdownString.supportThemeIcons = true
 
-        const [suggestedFix] = issue.remediation.suggestedFixes
+        const [suggestedFix] = issue.suggestedFixes
 
         if (suggestedFix) {
             markdownString.appendMarkdown(

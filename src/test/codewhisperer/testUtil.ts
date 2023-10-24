@@ -178,15 +178,13 @@ export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeSca
         detectorName: 'detectorName',
         relatedVulnerabilities: ['CWE-1'],
         severity: 'High',
-        remediation: {
-            recommendation: {
-                text: 'recommendationText',
-                url: 'recommendationUrl',
-            },
-            suggestedFixes: [
-                { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
-            ],
+        recommendation: {
+            text: 'recommendationText',
+            url: 'recommendationUrl',
         },
+        suggestedFixes: [
+            { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
+        ],
         ...overrides,
     }
 }

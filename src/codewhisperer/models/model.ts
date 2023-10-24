@@ -173,9 +173,19 @@ export interface RecommendationDescription {
     markdown: string
 }
 
+export interface Recommendation {
+    text: string
+    url: string
+}
+
 export interface SuggestedFix {
     description: string
     code: string
+}
+
+export interface Remediation {
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
 }
 
 export interface RawCodeScanIssue {
@@ -184,6 +194,11 @@ export interface RawCodeScanIssue {
     endLine: number
     title: string
     description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    relatedVulnerabilities: string[]
+    severity: string
+    remediation: Remediation
 }
 
 export interface CodeScanIssue {
@@ -196,17 +211,8 @@ export interface CodeScanIssue {
     detectorName: string
     relatedVulnerabilities: string[]
     severity: string
-    remediation: Remediation
-}
-
-export interface Remediation {
     recommendation: Recommendation
     suggestedFixes: SuggestedFix[]
-}
-
-export interface Recommendation {
-    text: string
-    url: string
 }
 
 export interface AggregatedCodeScanIssue {

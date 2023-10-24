@@ -22,10 +22,7 @@ describe('securityIssueHoverProvider', () => {
 
     it('should return hover for each issue for the current position', () => {
         sinon.stub(vscode.Uri, 'joinPath').callsFake(() => vscode.Uri.parse('myPath'))
-        const issues = [
-            createCodeScanIssue(),
-            createCodeScanIssue({ remediation: { recommendation: { text: '', url: '' }, suggestedFixes: [] } }),
-        ]
+        const issues = [createCodeScanIssue(), createCodeScanIssue({ suggestedFixes: [] })]
 
         securityIssueHoverProvider.issues = [
             {
