@@ -39,7 +39,14 @@ export const defaultInputboxOptions: vscode.InputBoxOptions = {
  */
 export function createInputBox(options?: ExtendedInputBoxOptions): InputBoxPrompter {
     const inputBox = vscode.window.createInputBox() as InputBox
-    assign({ ...defaultInputboxOptions, ...options }, inputBox)
+    assign(
+        {
+            ...defaultInputboxOptions,
+            ...options,
+            valueSelection: options?.valueSelection as InputBox['valueSelection'],
+        },
+        inputBox
+    )
     inputBox.buttons = options?.buttons ?? []
 
     const prompter = new InputBoxPrompter(inputBox)

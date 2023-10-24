@@ -130,8 +130,8 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     provideInlineCompletionItems(
         document: vscode.TextDocument,
         position: vscode.Position,
-        context: vscode.InlineCompletionContext,
-        token: vscode.CancellationToken
+        _context: vscode.InlineCompletionContext,
+        _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
         if (position.line < 0 || position.isBefore(this.startPos)) {
             application()._clearCodeWhispererUIListener.fire()
