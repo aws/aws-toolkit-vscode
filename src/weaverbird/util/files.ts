@@ -15,6 +15,8 @@ import { GitIgnoreFilter } from './gitignore'
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
+import { ProjectSizeTooLargeError } from '../errors'
+import { projectSizeLimit } from '../limits'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -77,7 +79,16 @@ export async function prepareRepoData(repoRootPath: string) {
         getExcludePattern()
     )
     const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
+
+    let totalBytes = 0
     for (const file of files) {
+        const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
+        totalBytes += fileSize
+
+        if (totalBytes > projectSizeLimit) {
+            throw new ProjectSizeTooLargeError()
+        }
+
         const relativePath = getWorkspaceRelativePath(file.fsPath)
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
         zip.addLocalFile(file.fsPath, zipFolderPath)
