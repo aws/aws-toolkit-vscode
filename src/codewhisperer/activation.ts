@@ -33,6 +33,7 @@ import {
     showIntroduction,
     reconnect,
     refreshStatusBar,
+    openSecurityIssuePanel,
     selectCustomizationPrompt,
     notifyNewCustomizationsCmd,
     connectWithCustomization,
@@ -169,6 +170,8 @@ export async function activate(context: ExtContext): Promise<void> {
         enableCodeSuggestions.register(context),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
+        // show security issue webview panel
+        openSecurityIssuePanel.register(context),
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
         // show reconnect prompt

@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { codeScanState } from '../models/model'
+import { CodeScanIssue, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -29,6 +29,7 @@ import { get, set } from '../util/commonUtil'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -180,6 +181,13 @@ export const refreshStatusBar = Commands.declare(
         } else {
             InlineCompletionService.instance.hideCodeWhispererStatusBar()
         }
+    }
+)
+
+export const openSecurityIssuePanel = Commands.declare(
+    'aws.codeWhisperer.openSecurityIssuePanel',
+    (context: ExtContext) => async (issue: CodeScanIssue) => {
+        showSecurityIssueWebview(context.extensionContext, issue)
     }
 )
 
