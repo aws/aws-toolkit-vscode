@@ -11,7 +11,7 @@ import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
-import { NoopWatcher, WatchedFiles, WatchedItem } from './watchedFiles'
+import { WatchedFiles, WatchedItem } from './watchedFiles'
 import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
 import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
@@ -83,31 +83,39 @@ export class AsyncCloudFormationTemplateRegistry {
     private isSetup = false
     /** The message that is shown to the user to indicate the registry is being set up */
     private setupProgressMessage: Thenable<void> | undefined = undefined
+    private setupPromise: Thenable<CloudFormationTemplateRegistry> | undefined
 
     /**
      * @param asyncSetupFunc registry setup that will be run async
      */
     constructor(
         private readonly instance: CloudFormationTemplateRegistry,
-        asyncSetupFunc: (instance: CloudFormationTemplateRegistry) => Promise<void>
-    ) {
-        const perflog = new PerfLog('cfn: template registry setup')
-        asyncSetupFunc(instance).then(() => {
-            this.isSetup = true
-            perflog.done()
-        })
-    }
+        private readonly asyncSetupFunc: (
+            instance: CloudFormationTemplateRegistry
+        ) => Promise<CloudFormationTemplateRegistry>
+    ) {}
 
     /**
      * Returns the initial registry instance if setup has completed, otherwise
      * returning a temporary instance and showing a progress message to the user
      * to indicate setup is in progress.
      */
-    getInstance(): CloudFormationTemplateRegistry {
+    async getInstance(): Promise<CloudFormationTemplateRegistry> {
         if (this.isSetup) {
             return this.instance
         }
 
+        let perf: PerfLog
+        if (!this.setupPromise) {
+            perf = new PerfLog('cfn: template registry setup')
+            this.setupPromise = this.asyncSetupFunc(this.instance)
+        }
+        this.setupPromise.then(() => {
+            if (perf) {
+                perf.done()
+            }
+            this.isSetup = true
+        })
         // Show user a message indicating setup is in progress
         if (this.setupProgressMessage === undefined) {
             this.setupProgressMessage = vscode.window.withProgress(
@@ -133,7 +141,7 @@ export class AsyncCloudFormationTemplateRegistry {
             )
         }
 
-        return new NoopWatcher() as unknown as CloudFormationTemplateRegistry
+        return this.setupPromise
     }
 }
 
@@ -147,7 +155,7 @@ export class AsyncCloudFormationTemplateRegistry {
 export function getResourcesForHandler(
     filepath: string,
     handler: string,
-    unfilteredTemplates: WatchedItem<CloudFormation.Template>[] = globals.templateRegistry.registeredItems
+    unfilteredTemplates: WatchedItem<CloudFormation.Template>[]
 ): { templateDatum: WatchedItem<CloudFormation.Template>; name: string; resourceData: CloudFormation.Resource }[] {
     // TODO: Array.flat and Array.flatMap not introduced until >= Node11.x -- migrate when VS Code updates Node ver
     const o = unfilteredTemplates.map(templateDatum => {

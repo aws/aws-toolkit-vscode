@@ -115,7 +115,7 @@ export async function makeGoConfig(config: SamLaunchRequestArgs): Promise<GoDebu
     // We want to persist the binary we build since it takes a non-trivial amount of time to build
     config.debuggerPath = path.join(globals.context.globalStorageUri.fsPath, 'debuggers', 'delve')
 
-    const isImageLambda = isImageLambdaConfig(config)
+    const isImageLambda = await isImageLambdaConfig(config)
 
     // Reference: https://github.com/aws/aws-sam-cli/blob/4543732bf3c0da3b57fe1e5aa43ce3f41d2bd0ba/samcli/local/docker/lambda_debug_settings.py#L94-L103
     // These are the default settings. For some reason SAM CLI is not setting them even if the container
