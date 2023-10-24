@@ -14,7 +14,10 @@ export class RuntimeLanguageContext {
      * Key: vscLanguageId
      * Value: CodeWhispererLanguageId
      */
-    private supportedLanguageMap: ConstantMap<CodeWhispererConstants.PlatformLanguageId, CodewhispererLanguage>
+    private supportedLanguageMap: ConstantMap<
+        CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage,
+        CodewhispererLanguage
+    >
 
     /**
      * A map storing CodeWhisperer supported programming language with key: vscLanguageId and value: language extension
@@ -27,29 +30,34 @@ export class RuntimeLanguageContext {
     private supportedLanguageSet = new Set<string>()
 
     constructor() {
-        this.supportedLanguageMap = createConstantMap<CodeWhispererConstants.PlatformLanguageId, CodewhispererLanguage>(
-            {
-                java: 'java',
-                python: 'python',
-                javascriptreact: 'jsx',
-                javascript: 'javascript',
-                typescript: 'typescript',
-                typescriptreact: 'tsx',
-                csharp: 'csharp',
-                c: 'c',
-                c_cpp: 'cpp',
-                cpp: 'cpp',
-                go: 'go',
-                kotlin: 'kotlin',
-                php: 'php',
-                ruby: 'ruby',
-                rust: 'rust',
-                scala: 'scala',
-                sh: 'shell',
-                shellscript: 'shell',
-                sql: 'sql',
-            }
-        )
+        this.supportedLanguageMap = createConstantMap<
+            CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage,
+            CodewhispererLanguage
+        >({
+            java: 'java',
+            python: 'python',
+            javascriptreact: 'jsx',
+            javascript: 'javascript',
+            typescript: 'typescript',
+            typescriptreact: 'tsx',
+            csharp: 'csharp',
+            c: 'c',
+            c_cpp: 'cpp',
+            cpp: 'cpp',
+            go: 'go',
+            kotlin: 'kotlin',
+            php: 'php',
+            ruby: 'ruby',
+            rust: 'rust',
+            scala: 'scala',
+            sh: 'shell',
+            shellscript: 'shell',
+            sql: 'sql',
+            shell: 'shell',
+            jsx: 'jsx',
+            tsx: 'tsx',
+            plaintext: 'plaintext',
+        })
         this.supportedLanguageExtensionMap = createConstantMap<CodeWhispererConstants.PlatformLanguageId, string>({
             java: 'java',
             python: 'py',
@@ -93,11 +101,12 @@ export class RuntimeLanguageContext {
 
     /**
      *
-     * @param vscLanguageId : official vscode languageId
+     * @param languageId : arbitrary string denoting a specific programming language
      * @returns corresponding CodewhispererLanguage ID if any, otherwise undefined
      */
-    public mapVscLanguageToCodeWhispererLanguage(vscLanguageId?: string): CodewhispererLanguage | undefined {
-        return this.supportedLanguageMap.get(vscLanguageId) ?? undefined
+    public mapToCodewhispererLanguage(languageId?: string): CodewhispererLanguage | undefined {
+        const lang = this.supportedLanguageMap.get(languageId)
+        return lang !== 'plaintext' ? lang : undefined
     }
 
     /**
@@ -114,7 +123,7 @@ export class RuntimeLanguageContext {
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
     public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
-        return { language: this.mapVscLanguageToCodeWhispererLanguage(vscLanguageId) ?? 'plaintext' }
+        return { language: this.mapToCodewhispererLanguage(vscLanguageId) ?? 'plaintext' }
     }
 
     /**
@@ -156,7 +165,7 @@ export class RuntimeLanguageContext {
      * @returns ture if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
-        return this.supportedLanguageSet.has(languageId)
+        return this.supportedLanguageSet.has(languageId) && this.mapToCodewhispererLanguage(languageId) !== undefined
     }
 }
 
