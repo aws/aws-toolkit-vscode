@@ -139,7 +139,7 @@ export class CodeWhispererCodeCoverageTracker {
                     codeCoverageEvent: {
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: runtimeLanguageContext.mapToCodeWhispererRuntimeLanguage(this._language),
+                            languageName: runtimeLanguageContext.ToRuntimeLanguage(this._language),
                         },
                         acceptedCharacterCount: acceptedTokens,
                         totalCharacterCount: totalTokens,
@@ -252,7 +252,7 @@ export class CodeWhispererCodeCoverageTracker {
         if (!runtimeLanguageContext.isLanguageSupported(language)) {
             return undefined
         }
-        const cwsprLanguage = runtimeLanguageContext.mapToCodewhispererLanguage(language)
+        const cwsprLanguage = runtimeLanguageContext.toTelemetryLanguage(language)
         if (!cwsprLanguage) {
             return undefined
         }

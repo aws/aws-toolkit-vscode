@@ -9,7 +9,9 @@ import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
-const codewhispererRuntimeLanguages: ReadonlySet<string> = new Set([
+type NormalizedLanguageId = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
+
+const normalizedLanguageSet: ReadonlySet<NormalizedLanguageId> = new Set([
     'python',
     'javascript',
     'java',
@@ -98,7 +100,7 @@ export class RuntimeLanguageContext {
     /**
      * Only used when invoking CodeWhisperer service API, for telemetry usage please use mapToCodewhispererLanguage
      */
-    public mapToCodeWhispererRuntimeLanguage(language: CodewhispererLanguage): CodewhispererLanguage {
+    public ToRuntimeLanguage(language: CodewhispererLanguage): NormalizedLanguageId {
         switch (language) {
             case 'jsx':
                 return 'javascript'
@@ -107,7 +109,7 @@ export class RuntimeLanguageContext {
                 return 'typescript'
 
             default:
-                if (!codewhispererRuntimeLanguages.has(language)) {
+                if (!normalizedLanguageSet.has(language)) {
                     getLogger().error(`codewhisperer: unknown runtime language ${language}`)
                 }
                 return language
@@ -118,20 +120,20 @@ export class RuntimeLanguageContext {
      * To add a new platform language id:
      * 1. add new platform language ID constant in the file codewhisperer/constant.ts
      * 2. add corresponding CodeWhispererLanguageId mapping in the constructor of RuntimeLanguageContext
-     * @param languageId : arbitrary string denoting a specific programming language, e.g. CodewhispererLanguageId or PlatformLanguageId
+     * @param languageId : vscode language id or codewhisperer language name
      * @returns corresponding CodewhispererLanguage ID if any, otherwise undefined
      */
-    public mapToCodewhispererLanguage(languageId?: string): CodewhispererLanguage | undefined {
+    public toTelemetryLanguage(languageId?: string): CodewhispererLanguage | undefined {
         return this.supportedLanguageMap.get(languageId)
     }
 
     /**
      * This is for notebook files map to a new filename with the corresponding language extension
-     * @param languageId : arbitrary string denoting a specific programming language, e.g. CodewhispererLanguageId or PlatformLanguageId
+     * @param languageId : vscode language id or codewhisperer language name
      * @returns corresponding language extension if any, otherwise undefined
      */
     public getLanguageExtensionForNotebook(languageId?: string): string | undefined {
-        return this.supportedLanguageExtensionMap.get(this.mapToCodewhispererLanguage(languageId)) ?? undefined
+        return this.supportedLanguageExtensionMap.get(this.toTelemetryLanguage(languageId)) ?? undefined
     }
 
     /**
@@ -139,7 +141,7 @@ export class RuntimeLanguageContext {
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
     public getLanguageContext(languageId?: string): { language: CodewhispererLanguage } {
-        return { language: this.mapToCodewhispererLanguage(languageId) ?? 'plaintext' }
+        return { language: this.toTelemetryLanguage(languageId) ?? 'plaintext' }
     }
 
     /**
@@ -153,7 +155,7 @@ export class RuntimeLanguageContext {
     >(request: T): T {
         const fileContext = request.fileContext
         const runtimeLanguage: codewhispererClient.ProgrammingLanguage = {
-            languageName: this.mapToCodeWhispererRuntimeLanguage(
+            languageName: this.ToRuntimeLanguage(
                 request.fileContext.programmingLanguage.languageName as CodewhispererLanguage
             ),
         }
@@ -173,8 +175,8 @@ export class RuntimeLanguageContext {
      * @returns ture if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
-        const lang = this.mapToCodewhispererLanguage(languageId)
-        return lang !== undefined && this.mapToCodewhispererLanguage(languageId) !== 'plaintext'
+        const lang = this.toTelemetryLanguage(languageId)
+        return lang !== undefined && this.toTelemetryLanguage(languageId) !== 'plaintext'
     }
 }
 
