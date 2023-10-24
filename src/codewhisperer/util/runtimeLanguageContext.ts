@@ -137,7 +137,7 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     * @param languageId : arbitrary string denoting a specific programming language, e.g. CodewhispererLanguageId or PlatformLanguageId
+     * @param languageId : vscode language id or codewhisperer language name
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
     public getLanguageContext(languageId?: string): { language: CodewhispererLanguage } {
