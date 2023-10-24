@@ -207,15 +207,6 @@ describe('LaunchConfiguration', function () {
 })
 
 describe('getReferencedHandlerPaths', function () {
-    before(async function () {
-        // init for the first test
-        await globals.templateRegistry
-    })
-
-    after(async function () {
-        ;(await globals.templateRegistry).reset()
-    })
-
     it('includes all resources as absolute paths to root dir + handlers', async function () {
         const mockLaunchConfig = instance(createMockLaunchConfig())
 
@@ -260,7 +251,7 @@ function createMockLaunchConfig(): LaunchConfiguration {
     })
     when(mockLaunchConfig.scopedResource).thenReturn(vscode.Uri.file(path.join(workspaceFolder, 'template.yaml')))
     when(mockLaunchConfig.getSamDebugConfigurations()).thenReturn(
-        new Promise(() => [
+        Promise.resolve([
             // default: template target with not-in-workspace, absolute-pathed templatePath
             createMockSamDebugConfig(),
             createMockSamDebugConfig({
