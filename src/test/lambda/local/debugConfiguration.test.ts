@@ -132,7 +132,7 @@ describe('isImageLambdaConfig', function () {
             name: 'It was me, fakeWorkspaceFolder!',
             index: 0,
         }
-        registry = globals.templateRegistry
+        registry = await globals.templateRegistry
         appDir = pathutil.normalize(path.join(testutil.getProjectDir(), 'testFixtures/workspaceFolder/'))
     })
 
@@ -162,7 +162,7 @@ describe('isImageLambdaConfig', function () {
             },
         } as SamLaunchRequestArgs
 
-        assert.strictEqual(isImageLambdaConfig(input), true)
+        assert.strictEqual(await isImageLambdaConfig(input), true)
     })
 
     it('false for ZIP-backed template', async function () {
@@ -191,7 +191,7 @@ describe('isImageLambdaConfig', function () {
             },
         } as SamLaunchRequestArgs
 
-        assert.strictEqual(isImageLambdaConfig(input), false)
+        assert.strictEqual(await isImageLambdaConfig(input), false)
     })
 
     it('false for code-type', async function () {
@@ -214,7 +214,7 @@ describe('isImageLambdaConfig', function () {
             },
         } as SamLaunchRequestArgs
 
-        assert.strictEqual(isImageLambdaConfig(input), false)
+        assert.strictEqual(await isImageLambdaConfig(input), false)
     })
 })
 

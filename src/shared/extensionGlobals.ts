@@ -109,7 +109,7 @@ interface ToolkitGlobals {
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }
-    templateRegistry: CloudFormationTemplateRegistry
+    templateRegistry: Promise<CloudFormationTemplateRegistry>
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager

@@ -36,7 +36,7 @@ export async function makeCsharpConfig(config: SamLaunchRequestArgs): Promise<Sa
     if (!config.baseBuildDir) {
         throw Error('invalid state: config.baseBuildDir was not set')
     }
-    config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
+    config.codeRoot = (await getCodeRoot(config.workspaceFolder, config))!
     // TODO: avoid the reassignment
     // TODO: walk the tree to find .sln, .csproj ?
     const originalCodeRoot = config.codeRoot
@@ -225,7 +225,7 @@ export async function makeDotnetDebugConfiguration(
     config.debuggerPath = pathutil.normalize(getDebuggerPath(codeUri))
     await ensureDir(config.debuggerPath)
 
-    const isImageLambda = isImageLambdaConfig(config)
+    const isImageLambda = await isImageLambdaConfig(config)
 
     if (isImageLambda && !config.noDebug) {
         config.containerEnvVars = {
