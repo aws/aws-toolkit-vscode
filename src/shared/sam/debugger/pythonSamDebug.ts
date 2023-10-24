@@ -95,7 +95,7 @@ export async function makePythonDebugConfig(
 
     let manifestPath: string | undefined
     if (!config.noDebug) {
-        const isImageLambda = isImageLambdaConfig(config)
+        const isImageLambda = await isImageLambdaConfig(config)
 
         if (!config.useIkpdb) {
             // Mounted in the Docker container as: /tmp/lambci_debug_files

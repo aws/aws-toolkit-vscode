@@ -206,11 +206,8 @@ async function addLaunchConfigEntry(
     )
 
     const launchConfig = new LaunchConfiguration(vscode.Uri.file(lambdaLocation))
-    if (
-        !getReferencedHandlerPaths(launchConfig).has(
-            pathutils.normalize(path.join(path.dirname(lambdaLocation), handler))
-        )
-    ) {
+    const refPaths = await getReferencedHandlerPaths(launchConfig)
+    if (!refPaths.has(pathutils.normalize(path.join(path.dirname(lambdaLocation), handler)))) {
         await launchConfig.addDebugConfiguration(samDebugConfig)
     }
 }
