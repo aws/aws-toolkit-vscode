@@ -723,6 +723,8 @@ export type AuthSource =
     | 'firstStartup'
     | 'codecatalystDeveloperTools'
     | 'codewhispererDeveloperTools'
+    | 'statusBar'
+    | 'explorer'
     | 'unknown'
 
 export async function showAuthWebview(

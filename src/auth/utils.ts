@@ -490,7 +490,9 @@ export const login = Commands.register('aws.login', async () => {
     const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
-        return vscode.commands.executeCommand(showConnectionsPageCommand)
+        // We cannot use the underlying function and must execute using the command
+        // due to circular dependency.
+        return vscode.commands.executeCommand(showConnectionsPageCommand, 'statusBar')
     } else {
         return switchConnections.execute(auth)
     }
@@ -524,7 +526,7 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            item.command = { title: 'Add Connection', command: showConnectionsPageCommand }
+            item.command = { title: 'Add Connection', command: showConnectionsPageCommand, arguments: ['explorer'] }
 
             return item
         }
