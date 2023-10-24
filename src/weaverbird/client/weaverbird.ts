@@ -71,7 +71,14 @@ export class WeaverbirdLambdaClient {
             const response = await invoke<StartConversationRequest, StartConversationResponse>(
                 this.client,
                 this.lambdaArns.setup.startConversation,
-                {}
+                // all of that is just mock data so that we can invoke lambdas explicitly before proxy layer is done
+                {
+                    clientMetadata: {
+                        userIdentity: {
+                            oidcUserID: 'fake-user-id',
+                        },
+                    },
+                }
             )
             return response.conversationId
         } catch (e) {
