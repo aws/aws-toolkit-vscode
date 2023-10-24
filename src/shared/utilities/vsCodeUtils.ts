@@ -12,6 +12,7 @@ import { CancellationError, Timeout, waitTimeout } from './timeoutUtils'
 import { telemetry } from '../telemetry/telemetry'
 import * as semver from 'semver'
 import { isNonNullable } from './tsUtils'
+import { VSCODE_EXTENSION_ID } from '../extensions'
 
 // TODO: Consider NLS initialization/configuration here & have packages to import localize from here
 export const localize = nls.loadMessageBundle()
@@ -225,4 +226,8 @@ export async function openUrl(url: vscode.Uri): Promise<boolean> {
         }
         return didOpen
     })
+}
+
+export function isToolkitActive(): boolean {
+    return isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)
 }

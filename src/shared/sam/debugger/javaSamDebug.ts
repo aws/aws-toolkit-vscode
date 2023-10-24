@@ -21,7 +21,7 @@ export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamL
         request: config.noDebug ? 'launch' : 'attach',
     }
 
-    config.codeRoot = getCodeRoot(config.workspaceFolder, config)!
+    config.codeRoot = (await getCodeRoot(config.workspaceFolder, config))!
 
     config.type = 'java'
     config.runtimeFamily = RuntimeFamily.Java
@@ -29,7 +29,7 @@ export async function makeJavaConfig(config: SamLaunchRequestArgs): Promise<SamL
     if (!config.noDebug) {
         config.hostName = '127.0.0.1'
         config.port = config.debugPort
-        if (isImageLambdaConfig(config)) {
+        if (await isImageLambdaConfig(config)) {
             config.containerEnvVars = {
                 _JAVA_OPTIONS:
                     // https://github.com/aws/aws-sam-cli/blob/86f88cbd7df365960f7015c5d086b0db7aedd9d5/samcli/local/docker/lambda_debug_settings.py#L53
