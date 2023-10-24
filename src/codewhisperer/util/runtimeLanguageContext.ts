@@ -3,10 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { getLogger } from '../../shared/logger/logger'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
+
+const codewhispererRuntimeLanguages: ReadonlySet<string> = new Set([
+    'python',
+    'javascript',
+    'java',
+    'csharp',
+    'typescript',
+    'c',
+    'cpp',
+    'go',
+    'kotlin',
+    'php',
+    'ruby',
+    'rust',
+    'scala',
+    'shell',
+    'sql',
+])
 
 export class RuntimeLanguageContext {
     /**
@@ -88,6 +107,9 @@ export class RuntimeLanguageContext {
                 return 'typescript'
 
             default:
+                if (!codewhispererRuntimeLanguages.has(language)) {
+                    getLogger().error(`codewhisperer: unknown runtime language ${language}`)
+                }
                 return language
         }
     }
