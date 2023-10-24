@@ -12,7 +12,7 @@ import {
     ChatTriggerType,
     TriggerPayload,
     TabClosedMessage,
-    InsertCodeAtCursorPostion,
+    InsertCodeAtCursorPosition,
     TriggerTabIDReceived,
     StopResponseMessage,
 } from './model'
@@ -28,7 +28,7 @@ import { randomUUID } from 'crypto'
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
-    readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPostion>
+    readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
@@ -37,7 +37,7 @@ export interface ChatControllerMessagePublishers {
 export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
-    readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPostion>
+    readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
@@ -96,7 +96,7 @@ export class ChatController {
         this.triggerEventsStorage.updateTriggerEventTabIDFromUnknown(message.triggerID, message.tabID)
     }
 
-    private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPostion) {
+    private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code)
     }
 

@@ -13,7 +13,7 @@ export interface TabClosedMessage {
     tabID: string
 }
 
-export interface InsertCodeAtCursorPostion {
+export interface InsertCodeAtCursorPosition {
     code: string
 }
 
