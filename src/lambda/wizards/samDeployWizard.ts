@@ -211,7 +211,7 @@ export class DefaultSamDeployWizardContext implements SamDeployWizardContext {
     }
 
     public async determineIfTemplateHasImages(templatePath: vscode.Uri): Promise<boolean> {
-        const template = (await globals.templateRegistry).getRegisteredItem(templatePath.fsPath)
+        const template = (await globals.templateRegistry).getItem(templatePath.fsPath)
         const resources = template?.item?.Resources
         if (resources === undefined) {
             return false

@@ -123,7 +123,7 @@ async function queryRegistryForFileWithGlobalsKeyStatus(
     let foundMatch = false
     while (!foundMatch) {
         await sleep(20)
-        const obj = registry.getRegisteredItem(filepath)
+        const obj = registry.getItem(filepath)
         if (obj) {
             foundMatch = Object.keys(obj.item).includes('Globals') === hasGlobals
         }

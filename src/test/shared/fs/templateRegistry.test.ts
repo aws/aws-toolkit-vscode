@@ -44,7 +44,7 @@ describe('CloudFormation Template Registry', async function () {
 
                 assert.strictEqual(testRegistry.registeredItems.length, 1)
 
-                const data = testRegistry.getRegisteredItem(filename.fsPath)
+                const data = testRegistry.getItem(filename.fsPath)
 
                 assertValidTestTemplate(data, filename.fsPath)
             })
@@ -71,13 +71,13 @@ describe('CloudFormation Template Registry', async function () {
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(filename)
 
-                const data = testRegistry.getRegisteredItem(filename)
+                const data = testRegistry.getItem(filename)
 
                 assertValidTestTemplate(data, filename.fsPath)
             })
 
             it('returns undefined if the registry has no registered templates', function () {
-                assert.strictEqual(testRegistry.getRegisteredItem('/template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getItem('/template.yaml'), undefined)
             })
 
             it('returns undefined if the registry does not contain the template in question', async function () {
@@ -85,7 +85,7 @@ describe('CloudFormation Template Registry', async function () {
                 await strToYamlFile(goodYaml1, filename.fsPath)
                 await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
 
-                assert.strictEqual(testRegistry.getRegisteredItem('/not-the-template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getItem('/not-the-template.yaml'), undefined)
             })
         })
 

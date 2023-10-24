@@ -200,12 +200,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Get a specific item's data
-     * Untitled files must be referred to by their URI
+     * Gets an item by filepath or URI.
+     *
+     * Untitled files must be referred to by URI.
+     *
      * @param path Absolute path to item of interest or a vscode.Uri to the item
      */
-    public getRegisteredItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
-        // fsPath is needed for Windows, it's equivalent to path on mac/linux
+    public getItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
         const normalizedPath = typeof path === 'string' ? pathutils.normalize(path) : normalizeVSCodeUri(path)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
@@ -225,7 +226,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         const arr: WatchedItem<T>[] = []
 
         for (const itemPath of this.registryData.keys()) {
-            const item = this.getRegisteredItem(itemPath)
+            const item = this.getItem(itemPath)
             if (item) {
                 arr.push(item)
             }
