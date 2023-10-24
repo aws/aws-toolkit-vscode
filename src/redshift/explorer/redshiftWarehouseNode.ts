@@ -17,10 +17,9 @@ import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
-import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { deleteConnection, getConnectionParamsState, updateConnectionParamsState } from './redshiftState'
-import globals from '../../shared/extensionGlobals'
+import { createLogsConnectionMessage, showConnectionMessage } from '../messageUtils'
 
 export class CreateNotebookNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -99,11 +98,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     newChildren: childNodes,
                 }
             } catch (error) {
-                getLogger().error(
-                    `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
-                        (error as Error).message
-                    }`
-                )
+                createLogsConnectionMessage(this.redshiftWarehouse.name, error as Error)
                 return Promise.reject(error)
             }
         })
@@ -145,12 +140,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     await updateConnectionParamsState(this.arn, this.connectionParams)
                     return childNodes
                 } catch (error) {
-                    globals.outputChannel.show(true)
-                    const msg = `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
-                        (error as Error).message
-                    }`
-                    getLogger().error(msg)
-                    globals.outputChannel.appendLine(msg)
+                    showConnectionMessage(this.redshiftWarehouse.name, error as Error)
                     await updateConnectionParamsState(this.arn, undefined)
                     return this.getRetryNode()
                 }
