@@ -104,8 +104,8 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     let validator: DefaultAwsSamDebugConfigurationValidator
 
     beforeEach(function () {
-        when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
-        when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
+        when(mockRegistry.getItem('/')).thenReturn(templateData)
+        when(mockRegistry.getItem('/image')).thenReturn(imageTemplateData)
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
@@ -126,7 +126,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
 
     it("returns invalid when resolving template debug configurations with a template that isn't in the registry", () => {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
-        when(mockEmptyRegistry.getRegisteredItem('/')).thenReturn(undefined)
+        when(mockEmptyRegistry.getItem('/')).thenReturn(undefined)
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
 
