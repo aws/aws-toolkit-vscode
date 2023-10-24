@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.intellij.codeInsight.codeVision.ui.visibleAreaChanged
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_DELETE_LINE
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_DELETE_TO_WORD_START
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_CARET_LEFT_WITH_SELECTION
@@ -13,16 +12,13 @@ import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_MOVE_LINE_STAR
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_SELECT_WORD_AT_CARET
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_END_WITH_SELECTION
 import com.intellij.openapi.actionSystem.IdeActions.ACTION_EDITOR_TEXT_START_WITH_SELECTION
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.editor.event.VisibleAreaEvent
 import com.intellij.openapi.ui.popup.JBPopup
-import com.intellij.testFramework.replaceService
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.times
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -30,15 +26,12 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.timeout
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.javaFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.popup.listeners.CodeWhispererScrollListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererInvocationStatus
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import java.awt.Rectangle
 
 class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
@@ -165,11 +158,6 @@ class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
     }
 
     private fun testInputSpecialCharWithRightContext(rightContext: String, shouldtrigger: Boolean) {
-        val userGroupSetting = mock<CodeWhispererUserGroupSettings>()
-        ApplicationManager.getApplication().replaceService(CodeWhispererUserGroupSettings::class.java, userGroupSetting, disposableRule.disposable)
-
-        whenever(userGroupSetting.getUserGroup()).thenReturn(CodeWhispererUserGroup.RightContext)
-
         CodeWhispererExplorerActionManager.getInstance().setAutoEnabled(true)
         setFileContext(pythonFileName, "def", rightContext)
         projectRule.fixture.type('{')
