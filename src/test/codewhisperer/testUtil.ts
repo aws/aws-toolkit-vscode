@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
-import { vsCodeState, AcceptedSuggestionEntry } from '../../codewhisperer/models/model'
+import { vsCodeState, AcceptedSuggestionEntry, CodeScanIssue } from '../../codewhisperer/models/model'
 import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
@@ -161,5 +161,40 @@ export function createMockWebviewPanel(): vscode.WebviewPanel {
         onDidDispose: sinon.spy(),
         reveal: sinon.spy(),
         dispose: sinon.spy(),
+    }
+}
+
+export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeScanIssue {
+    return {
+        startLine: 0,
+        endLine: 1,
+        comment: 'comment',
+        title: 'title',
+        description: {
+            text: 'description',
+            markdown: 'description',
+        },
+        detectorId: 'language/cool-detector@v1.0',
+        detectorName: 'detectorName',
+        relatedVulnerabilities: ['CWE-1'],
+        severity: 'High',
+        remediation: {
+            recommendation: {
+                text: 'recommendationText',
+                url: 'recommendationUrl',
+            },
+            suggestedFixes: [
+                { description: 'fix', code: '@@ -1,1 +1,1 @@\nfirst line\n-second line\n+third line\nfourth line' },
+            ],
+        },
+        ...overrides,
+    }
+}
+
+export function createCodeActionContext(): vscode.CodeActionContext {
+    return {
+        diagnostics: [],
+        only: vscode.CodeActionKind.Empty,
+        triggerKind: vscode.CodeActionTriggerKind.Automatic,
     }
 }

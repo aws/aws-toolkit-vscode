@@ -56,6 +56,7 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
+import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -220,6 +221,10 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerHoverProvider(
             [...CodeWhispererConstants.supportedLanguages],
             SecurityIssueHoverProvider.instance
+        ),
+        vscode.languages.registerCodeActionsProvider(
+            [...CodeWhispererConstants.supportedLanguages],
+            SecurityIssueCodeActionProvider.instance
         )
     )
 
@@ -307,6 +312,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 disposeSecurityDiagnostic(e)
 
                 SecurityIssueHoverProvider.instance.handleDocumentChange(e)
+                SecurityIssueCodeActionProvider.instance.handleDocumentChange(e)
 
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
