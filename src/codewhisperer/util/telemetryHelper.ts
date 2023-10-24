@@ -348,7 +348,7 @@ export class TelemetryHelper {
                         requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: runtimeLanguageContext.ToRuntimeLanguage(
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(
                                 this.sessionDecisions[0].codewhispererLanguage
                             ),
                         },
@@ -596,7 +596,7 @@ export class TelemetryHelper {
                 telemetryEvent: {
                     codeScanEvent: {
                         programmingLanguage: {
-                            languageName: runtimeLanguageContext.ToRuntimeLanguage(languageId as CodewhispererLanguage),
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(languageId as CodewhispererLanguage),
                         },
                         codeScanJobId: jobId,
                         timestamp: new Date(Date.now()),

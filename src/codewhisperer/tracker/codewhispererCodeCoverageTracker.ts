@@ -139,7 +139,7 @@ export class CodeWhispererCodeCoverageTracker {
                     codeCoverageEvent: {
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: runtimeLanguageContext.ToRuntimeLanguage(this._language),
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(this._language),
                         },
                         acceptedCharacterCount: acceptedTokens,
                         totalCharacterCount: totalTokens,

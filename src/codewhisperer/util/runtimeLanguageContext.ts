@@ -98,9 +98,11 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     * Only used when invoking CodeWhisperer service API, for telemetry usage please use mapToCodewhispererLanguage
+     * Normalize client side language id to service aware language id (service is not aware of jsx/tsx)
+     * Only used when invoking CodeWhisperer service API, for client telemetry usage please use toTelemetryLanguage
+     * Client side CodewhispererLanguage is a superset of NormalizedLanguageId
      */
-    public ToRuntimeLanguage(language: CodewhispererLanguage): NormalizedLanguageId {
+    public toRuntimeLanguage(language: CodewhispererLanguage): NormalizedLanguageId {
         switch (language) {
             case 'jsx':
                 return 'javascript'
@@ -119,7 +121,7 @@ export class RuntimeLanguageContext {
     /**
      * To add a new platform language id:
      * 1. add new platform language ID constant in the file codewhisperer/constant.ts
-     * 2. add corresponding CodeWhispererLanguageId mapping in the constructor of RuntimeLanguageContext
+     * 2. add corresponding CodeWhispererLanguage mapping in the constructor of RuntimeLanguageContext
      * @param languageId : vscode language id or codewhisperer language name
      * @returns corresponding CodewhispererLanguage ID if any, otherwise undefined
      */
@@ -155,7 +157,7 @@ export class RuntimeLanguageContext {
     >(request: T): T {
         const fileContext = request.fileContext
         const runtimeLanguage: codewhispererClient.ProgrammingLanguage = {
-            languageName: this.ToRuntimeLanguage(
+            languageName: this.toRuntimeLanguage(
                 request.fileContext.programmingLanguage.languageName as CodewhispererLanguage
             ),
         }
