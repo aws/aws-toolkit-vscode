@@ -17,7 +17,7 @@ import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
 import { ToolkitError } from '../shared/errors'
 import { deleteConnection, updateConnectionParamsState } from './explorer/redshiftState'
 import { showViewLogsMessage } from '../shared/utilities/messages'
-import { showConnectionMessage } from './utils'
+import { showConnectionMessage } from './messageUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {
     if ('NotebookEdit' in vscode) {

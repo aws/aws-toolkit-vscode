@@ -19,7 +19,7 @@ import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { deleteConnection, getConnectionParamsState, updateConnectionParamsState } from './redshiftState'
-import { createLogsConnectionMessage, showConnectionMessage } from '../utils'
+import { createLogsConnectionMessage, showConnectionMessage } from '../messageUtils'
 
 export class CreateNotebookNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {

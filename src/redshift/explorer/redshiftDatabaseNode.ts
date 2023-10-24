@@ -14,7 +14,7 @@ import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { getIcon } from '../../shared/icons'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { showViewLogsFetchMessage } from '../utils'
+import { showViewLogsFetchMessage } from '../messageUtils'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
