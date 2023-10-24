@@ -4,7 +4,7 @@
     <div class="mb-16">
         <div class="container button-container" style="justify-content: space-between">
             <h1>{{ title }} <img :src="severityImage" /></h1>
-            <input class="mt-4 ml-16" type="submit" value="Apply fix" />
+            <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" value="Apply fix" />
         </div>
 
         <div class="mt-16">

@@ -71,7 +71,7 @@ describe('securityIssueHoverProvider', () => {
                     'description\n\n' +
                     `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                         JSON.stringify(issues[0])
-                    )} "Open security issue")\n` +
+                    )} 'Open "CodeWhisperer Security Issue"')\n` +
                     ' | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix "Apply suggested fix")\n\n' +
                     '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
                     '```language\n' +
@@ -103,7 +103,7 @@ describe('securityIssueHoverProvider', () => {
                     'description\n\n' +
                     `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                         JSON.stringify(issues[1])
-                    )} "Open security issue")\n`
+                    )} 'Open "CodeWhisperer Security Issue"')\n`
             )
         })
 

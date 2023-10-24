@@ -108,7 +108,9 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
             `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(issue))}`
         )
         const applyFixCommand = vscode.Uri.parse('command:aws.codeWhisperer.applySecurityFix')
-        markdownString.appendMarkdown(`[$(eye) View Details](${viewDetailsCommand} "Open security issue")\n`)
+        markdownString.appendMarkdown(
+            `[$(eye) View Details](${viewDetailsCommand} 'Open "CodeWhisperer Security Issue"')\n`
+        )
 
         if (suggestedFix) {
             markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand} "Apply suggested fix")\n`)
