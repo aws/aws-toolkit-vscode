@@ -11,6 +11,7 @@ import { ExtensionMessage } from './commands'
 import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
+import { telemetry } from '../../../shared/telemetry/telemetry';
 
 interface ChatPayload {
     chatMessage: string
@@ -87,6 +88,8 @@ export class Connector {
     }
 
     onTabAdd = (tabID: string): void => {
+        // TODO: how to differentiate between WB and CWSPR tab add event?
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
         this.tabsStorage.addTab({
             id: tabID,
             type: 'unknown',
