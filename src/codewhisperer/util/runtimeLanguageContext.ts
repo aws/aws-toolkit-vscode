@@ -10,8 +10,7 @@ import * as CodeWhispererConstants from '../models/constants'
 
 export class RuntimeLanguageContext {
     /**
-     * A map storing cwspr supporting programming language with key: vscLanguageId and value: cwsprLanguageId
-     * Key: vscLanguageId
+     * Key: Union set of CodewhispererLanguageId and PlatformLanguageId (VSC, C9 etc.)
      * Value: CodeWhispererLanguageId
      */
     private supportedLanguageMap: ConstantMap<
@@ -24,10 +23,7 @@ export class RuntimeLanguageContext {
      * Key: vscLanguageId
      * Value: language extension
      */
-    private supportedLanguageExtensionMap: ConstantMap<CodeWhispererConstants.PlatformLanguageId, string>
-
-    // A set contains vscode languageId and CodeWhispererLanguage
-    private supportedLanguageSet = new Set<string>()
+    private supportedLanguageExtensionMap: ConstantMap<CodewhispererLanguage, string>
 
     constructor() {
         this.supportedLanguageMap = createConstantMap<
@@ -58,16 +54,15 @@ export class RuntimeLanguageContext {
             tsx: 'tsx',
             plaintext: 'plaintext',
         })
-        this.supportedLanguageExtensionMap = createConstantMap<CodeWhispererConstants.PlatformLanguageId, string>({
+        this.supportedLanguageExtensionMap = createConstantMap<CodewhispererLanguage, string>({
             java: 'java',
             python: 'py',
-            javascriptreact: 'jsx',
+            jsx: 'jsx',
             javascript: 'js',
             typescript: 'ts',
-            typescriptreact: 'tsx',
+            tsx: 'tsx',
             csharp: 'cs',
             c: 'c',
-            c_cpp: 'cpp',
             cpp: 'cpp',
             go: 'go',
             kotlin: 'kt',
@@ -75,17 +70,15 @@ export class RuntimeLanguageContext {
             ruby: 'rb',
             rust: 'rs',
             scala: 'scala',
-            sh: 'sh',
-            shellscript: 'sh',
+            shell: 'sh',
             sql: 'sql',
+            plaintext: 'txt',
         })
-
-        const values = Array.from(this.supportedLanguageMap.values())
-        const keys = Array.from(this.supportedLanguageMap.keys())
-        values.forEach(item => this.supportedLanguageSet.add(item))
-        keys.forEach(item => this.supportedLanguageSet.add(item))
     }
 
+    /**
+     * Only used when invoking CodeWhisperer service API, for telemetry usage please use mapToCodewhispererLanguage
+     */
     public mapToCodeWhispererRuntimeLanguage(language: CodewhispererLanguage): CodewhispererLanguage {
         switch (language) {
             case 'jsx':
@@ -100,22 +93,23 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     *
-     * @param languageId : arbitrary string denoting a specific programming language
+     * To add a new platform language id:
+     * 1. add new platform language ID constant in the file codewhisperer/constant.ts
+     * 2. add corresponding CodeWhispererLanguageId mapping in the constructor of RuntimeLanguageContext
+     * @param languageId : arbitrary string denoting a specific programming language, e.g. CodewhispererLanguageId or PlatformLanguageId
      * @returns corresponding CodewhispererLanguage ID if any, otherwise undefined
      */
     public mapToCodewhispererLanguage(languageId?: string): CodewhispererLanguage | undefined {
-        const lang = this.supportedLanguageMap.get(languageId)
-        return lang !== 'plaintext' ? lang : undefined
+        return this.supportedLanguageMap.get(languageId)
     }
 
     /**
      * This is for notebook files map to a new filename with the corresponding language extension
-     * @param vscLanguageId : official vscode languageId
+     * @param languageId : arbitrary string denoting a specific programming language, e.g. CodewhispererLanguageId or PlatformLanguageId
      * @returns corresponding language extension if any, otherwise undefined
      */
-    public getLanguageExtensionForNotebook(vscLanguageId?: string): string | undefined {
-        return this.supportedLanguageExtensionMap.get(vscLanguageId) ?? undefined
+    public getLanguageExtensionForNotebook(languageId?: string): string | undefined {
+        return this.supportedLanguageExtensionMap.get(this.mapToCodewhispererLanguage(languageId)) ?? undefined
     }
 
     /**
@@ -136,25 +130,17 @@ export class RuntimeLanguageContext {
         T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
     >(request: T): T {
         const fileContext = request.fileContext
-        const childLanguage = request.fileContext.programmingLanguage
-        let parentLanguage: codewhispererClient.ProgrammingLanguage
-        switch (childLanguage.languageName) {
-            case 'tsx':
-                parentLanguage = { languageName: CodeWhispererConstants.typescript }
-                break
-            case 'jsx':
-                parentLanguage = { languageName: CodeWhispererConstants.javascript }
-                break
-            default:
-                parentLanguage = childLanguage
-                break
+        const runtimeLanguage: codewhispererClient.ProgrammingLanguage = {
+            languageName: this.mapToCodeWhispererRuntimeLanguage(
+                request.fileContext.programmingLanguage.languageName as CodewhispererLanguage
+            ),
         }
 
         return {
             ...request,
             fileContext: {
                 ...fileContext,
-                programmingLanguage: parentLanguage,
+                programmingLanguage: runtimeLanguage,
             },
         }
     }
@@ -165,7 +151,8 @@ export class RuntimeLanguageContext {
      * @returns ture if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
-        return this.supportedLanguageSet.has(languageId) && this.mapToCodewhispererLanguage(languageId) !== undefined
+        const lang = this.mapToCodewhispererLanguage(languageId)
+        return lang !== undefined && this.mapToCodewhispererLanguage(languageId) !== 'plaintext'
     }
 }
 
