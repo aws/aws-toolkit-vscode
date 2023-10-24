@@ -113,11 +113,11 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     * @param vscLanguageId : official vscode languageId
+     * @param languageId : arbitrary string denoting a specific programming language, e.g. CodewhispererLanguageId or PlatformLanguageId
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
-    public getLanguageContext(vscLanguageId?: string): { language: CodewhispererLanguage } {
-        return { language: this.mapToCodewhispererLanguage(vscLanguageId) ?? 'plaintext' }
+    public getLanguageContext(languageId?: string): { language: CodewhispererLanguage } {
+        return { language: this.mapToCodewhispererLanguage(languageId) ?? 'plaintext' }
     }
 
     /**
