@@ -148,7 +148,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         this.disposables.push(
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
                 if (isUntitledScheme(event.document.uri)) {
-                    this.addItemToRegistry(event.document.uri, true, event.document.getText())
+                    this.addItem(event.document.uri, true, event.document.getText())
                 }
             }),
             vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
@@ -175,7 +175,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Adds an item to registry. Wipes any existing item in its place with new copy of the data
      * @param uri vscode.Uri containing the item to load in
      */
-    public async addItemToRegistry(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<void> {
+    public async addItem(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<void> {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
             getLogger().verbose(`${this.name}: excluding path (matches "${excluded}"): ${uri.fsPath}`)
@@ -200,12 +200,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Get a specific item's data
-     * Untitled files must be referred to by their URI
+     * Gets an item by filepath or URI.
+     *
+     * Untitled files must be referred to by URI.
+     *
      * @param path Absolute path to item of interest or a vscode.Uri to the item
      */
-    public getRegisteredItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
-        // fsPath is needed for Windows, it's equivalent to path on mac/linux
+    public getItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
         const normalizedPath = typeof path === 'string' ? pathutils.normalize(path) : normalizeVSCodeUri(path)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
@@ -219,13 +220,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Returns the registry's data as an array of paths to type T objects
+     * Gets all registry items as an array of paths to type `T` objects.
      */
-    public get registeredItems(): WatchedItem<T>[] {
+    public get items(): WatchedItem<T>[] {
         const arr: WatchedItem<T>[] = []
 
         for (const itemPath of this.registryData.keys()) {
-            const item = this.getRegisteredItem(itemPath)
+            const item = this.getItem(itemPath)
             if (item) {
                 arr.push(item)
             }
@@ -272,7 +273,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             try {
                 const found = await vscode.workspace.findFiles(glob, exclude)
                 for (const item of found) {
-                    await this.addItemToRegistry(item, true)
+                    await this.addItem(item, true)
                 }
             } catch (e) {
                 const err = e as Error
@@ -299,11 +300,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             watcher,
             watcher.onDidChange(async uri => {
                 getLogger().verbose(`${this.name}: detected change: ${uri.fsPath}`)
-                await this.addItemToRegistry(uri)
+                await this.addItem(uri)
             }),
             watcher.onDidCreate(async uri => {
                 getLogger().verbose(`${this.name}: detected new file: ${uri.fsPath}`)
-                await this.addItemToRegistry(uri)
+                await this.addItem(uri)
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`${this.name}: detected delete: ${uri.fsPath}`)
