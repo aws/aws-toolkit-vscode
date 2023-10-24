@@ -65,7 +65,6 @@ import software.aws.toolkits.jetbrains.ui.feedback.FeedbackDialog
 import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
 import software.aws.toolkits.resources.message
 import java.awt.Dimension
-import javax.swing.Icon
 import javax.swing.JComponent
 
 class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), Disposable {
@@ -146,20 +145,19 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                     message("codewhisperer.learn_page.header.title"),
                                     listOf(
                                         AuthPanelBullet(
-                                            PanelConstants.COMMIT_ICON,
+                                            true,
                                             message("iam_identity_center.name"),
                                             message("aws.onboarding.getstarted.panel.idc_row_comment_text")
                                         ),
                                         AuthPanelBullet(
-                                            PanelConstants.COMMIT_ICON,
+                                            true,
                                             message("aws_builder_id.service_name"),
                                             message("aws.onboarding.getstarted.panel.builderid_row_comment_text")
                                         ),
                                         AuthPanelBullet(
-                                            PanelConstants.CANCEL_ICON,
+                                            false,
                                             message("settings.credentials.iam"),
                                             message("aws.getstarted.auth.panel.notSupport_text"),
-                                            false
                                         )
                                     )
                                 )
@@ -170,17 +168,17 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                     message("aws.getstarted.resource.panel_title"),
                                     listOf(
                                         AuthPanelBullet(
-                                            PanelConstants.COMMIT_ICON,
+                                            true,
                                             message("iam_identity_center.name"),
                                             message("aws.onboarding.getstarted.panel.idc_row_comment_text")
                                         ),
                                         AuthPanelBullet(
-                                            PanelConstants.COMMIT_ICON,
+                                            false,
                                             message("aws_builder_id.service_name"),
                                             message("aws.getstarted.auth.panel.notSupport_text")
                                         ),
                                         AuthPanelBullet(
-                                            PanelConstants.COMMIT_ICON,
+                                            true,
                                             message("settings.credentials.iam"),
                                             message("aws.onboarding.getstarted.panel.iam_row_comment_text")
                                         )
@@ -193,21 +191,19 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                     message("caws.title"),
                                     listOf(
                                         AuthPanelBullet(
-                                            PanelConstants.CANCEL_ICON,
+                                            false,
                                             message("iam_identity_center.name"),
-                                            message("aws.getstarted.auth.panel.notSupport_text"),
-                                            false
+                                            message("aws.getstarted.auth.panel.notSupport_text")
                                         ),
                                         AuthPanelBullet(
-                                            PanelConstants.COMMIT_ICON,
+                                            true,
                                             message("aws_builder_id.service_name"),
                                             message("aws.onboarding.getstarted.panel.builderid_row_comment_text")
                                         ),
                                         AuthPanelBullet(
-                                            PanelConstants.CANCEL_ICON,
+                                            false,
                                             message("settings.credentials.iam"),
-                                            message("aws.getstarted.auth.panel.notSupport_text"),
-                                            false
+                                            message("aws.getstarted.auth.panel.notSupport_text")
                                         )
                                     )
                                 )
@@ -345,7 +341,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                             }
 
                             row {
-                                label(message("gettingstarted.auth.connected.builderid")).applyToComponent { this.icon = PanelConstants.COMMIT_ICON }
+                                label(message("gettingstarted.auth.connected.builderid")).applyToComponent { this.icon = PanelConstants.CHECKMARK_ICON }
                             }
                             row {
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
@@ -406,7 +402,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                             }
 
                             row {
-                                label(message("gettingstarted.auth.builderid.expired")).applyToComponent { icon = PanelConstants.CANCEL_ICON }
+                                label(message("gettingstarted.auth.builderid.expired")).applyToComponent { icon = PanelConstants.X_ICON }
                             }
                             row {
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
@@ -517,10 +513,10 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                 }
                             }
                             row {
-                                label(message("gettingstarted.auth.connected.iam")).applyToComponent { icon = PanelConstants.COMMIT_ICON }
+                                label(message("gettingstarted.auth.connected.iam")).applyToComponent { icon = PanelConstants.CHECKMARK_ICON }
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM)
                             row {
-                                label(message("gettingstarted.auth.connected.idc")).applyToComponent { this.icon = PanelConstants.COMMIT_ICON }
+                                label(message("gettingstarted.auth.connected.idc")).applyToComponent { this.icon = PanelConstants.CHECKMARK_ICON }
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM_IDC)
                             row {
                                 link(message("general.add.another")) {
@@ -559,11 +555,11 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                 }
                             }
                             row {
-                                label(message("gettingstarted.auth.idc.expired")).applyToComponent { icon = PanelConstants.CANCEL_ICON }
+                                label(message("gettingstarted.auth.idc.expired")).applyToComponent { icon = PanelConstants.X_ICON }
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM_IDC)
 
                             row {
-                                label(message("gettingstarted.auth.iam.invalid")).applyToComponent { icon = PanelConstants.CANCEL_ICON }
+                                label(message("gettingstarted.auth.iam.invalid")).applyToComponent { icon = PanelConstants.X_ICON }
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM)
 
                             row {
@@ -654,12 +650,12 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                 }
                             }
                             row {
-                                label(message("gettingstarted.auth.connected.builderid")).applyToComponent { this.icon = PanelConstants.COMMIT_ICON }
+                                label(message("gettingstarted.auth.connected.builderid")).applyToComponent { this.icon = PanelConstants.CHECKMARK_ICON }
                             }.visible(
                                 checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER).connectionType == ActiveConnectionType.BUILDER_ID
                             )
                             row {
-                                label(message("gettingstarted.auth.connected.idc")).applyToComponent { this.icon = PanelConstants.COMMIT_ICON }
+                                label(message("gettingstarted.auth.connected.idc")).applyToComponent { this.icon = PanelConstants.CHECKMARK_ICON }
                             }.visible(
                                 checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER).connectionType == ActiveConnectionType.IAM_IDC
                             )
@@ -704,12 +700,12 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                                 topGap(TopGap.SMALL)
                             }
                             row {
-                                label(message("gettingstarted.auth.builderid.expired")).applyToComponent { this.icon = PanelConstants.CANCEL_ICON }
+                                label(message("gettingstarted.auth.builderid.expired")).applyToComponent { this.icon = PanelConstants.X_ICON }
                             }.visible(
                                 checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER).connectionType == ActiveConnectionType.BUILDER_ID
                             )
                             row {
-                                label(message("gettingstarted.auth.idc.expired")).applyToComponent { this.icon = PanelConstants.CANCEL_ICON }
+                                label(message("gettingstarted.auth.idc.expired")).applyToComponent { this.icon = PanelConstants.X_ICON }
                             }.visible(
                                 checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER).connectionType == ActiveConnectionType.IAM_IDC
                             )
@@ -773,7 +769,13 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
 
                         bullets.forEach { bullet ->
                             row {
-                                icon(bullet.icon)
+                                val icon = if (bullet.enable) {
+                                    PanelConstants.CHECKMARK_ICON
+                                } else {
+                                    PanelConstants.X_ICON
+                                }
+
+                                icon(icon)
                                 panel {
                                     row(bullet.titleName) {
                                     }.rowComment(bullet.comment)
@@ -869,8 +871,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
         const val SHARE_FEEDBACK_LINK = "FeedbackDialog"
         const val SET_UP_CODECATALYST = "https://docs.aws.amazon.com/codecatalyst/latest/userguide/setting-up-topnode.html"
         const val CREATE_CODECATALYST_SPACE = "https://codecatalyst.aws/spaces/create"
-        val COMMIT_ICON = AllIcons.General.InspectionsOK
-        val CANCEL_ICON = AllIcons.Ide.Notification.Close
+        val CHECKMARK_ICON = AllIcons.General.InspectionsOK
+        val X_ICON = AllIcons.Ide.Notification.Close
         val PANEL_TITLE_FONT = JBFont.h2().asBold()
         const val PANEL_WIDTH = 300
         const val PANEL_HEIGHT = 450
@@ -878,10 +880,9 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
     }
 
     data class AuthPanelBullet(
-        val icon: Icon,
+        val enable: Boolean,
         val titleName: String,
-        val comment: String,
-        val enable: Boolean = true
+        val comment: String
     )
 
     private inner class FeatureColumns : BorderLayoutPanel(10, 0) {
