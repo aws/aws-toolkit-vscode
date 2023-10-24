@@ -207,6 +207,15 @@ describe('LaunchConfiguration', function () {
 })
 
 describe('getReferencedHandlerPaths', function () {
+    before(async function () {
+        // init for the first test
+        await globals.templateRegistry
+    })
+
+    after(async function () {
+        ;(await globals.templateRegistry).reset()
+    })
+
     it('includes all resources as absolute paths to root dir + handlers', async function () {
         const mockLaunchConfig = instance(createMockLaunchConfig())
 
