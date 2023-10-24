@@ -47,78 +47,6 @@ h6 {
     line-height: 1.25;
 }
 
-#code-csp-warning {
-    position: fixed;
-    top: 0;
-    right: 0;
-    color: white;
-    margin: 16px;
-    text-align: center;
-    font-size: 12px;
-    font-family: sans-serif;
-    background-color: #444444;
-    cursor: pointer;
-    padding: 6px;
-    box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.25);
-}
-
-#code-csp-warning:hover {
-    text-decoration: none;
-    background-color: #007acc;
-    box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.25);
-}
-
-body.scrollBeyondLastLine {
-    margin-bottom: calc(100vh - 22px);
-}
-
-body.showEditorSelection .code-line {
-    position: relative;
-}
-
-body.showEditorSelection :not(tr, ul, ol).code-active-line:before,
-body.showEditorSelection :not(tr, ul, ol).code-line:hover:before {
-    content: '';
-    display: block;
-    position: absolute;
-    top: 0;
-    left: -12px;
-    height: 100%;
-}
-
-.vscode-high-contrast.showEditorSelection :not(tr, ul, ol).code-line .code-line:hover:before {
-    border-left: none;
-}
-
-body.showEditorSelection li.code-active-line:before,
-body.showEditorSelection li.code-line:hover:before {
-    left: -30px;
-}
-
-.vscode-light.showEditorSelection .code-active-line:before {
-    border-left: 3px solid rgba(0, 0, 0, 0.15);
-}
-
-.vscode-light.showEditorSelection .code-line:hover:before {
-    border-left: 3px solid rgba(0, 0, 0, 0.4);
-}
-
-.vscode-dark.showEditorSelection .code-active-line:before {
-    border-left: 3px solid rgba(255, 255, 255, 0.4);
-}
-
-.vscode-dark.showEditorSelection .code-line:hover:before {
-    border-left: 3px solid rgba(255, 255, 255, 0.6);
-}
-
-.vscode-high-contrast.showEditorSelection .code-active-line:before {
-    border-left: 3px solid rgba(255, 160, 0, 0.7);
-}
-
-.vscode-high-contrast.showEditorSelection .code-line:hover:before {
-    border-left: 3px solid rgba(255, 160, 0, 1);
-}
-
 /* Prevent `sub` and `sup` elements from affecting line height */
 sub,
 sup {
@@ -176,9 +104,6 @@ hr {
 h1 {
     font-size: 2em;
     margin-top: 0;
-    padding-bottom: 0.3em;
-    border-bottom-width: 1px;
-    border-bottom-style: solid;
 }
 
 h2 {
@@ -264,130 +189,12 @@ pre code {
     tab-size: 4;
 }
 
-/** Theming */
-
 pre {
     background-color: var(--vscode-textCodeBlock-background);
     border: 1px solid var(--vscode-widget-border);
 }
 
-.vscode-high-contrast h1 {
-    border-color: rgb(0, 0, 0);
-}
-
-.vscode-light th {
-    border-color: rgba(0, 0, 0, 0.69);
-}
-
-.vscode-dark th {
-    border-color: rgba(255, 255, 255, 0.69);
-}
-
-.vscode-light h1,
-.vscode-light h2,
-.vscode-light hr,
-.vscode-light td {
-    border-color: rgba(0, 0, 0, 0.18);
-}
-
-.vscode-dark h1,
-.vscode-dark h2,
-.vscode-dark hr,
-.vscode-dark td {
-    border-color: rgba(255, 255, 255, 0.18);
-}
-
-.hljs-keyword,
-.hljs-literal,
-.hljs-symbol,
-.hljs-name {
-    color: #569cd6;
-}
-.hljs-link {
-    color: #569cd6;
-    text-decoration: underline;
-}
-
-.hljs-built_in,
-.hljs-type {
-    color: #4ec9b0;
-}
-
-.hljs-number,
-.hljs-class {
-    color: #b8d7a3;
-}
-
-.hljs-string,
-.hljs-meta-string {
-    color: #d69d85;
-}
-
-.hljs-regexp,
-.hljs-template-tag {
-    color: #9a5334;
-}
-
-.hljs-subst,
-.hljs-function,
-.hljs-title,
-.hljs-params,
-.hljs-formula {
-    color: #dcdcdc;
-}
-
-.hljs-comment,
-.hljs-quote {
-    color: #57a64a;
-    font-style: italic;
-}
-
-.hljs-doctag {
-    color: #608b4e;
-}
-
-.hljs-meta,
-.hljs-meta-keyword,
-.hljs-tag {
-    color: #9b9b9b;
-}
-
-.hljs-variable,
-.hljs-template-variable {
-    color: #bd63c5;
-}
-
-.hljs-attr,
-.hljs-attribute,
-.hljs-builtin-name {
-    color: #9cdcfe;
-}
-
-.hljs-section {
-    color: gold;
-}
-
-.hljs-emphasis {
-    font-style: italic;
-}
-
-.hljs-strong {
-    font-weight: bold;
-}
-
-/*.hljs-code {
-   font-family:'Monospace';
- }*/
-
-.hljs-bullet,
-.hljs-selector-tag,
-.hljs-selector-id,
-.hljs-selector-class,
-.hljs-selector-attr,
-.hljs-selector-pseudo {
-    color: #d7ba7d;
-}
-
+/* These styles are used to render code diff with markdown-it rendered output */
 .hljs-addition {
     background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(155, 185, 85, 0.2));
     color: rgb(155, 185, 85);
@@ -402,78 +209,43 @@ pre {
     width: 100%;
 }
 
-/*
- From https://raw.githubusercontent.com/isagalaev/highlight.js/master/src/styles/vs.css
- */
-/*
-
- Visual Studio-like style based on original C# coloring by Jason Diamond <jason@diamond.name>
-
- */
-
-.vscode-light .hljs-function,
-.vscode-light .hljs-params,
-.vscode-light .hljs-number,
-.vscode-light .hljs-class {
-    color: inherit;
+input[type='submit'] {
+    background-color: var(--vscode-button-background);
+    border: none;
+    color: var(--vscode-button-foreground);
+    padding: 6px 14px;
+    cursor: pointer;
+    border-radius: 5%;
 }
 
-.vscode-light .hljs-comment,
-.vscode-light .hljs-quote,
-.vscode-light .hljs-number,
-.vscode-light .hljs-class,
-.vscode-light .hljs-variable {
-    color: #008000;
+input[type='submit']:hover {
+    background-color: var(--vscode-button-hoverBackground);
 }
 
-.vscode-light .hljs-keyword,
-.vscode-light .hljs-selector-tag,
-.vscode-light .hljs-name,
-.vscode-light .hljs-tag {
-    color: #00f;
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
 }
 
-.vscode-light .hljs-built_in,
-.vscode-light .hljs-builtin-name {
-    color: #007acc;
+.flex-container > div {
+    flex: 33%;
 }
 
-.vscode-light .hljs-string,
-.vscode-light .hljs-section,
-.vscode-light .hljs-attribute,
-.vscode-light .hljs-literal,
-.vscode-light .hljs-template-tag,
-.vscode-light .hljs-template-variable,
-.vscode-light .hljs-type {
-    color: #a31515;
+@media screen and (max-width: 900px) {
+    .flex-container > div {
+        flex: 50%;
+    }
 }
 
-.vscode-light .hljs-selector-attr,
-.vscode-light .hljs-selector-pseudo,
-.vscode-light .hljs-meta,
-.vscode-light .hljs-meta-keyword {
-    color: #2b91af;
+@media screen and (max-width: 400px) {
+    .flex-container {
+        flex-direction: column;
+    }
 }
 
-.vscode-light .hljs-title,
-.vscode-light .hljs-doctag {
-    color: #808080;
-}
-
-.vscode-light .hljs-attr {
-    color: #f00;
-}
-
-.vscode-light .hljs-symbol,
-.vscode-light .hljs-bullet,
-.vscode-light .hljs-link {
-    color: #00b0e8;
-}
-
-.vscode-light .hljs-emphasis {
-    font-style: italic;
-}
-
-.vscode-light .hljs-strong {
-    font-weight: bold;
+hr {
+    border: unset;
+    height: unset;
+    border-bottom: 1px solid var(--vscode-menu-separatorBackground);
 }

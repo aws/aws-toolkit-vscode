@@ -200,8 +200,13 @@ export interface CodeScanIssue {
 }
 
 export interface Remediation {
-    recommendation: { text: string; url: string }
-    suggestedFixes?: SuggestedFix[]
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
+}
+
+export interface Recommendation {
+    text: string
+    url: string
 }
 
 export interface AggregatedCodeScanIssue {

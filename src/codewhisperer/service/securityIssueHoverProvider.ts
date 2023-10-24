@@ -92,7 +92,7 @@ export class SecurityIssueHoverProvider implements vscode.HoverProvider {
         markdownString.supportHtml = true
         markdownString.supportThemeIcons = true
 
-        const [suggestedFix] = issue.remediation.suggestedFixes ?? []
+        const [suggestedFix] = issue.remediation.suggestedFixes
 
         if (suggestedFix) {
             markdownString.appendMarkdown(

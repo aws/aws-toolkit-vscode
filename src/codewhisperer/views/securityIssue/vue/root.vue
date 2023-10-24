@@ -1,13 +1,19 @@
 /*! * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved. * SPDX-License-Identifier: Apache-2.0 */
 
 <template>
-    <div>
-        <h1 class="page-header">{{ detectorName }} <img :src="severityImage" /></h1>
-        <span v-html="recommendationTextHtml"></span>
+    <div class="mb-16">
+        <div class="container button-container" style="justify-content: space-between">
+            <h1>{{ title }} <img :src="severityImage" /></h1>
+            <input class="mt-4 ml-16" type="submit" value="Apply fix" />
+        </div>
+
+        <div class="mt-16">
+            <span v-html="recommendationTextHtml"></span>
+        </div>
 
         <hr />
 
-        <div class="flex-container detector-details">
+        <div class="flex-container mt-16">
             <div>
                 <b>Common Weakness Enumeration (CWE)</b>
                 <p>
@@ -40,18 +46,14 @@
             </div>
         </div>
 
-        <hr />
-
         <div v-if="isFixAvailable">
+            <hr />
+
             <h3>Suggested code fix</h3>
             <span v-html="suggestedFixHtml"></span>
 
             <h4>Why are we recommending this?</h4>
             <span>{{ suggestedFixDescription }}</span>
-
-            <div class="apply-fix">
-                <input type="submit" value="Apply Fix" />
-            </div>
         </div>
     </div>
 </template>
@@ -92,6 +94,7 @@ const md = markdownIt({
 export default defineComponent({
     data() {
         return {
+            title: '',
             detectorId: '',
             detectorName: '',
             severity: '',
@@ -112,8 +115,9 @@ export default defineComponent({
         async getData() {
             const issue = await client.getIssue()
             if (issue) {
-                const [suggestedFix] = issue.remediation.suggestedFixes ?? []
+                const [suggestedFix] = issue.remediation.suggestedFixes
 
+                this.title = issue.title
                 this.detectorId = issue.detectorId
                 this.detectorName = issue.detectorName
                 this.relatedVulnerabilities = issue.relatedVulnerabilities
@@ -145,58 +149,10 @@ export default defineComponent({
         suggestedFixHtml() {
             return md.render(`
 \`\`\`diff
-${this.suggestedFix}
+${this.suggestedFix.replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '')}
 \`\`\`
       `)
         },
     },
 })
 </script>
-
-<style>
-input[type='submit'] {
-    background-color: var(--vscode-button-background);
-    border: none;
-    color: var(--vscode-button-foreground);
-    padding: 6px 14px;
-    cursor: pointer;
-    border-radius: 5%;
-    margin: 20px 0;
-}
-
-input[type='submit']:hover {
-    background-color: var(--vscode-button-hoverBackground);
-}
-
-.flex-container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-.flex-container > div {
-    flex: 33%;
-}
-
-@media screen and (max-width: 900px) {
-    .flex-container > div {
-        flex: 50%;
-    }
-}
-
-@media screen and (max-width: 400px) {
-    .flex-container {
-        flex-direction: column;
-    }
-}
-
-.page-header {
-    padding-bottom: unset;
-    border-bottom-width: unset;
-    border-bottom-style: unset;
-}
-
-.detector-details {
-    padding-top: 10px;
-}
-</style>
