@@ -219,7 +219,7 @@ object CodeWhispererUtil {
     fun promptReAuth(project: Project, isPluginStarting: Boolean = false): Boolean {
         if (!isCodeWhispererExpired(project)) return false
         val tokenProvider = tokenProvider(project) ?: return false
-        return maybeReauthProviderIfNeeded(project, tokenProvider) {
+        return maybeReauthProviderIfNeeded(project, tokenProvider, isBuilderId = tokenConnection(project).isSono()) {
             runInEdt {
                 project.refreshDevToolTree()
                 if (!CodeWhispererService.hasReAuthPromptBeenShown()) {
@@ -259,14 +259,17 @@ object CodeWhispererUtil {
         return connection.startUrl
     }
 
-    private fun tokenProvider(project: Project) = (
+    private fun tokenConnection(project: Project) = (
         ToolkitConnectionManager
             .getInstance(project)
             .activeConnectionForFeature(CodeWhispererConnection.getInstance()) as? AwsBearerTokenConnection
         )
-        ?.getConnectionSettings()
-        ?.tokenProvider
-        ?.delegate as? BearerTokenProvider
+
+    private fun tokenProvider(project: Project) =
+        tokenConnection(project)
+            ?.getConnectionSettings()
+            ?.tokenProvider
+            ?.delegate as? BearerTokenProvider
 
     fun reconnectCodeWhisperer(project: Project) {
         val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())

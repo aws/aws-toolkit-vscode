@@ -239,12 +239,18 @@ fun AwsBearerTokenConnection.lazyIsUnauthedBearerConnection(): Boolean {
 fun reauthProviderIfNeeded(project: Project?, connection: ToolkitConnection): BearerTokenProvider {
     val tokenProvider = (connection.getConnectionSettings() as TokenConnectionSettings).tokenProvider.delegate as BearerTokenProvider
 
-    return reauthProviderIfNeeded(project, tokenProvider)
+    return reauthProviderIfNeeded(project, tokenProvider, connection.isSono())
 }
 
-fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider): BearerTokenProvider {
-    maybeReauthProviderIfNeeded(project, tokenProvider) {
-        runUnderProgressIfNeeded(project, message("credentials.sono.login.pending"), true) {
+fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider, isBuilderId: Boolean): BearerTokenProvider {
+    maybeReauthProviderIfNeeded(project, tokenProvider, isBuilderId) {
+        val title = if (isBuilderId) {
+            message("credentials.sono.login.pending")
+        } else {
+            message("credentials.sso.login.pending")
+        }
+
+        runUnderProgressIfNeeded(project, title, true) {
             tokenProvider.reauthenticate()
         }
     }
@@ -253,7 +259,12 @@ fun reauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider
 }
 
 // Return true if need to re-auth, false otherwise
-fun maybeReauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenProvider, onReauthRequired: (SsoOidcException?) -> Any): Boolean {
+fun maybeReauthProviderIfNeeded(
+    project: Project?,
+    tokenProvider: BearerTokenProvider,
+    isBuilderId: Boolean,
+    onReauthRequired: (SsoOidcException?) -> Any
+): Boolean {
     val state = tokenProvider.state()
     when (state) {
         BearerTokenAuthState.NOT_AUTHENTICATED -> {
@@ -264,13 +275,19 @@ fun maybeReauthProviderIfNeeded(project: Project?, tokenProvider: BearerTokenPro
 
         BearerTokenAuthState.NEEDS_REFRESH -> {
             try {
-                return runUnderProgressIfNeeded(project, message("credentials.sono.login.refreshing"), true) {
+                val title = if (isBuilderId) {
+                    message("credentials.sono.login.refreshing")
+                } else {
+                    message("credentials.sso.login.refreshing")
+                }
+
+                return runUnderProgressIfNeeded(project, title, true) {
                     tokenProvider.resolveToken()
                     BearerTokenProviderListener.notifyCredUpdate(tokenProvider.id)
                     return@runUnderProgressIfNeeded false
                 }
             } catch (e: SsoOidcException) {
-                getLogger<ToolkitAuthManager>().warn(e) { "Redriving AWS Builder ID login flow since token could not be refreshed" }
+                getLogger<ToolkitAuthManager>().warn(e) { "Redriving bearer token login flow since token could not be refreshed" }
                 onReauthRequired(e)
                 return true
             }

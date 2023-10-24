@@ -72,7 +72,7 @@ class SonoCredentialManager {
                 loginSso(project, SONO_URL, SONO_REGION, CODECATALYST_SCOPES)
             }
 
-            else -> reauthProviderIfNeeded(project, provider)
+            else -> reauthProviderIfNeeded(project, provider, isBuilderId = true)
         }
     }
 
