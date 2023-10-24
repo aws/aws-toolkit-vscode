@@ -3320,15 +3320,15 @@ describe('debugConfiguration', function () {
             },
         }
 
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'my.test.handler')
 
         // Config with relative path:
         config.invokeTarget.projectRoot = relativePath
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Config with absolute path:
         config.invokeTarget.projectRoot = fullPath
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
     })
 
     it('getCodeRoot(), getHandlerName() with invokeTarget=template', async function () {
@@ -3360,13 +3360,13 @@ describe('debugConfiguration', function () {
         // Template with relative path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: relativePath, handler: 'handler' }), tempFile.fsPath)
         await (await globals.templateRegistry).addItemToRegistry(tempFile)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, config), 'handler')
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, config), 'handler')
 
         // Template with absolute path:
         testutil.toFile(makeSampleSamTemplateYaml(true, { codeUri: fullPath }), tempFile.fsPath)
         await (await globals.templateRegistry).addItemToRegistry(tempFile)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, config), fullPath)
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, config), fullPath)
 
         // Template with refs that don't override:
         const tempFileRefs = vscode.Uri.file(path.join(tempFolder, 'testRefs.yaml'))
@@ -3388,8 +3388,8 @@ describe('debugConfiguration', function () {
             tempFileRefs.fsPath
         )
         await (await globals.templateRegistry).addItemToRegistry(tempFileRefs)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileRefsConfig), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileRefsConfig), 'handler')
 
         // Template with refs that overrides handler via default parameter value in YAML template
         const tempFileDefaultRefs = vscode.Uri.file(path.join(tempFolder, 'testDefaultRefs.yaml'))
@@ -3415,8 +3415,8 @@ describe('debugConfiguration', function () {
             tempFileDefaultRefs.fsPath
         )
         await (await globals.templateRegistry).addItemToRegistry(tempFileDefaultRefs)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileDefaultRefsConfig), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileDefaultRefsConfig), 'thisWillOverride')
 
         // Template with refs that overrides handler via override value in launch config
         const tempFileOverrideRef = vscode.Uri.file(path.join(tempFolder, 'testOverrideRefs.yaml'))
@@ -3437,7 +3437,7 @@ describe('debugConfiguration', function () {
             tempFileOverrideRef.fsPath
         )
         await (await globals.templateRegistry).addItemToRegistry(tempFileOverrideRef)
-        assert.strictEqual(debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
-        assert.strictEqual(debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
+        assert.strictEqual(await debugConfiguration.getCodeRoot(folder, fileOverrideRefConfig), fullPath)
+        assert.strictEqual(await debugConfiguration.getHandlerName(folder, fileOverrideRefConfig), 'override')
     })
 })

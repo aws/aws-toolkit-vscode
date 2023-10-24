@@ -130,7 +130,8 @@ class DefaultDebugConfigSource implements DebugConfigurationSource {
 }
 
 async function getSamCodeTargets(launchConfig: LaunchConfiguration): Promise<CodeTargetProperties[]> {
-    return _(await launchConfig.getSamDebugConfigurations())
+    const debugConfigs = await launchConfig.getSamDebugConfigurations()
+    return _(debugConfigs)
         .map(samConfig => samConfig.invokeTarget)
         .filter(isCodeTargetProperties)
         .value()

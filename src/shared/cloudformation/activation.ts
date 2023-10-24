@@ -95,6 +95,8 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
             if (config.get('enableCodeLenses', false) || isToolkitActive()) {
                 return await asyncRegistry.getInstance()
             }
+
+            return NoopWatcher
         },
     })
 }
