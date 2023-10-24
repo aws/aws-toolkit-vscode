@@ -119,7 +119,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const inputCwsprLanguageId of codewhispererLanguageIds) {
             it(`should return itself if input language is codewhispererLanguageId - ${inputCwsprLanguageId}`, function () {
-                const actual = languageContext.mapToCodewhispererLanguage(inputCwsprLanguageId)
+                const actual = languageContext.toTelemetryLanguage(inputCwsprLanguageId)
                 assert.strictEqual(actual, inputCwsprLanguageId)
             })
         }
@@ -148,7 +148,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [platformLanguageId, expectedCwsprLanguageId] of platformLanguageIds) {
             it(`should return mapped codewhispererLanguageId ${expectedCwsprLanguageId} if input language is platformLanguageId - ${platformLanguageId}`, function () {
-                const actual = languageContext.mapToCodewhispererLanguage(platformLanguageId)
+                const actual = languageContext.toTelemetryLanguage(platformLanguageId)
                 assert.strictEqual(actual, expectedCwsprLanguageId)
             })
         }
@@ -162,7 +162,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [arbitraryId, _] of arbitraryIds) {
             it(`should return undefined if languageId is undefined or not neither is type of codewhispererLanguageId or platformLanguageId - ${arbitraryId}`, function () {
-                const actual = languageContext.mapToCodewhispererLanguage(undefined)
+                const actual = languageContext.toTelemetryLanguage(undefined)
                 assert.strictEqual(actual, undefined)
             })
         }
@@ -192,7 +192,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [inputCwsprLanguageId, expectedCwsprLanguageId] of codewhispererLanguageIds) {
             it(`should return ${expectedCwsprLanguageId} if input codewhispererLanguageId is - ${inputCwsprLanguageId}`, function () {
-                const actual = languageContext.mapToCodeWhispererRuntimeLanguage(inputCwsprLanguageId)
+                const actual = languageContext.toRuntimeLanguage(inputCwsprLanguageId)
                 assert.strictEqual(actual, expectedCwsprLanguageId)
             })
         }
