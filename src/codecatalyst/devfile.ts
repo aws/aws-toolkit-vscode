@@ -66,7 +66,7 @@ export class DevfileCodeLensProvider implements vscode.CodeLensProvider {
         this.disposables.push(this._onDidChangeCodeLenses)
         this.disposables.push(
             workspace.onDidSaveTextDocument(async document => {
-                if (!registry.getRegisteredItem(document.fileName)) {
+                if (!registry.getItem(document.fileName)) {
                     return
                 }
 
