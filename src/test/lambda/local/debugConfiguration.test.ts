@@ -138,7 +138,7 @@ describe('isImageLambdaConfig', function () {
 
     it('true for Image-backed template', async function () {
         const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
-        await registry.addItemToRegistry(templatePath)
+        await registry.addItem(templatePath)
 
         const input = {
             name: 'fake-launch-config',
@@ -167,7 +167,7 @@ describe('isImageLambdaConfig', function () {
 
     it('false for ZIP-backed template', async function () {
         const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-        await registry.addItemToRegistry(templatePath)
+        await registry.addItem(templatePath)
 
         const input = {
             name: 'fake-launch-config',
