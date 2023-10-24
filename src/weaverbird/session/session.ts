@@ -65,7 +65,7 @@ export class Session {
     /**
      * Triggered by the Write Code follow up button to start the code generation phase
      */
-    async startCodegen(): Promise<void> {
+    async startCodegen(): Promise<string[]> {
         if (!this.state.conversationId) {
             throw new ConversationIdNotFoundError()
         }
@@ -79,6 +79,7 @@ export class Session {
             this.tabID
         )
         await this.nextInteraction(undefined)
+        return this._state.filePaths ?? []
     }
 
     async send(msg: string): Promise<Interaction> {
@@ -91,7 +92,7 @@ export class Session {
             const message =
                 'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
             return {
-                content: [message],
+                content: message,
             }
         }
 
@@ -129,7 +130,7 @@ export class Session {
             this.approach = newApproach
         }
 
-        return resp.interactions
+        return resp.interaction
     }
 
     public async acceptChanges() {

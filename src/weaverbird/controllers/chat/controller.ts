@@ -67,43 +67,41 @@ export class WeaverbirdController {
             return
         }
 
-        try {
+        this.messenger.sendResponse(async () => {
             const session = await this.sessionStorage.getSession(message.tabID)
             const interactions = await session.send(message.message)
-
-            for (const content of interactions.content) {
-                this.messenger.sendResponse(
-                    {
-                        message: content,
-                        followUps: this.getFollowUpOptions(session.state.phase),
-                    },
-                    message.tabID
-                )
+            return {
+                message: interactions.content,
+                followUps: this.getFollowUpOptions(session.state.phase),
             }
-        } catch (err: any) {
-            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
-            this.messenger.sendErrorMessage(errorMessage, message.tabID)
-        }
+        }, message.tabID)
     }
 
     // TODO add type
     private async writeCodeClicked(message: any) {
-        try {
-            const session = await this.sessionStorage.getSession(message.tabID)
-            await session.startCodegen()
+        // lock the UI/show loading bubbles
+        this.messenger.sendCodeGeneration(message.tabID, true)
+        const session = await this.sessionStorage.getSession(message.tabID)
 
-            // Only add the follow up when the tab hasn't been closed/request hasn't been cancelled
-            if (!session.state.tokenSource.token.isCancellationRequested) {
-                this.messenger.sendResponse(
-                    {
-                        followUps: this.getFollowUpOptions(session.state.phase),
-                    },
-                    message.tabID
-                )
-            }
+        let filePaths: string[] = []
+        try {
+            filePaths = await session.startCodegen()
         } catch (err: any) {
             const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
             this.messenger.sendErrorMessage(errorMessage, message.tabID)
+        }
+
+        // unlock the UI
+        this.messenger.sendCodeGeneration(message.tabID, false)
+
+        // send the file path changes
+        if (filePaths.length > 0) {
+            this.messenger.sendFilePaths(filePaths, message.tabID, session.state.conversationId ?? '')
+        }
+
+        // Only add the follow up when the tab hasn't been closed/request hasn't been cancelled
+        if (!session.state.tokenSource.token.isCancellationRequested && filePaths.length > 0) {
+            this.messenger.sendFollowUps(this.getFollowUpOptions(session.state.phase), message.tabID)
         }
     }
 

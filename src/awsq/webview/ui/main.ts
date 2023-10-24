@@ -170,6 +170,31 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 return
             }
         },
+        onWriteCodeFollowUpClicked: (tabID: string, inProgress: boolean) => {
+            if (inProgress) {
+                mynahUI.updateStore(tabID, {
+                    loadingChat: true,
+                    promptInputDisabledState: true,
+                })
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER,
+                    body: 'Code generation started',
+                })
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER_STREAM,
+                    body: '',
+                })
+                tabsStorage.updateTabStatus(tabID, 'busy')
+                return
+            }
+
+            mynahUI.updateLastChatAnswerStream(tabID, 'Changes to files done. Please review:')
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            tabsStorage.updateTabStatus(tabID, 'free')
+        },
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
