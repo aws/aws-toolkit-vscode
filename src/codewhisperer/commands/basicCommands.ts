@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { codeScanState } from '../models/model'
+import { CodeScanIssue, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -29,6 +29,7 @@ import { get, set } from '../util/commonUtil'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { applyPatch } from 'diff'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -187,5 +188,44 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
         notifyNewCustomizations().then()
+    }
+)
+
+export const applySecurityFix = Commands.declare(
+    'aws.codewhisperer.applySecurityFix',
+    () => async (codeScanIssue: CodeScanIssue) => {
+        const [suggestedFix] = codeScanIssue.suggestedFixes ?? []
+        const activeEditor = vscode.window.activeTextEditor
+        if (!suggestedFix || !activeEditor) {
+            return
+        }
+
+        const fileContent = activeEditor.document.getText()
+        const lineCount = activeEditor.document.lineCount
+        const patch = suggestedFix.code
+
+        const updatedContent = applyPatch(fileContent, patch)
+
+        if (updatedContent) {
+            activeEditor.edit(editBuilder => {
+                const range = new vscode.Range(0, 0, lineCount, 0)
+                editBuilder.replace(range, updatedContent)
+            })
+            activeEditor.document.save().then(isSaved => {
+                if (isSaved) {
+                    vscode.window
+                        .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
+                            title: CodeWhispererConstants.runSecurityScanButtonTitle,
+                        })
+                        .then(res => {
+                            if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
+                                vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
+                            }
+                        })
+                }
+            })
+        } else {
+            vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
+        }
     }
 )

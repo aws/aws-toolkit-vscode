@@ -192,7 +192,7 @@ export const referenceLogText = (
 ) =>
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
-export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
+export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
     <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
@@ -285,6 +285,14 @@ export enum UserGroup {
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+
+export const codeFixAppliedSuccessMessage =
+    'Suggested code fix was applied successfully. Run a security scan to validate the fix. To revert back to the original code, use the undo command.'
+
+export const codeFixAppliedFailedMessage =
+    'Error while applying the suggested code fix. Please copy the suggested code and replace the vulnerable lines of code.'
+
+export const runSecurityScanButtonTitle = 'Run security scan'
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,

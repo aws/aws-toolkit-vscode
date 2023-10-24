@@ -7,9 +7,13 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { resetCodeWhispererGlobalVariables } from '../testUtil'
+import { createCodeScanIssue, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { assertTelemetryCurried } from '../../testUtil'
-import { toggleCodeSuggestions, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
+import {
+    toggleCodeSuggestions,
+    showSecurityScan,
+    applySecurityFix,
+} from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command } from '../../../shared/vscode/commands2'
@@ -130,6 +134,68 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.ok(vscode.window.activeTextEditor === undefined)
             await targetCommand.execute()
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
+        })
+
+        it('should call applySecurityFix command successfully', async function () {
+            const documentEditStub = sinon.stub()
+            const documentSaveStub = sinon.stub()
+            documentSaveStub.resolves(() => true)
+
+            const activeTextEditorMock = {
+                document: {
+                    uri: vscode.Uri.parse(`file:///path/to/mock-file.js`),
+                    save: documentSaveStub,
+                    getText: () => 'first line\nsecond line\nfourth line',
+                    lineCount: 3,
+                },
+                edit: documentEditStub,
+                selection: undefined,
+            }
+            const sandbox = sinon.createSandbox()
+            sandbox.stub(vscode.window, 'activeTextEditor').value(activeTextEditorMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            await targetCommand.execute(createCodeScanIssue())
+
+            assert.ok(documentEditStub.calledOnce)
+            assert.ok(documentSaveStub.calledOnce)
+            assert.strictEqual(
+                getTestWindow().shownMessages[0].message,
+                'Suggested code fix was applied successfully. Run a security scan to validate the fix. To revert back to the original code, use the undo command.'
+            )
+
+            sandbox.restore()
+        })
+        it('should fail to apply patch', async function () {
+            const activeTextEditorMock = {
+                document: {
+                    uri: vscode.Uri.parse(`file:///path/to/mock-file.js`),
+                    getText: () => 'first\nsecond\nfourth\ntext\nnew\n\nname',
+                    lineCount: 7,
+                },
+                selection: undefined,
+            }
+            const sandbox = sinon.createSandbox()
+            sandbox.stub(vscode.window, 'activeTextEditor').value(activeTextEditorMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            await targetCommand.execute(
+                createCodeScanIssue({
+                    suggestedFixes: [
+                        {
+                            code: '@@ -1,1 -1,1 @@\n-mock\n+line5',
+                            description: 'dummy',
+                        },
+                    ],
+                })
+            )
+
+            assert.strictEqual(
+                getTestWindow().shownMessages[0].message,
+                'Error while applying the suggested code fix. Please copy the suggested code and replace the vulnerable lines of code.'
+            )
+
+            sandbox.restore()
         })
     })
 })
