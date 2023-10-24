@@ -39,19 +39,129 @@
             "description": "Installed CLI"
         },
         {
-            "name": "mynahContext",
+            "name": "cwsprChatTriggerInteraction",
             "type": "string",
-            "description": "Event specific metadata object, serialised as a JSON string"
+            "allowedValues": ["hotkeys", "click", "contextMenu"],
+            "description": "Identifies the specific interaction that opens the chat panel"
         },
         {
-            "name": "mynahSearchId",
+            "name": "cwsprChatConversationId",
             "type": "string",
-            "description": "Identifies a unique search interaction"
+            "description": "Unique identifier for each conversation"
         },
         {
-            "name": "mynahViewId",
+            "name": "cwsprChatUserIntent",
             "type": "string",
-            "description": "Identifies panel in which search form is rendered"
+            "allowedValues": [
+                "suggestAlternateImplementation",
+                "applyCommonBestPractices",
+                "improveCode",
+                "showExample",
+                "citeSources",
+                "explainLineByLine",
+                "explainCodeSelection"
+            ],
+            "description": "Explict user intent associated with a chat message"
+        },
+        {
+            "name": "cwsprChatHasCodeSnippet",
+            "type": "boolean",
+            "description": "true if user has selected code snippet, false otherwise."
+        },
+        {
+            "name": "cwsprChatProgrammingLanguage",
+            "type": "boolean",
+            "description": "Programming language associated with the message"
+        },
+        {
+            "name": "cwsprChatConversationType",
+            "type": "string",
+            "description": "Identifies the type of conversation"
+        },
+        {
+            "name": "cwsprChatMessageId",
+            "type": "string",
+            "description": "Unique identifier for each message in an conversation"
+        },
+        {
+            "name": "cwsprChatCodeSnippetCount",
+            "type": "int",
+            "description": "Number of code snippets in response"
+        },
+        {
+            "name": "cwsprChatResponseCode",
+            "type": "int",
+            "description": "HTTP response code for message API invocation"
+        },
+        {
+            "name": "cwsprChatSourceLinkCount",
+            "type": "int",
+            "description": "Number of links in response"
+        },
+        {
+            "name": "cwsprChatReferencesCount",
+            "type": "int",
+            "description": "Number of references in response"
+        },
+        {
+            "name": "cwsprChatFollowUpCount",
+            "type": "int",
+            "description": "Number of follow ups in response"
+        },
+        {
+            "name": "cwsprChatTimeToFirstChunk",
+            "type": "int",
+            "description": "Time taken in ms to get back the first chunk"
+        },
+        {
+            "name": "cwsprChatFullResponseLatency",
+            "type": "int",
+            "description": "Time taken to get the full response in ms"
+        },
+        {
+            "name": "cwsprChatResponseLength",
+            "type": "int",
+            "description": "Number of characters in response"
+        },
+        {
+            "name": "cwsprChatRequestLength",
+            "type": "int",
+            "description": "Number of characters in request"
+        },
+        {
+            "name": "cwsprChatInteractionType",
+            "allowedValues": [
+                "insertAtCursor",
+                "copySnippet",
+                "copy",
+                "clickLink",
+                "clickFollowUp",
+                "hoverReference",
+                "upvote",
+                "downvote"
+            ],
+            "type": "string",
+            "description": "Indicates the specific interaction type with a message in a conversation"
+        },
+        {
+            "name": "cwsprChatInteractionTarget",
+            "type": "string",
+            "description": "Identifies the entity within the message that user interacts with."
+        },
+        {
+            "name": "cwsprChatAcceptedCharactersLength",
+            "type": "string",
+            "description": "Count of code characters copied to the editor"
+        },
+        {
+            "name": "cwsprChatHasReference",
+            "type": "boolean",
+            "description": "True if the code snippet that user interacts with has a reference."
+        },
+        {
+            "name": "cwsprChatModificationPercentage",
+            "type": "double",
+            "description": "% of characters edited by user after copying/inserting code from a message"
         }
     ],
     "metrics": [
@@ -302,195 +412,167 @@
             "description": "Called after opening the SAM Config UI"
         },
         {
-            "name": "mynah_showResults",
-            "description": "Emitted when search suggestions are rendered",
+            "name": "codewhispererchat_openChat",
+            "description": "When user opens CWSPR chat panel",
             "metadata": [
                 {
-                    "type": "mynahContext"
-                },
-                {
-                    "type": "mynahSearchId"
-                },
-                {
-                    "type": "mynahViewId"
+                    "type": "cwsprChatTriggerInteraction",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "mynah_submitFeedback",
-            "description": "Emitted when user submits feedback",
+            "name": "codewhispererchat_enterFocusChat",
+            "description": "When chat panel comes into focus"
+        },
+        {
+            "name": "codewhispererchat_exitFocusChat",
+            "description": "When chat panel goes out of focus"
+        },
+        {
+            "name": "codewhispererchat_closeChat",
+            "description": "When chat panel is closed"
+        },
+        {
+            "name": "codewhispererchat_startConversation",
+            "description": "When user starts a new conversation",
             "metadata": [
                 {
-                    "type": "mynahContext"
+                    "type": "cwsprChatConversationId",
+                    "required": true
                 },
                 {
-                    "type": "mynahSearchId"
+                    "type": "cwsprChatTriggerInteraction",
+                    "required": true
                 },
                 {
-                    "type": "mynahViewId"
-                }
-            ]
-        },
-        {
-            "name": "mynah_updateQueryContext",
-            "description": "Emitted when user updates search query context",
-            "metadata": [
-                {
-                    "type": "mynahContext"
+                    "type": "cwsprChatUserIntent"
                 },
                 {
-                    "type": "mynahSearchId"
+                    "type": "cwsprChatHasCodeSnippet"
                 },
                 {
-                    "type": "mynahViewId"
-                }
-            ]
-        },
-        {
-            "name": "mynah_updatePanelState",
-            "description": "Emitted when mynah search panel goes in/out of focus",
-            "metadata": [
-                {
-                    "type": "mynahContext"
+                    "type": "cwsprChatProgrammingLanguage"
                 },
                 {
-                    "type": "mynahViewId"
+                    "type": "cwsprChatConversationType",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "mynah_updateExtensionState",
-            "description": "Emitted when extension activates/deactivates",
+            "name": "codewhispererchat_addMessage",
+            "description": "When a message is added to the conversation",
             "metadata": [
                 {
-                    "type": "mynahContext"
-                }
-            ]
-        },
-        {
-            "name": "mynah_updateLiveSearchState",
-            "description": "Emitted when mynah live search state (running, paused or stopped) changes",
-            "metadata": [
-                {
-                    "type": "mynahContext"
-                }
-            ]
-        },
-        {
-            "name": "mynah_viewNotification",
-            "description": "Emitted when user sees a notification",
-            "metadata": [
-                {
-                    "type": "mynahContext"
-                }
-            ]
-        },
-        {
-            "name": "mynah_actOnNotification",
-            "description": "Emitted when user interacts with a notification",
-            "metadata": [
-                {
-                    "type": "mynahContext"
-                }
-            ]
-        },
-        {
-            "name": "mynah_selectAutocompleteSuggestion",
-            "description": "Emitted when user selects a autocomplete suggested query",
-            "metadata": [
-                {
-                    "type": "mynahContext"
-                }
-            ]
-        },
-        {
-            "name": "mynah_showCodeDetails",
-            "description": "Emitted when user clicks on a code block in search pane",
-            "metadata": [
-                {
-                    "type": "mynahContext"
+                    "type": "cwsprChatConversationId",
+                    "required": true
                 },
                 {
-                    "type": "mynahSearchId"
+                    "type": "cwsprChatMessageId",
+                    "required": true
                 },
                 {
-                    "type": "mynahViewId"
+                    "type": "cwsprChatUserIntent"
+                },
+                {
+                    "type": "cwsprChatCodeSnippetCount"
+                },
+                {
+                    "type": "cwsprChatProgrammingLanguage"
+                },
+                {
+                    "type": "cwsprChatResponseCode",
+                    "required": true
+                },
+                {
+                    "type": "cwsprChatSourceLinkCount"
+                },
+                {
+                    "type": "cwsprChatReferencesCount"
+                },
+                {
+                    "type": "cwsprChatFollowUpCount"
+                },
+                {
+                    "type": "cwsprChatTimeToFirstChunk",
+                    "required": true
+                },
+                {
+                    "type": "cwsprChatFullResponseLatency",
+                    "required": true
+                },
+                {
+                    "type": "cwsprChatResponseLength"
+                },
+                {
+                    "type": "cwsprChatConversationType",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "mynah_showSearchHistory",
-            "description": "Emitted when user clicks on search history button"
-        },
-        {
-            "name": "mynah_search",
-            "description": "Emitted when user performs a search",
+            "name": "codewhispererchat_interactWithMessage",
+            "description": "When a user interacts with a message in the conversation",
             "metadata": [
                 {
-                    "type": "mynahContext"
+                    "type": "cwsprChatConversationId",
+                    "required": true
                 },
                 {
-                    "type": "mynahSearchId"
+                    "type": "cwsprChatMessageId",
+                    "required": true
                 },
                 {
-                    "type": "mynahViewId"
+                    "type": "cwsprChatInteractionType",
+                    "required": true
+                },
+                {
+                    "type": "cwsprChatInteractionTarget"
+                },
+                {
+                    "type": "cwsprChatAcceptedCharactersLength"
+                },
+                {
+                    "type": "cwsprChatHasReference"
                 }
             ]
         },
         {
-            "name": "mynah_interactWithSuggestion",
-            "description": "Emitted when user interacts with a search suggestion",
+            "name": "codewhispererchat_modifyCode",
+            "description": "% of code modified by the user after copying/inserting code from a message",
             "metadata": [
                 {
-                    "type": "mynahContext"
+                    "type": "cwsprChatConversationId",
+                    "required": true
                 },
                 {
-                    "type": "mynahSearchId"
+                    "type": "cwsprChatMessageId",
+                    "required": true
                 },
                 {
-                    "type": "mynahViewId"
+                    "type": "cwsprChatModificationPercentage",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "mynah_updateErrorState",
-            "description": "Emitted when an error is observed or cleared in the IDE",
+            "name": "codewhispererchat_enterFocusConversation",
+            "description": "When a conversation comes into focus",
             "metadata": [
                 {
-                    "type": "mynahContext"
+                    "type": "cwsprChatConversationId",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "mynah_heartbeat",
-            "description": "Emitted when the user is actively using the IDE",
+            "name": "codewhispererchat_exitFocusConversation",
+            "description": "When a conversation goes out of focus",
             "metadata": [
                 {
-                    "type": "mynahContext"
-                }
-            ]
-        },
-        {
-            "name": "mynah_clearSearch",
-            "description": "Emitted when user clears the search form",
-            "metadata": [
-                {
-                    "type": "mynahSearchId"
-                },
-                {
-                    "type": "mynahViewId"
-                }
-            ]
-        },
-        {
-            "name": "mynah_changeTab",
-            "description": "When user changes the tab",
-            "metadata": [
-                {
-                    "type": "mynahContext"
-                },
-                {
-                    "type": "mynahViewId"
+                    "type": "cwsprChatConversationId",
+                    "required": true
                 }
             ]
         }
