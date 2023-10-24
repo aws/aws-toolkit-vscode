@@ -91,7 +91,7 @@ describe('runtimeLanguageContext', function () {
         })
     })
 
-    describe('mapToCodeWhispererLanguage', function () {
+    describe('toTelemetryLanguage', function () {
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
         })
@@ -168,7 +168,7 @@ describe('runtimeLanguageContext', function () {
         }
     })
 
-    describe('mapToCodeWhispererRuntimeLanguage', function () {
+    describe('toRuntimeLanguage', function () {
         const codewhispererLanguageIds: CodewhispererLanguage[][] = [
             ['c', 'c'],
             ['cpp', 'cpp'],
