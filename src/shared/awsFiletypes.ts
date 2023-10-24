@@ -67,7 +67,7 @@ export function activate(): void {
         vscode.workspace.onDidOpenTextDocument(async (doc: vscode.TextDocument) => {
             const isAwsFileExt = isAwsFiletype(doc)
             const isSchemaHandled = globals.schemaService.isMapped(doc.uri)
-            const isCfnTemplate = !!(await globals.templateRegistry).registeredItems.find(
+            const isCfnTemplate = !!(await globals.templateRegistry).items.find(
                 t => pathutil.normalize(t.path) === pathutil.normalize(doc.fileName)
             )
             if (!isAwsFileExt && !isSchemaHandled && !isCfnTemplate) {

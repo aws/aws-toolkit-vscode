@@ -61,11 +61,7 @@ export async function makeCodeLenses({
 
         try {
             const registry = await globals.templateRegistry
-            const associatedResources = getResourcesForHandler(
-                handler.filename,
-                handler.handlerName,
-                registry.registeredItems
-            )
+            const associatedResources = getResourcesForHandler(handler.filename, handler.handlerName, registry.items)
             const templateConfigs: AddSamDebugConfigurationInput[] = []
 
             if (associatedResources.length > 0) {
