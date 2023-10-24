@@ -16,8 +16,6 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmi
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroup
-import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererUserGroupSettings
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.LEFT_CONTEXT_ON_CURRENT_LINE
 import java.awt.Point
@@ -97,8 +95,7 @@ object CodeWhispererEditorUtil {
         val rightContextLines = caretContext.rightFileContext.split(Regex("\r?\n"))
         val rightContextCurrentLine = if (rightContextLines.isEmpty()) "" else rightContextLines[0]
 
-        return CodeWhispererUserGroupSettings.getInstance().getUserGroup() == CodeWhispererUserGroup.RightContext &&
-            rightContextCurrentLine.isNotEmpty() &&
+        return rightContextCurrentLine.isNotEmpty() &&
             !rightContextCurrentLine.startsWith(" ") &&
             rightContextCurrentLine.trim() != ("}")
     }

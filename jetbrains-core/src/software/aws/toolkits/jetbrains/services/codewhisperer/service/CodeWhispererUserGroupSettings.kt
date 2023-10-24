@@ -78,10 +78,7 @@ class CodeWhispererUserGroupSettings : PersistentStateComponent<CodeWhispererUse
 
     @VisibleForTesting
     fun determineUserGroup(): CodeWhispererUserGroup {
-        val randomNum = Math.random()
-        val group = if (randomNum < 1 / 2.0) {
-            CodeWhispererUserGroup.Control
-        } else CodeWhispererUserGroup.RightContext
+        val group = CodeWhispererUserGroup.Control
 
         settings[USER_GROUP_KEY] = group.name
         version = AwsToolkit.PLUGIN_VERSION
