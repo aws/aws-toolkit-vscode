@@ -192,7 +192,7 @@ export const referenceLogText = (
 ) =>
     `with code ${code} provided with reference under ${license} from repository ${repository}. Added to ${filePath} ${lineInfo}.`
 
-export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in
+export const referenceLogPromptText = `Don\'t want suggestions that include code with references? Uncheck this option in 
     <a href="#" onclick="openSettings();return false;">CodeWhisperer Settings</a>`
 
 export const referenceLogPromptTextEnterpriseSSO =
