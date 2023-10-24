@@ -189,7 +189,7 @@ interface TemplateItem {
 function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
     const folders = new Set<string>()
     const recentTemplatePath = getRecentResponse('global', 'templatePath')
-    const items = registry.registeredItems.map(({ item, path: filePath }) => {
+    const items = registry.items.map(({ item, path: filePath }) => {
         const uri = vscode.Uri.file(filePath)
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath

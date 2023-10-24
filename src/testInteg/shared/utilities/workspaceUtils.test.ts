@@ -94,7 +94,7 @@ describe('findParentProjectFile', async function () {
                 await writeFile(file.fsPath, '')
                 // Add it to the registry. The registry is async and we are not
                 // testing the registry in this test, so manually use it
-                await globals.codelensRootRegistry.addItemToRegistry(file)
+                await globals.codelensRootRegistry.addItem(file)
             }
             const projectFile = await findParentProjectFile(sourceCodeUri, /^.*\.csproj$/)
             if (test.expectedResult) {

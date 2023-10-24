@@ -161,7 +161,7 @@ export class SamInvokeWebview extends VueWebview {
     public async getTemplate() {
         const items: (vscode.QuickPickItem & { templatePath: string })[] = []
         const noTemplate = 'NOTEMPLATEFOUND'
-        for (const template of (await globals.templateRegistry).registeredItems) {
+        for (const template of (await globals.templateRegistry).items) {
             const resources = template.item.Resources
             if (resources) {
                 for (const resource of Object.keys(resources)) {
