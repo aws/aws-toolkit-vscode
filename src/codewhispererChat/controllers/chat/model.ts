@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 
 export interface TriggerTabIDReceived {
@@ -39,4 +40,5 @@ export interface TriggerPayload {
     readonly message: string | undefined
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
+    readonly userIntent: UserIntent | undefined
 }

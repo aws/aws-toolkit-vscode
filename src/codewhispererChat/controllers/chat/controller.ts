@@ -5,7 +5,6 @@
 
 import { EditorContextExtractor, TriggerType } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { ChatRequest, EditorContext, IdeTriggerRequest } from '../../clients/chat/v0/model'
 import { Messenger } from './messenger/messenger'
 import {
     PromptMessage,
@@ -24,6 +23,7 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
+import { ChatRequest, DocumentSymbol, UserIntent } from '@amzn/codewhisperer-streaming'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -105,6 +105,34 @@ export class ChatController {
         this.triggerEventsStorage.removeTabEvents(message.tabID)
     }
 
+    private getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
+        switch (command) {
+            case 'aws.awsq.explainCode':
+                return UserIntent.EXPLAIN_CODE_SELECTION
+            case 'aws.awsq.refactorCode':
+                return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
+            case 'aws.awsq.fixCode':
+                return UserIntent.APPLY_COMMON_BEST_PRACTICES
+            case 'aws.awsq.optimizeCode':
+                return UserIntent.IMPROVE_CODE
+            default:
+                return undefined
+        }
+    }
+
+    private getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
+        if (prompt.message?.startsWith('Explain')) {
+            return UserIntent.EXPLAIN_CODE_SELECTION
+        } else if (prompt.message?.startsWith('Refactor')) {
+            return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
+        } else if (prompt.message?.startsWith('Fix')) {
+            return UserIntent.APPLY_COMMON_BEST_PRACTICES
+        } else if (prompt.message?.startsWith('Optimize')) {
+            return UserIntent.IMPROVE_CODE
+        }
+        return undefined
+    }
+
     private async processContextMenuCommand(command: EditorContextCommand) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ContextMenu).then(context => {
@@ -127,10 +155,7 @@ export class ChatController {
 
                 this.generateResponse(
                     {
-                        message: this.promptGenerator.getPromptForContextMenuCommand(
-                            command,
-                            context?.codeSelectionContext?.selectedCode ?? ''
-                        ),
+                        message: prompt,
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
                         code: context?.codeSelectionContext?.selectedCode,
@@ -138,6 +163,7 @@ export class ChatController {
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.codeSelectionContext?.names,
+                        userIntent: this.getUserIntentFromContextMenuCommand(command),
                     },
                     triggerID
                 )
@@ -189,6 +215,7 @@ export class ChatController {
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: undefined,
+                        userIntent: this.getUserIntentFromPromptChatMessage(message),
                     },
                     triggerID
                 )
@@ -216,46 +243,73 @@ export class ChatController {
         }
 
         const tabID = triggerEvent.tabID
+        const request = this.triggerPayloadToChatRequest(triggerPayload)
+        const session = this.sessionStorage.getSession(tabID)
+        session.createNewTokenSource()
+        const response = await session.chat(request)
+        this.messenger.sendAIResponse(response, session, tabID, triggerID)
+    }
 
-        const editorContext: EditorContext = {
-            fileContent: triggerPayload.fileText,
-            language: triggerPayload.fileLanguage,
-            query: triggerPayload.query,
-            code: triggerPayload.code,
-            context: {
-                matchPolicy: triggerPayload.matchPolicy ?? {
-                    should: [],
-                    must: [],
-                    mustNot: [],
-                },
-            },
-            codeQuery: triggerPayload.codeQuery,
-        }
-
-        let response
+    private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): ChatRequest {
+        const documentSymbolFqns: DocumentSymbol[] = []
+        triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
+            documentSymbolFqns.push({
+                name: fqn.symbol?.join('.'),
+                type: undefined,
+                source: fqn.source?.join('.'),
+            })
+        })
         if (triggerPayload.trigger == ChatTriggerType.ChatMessage) {
-            const chatRequest: ChatRequest = {
-                message: triggerPayload.message ?? '',
-                editorContext: editorContext,
-                attachedSuggestions: [],
-                attachedApiDocsSuggestions: [],
+            return {
+                conversationState: {
+                    currentMessage: {
+                        userInputMessage: {
+                            content: triggerPayload.message ?? '',
+                            userInputMessageContext: {
+                                editorState: {
+                                    document: {
+                                        // TODO : replace with actual relative file path once available in trigger payload
+                                        relativeFilePath: './test.py',
+                                        text: triggerPayload.fileText,
+                                        programmingLanguage: { languageName: triggerPayload.fileLanguage },
+                                        documentSymbols: documentSymbolFqns,
+                                    },
+                                    cursorState: {
+                                        position: { line: 0, character: 0 },
+                                    },
+                                },
+                            },
+                            userIntent: triggerPayload.userIntent,
+                        },
+                    },
+                    chatTriggerType: 'MANUAL',
+                },
             }
-
-            const session = this.sessionStorage.getSession(tabID)
-            session.createNewTokenSource()
-            response = session.chat(chatRequest)
         } else {
-            const trigger = triggerPayload.trigger
-            const ideTriggerRequest: IdeTriggerRequest = {
-                trigger: trigger,
-                editorContext,
+            return {
+                conversationState: {
+                    currentMessage: {
+                        userInputMessage: {
+                            content: triggerPayload.message ?? '',
+                            userInputMessageContext: {
+                                editorState: {
+                                    document: {
+                                        relativeFilePath: '',
+                                        text: triggerPayload.fileText,
+                                        programmingLanguage: { languageName: triggerPayload.fileLanguage },
+                                        documentSymbols: documentSymbolFqns,
+                                    },
+                                    cursorState: {
+                                        position: { line: 0, character: 0 },
+                                    },
+                                },
+                            },
+                            userIntent: triggerPayload.userIntent,
+                        },
+                    },
+                    chatTriggerType: 'MANUAL',
+                },
             }
-
-            const session = this.sessionStorage.getSession(tabID)
-            session.createNewTokenSource()
-            response = session.ideTrigger(ideTriggerRequest)
         }
-
-        this.messenger.sendAIResponse(response, tabID, triggerID)
     }
 }

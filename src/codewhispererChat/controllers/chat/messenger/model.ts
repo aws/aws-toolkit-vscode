@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-interface ChatException {
+export interface ChatException {
     readonly errorMessage: string | undefined
     readonly sessionID: string | undefined
     readonly statusCode: string | undefined
