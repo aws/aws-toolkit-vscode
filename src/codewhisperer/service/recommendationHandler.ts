@@ -301,7 +301,6 @@ export class RecommendationHandler {
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
             } else {
-                // TODO: Double-check with service side that this is an AccessDeniedException
                 if (
                     (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||
                     errorCode === 'ResourceNotFoundException'
