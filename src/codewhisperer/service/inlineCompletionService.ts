@@ -18,6 +18,7 @@ import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
+import { showCodeWhispererQuickPickCommand } from '../commands/basicCommands'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -148,7 +149,7 @@ export class InlineCompletionService {
         this.statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer${
             selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
         }`
-        this.statusBar.command = undefined
+        this.statusBar.command = showCodeWhispererQuickPickCommand
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
@@ -159,7 +160,7 @@ export class InlineCompletionService {
         this.statusBar.text = codicon`${getIcon('vscode-check')} CodeWhisperer${
             selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
         }`
-        this.statusBar.command = undefined
+        this.statusBar.command = showCodeWhispererQuickPickCommand
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }

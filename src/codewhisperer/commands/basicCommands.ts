@@ -27,6 +27,9 @@ import {
     showCustomizationPrompt,
 } from '../util/customizationUtil'
 import { get, set } from '../util/commonUtil'
+import { createQuickPick } from '../../shared/ui/pickerPrompter'
+import { codewhispererNode } from '../explorer/codewhispererNode'
+import { createExitButton } from '../../shared/ui/buttons'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -190,3 +193,12 @@ export const notifyNewCustomizationsCmd = Commands.declare(
         notifyNewCustomizations().then()
     }
 )
+
+export const showCodeWhispererQuickPickCommand = 'aws.codewhisperer.quickpick'
+export const showCodeWhispererQuickPick = Commands.declare({ id: showCodeWhispererQuickPickCommand }, () => () => {
+    createQuickPick(codewhispererNode.getChildren('item'), {
+        title: 'CodeWhisperer',
+        buttons: [createExitButton()],
+        ignoreFocusOut: false,
+    }).prompt()
+})
