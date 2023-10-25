@@ -136,19 +136,6 @@ export function isSageMaker(): boolean {
     return vscode.env.appName === sageMakerAppname
 }
 
-/**
- * Returns true if credentials are provided by the environment (ex. via ~/.aws/)
- *
- * @param isC9 boolean for if Cloud9 is host
- * @param isSM boolean for if SageMaker is host
- * @returns boolean for if C9 "OR" SM
- */
-export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
-    isC9 ??= isCloud9()
-    isSM ??= isSageMaker()
-    return isSM || isC9
-}
-
 export function isCn(): boolean {
     return getComputeRegion()?.startsWith('cn') ?? false
 }
@@ -388,7 +375,7 @@ export async function initializeComputeRegion(
 ): Promise<void> {
     isC9 ??= isCloud9()
     isSM ??= isSageMaker()
-    if (hasVendedIamCredentials(isC9, isSM)) {
+    if (isC9 || isSM) {
         metadata ??= new DefaultEc2MetadataClient()
         try {
             const identity = await metadata.getInstanceIdentity()

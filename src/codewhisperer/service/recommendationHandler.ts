@@ -14,7 +14,8 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9, isSageMaker, hasVendedIamCredentials } from '../../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
     isInlineCompletionEnabled,
@@ -274,7 +275,7 @@ export class RecommendationHandler {
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
 
-                if (error?.code === 'AccessDeniedException') {
+                if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
                     getLogger().error('CodeWhisperer AccessDeniedException : %s', (error as Error).message)
                     vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
@@ -283,7 +284,7 @@ export class RecommendationHandler {
                                 openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
                             }
                         })
-                    await vscode.commands.executeCommand('aws.codeWhisperer.disableAutoTriggerOfCodeSuggestions')
+                    await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
                 }
             } else {
                 errorMessage = error as string
