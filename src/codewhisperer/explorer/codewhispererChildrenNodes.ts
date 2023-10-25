@@ -10,7 +10,6 @@ import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Command } from '../../shared/vscode/commands2'
 import {
-    enableCodeSuggestions,
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
@@ -22,13 +21,6 @@ import {
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
 import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/customizationUtil'
-
-export const createEnableCodeSuggestionsNode = () =>
-    enableCodeSuggestions.build().asTreeNode({
-        label: localize('AWS.explorerNode.enableCodeWhispererNode.label', 'Enable CodeWhisperer'),
-        iconPath: getIcon('vscode-debug-start'),
-        tooltip: localize('AWS.explorerNode.enableCodeWhispererNode.tooltip', 'Click to Enable CodeWhisperer'),
-    })
 
 export function createAutoSuggestions(type: 'item', pause: boolean): DataQuickPickItem<'autoSuggestions'>
 export function createAutoSuggestions(type: 'tree', pause: boolean): TreeNode<Command>
