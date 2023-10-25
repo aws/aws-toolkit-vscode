@@ -6,7 +6,7 @@
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
 
-const ENDPOINT = 'https://rts-641299012133.test.codewhisperer.ai.aws.dev'
+const ENDPOINT = 'https://rts-171763828851.test.codewhisperer.ai.aws.dev'
 const REGION = 'us-west-2'
 
 export class CodeWhispererStreamingClient {
