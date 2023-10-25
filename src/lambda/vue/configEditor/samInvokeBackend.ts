@@ -351,24 +351,22 @@ async function getLaunchConfigQuickPickItems(
     const existingConfigs = launchConfig.getDebugConfigurations()
     const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
     const registry = await globals.templateRegistry
-    return existingConfigs
-        .map((val, index) => {
-            return {
-                config: val,
-                index,
-            }
-        })
-        .filter(o => {
-            const res = samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, registry, true)
-            return res?.isValid
-        })
-        .map(val => {
-            return {
-                index: val.index,
-                label: val.config.name,
-                config: val.config as AwsSamDebuggerConfiguration,
-            }
-        })
+    const mapped = existingConfigs.map((val, index) => {
+        return {
+            config: val as AwsSamDebuggerConfiguration,
+            index: index,
+            label: val.name,
+        }
+    })
+    // XXX: can't use filter() with async predicate.
+    const filtered: LaunchConfigPickItem[] = []
+    for (const c of mapped) {
+        const valid = await samValidator.validate(c.config, registry, true)
+        if (valid?.isValid) {
+            filtered.push(c)
+        }
+    }
+    return filtered
 }
 
 export function finalizeConfig(config: AwsSamDebuggerConfiguration, name: string): AwsSamDebuggerConfiguration {

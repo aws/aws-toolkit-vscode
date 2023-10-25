@@ -74,7 +74,14 @@ export class LaunchConfiguration {
             isAwsSamDebugConfiguration(o)
         ) as AwsSamDebuggerConfiguration[]
         const registry = await globals.templateRegistry
-        return configs.filter(o => this.samValidator.validate(o, registry)?.isValid)
+        // XXX: can't use filter() with async predicate.
+        const validConfigs: AwsSamDebuggerConfiguration[] = []
+        for (const c of configs) {
+            if ((await this.samValidator.validate(c, registry))?.isValid) {
+                validConfigs.push(c)
+            }
+        }
+        return validConfigs
     }
 
     /**
