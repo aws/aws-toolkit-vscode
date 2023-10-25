@@ -17,10 +17,10 @@ class GettingStartedSettings : PersistentStateComponent<GettingStartedSettingsCo
         this.state = state
     }
 
-    var displayPageFirstInstance: Boolean
-        get() = state.displayPageFirstInstance
+    var shouldDisplayPage: Boolean
+        get() = state.shouldDisplayPage
         set(value) {
-            state.displayPageFirstInstance = value
+            state.shouldDisplayPage = value
         }
 
     companion object {
@@ -28,5 +28,5 @@ class GettingStartedSettings : PersistentStateComponent<GettingStartedSettingsCo
     }
 }
 data class GettingStartedSettingsConfiguration(
-    var displayPageFirstInstance: Boolean = true
+    var shouldDisplayPage: Boolean = true
 )

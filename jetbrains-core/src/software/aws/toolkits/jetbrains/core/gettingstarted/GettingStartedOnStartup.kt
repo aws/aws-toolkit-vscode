@@ -3,10 +3,14 @@
 
 package software.aws.toolkits.jetbrains.core.gettingstarted
 
+import com.intellij.configurationStore.getPersistentStateComponentStorageLocation
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.StartupActivity
 import software.aws.toolkits.core.utils.error
+import software.aws.toolkits.core.utils.exists
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.tryOrNull
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel
 import software.aws.toolkits.jetbrains.settings.GettingStartedSettings
 import software.aws.toolkits.telemetry.AuthTelemetry
@@ -17,8 +21,16 @@ import software.aws.toolkits.telemetry.Result
 class GettingStartedOnStartup : StartupActivity {
     override fun runActivity(project: Project) {
         try {
+            val hasStartedToolkitBefore = tryOrNull {
+                getPersistentStateComponentStorageLocation(GettingStartedSettings::class.java)?.exists()
+            } ?: true
+
+            if (hasStartedToolkitBefore && CredentialManager.getInstance().getCredentialIdentifiers().isNotEmpty()) {
+                GettingStartedSettings.getInstance().shouldDisplayPage = false
+            }
+
             val settings = GettingStartedSettings.getInstance()
-            if (!settings.displayPageFirstInstance) {
+            if (!settings.shouldDisplayPage) {
                 return
             } else {
                 GettingStartedPanel.openPanel(project)
@@ -30,7 +42,7 @@ class GettingStartedOnStartup : StartupActivity {
                     isAggregated = true,
                     result = Result.Succeeded
                 )
-                settings.displayPageFirstInstance = false
+                settings.shouldDisplayPage = false
             }
         } catch (e: Exception) {
             LOG.error(e) { "Error opening getting started panel" }
