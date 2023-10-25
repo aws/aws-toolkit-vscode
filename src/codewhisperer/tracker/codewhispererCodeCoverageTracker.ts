@@ -252,7 +252,7 @@ export class CodeWhispererCodeCoverageTracker {
         if (!runtimeLanguageContext.isLanguageSupported(language)) {
             return undefined
         }
-        const cwsprLanguage = runtimeLanguageContext.toTelemetryLanguage(language)
+        const cwsprLanguage = runtimeLanguageContext.normalizeLanguage(language)
         if (!cwsprLanguage) {
             return undefined
         }

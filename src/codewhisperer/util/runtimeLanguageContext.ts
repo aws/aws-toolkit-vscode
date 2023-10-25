@@ -9,9 +9,9 @@ import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
-type NormalizedLanguageId = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
+type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
 
-const normalizedLanguageSet: ReadonlySet<NormalizedLanguageId> = new Set([
+const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'c',
     'cpp',
     'csharp',
@@ -98,11 +98,22 @@ export class RuntimeLanguageContext {
     }
 
     /**
+     * To add a new platform language id:
+     * 1. add new platform language ID constant in the file codewhisperer/constant.ts
+     * 2. add corresponding CodeWhispererLanguage mapping in the constructor of RuntimeLanguageContext
+     * @param languageId : vscode language id or codewhisperer language name
+     * @returns normalized language id of type CodewhispererLanguage if any, otherwise undefined
+     */
+    public normalizeLanguage(languageId?: string): CodewhispererLanguage | undefined {
+        return this.supportedLanguageMap.get(languageId)
+    }
+
+    /**
      * Normalize client side language id to service aware language id (service is not aware of jsx/tsx)
-     * Only used when invoking CodeWhisperer service API, for client telemetry usage please use toTelemetryLanguage
+     * Only used when invoking CodeWhisperer service API, for client usage please use normalizeLanguage
      * Client side CodewhispererLanguage is a superset of NormalizedLanguageId
      */
-    public toRuntimeLanguage(language: CodewhispererLanguage): NormalizedLanguageId {
+    public toRuntimeLanguage(language: CodewhispererLanguage): RuntimeLanguage {
         switch (language) {
             case 'jsx':
                 return 'javascript'
@@ -111,22 +122,11 @@ export class RuntimeLanguageContext {
                 return 'typescript'
 
             default:
-                if (!normalizedLanguageSet.has(language)) {
+                if (!runtimeLanguageSet.has(language)) {
                     getLogger().error(`codewhisperer: unknown runtime language ${language}`)
                 }
                 return language
         }
-    }
-
-    /**
-     * To add a new platform language id:
-     * 1. add new platform language ID constant in the file codewhisperer/constant.ts
-     * 2. add corresponding CodeWhispererLanguage mapping in the constructor of RuntimeLanguageContext
-     * @param languageId : vscode language id or codewhisperer language name
-     * @returns corresponding CodewhispererLanguage ID if any, otherwise undefined
-     */
-    public toTelemetryLanguage(languageId?: string): CodewhispererLanguage | undefined {
-        return this.supportedLanguageMap.get(languageId)
     }
 
     /**
@@ -135,7 +135,7 @@ export class RuntimeLanguageContext {
      * @returns corresponding language extension if any, otherwise undefined
      */
     public getLanguageExtensionForNotebook(languageId?: string): string | undefined {
-        return this.supportedLanguageExtensionMap.get(this.toTelemetryLanguage(languageId)) ?? undefined
+        return this.supportedLanguageExtensionMap.get(this.normalizeLanguage(languageId)) ?? undefined
     }
 
     /**
@@ -143,7 +143,7 @@ export class RuntimeLanguageContext {
      * @returns An object with a field language: CodewhispererLanguage, if no corresponding CodewhispererLanguage ID, plaintext is returned
      */
     public getLanguageContext(languageId?: string): { language: CodewhispererLanguage } {
-        return { language: this.toTelemetryLanguage(languageId) ?? 'plaintext' }
+        return { language: this.normalizeLanguage(languageId) ?? 'plaintext' }
     }
 
     /**
@@ -177,8 +177,8 @@ export class RuntimeLanguageContext {
      * @returns ture if the language is supported by CodeWhisperer otherwise false
      */
     public isLanguageSupported(languageId: string): boolean {
-        const lang = this.toTelemetryLanguage(languageId)
-        return lang !== undefined && this.toTelemetryLanguage(languageId) !== 'plaintext'
+        const lang = this.normalizeLanguage(languageId)
+        return lang !== undefined && this.normalizeLanguage(languageId) !== 'plaintext'
     }
 }
 

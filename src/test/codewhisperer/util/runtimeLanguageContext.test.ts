@@ -91,7 +91,7 @@ describe('runtimeLanguageContext', function () {
         })
     })
 
-    describe('toTelemetryLanguage', function () {
+    describe('normalizeLanguage', function () {
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
         })
@@ -119,7 +119,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const inputCwsprLanguageId of codewhispererLanguageIds) {
             it(`should return itself if input language is codewhispererLanguageId - ${inputCwsprLanguageId}`, function () {
-                const actual = languageContext.toTelemetryLanguage(inputCwsprLanguageId)
+                const actual = languageContext.normalizeLanguage(inputCwsprLanguageId)
                 assert.strictEqual(actual, inputCwsprLanguageId)
             })
         }
@@ -148,7 +148,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [platformLanguageId, expectedCwsprLanguageId] of platformLanguageIds) {
             it(`should return mapped codewhispererLanguageId ${expectedCwsprLanguageId} if input language is platformLanguageId - ${platformLanguageId}`, function () {
-                const actual = languageContext.toTelemetryLanguage(platformLanguageId)
+                const actual = languageContext.normalizeLanguage(platformLanguageId)
                 assert.strictEqual(actual, expectedCwsprLanguageId)
             })
         }
@@ -162,7 +162,7 @@ describe('runtimeLanguageContext', function () {
 
         for (const [arbitraryId, _] of arbitraryIds) {
             it(`should return undefined if languageId is undefined or not neither is type of codewhispererLanguageId or platformLanguageId - ${arbitraryId}`, function () {
-                const actual = languageContext.toTelemetryLanguage(undefined)
+                const actual = languageContext.normalizeLanguage(undefined)
                 assert.strictEqual(actual, undefined)
             })
         }
