@@ -202,3 +202,8 @@ export const showCodeWhispererQuickPick = Commands.declare({ id: showCodeWhisper
         ignoreFocusOut: false,
     }).prompt()
 })
+
+export const signoutCodeWhisperer = Commands.declare(
+    'aws.codewhisperer.signout',
+    (auth: AuthUtil) => () => auth.secondaryAuth.deleteConnection()
+)

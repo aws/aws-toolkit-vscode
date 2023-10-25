@@ -16,6 +16,7 @@ import {
     createSelectCustomization,
     createReconnect,
     createGettingStarted,
+    createSignout,
 } from './codewhispererChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
@@ -75,41 +76,55 @@ export class CodeWhispererNode implements RootNode {
     public getChildren(type: 'item'): DataQuickPickItem<string>[]
     public getChildren(type: 'tree' | 'item'): TreeNode<Command>[] | DataQuickPickItem<string>[]
     public getChildren(type: 'tree' | 'item' = 'tree'): any[] {
-        const autoTriggerEnabled =
-            globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
-        if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnect(type), createLearnMore(type)]
-        }
-        if (!AuthUtil.instance.isConnected()) {
-            return [createSignIn(type), createLearnMore(type)]
-        }
-        if (this._showFreeTierLimitReachedNode) {
-            if (hasVendedIamCredentials()) {
-                return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
-            } else {
-                return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
+        const _getChildren = () => {
+            const autoTriggerEnabled =
+                globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
+            if (AuthUtil.instance.isConnectionExpired()) {
+                return [createReconnect(type), createLearnMore(type)]
             }
-        } else {
-            if (hasVendedIamCredentials()) {
-                return [createAutoSuggestions(type, autoTriggerEnabled), createOpenReferenceLog(type)]
+            if (!AuthUtil.instance.isConnected()) {
+                return [createSignIn(type), createLearnMore(type)]
+            }
+            if (this._showFreeTierLimitReachedNode) {
+                if (hasVendedIamCredentials()) {
+                    return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
+                } else {
+                    return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
+                }
             } else {
-                if (AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled) {
+                if (hasVendedIamCredentials()) {
+                    return [createAutoSuggestions(type, autoTriggerEnabled), createOpenReferenceLog(type)]
+                } else {
+                    if (
+                        AuthUtil.instance.isValidEnterpriseSsoInUse() &&
+                        AuthUtil.instance.isCustomizationFeatureEnabled
+                    ) {
+                        return [
+                            createAutoSuggestions(type, autoTriggerEnabled),
+                            createSecurityScan(type),
+                            createSelectCustomization(type),
+                            createOpenReferenceLog(type),
+                            createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
+                        ]
+                    }
                     return [
                         createAutoSuggestions(type, autoTriggerEnabled),
                         createSecurityScan(type),
-                        createSelectCustomization(type),
                         createOpenReferenceLog(type),
                         createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
                     ]
                 }
-                return [
-                    createAutoSuggestions(type, autoTriggerEnabled),
-                    createSecurityScan(type),
-                    createOpenReferenceLog(type),
-                    createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
-                ]
             }
         }
+
+        const children = _getChildren()
+
+        // Add 'Sign Out' to quick pick if user is connected
+        if (AuthUtil.instance.isConnected() && type === 'item' && !hasVendedIamCredentials()) {
+            return [...children, { kind: vscode.QuickPickItemKind.Separator, data: 'separator' }, createSignout('item')]
+        }
+
+        return children
     }
 
     /**

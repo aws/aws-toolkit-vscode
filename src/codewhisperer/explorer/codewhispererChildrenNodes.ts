@@ -4,6 +4,7 @@
  */
 
 import { AuthCommandDeclarations } from '../../auth/commands'
+import { ToolkitError } from '../../shared/errors'
 import { codicon, getIcon } from '../../shared/icons'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -17,6 +18,7 @@ import {
     showFreeTierLimit,
     reconnect,
     selectCustomizationPrompt,
+    signoutCodeWhisperer,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
@@ -263,5 +265,23 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
                         'codewhispererDeveloperTools'
                     ),
             } as DataQuickPickItem<'gettingStarted'>
+    }
+}
+
+export function createSignout(type: 'item'): DataQuickPickItem<'signout'>
+export function createSignout(type: 'tree'): TreeNode<Command>
+export function createSignout(type: 'item' | 'tree'): DataQuickPickItem<'signout'> | TreeNode<Command>
+export function createSignout(type: 'item' | 'tree'): any {
+    const label = localize('AWS.codewhisperer.signoutNode.label', 'Sign Out')
+    const icon = getIcon('vscode-sign-out')
+    switch (type) {
+        case 'tree':
+            throw new ToolkitError('codewhisperer: Signout Node not implemented for tree.')
+        case 'item':
+            return {
+                data: 'signout',
+                label: codicon`${icon} ${label}`,
+                onClick: () => signoutCodeWhisperer.execute(),
+            } as DataQuickPickItem<'signout'>
     }
 }
