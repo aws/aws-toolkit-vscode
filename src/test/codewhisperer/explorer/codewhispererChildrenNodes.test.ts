@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import {
-    createEnableCodeSuggestionsNode,
     createSignIn,
     createLearnMore,
     createFreeTierLimitMet,
@@ -21,12 +20,6 @@ import {
 describe('codewhisperer children nodes', function () {
     afterEach(function () {
         sinon.restore()
-    })
-
-    it('should build enableCodeSuggestions command node', function () {
-        const node = createEnableCodeSuggestionsNode()
-
-        assert.strictEqual(node.resource.id, 'aws.codeWhisperer.enableCodeSuggestions')
     })
 
     it('builds the pause/resume codewhisperer command node', async function () {
