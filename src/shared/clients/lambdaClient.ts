@@ -12,13 +12,11 @@ import { ClassToInterfaceType } from '../utilities/tsUtils'
 
 export type LambdaClient = ClassToInterfaceType<DefaultLambdaClient>
 
-const fiveMinutesInMillis = 5 * 60 * 1000
-
 export class DefaultLambdaClient {
-    private readonly defaultTimeout: number
+    private readonly defaultTimeoutInMs: number
 
     public constructor(public readonly regionCode: string) {
-        this.defaultTimeout = fiveMinutesInMillis
+        this.defaultTimeoutInMs = 5 * 60 * 1000 // 5 minutes
     }
 
     public async deleteFunction(name: string): Promise<void> {
@@ -125,7 +123,7 @@ export class DefaultLambdaClient {
     private async createSdkClient(): Promise<Lambda> {
         return await globals.sdkClientBuilder.createAwsService(
             Lambda,
-            { httpOptions: { timeout: this.defaultTimeout } },
+            { httpOptions: { timeout: this.defaultTimeoutInMs } },
             this.regionCode
         )
     }
