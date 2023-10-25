@@ -462,7 +462,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 makeSampleSamTemplateYaml(true, { resourceName, runtime: 'moreLikeRanOutOfTime' }),
                 tempFile.fsPath
             )
-            await (await globals.templateRegistry).addItem(tempFile)
             await assert.rejects(() =>
                 debugConfigProvider.makeConfig(undefined, {
                     type: AWS_SAM_DEBUG_TYPE,
@@ -853,7 +852,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -980,7 +978,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -1119,7 +1116,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
 
             const expected: SamLaunchRequestArgs = {
@@ -1415,7 +1411,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1514,7 +1509,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
             const expected: SamLaunchRequestArgs = {
@@ -1778,7 +1772,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
@@ -1933,7 +1926,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
             const actual = (await debugConfigProvider.makeConfig(folder, input))! as SamLaunchRequestArgs
             const codeRoot = `${appDir}/src/HelloWorld`
             const expectedCodeRoot = (actual.baseBuildDir ?? 'fail') + '/input'
@@ -2242,7 +2234,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2368,7 +2359,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2460,7 +2450,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 },
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-image-sam-app/template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2739,7 +2728,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 useIkpdb: true,
             }
             const templatePath = vscode.Uri.file(path.join(appDir, 'python3.7-plain-sam-app/template.yaml'))
-            await (await globals.templateRegistry).addItem(templatePath)
 
             // Invoke with noDebug=false (the default).
             const actual = (await debugConfigProvider.makeConfig(folder, input))!
@@ -2885,7 +2873,6 @@ describe('SamDebugConfigurationProvider', async function () {
                 }),
                 tempFile.fsPath
             )
-            await (await globals.templateRegistry).addItem(tempFile)
             const actual = (await debugConfigProviderMockCredentials.makeConfig(folder, input))!
             const tempDir = path.dirname(actual.codeRoot)
 

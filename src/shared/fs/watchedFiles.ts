@@ -172,14 +172,21 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Adds an item to registry. Wipes any existing item in its place with new copy of the data
-     * @param uri vscode.Uri containing the item to load in
+     * Adds or updates an item in the registry, and returns the result.
+     *
+     * If the item matches an "exclude" rule, it is not added nor does it update/replace any existing item.
+     *
+     * @param uri vscode.Uri containing the item to register.
+     * @param quiet On failure, log a message instead of throwing an exception.
+     * @param contents Optional data to associate with the item, for logical (non-filesystem) URIs.
+     *
+     * @returns Item, or undefined if (1) processing fails or (2) the name matches an "exclude" rule.
      */
-    public async addItem(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<void> {
+    public async addItem(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<WatchedItem<T> | undefined> {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
-            getLogger().verbose(`${this.name}: excluding path (matches "${excluded}"): ${uri.fsPath}`)
-            return
+            getLogger().verbose(`${this.name}: excluded (matches "${excluded}"): ${uri.fsPath}`)
+            return undefined
         }
         this.assertAbsolute(uri)
         const pathAsString = normalizeVSCodeUri(uri)
@@ -187,7 +194,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             const item = await this.process(uri, contents)
             if (item) {
                 this.registryData.set(pathAsString, item)
+                return {
+                    path: pathAsString,
+                    item: item,
+                }
             } else {
+                getLogger().info(`${this.name}: failed to process: ${uri}`)
                 // if value isn't valid for type, remove from registry
                 this.registryData.delete(pathAsString)
             }
@@ -195,8 +207,9 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`${this.name}: failed to load(): ${uri}: ${(e as Error).message}`)
+            getLogger().info(`${this.name}: failed to process: ${uri}: ${(e as Error).message}`)
         }
+        return undefined
     }
 
     /**
