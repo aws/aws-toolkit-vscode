@@ -98,7 +98,7 @@ export async function findParentProjectFile(
         return undefined
     }
 
-    const workspaceProjectFiles = globals.codelensRootRegistry.registeredItems
+    const workspaceProjectFiles = globals.codelensRootRegistry.items
         .filter(item => item.item.match(projectFile))
         .map(item => item.path)
 

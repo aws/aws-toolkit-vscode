@@ -109,7 +109,8 @@ interface ToolkitGlobals {
     regionProvider: RegionProvider
     sdkClientBuilder: AWSClientBuilder
     telemetry: TelemetryService & { logger: TelemetryLogger }
-    templateRegistry: CloudFormationTemplateRegistry
+    /** template.yaml registry. _Avoid_ calling this until it is actually needed (for SAM features). */
+    templateRegistry: Promise<CloudFormationTemplateRegistry>
     schemaService: SchemaService
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager

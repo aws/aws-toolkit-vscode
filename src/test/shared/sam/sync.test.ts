@@ -16,10 +16,12 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import { ToolkitError } from '../../../shared/errors'
+import globals from '../../../shared/extensionGlobals'
 
-describe('SyncWizard', function () {
+describe('SyncWizard', async function () {
+    const registry = await globals.templateRegistry
     const createTester = (params?: Partial<SyncParams>) =>
-        createWizardTester(new SyncWizard({ deployType: 'code', ...params }))
+        createWizardTester(new SyncWizard({ deployType: 'code', ...params }, registry))
 
     it('shows steps in correct order', function () {
         const tester = createTester()

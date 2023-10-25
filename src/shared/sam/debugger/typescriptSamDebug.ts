@@ -76,7 +76,7 @@ export async function makeTypescriptConfig(config: SamLaunchRequestArgs): Promis
     // compile typescript code and convert lambda handler if necessary
     await compileTypeScript(config)
 
-    const isImageLambda = isImageLambdaConfig(config)
+    const isImageLambda = await isImageLambdaConfig(config)
 
     if (isImageLambda && !config.noDebug) {
         // Need --inspect to enable debugging. SAM CLI doesn't send env vars for "Image" packagetype.

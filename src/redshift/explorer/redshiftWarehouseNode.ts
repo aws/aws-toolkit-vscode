@@ -17,10 +17,9 @@ import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
 import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
 import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
-import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { deleteConnection, getConnectionParamsState, updateConnectionParamsState } from './redshiftState'
-import globals from '../../shared/extensionGlobals'
+import { createLogsConnectionMessage, showConnectionMessage } from '../messageUtils'
 
 export class CreateNotebookNode extends AWSCommandTreeNode {
     constructor(parent: RedshiftWarehouseNode) {
@@ -43,8 +42,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
     constructor(
         public readonly parent: RedshiftNode,
         public readonly redshiftWarehouse: AWSResourceNode,
-        public readonly warehouseType: RedshiftWarehouseType,
-        public readonly connectionWizard?: RedshiftNodeConnectionWizard
+        public readonly warehouseType: RedshiftWarehouseType
     ) {
         super(redshiftWarehouse.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = redshiftWarehouse.name
@@ -52,7 +50,6 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
         this.arn = redshiftWarehouse.arn
         this.name = redshiftWarehouse.name
         this.redshiftClient = parent.redshiftClient
-        this.connectionWizard = connectionWizard ?? new RedshiftNodeConnectionWizard(this)
         const existingConnectionParams = getConnectionParamsState(this.arn)
         if (existingConnectionParams && existingConnectionParams !== deleteConnection) {
             this.connectionParams = existingConnectionParams as ConnectionParams
@@ -101,11 +98,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     newChildren: childNodes,
                 }
             } catch (error) {
-                getLogger().error(
-                    `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
-                        (error as Error).message
-                    }`
-                )
+                createLogsConnectionMessage(this.redshiftWarehouse.name, error as Error)
                 return Promise.reject(error)
             }
         })
@@ -125,7 +118,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     this.connectionParams = existingConnectionParams as ConnectionParams
                 } else {
                     // No connectionParams: trigger connection wizard to get user input
-                    this.connectionParams = await this.connectionWizard!.run()
+                    this.connectionParams = await new RedshiftNodeConnectionWizard(this).run()
                     if (!this.connectionParams) {
                         return this.getClickToEstablishConnectionNode()
                     }
@@ -147,11 +140,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                     await updateConnectionParamsState(this.arn, this.connectionParams)
                     return childNodes
                 } catch (error) {
-                    const msg = `Redshift: Failed to fetch databases for warehouse ${this.redshiftWarehouse.name} - ${
-                        (error as Error).message
-                    }`
-                    getLogger().error(msg)
-                    globals.outputChannel.appendLine(msg)
+                    showConnectionMessage(this.redshiftWarehouse.name, error as Error)
                     await updateConnectionParamsState(this.arn, undefined)
                     return this.getRetryNode()
                 }

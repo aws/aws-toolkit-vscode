@@ -9,7 +9,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
 import { captureEventOnce } from '../../testUtil'
-import { codewhispererScopes, isSsoConnection } from '../../../auth/connection'
+import { codewhispererScopes, isAnySsoConnection, isBuilderIdConnection } from '../../../auth/connection'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
@@ -111,9 +111,9 @@ describe('AuthUtil', async function () {
         await authUtil.connectToAwsBuilderId()
         assert.ok(authUtil.isConnected())
 
-        const ssoConnectionIds = new Set(auth.activeConnectionEvents.emits.filter(isSsoConnection).map(c => c.id))
+        const ssoConnectionIds = new Set(auth.activeConnectionEvents.emits.filter(isAnySsoConnection).map(c => c.id))
         assert.strictEqual(ssoConnectionIds.size, 1, 'Expected exactly 1 unique SSO connection id')
-        assert.strictEqual((await auth.listConnections()).filter(isSsoConnection).length, 1)
+        assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
     })
 
     it('automatically upgrades connections if they do not have the required scopes', async function () {
@@ -124,11 +124,11 @@ describe('AuthUtil', async function () {
         await authUtil.connectToAwsBuilderId()
         assert.ok(authUtil.isConnected())
         assert.ok(authUtil.isConnectionValid())
-        assert.ok(isSsoConnection(authUtil.conn))
+        assert.ok(isBuilderIdConnection(authUtil.conn))
         assert.strictEqual(authUtil.conn?.id, upgradeableConn.id)
         assert.strictEqual(authUtil.conn.startUrl, upgradeableConn.startUrl)
         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)
-        assert.strictEqual((await auth.listConnections()).filter(isSsoConnection).length, 1)
+        assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
     })
 
     it('test reformatStartUrl should remove trailing slash and hash', function () {
