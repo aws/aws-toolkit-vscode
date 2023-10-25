@@ -37,6 +37,7 @@ import {
     notifyNewCustomizationsCmd,
     connectWithCustomization,
     showCodeWhispererQuickPick,
+    signoutCodeWhisperer,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -92,7 +93,7 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
-        Commands.register('aws.codewhisperer.signout', () => auth.secondaryAuth.deleteConnection()),
+        signoutCodeWhisperer.register(auth),
         /** Opens the Add Connections webview with CW highlighted */
         Commands.register('aws.codewhisperer.manageConnections', () => {
             AuthCommandDeclarations.instance.declared.showManageConnections.execute(
