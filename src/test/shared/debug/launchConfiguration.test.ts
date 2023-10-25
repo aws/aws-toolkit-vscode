@@ -112,11 +112,7 @@ describe('LaunchConfiguration', function () {
         mockConfigSource = mock()
         mockSamValidator = mock()
         when(mockConfigSource.getDebugConfigurations()).thenReturn(debugConfigurations)
-        when(mockSamValidator.validate(deepEqual(samDebugConfiguration), registry)).thenReturn(
-            await (async () => {
-                return { isValid: true }
-            })()
-        )
+        when(mockSamValidator.validate(deepEqual(samDebugConfiguration), registry)).thenResolve({ isValid: true })
     })
 
     afterEach(async function () {
