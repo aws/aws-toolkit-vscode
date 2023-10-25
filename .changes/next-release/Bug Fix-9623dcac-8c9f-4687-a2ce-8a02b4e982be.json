@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "`AWS: Add SAM Debug Configuration` command only works the first time it is invoked."
+}
