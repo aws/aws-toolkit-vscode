@@ -17,11 +17,12 @@ import {
     createReconnect,
     createGettingStarted,
 } from './codewhispererChildrenNodes'
-import { Commands } from '../../shared/vscode/commands2'
+import { Command, Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
@@ -70,39 +71,42 @@ export class CodeWhispererNode implements RootNode {
         return ''
     }
 
-    public getChildren() {
+    public getChildren(): TreeNode<Command>[]
+    public getChildren(type: 'item'): DataQuickPickItem<string>[]
+    public getChildren(type: 'tree' | 'item'): TreeNode<Command>[] | DataQuickPickItem<string>[]
+    public getChildren(type: 'tree' | 'item' = 'tree'): any[] {
         const autoTriggerEnabled =
             globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
         if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnect('tree'), createLearnMore('tree')]
+            return [createReconnect(type), createLearnMore(type)]
         }
         if (!AuthUtil.instance.isConnected()) {
-            return [createSignIn('tree'), createLearnMore('tree')]
+            return [createSignIn(type), createLearnMore(type)]
         }
         if (this._showFreeTierLimitReachedNode) {
             if (hasVendedIamCredentials()) {
-                return [createFreeTierLimitMet('tree'), createOpenReferenceLog('tree')]
+                return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
             } else {
-                return [createFreeTierLimitMet('tree'), createSecurityScan('tree'), createOpenReferenceLog('tree')]
+                return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
             }
         } else {
             if (hasVendedIamCredentials()) {
-                return [createAutoSuggestions('tree', autoTriggerEnabled), createOpenReferenceLog('tree')]
+                return [createAutoSuggestions(type, autoTriggerEnabled), createOpenReferenceLog(type)]
             } else {
                 if (AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled) {
                     return [
-                        createAutoSuggestions('tree', autoTriggerEnabled),
-                        createSecurityScan('tree'),
-                        createSelectCustomization('tree'),
-                        createOpenReferenceLog('tree'),
-                        createGettingStarted('tree'), // "Learn" node : opens Learn CodeWhisperer page
+                        createAutoSuggestions(type, autoTriggerEnabled),
+                        createSecurityScan(type),
+                        createSelectCustomization(type),
+                        createOpenReferenceLog(type),
+                        createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
                     ]
                 }
                 return [
-                    createAutoSuggestions('tree', autoTriggerEnabled),
-                    createSecurityScan('tree'),
-                    createOpenReferenceLog('tree'),
-                    createGettingStarted('tree'), // "Learn" node : opens Learn CodeWhisperer page
+                    createAutoSuggestions(type, autoTriggerEnabled),
+                    createSecurityScan(type),
+                    createOpenReferenceLog(type),
+                    createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
                 ]
             }
         }
