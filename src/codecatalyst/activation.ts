@@ -23,6 +23,7 @@ import { isDevenvVscode } from './utils'
 import { getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
+import { AuthCommandDeclarations } from '../auth/commands'
 
 const localize = nls.loadMessageBundle()
 
@@ -36,12 +37,17 @@ export async function activate(ctx: ExtContext): Promise<void> {
 
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
-        ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands))
+        ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),
+        Commands.register('aws.codecatalyst.manageConnections', () => {
+            AuthCommandDeclarations.instance.declared.showManageConnections.execute(
+                'codecatalystDeveloperTools',
+                'codecatalyst'
+            )
+        }),
+        Commands.register('aws.codecatalyst.signout', () => {
+            return authProvider.secondaryAuth.deleteConnection()
+        })
     )
-
-    Commands.register('aws.codecatalyst.removeConnection', () => {
-        authProvider.removeSavedConnection()
-    })
 
     if (!isCloud9()) {
         GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then(disposable => {

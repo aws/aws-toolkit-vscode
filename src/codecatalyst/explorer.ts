@@ -150,9 +150,18 @@ export class CodeCatalystRootNode implements RootNode {
             item.description = 'Connected to Dev Environment'
             item.iconPath = addColor(getIcon('vscode-pass'), 'testing.iconPassed')
         } else {
-            item.description = this.authProvider.isUsingSavedConnection ? 'AWS Builder ID Connected' : undefined
+            item.description = this.getDescription()
         }
 
         return item
+    }
+
+    private getDescription(): string {
+        if (this.authProvider.activeConnection) {
+            return this.authProvider.secondaryAuth.isConnectionExpired
+                ? 'Expired Connection'
+                : 'AWS Builder ID Connected'
+        }
+        return ''
     }
 }

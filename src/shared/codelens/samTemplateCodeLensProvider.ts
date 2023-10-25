@@ -31,8 +31,8 @@ export class SamTemplateCodeLensProvider implements vscode.CodeLensProvider {
         }
 
         // User already has launch configs for:
-        const mappedApiConfigs = Array.from(getConfigsMappedToTemplates(launchConfig, 'api'))
-        const mappedFunConfigs = Array.from(getConfigsMappedToTemplates(launchConfig, 'template'))
+        const mappedApiConfigs = Array.from(await getConfigsMappedToTemplates(launchConfig, 'api'))
+        const mappedFunConfigs = Array.from(await getConfigsMappedToTemplates(launchConfig, 'template'))
 
         const unmappedApis = apiResources.filter(
             r =>

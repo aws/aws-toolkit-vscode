@@ -15,7 +15,6 @@ import {
 } from '../../../../shared/sam/debugger/awsSamDebugConfiguration'
 import { DefaultAwsSamDebugConfigurationValidator } from '../../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import { createBaseTemplate } from '../../cloudformation/cloudformationTestUtils'
-import globals from '../../../../shared/extensionGlobals'
 import { WatchedItem } from '../../../../shared/fs/watchedFiles'
 
 function createTemplateConfig(): AwsSamDebuggerConfiguration {
@@ -104,21 +103,9 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
 
     let validator: DefaultAwsSamDebugConfigurationValidator
 
-    let savedRegistry: CloudFormationTemplateRegistry
-
-    before(function () {
-        savedRegistry = globals.templateRegistry
-    })
-
-    after(function () {
-        globals.templateRegistry = savedRegistry
-    })
-
     beforeEach(function () {
-        when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
-        when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
-
-        globals.templateRegistry = mockRegistry
+        when(mockRegistry.getItem('/')).thenReturn(templateData)
+        when(mockRegistry.getItem('/image')).thenReturn(imageTemplateData)
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
@@ -126,24 +113,24 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     it('returns invalid when resolving debug configurations with an invalid request type', function () {
         templateConfig.request = 'not-direct-invoke'
 
-        const result = validator.validate(templateConfig)
+        const result = validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
     it('returns invalid when resolving debug configurations with an invalid target type', function () {
         templateConfig.invokeTarget.target = 'not-valid' as any
 
-        const result = validator.validate(templateConfig as any)
+        const result = validator.validate(templateConfig as any, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
     it("returns invalid when resolving template debug configurations with a template that isn't in the registry", () => {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
-        when(mockEmptyRegistry.getRegisteredItem('/')).thenReturn(undefined)
+        when(mockEmptyRegistry.getItem('/')).thenReturn(undefined)
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
 
-        const result = validator.validate(templateConfig)
+        const result = validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -151,7 +138,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'wrong'
 
-        const result = validator.validate(templateConfig)
+        const result = validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -159,7 +146,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
 
-        const result = validator.validate(templateConfig)
+        const result = validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -167,7 +154,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ZipResourceProperties
         properties.Runtime = 'invalid'
 
-        const result = validator.validate(templateConfig)
+        const result = validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -175,7 +162,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
 
-        const result = validator.validate(apiConfig)
+        const result = validator.validate(apiConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -183,7 +170,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
         const config = createApiConfig()
         config.api = undefined
 
-        const result = validator.validate(config)
+        const result = validator.validate(config, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -192,14 +179,14 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
 
         config.api!.path = 'noleadingslash'
 
-        const result = validator.validate(config)
+        const result = validator.validate(config, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
     it('returns invalid when resolving code debug configurations with invalid runtimes', function () {
         codeConfig.lambda = { runtime: 'asd' }
 
-        const result = validator.validate(codeConfig)
+        const result = validator.validate(codeConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
@@ -208,7 +195,7 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
 
         delete lambda?.runtime
 
-        const result = validator.validate(templateConfig)
+        const result = validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 })

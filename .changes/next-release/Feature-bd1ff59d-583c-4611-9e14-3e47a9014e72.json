@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CloudWatch Logs: Preserve quickpick menu position when loading more items."
+}

@@ -19,7 +19,7 @@ import {
     API_TARGET_TYPE,
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
-import globals from '../../extensionGlobals'
+import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
 
 export interface ValidationResult {
     isValid: boolean
@@ -27,7 +27,7 @@ export interface ValidationResult {
 }
 
 export interface AwsSamDebugConfigurationValidator {
-    validate(config: AwsSamDebuggerConfiguration): ValidationResult
+    validate(config: AwsSamDebuggerConfiguration, registry: CloudFormationTemplateRegistry): ValidationResult
 }
 
 export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConfigurationValidator {
@@ -36,7 +36,11 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     /**
      * Validates debug configuration properties.
      */
-    public validate(config: AwsSamDebuggerConfiguration, resolveVars?: boolean): ValidationResult {
+    public validate(
+        config: AwsSamDebuggerConfiguration,
+        registry: CloudFormationTemplateRegistry,
+        resolveVars?: boolean
+    ): ValidationResult {
         let rv: ValidationResult = { isValid: false, message: undefined }
         if (resolveVars) {
             config = doTraverseAndReplace(config, this.workspaceFolder?.uri.fsPath ?? '')
@@ -68,7 +72,7 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
                 const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
                 // Normalize to absolute path for use in the runner.
                 config.invokeTarget.templatePath = fullpath
-                cfnTemplate = globals.templateRegistry.getRegisteredItem(fullpath)?.item
+                cfnTemplate = registry.getItem(fullpath)?.item
             }
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {

@@ -254,7 +254,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = globals.templateRegistry.registeredItems
+            const templates = (await globals.templateRegistry).items
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
@@ -438,7 +438,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 ],
             })
         } else {
-            const rv = configValidator.validate(config)
+            const registry = await globals.templateRegistry
+            const rv = configValidator.validate(config, registry)
             if (!rv.isValid) {
                 throw new ToolkitError(`Invalid launch configuration: ${rv.message}`, { code: 'BadLaunchConfig' })
             } else if (rv.message) {
@@ -449,14 +450,14 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
 
         const editor = vscode.window.activeTextEditor
         const templateInvoke = config.invokeTarget as TemplateTargetProperties
-        const template = getTemplate(folder, config)
-        const templateResource = getTemplateResource(folder, config)
-        const codeRoot = getCodeRoot(folder, config)
+        const template = await getTemplate(folder, config)
+        const templateResource = await getTemplateResource(folder, config)
+        const codeRoot = await getCodeRoot(folder, config)
         const architecture = getArchitecture(template, templateResource, config.invokeTarget)
         // Handler is the only field that we need to parse refs for.
         // This is necessary for Python debugging since we have to create the temporary entry file
         // Other refs can fail; SAM will handle them.
-        const handlerName = getHandlerName(folder, config)
+        const handlerName = await getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
         fs.ensureDir(config.baseBuildDir)
@@ -699,7 +700,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             debug: !config.noDebug,
             runtime: config.runtime as Runtime,
             lambdaArchitecture: config.architecture,
-            lambdaPackageType: isImageLambdaConfig(config) ? 'Image' : 'Zip',
+            lambdaPackageType: (await isImageLambdaConfig(config)) ? 'Image' : 'Zip',
             version: await getSamCliVersion(getSamCliContext()),
         })
 

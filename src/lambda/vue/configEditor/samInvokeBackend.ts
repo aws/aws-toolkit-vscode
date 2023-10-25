@@ -94,7 +94,7 @@ export class SamInvokeWebview extends VueWebview {
         }
         const uri = workspaceFolder.uri
         const launchConfig = new LaunchConfiguration(uri)
-        const pickerItems = getLaunchConfigQuickPickItems(launchConfig, uri)
+        const pickerItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
         if (pickerItems.length === 0) {
             pickerItems.push({
                 index: -1,
@@ -161,7 +161,7 @@ export class SamInvokeWebview extends VueWebview {
     public async getTemplate() {
         const items: (vscode.QuickPickItem & { templatePath: string })[] = []
         const noTemplate = 'NOTEMPLATEFOUND'
-        for (const template of globals.templateRegistry.registeredItems) {
+        for (const template of (await globals.templateRegistry).items) {
             const resources = template.item.Resources
             if (resources) {
                 for (const resource of Object.keys(resources)) {
@@ -227,6 +227,7 @@ export class SamInvokeWebview extends VueWebview {
             return
         }
         const launchConfig = new LaunchConfiguration(uri)
+        const launchConfigItems = await getLaunchConfigQuickPickItems(launchConfig, uri)
         const pickerItems = [
             {
                 label: addCodiconToString(
@@ -236,7 +237,7 @@ export class SamInvokeWebview extends VueWebview {
                 index: -1,
                 alwaysShow: true,
             },
-            ...getLaunchConfigQuickPickItems(launchConfig, uri),
+            ...launchConfigItems,
         ]
 
         const qp = picker.createQuickPick({
@@ -343,9 +344,13 @@ function getUriFromLaunchConfig(config: AwsSamDebuggerConfiguration): vscode.Uri
     return undefined
 }
 
-function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: vscode.Uri): LaunchConfigPickItem[] {
+async function getLaunchConfigQuickPickItems(
+    launchConfig: LaunchConfiguration,
+    uri: vscode.Uri
+): Promise<LaunchConfigPickItem[]> {
     const existingConfigs = launchConfig.getDebugConfigurations()
     const samValidator = new DefaultAwsSamDebugConfigurationValidator(vscode.workspace.getWorkspaceFolder(uri))
+    const registry = await globals.templateRegistry
     return existingConfigs
         .map((val, index) => {
             return {
@@ -353,7 +358,10 @@ function getLaunchConfigQuickPickItems(launchConfig: LaunchConfiguration, uri: v
                 index,
             }
         })
-        .filter(o => samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, true)?.isValid)
+        .filter(o => {
+            const res = samValidator.validate(o.config as any as AwsSamDebuggerConfiguration, registry, true)
+            return res?.isValid
+        })
         .map(val => {
             return {
                 index: val.index,

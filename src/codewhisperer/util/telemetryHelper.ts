@@ -340,6 +340,13 @@ export class TelemetryHelper {
             e2eLatency = performance.now() - session.invokeSuggestionStartTime
         }
 
+        let codewhispererRuntimeLanguage: string = this.sessionDecisions[0].codewhispererLanguage
+        if (codewhispererRuntimeLanguage === 'jsx') {
+            codewhispererRuntimeLanguage = 'javascript'
+        } else if (codewhispererRuntimeLanguage === 'tsx') {
+            codewhispererRuntimeLanguage = 'typescript'
+        }
+
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -348,7 +355,7 @@ export class TelemetryHelper {
                         requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: this.sessionDecisions[0].codewhispererLanguage,
+                            languageName: codewhispererRuntimeLanguage,
                         },
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
@@ -581,6 +588,14 @@ export class TelemetryHelper {
     }
     public sendCodeScanEvent(languageId: string, jobId: string) {
         getLogger().debug(`start sendCodeScanEvent: jobId: "${jobId}", languageId: "${languageId}"`)
+
+        let codewhispererRuntimeLanguage: string = languageId
+        if (codewhispererRuntimeLanguage === 'jsx') {
+            codewhispererRuntimeLanguage = 'javascript'
+        } else if (codewhispererRuntimeLanguage === 'tsx') {
+            codewhispererRuntimeLanguage = 'typescript'
+        }
+
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
