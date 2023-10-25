@@ -6,6 +6,7 @@ import * as vscode from 'vscode'
 import { CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
 import { SecurityIssueProvider } from './securityIssueProvider'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -30,6 +31,10 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                 const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                 if (range.contains(position)) {
                     contents.push(this._getContent(issue))
+                    telemetry.codewhisperer_codeScanIssueHover.emit({
+                        findingId: issue.findingId,
+                        detectorId: issue.detectorId,
+                    })
                 }
             }
         }

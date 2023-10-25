@@ -24,6 +24,7 @@ const codeScanIssue: CodeScanIssue[] = [
         },
         detectorId: '',
         detectorName: '',
+        findingId: '',
         relatedVulnerabilities: [],
         severity: 'low',
         recommendation: { text: 'foo', url: 'foo' },

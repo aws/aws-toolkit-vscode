@@ -8,6 +8,7 @@ import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/secur
 import { createCodeScanIssue, createMockDocument } from '../testUtil'
 import assert from 'assert'
 import sinon from 'sinon'
+import { assertTelemetry } from '../../testUtil'
 
 describe('securityIssueHoverProvider', () => {
     let securityIssueHoverProvider: SecurityIssueHoverProvider
@@ -22,7 +23,10 @@ describe('securityIssueHoverProvider', () => {
 
     it('should return hover for each issue for the current position', () => {
         sinon.stub(vscode.Uri, 'joinPath').callsFake(() => vscode.Uri.parse('myPath'))
-        const issues = [createCodeScanIssue(), createCodeScanIssue({ suggestedFixes: [] })]
+        const issues = [
+            createCodeScanIssue({ findingId: 'finding-1', detectorId: 'language/detector-1' }),
+            createCodeScanIssue({ findingId: 'finding-2', detectorId: 'language/detector-2', suggestedFixes: [] }),
+        ]
 
         securityIssueHoverProvider.issues = [
             {
@@ -74,6 +78,10 @@ describe('securityIssueHoverProvider', () => {
                     JSON.stringify(issues[1])
                 )} 'Open "CodeWhisperer Security Issue"')\n`
         )
+        assertTelemetry('codewhisperer_codeScanIssueHover', [
+            { findingId: 'finding-1', detectorId: 'language/detector-1' },
+            { findingId: 'finding-2', detectorId: 'language/detector-2' },
+        ])
     })
 
     it('should return empty contents if there is no issue on the current position', () => {
