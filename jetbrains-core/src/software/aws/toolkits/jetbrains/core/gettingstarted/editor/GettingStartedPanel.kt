@@ -17,6 +17,7 @@ import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.popup.Balloon
+import com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager
 import com.intellij.ui.GotItTooltip
 import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.TitledSeparator
@@ -72,6 +73,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
     private val featureSetPanel = FeatureColumns()
     private val alarm = Alarm()
     init {
+        background = WelcomeScreenUIManager.getMainAssociatedComponentBackground()
+
         ApplicationManager.getApplication().messageBus.connect(this).subscribe(
             BearerTokenProviderListener.TOPIC,
             object : BearerTokenProviderListener {
@@ -216,6 +219,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                         }
                     }
                 }
+            }.apply {
+                isOpaque = false
             }
         )
 
@@ -421,6 +426,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                             }
                         }.visible(checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODECATALYST) is ActiveConnection.ExpiredBearer)
                     }
+                }.apply {
+                    isOpaque = false
                 }
             )
         }
@@ -574,6 +581,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                             }
                         }.visible(checkIamConnectionValidity(project) is ActiveConnection.ExpiredIam)
                     }
+                }.apply {
+                    isOpaque = false
                 }
             )
         }
@@ -739,6 +748,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                             )
                         }.visible(checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER) is ActiveConnection.ExpiredBearer)
                     }
+                }.apply {
+                    isOpaque = false
                 }
             )
         }
@@ -765,7 +776,6 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
             addToCenter(
                 panel {
                     indent {
-
                         row {
                             label(panelTitle).applyToComponent {
                                 font = PANEL_TITLE_FONT
@@ -789,6 +799,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                             }
                         }
                     }
+                }.apply {
+                    isOpaque = false
                 }
             )
         }
@@ -801,6 +813,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
             border = IdeBorderFactory.createRoundedBorder().apply {
                 setColor(UIUtil.getLabelForeground())
             }
+
+            isOpaque = false
         }
     }
 
@@ -816,6 +830,7 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
             }
         }
     }
+
     private class ConnectionInfoBanner : BorderLayoutPanel(10, 0) {
         private val wrapper = Wrapper()
         init {
@@ -893,6 +908,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
     private inner class FeatureColumns : BorderLayoutPanel(10, 0) {
         private val wrapper = Wrapper()
         init {
+            isOpaque = false
+
             addToCenter(wrapper)
         }
 
@@ -907,6 +924,8 @@ class GettingStartedPanel(private val project: Project) : BorderLayoutPanel(), D
                         // CodeCatalyst Panel
                         cell(CodeCatalystPanel())
                     }
+                }.apply {
+                    isOpaque = false
                 }
             )
         }
