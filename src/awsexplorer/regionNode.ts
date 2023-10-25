@@ -11,6 +11,7 @@ import { CloudWatchLogsNode } from '../cloudWatchLogs/explorer/cloudWatchLogsNod
 import { LambdaNode } from '../lambda/explorer/lambdaNodes'
 import { S3Node } from '../s3/explorer/s3Nodes'
 import { EcrNode } from '../ecr/explorer/ecrNode'
+import { EmrServerlessNode } from '../emr-serverless/explorer/emrServerlessNode'
 import { RedshiftNode } from '../redshift/explorer/redshiftNode'
 import { IotNode } from '../iot/explorer/iotNodes'
 import { Region } from '../shared/regions/endpoints'
@@ -22,6 +23,7 @@ import { ResourcesNode } from '../dynamicResources/explorer/nodes/resourcesNode'
 import { AppRunnerNode } from '../apprunner/explorer/apprunnerNode'
 import { DefaultAppRunnerClient } from '../shared/clients/apprunnerClient'
 import { DefaultEcrClient } from '../shared/clients/ecrClient'
+import { EmrServerlessClient } from '../shared/clients/emrServerlessClient'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { DefaultIotClient } from '../shared/clients/iotClient'
 import { DefaultS3Client } from '../shared/clients/s3Client'
@@ -81,6 +83,10 @@ const serviceCandidates: ServiceNode[] = [
     {
         serviceId: 'ecs',
         createFn: (regionCode: string) => new TreeShim(getEcsRootNode(regionCode)),
+    },
+    {
+        serviceId: 'emr-serverless',
+        createFn: (regionCode: string) => new EmrServerlessNode(new EmrServerlessClient(regionCode)),
     },
     {
         serviceId: 'iot',
