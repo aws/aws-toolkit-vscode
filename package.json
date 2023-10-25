@@ -4042,6 +4042,7 @@
         "webpack-dev-server": "^4.15.1"
     },
     "dependencies": {
+        "@amzn/codewhisperer-streaming": "file:./src.gen/@amzn/codewhisperer-streaming",
         "@aws-sdk/client-cognito-identity": "3.46.0",
         "@aws-sdk/client-lambda": "3.385.0",
         "@aws-sdk/client-sso": "^3.342.0",
