@@ -92,6 +92,7 @@ const mockCodeScanFindings = JSON.stringify([
         },
         detectorId: 'detectorId',
         detectorName: 'detectorName',
+        findingId: 'findingId',
         relatedVulnerabilities: [],
         severity: 'High',
         remediation: {

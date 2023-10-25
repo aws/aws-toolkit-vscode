@@ -153,6 +153,7 @@ export function createCodeScanIssue(overrides?: Partial<CodeScanIssue>): CodeSca
         },
         detectorId: 'language/cool-detector@v1.0',
         detectorName: 'detectorName',
+        findingId: 'findingId',
         relatedVulnerabilities: ['CWE-1'],
         severity: 'High',
         recommendation: {
