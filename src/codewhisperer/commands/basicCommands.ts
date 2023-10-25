@@ -30,6 +30,7 @@ import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPage
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { applyPatch } from 'diff'
+import { showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -181,6 +182,13 @@ export const refreshStatusBar = Commands.declare(
         } else {
             InlineCompletionService.instance.hideCodeWhispererStatusBar()
         }
+    }
+)
+
+export const openSecurityIssuePanel = Commands.declare(
+    'aws.codeWhisperer.openSecurityIssuePanel',
+    (context: ExtContext) => async (issue: CodeScanIssue) => {
+        showSecurityIssueWebview(context.extensionContext, issue)
     }
 )
 

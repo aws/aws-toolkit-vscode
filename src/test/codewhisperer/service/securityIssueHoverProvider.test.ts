@@ -22,11 +22,12 @@ describe('securityIssueHoverProvider', () => {
 
     it('should return hover for each issue for the current position', () => {
         sinon.stub(vscode.Uri, 'joinPath').callsFake(() => vscode.Uri.parse('myPath'))
+        const issues = [createCodeScanIssue(), createCodeScanIssue({ suggestedFixes: [] })]
 
         securityIssueHoverProvider.issues = [
             {
                 filePath: mockDocument.fileName,
-                issues: [createCodeScanIssue(), createCodeScanIssue({ suggestedFixes: [] })],
+                issues,
             },
         ]
 
@@ -37,8 +38,10 @@ describe('securityIssueHoverProvider', () => {
             (actual.contents[0] as vscode.MarkdownString).value,
             '## Suggested Fix for title ![High](file:///myPath)\n' +
                 'description\n\n' +
-                '[$(eye) View Details](command:aws.codewhisperer.viewSecurityIssue)\n' +
-                ' | [$(wrench) Apply Fix](command:aws.codewhisperer.applySecurityFix)\n\n' +
+                `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                    JSON.stringify(issues[0])
+                )} 'Open "CodeWhisperer Security Issue"')\n` +
+                ' | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix "Apply suggested fix")\n\n' +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
                 '```language\n' +
                 'first line    \n' +
@@ -67,7 +70,9 @@ describe('securityIssueHoverProvider', () => {
             (actual.contents[1] as vscode.MarkdownString).value,
             '## title ![High](file:///myPath)\n' +
                 'description\n\n' +
-                '[$(eye) View Details](command:aws.codewhisperer.viewSecurityIssue)\n'
+                `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                    JSON.stringify(issues[1])
+                )} 'Open "CodeWhisperer Security Issue"')\n`
         )
     })
 
