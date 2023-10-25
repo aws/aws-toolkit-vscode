@@ -16,7 +16,7 @@ export class DefaultLambdaClient {
     private readonly defaultTimeoutInMs: number
 
     public constructor(public readonly regionCode: string) {
-        this.defaultTimeoutInMs = 5 * 60 * 1000 // 5 minutes
+        this.defaultTimeoutInMs = 5 * 60 * 1000 // 5 minutes (SDK default is 2 minutes)
     }
 
     public async deleteFunction(name: string): Promise<void> {
