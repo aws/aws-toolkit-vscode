@@ -108,10 +108,8 @@ describe('CloudFormation Template Registry', async function () {
 })
 
 async function registryHasTargetNumberOfFiles(registry: CloudFormationTemplateRegistry, target: number) {
-    if (!(await waitUntil(async () => registry.registeredItems.length === target, { timeout: 30000 }))) {
-        throw new Error(
-            `watchedFiles found wrong number files: expected ${target}, got ${registry.registeredItems.length}`
-        )
+    if (!(await waitUntil(async () => registry.items.length === target, { timeout: 30000 }))) {
+        throw new Error(`watchedFiles found wrong number files: expected ${target}, got ${registry.items.length}`)
     }
 }
 
@@ -123,7 +121,7 @@ async function queryRegistryForFileWithGlobalsKeyStatus(
     let foundMatch = false
     while (!foundMatch) {
         await sleep(20)
-        const obj = registry.getRegisteredItem(filepath)
+        const obj = registry.getItem(filepath)
         if (obj) {
             foundMatch = Object.keys(obj.item).includes('Globals') === hasGlobals
         }

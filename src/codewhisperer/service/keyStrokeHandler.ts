@@ -20,7 +20,6 @@ import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -119,7 +118,6 @@ export class KeyStrokeHandler {
             // we do not want to trigger when there is immediate right context on the same line
             // with "}" being an exception because of IDE auto-complete
             if (
-                CodeWhispererUserGroupSettings.getUserGroup() === CodeWhispererConstants.UserGroup.RightContext &&
                 rightContextAtCurrentLine.length &&
                 !rightContextAtCurrentLine.startsWith(' ') &&
                 rightContextAtCurrentLine.trim() !== '}'

@@ -193,7 +193,7 @@ export async function getTemplate(
     }
     const templateInvoke = config.invokeTarget as TemplateTargetProperties
     const fullPath = tryGetAbsolutePath(folder, templateInvoke.templatePath)
-    const cfnTemplate = (await globals.templateRegistry).getRegisteredItem(fullPath)?.item
+    const cfnTemplate = (await globals.templateRegistry).getItem(fullPath)?.item
     return cfnTemplate
 }
 
