@@ -27,9 +27,6 @@ import {
     showCustomizationPrompt,
 } from '../util/customizationUtil'
 import { get, set } from '../util/commonUtil'
-import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { getIcon } from '../../shared/icons'
-import { localize } from '../../shared/utilities/vsCodeUtils'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -46,17 +43,6 @@ export const toggleCodeSuggestions = Commands.declare(
         })
     }
 )
-/*
-createGettingStartedNode(Learn) will be a childnode of CodeWhisperer
-onClick on this "Learn" Node will open the Learn CodeWhisperer Page.
-*/
-export const createGettingStartedNode = () =>
-    CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
-        .build('codewhispererDeveloperTools')
-        .asTreeNode({
-            label: localize('AWS.explorerNode.codewhispererGettingStartedNode.label', 'Learn'),
-            iconPath: getIcon('aws-codewhisperer-learn'),
-        })
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
