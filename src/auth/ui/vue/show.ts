@@ -716,6 +716,7 @@ export type AuthSource =
     | 'firstStartup'
     | 'codecatalystDeveloperTools'
     | 'codewhispererDeveloperTools'
+    | 'codewhispererQuickPick'
     | 'unknown'
 
 export async function showAuthWebview(

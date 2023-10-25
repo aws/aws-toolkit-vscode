@@ -4,7 +4,7 @@
  */
 
 import { AuthCommandDeclarations } from '../../auth/commands'
-import { getIcon } from '../../shared/icons'
+import { codicon, getIcon } from '../../shared/icons'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -24,7 +24,10 @@ import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/
 
 export function createAutoSuggestions(type: 'item', pause: boolean): DataQuickPickItem<'autoSuggestions'>
 export function createAutoSuggestions(type: 'tree', pause: boolean): TreeNode<Command>
-export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): DataQuickPickItem<'autoSuggestions'> | TreeNode<Command>
+export function createAutoSuggestions(
+    type: 'item' | 'tree',
+    pause: boolean
+): DataQuickPickItem<'autoSuggestions'> | TreeNode<Command>
 export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): any {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
     const iconResume = getIcon('vscode-debug-start')
@@ -45,7 +48,12 @@ export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): an
                       }
             )
         case 'item':
-            break
+            return {
+                data: 'autoSuggestions',
+                label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+                description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
+                onClick: () => toggleCodeSuggestions.execute(),
+            } as DataQuickPickItem<'autoSuggestions'>
     }
 }
 
@@ -68,7 +76,11 @@ export function createOpenReferenceLog(type: 'item' | 'tree'): any {
                 contextValue: 'awsCodeWhispererOpenReferenceLogNode',
             })
         case 'item':
-            break
+            return {
+                data: 'openReferenceLog',
+                label: codicon`${icon} ${label}`,
+                onClick: () => showReferenceLog.execute(),
+            } as DataQuickPickItem<'openReferenceLog'>
     }
 }
 
@@ -89,7 +101,11 @@ export function createSecurityScan(type: 'item' | 'tree'): any {
                 contextValue: `awsCodeWhisperer${prefix}SecurityScanNode`,
             })
         case 'item':
-            break
+            return {
+                data: 'securityScan',
+                label: codicon`${icon} ${label}`,
+                onClick: () => showSecurityScan.execute(),
+            } as DataQuickPickItem<'securityScan'>
     }
 }
 
@@ -109,7 +125,15 @@ export function createSignIn(type: 'item' | 'tree'): any {
                     iconPath: icon,
                 })
         case 'item':
-            break
+            return {
+                data: 'signIn',
+                label: codicon`${icon} ${label}`,
+                onClick: () =>
+                    AuthCommandDeclarations.instance.declared.showManageConnections.execute(
+                        'codewhispererQuickPick',
+                        'codewhisperer'
+                    ),
+            } as DataQuickPickItem<'signIn'>
     }
 }
 
@@ -127,7 +151,11 @@ export function createReconnect(type: 'item' | 'tree'): any {
                 iconPath: icon,
             })
         case 'item':
-            break
+            return {
+                data: 'reconnect',
+                label: codicon`${icon} ${label}`,
+                onClick: () => reconnect.execute(),
+            } as DataQuickPickItem<'reconnect'>
     }
 }
 
@@ -146,7 +174,11 @@ export function createLearnMore(type: 'item' | 'tree'): any {
                 contextValue: 'awsCodeWhispererLearnMoreNode',
             })
         case 'item':
-            break
+            return {
+                data: 'learnMore',
+                label: codicon`${icon} ${label}`,
+                onClick: () => showLearnMore.execute(),
+            } as DataQuickPickItem<'learnMore'>
     }
 }
 
@@ -169,13 +201,19 @@ export function createFreeTierLimitMet(type: 'tree' | 'item'): any {
             })
 
         case 'item':
-            break
+            return {
+                data: 'freeTierLimitMet',
+                label: codicon`${icon} ${label}`,
+                onClick: () => showFreeTierLimit.execute(),
+            } as DataQuickPickItem<'freeTierLimitMet'>
     }
 }
 
 export function createSelectCustomization(type: 'item'): DataQuickPickItem<'selectCustomization'>
 export function createSelectCustomization(type: 'tree'): TreeNode<Command>
-export function createSelectCustomization(type: 'item' | 'tree'): DataQuickPickItem<'selectCustomization'> | TreeNode<Command>
+export function createSelectCustomization(
+    type: 'item' | 'tree'
+): DataQuickPickItem<'selectCustomization'> | TreeNode<Command>
 export function createSelectCustomization(type: 'tree' | 'item'): any {
     const newCustomizationsAvailable = getNewCustomizationAvailable()
     const selectedCustomization = getSelectedCustomization()
@@ -191,10 +229,12 @@ export function createSelectCustomization(type: 'tree' | 'item'): any {
                 iconPath: icon,
                 description: `${newText}${selectedCustomization.arn === '' ? '' : selectedCustomization.name}`,
             })
-            break
-
         case 'item':
-            break
+            return {
+                data: 'selectCustomization',
+                label: codicon`${icon} ${label}`,
+                onClick: () => selectCustomizationPrompt.execute(),
+            } as DataQuickPickItem<'selectCustomization'>
     }
 }
 
@@ -215,6 +255,13 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
                 })
 
         case 'item':
-            break
+            return {
+                data: 'gettingStarted',
+                label: codicon`${icon} ${label}`,
+                onClick: () =>
+                    CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage.execute(
+                        'codewhispererDeveloperTools'
+                    ),
+            } as DataQuickPickItem<'gettingStarted'>
     }
 }
