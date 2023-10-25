@@ -72,8 +72,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
     Commands.register('aws.addSamDebugConfig', async () => {
         if (!didActivateCodeLensProviders) {
             await activateSlowCodeLensesOnce()
-            await samDebugConfigCmd()
         }
+        await samDebugConfigCmd()
     })
 
     ctx.extensionContext.subscriptions.push(
