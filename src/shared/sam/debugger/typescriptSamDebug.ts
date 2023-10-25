@@ -187,7 +187,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     const compilerOptions = tsConfig.compilerOptions
 
     // determine build directory
-    const tsBuildDir = path.resolve(config.codeRoot, config.sam?.buildDir ?? compilerOptions.outDir ?? '.')
+    const tsBuildDir = path.resolve(config.baseBuildDir, 'output')
     compilerOptions.outDir = tsBuildDir
 
     // overwrite rootDir, sourceRoot
@@ -205,7 +205,7 @@ async function compileTypeScript(config: SamLaunchRequestArgs): Promise<void> {
     writeFileSync(tsConfigPath, JSON.stringify(tsConfig, undefined, 4))
 
     // resolve ts lambda handler to point into build directory relative to codeRoot
-    const tsLambdaHandler = path.relative(config.codeRoot, path.join(tsBuildDir, config.invokeTarget.lambdaHandler))
+    const tsLambdaHandler = path.join(tsBuildDir, config.invokeTarget.lambdaHandler)
     config.invokeTarget.lambdaHandler = pathutil.normalizeSeparator(tsLambdaHandler)
     getLogger('channel').info(`Resolved compiled lambda handler to ${tsLambdaHandler}`)
 
