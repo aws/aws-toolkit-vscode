@@ -12,8 +12,9 @@ import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 
-interface ChatPayload {
+export interface ChatPayload {
     chatMessage: string
+    chatCommand?: string
     attachedAPIDocsSuggestion?: Suggestion
     attachedVanillaSuggestion?: Suggestion
 }

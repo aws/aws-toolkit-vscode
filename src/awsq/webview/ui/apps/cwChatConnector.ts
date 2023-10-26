@@ -9,6 +9,7 @@ import { TabsStorage } from '../storages/tabsStorage'
 
 interface ChatPayload {
     chatMessage: string
+    chatCommand?: string
     attachedAPIDocsSuggestion?: Suggestion
     attachedVanillaSuggestion?: Suggestion
 }
@@ -95,6 +96,7 @@ export class Connector {
                 tabID: tabID,
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
+                chatCommand: payload.chatCommand,
                 tabType: 'cwc',
             })
         })
@@ -109,7 +111,7 @@ export class Connector {
 
     private processEditorContextCommandMessage = async (messageData: any): Promise<void> => {
         const triggerTabID = this.onCWCContextCommandMessage({
-            body: `<span markdown="1">${messageData.message}</span>`,
+            body: messageData.message,
             type: ChatItemType.PROMPT,
         })
 
@@ -140,8 +142,7 @@ export class Connector {
 
             const answer: ChatItem = {
                 type: messageData.messageType,
-                body:
-                    messageData.message !== undefined ? `<span markdown="1">${messageData.message}</span>` : undefined,
+                body: messageData.message !== undefined ? messageData.message : undefined,
                 followUp: followUps,
             }
 
