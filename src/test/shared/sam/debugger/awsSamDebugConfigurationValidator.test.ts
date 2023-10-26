@@ -104,98 +104,98 @@ describe('DefaultAwsSamDebugConfigurationValidator', function () {
     let validator: DefaultAwsSamDebugConfigurationValidator
 
     beforeEach(function () {
-        when(mockRegistry.getRegisteredItem('/')).thenReturn(templateData)
-        when(mockRegistry.getRegisteredItem('/image')).thenReturn(imageTemplateData)
+        when(mockRegistry.getItem('/')).thenReturn(templateData)
+        when(mockRegistry.getItem('/image')).thenReturn(imageTemplateData)
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
     })
 
-    it('returns invalid when resolving debug configurations with an invalid request type', function () {
+    it('returns invalid when resolving debug configurations with an invalid request type', async () => {
         templateConfig.request = 'not-direct-invoke'
 
-        const result = validator.validate(templateConfig, mockRegistry)
+        const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns invalid when resolving debug configurations with an invalid target type', function () {
+    it('returns invalid when resolving debug configurations with an invalid target type', async () => {
         templateConfig.invokeTarget.target = 'not-valid' as any
 
-        const result = validator.validate(templateConfig as any, mockRegistry)
+        const result = await validator.validate(templateConfig as any, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it("returns invalid when resolving template debug configurations with a template that isn't in the registry", () => {
+    it("returns invalid when resolving template debug configurations with a template that isn't in the registry", async () => {
         const mockEmptyRegistry: CloudFormationTemplateRegistry = mock()
-        when(mockEmptyRegistry.getRegisteredItem('/')).thenReturn(undefined)
+        when(mockEmptyRegistry.getItem('/')).thenReturn(undefined)
 
         validator = new DefaultAwsSamDebugConfigurationValidator(instance(mockFolder))
 
-        const result = validator.validate(templateConfig, mockRegistry)
+        const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it("returns invalid when resolving template debug configurations with a template that doesn't have the set resource", () => {
+    it("returns invalid when resolving template debug configurations with a template that doesn't have the set resource", async () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'wrong'
 
-        const result = validator.validate(templateConfig, mockRegistry)
+        const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it("returns invalid when resolving template debug configurations with a template that isn't serverless", () => {
+    it("returns invalid when resolving template debug configurations with a template that isn't serverless", async () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
 
-        const result = validator.validate(templateConfig, mockRegistry)
+        const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', function () {
+    it('returns undefined when resolving template debug configurations with a resource that has an invalid runtime in template', async () => {
         const properties = templateData.item.Resources?.TestResource?.Properties as CloudFormation.ZipResourceProperties
         properties.Runtime = 'invalid'
 
-        const result = validator.validate(templateConfig, mockRegistry)
+        const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it("API config returns invalid when resolving with a template that isn't serverless", () => {
+    it("API config returns invalid when resolving with a template that isn't serverless", async () => {
         const target = templateConfig.invokeTarget as TemplateTargetProperties
         target.logicalId = 'OtherResource'
 
-        const result = validator.validate(apiConfig, mockRegistry)
+        const result = await validator.validate(apiConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('API config is invalid when it does not have an API field', function () {
+    it('API config is invalid when it does not have an API field', async () => {
         const config = createApiConfig()
         config.api = undefined
 
-        const result = validator.validate(config, mockRegistry)
+        const result = await validator.validate(config, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it("API config is invalid when its path does not start with a '/'", () => {
+    it("API config is invalid when its path does not start with a '/'", async () => {
         const config = createApiConfig()
 
         config.api!.path = 'noleadingslash'
 
-        const result = validator.validate(config, mockRegistry)
+        const result = await validator.validate(config, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns invalid when resolving code debug configurations with invalid runtimes', function () {
+    it('returns invalid when resolving code debug configurations with invalid runtimes', async () => {
         codeConfig.lambda = { runtime: 'asd' }
 
-        const result = validator.validate(codeConfig, mockRegistry)
+        const result = await validator.validate(codeConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 
-    it('returns invalid when Image app does not declare runtime', function () {
+    it('returns invalid when Image app does not declare runtime', async () => {
         const lambda = imageTemplateConfig.lambda
 
         delete lambda?.runtime
 
-        const result = validator.validate(templateConfig, mockRegistry)
+        const result = await validator.validate(templateConfig, mockRegistry)
         assert.strictEqual(result.isValid, false)
     })
 })

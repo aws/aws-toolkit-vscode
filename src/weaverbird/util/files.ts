@@ -5,8 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-
-import WeaverbirdClient, { FileMetadata } from '../client/weaverbirdclient'
+import { FileMetadata } from '../client/weaverbirdclient'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { getGlobDirExcludedPatterns } from '../../shared/fs/watchedFiles'
 import { getWorkspaceRelativePath } from '../../shared/utilities/workspaceUtils'
@@ -16,6 +15,8 @@ import { GitIgnoreFilter } from './gitignore'
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
+import { ProjectSizeTooLargeError } from '../errors'
+import { projectSizeLimit } from '../limits'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -67,10 +68,6 @@ export async function collectFiles(rootPath: string, respectGitIgnore: boolean =
     return storage
 }
 
-export function getFilePaths(fileContents: WeaverbirdClient.FileMetadataList): string[] {
-    return fileContents.map(metadata => metadata.filePath)
-}
-
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
@@ -82,7 +79,16 @@ export async function prepareRepoData(repoRootPath: string) {
         getExcludePattern()
     )
     const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
+
+    let totalBytes = 0
     for (const file of files) {
+        const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
+        totalBytes += fileSize
+
+        if (totalBytes > projectSizeLimit) {
+            throw new ProjectSizeTooLargeError()
+        }
+
         const relativePath = getWorkspaceRelativePath(file.fsPath)
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
         zip.addLocalFile(file.fsPath, zipFolderPath)

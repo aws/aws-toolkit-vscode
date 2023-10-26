@@ -41,6 +41,16 @@ export class FilePathMessage extends UiMessage {
     }
 }
 
+export class CodeGenerationMessage extends UiMessage {
+    readonly inProgress: boolean
+    override type = 'codeGenerationMessage'
+
+    constructor(tabID: string, inProgress: boolean) {
+        super(tabID)
+        this.inProgress = inProgress
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
@@ -77,6 +87,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendFilePaths(message: FilePathMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendCodeGeneration(message: CodeGenerationMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

@@ -5,9 +5,8 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-
-import { collectFiles, getFilePaths } from '../util/files'
-import {
+import { collectFiles } from '../util/files'
+import WeaverbirdClient, {
     FileMetadata,
     GenerateApproachInput,
     GenerateApproachOutput,
@@ -26,7 +25,6 @@ import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { weaverbirdScheme } from '../constants'
 import {
-    Interaction,
     SessionStateAction,
     SessionStateConfig,
     SessionStateInteraction,
@@ -35,27 +33,40 @@ import {
     SessionStatePhase,
 } from '../types'
 import { invoke } from '../util/invoke'
-import { Messenger } from '../controllers/chat/messenger/messenger'
 import globals from '../../shared/extensionGlobals'
+import { ToolkitError } from '../../shared/errors'
 
 const fs = FileSystemCommon.instance
 
+export class ConversationNotStartedState implements SessionState {
+    public tokenSource: vscode.CancellationTokenSource
+    public readonly phase = SessionStatePhase.Init
+
+    constructor(public approach: string, public tabID: string) {
+        this.tokenSource = new vscode.CancellationTokenSource()
+        this.approach = ''
+    }
+
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        throw new ToolkitError('Illegal transition between states, restart the conversation')
+    }
+}
+
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
+    public readonly conversationId: string
     public readonly phase = SessionStatePhase.Approach
 
-    constructor(
-        private config: Omit<SessionStateConfig, 'conversationId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.conversationId = config.conversationId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload = {
             task: action.task,
-            originalFileContents: action.files,
+            originalFileContents: [],
+            conversationId: this.conversationId,
             config: this.config.llmConfig,
         }
 
@@ -66,7 +77,8 @@ export class RefinementState implements SessionState {
         )
 
         this.approach =
-            response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+            response.approach ??
+            'There has been a problem generating an approach. Please open a conversation in a new tab'
 
         return {
             nextState: new RefinementIterationState(
@@ -77,8 +89,8 @@ export class RefinementState implements SessionState {
                 this.approach,
                 this.tabID
             ),
-            interactions: {
-                content: [`${this.approach}\n`],
+            interaction: {
+                content: `${this.approach}\n`,
             },
         }
     }
@@ -115,18 +127,19 @@ export class RefinementIterationState implements SessionState {
         )
 
         this.approach =
-            response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+            response.approach ??
+            'There has been a problem generating an approach. Please open a conversation in a new tab'
 
         return {
             nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
-            interactions: {
-                content: [`${this.approach}\n`],
+            interaction: {
+                content: `${this.approach}\n`,
             },
         }
     }
 }
 
-async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileContents): Promise<Interaction> {
+async function createFilePaths(fs: VirtualFileSystem, newFileContents: NewFileContents): Promise<string[]> {
     const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
         const encoder = new TextEncoder()
@@ -136,10 +149,7 @@ async function createChanges(fs: VirtualFileSystem, newFileContents: NewFileCont
         filePaths.push(filePath)
     }
 
-    return {
-        content: ['Changes to files done. Please review:'],
-        filePaths,
-    }
+    return filePaths
 }
 
 abstract class CodeGenBase {
@@ -154,12 +164,10 @@ abstract class CodeGenBase {
         this.conversationId = config.conversationId
     }
 
-    async generateCode(params: {
-        getResultLambdaArn: string
-        fs: VirtualFileSystem
-        messenger: Messenger
-        generationId: string
-    }) {
+    async generateCode(params: { getResultLambdaArn: string; fs: VirtualFileSystem; generationId: string }): Promise<{
+        newFiles: WeaverbirdClient.FileMetadataList
+        newFilePaths: string[]
+    }> {
         for (
             let pollingIteration = 0;
             pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
@@ -180,20 +188,11 @@ abstract class CodeGenBase {
             switch (codegenResult.codeGenerationStatus) {
                 case 'ready': {
                     const newFiles = codegenResult.result?.newFileContents ?? []
-                    const changes = await createChanges(params.fs, newFiles)
-                    for (const change of changes.content) {
-                        params.messenger.sendResponse(
-                            {
-                                message: change,
-                            },
-                            this.tabID
-                        )
+                    const newFilePaths = await createFilePaths(params.fs, newFiles)
+                    return {
+                        newFiles,
+                        newFilePaths,
                     }
-                    if (changes.filePaths && changes.filePaths.length > 0) {
-                        // Show the file tree component when file paths are present
-                        params.messenger.sendFilePaths(changes.filePaths, this.tabID, this.config.conversationId)
-                    }
-                    return newFiles
                 }
                 case 'predict-ready': {
                     await new Promise(f => globals.clock.setTimeout(f, this.requestDelay))
@@ -206,39 +205,39 @@ abstract class CodeGenBase {
                 case 'predict-failed':
                 case 'debate-failed':
                 case 'failed': {
-                    getLogger().error('Failed to generate code')
-                    params.messenger.sendErrorMessage('Code generation failed\n', this.tabID)
-                    return []
+                    throw new ToolkitError('Code generation failed')
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`
-                    getLogger().error(errorMessage)
-                    params.messenger.sendErrorMessage(errorMessage, this.tabID)
-                    return []
+                    throw new ToolkitError(errorMessage)
                 }
             }
         }
         if (!this.tokenSource.token.isCancellationRequested) {
             // still in progress
-            const errorMessage = `Code generation did not finish withing the expected time :(`
-            getLogger().error(errorMessage)
-            params.messenger.sendErrorMessage(errorMessage, this.tabID)
+            const errorMessage = 'Code generation did not finish withing the expected time'
+            throw new ToolkitError(errorMessage)
         }
-        return []
+        return {
+            newFiles: [],
+            newFilePaths: [],
+        }
     }
 }
 
 export class CodeGenState extends CodeGenBase implements SessionState {
-    public filePaths?: string[]
+    public filePaths: string[]
+    private newFileContents: FileMetadata[]
 
     constructor(config: SessionStateConfig, public approach: string, tabID: string) {
         super(config, tabID)
         this.filePaths = []
+        this.newFileContents = []
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload: GenerateCodeInput = {
-            originalFileContents: action.files,
+            originalFileContents: [],
             approach: this.approach,
             task: action.task,
             config: this.config.llmConfig,
@@ -253,52 +252,39 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
         const genId = response.generationId
 
-        action.messenger.sendResponse(
-            {
-                message: 'Code generation started\n',
-            },
-            this.tabID
-        )
-
-        const newFileContents = await this.generateCode({
+        const codeGeneration = await this.generateCode({
             getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
             fs: action.fs,
-            messenger: action.messenger,
             generationId: genId,
-        }).catch(_ => {
-            getLogger().error(`Failed to generate code`)
-            return []
         })
-        this.filePaths = getFilePaths(newFileContents)
+
+        this.filePaths = codeGeneration.newFilePaths
+        this.newFileContents = codeGeneration.newFiles
 
         const nextState = new CodeGenIterationState(
             this.config,
             this.approach,
-            newFileContents,
+            this.newFileContents,
             this.filePaths,
             this.tabID
         )
 
         return {
             nextState,
-            interactions: {
-                content: [],
-            },
+            interaction: {},
         }
     }
 }
 
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public filePaths?: string[]
+    public filePaths: string[]
+    public readonly conversationId: string
 
-    constructor(
-        private config: Omit<SessionStateConfig, 'conversationId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
+        this.conversationId = config.conversationId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -315,7 +301,7 @@ export class MockCodeGenState implements SessionState {
                     filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,
                 }))
-                this.filePaths = getFilePaths(newFileContents)
+                this.filePaths = await createFilePaths(action.fs, newFileContents)
             }
         } catch (e) {
             // TODO: handle this error properly, double check what would be expected behaviour if mock code does not work.
@@ -323,9 +309,16 @@ export class MockCodeGenState implements SessionState {
         }
 
         return {
-            // no point in iterating after a mocked code gen
-            nextState: new RefinementState(this.config, this.approach, this.tabID),
-            interactions: await createChanges(action.fs, newFileContents),
+            // no point in iterating after a mocked code gen?
+            nextState: new RefinementState(
+                {
+                    ...this.config,
+                    conversationId: this.conversationId,
+                },
+                this.approach,
+                this.tabID
+            ),
+            interaction: {},
         }
     }
 }
@@ -366,29 +359,18 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
 
         const genId = response.generationId
 
-        action.messenger.sendResponse(
-            {
-                message: 'Code generation started\n',
-            },
-            this.tabID
-        )
-
-        this.newFileContents = await this.generateCode({
+        const codeGeneration = await this.generateCode({
             getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getIterationResults,
             fs: action.fs,
-            messenger: action.messenger,
             generationId: genId,
-        }).catch(_ => {
-            getLogger().error(`Failed to generate code`)
-            return []
         })
-        this.filePaths = getFilePaths(this.newFileContents)
+
+        this.filePaths = codeGeneration.newFilePaths
+        this.newFileContents = codeGeneration.newFiles
 
         return {
             nextState: this,
-            interactions: {
-                content: ['Changes to files done'],
-            },
+            interaction: {},
         }
     }
 }

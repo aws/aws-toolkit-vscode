@@ -254,7 +254,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const configs: AwsSamDebuggerConfiguration[] = []
         if (folder) {
             const folderPath = folder.uri.fsPath
-            const templates = (await globals.templateRegistry).registeredItems
+            const templates = (await globals.templateRegistry).items
 
             for (const templateDatum of templates) {
                 if (isInDirectory(folderPath, templateDatum.path)) {
@@ -439,7 +439,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             })
         } else {
             const registry = await globals.templateRegistry
-            const rv = configValidator.validate(config, registry)
+            const rv = await configValidator.validate(config, registry)
             if (!rv.isValid) {
                 throw new ToolkitError(`Invalid launch configuration: ${rv.message}`, { code: 'BadLaunchConfig' })
             } else if (rv.message) {

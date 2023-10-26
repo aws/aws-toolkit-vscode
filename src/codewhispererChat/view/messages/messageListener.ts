@@ -90,6 +90,7 @@ export class UIMessageListener {
     private processChatMessage(msg: any) {
         this.chatControllerMessagePublishers.processPromptChatMessage.publish({
             message: msg.chatMessage,
+            command: msg.command,
             tabID: msg.tabID,
         })
     }

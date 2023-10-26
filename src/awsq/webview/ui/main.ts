@@ -2,26 +2,21 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-
-import { Connector } from './connector'
+import { ChatPayload, Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 
-const WelcomeMessage = `<span markdown="1">
-Hi, I am AWS Q. I can answer your software development questions. 
+const WelcomeMessage = `Hi, I am AWS Q. I can answer your software development questions. 
 Ask me to explain, debug, or optimize your code. 
-You can enter \`/\` to see a list of quick actions.
-</span>`
-const WeaverBirdWelcomeMessage = `<span markdown="1">
-### How \`/assign\` works:
+You can enter \`/\` to see a list of quick actions.`
+const WeaverBirdWelcomeMessage = `### How \`/assign\` works:
 1. Describe your job to be done
 2. Agree on an approach
 3. Q generate code
-4. Review code suggestions, provide feedback if needed
-</span>`
+4. Review code suggestions, provide feedback if needed`
 
 const WelcomeFollowUps = {
     text: 'Or you can select one of these',
@@ -43,35 +38,35 @@ const QuickActionCommands = [
         commands: [
             {
                 command: '/assign',
+                placeholder: 'Please specify the coding task in details',
                 description: 'Give Q a coding task',
             },
         ],
     },
+    // TODO after implementing the command handlers on the extension side
+    // those items should be enabled one by one
+    /* {
+    groupName: 'Quick Actions',
+    commands: [
     {
-        groupName: 'Quick Action',
-        commands: [
-            {
-                command: '/explain',
-                promptText: 'Explain',
-                description: 'Explain selected code or an active file',
-            },
-            {
-                command: '/fix',
-                promptText: 'Fix',
-                description: 'Debug selected code and suggest fix',
-            },
-            {
-                command: '/refactor',
-                promptText: 'Refactor',
-                description: 'Refactor selected code',
-            },
-            {
-                command: '/optimize',
-                promptText: 'Optimize',
-                description: 'Optimize selected code',
-            },
-        ],
+        command: '/explain',
+        description: 'Explain the selected code or active file',
     },
+    {
+        command: '/fix',
+        placeholder: 'Please specify what to fix, ie: selected code or the active file',
+        description: 'Fix the selected code or active file',
+    },
+    {
+        command: '/refactor',
+        description: 'Explain the selected code or active file',
+    },
+    {
+        command: '/optimize',
+        description: 'Explain the selected code or active file',
+    },
+    ],
+}, */
     {
         commands: [
             {
@@ -170,18 +165,47 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 return
             }
         },
+        onWriteCodeFollowUpClicked: (tabID: string, inProgress: boolean) => {
+            if (inProgress) {
+                mynahUI.updateStore(tabID, {
+                    loadingChat: true,
+                    promptInputDisabledState: true,
+                })
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER,
+                    body: 'Code generation started',
+                })
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER_STREAM,
+                    body: '',
+                })
+                tabsStorage.updateTabStatus(tabID, 'busy')
+                return
+            }
+
+            mynahUI.updateLastChatAnswer(tabID, {
+                body: 'Changes to files done. Please review:',
+            })
+            mynahUI.updateStore(tabID, {
+                loadingChat: false,
+                promptInputDisabledState: false,
+            })
+            tabsStorage.updateTabStatus(tabID, 'free')
+        },
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART) {
                 if (typeof item.body === 'string') {
-                    mynahUI.updateLastChatAnswerStream(tabID, item.body)
+                    mynahUI.updateLastChatAnswer(tabID, { body: item.body })
                 }
                 if (item.relatedContent !== undefined) {
-                    mynahUI.updateLastChatAnswerStream(tabID, {
-                        title: item.relatedContent.title,
-                        content: item.relatedContent.content,
+                    mynahUI.updateLastChatAnswer(tabID, {
+                        relatedContent: {
+                            title: item.relatedContent.title,
+                            content: item.relatedContent.content,
+                        },
                     })
                 }
 
@@ -232,9 +256,8 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onError: (tabID: string, message: string, title: string) => {
             const answer: ChatItem = {
                 type: ChatItemType.ANSWER,
-                body: `<span markdown="1">**${title}**
-                    ${message}
-</span>`,
+                body: `**${title}** 
+${message}`,
             }
 
             mynahUI.addChatItem(tabID, answer)
@@ -253,23 +276,26 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
         onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
-            if (prompt.prompt === undefined) {
+            if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
-            if (prompt.prompt.match(/\/assign/)) {
-                let affectedTabId = tabID
-                const realPromptText = prompt.escapedPrompt?.replace('/assign', '').trim()
+            if (prompt.command !== undefined && prompt.command.trim() !== '') {
+                if (prompt.command === '/assign') {
+                    let affectedTabId = tabID
+                    const realPromptText = prompt.escapedPrompt?.trim() ?? ''
+                    if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
+                        affectedTabId = mynahUI.updateStore('', {})
+                    }
+                    tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
 
-                if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
-                    affectedTabId = mynahUI.updateStore('', {
+                    mynahUI.updateStore(affectedTabId, { chatItems: [] })
+                    mynahUI.updateStore(affectedTabId, {
+                        tabTitle: 'Q - Task',
+                        quickActionCommands: [],
+                        promptInputPlaceholder: 'Assign a code task',
                         chatItems: [
                             ...(realPromptText !== ''
-                                ? [
-                                      {
-                                          type: ChatItemType.PROMPT,
-                                          body: realPromptText,
-                                      },
-                                  ]
+                                ? []
                                 : [
                                       {
                                           type: ChatItemType.ANSWER,
@@ -278,31 +304,41 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                                   ]),
                         ],
                     })
-                }
-                tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
 
-                mynahUI.updateStore(affectedTabId, {
-                    tabTitle: 'Q - Task',
-                    quickActionCommands: [],
-                    promptInputPlaceholder: 'Assign a code task',
-                })
+                    if (realPromptText !== '') {
+                        mynahUI.addChatItem(affectedTabId, {
+                            type: ChatItemType.PROMPT,
+                            body: realPromptText,
+                            ...(prompt.attachment !== undefined
+                                ? {
+                                      relatedContent: {
+                                          content: [prompt.attachment],
+                                      },
+                                  }
+                                : {}),
+                        })
+                        connector.requestGenerativeAIAnswer(affectedTabId, {
+                            chatMessage: realPromptText,
+                        })
+                    }
 
-                if (realPromptText !== undefined && realPromptText !== '') {
-                    connector.requestGenerativeAIAnswer(affectedTabId, {
-                        chatMessage: realPromptText,
+                    return
+                } else if (prompt.command === '/clear') {
+                    // TODO clear command should also be sent to extension,
+                    // command sending is already added,
+                    // however the extension layer doesn't do anything with it yet
+                    // it should clear the cache or anything related with that tab
+                    mynahUI.updateStore(tabID, {
+                        chatItems: [],
                     })
-                } else if (affectedTabId === tabID) {
-                    mynahUI.addChatItem(affectedTabId, {
-                        type: ChatItemType.ANSWER,
-                        body: WeaverBirdWelcomeMessage,
-                    })
+                    return
+                } else {
+                    // TODO we should send all commands to the extension
+                    // which is implemented but the extension should handle them
                 }
-
-                return
             }
 
             tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-
             mynahUI.addChatItem(tabID, {
                 type: ChatItemType.PROMPT,
                 body: prompt.escapedPrompt,
@@ -321,8 +357,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
             })
 
             tabsStorage.updateTabStatus(tabID, 'busy')
-            const chatPayload = {
+            const chatPayload: ChatPayload = {
                 chatMessage: prompt.prompt ?? '',
+                chatCommand: prompt.command,
             }
 
             connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})

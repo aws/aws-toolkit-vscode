@@ -27,7 +27,7 @@ export interface ValidationResult {
 }
 
 export interface AwsSamDebugConfigurationValidator {
-    validate(config: AwsSamDebuggerConfiguration, registry: CloudFormationTemplateRegistry): ValidationResult
+    validate(config: AwsSamDebuggerConfiguration, registry: CloudFormationTemplateRegistry): Promise<ValidationResult>
 }
 
 export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConfigurationValidator {
@@ -36,11 +36,11 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
     /**
      * Validates debug configuration properties.
      */
-    public validate(
+    public async validate(
         config: AwsSamDebuggerConfiguration,
         registry: CloudFormationTemplateRegistry,
         resolveVars?: boolean
-    ): ValidationResult {
+    ): Promise<ValidationResult> {
         let rv: ValidationResult = { isValid: false, message: undefined }
         if (resolveVars) {
             config = doTraverseAndReplace(config, this.workspaceFolder?.uri.fsPath ?? '')
@@ -67,12 +67,15 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
             config.invokeTarget.target === TEMPLATE_TARGET_TYPE ||
             config.invokeTarget.target === API_TARGET_TYPE
         ) {
-            let cfnTemplate
+            let cfnTemplate: CloudFormation.Template | undefined
             if (config.invokeTarget.templatePath) {
                 const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
                 // Normalize to absolute path for use in the runner.
                 config.invokeTarget.templatePath = fullpath
-                cfnTemplate = registry.getRegisteredItem(fullpath)?.item
+                // Forcefully add to the registry in case the registry scan somehow missed the file. #2614
+                // If the user (launch config) gave an explicit path we should always "find" it.
+                const uri = vscode.Uri.file(fullpath)
+                cfnTemplate = (await registry.addItem(uri, true))?.item
             }
             rv = this.validateTemplateConfig(config, config.invokeTarget.templatePath, cfnTemplate)
         } else if (config.invokeTarget.target === CODE_TARGET_TYPE) {

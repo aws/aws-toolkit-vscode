@@ -30,7 +30,6 @@ interface SearchSuggestionCommonProps {
     readonly title: string
     readonly url: string
     readonly body: string
-    readonly type: string
     readonly id: number
 }
 
@@ -38,20 +37,17 @@ class SearchSuggestionCommon {
     readonly title!: string
     readonly url!: string
     readonly body!: string
-    readonly type!: string
     readonly id!: number
 
     constructor(props: SearchSuggestionCommonProps) {
         this.title = props.title
         this.url = props.url
         this.body = props.body
-        this.type = props.type
         this.id = props.id
     }
 }
 
 export class APIDocsSuggestion extends SearchSuggestionCommon {
-    override type = 'ApiDocsSuggestion'
     readonly metadata!: APIDocsSuggestionMetadata
 }
 

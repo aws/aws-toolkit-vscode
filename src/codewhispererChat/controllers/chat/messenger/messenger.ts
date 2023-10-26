@@ -4,20 +4,21 @@
  */
 
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
-import { ChatEvent } from '../../../clients/chat/v0/model'
-import {
-    ChatMessage,
-    AppToWebViewMessageDispatcher,
-    ErrorMessage,
-    FollowUp,
-    Suggestion,
-    EditorContextCommandMessage,
-} from '../../../view/connector/connector'
+import { AppToWebViewMessageDispatcher, EditorContextCommandMessage } from '../../../view/connector/connector'
+import { ChatResponseStream, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
+import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
+import { ChatSession } from '../../../clients/chat/v0/chat'
+import { ChatException } from './model'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
-    async sendAIResponse(response: AsyncGenerator<ChatEvent>, tabID: string, triggerID: string) {
+    async sendAIResponse(
+        response: AsyncIterable<ChatResponseStream>,
+        session: ChatSession,
+        tabID: string,
+        triggerID: string
+    ) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
@@ -38,8 +39,14 @@ export class Messenger {
         await waitUntil(
             async () => {
                 for await (const chatEvent of response) {
-                    if (chatEvent.token != undefined) {
-                        message += chatEvent.token
+                    if (session.tokenSource.token.isCancellationRequested) {
+                        return true
+                    }
+                    if (
+                        chatEvent.assistantResponseEvent?.content != undefined &&
+                        chatEvent.assistantResponseEvent.content.length > 0
+                    ) {
+                        message += chatEvent.assistantResponseEvent.content
 
                         this.dispatcher.sendChatMessage(
                             new ChatMessage(
@@ -55,39 +62,28 @@ export class Messenger {
                         )
                     }
 
-                    if (chatEvent.suggestions != undefined) {
+                    if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks != undefined) {
                         let suggestionIndex = 0
-                        const newSuggestions: Suggestion[] = chatEvent.suggestions.map(
-                            s =>
-                                new Suggestion({
-                                    title: s.title,
-                                    url: s.url,
-                                    body: s.body,
-                                    id: suggestionIndex++,
-                                    type: s.type,
-                                    context: s.context,
-                                })
-                        )
+                        const newSuggestions: Suggestion[] =
+                            chatEvent.supplementaryWebLinksEvent.supplementaryWebLinks.map(
+                                (s: SupplementaryWebLink) =>
+                                    new Suggestion({
+                                        title: s.title ?? '',
+                                        url: s.url ?? '',
+                                        body: s.snippet ?? '',
+                                        id: suggestionIndex++,
+                                        context: [],
+                                    })
+                            )
                         relatedSuggestions.push(...newSuggestions)
                     }
 
-                    if (chatEvent.followUps != undefined) {
-                        chatEvent.followUps.forEach(element => {
-                            if (element.pillText !== undefined) {
-                                followUps.push({
-                                    type: element.type.toString(),
-                                    pillText: element.pillText,
-                                    prompt: element.prompt ?? element.pillText,
-                                })
-                            }
-
-                            if (element.message !== undefined) {
-                                followUps.push({
-                                    type: element.type.toString(),
-                                    pillText: element.message,
-                                    prompt: element.message,
-                                })
-                            }
+                    if (chatEvent.followupPromptEvent?.followupPrompt != undefined) {
+                        const followUp = chatEvent.followupPromptEvent.followupPrompt
+                        followUps.push({
+                            type: followUp.userIntent ?? '',
+                            pillText: followUp.content ?? '',
+                            prompt: followUp.content ?? '',
                         })
                     }
                 }

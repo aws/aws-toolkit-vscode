@@ -14,7 +14,7 @@ export class ChatSessionStorage {
             return sessionFromStorage
         }
 
-        const newSession = new ChatSession('f7baecc9fb5779d04f0ac73c75180ca6-mynah-team-dev')
+        const newSession = new ChatSession()
         this.sessions.set(tabID, newSession)
 
         return newSession

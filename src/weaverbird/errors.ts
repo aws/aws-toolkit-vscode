@@ -22,3 +22,9 @@ export class PanelLoadError extends ToolkitError {
         super(`Weaverbird UI panel failed to load`, { code: 'PanelLoadFailed' })
     }
 }
+
+export class ProjectSizeTooLargeError extends ToolkitError {
+    constructor() {
+        super('Project size is too large', { code: 'ProjectSizeTooLarge' })
+    }
+}

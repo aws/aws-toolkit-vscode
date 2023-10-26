@@ -8,3 +8,4 @@ src/weaverbird/client/weaverbirdclient.d.ts
 src/testFixtures/workspaceFolder/ts-plain-sam-app/
 dist/**
 types/*.d.ts
+src.gen/**

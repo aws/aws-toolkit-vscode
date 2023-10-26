@@ -17,26 +17,23 @@ import { LambdaClient } from '../../../shared/clients/lambdaClient'
 import * as invokeModule from '../../../weaverbird/util/invoke'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
-import { GenerateApproachOutput, GenerateCodeOutput } from '../../../weaverbird/client/weaverbirdclient'
+import { GenerateApproachOutput } from '../../../weaverbird/client/weaverbirdclient'
 import { Messenger } from '../../../weaverbird/controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from '../../../weaverbird/views/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
 
 interface MockSessionStateActionInput {
     msg?: 'MOCK CODE' | 'OTHER'
-    messengerEvent?: vscode.EventEmitter<any>
 }
 
-const mockSessionStateAction = ({ msg, messengerEvent }: MockSessionStateActionInput): SessionStateAction => {
+const mockSessionStateAction = ({ msg }: MockSessionStateActionInput): SessionStateAction => {
     return {
         task: 'test-task',
         msg: msg ?? 'test-msg',
         files: [],
         fs: new VirtualFileSystem(),
         messenger: new Messenger(
-            new AppToWebViewMessageDispatcher(
-                new MessagePublisher<any>(messengerEvent ?? new vscode.EventEmitter<any>())
-            )
+            new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
         ),
     }
 }
@@ -100,8 +97,8 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState: new RefinementIterationState(testConfig, testApproach, tabId),
-                interactions: {
-                    content: [`${testApproach}\n`],
+                interaction: {
+                    content: `${testApproach}\n`,
                 },
             })
         })
@@ -111,12 +108,12 @@ describe('sessionState', () => {
             const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
             const invokeFailureApproach =
-                "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+                'There has been a problem generating an approach. Please open a conversation in a new tab'
 
             assert.deepStrictEqual(result, {
                 nextState: new RefinementIterationState(testConfig, invokeFailureApproach, tabId),
-                interactions: {
-                    content: [`${invokeFailureApproach}\n`],
+                interaction: {
+                    content: `${invokeFailureApproach}\n`,
                 },
             })
         })
@@ -131,10 +128,7 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState: nextState,
-                interactions: {
-                    content: ['Changes to files done. Please review:'],
-                    filePaths: [],
-                },
+                interaction: {},
             })
         })
     })
@@ -142,8 +136,7 @@ describe('sessionState', () => {
     describe('CodeGenState', () => {
         it('transitions to  generate CodeGenIterationState when codeGenerationStatus ready ', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
-            const testEmitter = sinon.createStubInstance(vscode.EventEmitter)
-            const testAction = mockSessionStateAction({ messengerEvent: testEmitter })
+            const testAction = mockSessionStateAction({})
             const state = new CodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
@@ -151,53 +144,20 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(result, {
                 nextState,
-                interactions: {
-                    content: [],
-                },
+                interaction: {},
             })
-            assert.strictEqual(testEmitter.fire.getCalls().length, 2)
-            assert.strictEqual(
-                testEmitter.fire.calledWithMatch({
-                    message: 'Code generation started\n',
-                }),
-                true
-            )
-            assert.strictEqual(
-                testEmitter.fire.calledWithMatch({
-                    message: 'Changes to files done. Please review:',
-                }),
-                true
-            )
         })
 
-        it('transitions to  generate CodeGenIterationState when codeGenerationStatus failed ', async () => {
+        it('fails when codeGenerationStatus failed ', async () => {
             sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'failed' })
-            const testEmitter = sinon.createStubInstance(vscode.EventEmitter)
-            const testAction = mockSessionStateAction({ messengerEvent: testEmitter })
+            const testAction = mockSessionStateAction({})
             const state = new CodeGenState(testConfig, testApproach, tabId)
-            const result = await state.interact(testAction)
-
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
-
-            assert.deepStrictEqual(result, {
-                nextState,
-                interactions: {
-                    content: [],
-                },
-            })
-            assert.strictEqual(testEmitter.fire.getCalls().length, 2)
-            assert.strictEqual(
-                testEmitter.fire.calledWithMatch({
-                    message: 'Code generation started\n',
-                }),
-                true
-            )
-            assert.strictEqual(
-                testEmitter.fire.calledWithMatch({
-                    message: 'Code generation failed\n',
-                }),
-                true
-            )
+            try {
+                await state.interact(testAction)
+                assert.fail('failed code generations should throw an error')
+            } catch (e: any) {
+                assert.deepStrictEqual(e.message, 'Code generation failed')
+            }
         })
     })
 
@@ -210,10 +170,7 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(interactionResult, {
                 nextState: new RefinementState(testConfig, testApproach, tabId),
-                interactions: {
-                    content: ['Changes to files done. Please review:'],
-                    filePaths: [],
-                },
+                interaction: {},
             })
         })
 
@@ -226,8 +183,8 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(interactionResult, {
                 nextState: new RefinementIterationState(testConfig, testApproach, tabId),
-                interactions: {
-                    content: [`${testApproach}\n`],
+                interaction: {
+                    content: `${testApproach}\n`,
                 },
             })
         })
@@ -235,7 +192,7 @@ describe('sessionState', () => {
 
     describe('CodeGenIterationState', () => {
         it('transitions to generate CodeGenIterationState', async () => {
-            sinon.stub(invokeModule, 'invoke').resolves({ generationId } satisfies GenerateCodeOutput)
+            sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
             const testAction = mockSessionStateAction({})
 
             const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
@@ -243,9 +200,7 @@ describe('sessionState', () => {
 
             assert.deepStrictEqual(codeGenIterationStateResult, {
                 nextState: codeGenIterationState,
-                interactions: {
-                    content: ['Changes to files done'],
-                },
+                interaction: {},
             })
         })
     })
