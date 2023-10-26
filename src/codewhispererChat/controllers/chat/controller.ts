@@ -282,8 +282,8 @@ export class ChatController {
                 }
 
                 const response = await session.chat(request)
-                // TODO: record converstion Id and conversation type
-                // telemetry.codewhispererchat_startConversation.record({ cwsprChatConversationId: session.sessionId })
+                // TODO: record conversation type
+                telemetry.codewhispererchat_startConversation.record({ cwsprChatConversationId: session.sessionId })
                 this.messenger.sendAIResponse(response, session, tabID, triggerID)
             })
         } catch (e) {
