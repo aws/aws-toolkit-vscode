@@ -22,6 +22,7 @@ const localize = nls.loadMessageBundle()
 const vscodeAppname = 'Visual Studio Code'
 const cloud9Appname = 'AWS Cloud9'
 const cloud9CnAppname = 'Amazon Cloud9'
+const sageMakerAppname = 'SageMaker Code Editor'
 const notInitialized = 'notInitialized'
 
 export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
@@ -29,6 +30,7 @@ export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
 export enum IDE {
     vscode,
     cloud9,
+    sagemaker,
     unknown,
 }
 
@@ -44,7 +46,11 @@ export function getIdeType(): IDE {
         return IDE.cloud9
     }
 
-    // Theia doesn't necessarily have all env propertie
+    if (vscode.env.appName === sageMakerAppname) {
+        return IDE.sagemaker
+    }
+
+    // Theia doesn't necessarily have all env properties
     // so we should be defensive and assume appName is nullable.
     if (vscode.env.appName?.startsWith(vscodeAppname)) {
         return IDE.vscode
@@ -80,9 +86,26 @@ export function getIdeProperties(): IdeProperties {
                 return createCloud9Properties(localize('AWS.title.cn', 'Amazon'))
             }
             return createCloud9Properties(company)
+        case IDE.sagemaker:
+            if (isCn()) {
+                // check for cn region
+                return createSageMakerProperties(localize('AWS.title.cn', 'Amazon'))
+            }
+            return createSageMakerProperties(company)
         // default is IDE.vscode
         default:
             return vscodeVals
+    }
+}
+
+function createSageMakerProperties(company: string): IdeProperties {
+    return {
+        shortName: localize('AWS.vscode.shortName', '{0} Code Editor', company),
+        longName: localize('AWS.vscode.longName', '{0} SageMaker Code Editor', company),
+        commandPalette: localize('AWS.vscode.commandPalette', 'Command Palette'),
+        codelens: localize('AWS.vscode.codelens', 'CodeLens'),
+        codelenses: localize('AWS.vscode.codelenses', 'CodeLenses'),
+        company,
     }
 }
 
@@ -107,6 +130,10 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
     }
     const codecat = getCodeCatalystDevEnvId() !== undefined
     return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
+}
+
+export function isSageMaker(): boolean {
+    return vscode.env.appName === sageMakerAppname
 }
 
 export function isCn(): boolean {
@@ -338,10 +365,17 @@ export function getToolkitEnvironmentDetails(): string {
 }
 
 /**
- * Returns the Cloud9 compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9.
+ * Returns the Cloud9/SageMaker compute region or 'unknown' if we can't pull a region, or `undefined` if this is not Cloud9 or SageMaker.
  */
-export async function initializeComputeRegion(metadata?: Ec2MetadataClient, isC9: boolean = isCloud9()): Promise<void> {
-    if (isC9) {
+
+export async function initializeComputeRegion(
+    metadata?: Ec2MetadataClient,
+    isC9?: boolean,
+    isSM?: boolean
+): Promise<void> {
+    isC9 ??= isCloud9()
+    isSM ??= isSageMaker()
+    if (isC9 || isSM) {
         metadata ??= new DefaultEc2MetadataClient()
         try {
             const identity = await metadata.getInstanceIdentity()
