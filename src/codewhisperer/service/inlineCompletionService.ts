@@ -18,7 +18,8 @@ import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
-import { showCodeWhispererQuickPickCommand } from '../commands/basicCommands'
+import { Commands } from '../../shared/vscode/commands2'
+import { showCodeWhispererQuickPickCommand } from '../commands/statusBarCommands'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -190,3 +191,17 @@ export class InlineCompletionService {
         this.statusBar.hide()
     }
 }
+
+/** In this module due to circulare dependency issues */
+export const refreshStatusBar = Commands.declare(
+    { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
+    () => () => {
+        if (AuthUtil.instance.isConnectionValid()) {
+            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
+        } else if (AuthUtil.instance.isConnectionExpired()) {
+            InlineCompletionService.instance.setCodeWhispererStatusBarExpired()
+        } else {
+            InlineCompletionService.instance.setCodeWhispererStatusBarNotConnected()
+        }
+    }
+)

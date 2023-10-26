@@ -17,7 +17,6 @@ import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { InlineCompletionService } from '../service/inlineCompletionService'
 import { getLogger } from '../../shared/logger'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
@@ -27,9 +26,6 @@ import {
     showCustomizationPrompt,
 } from '../util/customizationUtil'
 import { get, set } from '../util/commonUtil'
-import { createQuickPick } from '../../shared/ui/pickerPrompter'
-import { codewhispererNode } from '../explorer/codewhispererNode'
-import { createExitButton } from '../../shared/ui/buttons'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -174,34 +170,12 @@ export const updateReferenceLog = Commands.declare(
     }
 )
 
-export const refreshStatusBar = Commands.declare(
-    { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
-    () => () => {
-        if (AuthUtil.instance.isConnectionValid()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-        } else if (AuthUtil.instance.isConnectionExpired()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarExpired()
-        } else {
-            InlineCompletionService.instance.setCodeWhispererStatusBarNotConnected()
-        }
-    }
-)
-
 export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
         notifyNewCustomizations().then()
     }
 )
-
-export const showCodeWhispererQuickPickCommand = 'aws.codewhisperer.quickpick'
-export const showCodeWhispererQuickPick = Commands.declare({ id: showCodeWhispererQuickPickCommand }, () => () => {
-    createQuickPick(codewhispererNode.getChildren('item'), {
-        title: 'CodeWhisperer',
-        buttons: [createExitButton()],
-        ignoreFocusOut: false,
-    }).prompt()
-})
 
 export const signoutCodeWhisperer = Commands.declare(
     'aws.codewhisperer.signout',

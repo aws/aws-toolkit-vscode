@@ -32,11 +32,9 @@ import {
     updateReferenceLog,
     showIntroduction,
     reconnect,
-    refreshStatusBar,
     selectCustomizationPrompt,
     notifyNewCustomizationsCmd,
     connectWithCustomization,
-    showCodeWhispererQuickPick,
     signoutCodeWhisperer,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
@@ -47,7 +45,7 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
-import { InlineCompletionService } from './service/inlineCompletionService'
+import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import { AuthUtil } from './util/authUtil'
@@ -57,6 +55,7 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { showCodeWhispererQuickPick } from './commands/statusBarCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
