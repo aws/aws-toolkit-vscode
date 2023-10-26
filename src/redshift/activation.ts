@@ -9,20 +9,17 @@ import { RedshiftNotebookSerializer } from './notebook/redshiftNotebookSerialize
 import { RedshiftNotebookController } from './notebook/redshiftNotebookController'
 import { CellStatusBarItemProvider } from './notebook/cellStatusBarItemProvider'
 import { Commands } from '../shared/vscode/commands2'
-import { NotebookConnectionWizard } from './wizards/connectionWizard'
+import { NotebookConnectionWizard, RedshiftNodeConnectionWizard } from './wizards/connectionWizard'
 import { ConnectionParams, ConnectionType } from './models/models'
 import { DefaultRedshiftClient } from '../shared/clients/redshiftClient'
 import { localize } from '../shared/utilities/vsCodeUtils'
 import { RedshiftWarehouseNode } from './explorer/redshiftWarehouseNode'
 import { ToolkitError } from '../shared/errors'
 import { deleteConnection, updateConnectionParamsState } from './explorer/redshiftState'
-import globals from '../shared/extensionGlobals'
 import { showViewLogsMessage } from '../shared/utilities/messages'
+import { showConnectionMessage } from './messageUtils'
 
 export async function activate(ctx: ExtContext): Promise<void> {
-    const outputChannel = globals.outputChannel
-    outputChannel.show(true)
-
     if ('NotebookEdit' in vscode) {
         ctx.extensionContext.subscriptions.push(
             vscode.workspace.registerNotebookSerializer('aws-redshift-sql-notebook', new RedshiftNotebookSerializer())
@@ -35,7 +32,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ctx.extensionContext.subscriptions.push(
             Commands.register(
                 'aws.redshift.notebookConnectClicked',
-                getNotebookConnectClickedHandler(ctx, redshiftNotebookController, outputChannel)
+                getNotebookConnectClickedHandler(ctx, redshiftNotebookController)
             )
         )
 
@@ -47,7 +44,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         )
 
         ctx.extensionContext.subscriptions.push(
-            Commands.register('aws.redshift.editConnection', getEditConnectionHandler(outputChannel))
+            Commands.register('aws.redshift.editConnection', getEditConnectionHandler())
         )
 
         ctx.extensionContext.subscriptions.push(
@@ -74,11 +71,7 @@ function getCreateNotebookClickedHandler(redshiftNotebookController: RedshiftNot
     }
 }
 
-function getNotebookConnectClickedHandler(
-    ctx: ExtContext,
-    redshiftNotebookController: RedshiftNotebookController,
-    outputChannel: vscode.OutputChannel
-) {
+function getNotebookConnectClickedHandler(ctx: ExtContext, redshiftNotebookController: RedshiftNotebookController) {
     return async (cell: vscode.NotebookCell, refreshCellStatusBar: () => void) => {
         const warehouseConnectionWizard = new NotebookConnectionWizard(ctx.regionProvider)
         let connectionParams: ConnectionParams | undefined = await warehouseConnectionWizard.run()
@@ -98,11 +91,9 @@ function getNotebookConnectClickedHandler(
                 connectionParams.secret = secretArnFetched
             }
             await redshiftNotebookController.redshiftClient.listDatabases(connectionParams!)
-            outputChannel.appendLine(`Redshift: connected to: ${connectionParams.warehouseIdentifier}`)
+            showConnectionMessage(connectionParams.warehouseIdentifier, undefined)
         } catch (error) {
-            outputChannel.appendLine(
-                `Redshift: failed to connect to: ${connectionParams.warehouseIdentifier} - ${(error as Error).message}`
-            )
+            showConnectionMessage(connectionParams.warehouseIdentifier, error as Error)
             connectionParams = undefined
         }
         const edit = new vscode.WorkspaceEdit()
@@ -116,10 +107,10 @@ function getNotebookConnectClickedHandler(
     }
 }
 
-function getEditConnectionHandler(outputChannel: vscode.OutputChannel) {
+function getEditConnectionHandler() {
     return async (redshiftWarehouseNode: RedshiftWarehouseNode) => {
         try {
-            const connectionParams = await redshiftWarehouseNode.connectionWizard!.run()
+            const connectionParams = await new RedshiftNodeConnectionWizard(redshiftWarehouseNode).run()
             if (connectionParams) {
                 if (connectionParams.connectionType === ConnectionType.DatabaseUser) {
                     const secretArnFetched =
@@ -134,11 +125,7 @@ function getEditConnectionHandler(outputChannel: vscode.OutputChannel) {
                 await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', redshiftWarehouseNode)
             }
         } catch (error) {
-            outputChannel.appendLine(
-                `Redshift: Failed to fetch databases for warehouse ${redshiftWarehouseNode.name} - ${
-                    (error as Error).message
-                }`
-            )
+            showConnectionMessage(redshiftWarehouseNode.name, error as Error)
         }
     }
 }

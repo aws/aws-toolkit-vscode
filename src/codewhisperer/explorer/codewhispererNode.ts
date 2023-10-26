@@ -19,7 +19,7 @@ import {
 import { createGettingStartedNode } from '../commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 
@@ -57,9 +57,13 @@ export class CodeWhispererNode implements RootNode {
 
     private getDescription(): string {
         if (AuthUtil.instance.isConnectionValid()) {
-            return AuthUtil.instance.isEnterpriseSsoInUse()
-                ? 'IAM Identity Center Connected'
-                : 'AWS Builder ID Connected'
+            if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                return 'IAM Identity Center Connected'
+            } else if (AuthUtil.instance.isBuilderIdInUse()) {
+                return 'AWS Builder ID Connected'
+            } else {
+                return 'IAM Connected'
+            }
         } else if (AuthUtil.instance.isConnectionExpired()) {
             return 'Expired Connection'
         }
@@ -76,13 +80,13 @@ export class CodeWhispererNode implements RootNode {
             return [createSsoSignIn(), createLearnMore()]
         }
         if (this._showFreeTierLimitReachedNode) {
-            if (isCloud9()) {
+            if (hasVendedIamCredentials()) {
                 return [createFreeTierLimitMetNode(), createOpenReferenceLogNode()]
             } else {
                 return [createFreeTierLimitMetNode(), createSecurityScanNode(), createOpenReferenceLogNode()]
             }
         } else {
-            if (isCloud9()) {
+            if (hasVendedIamCredentials()) {
                 return [createAutoSuggestionsNode(autoTriggerEnabled), createOpenReferenceLogNode()]
             } else {
                 if (AuthUtil.instance.isValidEnterpriseSsoInUse() && AuthUtil.instance.isCustomizationFeatureEnabled) {

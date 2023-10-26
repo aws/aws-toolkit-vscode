@@ -32,11 +32,15 @@ import { SectionName, StaticProfile } from './credentials/types'
 import { throwOnInvalidCredentials } from './credentials/validation'
 import {
     Connection,
+    SsoConnection,
     createBuilderIdProfile,
     createSsoProfile,
     defaultSsoRegion,
+    isAnySsoConnection,
+    isIdcSsoConnection,
     isBuilderIdConnection,
-    isSsoConnection,
+    isIamConnection,
+    isValidCodeCatalystConnection,
 } from './connection'
 import { Commands } from '../shared/vscode/commands2'
 import { Auth } from './auth'
@@ -44,6 +48,7 @@ import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
+import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -144,7 +149,7 @@ export const createIamItem = () =>
     } as DataQuickPickItem<'iam'>)
 
 export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
-    const existingConnections = (await Auth.instance.listConnections()).filter(isSsoConnection)
+    const existingConnections = (await Auth.instance.listConnections()).filter(isAnySsoConnection)
 
     function validateSsoUrl(url: string) {
         const urlFormatError = validateSsoUrlFormat(url)
@@ -556,6 +561,81 @@ export class AuthNode implements TreeNode<Auth> {
             item.description = text
         }
     }
+}
+
+export async function hasIamCredentials(
+    allConnections = () => Auth.instance.listAndTraverseConnections().promise()
+): Promise<boolean> {
+    return (await allConnections()).some(isIamConnection)
+}
+
+export type SsoKind = 'any' | 'codewhisperer'
+
+/**
+ * Returns true if an Identity Center SSO connection exists.
+ *
+ * @param kind A specific kind of Identity Center SSO connection that must exist.
+ * @param allConnections func to get all connections that exist
+ */
+export async function hasSso(
+    kind: SsoKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<boolean> {
+    return (await findSsoConnections(kind, allConnections)).length > 0
+}
+
+async function findSsoConnections(
+    kind: SsoKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<SsoConnection[]> {
+    let predicate: (c?: Connection) => boolean
+    switch (kind) {
+        case 'codewhisperer':
+            predicate = (conn?: Connection) => {
+                return isIdcSsoConnection(conn) && isValidCodeWhispererConnection(conn)
+            }
+            break
+        case 'any':
+            predicate = isIdcSsoConnection
+    }
+    return (await allConnections()).filter(predicate).filter(isIdcSsoConnection)
+}
+
+export type BuilderIdKind = 'any' | 'codewhisperer' | 'codecatalyst'
+
+/**
+ * Returns true if a Builder ID connection exists.
+ *
+ * @param kind A Builder ID connection that has the scopes of this kind.
+ * @param allConnections func to get all connections that exist
+ */
+export async function hasBuilderId(
+    kind: BuilderIdKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<boolean> {
+    return (await findBuilderIdConnections(kind, allConnections)).length > 0
+}
+
+async function findBuilderIdConnections(
+    kind: BuilderIdKind = 'any',
+    allConnections = () => Auth.instance.listConnections()
+): Promise<SsoConnection[]> {
+    let predicate: (c?: Connection) => boolean
+    switch (kind) {
+        case 'codewhisperer':
+            predicate = (conn?: Connection) => {
+                return isBuilderIdConnection(conn) && isValidCodeWhispererConnection(conn)
+            }
+            break
+        case 'codecatalyst':
+            predicate = (conn?: Connection) => {
+                return isBuilderIdConnection(conn) && isValidCodeCatalystConnection(conn)
+            }
+            break
+        case 'any':
+            predicate = isBuilderIdConnection
+    }
+    return (await allConnections()).filter(predicate).filter(isAnySsoConnection)
 }
 
 /**

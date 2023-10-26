@@ -55,6 +55,7 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
+import { AuthCommandDeclarations } from '../auth/commands'
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -93,6 +94,14 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
+        Commands.register('aws.codewhisperer.signout', () => auth.secondaryAuth.deleteConnection()),
+        /** Opens the Add Connections webview with CW highlighted */
+        Commands.register('aws.codewhisperer.manageConnections', () => {
+            AuthCommandDeclarations.instance.declared.showManageConnections.execute(
+                'codewhispererDeveloperTools',
+                'codewhisperer'
+            )
+        }),
         /**
          * Configuration change
          */
@@ -382,7 +391,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
-                if (e.contentChanges.length != 0 && !vsCodeState.isCodeWhispererEditing) {
+                if (e.contentChanges.length == 0 || vsCodeState.isCodeWhispererEditing) {
                     return
                 }
                 /**

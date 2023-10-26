@@ -27,6 +27,7 @@ import {
     getToolkitEnvironmentDetails,
     initializeComputeRegion,
     isCloud9,
+    isSageMaker,
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -69,7 +70,7 @@ import { Auth } from './auth/auth'
 import { openUrl } from './shared/utilities/vsCodeUtils'
 import { isUserCancelledError, resolveErrorMessageToDisplay, ToolkitError } from './shared/errors'
 import { Logging } from './shared/logger/commands'
-import { showMessageWithUrl } from './shared/utilities/messages'
+import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
 
@@ -209,7 +210,10 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        await codecatalyst.activate(extContext)
+        // do not enable codecatalyst for sagemaker
+        if (!isSageMaker()) {
+            await codecatalyst.activate(extContext)
+        }
 
         await activateCloudFormationTemplateRegistry(context)
 
@@ -257,7 +261,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
         showWelcomeMessage(context)
 
-        recordToolkitInitialization(activationStartedOn, getLogger())
+        const settingsValid = await checkSettingsHealth(settings)
+        recordToolkitInitialization(activationStartedOn, settingsValid, getLogger())
 
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
@@ -303,12 +308,16 @@ function makeEndpointsProvider() {
     }
 }
 
-function recordToolkitInitialization(activationStartedOn: number, logger?: Logger) {
+function recordToolkitInitialization(activationStartedOn: number, settingsValid: boolean, logger?: Logger) {
     try {
         const activationFinishedOn = Date.now()
         const duration = activationFinishedOn - activationStartedOn
 
-        telemetry.toolkit_init.emit({ duration })
+        if (settingsValid) {
+            telemetry.toolkit_init.emit({ duration })
+        } else {
+            telemetry.toolkit_init.emit({ duration, result: 'Failed', reason: 'UserSettings' })
+        }
     } catch (err) {
         logger?.error(err as Error)
     }
@@ -391,6 +400,20 @@ export function logAndShowWebviewError(err: unknown, webviewId: string, command:
     const detailedError = ToolkitError.chain(err, `Webview backend command failed: "${command}()"`)
     const userFacingError = ToolkitError.chain(detailedError, 'Webview error')
     logAndShowError(userFacingError, `webviewId="${webviewId}"`, 'Webview error')
+}
+
+async function checkSettingsHealth(settings: Settings): Promise<boolean> {
+    const ok = await settings.isValid()
+    if (!ok) {
+        const msg = 'User settings.json file appears to be invalid. Check settings.json for syntax errors.'
+        const openSettingsItem = 'Open settings.json'
+        showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
+            if (resp === openSettingsItem) {
+                vscode.commands.executeCommand('workbench.action.openSettingsJson')
+            }
+        })
+    }
+    return ok
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle

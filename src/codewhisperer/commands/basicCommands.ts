@@ -18,6 +18,7 @@ import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { InlineCompletionService } from '../service/inlineCompletionService'
+import { getLogger } from '../../shared/logger'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import {
     getPersistedCustomizations,
@@ -60,14 +61,15 @@ export const createGettingStartedNode = () =>
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
-    (context: ExtContext) => async () => {
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
-        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        if (!isCloud9()) {
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+    (context: ExtContext) =>
+        async (isAuto: boolean = true) => {
+            await set(CodeWhispererConstants.autoTriggerEnabledKey, isAuto, context.extensionContext.globalState)
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+            if (!isCloud9()) {
+                await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            }
         }
-    }
 )
 
 export const showReferenceLog = Commands.declare(
@@ -121,37 +123,50 @@ export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => asy
 })
 
 // Shortcut command to directly connect to Identity Center or prompt start URL entry
-// It can optionally set a customization too.
+// It can optionally set a customization too based on given values to match on
 export const connectWithCustomization = Commands.declare(
     'aws.codeWhisperer.connect',
-    () =>
-        async (
-            startUrl?: string,
-            region?: string,
-            customizationArn?: string,
-            customizationName?: string,
-            customizationDescription?: string
-        ) => {
-            // This command supports two sets of arguments:
-            //  * startUrl and region. If both arguments are provided they will be used, otherwise
-            //    the command prompts for them interactively.
-            //  * customization{Arn, Name, Description}. If at least customizationArn is provided,
-            //    the command selects this customization.
-            if (startUrl && region) {
-                await connectToEnterpriseSso(startUrl, region)
-            } else {
-                await getStartUrl()
-            }
-            if (customizationArn) {
-                const match = getPersistedCustomizations().find(c => c.arn == customizationArn)
-                const customization = {
-                    arn: customizationArn,
-                    name: customizationName ?? match?.name ?? 'unknown',
-                    description: customizationDescription ?? match?.description ?? 'unknown',
-                }
-                await selectCustomization(customization)
-            }
+    () => async (startUrl?: string, region?: string, customizationArn?: string, customizationNamePrefix?: string) => {
+        // This command supports the following arguments:
+        //  * startUrl and region. If both arguments are provided they will be used, otherwise
+        //    the command prompts for them interactively.
+        //  * customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
+        //  * customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
+        if (startUrl && region) {
+            await connectToEnterpriseSso(startUrl, region)
+        } else {
+            await getStartUrl()
         }
+
+        // No customization match information given, exit early.
+        if (!customizationArn && !customizationNamePrefix) {
+            return
+        }
+
+        let persistedCustomizations = getPersistedCustomizations()
+
+        // Check if any customizations have already been persisted.
+        // If not, call `notifyNewCustomizations` to handle it then recheck.
+        if (persistedCustomizations.length === 0) {
+            await notifyNewCustomizations()
+            persistedCustomizations = getPersistedCustomizations()
+        }
+
+        // If given an ARN, assume a specific customization is desired and find an entry that matches it. Ignores the prefix logic.
+        // Otherwise if only a prefix is given, find an entry that matches it.
+        // Backwards compatible with previous implementation.
+        const match = customizationArn
+            ? persistedCustomizations.find(c => c.arn === customizationArn)
+            : persistedCustomizations.find(c => c.name?.startsWith(customizationNamePrefix as string))
+
+        // If no match is found, nothing to do :)
+        if (!match) {
+            getLogger().error(`No customization match found: arn=${customizationArn} prefix=${customizationNamePrefix}`)
+            return
+        }
+        // Since we selected based on a match, we'll reuse the persisted values.
+        await selectCustomization(match)
+    }
 )
 
 export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async () => {
