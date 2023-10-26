@@ -23,7 +23,7 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
-import { ChatRequest, DocumentSymbol, UserIntent } from '@amzn/codewhisperer-streaming'
+import { ChatRequest, CursorState, DocumentSymbol, UserIntent } from '@amzn/codewhisperer-streaming'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -158,9 +158,10 @@ export class ChatController {
                         message: prompt,
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
-                        code: context?.codeSelectionContext?.selectedCode,
+                        codeSelection: context?.codeSelectionContext?.selection,
                         fileText: context?.activeFileContext?.fileText,
                         fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.codeSelectionContext?.names,
                         userIntent: this.getUserIntentFromContextMenuCommand(command),
@@ -210,9 +211,10 @@ export class ChatController {
                         message: message.message,
                         trigger: ChatTriggerType.ChatMessage,
                         query: message.message,
-                        code: undefined,
+                        codeSelection: undefined,
                         fileText: context?.activeFileContext?.fileText,
                         fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: undefined,
                         userIntent: this.getUserIntentFromPromptChatMessage(message),
@@ -259,6 +261,15 @@ export class ChatController {
                 source: fqn.source?.join('.'),
             })
         })
+        let cursorState: CursorState | undefined = undefined
+        if (triggerPayload.codeSelection?.start) {
+            cursorState = {
+                range: {
+                    start: triggerPayload.codeSelection?.start,
+                    end: triggerPayload.codeSelection?.end,
+                },
+            }
+        }
         if (triggerPayload.trigger == ChatTriggerType.ChatMessage) {
             return {
                 conversationState: {
@@ -268,15 +279,12 @@ export class ChatController {
                             userInputMessageContext: {
                                 editorState: {
                                     document: {
-                                        // TODO : replace with actual relative file path once available in trigger payload
-                                        relativeFilePath: './test.py',
+                                        relativeFilePath: triggerPayload.filePath,
                                         text: triggerPayload.fileText,
                                         programmingLanguage: { languageName: triggerPayload.fileLanguage },
                                         documentSymbols: documentSymbolFqns,
                                     },
-                                    cursorState: {
-                                        position: { line: 0, character: 0 },
-                                    },
+                                    ...(cursorState && { cursorState }),
                                 },
                             },
                             userIntent: triggerPayload.userIntent,
@@ -294,14 +302,12 @@ export class ChatController {
                             userInputMessageContext: {
                                 editorState: {
                                     document: {
-                                        relativeFilePath: '',
+                                        relativeFilePath: triggerPayload.filePath,
                                         text: triggerPayload.fileText,
                                         programmingLanguage: { languageName: triggerPayload.fileLanguage },
                                         documentSymbols: documentSymbolFqns,
                                     },
-                                    cursorState: {
-                                        position: { line: 0, character: 0 },
-                                    },
+                                    ...(cursorState && { cursorState }),
                                 },
                             },
                             userIntent: triggerPayload.userIntent,

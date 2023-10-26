@@ -13,6 +13,7 @@ export class FileContextExtractor {
     public async extract(file: TextDocument): Promise<FileContext> {
         const fileText = file.getText()
         const fileLanguage = extractLanguageNameFromFile(file)
+        const filePath = file.fileName
         const matchPolicy = await this.extractMatchPolicyFromFile(file, false)
 
         // TODO: Implement CodeQuery extraction
@@ -21,6 +22,7 @@ export class FileContextExtractor {
         return {
             fileText,
             fileLanguage,
+            filePath,
             matchPolicy,
         }
     }

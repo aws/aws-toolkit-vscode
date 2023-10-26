@@ -29,8 +29,11 @@ export class CodeSelectionContextExtractor {
             simpleNames.push(selectedCode)
         }
 
+        const selection = editor.selection
+
         return {
             selectedCode,
+            selection,
             names: {
                 simpleNames,
                 fullyQualifiedNames: {

@@ -5,6 +5,7 @@
 
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
+import { Selection } from 'vscode'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -33,10 +34,11 @@ export enum ChatTriggerType {
 
 export interface TriggerPayload {
     readonly query: string | undefined
-    readonly code: string | undefined
+    readonly codeSelection: Selection | undefined
     readonly trigger: ChatTriggerType
     readonly fileText: string | undefined
     readonly fileLanguage: string | undefined
+    readonly filePath: string | undefined
     readonly message: string | undefined
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
