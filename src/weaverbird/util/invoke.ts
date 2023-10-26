@@ -8,6 +8,7 @@ import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 
 export async function invoke<TInput, TOutput>(client: LambdaClient, arn: string, payload: TInput): Promise<TOutput> {
+    getLogger().info(`Executing ${arn} with ${JSON.stringify(payload)}`)
     try {
         const response = await client.invoke(
             arn,

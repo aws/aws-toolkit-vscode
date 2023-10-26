@@ -108,7 +108,7 @@ describe('sessionState', () => {
             const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
             const invokeFailureApproach =
-                "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+                'There has been a problem generating an approach. Please open a conversation in a new tab'
 
             assert.deepStrictEqual(result, {
                 nextState: new RefinementIterationState(testConfig, invokeFailureApproach, tabId),

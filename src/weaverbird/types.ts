@@ -39,6 +39,7 @@ export enum FollowUpTypes {
 export enum SessionStatePhase {
     Approach = 'Approach',
     Codegen = 'Codegen',
+    Init = 'Init',
 }
 
 export interface SessionState {
