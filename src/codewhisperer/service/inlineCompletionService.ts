@@ -168,7 +168,7 @@ export class InlineCompletionService {
     setCodeWhispererStatusBarExpired() {
         this._isPaginationRunning = false
         this.statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
-        this.statusBar.command = 'aws.codeWhisperer.reconnect'
+        this.statusBar.command = showCodeWhispererQuickPickCommand
         ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
     }
