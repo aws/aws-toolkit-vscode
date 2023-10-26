@@ -5,6 +5,7 @@
 
 import { MessageListener } from '../../../awsq/messages/messageListener'
 import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 
 export interface UIMessageListenerProps {
@@ -84,7 +85,7 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        return
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
     }
 
     private processChatMessage(msg: any) {

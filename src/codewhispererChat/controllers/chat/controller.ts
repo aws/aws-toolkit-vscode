@@ -24,6 +24,7 @@ import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
 import { ChatRequest, DocumentSymbol, UserIntent } from '@amzn/codewhisperer-streaming'
+import { CwsprChatUserIntent, telemetry } from '../../../shared/telemetry/telemetry'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -120,6 +121,22 @@ export class ChatController {
         }
     }
 
+    // TODO: can this be same as command name?
+    private getContextMenuUserIntentForTelemetry(userIntent: UserIntent | undefined): CwsprChatUserIntent | undefined {
+        switch (userIntent) {
+            case UserIntent.EXPLAIN_CODE_SELECTION:
+                return 'explainCodeSelection'
+            case UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION:
+                return 'suggestAlternateImplementation'
+            case UserIntent.APPLY_COMMON_BEST_PRACTICES:
+                return 'applyCommonBestPractices'
+            case UserIntent.IMPROVE_CODE:
+                return 'improveCode'
+            default:
+                return undefined
+        }
+    }
+
     private getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
         if (prompt.message?.startsWith('Explain')) {
             return UserIntent.EXPLAIN_CODE_SELECTION
@@ -153,20 +170,33 @@ export class ChatController {
 
                 this.messenger.sendEditorContextCommandMessage(prompt, triggerID)
 
-                this.generateResponse(
-                    {
-                        message: prompt,
-                        trigger: ChatTriggerType.ChatMessage,
-                        query: undefined,
-                        code: context?.codeSelectionContext?.selectedCode,
-                        fileText: context?.activeFileContext?.fileText,
-                        fileLanguage: context?.activeFileContext?.fileLanguage,
-                        matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: context?.codeSelectionContext?.names,
-                        userIntent: this.getUserIntentFromContextMenuCommand(command),
-                    },
-                    triggerID
-                )
+                telemetry.codewhispererchat_startConversation.run(span => {
+                    const userIntent = this.getUserIntentFromContextMenuCommand(command)
+                    span.record({
+                        cwsprChatConversationType: 'contextMenu',
+                        cwsprChatHasCodeSnippet: context?.codeSelectionContext?.selectedCode != undefined,
+                    })
+
+                    const telemetryUserIntent = this.getContextMenuUserIntentForTelemetry(userIntent)
+                    if (telemetryUserIntent) {
+                        span.record({ cwsprChatUserIntent: telemetryUserIntent })
+                    }
+
+                    this.generateResponse(
+                        {
+                            message: prompt,
+                            trigger: ChatTriggerType.ChatMessage,
+                            query: undefined,
+                            code: context?.codeSelectionContext?.selectedCode,
+                            fileText: context?.activeFileContext?.fileText,
+                            fileLanguage: context?.activeFileContext?.fileLanguage,
+                            matchPolicy: context?.activeFileContext?.matchPolicy,
+                            codeQuery: context?.codeSelectionContext?.names,
+                            userIntent,
+                        },
+                        triggerID
+                    )
+                })
             })
         } catch (e) {
             if (typeof e === 'string') {
@@ -248,6 +278,8 @@ export class ChatController {
         session.createNewTokenSource()
         try {
             const response = await session.chat(request)
+            // TODO: record converstion Id
+            telemetry.codewhispererchat_startConversation.record({ cwsprChatConversationId: session.sessionId })
             this.messenger.sendAIResponse(response, session, tabID, triggerID)
         } catch (e) {
             if (typeof e === 'string') {

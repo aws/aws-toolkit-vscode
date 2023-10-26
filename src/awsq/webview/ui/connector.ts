@@ -11,7 +11,6 @@ import { ExtensionMessage } from './commands'
 import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
-import { telemetry } from '../../../shared/telemetry/telemetry';
 
 export interface ChatPayload {
     chatMessage: string
@@ -76,6 +75,8 @@ export class Connector {
         if (message.data === undefined) {
             return
         }
+
+        // TODO: potential json parsing error exists. Need to determine the failing case.
         const messageData = JSON.parse(message.data)
 
         if (messageData == undefined) {
@@ -90,8 +91,6 @@ export class Connector {
     }
 
     onTabAdd = (tabID: string): void => {
-        // TODO: how to differentiate between WB and CWSPR tab add event?
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
         this.tabsStorage.addTab({
             id: tabID,
             type: 'unknown',
