@@ -130,6 +130,7 @@ describe('runtimeLanguageContext', function () {
             ['cpp', 'cpp'],
             ['csharp', 'csharp'],
             ['go', 'go'],
+            ['golang', 'go'],
             ['java', 'java'],
             ['javascript', 'javascript'],
             ['javascriptreact', 'jsx'],
@@ -230,6 +231,7 @@ describe('runtimeLanguageContext', function () {
         const platformLanguageIds: [PlatformLanguageId, string][] = [
             ['c_cpp', 'cpp'],
             ['cpp', 'cpp'],
+            ['golang', 'go'],
             ['javascriptreact', 'jsx'],
             ['sh', 'sh'],
             ['shellscript', 'sh'],

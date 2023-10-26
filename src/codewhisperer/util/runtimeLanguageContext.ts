@@ -74,6 +74,7 @@ export class RuntimeLanguageContext {
             tsx: 'tsx',
             typescript: 'typescript',
             typescriptreact: 'tsx',
+            golang: 'go',
         })
         this.supportedLanguageExtensionMap = createConstantMap<CodewhispererLanguage, string>({
             c: 'c',

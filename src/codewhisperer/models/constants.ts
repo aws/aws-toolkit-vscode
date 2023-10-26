@@ -103,6 +103,7 @@ export const platformLanguageIds = [
     'shellscript',
     'sh', // Cloud9 reports bash files with this language-id
     'sql',
+    'golang', // Cloud9 reports Go files with this language-id
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
