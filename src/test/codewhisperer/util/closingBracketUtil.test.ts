@@ -43,6 +43,26 @@ describe('closingBracketUtil', function () {
 
         it('should remove extra closing symbol', async function () {
             /**
+             * public class Main {
+             *     public static void main(|)
+             * }
+             */
+            await assertClosingSymbolsHandler(
+                String.raw`public class Main {
+    public static void main(`,
+                String.raw`)
+}`,
+                String.raw`args: String[]) {
+        System.out.println("Hello World");
+    }`,
+                String.raw`public class Main {
+    public static void main(args: String[]) {
+        System.out.println("Hello World");
+    }
+}`
+            )
+
+            /**
              * function add2Numbers(a: number: b: number) {
              *     return a + b
              * })
@@ -98,6 +118,32 @@ describe('closingBracketUtil', function () {
                 '"element1", "element2"];',
                 `const anArray = ["element1", "element2"];`
             )
+
+            await assertClosingSymbolsHandler(
+                String.raw`genericFunction<`,
+                String.raw`> () {
+    if (T isInstanceOf string) {
+        console.log(T)
+    } else {
+        // Do nothing
+    }
+}`,
+                'T>',
+                String.raw`genericFunction<T> () {
+    if (T isInstanceOf string) {
+        console.log(T)
+    } else {
+        // Do nothing
+    }
+}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'const rawStr = String.raw`',
+                '`',
+                'Foo`;',
+                `const rawStr = String.raw\`Foo\`;`
+            )
         })
 
         it('should not remove extra closing symbol', async function () {
@@ -134,6 +180,32 @@ describe('closingBracketUtil', function () {
                 '',
                 'hello world";',
                 'const aString = "hello world";'
+            )
+
+            await assertClosingSymbolsHandler(
+                'genericFunction<',
+                String.raw` {
+    if (T isInstanceOf string) {
+        console.log(T)
+    } else {
+        // Do nothing
+    }
+}`,
+                'T> ()',
+                String.raw`genericFunction<T> () {
+    if (T isInstanceOf string) {
+        console.log(T)
+    } else {
+        // Do nothing
+    }
+}`
+            )
+
+            await assertClosingSymbolsHandler(
+                'const rawStr = String.raw`',
+                '',
+                'Foo`;',
+                `const rawStr = String.raw\`Foo\`;`
             )
         })
     })
