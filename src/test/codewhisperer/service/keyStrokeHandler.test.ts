@@ -99,7 +99,7 @@ describe('keyStrokeHandler', function () {
             await testShouldInvoke('a', true)
         })
 
-        it('Should skip invoking if there is immediate right context on the same line and not a single } for the user group', async function () {
+        it('Should skip invoking if there is immediate right context on the same line and not a single }', async function () {
             const casesForSuppressTokenFilling = [
                 {
                     rightContext: 'add',
@@ -127,12 +127,8 @@ describe('keyStrokeHandler', function () {
                 },
             ]
             casesForSuppressTokenFilling.forEach(async ({ rightContext, shouldInvoke }) => {
-                await testShouldInvoke('{', shouldInvoke, rightContext, CodeWhispererConstants.UserGroup.RightContext)
+                await testShouldInvoke('{', shouldInvoke, rightContext)
             })
-        })
-
-        it('Should not skip invoking based on right context for control group', async function () {
-            await testShouldInvoke('{', true, 'add')
         })
 
         async function testShouldInvoke(

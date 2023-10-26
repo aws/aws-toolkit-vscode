@@ -13,13 +13,11 @@ import { ConnectionParams } from '../models/models'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { getIcon } from '../../shared/icons'
-import { getLogger } from '../../shared/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
-import { showViewLogsMessage } from '../../shared/utilities/messages'
+import { showViewLogsFetchMessage } from '../messageUtils'
 
 export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNode {
     private readonly childLoader = new ChildNodeLoader(this, token => this.loadPage(token))
-    private readonly logger = getLogger()
 
     public constructor(
         public readonly databaseName: string,
@@ -65,9 +63,7 @@ export class RedshiftDatabaseNode extends AWSTreeNodeBase implements LoadMoreNod
                     newContinuationToken: listSchemaResponse.NextToken,
                 }
             } catch (error) {
-                const msg = `Redshift: Failed to fetch schemas for ${this.databaseName}: ${(error as Error).message}`
-                this.logger.error(msg)
-                showViewLogsMessage(msg)
+                showViewLogsFetchMessage('schemas', this.databaseName, error as Error)
                 return Promise.reject(error)
             }
         })

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { isKeyOf, Mutable } from '../../../shared/utilities/tsUtils'
+import { isKeyOf, isNonNullable, isThenable, Mutable } from '../../../shared/utilities/tsUtils'
 import { SeverityLevel, ShownMessage, TestFileSystemDialog, TestMessage } from './message'
 import { createTestInputBox, createTestQuickPick, TestInputBox, TestQuickPick } from './quickInput'
 import { TestStatusBar } from './statusbar'
@@ -252,8 +252,12 @@ export function createTestWindow(workspace = vscode.workspace): Window & TestWin
         if (validateInput) {
             inputBox.onDidChangeValue(v => {
                 const validationMessage = validateInput(v)
-                if (typeof validationMessage === 'string' || validationMessage === undefined) {
-                    inputBox.validationMessage = validationMessage
+                if (
+                    !isThenable(validationMessage) ||
+                    typeof validationMessage === 'string' ||
+                    validationMessage === undefined
+                ) {
+                    inputBox.validationMessage = isNonNullable(validationMessage) ? validationMessage : undefined
                 } else {
                     validationMessage?.then(val =>
                         val || val === undefined ? (inputBox.validationMessage = val) : void 0

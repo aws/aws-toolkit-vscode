@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../logger'
-import { localize } from '../utilities/vsCodeUtils'
+import { isToolkitActive, localize } from '../utilities/vsCodeUtils'
 
 import { AsyncCloudFormationTemplateRegistry, CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 import { getIdeProperties } from '../extensionUtilities'
@@ -13,6 +13,7 @@ import { NoopWatcher } from '../fs/watchedFiles'
 import { createStarterTemplateFile } from './cloudformation'
 import { Commands } from '../vscode/commands2'
 import globals from '../extensionGlobals'
+import { SamCliSettings } from '../sam/cli/samCliSettings'
 
 export const templateFileGlobPattern = '**/*.{yaml,yml}'
 
@@ -48,7 +49,7 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
         getLogger().error('Failed to activate template registry: %s', e)
         // This prevents us from breaking for any reason later if it fails to load. Since
         // Noop watcher is always empty, we will get back empty arrays with no issues.
-        globals.templateRegistry = new NoopWatcher() as unknown as CloudFormationTemplateRegistry
+        globals.templateRegistry = (async () => new NoopWatcher() as unknown as CloudFormationTemplateRegistry)()
     }
     // If setting it up worked, add it to subscriptions so it is cleaned up at exit
     extensionContext.subscriptions.push(
@@ -69,8 +70,10 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
     const registrySetupFunc = async (registry: CloudFormationTemplateRegistry) => {
         await registry.addExcludedPattern(devfileExcludePattern)
         await registry.addExcludedPattern(templateFileExcludePattern)
-        await registry.addWatchPattern(templateFileGlobPattern)
+        await registry.addWatchPatterns([templateFileGlobPattern])
         await registry.watchUntitledFiles()
+
+        return registry
     }
 
     const asyncRegistry = new AsyncCloudFormationTemplateRegistry(registry, registrySetupFunc)
@@ -79,7 +82,7 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
         set(newInstance: CloudFormationTemplateRegistry) {
             this.cfnInstance = newInstance
         },
-        get() {
+        async get() {
             // This condition handles testing scenarios where we may have
             // already set a mock object before activation.
             // Though in prod nothing should be calling this 'set' function.
@@ -87,7 +90,13 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
                 return this.cfnInstance
             }
 
-            return asyncRegistry.getInstance()
+            // prevent eager load if codelenses are off
+            const config = SamCliSettings.instance
+            if (config.get('enableCodeLenses', false) || isToolkitActive()) {
+                return await asyncRegistry.getInstance()
+            }
+
+            return NoopWatcher
         },
     })
 }

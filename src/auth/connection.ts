@@ -23,10 +23,36 @@ export const ssoAccountAccessScopes = ['sso:account:access']
 export const codewhispererScopes = ['codewhisperer:completions', 'codewhisperer:analysis']
 export const defaultSsoRegion = 'us-east-1'
 
+type SsoType =
+    | 'any' // any type of sso
+    | 'idc' // AWS Identity Center
+    | 'builderId'
+
 export const isIamConnection = (conn?: Connection): conn is IamConnection => conn?.type === 'iam'
-export const isSsoConnection = (conn?: Connection): conn is SsoConnection => conn?.type === 'sso'
-export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection =>
-    isSsoConnection(conn) && conn.startUrl === builderIdStartUrl
+export const isSsoConnection = (conn?: Connection, type: SsoType = 'any'): conn is SsoConnection => {
+    if (conn?.type !== 'sso') {
+        return false
+    }
+    // At this point the conn is an SSO conn, but now we must determine the specific type
+    switch (type) {
+        case 'idc':
+            // An Identity Center SSO connection is the Base/Root and doesn't
+            // have any unique identifiers, so we must eliminate the other SSO
+            // types to determine if this is Identity Center.
+            // This condition should grow as more SsoType's get added.
+            return !isBuilderIdConnection(conn)
+        case 'builderId':
+            return conn.startUrl === builderIdStartUrl
+        case 'any':
+            return true
+    }
+}
+export const isAnySsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'any')
+export const isIdcSsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'idc')
+export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'builderId')
+
+export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
+    isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
 
 export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
     return scopes?.every(s => target.scopes?.includes(s))

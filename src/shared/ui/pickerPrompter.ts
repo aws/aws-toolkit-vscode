@@ -63,6 +63,8 @@ export type ExtendedQuickPickOptions<T> = Omit<
     errorItem?: DataQuickPickItem<T>
     /** Description for recently used item */
     recentlyUsed?: string
+    /** Defined on `vscode.QuickPick` but not `vscode.QuickPickOptions` 🤷 */
+    keepScrollPosition?: boolean
 }
 
 /** See {@link ExtendedQuickPickOptions.noItemsFoundItem noItemsFoundItem} for setting a different item */
@@ -85,6 +87,7 @@ export const defaultQuickpickOptions: ExtendedQuickPickOptions<any> = {
     ignoreFocusOut: true,
     noItemsFoundItem: defaultNoItemsItem,
     errorItem: defaultErrorItem,
+    keepScrollPosition: true,
 }
 
 type QuickPickData<T> = PromptResult<T> | (() => Promise<PromptResult<T>>)

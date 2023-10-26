@@ -7,7 +7,7 @@ import TransportStream from 'winston-transport'
 import { FileSystemCommon } from '../../srcShared/fs'
 import * as vscode from 'vscode'
 import globals from '../extensionGlobals'
-import { MESSAGE } from './debugConsoleTransport'
+import { MESSAGE } from './consoleLogTransport'
 import { WinstonToolkitLogger } from './winstonToolkitLogger'
 
 interface LogEntry {
