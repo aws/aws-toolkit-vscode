@@ -243,7 +243,7 @@ export class CodeWhispererCodeCoverageTracker {
         this.addTotalTokens(e.document.fileName, content.text.length)
     }
 
-    public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
+    public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
 
     public static getTracker(
         language: string,
@@ -256,8 +256,8 @@ export class CodeWhispererCodeCoverageTracker {
         if (!cwsprLanguage) {
             return undefined
         }
-        const instance = this.instances.get(language) ?? new this(cwsprLanguage)
-        this.instances.set(language, instance)
+        const instance = this.instances.get(cwsprLanguage) ?? new this(cwsprLanguage)
+        this.instances.set(cwsprLanguage, instance)
         return instance
     }
 }
