@@ -8,11 +8,12 @@ Details about any publicly accessible functionalities exposed through [extension
 
 #### `aws.codeWhisperer.connect`
 
-**Signature**: _async (startUrl?: string, region?: string, customizationArn?: string, customizationName?: string, customizationDescription?: string) => Promise<void>_
+**Signature**: _async (startUrl?: string, region?: string, customizationArn?: string, customizationNamePrefix?: string) => Promise<void>_
 
 Shortcut command to directly connect to Identity Center or prompt start URL entry, as well as set a customization for CodeWhisperer requests.
 
-This command supports two sets of arguments:
+This command supports the following arguments:
 
 -   startUrl and region. If both arguments are provided they will be used, otherwise the command prompts for them interactively.
--   customization{Arn, Name, Description}. If at least customizationArn is provided, the command selects this customization.
+-   customizationArn: select customization by ARN. If provided, `customizationNamePrefix` is ignored.
+-   customizationNamePrefix: select customization by prefix, if `customizationArn` is `undefined`.
