@@ -70,7 +70,7 @@
         },
         {
             "name": "cwsprChatProgrammingLanguage",
-            "type": "boolean",
+            "type": "string",
             "description": "Programming language associated with the message"
         },
         {
