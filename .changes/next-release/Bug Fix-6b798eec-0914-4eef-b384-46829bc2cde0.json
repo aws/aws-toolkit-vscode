@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "SAM debugging: \"Invalid (or missing) template file\" may occur even when a valid template.yaml is specified by `invokeTarget.templatePath` in the launch config. #2614"
-}
