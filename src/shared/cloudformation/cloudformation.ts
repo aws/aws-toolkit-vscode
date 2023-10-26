@@ -13,11 +13,22 @@ import { SystemUtilities } from '../systemUtilities'
 import { getLogger } from '../logger'
 import { lambdaPackageTypeImage } from '../constants'
 import { isCloud9 } from '../extensionUtilities'
+import { isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 
 export namespace CloudFormation {
     export const SERVERLESS_API_TYPE = 'AWS::Serverless::Api' // eslint-disable-line @typescript-eslint/naming-convention
     export const SERVERLESS_FUNCTION_TYPE = 'AWS::Serverless::Function' // eslint-disable-line @typescript-eslint/naming-convention
     export const LAMBDA_FUNCTION_TYPE = 'AWS::Lambda::Function' // eslint-disable-line @typescript-eslint/naming-convention
+
+    export const templateFileGlobPattern = '**/*.{yaml,yml}'
+    export const devfileExcludePattern = /.*devfile\.(yaml|yml)/i
+    /**
+     * Match any file path that contains a .aws-sam folder. The way this works is:
+     * match anything that starts  with a '/' or '\', then '.aws-sam', then either
+     * a '/' or '\' followed by any number of characters or end of a string (so it
+     * matches both /.aws-sam or /.aws-sam/<any number of characters>)
+     */
+    export const templateFileExcludePattern = /.*[/\\]\.aws-sam([/\\].*|$)/
 
     export function isZipLambdaResource(
         resource?: ZipResourceProperties | ImageResourceProperties
@@ -364,6 +375,22 @@ export namespace CloudFormation {
         [key: string]: Resource | undefined
     }
 
+    /** Returns true if the given name or path is a valid CloudFormation or SAM filename. */
+    export function isValidFilename(filename: string | vscode.Uri): boolean {
+        filename = typeof filename === 'string' ? filename : filename.fsPath
+        filename = filename.trim()
+        if (!filename.endsWith('.yml') && !filename.endsWith('.yaml')) {
+            return false
+        }
+        // Note: intentionally _not_ checking `templateFileExcludePattern` here, because while excluding
+        // template files in .aws-sam/ is relevant for the workspace scan, it's irrelevant if such
+        // a file was opened explicitly by the user.
+        if (filename.match(devfileExcludePattern)) {
+            return false
+        }
+        return true
+    }
+
     export async function load(filename: string, validate: boolean = true): Promise<Template> {
         if (!(await SystemUtilities.fileExists(filename))) {
             throw new Error(`Template file not found: ${filename}`)
@@ -382,6 +409,51 @@ export namespace CloudFormation {
             validateTemplate(template)
         }
         return template
+    }
+
+    /**
+     * Returns a `CloudFormation.Template` if the given file (on disk) or `contents` is a valid
+     * CloudFormation document, or `{ template: undefined, kind: undefined }` if the file is
+     * invalid.
+     */
+    export async function tryLoad(
+        uri: vscode.Uri,
+        contents?: string
+    ): Promise<{ template: CloudFormation.Template | undefined; kind: 'sam' | 'cfn' | undefined }> {
+        const rv: {
+            template: CloudFormation.Template | undefined
+            kind: 'sam' | 'cfn' | undefined
+        } = { template: undefined, kind: undefined }
+        try {
+            if (isUntitledScheme(uri)) {
+                if (!contents) {
+                    // this error technically just throw us into the catch so the error message isn't used
+                    throw new Error('Contents must be defined for untitled uris')
+                }
+                rv.template = await CloudFormation.loadByContents(contents, false)
+            } else {
+                rv.template = await CloudFormation.load(normalizeVSCodeUri(uri), false)
+            }
+        } catch (e) {
+            return {
+                template: undefined,
+                kind: undefined,
+            }
+        }
+
+        // Check if the template is a SAM template, using the same heuristic as the cfn-lint team:
+        // https://github.com/aws-cloudformation/aws-cfn-lint-visual-studio-code/blob/629de0bac4f36cfc6534e409a6f6766a2240992f/client/src/yaml-support/yaml-schema.ts#L39-L51
+        if (rv.template.AWSTemplateFormatVersion || rv.template.Resources) {
+            rv.kind =
+                rv.template.Transform && rv.template.Transform.toString().startsWith('AWS::Serverless') ? 'sam' : 'cfn'
+
+            return rv
+        }
+
+        return {
+            template: undefined,
+            kind: undefined,
+        }
     }
 
     export async function save(template: Template, filename: string): Promise<void> {
