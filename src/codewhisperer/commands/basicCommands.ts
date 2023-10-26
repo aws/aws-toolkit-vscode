@@ -180,9 +180,9 @@ export const refreshStatusBar = Commands.declare(
         if (AuthUtil.instance.isConnectionValid()) {
             InlineCompletionService.instance.setCodeWhispererStatusBarOk()
         } else if (AuthUtil.instance.isConnectionExpired()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarDisconnected()
+            InlineCompletionService.instance.setCodeWhispererStatusBarExpired()
         } else {
-            InlineCompletionService.instance.hideCodeWhispererStatusBar()
+            InlineCompletionService.instance.setCodeWhispererStatusBarNotConnected()
         }
     }
 )

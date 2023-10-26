@@ -165,11 +165,19 @@ export class InlineCompletionService {
         this.statusBar.show()
     }
 
-    setCodeWhispererStatusBarDisconnected() {
+    setCodeWhispererStatusBarExpired() {
         this._isPaginationRunning = false
         this.statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
         this.statusBar.command = 'aws.codeWhisperer.reconnect'
         ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
+        this.statusBar.show()
+    }
+
+    setCodeWhispererStatusBarNotConnected() {
+        this._isPaginationRunning = false
+        this.statusBar.text = codicon` ${getIcon('vscode-chrome-close')} CodeWhisperer`
+        this.statusBar.command = showCodeWhispererQuickPickCommand
+        ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
     }
 
