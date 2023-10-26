@@ -93,7 +93,6 @@ object CodeWhispererConstants {
     object Customization {
         private const val noAccessToCustomizationMessage = "Your account is not authorized to use CodeWhisperer Enterprise."
         private const val invalidCustomizationMessage = "You are not authorized to access"
-        private const val customizationNotFoundMessage = "not found"
 
         val noAccessToCustomizationExceptionPredicate: (e: Exception) -> Boolean = { e ->
             if (e !is CodeWhispererRuntimeException) {
@@ -108,14 +107,6 @@ object CodeWhispererConstants {
                 false
             } else {
                 e is AccessDeniedException && (e.message?.contains(invalidCustomizationMessage, ignoreCase = true) ?: false)
-            }
-        }
-
-        val customizationNotFoundExceptionPredicate: (e: Exception) -> Boolean = { e ->
-            if (e !is CodeWhispererRuntimeException) {
-                false
-            } else {
-                e is AccessDeniedException && (e.message?.contains(customizationNotFoundMessage, ignoreCase = true) ?: false)
             }
         }
     }
