@@ -55,7 +55,15 @@ const vueConfig = {
                 test: /\.css$/,
                 use: ['vue-style-loader', 'css-loader'],
             },
-            { test: /\.(png|jpg|gif|svg)$/, use: 'file-loader' }
+            {
+                test: /\.(png|jpg|gif|svg)$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        name: '[path][name].[ext]',
+                    },
+                },
+            }
         ),
     },
     plugins: (baseConfig.plugins ?? []).concat(new VueLoaderPlugin()),
