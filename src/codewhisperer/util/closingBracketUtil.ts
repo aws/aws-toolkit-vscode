@@ -15,14 +15,14 @@ interface bracketMapType {
 const quotes = ["'", '"', '`']
 const parenthesis = ['(', '[', '{', ')', ']', '}', '<', '>']
 
-const closeToOpenParen: bracketMapType = {
+const closeToOpen: bracketMapType = {
     ')': '(',
     ']': '[',
     '}': '{',
     '>': '<',
 }
 
-const openToCloseParen: bracketMapType = {
+const openToClose: bracketMapType = {
     '(': ')',
     '[': ']',
     '{': '}',
@@ -143,7 +143,7 @@ function getBracketsToRemove(
         const opening = unpairedOpeningsInLeftContext[i]
         const closing = unpairedClosingsInReco[j]
 
-        const isPaired = closeToOpenParen[closing.char] === opening.char
+        const isPaired = closeToOpen[closing.char] === opening.char
         const toDelete = unpairedClosingsInRightContext[k]
 
         if (isPaired) {
@@ -224,13 +224,13 @@ function nonClosedOpneingParen(str: string, cnt?: number): { char: string; strOf
             continue
         }
 
-        if (char in closeToOpenParen) {
+        if (char in closeToOpen) {
             stack.push(char)
             if (cnt && cnt === resultSet.length) {
                 return resultSet
             }
-        } else if (char in openToCloseParen) {
-            if (stack.length !== 0 && stack[stack.length - 1] === openToCloseParen[char]) {
+        } else if (char in openToClose) {
+            if (stack.length !== 0 && stack[stack.length - 1] === openToClose[char]) {
                 stack.pop()
             } else {
                 resultSet.push({ char: char, strOffset: i })
@@ -251,13 +251,13 @@ function nonClosedClosingParen(str: string, cnt?: number): { char: string; strOf
             continue
         }
 
-        if (char in openToCloseParen) {
+        if (char in openToClose) {
             stack.push(char)
             if (cnt && cnt === resultSet.length) {
                 return resultSet
             }
-        } else if (char in closeToOpenParen) {
-            if (stack.length !== 0 && stack[stack.length - 1] === closeToOpenParen[char]) {
+        } else if (char in closeToOpen) {
+            if (stack.length !== 0 && stack[stack.length - 1] === closeToOpen[char]) {
                 stack.pop()
             } else {
                 resultSet.push({ char: char, strOffset: i })
