@@ -8,7 +8,7 @@ import * as yaml from 'js-yaml'
 import * as path from 'path'
 import { Architecture } from '../../../lambda/models/samLambdaRuntime'
 import * as filesystemUtilities from '../../../shared/filesystemUtilities'
-import { CloudFormation } from '../../cloudformation/cloudformation'
+import * as CloudFormation from '../../cloudformation/cloudformation'
 import ZipResourceProperties = CloudFormation.ZipResourceProperties
 
 export class SamTemplateGenerator {

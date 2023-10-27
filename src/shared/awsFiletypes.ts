@@ -13,7 +13,7 @@ import * as collectionUtil from '../shared/utilities/collectionUtils'
 import globals from './extensionGlobals'
 import { telemetry } from './telemetry/telemetry'
 import { AwsFiletype } from './telemetry/telemetry'
-import { CloudFormation } from './cloudformation/cloudformation'
+import * as CloudFormation from './cloudformation/cloudformation'
 
 /** AWS filetypes: vscode language ids */
 export const awsFiletypeLangIds = {
