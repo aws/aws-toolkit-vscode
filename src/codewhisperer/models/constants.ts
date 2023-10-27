@@ -286,11 +286,9 @@ export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
 
-export const codeFixAppliedSuccessMessage =
-    'Suggested code fix was applied successfully. Run a security scan to validate the fix. To revert back to the original code, use the undo command.'
+export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
 
-export const codeFixAppliedFailedMessage =
-    'Error while applying the suggested code fix. Please copy the suggested code and replace the vulnerable lines of code.'
+export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
 
 export const runSecurityScanButtonTitle = 'Run security scan'
 

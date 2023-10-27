@@ -30,7 +30,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
             for (const issue of group.issues) {
                 const range = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                 if (range.contains(position)) {
-                    contents.push(this._getContent(issue))
+                    contents.push(this._getContent(group.filePath, issue))
                     telemetry.codewhisperer_codeScanIssueHover.emit({
                         findingId: issue.findingId,
                         detectorId: issue.detectorId,
@@ -42,7 +42,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         return new vscode.Hover(contents)
     }
 
-    private _getContent(issue: CodeScanIssue) {
+    private _getContent(filePath: string, issue: CodeScanIssue) {
         const markdownString = new vscode.MarkdownString()
         markdownString.isTrusted = true
         markdownString.supportHtml = true
@@ -63,12 +63,17 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         const viewDetailsCommand = vscode.Uri.parse(
             `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(issue))}`
         )
-        const applyFixCommand = vscode.Uri.parse('command:aws.codeWhisperer.applySecurityFix')
+
         markdownString.appendMarkdown(
             `[$(eye) View Details](${viewDetailsCommand} 'Open "CodeWhisperer Security Issue"')\n`
         )
 
         if (suggestedFix) {
+            const applyFixCommand = vscode.Uri.parse(
+                `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
+                    JSON.stringify({ ...issue, filePath })
+                )}`
+            )
             markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand} "Apply suggested fix")\n`)
             markdownString.appendMarkdown(
                 `${this._makeCodeBlock(suggestedFix.code, issue.detectorId.split('/').shift())}\n`
