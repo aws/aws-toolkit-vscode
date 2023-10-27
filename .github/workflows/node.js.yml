@@ -23,8 +23,10 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
+            - name: Disable engine-strict check
+              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
@@ -65,8 +67,10 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
+            - name: Disable engine-strict check
+              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
@@ -94,8 +98,10 @@ jobs:
             NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
+            - name: Disable engine-strict check
+              run: sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci

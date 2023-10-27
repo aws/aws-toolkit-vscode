@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import {
@@ -32,6 +32,18 @@ describe('CloudFormation', function () {
 
     afterEach(async function () {
         await fs.remove(filename)
+    })
+
+    it('isValidFilename()', async function () {
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/bar.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/template.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.yml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/.aws-sam/template.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('devfile.yml'), false)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('devfile.yaml'), false)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.yml.bk'), false)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.txt'), false)
     })
 
     describe('load', async function () {

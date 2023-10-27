@@ -10,15 +10,16 @@ import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
-import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
 
 describe('IotPolicyFolderNode', function () {
     const nextMarker = 'nextMarker'
     const pageSize = 250
 
     let iot: IotClient
+    let config: TestSettings
     const policy: Iot.Policy = { policyName: 'policy', policyArn: 'arn' }
     const expectedPolicy: IotPolicy = { name: 'policy', arn: 'arn' }
 
@@ -33,6 +34,7 @@ describe('IotPolicyFolderNode', function () {
 
     beforeEach(function () {
         iot = mock()
+        config = new TestSettings()
     })
 
     describe('getChildren', function () {
@@ -43,11 +45,8 @@ describe('IotPolicyFolderNode', function () {
             })
             when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 'iot.maxItemsPerPage', value: pageSize },
-            })
-            const node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)), workspace)
+            await config.getSection('aws').update('iot.maxItemsPerPage', pageSize)
+            const node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)), config)
             const [policyNode, ...otherNodes] = await node.getChildren()
 
             assertPolicyNode(policyNode, expectedPolicy)
@@ -61,11 +60,8 @@ describe('IotPolicyFolderNode', function () {
             })
             when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 'iot.maxItemsPerPage', value: pageSize },
-            })
-            const node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)), workspace)
+            await config.getSection('aws').update('iot.maxItemsPerPage', pageSize)
+            const node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)), config)
             const [policyNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertPolicyNode(policyNode, expectedPolicy)

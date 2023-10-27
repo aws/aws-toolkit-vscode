@@ -17,7 +17,7 @@ import {
     createTemplateAwsSamDebugConfig,
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
-import { CloudFormation } from '../../../cloudformation/cloudformation'
+import * as CloudFormation from '../../../cloudformation/cloudformation'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import { getIdeProperties } from '../../../extensionUtilities'
 import { isValidResponse } from '../../../wizards/wizard'
@@ -57,7 +57,7 @@ export async function addSamDebugConfiguration(
         let preloadedConfig = undefined
 
         if (workspaceFolder) {
-            const templateDatum = globals.templateRegistry.getRegisteredItem(rootUri)
+            const templateDatum = (await globals.templateRegistry).getItem(rootUri)
             if (templateDatum) {
                 const resource = templateDatum.item.Resources![resourceName]
                 if (!resource) {

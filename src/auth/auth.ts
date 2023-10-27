@@ -53,6 +53,7 @@ import {
     loadLinkedProfilesIntoStore,
     ssoAccountAccessScopes,
 } from './connection'
+import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 
 interface AuthService {
     /**
@@ -121,9 +122,12 @@ export class Auth implements AuthService, ConnectionManager {
     readonly #onDidChangeActiveConnection = new vscode.EventEmitter<StatefulConnection | undefined>()
     readonly #onDidChangeConnectionState = new vscode.EventEmitter<ConnectionStateChangeEvent>()
     readonly #onDidUpdateConnection = new vscode.EventEmitter<StatefulConnection>()
+    readonly #onDidDeleteConnection = new vscode.EventEmitter<Connection['id']>()
     public readonly onDidChangeActiveConnection = this.#onDidChangeActiveConnection.event
     public readonly onDidChangeConnectionState = this.#onDidChangeConnectionState.event
     public readonly onDidUpdateConnection = this.#onDidUpdateConnection.event
+    /** Fired when a connection and its metadata has been completely deleted */
+    public readonly onDidDeleteConnection = this.#onDidDeleteConnection.event
 
     public constructor(
         private readonly store: ProfileStore,
@@ -284,13 +288,15 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     public async deleteConnection(connection: Pick<Connection, 'id'>): Promise<void> {
-        if (connection.id === this.#activeConnection?.id) {
+        const connId = connection.id
+        if (connId === this.#activeConnection?.id) {
             await this.logout()
         } else {
-            await this.invalidateConnection(connection.id)
+            await this.invalidateConnection(connId)
         }
 
-        await this.store.deleteProfile(connection.id)
+        await this.store.deleteProfile(connId)
+        this.#onDidDeleteConnection.fire(connId)
     }
 
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
@@ -771,4 +777,16 @@ export class Auth implements AuthService, ConnectionManager {
             ? localizedText.builderId()
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
+}
+/**
+ * Returns true if credentials are provided by the environment (ex. via ~/.aws/)
+ *
+ * @param isC9 boolean for if Cloud9 is host
+ * @param isSM boolean for if SageMaker is host
+ * @returns boolean for if C9 "OR" SM
+ */
+export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
+    isC9 ??= isCloud9()
+    isSM ??= isSageMaker()
+    return isSM || isC9
 }

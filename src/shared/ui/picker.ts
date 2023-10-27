@@ -47,6 +47,7 @@ export function createQuickPick<T extends vscode.QuickPickItem>({
     buttons?: vscode.QuickInputButton[]
 }): vscode.QuickPick<T> {
     const picker = vscode.window.createQuickPick<T>()
+    picker.keepScrollPosition = true
 
     if (options) {
         picker.title = options.title

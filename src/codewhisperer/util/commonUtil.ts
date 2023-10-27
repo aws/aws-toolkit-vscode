@@ -26,7 +26,7 @@ export function asyncCallWithTimeout<T>(asyncPromise: Promise<T>, message: strin
 }
 
 export function isInlineCompletionEnabled() {
-    return semver.gte(vscode.version, '1.68.0') && getInlineSuggestEnabled() && !isCloud9()
+    return getInlineSuggestEnabled() && !isCloud9()
 }
 
 // This is the VS Code version that started to have regressions in inline completion API

@@ -53,6 +53,7 @@ export async function notifyNewCustomizations() {
     }
 
     const newCustomizations = getNewCustomizations(availableCustomizations)
+    await setPersistedCustomizations(availableCustomizations)
     if (newCustomizations.length === 0) {
         return
     }

@@ -4,35 +4,39 @@
  */
 
 import assert from 'assert'
-import { TreeItem } from 'vscode'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { copyTextCommand } from '../../../awsexplorer/commands/copyText'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { TreeShim } from '../../../shared/treeview/utils'
-import { FakeEnv } from '../../shared/vscode/fakeEnv'
+import { FakeClipboard } from '../../shared/vscode/fakeEnv'
 
 describe('copyTextCommand', function () {
+    beforeEach(function () {
+        const fakeClipboard = new FakeClipboard()
+        sinon.stub(vscode.env, 'clipboard').value(fakeClipboard)
+    })
+
     it('copies name to clipboard and shows status bar confirmation', async function () {
         const node: AWSResourceNode = {
             arn: 'arn',
             name: 'name',
         }
 
-        const env = new FakeEnv()
-        await copyTextCommand(node, 'name', env)
+        await copyTextCommand(node, 'name')
 
-        assert.strictEqual(env.clipboard.text, 'name')
+        assert.strictEqual(await vscode.env.clipboard.readText(), 'name')
     })
 
     it('handles `TreeShim`', async function () {
         const node = new TreeShim({
             id: 'shim',
             resource: { name: 'resource', arn: 'arn' },
-            getTreeItem: () => new TreeItem(''),
+            getTreeItem: () => new vscode.TreeItem(''),
         })
 
-        const env = new FakeEnv()
-        await copyTextCommand(node, 'name', env)
-        assert.strictEqual(env.clipboard.text, 'resource')
+        await copyTextCommand(node, 'name')
+        assert.strictEqual(await vscode.env.clipboard.readText(), 'resource')
     })
 
     it('copies arn to clipboard and shows status bar confirmation', async function () {
@@ -41,10 +45,9 @@ describe('copyTextCommand', function () {
             name: 'name',
         }
 
-        const env = new FakeEnv()
-        await copyTextCommand(node, 'ARN', env)
+        await copyTextCommand(node, 'ARN')
 
-        assert.strictEqual(env.clipboard.text, 'arn')
+        assert.strictEqual(await vscode.env.clipboard.readText(), 'arn')
     })
 
     it('copies id to clipboard and shows status bar confirmation', async function () {
@@ -54,9 +57,8 @@ describe('copyTextCommand', function () {
             id: 'id',
         }
 
-        const env = new FakeEnv()
-        await copyTextCommand(node, 'id', env)
+        await copyTextCommand(node, 'id')
 
-        assert.strictEqual(env.clipboard.text, 'id')
+        assert.strictEqual(await vscode.env.clipboard.readText(), 'id')
     })
 })

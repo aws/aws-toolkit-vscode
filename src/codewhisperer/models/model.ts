@@ -196,6 +196,7 @@ export interface RawCodeScanIssue {
     description: RecommendationDescription
     detectorId: string
     detectorName: string
+    findingId: string
     relatedVulnerabilities: string[]
     severity: string
     remediation: Remediation
@@ -209,6 +210,7 @@ export interface CodeScanIssue {
     description: RecommendationDescription
     detectorId: string
     detectorName: string
+    findingId: string
     relatedVulnerabilities: string[]
     severity: string
     recommendation: Recommendation

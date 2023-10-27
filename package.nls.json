@@ -3,6 +3,7 @@
     "AWS.title.cn": "Amazon",
     "AWS.productName": "AWS Toolkit",
     "AWS.productName.cn": "Amazon Toolkit",
+    "AWS.codecatalyst.submenu.title": "Manage CodeCatalyst",
     "AWS.configuration.profileDescription": "The name of the credential profile to obtain credentials from.",
     "AWS.configuration.description.lambda.recentlyUploaded": "Recently selected Lambda upload targets.",
     "AWS.configuration.description.ecs.openTerminalCommand": "The command to run when starting a new interactive terminal session.",
@@ -98,7 +99,7 @@
     "AWS.command.codecatalyst.listCommands": "List CodeCatalyst Commands",
     "AWS.command.codecatalyst.login": "Connect to CodeCatalyst",
     "AWS.command.codecatalyst.logout": "Sign out of CodeCatalyst",
-    "AWS.command.codecatalyst.removeConnection": "Remove Connection from Tool",
+    "AWS.command.codecatalyst.signout": "Sign out",
     "AWS.command.deploySamApplication": "Deploy SAM Application",
     "AWS.command.aboutToolkit": "About Toolkit",
     "AWS.command.downloadLambda": "Download...",
@@ -195,7 +196,7 @@
     "AWS.command.resources.configure": "Show Resources...",
     "AWS.command.codewhisperer.introduction": "What is CodeWhisperer?",
     "AWS.command.codewhisperer.configure": "CodeWhisperer Settings",
-    "AWS.command.codewhisperer.removeConnection": "Remove Connection from Tool",
+    "AWS.command.codewhisperer.signout": "Sign out",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
@@ -225,5 +226,6 @@
     "AWS.codewhisperer.customization.quickPick.title": "Select a Customization",
     "AWS.codewhisperer.customization.quickPick.placeholder": "You have access to the following customizations",
     "AWS.codewhisperer.customization.notification.new_customizations.select": "Select Customization",
-    "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More"
+    "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
+    "AWS.codewhisperer.submenu.title": "Manage CodeWhisperer"
 }

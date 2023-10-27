@@ -5,7 +5,7 @@
 
 import { load } from 'js-yaml'
 import * as vscode from 'vscode'
-import { CloudFormation } from './cloudformation'
+import * as CloudFormation from './cloudformation'
 import { waitUntil } from '../utilities/timeoutUtils'
 
 /**
