@@ -267,6 +267,12 @@ export class ChatController {
                 source: fqn.source?.join('.'),
             })
         })
+
+        let programmingLanguage = undefined
+        if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
+            programmingLanguage = { languageName: triggerPayload.fileLanguage }
+        }
+
         if (triggerPayload.trigger == ChatTriggerType.ChatMessage) {
             return {
                 conversationState: {
@@ -279,7 +285,7 @@ export class ChatController {
                                         // TODO : replace with actual relative file path once available in trigger payload
                                         relativeFilePath: './test.py',
                                         text: triggerPayload.fileText,
-                                        programmingLanguage: { languageName: triggerPayload.fileLanguage },
+                                        programmingLanguage,
                                         documentSymbols: documentSymbolFqns,
                                     },
                                     cursorState: {
