@@ -4,7 +4,45 @@
  */
 
 import * as _ from 'lodash'
-import { Iot } from 'aws-sdk'
+import {
+    AttachPolicyCommandInput,
+    AttachThingPrincipalCommandInput,
+    CertificateDescription,
+    CreateKeysAndCertificateCommandInput,
+    CreateKeysAndCertificateCommandOutput,
+    CreatePolicyCommandInput,
+    CreatePolicyCommandOutput,
+    CreatePolicyVersionCommandInput,
+    CreateThingCommandInput,
+    CreateThingCommandOutput,
+    DeleteCertificateCommandInput,
+    DeletePolicyCommandInput,
+    DeletePolicyVersionCommandInput,
+    DeleteThingCommandInput,
+    DescribeCertificateCommandInput,
+    DescribeCertificateCommandOutput,
+    DetachPolicyCommandInput,
+    DetachThingPrincipalCommandInput,
+    GetPolicyVersionCommandInput,
+    GetPolicyVersionCommandOutput,
+    IoT,
+    ListCertificatesCommandInput,
+    ListCertificatesCommandOutput,
+    ListPoliciesCommandInput,
+    ListPoliciesCommandOutput,
+    ListPolicyVersionsCommandInput,
+    ListPrincipalPoliciesCommandInput,
+    ListPrincipalPoliciesCommandOutput,
+    ListPrincipalThingsCommandInput,
+    ListTargetsForPolicyCommandInput,
+    ListThingPrincipalsCommandInput,
+    ListThingPrincipalsCommandOutput,
+    ListThingsCommandInput,
+    ListThingsCommandOutput,
+    PolicyVersion,
+    SetDefaultPolicyVersionCommandInput,
+    UpdateCertificateCommandInput,
+} from "@aws-sdk/client-iot";
 import { parse } from '@aws-sdk/util-arn-parser'
 import { getLogger } from '../logger'
 import { InterfaceNoSymbol } from '../utilities/tsUtils'
@@ -30,7 +68,7 @@ const iotServiceArn = 'iot'
 const certArnResourcePattern = /cert\/(\w+)/
 
 export interface ListThingCertificatesResponse {
-    readonly certificates: Iot.CertificateDescription[]
+    readonly certificates: CertificateDescription[]
     readonly nextToken: string | undefined
 }
 
@@ -45,11 +83,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listThings(request?: Iot.ListThingsRequest): Promise<Iot.ListThingsResponse> {
+    public async listThings(request?: ListThingsCommandInput): Promise<ListThingsCommandOutput> {
         getLogger().debug('ListThings called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.ListThingsResponse = await iot
+        const output: ListThingsCommandOutput = await iot
             .listThings({
                 maxResults: request?.maxResults ?? defaultMaxThings,
                 nextToken: request?.nextToken,
@@ -65,11 +103,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async createThing(request: Iot.CreateThingRequest): Promise<Iot.CreateThingResponse> {
+    public async createThing(request: CreateThingCommandInput): Promise<CreateThingCommandOutput> {
         getLogger().debug('CreateThing called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.CreateThingResponse = await iot.createThing({ thingName: request.thingName }).promise()
+        const output: CreateThingCommandOutput = await iot.createThing({ thingName: request.thingName }).promise()
 
         getLogger().debug('CreateThing returned response: %O', output)
         return output
@@ -80,7 +118,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async deleteThing(request: Iot.DeleteThingRequest): Promise<void> {
+    public async deleteThing(request: DeleteThingCommandInput): Promise<void> {
         getLogger().debug('DeleteThing called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -94,11 +132,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listCertificates(request: Iot.ListCertificatesRequest): Promise<Iot.ListCertificatesResponse> {
+    public async listCertificates(request: ListCertificatesCommandInput): Promise<ListCertificatesCommandOutput> {
         getLogger().debug('ListCertificates called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.ListCertificatesResponse = await iot
+        const output: ListCertificatesCommandOutput = await iot
             .listCertificates({
                 pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
@@ -119,11 +157,11 @@ export class DefaultIotClient {
      * @throws Error if there is an error calling IoT.
      */
     public async listThingPrincipals(
-        request: Iot.ListThingPrincipalsRequest
-    ): Promise<Iot.ListThingPrincipalsResponse> {
+        request: ListThingPrincipalsCommandInput
+    ): Promise<ListThingPrincipalsCommandOutput> {
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.ListThingPrincipalsResponse = await iot
+        const output: ListThingPrincipalsCommandOutput = await iot
             .listThingPrincipals({
                 thingName: request.thingName,
                 maxResults: request.maxResults ?? defaultMaxThings,
@@ -139,11 +177,11 @@ export class DefaultIotClient {
      * @throws Error if there is an error calling IoT.
      */
     private async describeCertificate(
-        request: Iot.DescribeCertificateRequest
-    ): Promise<Iot.DescribeCertificateResponse> {
+        request: DescribeCertificateCommandInput
+    ): Promise<DescribeCertificateCommandOutput> {
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.DescribeCertificateResponse = await iot.describeCertificate(request).promise()
+        const output: DescribeCertificateCommandOutput = await iot.describeCertificate(request).promise()
 
         return output
     }
@@ -159,12 +197,12 @@ export class DefaultIotClient {
      * @throws Error if there is an error calling IoT.
      */
     public async listThingCertificates(
-        request: Iot.ListThingPrincipalsRequest
+        request: ListThingPrincipalsCommandInput
     ): Promise<ListThingCertificatesResponse> {
         getLogger().debug('ListThingCertificates called with request: %O', request)
 
         const output = await this.listThingPrincipals(request)
-        const iotPrincipals: Iot.Principal[] = output.principals ?? []
+        const iotPrincipals: string[] = output.principals ?? []
         const nextToken = output.nextToken
 
         const describedCerts = iotPrincipals.map(async iotPrincipal => {
@@ -179,7 +217,7 @@ export class DefaultIotClient {
 
         const resolvedCerts = (await Promise.all(describedCerts))
             .filter(cert => cert?.certificateDescription != undefined)
-            .map(cert => cert?.certificateDescription as Iot.CertificateDescription)
+            .map(cert => cert?.certificateDescription as CertificateDescription)
 
         const response: ListThingCertificatesResponse = { certificates: resolvedCerts, nextToken: nextToken }
         getLogger().debug('ListThingCertificates returned response: %O', response)
@@ -194,7 +232,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listThingsForCert(request: Iot.ListPrincipalThingsRequest): Promise<string[]> {
+    public async listThingsForCert(request: ListPrincipalThingsCommandInput): Promise<string[]> {
         getLogger().debug('ListThingsForCert called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -205,7 +243,7 @@ export class DefaultIotClient {
                 principal: request.principal,
             })
             .promise()
-        const iotThings: Iot.ThingName[] = output.things ?? []
+        const iotThings: string[] = output.things ?? []
 
         getLogger().debug('ListThingsForCert returned response: %O', iotThings)
         return iotThings
@@ -217,12 +255,12 @@ export class DefaultIotClient {
      * @throws Error if there is an error calling IoT.
      */
     public async createCertificateAndKeys(
-        request: Iot.CreateKeysAndCertificateRequest
-    ): Promise<Iot.CreateKeysAndCertificateResponse> {
+        request: CreateKeysAndCertificateCommandInput
+    ): Promise<CreateKeysAndCertificateCommandOutput> {
         getLogger().debug('CreateCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.CreateKeysAndCertificateResponse = await iot.createKeysAndCertificate(request).promise()
+        const output: CreateKeysAndCertificateCommandOutput = await iot.createKeysAndCertificate(request).promise()
 
         getLogger().debug('CreateCertificate succeeded')
         return output
@@ -233,7 +271,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async updateCertificate(request: Iot.UpdateCertificateRequest): Promise<void> {
+    public async updateCertificate(request: UpdateCertificateCommandInput): Promise<void> {
         getLogger().debug('UpdateCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -251,7 +289,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async deleteCertificate(request: Iot.DeleteCertificateRequest): Promise<void> {
+    public async deleteCertificate(request: DeleteCertificateCommandInput): Promise<void> {
         getLogger().debug('DeleteCertificate called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -265,7 +303,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async attachThingPrincipal(request: Iot.AttachThingPrincipalRequest): Promise<void> {
+    public async attachThingPrincipal(request: AttachThingPrincipalCommandInput): Promise<void> {
         getLogger().debug('AttachThingPrincipal called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -279,7 +317,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async detachThingPrincipal(request: Iot.DetachThingPrincipalRequest): Promise<void> {
+    public async detachThingPrincipal(request: DetachThingPrincipalCommandInput): Promise<void> {
         getLogger().debug('DetachThingPrincipal called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -293,11 +331,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listPolicies(request: Iot.ListPoliciesRequest): Promise<Iot.ListPoliciesResponse> {
+    public async listPolicies(request: ListPoliciesCommandInput): Promise<ListPoliciesCommandOutput> {
         getLogger().debug('ListPolicies called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.ListPoliciesResponse = await iot
+        const output: ListPoliciesCommandOutput = await iot
             .listPolicies({
                 pageSize: request.pageSize ?? defaultMaxThings,
                 marker: request.marker,
@@ -314,11 +352,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listPrincipalPolicies(request: Iot.ListPrincipalPoliciesRequest): Promise<Iot.ListPoliciesResponse> {
+    public async listPrincipalPolicies(request: ListPrincipalPoliciesCommandInput): Promise<ListPoliciesCommandOutput> {
         getLogger().debug('ListPrincipalPolicies called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.ListPrincipalPoliciesResponse = await iot
+        const output: ListPrincipalPoliciesCommandOutput = await iot
             .listPrincipalPolicies({
                 principal: request.principal,
                 pageSize: request.pageSize ?? defaultMaxThings,
@@ -339,7 +377,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async listPolicyTargets(request: Iot.ListTargetsForPolicyRequest): Promise<string[]> {
+    public async listPolicyTargets(request: ListTargetsForPolicyCommandInput): Promise<string[]> {
         getLogger().debug('ListPolicyTargets called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -350,7 +388,7 @@ export class DefaultIotClient {
                 policyName: request.policyName,
             })
             .promise()
-        const arns: Iot.Target[] = output.targets ?? []
+        const arns: string[] = output.targets ?? []
 
         getLogger().debug('ListPolicyTargets returned response: %O', arns)
         return arns
@@ -361,7 +399,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async attachPolicy(request: Iot.AttachPolicyRequest): Promise<void> {
+    public async attachPolicy(request: AttachPolicyCommandInput): Promise<void> {
         getLogger().debug('AttachPolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -375,7 +413,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async detachPolicy(request: Iot.DetachPolicyRequest): Promise<void> {
+    public async detachPolicy(request: DetachPolicyCommandInput): Promise<void> {
         getLogger().debug('DetachPolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -389,11 +427,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async createPolicy(request: Iot.CreatePolicyRequest): Promise<void> {
+    public async createPolicy(request: CreatePolicyCommandInput): Promise<void> {
         getLogger().debug('CreatePolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.CreatePolicyResponse = await iot.createPolicy(request).promise()
+        const output: CreatePolicyCommandOutput = await iot.createPolicy(request).promise()
         getLogger().info(`Created policy: ${output.policyArn}`)
 
         getLogger().debug('CreatePolicy successful')
@@ -408,7 +446,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async deletePolicy(request: Iot.DeletePolicyRequest): Promise<void> {
+    public async deletePolicy(request: DeletePolicyCommandInput): Promise<void> {
         getLogger().debug('DeletePolicy called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -440,7 +478,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async *listPolicyVersions(request: Iot.ListPolicyVersionsRequest): AsyncIterableIterator<Iot.PolicyVersion> {
+    public async *listPolicyVersions(request: ListPolicyVersionsCommandInput): AsyncIterableIterator<PolicyVersion> {
         const iot = await this.iotProvider(this.regionCode)
 
         const response = await iot.listPolicyVersions(request).promise()
@@ -455,7 +493,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async createPolicyVersion(request: Iot.CreatePolicyVersionRequest): Promise<void> {
+    public async createPolicyVersion(request: CreatePolicyVersionCommandInput): Promise<void> {
         getLogger().debug('CreatePolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -474,7 +512,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async deletePolicyVersion(request: Iot.DeletePolicyVersionRequest): Promise<void> {
+    public async deletePolicyVersion(request: DeletePolicyVersionCommandInput): Promise<void> {
         getLogger().debug('DeletePolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -488,7 +526,7 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async setDefaultPolicyVersion(request: Iot.SetDefaultPolicyVersionRequest): Promise<void> {
+    public async setDefaultPolicyVersion(request: SetDefaultPolicyVersionCommandInput): Promise<void> {
         getLogger().debug('SetDefaultPolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
@@ -502,11 +540,11 @@ export class DefaultIotClient {
      *
      * @throws Error if there is an error calling IoT.
      */
-    public async getPolicyVersion(request: Iot.GetPolicyVersionRequest): Promise<Iot.GetPolicyVersionResponse> {
+    public async getPolicyVersion(request: GetPolicyVersionCommandInput): Promise<GetPolicyVersionCommandOutput> {
         getLogger().debug('GetPolicyVersion called with request: %O', request)
         const iot = await this.iotProvider(this.regionCode)
 
-        const output: Iot.GetPolicyVersionResponse = await iot.getPolicyVersion(request).promise()
+        const output: GetPolicyVersionCommandOutput = await iot.getPolicyVersion(request).promise()
 
         getLogger().debug('GetPolicyVersion successful')
         return output

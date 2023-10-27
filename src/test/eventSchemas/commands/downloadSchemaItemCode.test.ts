@@ -8,7 +8,11 @@ import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { Schemas } from 'aws-sdk'
+import {
+    DescribeCodeBindingCommandOutput,
+    GetCodeBindingSourceCommandOutput,
+    PutCodeBindingCommandOutput,
+} from "@aws-sdk/client-schemas";
 import * as sinon from 'sinon'
 
 import {
@@ -60,7 +64,7 @@ describe('CodeDownloader', function () {
 
     describe('codeDownloader', async function () {
         it('should return an error if the response body is not Buffer', async function () {
-            const response: Schemas.GetCodeBindingSourceResponse = {
+            const response: GetCodeBindingSourceCommandOutput = {
                 Body: 'Invalied body',
             }
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
@@ -74,7 +78,7 @@ describe('CodeDownloader', function () {
 
         it('should return arrayBuffer for valid Body type', async function () {
             const myBuffer = Buffer.from('TEST STRING')
-            const response: Schemas.GetCodeBindingSourceResponse = {
+            const response: GetCodeBindingSourceCommandOutput = {
                 Body: myBuffer,
             }
 
@@ -145,7 +149,7 @@ describe('CodeGenerator', function () {
 
     describe('codeGenerator', async function () {
         it('should return the current status of code generation', async function () {
-            const response: Schemas.PutCodeBindingResponse = {
+            const response: PutCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
             sandbox.stub(schemaClient, 'putCodeBinding').returns(Promise.resolve(response))
@@ -161,7 +165,7 @@ describe('CodeGenerator', function () {
         // If code bindings were not generated, but putCodeBinding was already called, ConflictException occurs
         // Return CREATE_IN_PROGRESS and keep polling in this case
         it('should return valid code generation status if it gets ConflictException', async function () {
-            const response: Schemas.PutCodeBindingResponse = {
+            const response: PutCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
 
@@ -221,10 +225,10 @@ describe('CodeGeneratorStatusPoller', function () {
 
     describe('getCurrentStatus', async function () {
         it('should return the current status of code generation', async function () {
-            const firstStatus: Schemas.DescribeCodeBindingResponse = {
+            const firstStatus: DescribeCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
-            const secondStatus: Schemas.DescribeCodeBindingResponse = {
+            const secondStatus: DescribeCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
 
@@ -242,7 +246,7 @@ describe('CodeGeneratorStatusPoller', function () {
 
     describe('codeGeneratorStatusPoller', async function () {
         it('fails if code generation status is invalid without retry', async function () {
-            const schemaResponse: Schemas.DescribeCodeBindingResponse = {
+            const schemaResponse: DescribeCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_FAILED,
             }
 
@@ -263,7 +267,7 @@ describe('CodeGeneratorStatusPoller', function () {
         })
 
         it('times out after max attempts if status is still in progress', async function () {
-            const schemaResponse: Schemas.DescribeCodeBindingResponse = {
+            const schemaResponse: DescribeCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
 
@@ -287,7 +291,7 @@ describe('CodeGeneratorStatusPoller', function () {
         })
 
         it('succeeds when code is previously generated without retry', async function () {
-            const schemaResponse: Schemas.DescribeCodeBindingResponse = {
+            const schemaResponse: DescribeCodeBindingCommandOutput = {
                 Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
 
@@ -399,7 +403,7 @@ describe('SchemaCodeDownload', function () {
         it('should generate code if download fails with ResourceNotFound and place it into requested directory', async function () {
             sandbox.stub(poller, 'pollForCompletion').returns(Promise.resolve('CREATE_COMPLETE'))
             const codeDownloaderStub = sandbox.stub(downloader, 'download')
-            const codeGeneratorResponse: Schemas.PutCodeBindingResponse = {
+            const codeGeneratorResponse: PutCodeBindingCommandOutput = {
                 Status: 'CREATE_IN_PROGRESS',
             }
             sandbox.stub(generator, 'generate').returns(Promise.resolve(codeGeneratorResponse))

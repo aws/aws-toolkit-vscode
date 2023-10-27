@@ -236,7 +236,7 @@ function createImageRepositorySubForm(
     )
 
     function isPublic(imageRepo: string): boolean {
-        return imageRepo.search(/^public.ecr.aws/) !== -1
+        return imageRepo.search(/^public.ecr.aws/) !== -1;
     }
 
     form.ImageRepositoryType.setDefault(state =>

@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { Schemas } from 'aws-sdk'
+import { PutCodeBindingCommandOutput } from "@aws-sdk/client-schemas";
 import fs = require('fs')
 import path = require('path')
 import * as vscode from 'vscode'
@@ -182,8 +182,8 @@ export class CodeGenerator {
 
     public async generate(
         codeDownloadRequest: SchemaCodeDownloadRequestDetails
-    ): Promise<Schemas.PutCodeBindingResponse> {
-        let response: Schemas.PutCodeBindingResponse
+    ): Promise<PutCodeBindingCommandOutput> {
+        let response: PutCodeBindingCommandOutput
         try {
             response = await this.client.putCodeBinding(
                 codeDownloadRequest.language,

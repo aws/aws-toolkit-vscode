@@ -3,7 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, SSM } from 'aws-sdk'
+import { AWSError } from 'aws-sdk';
+
+import {
+    DescribeInstanceInformationCommandInput,
+    GetCommandInvocationCommandOutput,
+    InstanceInformation,
+    SendCommandCommandOutput,
+    Session,
+    SSM,
+    StartSessionCommandOutput,
+    TerminateSessionCommandOutput,
+} from "@aws-sdk/client-ssm";
+
 import { getLogger } from '../logger/logger'
 import globals from '../extensionGlobals'
 import { pageableToCollection } from '../utilities/collectionUtils'
@@ -17,7 +29,7 @@ export class SsmClient {
         return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
     }
 
-    public async terminateSession(session: SSM.Session): Promise<SSM.TerminateSessionResponse> {
+    public async terminateSession(session: Session): Promise<TerminateSessionCommandOutput> {
         const sessionId = session.SessionId!
         const client = await this.createSdkClient()
         const termination = await client
@@ -33,8 +45,8 @@ export class SsmClient {
     public async startSession(
         target: string,
         document?: string,
-        parameters?: SSM.SessionManagerParameters
-    ): Promise<SSM.StartSessionResponse> {
+        parameters?: Record<string, Array<string>>
+    ): Promise<StartSessionCommandOutput> {
         const client = await this.createSdkClient()
         const response = await client
             .startSession({ Target: target, DocumentName: document, Parameters: parameters })
@@ -42,11 +54,11 @@ export class SsmClient {
         return response
     }
 
-    public async describeInstance(target: string): Promise<SSM.InstanceInformation> {
+    public async describeInstance(target: string): Promise<InstanceInformation> {
         const client = await this.createSdkClient()
-        const requester = async (req: SSM.DescribeInstanceInformationRequest) =>
+        const requester = async (req: DescribeInstanceInformationCommandInput) =>
             client.describeInstanceInformation(req).promise()
-        const request: SSM.DescribeInstanceInformationRequest = {
+        const request: DescribeInstanceInformationCommandInput = {
             InstanceInformationFilterList: [
                 {
                     key: 'InstanceIds',
@@ -71,8 +83,8 @@ export class SsmClient {
     public async sendCommand(
         target: string,
         documentName: string,
-        parameters: SSM.Parameters
-    ): Promise<SSM.SendCommandResult> {
+        parameters: Record<string, Array<string>>
+    ): Promise<SendCommandCommandOutput> {
         const client = await this.createSdkClient()
         const response = await client
             .sendCommand({ InstanceIds: [target], DocumentName: documentName, Parameters: parameters })
@@ -83,8 +95,8 @@ export class SsmClient {
     public async sendCommandAndWait(
         target: string,
         documentName: string,
-        parameters: SSM.Parameters
-    ): Promise<PromiseResult<SSM.GetCommandInvocationResult, AWSError>> {
+        parameters: Record<string, Array<string>>
+    ): Promise<PromiseResult<GetCommandInvocationCommandOutput, AWSError>> {
         const response = await this.sendCommand(target, documentName, parameters)
         const client = await this.createSdkClient()
         try {

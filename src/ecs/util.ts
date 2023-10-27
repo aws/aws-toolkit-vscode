@@ -15,7 +15,6 @@ import { isCloud9 } from '../shared/extensionUtilities'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { TaskDefinition } from 'aws-sdk/clients/ecs'
 import { getLogger } from '../shared/logger'
-import { SSM } from 'aws-sdk'
 import { fromExtensionManifest } from '../shared/settings'
 import { ecsTaskPermissionsUrl } from '../shared/constants'
 

@@ -190,7 +190,7 @@ function maskArns(text: string) {
         }
 
         return match
-    })
+    });
 }
 
 /**
@@ -229,7 +229,7 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
 
             message.items[0].select()
         }
-    })
+    });
 }
 
 /**

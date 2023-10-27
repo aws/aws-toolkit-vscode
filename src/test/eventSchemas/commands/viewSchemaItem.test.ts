@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Schemas } from 'aws-sdk'
+
+
+import { DescribeSchemaCommandOutput } from "@aws-sdk/client-schemas";
 
 import assert from 'assert'
 import * as sinon from 'sinon'
@@ -117,7 +119,7 @@ describe('viewSchemaItem', async function () {
     }
 
     function generateSchemaItemNode(): SchemaItemNode {
-        const schemaResponse: Schemas.DescribeSchemaResponse = {
+        const schemaResponse: DescribeSchemaCommandOutput = {
             Content: awsEventSchemaRaw,
         }
         const schemaClient = new DefaultSchemaClient('')

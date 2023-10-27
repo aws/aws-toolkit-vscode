@@ -4,22 +4,38 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftServerless, RedshiftData } from 'aws-sdk'
+
+
+import {
+    DescribeClustersCommandInput,
+    DescribeClustersCommandOutput,
+    GetClusterCredentialsCommandInput,
+    GetClusterCredentialsCommandOutput,
+    Redshift,
+} from "@aws-sdk/client-redshift";
+
+import {
+    DescribeStatementCommandInput,
+    GetStatementResultCommandInput,
+    GetStatementResultCommandOutput,
+    ListDatabasesCommandInput,
+    ListDatabasesCommandOutput,
+    ListSchemasCommandInput,
+    ListSchemasCommandOutput,
+    ListTablesCommandInput,
+    ListTablesCommandOutput,
+    RedshiftData,
+} from "@aws-sdk/client-redshift-data";
+
+import {
+    GetCredentialsCommandInput,
+    GetCredentialsCommandOutput,
+    ListWorkgroupsCommandInput,
+    ListWorkgroupsCommandOutput,
+    RedshiftServerless,
+} from "@aws-sdk/client-redshift-serverless";
+
 import globals from '../extensionGlobals'
-import { ClusterCredentials, ClustersMessage, GetClusterCredentialsMessage } from 'aws-sdk/clients/redshift'
-import {
-    GetCredentialsRequest,
-    GetCredentialsResponse,
-    ListWorkgroupsResponse,
-} from 'aws-sdk/clients/redshiftserverless'
-import {
-    DescribeStatementRequest,
-    GetStatementResultRequest,
-    GetStatementResultResponse,
-    ListDatabasesResponse,
-    ListSchemasResponse,
-    ListTablesResponse,
-} from 'aws-sdk/clients/redshiftdata'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../redshift/models/models'
 import { sleep } from '../utilities/timeoutUtils'
 import { SecretsManagerClient } from './secretsManagerClient'
@@ -27,7 +43,7 @@ import { ToolkitError } from '../errors'
 import { getLogger } from '../logger/logger'
 
 export interface ExecuteQueryResponse {
-    statementResultResponse: GetStatementResultResponse
+    statementResultResponse: GetStatementResultCommandOutput
     executionId: string
 }
 
@@ -45,9 +61,9 @@ export class DefaultRedshiftClient {
     ) {}
 
     // eslint-disable-next-line require-yield
-    public async describeProvisionedClusters(nextToken?: string): Promise<ClustersMessage> {
+    public async describeProvisionedClusters(nextToken?: string): Promise<DescribeClustersCommandOutput> {
         const redshiftClient = await this.redshiftClientProvider(this.regionCode)
-        const request: Redshift.DescribeClustersMessage = {
+        const request: DescribeClustersCommandInput = {
             Marker: nextToken,
             MaxRecords: 20,
         }
@@ -60,9 +76,9 @@ export class DefaultRedshiftClient {
         return response
     }
 
-    public async listServerlessWorkgroups(nextToken?: string): Promise<ListWorkgroupsResponse> {
+    public async listServerlessWorkgroups(nextToken?: string): Promise<ListWorkgroupsCommandOutput> {
         const redshiftServerlessClient = await this.redshiftServerlessClientProvider(this.regionCode)
-        const request: RedshiftServerless.ListWorkgroupsRequest = {
+        const request: ListWorkgroupsCommandInput = {
             nextToken: nextToken,
             maxResults: 20,
         }
@@ -75,11 +91,11 @@ export class DefaultRedshiftClient {
         return response
     }
 
-    public async listDatabases(connectionParams: ConnectionParams, nextToken?: string): Promise<ListDatabasesResponse> {
+    public async listDatabases(connectionParams: ConnectionParams, nextToken?: string): Promise<ListDatabasesCommandOutput> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
-        const input: RedshiftData.ListDatabasesRequest = {
+        const input: ListDatabasesCommandInput = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
             DbUser:
@@ -96,11 +112,11 @@ export class DefaultRedshiftClient {
         }
         return redshiftDataClient.listDatabases(input).promise()
     }
-    public async listSchemas(connectionParams: ConnectionParams, nextToken?: string): Promise<ListSchemasResponse> {
+    public async listSchemas(connectionParams: ConnectionParams, nextToken?: string): Promise<ListSchemasCommandOutput> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
-        const input: RedshiftData.ListSchemasRequest = {
+        const input: ListSchemasCommandInput = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
             DbUser:
@@ -121,11 +137,11 @@ export class DefaultRedshiftClient {
         connectionParams: ConnectionParams,
         schemaName: string,
         nextToken?: string
-    ): Promise<ListTablesResponse> {
+    ): Promise<ListTablesCommandOutput> {
         const redshiftDataClient = await this.redshiftDataClientProvider(this.regionCode)
         const warehouseType = connectionParams.warehouseType
         const warehouseIdentifier = connectionParams.warehouseIdentifier
-        const input: RedshiftData.ListTablesRequest = {
+        const input: ListTablesCommandInput = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             DbUser:
                 connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
@@ -181,7 +197,7 @@ export class DefaultRedshiftClient {
             let status: Status = 'RUNNING'
             while (status === 'RUNNING') {
                 const describeStatementResponse = await redshiftData
-                    .describeStatement({ Id: executionId } as DescribeStatementRequest)
+                    .describeStatement({ Id: executionId } as DescribeStatementCommandInput)
                     .promise()
                 if (describeStatementResponse.Status === 'FAILED' || describeStatementResponse.Status === 'FINISHED') {
                     status = describeStatementResponse.Status
@@ -199,7 +215,7 @@ export class DefaultRedshiftClient {
             }
         }
         const result = await redshiftData
-            .getStatementResult({ Id: executionId, NextToken: nextToken } as GetStatementResultRequest)
+            .getStatementResult({ Id: executionId, NextToken: nextToken } as GetStatementResultCommandInput)
             .promise()
 
         return { statementResultResponse: result, executionId: executionId } as ExecuteQueryResponse
@@ -208,10 +224,10 @@ export class DefaultRedshiftClient {
     public async getTempCredentials(
         warehouseType: RedshiftWarehouseType,
         connectionParams: ConnectionParams
-    ): Promise<ClusterCredentials | GetCredentialsResponse> {
+    ): Promise<GetClusterCredentialsCommandOutput | GetCredentialsCommandOutput> {
         if (warehouseType === RedshiftWarehouseType.PROVISIONED) {
             const redshiftClient = await this.redshiftClientProvider(this.regionCode)
-            const getClusterCredentialsRequest: GetClusterCredentialsMessage = {
+            const getClusterCredentialsRequest: GetClusterCredentialsCommandInput = {
                 DbUser: connectionParams.username!,
                 DbName: connectionParams.database,
                 ClusterIdentifier: connectionParams.warehouseIdentifier,
@@ -219,7 +235,7 @@ export class DefaultRedshiftClient {
             return redshiftClient.getClusterCredentials(getClusterCredentialsRequest).promise()
         } else {
             const redshiftServerless = await this.redshiftServerlessClientProvider(this.regionCode)
-            const getCredentialsRequest: GetCredentialsRequest = {
+            const getCredentialsRequest: GetCredentialsCommandInput = {
                 dbName: connectionParams.database,
                 workgroupName: connectionParams.warehouseIdentifier,
             }

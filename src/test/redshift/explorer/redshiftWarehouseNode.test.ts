@@ -5,7 +5,7 @@
 
 import sinon = require('sinon')
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
+import { ListDatabasesCommandOutput, RedshiftData } from "@aws-sdk/client-redshift-data";
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
 import { RedshiftWarehouseNode, CreateNotebookNode } from '../../../redshift/explorer/redshiftWarehouseNode'
 import { RedshiftNode } from '../../../redshift/explorer/redshiftNode'
@@ -39,8 +39,8 @@ function verifyRetryNode(childNodes: AWSTreeNodeBase[]) {
 describe('redshiftWarehouseNode', function () {
     describe('getChildren', function () {
         const sandbox = sinon.createSandbox()
-        const expectedResponse = { Databases: ['testDb1'] } as ListDatabasesResponse
-        const expectedResponseWithNextToken = { Databases: ['testDb1'], NextToken: 'next' } as ListDatabasesResponse
+        const expectedResponse = { Databases: ['testDb1'] } as ListDatabasesCommandOutput
+        const expectedResponseWithNextToken = { Databases: ['testDb1'], NextToken: 'next' } as ListDatabasesCommandOutput
         const connectionParams = new ConnectionParams(
             ConnectionType.TempCreds,
             'testDb1',

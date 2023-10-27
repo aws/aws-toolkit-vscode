@@ -101,7 +101,7 @@ export class DefaultCodeWhispererClient {
                 ],
             } as ServiceOptions,
             undefined
-        )) as CodeWhispererClient
+        )) as CodeWhispererClient;
     }
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {

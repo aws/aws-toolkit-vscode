@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import { S3 } from 'aws-sdk'
+import { Bucket, ManagedUpload } from "@aws-sdk/client-s3";
 import {
     FileSizeBytes,
     getFilesToUpload,
@@ -45,7 +45,7 @@ describe('uploadFileCommand', function () {
     let getBucket: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
     let commands: Commands
-    let mockedUpload: S3.ManagedUpload
+    let mockedUpload: ManagedUpload
 
     beforeEach(function () {
         mockedUpload = mock()
@@ -268,7 +268,7 @@ describe('promptUserForBucket', async function () {
     const fileLocation = vscode.Uri.file('/file.jpg')
 
     let s3: S3Client
-    let buckets: S3.Bucket[]
+    let buckets: Bucket[]
 
     const promptUndef: <T extends vscode.QuickPickItem>(opts: {
         picker: vscode.QuickPick<T>

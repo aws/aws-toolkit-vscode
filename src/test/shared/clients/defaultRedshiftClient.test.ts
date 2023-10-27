@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Redshift, RedshiftData, RedshiftServerless, AWSError, Request } from 'aws-sdk'
+import { AWSError, Request } from 'aws-sdk';
+import { DescribeClustersCommandOutput, Redshift } from "@aws-sdk/client-redshift";
+import { ListDatabasesCommandOutput, ListSchemasCommandOutput, RedshiftData } from "@aws-sdk/client-redshift-data";
+import { ListWorkgroupsCommandOutput, RedshiftServerless } from "@aws-sdk/client-redshift-serverless";
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import assert = require('assert')
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
@@ -57,7 +60,7 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('describeProvisionedClusters', function () {
-        const expectedResponse = { Clusters: [] } as Redshift.ClustersMessage
+        const expectedResponse = { Clusters: [] } as DescribeClustersCommandOutput
         let describeClustersStub: sinon.SinonStub
 
         beforeEach(function () {
@@ -80,7 +83,7 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('listServerlessWorkgroups', function () {
-        const expectedResponse = { workgroups: [] } as RedshiftServerless.ListWorkgroupsResponse
+        const expectedResponse = { workgroups: [] } as ListWorkgroupsCommandOutput
         let listServerlessWorkgroupsStub: sinon.SinonStub
         beforeEach(function () {
             listServerlessWorkgroupsStub = sandbox.stub()
@@ -102,7 +105,7 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('listDatabases', function () {
-        const expectedResponse = { Databases: [] } as RedshiftData.ListDatabasesResponse
+        const expectedResponse = { Databases: [] } as ListDatabasesCommandOutput
         let listDatabasesStub: sinon.SinonStub
         beforeEach(function () {
             listDatabasesStub = sandbox.stub()
@@ -127,7 +130,7 @@ describe('DefaultRedshiftClient', function () {
     })
 
     describe('listSchemas', function () {
-        const expectedResponse = { Schemas: [] } as RedshiftData.ListSchemasResponse
+        const expectedResponse = { Schemas: [] } as ListSchemasCommandOutput
         let listSchemasStub: sinon.SinonStub
         beforeEach(function () {
             listSchemasStub = sandbox.stub()

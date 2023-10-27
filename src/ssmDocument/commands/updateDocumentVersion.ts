@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
 import { getLogger, Logger } from '../../shared/logger'

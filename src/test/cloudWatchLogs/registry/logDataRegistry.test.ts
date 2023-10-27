@@ -27,8 +27,7 @@ import {
     testLogData,
     unregisteredData,
 } from '../utils.test'
-import { CloudWatchLogs } from 'aws-sdk'
-import { FilteredLogEvents } from 'aws-sdk/clients/cloudwatchlogs'
+import { FilteredLogEvent } from "@aws-sdk/client-cloudwatch-logs";
 
 describe('LogDataRegistry', async function () {
     let registry: GetSetLogDataRegistry
@@ -115,8 +114,8 @@ describe('LogDataRegistry', async function () {
         const pageToken1 = 'page1Token'
         const pageToken2 = 'page2Token'
 
-        function createCwlEvents(id: string, count: number): FilteredLogEvents {
-            let events: CloudWatchLogs.FilteredLogEvents = []
+        function createCwlEvents(id: string, count: number): Array<FilteredLogEvent> {
+            let events: Array<FilteredLogEvent> = []
             for (let i = 0; i < count; i++) {
                 events = events.concat({ message: `message-${id}`, logStreamName: `stream-${id}` })
             }
@@ -127,10 +126,10 @@ describe('LogDataRegistry', async function () {
             return async function (
                 logGroupInfo: CloudWatchLogsGroupInfo,
                 parameters: CloudWatchLogsParameters,
-                nextToken?: CloudWatchLogs.NextToken
+                nextToken?: string
             ) {
                 return getSimulatedCwlResponse(nextToken, isPage1Empty)
-            }
+            };
         }
 
         /**
@@ -140,7 +139,7 @@ describe('LogDataRegistry', async function () {
          * @returns
          */
         function getSimulatedCwlResponse(
-            token: CloudWatchLogs.NextToken | undefined,
+            token: string | undefined,
             isPage1Empty: boolean
         ): CloudWatchLogsResponse {
             switch (token) {

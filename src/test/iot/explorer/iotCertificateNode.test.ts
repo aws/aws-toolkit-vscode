@@ -6,7 +6,7 @@
 import assert from 'assert'
 import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { Policy } from "@aws-sdk/client-iot";
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
@@ -21,7 +21,7 @@ describe('IotCertificateNode', function () {
     let iot: IotClient
     const certArn = 'certArn'
     const cert = { id: 'cert', arn: certArn, activeStatus: 'ACTIVE', creationDate: new Date(0) }
-    const policy: Iot.Policy = { policyName: 'policy', policyArn: 'arn' }
+    const policy: Policy = { policyName: 'policy', policyArn: 'arn' }
     const expectedPolicy: IotPolicy = { name: 'policy', arn: 'arn' }
 
     function assertPolicyNode(node: AWSTreeNodeBase, expectedPolicy: IotPolicy): void {

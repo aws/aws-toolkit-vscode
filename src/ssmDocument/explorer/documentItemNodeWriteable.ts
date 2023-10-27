@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+
+
 import { RegistryItemNode } from './registryItemNode'
 import { SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
 import { DocumentItemNode } from './documentItemNode'

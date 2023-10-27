@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Schemas } from 'aws-sdk'
+
+
+import { SchemaSummary, SchemaVersionSummary } from "@aws-sdk/client-schemas";
 
 import * as os from 'os'
 import { SchemaClient } from '../../shared/clients/schemaClient'
@@ -15,7 +17,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 
 export class SchemaItemNode extends AWSTreeNodeBase {
     public constructor(
-        private schemaItem: Schemas.SchemaSummary,
+        private schemaItem: SchemaSummary,
         public readonly client: SchemaClient,
         public readonly registryName: string
     ) {
@@ -30,7 +32,7 @@ export class SchemaItemNode extends AWSTreeNodeBase {
         }
     }
 
-    public update(schemaItem: Schemas.SchemaSummary): void {
+    public update(schemaItem: SchemaSummary): void {
         this.schemaItem = schemaItem
         this.label = this.schemaItem.SchemaName || ''
         let schemaArn = ''
@@ -50,7 +52,7 @@ export class SchemaItemNode extends AWSTreeNodeBase {
         return response.Content!
     }
 
-    public async listSchemaVersions(): Promise<Schemas.SchemaVersionSummary[]> {
+    public async listSchemaVersions(): Promise<SchemaVersionSummary[]> {
         const versions = await toArrayAsync(this.client.listSchemaVersions(this.registryName, this.schemaName))
 
         return versions

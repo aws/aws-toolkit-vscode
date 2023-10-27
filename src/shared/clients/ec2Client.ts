@@ -3,10 +3,24 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AWSError, EC2 } from 'aws-sdk'
+import { AWSError } from 'aws-sdk';
+import {
+    DescribeIamInstanceProfileAssociationsCommandInput,
+    DescribeInstancesCommandInput,
+    DescribeInstanceStatusCommandInput,
+    EC2,
+    Filter,
+    IamInstanceProfile,
+    IamInstanceProfileAssociation,
+    Instance,
+    InstanceStateName,
+    Reservation,
+    StartInstancesCommandOutput,
+    StopInstancesCommandOutput,
+    Tag,
+} from "@aws-sdk/client-ec2";
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
-import { IamInstanceProfile } from 'aws-sdk/clients/ec2'
 import globals from '../extensionGlobals'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { Timeout } from '../utilities/timeoutUtils'
@@ -15,7 +29,7 @@ import { ToolkitError, isAwsError } from '../errors'
 
 export interface Ec2Instance extends EC2.Instance {
     name?: string
-    status?: EC2.InstanceStateName
+    status?: InstanceStateName
 }
 
 export class Ec2Client {
@@ -25,10 +39,10 @@ export class Ec2Client {
         return await globals.sdkClientBuilder.createAwsService(EC2, undefined, this.regionCode)
     }
 
-    public async getInstances(filters?: EC2.Filter[]): Promise<AsyncCollection<EC2.Instance>> {
+    public async getInstances(filters?: Filter[]): Promise<AsyncCollection<Instance>> {
         const client = await this.createSdkClient()
 
-        const requester = async (request: EC2.DescribeInstancesRequest) => client.describeInstances(request).promise()
+        const requester = async (request: DescribeInstancesCommandInput) => client.describeInstances(request).promise()
         const collection = pageableToCollection(
             requester,
             filters ? { Filters: filters } : {},
@@ -43,8 +57,8 @@ export class Ec2Client {
 
     /** Updates status and name in-place for displaying to humans. */
     protected async updateInstancesDetail(
-        instances: AsyncCollection<EC2.Instance>
-    ): Promise<AsyncCollection<EC2.Instance>> {
+        instances: AsyncCollection<Instance>
+    ): Promise<AsyncCollection<Instance>> {
         return instances
             .map(async instance => {
                 return { ...instance, status: await this.getInstanceStatus(instance.InstanceId!) }
@@ -57,8 +71,8 @@ export class Ec2Client {
     }
 
     public getInstancesFromReservations(
-        reservations: AsyncCollection<EC2.ReservationList | undefined>
-    ): AsyncCollection<EC2.Instance> {
+        reservations: AsyncCollection<Array<Reservation> | undefined>
+    ): AsyncCollection<Instance> {
         return reservations
             .flatten()
             .map(instanceList => instanceList?.Instances)
@@ -66,9 +80,9 @@ export class Ec2Client {
             .filter(instance => instance!.InstanceId !== undefined)
     }
 
-    public async getInstanceStatus(instanceId: string): Promise<EC2.InstanceStateName> {
+    public async getInstanceStatus(instanceId: string): Promise<InstanceStateName> {
         const client = await this.createSdkClient()
-        const requester = async (request: EC2.DescribeInstanceStatusRequest) =>
+        const requester = async (request: DescribeInstanceStatusCommandInput) =>
             client.describeInstanceStatus(request).promise()
 
         const response = await pageableToCollection(
@@ -89,7 +103,7 @@ export class Ec2Client {
         return status == 'running'
     }
 
-    public getInstancesFilter(instanceIds: string[]): EC2.Filter[] {
+    public getInstancesFilter(instanceIds: string[]): Filter[] {
         return [
             {
                 Name: 'instance-id',
@@ -117,7 +131,7 @@ export class Ec2Client {
         }
     }
 
-    public async startInstance(instanceId: string): Promise<PromiseResult<EC2.StartInstancesResult, AWSError>> {
+    public async startInstance(instanceId: string): Promise<PromiseResult<StartInstancesCommandOutput, AWSError>> {
         const client = await this.createSdkClient()
 
         const response = await client.startInstances({ InstanceIds: [instanceId] }).promise()
@@ -140,7 +154,7 @@ export class Ec2Client {
         }
     }
 
-    public async stopInstance(instanceId: string): Promise<PromiseResult<EC2.StopInstancesResult, AWSError>> {
+    public async stopInstance(instanceId: string): Promise<PromiseResult<StopInstancesCommandOutput, AWSError>> {
         const client = await this.createSdkClient()
 
         const response = await client.stopInstances({ InstanceIds: [instanceId] }).promise()
@@ -188,10 +202,10 @@ export class Ec2Client {
      * @param instanceId target EC2 instance ID
      * @returns IAM Association for instance
      */
-    private async getIamInstanceProfileAssociation(instanceId: string): Promise<EC2.IamInstanceProfileAssociation> {
+    private async getIamInstanceProfileAssociation(instanceId: string): Promise<IamInstanceProfileAssociation> {
         const client = await this.createSdkClient()
         const instanceFilter = this.getInstancesFilter([instanceId])
-        const requester = async (request: EC2.DescribeIamInstanceProfileAssociationsRequest) =>
+        const requester = async (request: DescribeIamInstanceProfileAssociationsCommandInput) =>
             client.describeIamInstanceProfileAssociations(request).promise()
         const response = await pageableToCollection(
             requester,
@@ -217,14 +231,14 @@ export class Ec2Client {
     }
 }
 
-export function getNameOfInstance(instance: EC2.Instance): string | undefined {
+export function getNameOfInstance(instance: Instance): string | undefined {
     return instanceHasName(instance) ? lookupTagKey(instance.Tags!, 'Name')! : undefined
 }
 
-export function instanceHasName(instance: EC2.Instance): boolean {
+export function instanceHasName(instance: Instance): boolean {
     return instance.Tags !== undefined && instance.Tags.filter(tag => tag.Key === 'Name').length != 0
 }
 
-function lookupTagKey(tags: EC2.Tag[], targetKey: string) {
+function lookupTagKey(tags: Tag[], targetKey: string) {
     return tags.filter(tag => tag.Key === targetKey)[0].Value
 }

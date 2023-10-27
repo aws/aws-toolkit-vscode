@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+
 
 import assert from 'assert'
 import * as sinon from 'sinon'

@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { Iot } from 'aws-sdk'
+import { Policy } from "@aws-sdk/client-iot";
 import { attachPolicyCommand, PolicyGen } from '../../../iot/commands/attachPolicy'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
@@ -20,19 +20,19 @@ import { getTestWindow } from '../../shared/vscode/window'
 describe('attachPolicyCommand', function () {
     const certId = 'iot-certificate'
     let iot: IotClient
-    let policies: Iot.Policy[]
+    let policies: Policy[]
     let certNode: IotCertWithPoliciesNode
     let selection: number = 0
-    const prompt: (iot: IotClient, policyFetch: PolicyGen) => Promise<PromptResult<Iot.Policy>> = async (
+    const prompt: (iot: IotClient, policyFetch: PolicyGen) => Promise<PromptResult<Policy>> = async (
         iot,
         policyFetch
     ) => {
         const iterable = policyFetch(iot)
-        const responses: DataQuickPickItem<Iot.Policy>[] = []
+        const responses: DataQuickPickItem<Policy>[] = []
         for await (const response of iterable) {
             responses.push(...response)
         }
-        return selection > -1 ? (responses[selection].data as Iot.Policy) : undefined
+        return selection > -1 ? (responses[selection].data as Policy) : undefined;
     }
 
     beforeEach(function () {

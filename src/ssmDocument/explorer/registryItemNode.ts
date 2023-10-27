@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
+import { DocumentIdentifier, ListDocumentsCommandInput } from "@aws-sdk/client-ssm";
 import * as vscode from 'vscode'
 
 import { DefaultSsmDocumentClient, SsmDocumentClient } from '../../shared/clients/ssmDocumentClient'
@@ -64,8 +64,8 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getDocumentByOwner(client: SsmDocumentClient): Promise<SSM.DocumentIdentifier[]> {
-        const request: SSM.ListDocumentsRequest = {
+    private async getDocumentByOwner(client: SsmDocumentClient): Promise<DocumentIdentifier[]> {
+        const request: ListDocumentsCommandInput = {
             Filters: [
                 {
                     Key: 'DocumentType',

@@ -4,14 +4,13 @@
  */
 
 import assert from 'assert'
-import { AppRunner } from 'aws-sdk'
+import { CodeRepository, ConnectionSummary, SourceConfiguration } from "@aws-sdk/client-apprunner";
 import { createWizardTester, WizardTester } from '../../shared/wizards/wizardTestUtils'
 import {
     AppRunnerCodeRepositoryWizard,
     createConnectionPrompter,
 } from '../../../apprunner/wizards/codeRepositoryWizard'
 import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
 import { WIZARD_EXIT } from '../../../shared/wizards/wizard'
 import { apprunnerConnectionHelpUrl } from '../../../shared/constants'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../shared/ui/testUtils'
@@ -19,8 +18,8 @@ import { stub } from '../../utilities/stubber'
 import { getOpenExternalStub } from '../../globalSetup.test'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
-    let tester: WizardTester<AppRunner.SourceConfiguration>
-    let repoTester: WizardTester<AppRunner.CodeRepository>
+    let tester: WizardTester<SourceConfiguration>
+    let repoTester: WizardTester<CodeRepository>
 
     beforeEach(function () {
         // apprunner client and git api will never be called

@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+
+
+import { DocumentVersionInfo } from "@aws-sdk/client-ssm";
 import * as sinon from 'sinon'
 import assert from 'assert'
 
@@ -32,7 +34,7 @@ describe('openDocumentItem', async function () {
 
     const fakeRegion = 'us-east-1'
 
-    const fakeSchemaList: SSM.DocumentVersionInfo[] = [
+    const fakeSchemaList: DocumentVersionInfo[] = [
         {
             Name: 'testDocument',
             DocumentVersion: '1',

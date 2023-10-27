@@ -6,11 +6,10 @@
 import * as sinon from 'sinon'
 import * as assert from 'assert'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { RedshiftData } from 'aws-sdk'
+import { ListTablesCommandOutput, RedshiftData } from "@aws-sdk/client-redshift-data";
 import { RedshiftSchemaNode } from '../../../redshift/explorer/redshiftSchemaNode'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
 import { RedshiftTableNode } from '../../../redshift/explorer/redshiftTableNode'
-import { ListTablesResponse } from 'aws-sdk/clients/redshiftdata'
 import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 
 describe('RedshiftSchemaNode', function () {
@@ -43,7 +42,7 @@ describe('RedshiftSchemaNode', function () {
         it('gets table nodes and filters out tables with pkey', async () => {
             listTablesStub.returns({
                 promise: () =>
-                    Promise.resolve({ Tables: [{ name: 'test' }, { name: 'test_pkey' }] } as ListTablesResponse),
+                    Promise.resolve({ Tables: [{ name: 'test' }, { name: 'test_pkey' }] } as ListTablesCommandOutput),
             })
             const node = new RedshiftSchemaNode('testSchema', redshiftClient, connectionParams)
             const childNodes = await node.getChildren()
@@ -57,7 +56,7 @@ describe('RedshiftSchemaNode', function () {
                     Promise.resolve({
                         Tables: [{ name: 'test' }, { name: 'test_pkey' }],
                         NextToken: 'next',
-                    } as ListTablesResponse),
+                    } as ListTablesCommandOutput),
             })
             const node = new RedshiftSchemaNode('testSchema', redshiftClient, connectionParams)
             const childNodes = await node.getChildren()

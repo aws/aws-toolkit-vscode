@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
-import { IAM } from 'aws-sdk'
+import { Role } from "@aws-sdk/client-iam";
 import { DefaultIamClient } from '../../../../shared/clients/iamClient'
 import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../testUtils'
 import { createRolePrompter } from '../../../../shared/ui/common/roles'
@@ -17,9 +17,9 @@ import { getOpenExternalStub } from '../../../globalSetup.test'
 const helpUri = vscode.Uri.parse('https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles.html')
 
 describe('createRolePrompter', function () {
-    let roles: IAM.Role[]
-    let newRole: IAM.Role
-    let tester: QuickPickPrompterTester<IAM.Role>
+    let roles: Role[]
+    let newRole: Role
+    let tester: QuickPickPrompterTester<Role>
 
     beforeEach(function () {
         roles = [

@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
-import { Schemas } from 'aws-sdk'
+import { SchemaSummary, SearchSchemaSummary } from "@aws-sdk/client-schemas";
 import * as vscode from 'vscode'
 import { downloadSchemaItemCode } from '../commands/downloadSchemaItemCode'
 import { RegistryItemNode } from '../explorer/registryItemNode'
@@ -93,7 +93,7 @@ export class SearchSchemasWebview extends VueWebview {
     }
 
     public async downloadCodeBindings(summary: SchemaVersionedSummary) {
-        const schemaItem: Schemas.SchemaSummary = {
+        const schemaItem: SchemaSummary = {
             SchemaName: getSchemaNameFromTitle(summary.Title),
         }
         const schemaItemNode = new SchemaItemNode(schemaItem, this.client, summary.RegistryName)
@@ -226,7 +226,7 @@ export async function getSearchResults(
     return results
 }
 
-export function getSchemaVersionedSummary(searchSummary: Schemas.SearchSchemaSummary[], prefix: string) {
+export function getSchemaVersionedSummary(searchSummary: SearchSchemaSummary[], prefix: string) {
     const results = searchSummary.map(searchSchemaSummary => ({
         RegistryName: searchSchemaSummary.RegistryName!,
         Title: prefix.concat(searchSchemaSummary.SchemaName!),

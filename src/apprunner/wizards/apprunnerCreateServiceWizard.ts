@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AppRunner } from 'aws-sdk'
+
+
+import { CreateServiceCommandInput, InstanceConfiguration, SourceConfiguration } from "@aws-sdk/client-apprunner";
 import * as nls from 'vscode-nls'
 import { createCommonButtons, QuickInputToggleButton } from '../../shared/ui/buttons'
 import * as input from '../../shared/ui/inputPrompter'
@@ -54,14 +56,14 @@ const validateName = (name: string) => {
     return undefined
 }
 
-function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
+function createInstanceStep(): Prompter<InstanceConfiguration> {
     const enumerations = [
         [1, 2],
         [1, 3],
         [2, 4],
     ]
 
-    const items: picker.DataQuickPickItem<AppRunner.InstanceConfiguration>[] = enumerations.map(e => ({
+    const items: picker.DataQuickPickItem<InstanceConfiguration>[] = enumerations.map(e => ({
         label: `${e[0]} vCPUs, ${e[1]} GBs Memory`,
         data: { Cpu: `${e[0]} vCPU`, Memory: `${e[1]} GB` },
     }))
@@ -74,10 +76,10 @@ function createInstanceStep(): Prompter<AppRunner.InstanceConfiguration> {
 
 function createSourcePrompter(
     autoDeployButton: QuickInputToggleButton
-): Prompter<AppRunner.CreateServiceRequest['SourceConfiguration']> {
+): Prompter<CreateServiceCommandInput['SourceConfiguration']> {
     const ecrPath = {
         label: 'ECR',
-        data: { ImageRepository: {} } as AppRunner.SourceConfiguration,
+        data: { ImageRepository: {} } as SourceConfiguration,
         detail: localize(
             'AWS.apprunner.createService.ecr.detail',
             'Create a service from a public or private Elastic Container Registry repository'
@@ -86,7 +88,7 @@ function createSourcePrompter(
 
     const repositoryPath = {
         label: 'Repository',
-        data: { CodeRepository: {} } as AppRunner.SourceConfiguration,
+        data: { CodeRepository: {} } as SourceConfiguration,
         detail: localize('AWS.apprunner.createService.repository.detail', 'Create a service from a GitHub repository'),
     }
 
@@ -96,11 +98,11 @@ function createSourcePrompter(
     })
 }
 
-export class CreateAppRunnerServiceWizard extends Wizard<AppRunner.CreateServiceRequest> {
+export class CreateAppRunnerServiceWizard extends Wizard<CreateServiceCommandInput> {
     public constructor(
         region: string,
-        initState: WizardState<AppRunner.CreateServiceRequest> = {},
-        implicitState: WizardState<AppRunner.CreateServiceRequest> = {},
+        initState: WizardState<CreateServiceCommandInput> = {},
+        implicitState: WizardState<CreateServiceCommandInput> = {},
         clients = {
             iam: new DefaultIamClient(region),
             ecr: new DefaultEcrClient(region),

@@ -6,7 +6,7 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { Schemas } from 'aws-sdk'
+import { RegistrySummary } from "@aws-sdk/client-schemas";
 import * as os from 'os'
 import * as vscode from 'vscode'
 
@@ -24,7 +24,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
     private readonly schemaNodes: Map<string, SchemaItemNode>
     public override readonly regionCode: string = this.client.regionCode
 
-    public constructor(private registryItemOutput: Schemas.RegistrySummary, private readonly client: SchemaClient) {
+    public constructor(private registryItemOutput: RegistrySummary, private readonly client: SchemaClient) {
         super('', vscode.TreeItemCollapsibleState.Collapsed)
 
         this.update(registryItemOutput)
@@ -53,7 +53,7 @@ export class RegistryItemNode extends AWSTreeNodeBase {
         })
     }
 
-    public update(registryItemOutput: Schemas.RegistrySummary): void {
+    public update(registryItemOutput: RegistrySummary): void {
         this.registryItemOutput = registryItemOutput
         this.label = `${this.registryName}`
         let registryArn = ''

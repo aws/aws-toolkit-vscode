@@ -4,7 +4,7 @@
  */
 
 import { createWizardTester, WizardTester } from '../../../test/shared/wizards/wizardTestUtils'
-import { AppRunner } from 'aws-sdk'
+import { CreateServiceCommandInput } from "@aws-sdk/client-apprunner";
 import { CreateAppRunnerServiceWizard } from '../../../apprunner/wizards/apprunnerCreateServiceWizard'
 import { stub } from '../../utilities/stubber'
 import { DefaultIamClient } from '../../../shared/clients/iamClient'
@@ -12,7 +12,7 @@ import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { DefaultAppRunnerClient } from '../../../shared/clients/apprunnerClient'
 
 describe('CreateServiceWizard', function () {
-    let tester: WizardTester<AppRunner.CreateServiceRequest>
+    let tester: WizardTester<CreateServiceCommandInput>
 
     beforeEach(function () {
         const regionCode = 'us-east-1'

@@ -5,12 +5,12 @@
 
 import AsyncLock from 'async-lock'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
-import { AppRunner } from 'aws-sdk'
-import { AppRunnerNode } from './apprunnerNode'
+import { OperationSummary, Service, ServiceSummary, UpdateServiceCommandInput } from "@aws-sdk/client-apprunner";
+import { LogGroup } from "@aws-sdk/client-cloudwatch-logs";
 
+import { AppRunnerNode } from './apprunnerNode'
 import { toArrayAsync, toMap } from '../../shared/utilities/collectionUtils'
 import { CloudWatchLogsBase } from '../../cloudWatchLogs/explorer/cloudWatchLogsNode'
-import { CloudWatchLogs } from 'aws-sdk'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 
 import * as nls from 'vscode-nls'
@@ -41,8 +41,8 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     constructor(
         public readonly parent: AppRunnerNode,
         private readonly client: AppRunnerClient,
-        private _info: AppRunner.Service,
-        private currentOperation: AppRunner.OperationSummary & { Type?: ServiceOperation } = {},
+        private _info: Service,
+        private currentOperation: OperationSummary & { Type?: ServiceOperation } = {},
         cloudwatchClient = new DefaultCloudWatchLogsClient(client.regionCode)
     ) {
         super('App Runner Service', parent.regionCode, cloudwatchClient)
@@ -55,7 +55,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.update(_info)
     }
 
-    public get info(): Readonly<AppRunner.Service> {
+    public get info(): Readonly<Service> {
         return this._info
     }
 
@@ -63,7 +63,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         return `https://${this._info.ServiceUrl}`
     }
 
-    protected async getLogGroups(): Promise<Map<string, CloudWatchLogs.LogGroup>> {
+    protected async getLogGroups(): Promise<Map<string, LogGroup>> {
         return toMap(
             await toArrayAsync(
                 this.cloudwatchClient.describeLogGroups({
@@ -81,7 +81,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.label = `${this._info.ServiceName} [${displayStatus}]`
     }
 
-    public update(info: AppRunner.ServiceSummary | AppRunner.Service): void {
+    public update(info: ServiceSummary | Service): void {
         // update can be called multiple times during an event loop
         // this would rarely cause the node's status to appear as 'Operation in progress'
         this.lock.acquire(this._info.ServiceId, done => {
@@ -131,7 +131,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
             })
     }
 
-    private updateInfo(info: AppRunner.ServiceSummary | AppRunner.Service): void {
+    private updateInfo(info: ServiceSummary | Service): void {
         if (info.Status === 'OPERATION_IN_PROGRESS' && this.currentOperation.Type === undefined) {
             // Asynchronous since it is not currently possible for race-conditions to occur with updating operations
             this.updateOperation()
@@ -157,7 +157,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.setOperation(resp.Service, resp.OperationId, 'DELETE_SERVICE')
     }
 
-    public async updateService(request: AppRunner.UpdateServiceRequest): Promise<void> {
+    public async updateService(request: UpdateServiceCommandInput): Promise<void> {
         const resp = await this.client.updateService({ ...request, ServiceArn: this._info.ServiceArn })
         this.setOperation(resp.Service, resp.OperationId, 'UPDATE_SERVICE')
     }
@@ -167,13 +167,13 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
         this.setOperation(this._info, resp.OperationId, 'START_DEPLOYMENT')
     }
 
-    public setOperation(info: AppRunner.Service, id?: string, type?: ServiceOperation): void {
+    public setOperation(info: Service, id?: string, type?: ServiceOperation): void {
         this.currentOperation.Id = id
         this.currentOperation.Type = type
         this.update(info)
     }
 
-    public async describe(): Promise<AppRunner.Service> {
+    public async describe(): Promise<Service> {
         const resp = await this.client.describeService({ ServiceArn: this.arn })
         this.update(resp.Service)
         return this._info

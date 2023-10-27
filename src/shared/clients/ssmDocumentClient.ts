@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+
+
+import { DescribeDocumentCommandOutput, DocumentIdentifier, SSM } from "@aws-sdk/client-ssm";
 import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -24,7 +26,7 @@ export class DefaultSsmDocumentClient {
 
     public async *listDocuments(
         request: SSM.Types.ListDocumentsRequest = {}
-    ): AsyncIterableIterator<SSM.DocumentIdentifier> {
+    ): AsyncIterableIterator<DocumentIdentifier> {
         const client = await this.createSdkClient()
 
         do {
@@ -56,7 +58,7 @@ export class DefaultSsmDocumentClient {
         } while (request.NextToken)
     }
 
-    public async describeDocument(documentName: string, documentVersion?: string): Promise<SSM.DescribeDocumentResult> {
+    public async describeDocument(documentName: string, documentVersion?: string): Promise<DescribeDocumentCommandOutput> {
         const client = await this.createSdkClient()
 
         const request: SSM.Types.DescribeDocumentRequest = {

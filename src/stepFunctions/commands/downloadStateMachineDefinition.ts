@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 import * as os from 'os'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
+import { DescribeStateMachineCommandOutput } from "@aws-sdk/client-sfn";
 import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -29,7 +29,7 @@ export async function downloadStateMachineDefinition(params: {
     const stateMachineName = params.stateMachineNode.details.name
     try {
         const client: StepFunctionsClient = new DefaultStepFunctionsClient(params.stateMachineNode.regionCode)
-        const stateMachineDetails: StepFunctions.DescribeStateMachineOutput = await client.getStateMachineDetails(
+        const stateMachineDetails: DescribeStateMachineCommandOutput = await client.getStateMachineDetails(
             params.stateMachineNode.details.stateMachineArn
         )
 

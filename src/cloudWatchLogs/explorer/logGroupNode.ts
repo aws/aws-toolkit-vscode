@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudWatchLogs } from 'aws-sdk'
+
+
+import { LogGroup } from "@aws-sdk/client-cloudwatch-logs";
 import * as os from 'os'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
@@ -13,7 +15,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 export const contextValueCloudwatchLog = 'awsCloudWatchLogNode'
 
 export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
-    public constructor(public override readonly regionCode: string, public logGroup: CloudWatchLogs.LogGroup) {
+    public constructor(public override readonly regionCode: string, public logGroup: LogGroup) {
         super('')
         this.update(logGroup)
         this.iconPath = getIcon('aws-cloudwatch-log-group')
@@ -25,7 +27,7 @@ export class LogGroupNode extends AWSTreeNodeBase implements AWSResourceNode {
         }
     }
 
-    public update(logGroup: CloudWatchLogs.LogGroup): void {
+    public update(logGroup: LogGroup): void {
         this.logGroup = logGroup
         this.label = this.logGroup.logGroupName || ''
         this.tooltip = `${this.logGroup.logGroupName}${os.EOL}${this.logGroup.arn}`

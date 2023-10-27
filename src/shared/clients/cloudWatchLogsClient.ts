@@ -3,7 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudWatchLogs } from 'aws-sdk'
+
+
+import {
+    CloudWatchLogs,
+    DescribeLogGroupsCommandInput,
+    DescribeLogGroupsCommandOutput,
+    DescribeLogStreamsCommandInput,
+    DescribeLogStreamsCommandOutput,
+    FilterLogEventsCommandInput,
+    FilterLogEventsCommandOutput,
+    GetLogEventsCommandInput,
+    GetLogEventsCommandOutput,
+    LogGroup,
+} from "@aws-sdk/client-cloudwatch-logs";
+
 import globals from '../extensionGlobals'
 import { ClassToInterfaceType } from '../utilities/tsUtils'
 
@@ -12,8 +26,8 @@ export class DefaultCloudWatchLogsClient {
     public constructor(public readonly regionCode: string) {}
 
     public async *describeLogGroups(
-        request: CloudWatchLogs.DescribeLogGroupsRequest = {}
-    ): AsyncIterableIterator<CloudWatchLogs.LogGroup> {
+        request: DescribeLogGroupsCommandInput = {}
+    ): AsyncIterableIterator<LogGroup> {
         const sdkClient = await this.createSdkClient()
         do {
             const response = await this.invokeDescribeLogGroups(request, sdkClient)
@@ -25,34 +39,34 @@ export class DefaultCloudWatchLogsClient {
     }
 
     public async describeLogStreams(
-        request: CloudWatchLogs.DescribeLogStreamsRequest
-    ): Promise<CloudWatchLogs.DescribeLogStreamsResponse> {
+        request: DescribeLogStreamsCommandInput
+    ): Promise<DescribeLogStreamsCommandOutput> {
         const sdkClient = await this.createSdkClient()
 
-        return sdkClient.describeLogStreams(request).promise()
+        return sdkClient.describeLogStreams(request);
     }
 
     public async getLogEvents(
-        request: CloudWatchLogs.GetLogEventsRequest
-    ): Promise<CloudWatchLogs.GetLogEventsResponse> {
+        request: GetLogEventsCommandInput
+    ): Promise<GetLogEventsCommandOutput> {
         const sdkClient = await this.createSdkClient()
 
-        return sdkClient.getLogEvents(request).promise()
+        return sdkClient.getLogEvents(request);
     }
 
     public async filterLogEvents(
-        request: CloudWatchLogs.FilterLogEventsRequest
-    ): Promise<CloudWatchLogs.FilterLogEventsResponse> {
+        request: FilterLogEventsCommandInput
+    ): Promise<FilterLogEventsCommandOutput> {
         const sdkClient = await this.createSdkClient()
 
-        return sdkClient.filterLogEvents(request).promise()
+        return sdkClient.filterLogEvents(request);
     }
 
     protected async invokeDescribeLogGroups(
-        request: CloudWatchLogs.DescribeLogGroupsRequest,
+        request: DescribeLogGroupsCommandInput,
         sdkClient: CloudWatchLogs
-    ): Promise<CloudWatchLogs.DescribeLogGroupsResponse> {
-        return sdkClient.describeLogGroups(request).promise()
+    ): Promise<DescribeLogGroupsCommandOutput> {
+        return sdkClient.describeLogGroups(request);
     }
 
     protected async createSdkClient(): Promise<CloudWatchLogs> {

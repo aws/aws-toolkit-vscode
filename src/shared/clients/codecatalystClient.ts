@@ -541,7 +541,7 @@ class CodeCatalystClientInternal {
 
         // The git extension skips over credential providers if the username is included in the authority
         const uri = Uri.parse(r.https)
-        return uri.with({ authority: uri.authority.replace(/.*@/, '') }).toString()
+        return uri.with({ authority: uri.authority.replace(/.*@/, '') }).toString();
     }
 
     public async createDevEnvironment(args: CodeCatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {

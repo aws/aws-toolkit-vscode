@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CloudWatchLogs } from 'aws-sdk'
+import { FilteredLogEvent, FilterLogEventsCommandInput, OutputLogEvent } from "@aws-sdk/client-cloudwatch-logs";
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, msgKey } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { waitTimeout } from '../../shared/utilities/timeoutUtils'
@@ -214,7 +214,7 @@ export async function filterLogEventsFromUri(
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
 
-    const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
+    const cwlParameters: FilterLogEventsCommandInput = {
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
         nextToken,
@@ -296,9 +296,9 @@ export type CloudWatchLogsParameters = {
 }
 
 export type CloudWatchLogsResponse = {
-    events: CloudWatchLogs.FilteredLogEvents
-    nextForwardToken?: CloudWatchLogs.NextToken
-    nextBackwardToken?: CloudWatchLogs.NextToken
+    events: Array<FilteredLogEvent>
+    nextForwardToken?: string
+    nextBackwardToken?: string
 }
 
 export type CloudWatchLogsAction = (
@@ -307,7 +307,7 @@ export type CloudWatchLogsAction = (
     nextToken?: string
 ) => Promise<CloudWatchLogsResponse>
 
-export type CloudWatchLogsEvent = CloudWatchLogs.OutputLogEvent & {
+export type CloudWatchLogsEvent = OutputLogEvent & {
     logStreamName?: string
     eventId?: string
 }
@@ -318,10 +318,10 @@ export class CloudWatchLogsData {
     logGroupInfo!: CloudWatchLogsGroupInfo
     retrieveLogsFunction!: CloudWatchLogsAction
     next?: {
-        token: CloudWatchLogs.NextToken
+        token: string
     }
     previous?: {
-        token: CloudWatchLogs.NextToken
+        token: string
     }
     busy: boolean = false
 }

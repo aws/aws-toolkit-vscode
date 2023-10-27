@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as os from 'os'
 import * as sinon from 'sinon'
-import { Schemas } from 'aws-sdk'
+import { RegistrySummary, SchemaSummary } from "@aws-sdk/client-schemas";
 import { RegistryItemNode } from '../../../eventSchemas/explorer/registryItemNode'
 import { SchemaItemNode } from '../../../eventSchemas/explorer/schemaItemNode'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
@@ -21,7 +21,7 @@ import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { getIcon } from '../../../shared/icons'
 import { stub } from '../../utilities/stubber'
 
-function createSchemaClient(data?: { schemas?: Schemas.SchemaSummary[]; registries?: Schemas.RegistrySummary[] }) {
+function createSchemaClient(data?: { schemas?: SchemaSummary[]; registries?: RegistrySummary[] }) {
     const client = stub(DefaultSchemaClient, { regionCode: 'code' })
     client.listSchemas.callsFake(() => asyncGenerator(data?.schemas ?? []))
     client.listRegistries.callsFake(() => asyncGenerator(data?.registries ?? []))
@@ -30,7 +30,7 @@ function createSchemaClient(data?: { schemas?: Schemas.SchemaSummary[]; registri
 }
 
 describe('RegistryItemNode', function () {
-    let fakeRegistry: Schemas.RegistrySummary
+    let fakeRegistry: RegistrySummary
 
     before(function () {
         fakeRegistry = {
@@ -58,17 +58,17 @@ describe('RegistryItemNode', function () {
     })
 
     it('returns schemas that belong to Registry', async function () {
-        const schema1Item: Schemas.SchemaSummary = {
+        const schema1Item: SchemaSummary = {
             SchemaArn: 'arn:schema1',
             SchemaName: 'schema1Name',
         }
 
-        const schema2Item: Schemas.SchemaSummary = {
+        const schema2Item: SchemaSummary = {
             SchemaArn: 'arn:schema1',
             SchemaName: 'schema2Name',
         }
 
-        const schema3Item: Schemas.SchemaSummary = {
+        const schema3Item: SchemaSummary = {
             SchemaArn: 'arn:schema1',
             SchemaName: 'schema3Name',
         }

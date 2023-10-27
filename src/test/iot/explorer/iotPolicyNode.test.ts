@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { PolicyVersion } from "@aws-sdk/client-iot";
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
@@ -18,12 +18,12 @@ describe('IotPolicyNode', function () {
     let iot: IotClient
     const policyName = 'policy'
     const expectedPolicy: IotPolicy = { name: policyName, arn: 'arn' }
-    const policyVersion: Iot.PolicyVersion = { versionId: 'V1', isDefaultVersion: true }
+    const policyVersion: PolicyVersion = { versionId: 'V1', isDefaultVersion: true }
 
     function assertPolicyVersionNode(
         node: AWSTreeNodeBase,
         expectedPolicy: IotPolicy,
-        expectedVersion: Iot.PolicyVersion
+        expectedVersion: PolicyVersion
     ): void {
         assert.ok(node instanceof IotPolicyVersionNode, `Node ${node} should be a Policy Version Node`)
         assert.deepStrictEqual((node as IotPolicyVersionNode).version, expectedVersion)

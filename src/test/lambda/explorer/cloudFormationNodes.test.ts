@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { CloudFormation } from 'aws-sdk'
+import { StackResource } from "@aws-sdk/client-cloudformation";
 import * as os from 'os'
 import {
     CloudFormationNode,
@@ -72,7 +72,7 @@ describe('CloudFormationStackNode', function () {
         return new CloudFormationStackNode(parentNode, regionCode, summary, lambdaClient, cloudFormationClient)
     }
 
-    function generateStackResources(...functionNames: string[]): CloudFormation.StackResource[] {
+    function generateStackResources(...functionNames: string[]): StackResource[] {
         return functionNames.map(name => ({
             PhysicalResourceId: name,
             LogicalResourceId: name,

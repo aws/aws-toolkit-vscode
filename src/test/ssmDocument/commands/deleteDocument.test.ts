@@ -10,7 +10,6 @@ import { deleteDocument } from '../../../ssmDocument/commands/deleteDocument'
 import { mock } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { RegistryItemNode } from '../../../ssmDocument/explorer/registryItemNode'
-import { SSM } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteDocument', async function () {

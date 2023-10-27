@@ -5,7 +5,7 @@
 
 import sinon = require('sinon')
 import { RedshiftDatabaseNode } from '../../../redshift/explorer/redshiftDatabaseNode'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftData } from "@aws-sdk/client-redshift-data";
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../../../redshift/models/models'
 import assert = require('assert')

@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+
+
+import {
+    CreateDocumentCommandInput,
+    CreateDocumentCommandOutput,
+    UpdateDocumentCommandInput,
+    UpdateDocumentCommandOutput,
+} from "@aws-sdk/client-ssm";
 
 import assert from 'assert'
 import * as sinon from 'sinon'
@@ -24,15 +31,15 @@ import { SeverityLevel } from '../../shared/vscode/message'
 describe('publishDocument', async function () {
     let wizardResponse: PublishSSMDocumentWizardResponse
     let textDocument: vscode.TextDocument
-    let result: SSM.CreateDocumentResult | SSM.UpdateDocumentResult
+    let result: CreateDocumentCommandOutput | UpdateDocumentCommandOutput
 
-    const fakeCreateRequest: SSM.CreateDocumentRequest = {
+    const fakeCreateRequest: CreateDocumentCommandInput = {
         Content: 'foo',
         DocumentFormat: 'JSON',
         DocumentType: 'Automation',
         Name: 'test',
     }
-    const fakeUpdateRequest: SSM.UpdateDocumentRequest = {
+    const fakeUpdateRequest: UpdateDocumentCommandInput = {
         Content: 'foo',
         DocumentFormat: 'JSON',
         DocumentVersion: '$LATEST',

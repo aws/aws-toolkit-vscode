@@ -3,7 +3,28 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Schemas } from 'aws-sdk'
+
+
+import {
+    DescribeCodeBindingCommandOutput,
+    DescribeSchemaCommandOutput,
+    GetCodeBindingSourceCommandOutput,
+    ListRegistriesCommandInput,
+    ListRegistriesCommandOutput,
+    ListSchemasCommandInput,
+    ListSchemasCommandOutput,
+    ListSchemaVersionsCommandInput,
+    ListSchemaVersionsCommandOutput,
+    PutCodeBindingCommandOutput,
+    RegistrySummary,
+    Schemas,
+    SchemaSummary,
+    SchemaVersionSummary,
+    SearchSchemasCommandInput,
+    SearchSchemasCommandOutput,
+    SearchSchemaSummary,
+} from "@aws-sdk/client-schemas";
+
 import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -12,13 +33,13 @@ export type SchemaClient = ClassToInterfaceType<DefaultSchemaClient>
 export class DefaultSchemaClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async *listRegistries(): AsyncIterableIterator<Schemas.RegistrySummary> {
+    public async *listRegistries(): AsyncIterableIterator<RegistrySummary> {
         const client = await this.createSdkClient()
 
-        const request: Schemas.ListRegistriesRequest = {}
+        const request: ListRegistriesCommandInput = {}
 
         do {
-            const response: Schemas.ListRegistriesResponse = await client.listRegistries(request).promise()
+            const response: ListRegistriesCommandOutput = await client.listRegistries(request).promise()
 
             if (response.Registries) {
                 yield* response.Registries
@@ -28,15 +49,15 @@ export class DefaultSchemaClient {
         } while (request.NextToken)
     }
 
-    public async *listSchemas(registryName: string): AsyncIterableIterator<Schemas.SchemaSummary> {
+    public async *listSchemas(registryName: string): AsyncIterableIterator<SchemaSummary> {
         const client = await this.createSdkClient()
 
-        const request: Schemas.ListSchemasRequest = {
+        const request: ListSchemasCommandInput = {
             RegistryName: registryName,
         }
 
         do {
-            const response: Schemas.ListSchemasResponse = await client.listSchemas(request).promise()
+            const response: ListSchemasCommandOutput = await client.listSchemas(request).promise()
 
             if (response.Schemas) {
                 yield* response.Schemas
@@ -50,7 +71,7 @@ export class DefaultSchemaClient {
         registryName: string,
         schemaName: string,
         schemaVersion?: string
-    ): Promise<Schemas.DescribeSchemaResponse> {
+    ): Promise<DescribeSchemaCommandOutput> {
         const client = await this.createSdkClient()
 
         return await client
@@ -65,16 +86,16 @@ export class DefaultSchemaClient {
     public async *listSchemaVersions(
         registryName: string,
         schemaName: string
-    ): AsyncIterableIterator<Schemas.SchemaVersionSummary> {
+    ): AsyncIterableIterator<SchemaVersionSummary> {
         const client = await this.createSdkClient()
 
-        const request: Schemas.ListSchemaVersionsRequest = {
+        const request: ListSchemaVersionsCommandInput = {
             RegistryName: registryName,
             SchemaName: schemaName,
         }
 
         do {
-            const response: Schemas.ListSchemaVersionsResponse = await client.listSchemaVersions(request).promise()
+            const response: ListSchemaVersionsCommandOutput = await client.listSchemaVersions(request).promise()
 
             if (response.SchemaVersions) {
                 yield* response.SchemaVersions
@@ -87,16 +108,16 @@ export class DefaultSchemaClient {
     public async *searchSchemas(
         keywords: string,
         registryName: string
-    ): AsyncIterableIterator<Schemas.SearchSchemaSummary> {
+    ): AsyncIterableIterator<SearchSchemaSummary> {
         const client = await this.createSdkClient()
 
-        const request: Schemas.SearchSchemasRequest = {
+        const request: SearchSchemasCommandInput = {
             Keywords: keywords,
             RegistryName: registryName,
         }
 
         do {
-            const response: Schemas.SearchSchemasResponse = await client.searchSchemas(request).promise()
+            const response: SearchSchemasCommandOutput = await client.searchSchemas(request).promise()
 
             if (response.Schemas) {
                 yield* response.Schemas
@@ -111,7 +132,7 @@ export class DefaultSchemaClient {
         registryName: string,
         schemaName: string,
         schemaVersion: string
-    ): Promise<Schemas.GetCodeBindingSourceResponse> {
+    ): Promise<GetCodeBindingSourceCommandOutput> {
         const client = await this.createSdkClient()
 
         return await client
@@ -129,7 +150,7 @@ export class DefaultSchemaClient {
         registryName: string,
         schemaName: string,
         schemaVersion: string
-    ): Promise<Schemas.PutCodeBindingResponse> {
+    ): Promise<PutCodeBindingCommandOutput> {
         const client = await this.createSdkClient()
 
         return await client
@@ -146,7 +167,7 @@ export class DefaultSchemaClient {
         registryName: string,
         schemaName: string,
         schemaVersion: string
-    ): Promise<Schemas.DescribeCodeBindingResponse> {
+    ): Promise<DescribeCodeBindingCommandOutput> {
         const client = await this.createSdkClient()
 
         return await client

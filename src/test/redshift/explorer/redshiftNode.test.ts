@@ -6,11 +6,11 @@
 import sinon = require('sinon')
 import { RedshiftNode } from '../../../redshift/explorer/redshiftNode'
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { AWSError, Redshift, RedshiftServerless, Request } from 'aws-sdk'
+import { AWSError, Request } from 'aws-sdk';
+import { Cluster, DescribeClustersCommandOutput, Redshift } from "@aws-sdk/client-redshift";
+import { ListWorkgroupsCommandOutput, RedshiftServerless, Workgroup } from "@aws-sdk/client-redshift-serverless";
 import assert = require('assert')
 import { RedshiftWarehouseNode } from '../../../redshift/explorer/redshiftWarehouseNode'
-import { ClusterList, ClustersMessage } from 'aws-sdk/clients/redshift'
-import { ListWorkgroupsResponse, WorkgroupList } from 'aws-sdk/clients/redshiftserverless'
 import { RedshiftWarehouseType } from '../../../redshift/models/models'
 import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
@@ -21,22 +21,22 @@ function success<T>(output?: T): Request<T, AWSError> {
     } as Request<any, AWSError>
 }
 
-function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage {
+function getExpectedProvisionedResponse(withNextToken: boolean): DescribeClustersCommandOutput {
     const response = {
         Clusters: [
             { ClusterNamespaceArn: 'testArn', ClusterIdentifier: 'testId', ClusterAvailabilityStatus: 'available' },
-        ] as ClusterList,
-    } as ClustersMessage
+        ] as Array<Cluster>,
+    } as DescribeClustersCommandOutput
     if (withNextToken) {
         response.Marker = 'next'
     }
     return response
 }
 
-function getExpectedServerlessResponse(withNextToken: boolean): ListWorkgroupsResponse {
+function getExpectedServerlessResponse(withNextToken: boolean): ListWorkgroupsCommandOutput {
     const response = {
-        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'available' }] as WorkgroupList,
-    } as ListWorkgroupsResponse
+        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'available' }] as Array<Workgroup>,
+    } as ListWorkgroupsCommandOutput
     if (withNextToken) {
         response.nextToken = 'next'
     }

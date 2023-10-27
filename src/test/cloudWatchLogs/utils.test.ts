@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { CloudWatchLogs } from 'aws-sdk'
 import * as vscode from 'vscode'
 import { createURIFromArgs, parseCloudWatchLogsUri, uriToKey } from '../../cloudWatchLogs/cloudWatchLogsUtils'
 import {
@@ -26,7 +25,7 @@ export const backwardToken = 'backward'
 export async function returnPaginatedEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
-    nextToken?: CloudWatchLogs.NextToken
+    nextToken?: string
 ) {
     switch (nextToken) {
         case forwardToken:
@@ -45,7 +44,7 @@ export async function returnPaginatedEvents(
 export async function returnNonEmptyPaginatedEvents(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
-    nextToken?: CloudWatchLogs.NextToken
+    nextToken?: string
 ) {
     const result = await returnPaginatedEvents(logGroupInfo, parameters, nextToken)
     if (result.events.length === 0) {

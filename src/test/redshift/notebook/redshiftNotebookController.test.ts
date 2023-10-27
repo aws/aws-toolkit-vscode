@@ -8,7 +8,7 @@ import { RedshiftNotebookController } from '../../../redshift/notebook/redshiftN
 import sinon = require('sinon')
 import assert = require('assert')
 import { DefaultRedshiftClient } from '../../../shared/clients/redshiftClient'
-import { RedshiftData } from 'aws-sdk'
+import { RedshiftData } from "@aws-sdk/client-redshift-data";
 
 describe('RedshiftNotebookController', () => {
     const mockRedshiftData = <RedshiftData>{}

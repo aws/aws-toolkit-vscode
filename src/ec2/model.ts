@@ -4,8 +4,8 @@
  */
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { Session } from 'aws-sdk/clients/ssm'
-import { IAM, SSM } from 'aws-sdk'
+import { Session, StartSessionCommandOutput } from "@aws-sdk/client-ssm";
+import { Role } from "@aws-sdk/client-iam";
 import { Ec2Selection } from './prompter'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -61,7 +61,7 @@ export class Ec2ConnectionManager {
         return new DefaultIamClient(this.regionCode)
     }
 
-    public async getAttachedIamRole(instanceId: string): Promise<IAM.Role | undefined> {
+    public async getAttachedIamRole(instanceId: string): Promise<Role | undefined> {
         const IamInstanceProfile = await this.ec2Client.getAttachedIamInstanceProfile(instanceId)
         if (IamInstanceProfile && IamInstanceProfile.Arn) {
             const IamRole = await this.iamClient.getIAMRoleFromInstanceProfile(IamInstanceProfile.Arn)
@@ -265,7 +265,7 @@ export class Ec2ConnectionManager {
     }
 }
 
-function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string, session: SSM.StartSessionResponse): NodeJS.ProcessEnv {
+function getEc2SsmEnv(selection: Ec2Selection, ssmPath: string, session: StartSessionCommandOutput): NodeJS.ProcessEnv {
     return Object.assign(
         {
             AWS_REGION: selection.region,

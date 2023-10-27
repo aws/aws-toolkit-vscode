@@ -4,7 +4,52 @@
  */
 
 import assert from 'assert'
-import { AWSError, Request, Iot } from 'aws-sdk'
+import { AWSError, Request } from 'aws-sdk';
+
+import {
+    AttachPolicyCommandInput,
+    AttachThingPrincipalCommandInput,
+    CreateKeysAndCertificateCommandInput,
+    CreateKeysAndCertificateCommandOutput,
+    CreatePolicyCommandInput,
+    CreatePolicyCommandOutput,
+    CreatePolicyVersionCommandInput,
+    CreatePolicyVersionCommandOutput,
+    CreateThingCommandOutput,
+    DeleteCertificateCommandInput,
+    DeletePolicyCommandInput,
+    DeletePolicyVersionCommandInput,
+    DeleteThingCommandInput,
+    DeleteThingCommandOutput,
+    DescribeCertificateCommandInput,
+    DescribeCertificateCommandOutput,
+    DescribeEndpointCommandInput,
+    DescribeEndpointCommandOutput,
+    DetachPolicyCommandInput,
+    DetachThingPrincipalCommandInput,
+    GetPolicyVersionCommandInput,
+    GetPolicyVersionCommandOutput,
+    IoT,
+    ListCertificatesCommandInput,
+    ListCertificatesCommandOutput,
+    ListPoliciesCommandInput,
+    ListPoliciesCommandOutput,
+    ListPolicyVersionsCommandInput,
+    ListPolicyVersionsCommandOutput,
+    ListPrincipalPoliciesCommandInput,
+    ListPrincipalThingsCommandInput,
+    ListPrincipalThingsCommandOutput,
+    ListTargetsForPolicyCommandInput,
+    ListTargetsForPolicyCommandOutput,
+    ListThingPrincipalsCommandInput,
+    ListThingPrincipalsCommandOutput,
+    ListThingsCommandInput,
+    ListThingsCommandOutput,
+    PolicyVersion,
+    SetDefaultPolicyVersionCommandInput,
+    UpdateCertificateCommandInput,
+} from "@aws-sdk/client-iot";
+
 import { anything, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import { DefaultIotClient, ListThingCertificatesResponse } from '../../../shared/clients/iotClient'
 
@@ -52,7 +97,7 @@ describe('DefaultIotClient', function () {
     /* Functions that create or retrieve resources. */
 
     describe('createThing', function () {
-        const expectedResponse: Iot.CreateThingResponse = { thingName: thingName, thingArn: 'arn' }
+        const expectedResponse: CreateThingCommandOutput = { thingName: thingName, thingArn: 'arn' }
         it('creates a thing', async function () {
             when(
                 mockIot.createThing(
@@ -76,8 +121,8 @@ describe('DefaultIotClient', function () {
 
     describe('createCertificateAndKeys', function () {
         const certificateId = 'cert1'
-        const input: Iot.CreateKeysAndCertificateRequest = { setAsActive: undefined }
-        const expectedResponse: Iot.CreateKeysAndCertificateResponse = {
+        const input: CreateKeysAndCertificateCommandInput = { setAsActive: undefined }
+        const expectedResponse: CreateKeysAndCertificateCommandOutput = {
             certificateId,
             certificateArn: 'arn',
             certificatePem: 'pem',
@@ -100,9 +145,9 @@ describe('DefaultIotClient', function () {
     })
 
     describe('getEndpoint', function () {
-        const input: Iot.DescribeEndpointRequest = { endpointType: 'iot:Data-ATS' }
+        const input: DescribeEndpointCommandInput = { endpointType: 'iot:Data-ATS' }
         const endpointAddress = 'address'
-        const describeResponse: Iot.DescribeEndpointResponse = { endpointAddress }
+        const describeResponse: DescribeEndpointCommandOutput = { endpointAddress }
 
         it('gets endpoint', async function () {
             when(mockIot.describeEndpoint(deepEqual(input))).thenReturn(success(describeResponse))
@@ -120,8 +165,8 @@ describe('DefaultIotClient', function () {
     })
 
     describe('getPolicyVersion', function () {
-        const input: Iot.GetPolicyVersionRequest = { policyName, policyVersionId: '1' }
-        const expectedResponse: Iot.GetPolicyVersionResponse = {
+        const input: GetPolicyVersionCommandInput = { policyName, policyVersionId: '1' }
+        const expectedResponse: GetPolicyVersionCommandOutput = {
             policyName,
             policyDocument,
             policyArn: 'arn1',
@@ -146,7 +191,7 @@ describe('DefaultIotClient', function () {
     /* Functions that return void .*/
 
     describe('deleteThing', function () {
-        const input: Iot.DeleteThingRequest = { thingName }
+        const input: DeleteThingCommandInput = { thingName }
 
         it('deletes a thing', async function () {
             when(
@@ -155,7 +200,7 @@ describe('DefaultIotClient', function () {
                         thingName: thingName,
                     })
                 )
-            ).thenReturn(success({} as Iot.DeleteThingResponse))
+            ).thenReturn(success({} as DeleteThingCommandOutput))
 
             await createClient().deleteThing({ thingName })
 
@@ -171,7 +216,7 @@ describe('DefaultIotClient', function () {
 
     describe('deleteCertificate', function () {
         const certificateId = 'cert1'
-        const input: Iot.DeleteCertificateRequest = { certificateId, forceDelete: undefined }
+        const input: DeleteCertificateCommandInput = { certificateId, forceDelete: undefined }
 
         it('deletes a certificate', async function () {
             when(mockIot.deleteCertificate(deepEqual(input))).thenReturn(success())
@@ -190,7 +235,7 @@ describe('DefaultIotClient', function () {
 
     describe('updateCertificate', function () {
         const certificateId = 'cert1'
-        const input: Iot.UpdateCertificateRequest = { certificateId, newStatus: 'ACTIVE' }
+        const input: UpdateCertificateCommandInput = { certificateId, newStatus: 'ACTIVE' }
 
         it('updates a certificate', async function () {
             when(mockIot.updateCertificate(deepEqual(input))).thenReturn(success())
@@ -208,7 +253,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('attachThingPrincipal', function () {
-        const input: Iot.AttachThingPrincipalRequest = { thingName, principal: 'arn1' }
+        const input: AttachThingPrincipalCommandInput = { thingName, principal: 'arn1' }
 
         it('attaches a certificate to a Thing', async function () {
             when(mockIot.attachThingPrincipal(deepEqual(input))).thenReturn(success())
@@ -226,7 +271,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('detachThingPrincipal', function () {
-        const input: Iot.DetachThingPrincipalRequest = { thingName, principal: 'arn1' }
+        const input: DetachThingPrincipalCommandInput = { thingName, principal: 'arn1' }
 
         it('detaches a certificate from a Thing', async function () {
             when(mockIot.detachThingPrincipal(deepEqual(input))).thenReturn(success())
@@ -244,7 +289,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('attachPolicy', function () {
-        const input: Iot.AttachPolicyRequest = { policyName, target: 'arn1' }
+        const input: AttachPolicyCommandInput = { policyName, target: 'arn1' }
 
         it('attaches a policy to a certificate', async function () {
             when(mockIot.attachPolicy(deepEqual(input))).thenReturn(success())
@@ -262,7 +307,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('detachPolicy', function () {
-        const input: Iot.DetachPolicyRequest = { policyName, target: 'arn1' }
+        const input: DetachPolicyCommandInput = { policyName, target: 'arn1' }
 
         it('detaches a policy from a certificate', async function () {
             when(mockIot.detachPolicy(deepEqual(input))).thenReturn(success())
@@ -280,8 +325,8 @@ describe('DefaultIotClient', function () {
     })
 
     describe('createPolicy', function () {
-        const input: Iot.CreatePolicyRequest = { policyName, policyDocument }
-        const expectedResponse: Iot.CreatePolicyResponse = { policyName, policyDocument, policyArn: 'arn1' }
+        const input: CreatePolicyCommandInput = { policyName, policyDocument }
+        const expectedResponse: CreatePolicyCommandOutput = { policyName, policyDocument, policyArn: 'arn1' }
 
         it('creates a policy from a document', async function () {
             when(mockIot.createPolicy(deepEqual(input))).thenReturn(success(expectedResponse))
@@ -299,7 +344,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('deletePolicy', function () {
-        const input: Iot.DeletePolicyRequest = { policyName }
+        const input: DeletePolicyCommandInput = { policyName }
 
         it('deletes a policy', async function () {
             when(mockIot.deletePolicy(deepEqual(input))).thenReturn(success())
@@ -317,8 +362,8 @@ describe('DefaultIotClient', function () {
     })
 
     describe('createPolicyVersion', function () {
-        const input: Iot.CreatePolicyVersionRequest = { policyName, policyDocument }
-        const expectedResponse: Iot.CreatePolicyVersionResponse = { policyDocument, policyArn: 'arn1' }
+        const input: CreatePolicyVersionCommandInput = { policyName, policyDocument }
+        const expectedResponse: CreatePolicyVersionCommandOutput = { policyDocument, policyArn: 'arn1' }
 
         it('creates a policy version from a document', async function () {
             when(mockIot.createPolicyVersion(deepEqual(input))).thenReturn(success(expectedResponse))
@@ -336,7 +381,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('deletePolicyVersion', function () {
-        const input: Iot.DeletePolicyVersionRequest = { policyName, policyVersionId: '1' }
+        const input: DeletePolicyVersionCommandInput = { policyName, policyVersionId: '1' }
 
         it('deletes a policy version', async function () {
             when(mockIot.deletePolicyVersion(deepEqual(input))).thenReturn(success())
@@ -354,7 +399,7 @@ describe('DefaultIotClient', function () {
     })
 
     describe('setDefaultPolicyVersion', function () {
-        const input: Iot.SetDefaultPolicyVersionRequest = { policyName, policyVersionId: '1' }
+        const input: SetDefaultPolicyVersionCommandInput = { policyName, policyVersionId: '1' }
 
         it('deletes a policy version', async function () {
             when(mockIot.setDefaultPolicyVersion(deepEqual(input))).thenReturn(success())
@@ -374,8 +419,8 @@ describe('DefaultIotClient', function () {
     /* Functions that list resources. */
 
     describe('listThings', function () {
-        const input: Iot.ListThingsRequest = { maxResults, nextToken }
-        const expectedResponse: Iot.ListThingsResponse = { things: [{ thingName: 'thing1' }], nextToken }
+        const input: ListThingsCommandInput = { maxResults, nextToken }
+        const expectedResponse: ListThingsCommandOutput = { things: [{ thingName: 'thing1' }], nextToken }
 
         it('lists things', async function () {
             when(mockIot.listThings(deepEqual(input))).thenReturn(success(expectedResponse))
@@ -393,8 +438,8 @@ describe('DefaultIotClient', function () {
     })
 
     describe('listCertificates', function () {
-        const input: Iot.ListCertificatesRequest = { pageSize, marker, ascendingOrder: undefined }
-        const expectedResponse: Iot.ListCertificatesResponse = {
+        const input: ListCertificatesCommandInput = { pageSize, marker, ascendingOrder: undefined }
+        const expectedResponse: ListCertificatesCommandOutput = {
             certificates: [{ certificateId: 'cert1' }],
             nextMarker: marker,
         }
@@ -417,11 +462,11 @@ describe('DefaultIotClient', function () {
     describe('listThingCertificates', function () {
         const certificateId = 'cert1'
         const certArn = 'arn:aws:iot:us-west-2:0123456789:cert/cert1'
-        const input: Iot.ListThingPrincipalsRequest = { thingName, maxResults, nextToken }
-        const principalsResponse: Iot.ListThingPrincipalsResponse = { principals: [certArn], nextToken }
+        const input: ListThingPrincipalsCommandInput = { thingName, maxResults, nextToken }
+        const principalsResponse: ListThingPrincipalsCommandOutput = { principals: [certArn], nextToken }
 
-        const describeInput: Iot.DescribeCertificateRequest = { certificateId }
-        const describeResponse: Iot.DescribeCertificateResponse = {
+        const describeInput: DescribeCertificateCommandInput = { certificateId }
+        const describeResponse: DescribeCertificateCommandOutput = {
             certificateDescription: { certificateId, certificateArn: certArn },
         }
 
@@ -454,8 +499,8 @@ describe('DefaultIotClient', function () {
     })
 
     describe('listThingsForCert', function () {
-        const input: Iot.ListPrincipalThingsRequest = { principal: 'arn1', maxResults, nextToken }
-        const listResponse: Iot.ListPrincipalThingsResponse = { things: [thingName], nextToken }
+        const input: ListPrincipalThingsCommandInput = { principal: 'arn1', maxResults, nextToken }
+        const listResponse: ListPrincipalThingsCommandOutput = { things: [thingName], nextToken }
         const expectedResponse = [thingName]
 
         it('lists things', async function () {
@@ -474,8 +519,8 @@ describe('DefaultIotClient', function () {
     })
 
     describe('listPolicies', function () {
-        const input: Iot.ListPoliciesRequest = { pageSize, marker, ascendingOrder: undefined }
-        const expectedResponse: Iot.ListPoliciesResponse = { policies: [{ policyName }], nextMarker: marker }
+        const input: ListPoliciesCommandInput = { pageSize, marker, ascendingOrder: undefined }
+        const expectedResponse: ListPoliciesCommandOutput = { policies: [{ policyName }], nextMarker: marker }
 
         it('lists policies', async function () {
             when(mockIot.listPolicies(deepEqual(input))).thenReturn(success(expectedResponse))
@@ -493,13 +538,13 @@ describe('DefaultIotClient', function () {
     })
 
     describe('listPrincipalPolicies', function () {
-        const input: Iot.ListPrincipalPoliciesRequest = {
+        const input: ListPrincipalPoliciesCommandInput = {
             pageSize,
             marker,
             ascendingOrder: undefined,
             principal: 'arn1',
         }
-        const expectedResponse: Iot.ListPoliciesResponse = { policies: [{ policyName }], nextMarker: marker }
+        const expectedResponse: ListPoliciesCommandOutput = { policies: [{ policyName }], nextMarker: marker }
 
         it('lists policies for certificate', async function () {
             when(mockIot.listPrincipalPolicies(deepEqual(input))).thenReturn(success(expectedResponse))
@@ -518,8 +563,8 @@ describe('DefaultIotClient', function () {
 
     describe('listPolicyTargets', function () {
         const targets = ['arn1', 'arn2']
-        const input: Iot.ListTargetsForPolicyRequest = { policyName, pageSize, marker }
-        const listResponse: Iot.ListTargetsForPolicyResponse = { targets, nextMarker: marker }
+        const input: ListTargetsForPolicyCommandInput = { policyName, pageSize, marker }
+        const listResponse: ListTargetsForPolicyCommandOutput = { targets, nextMarker: marker }
 
         it('lists certificates', async function () {
             when(mockIot.listTargetsForPolicy(deepEqual(input))).thenReturn(success(listResponse))
@@ -537,10 +582,10 @@ describe('DefaultIotClient', function () {
     })
 
     describe('listPolicyVersions', function () {
-        const input: Iot.ListPolicyVersionsRequest = { policyName }
-        const expectedVersion1: Iot.PolicyVersion = { versionId: '1' }
-        const expectedVersion2: Iot.PolicyVersion = { versionId: '2' }
-        const listResponse: Iot.ListPolicyVersionsResponse = { policyVersions: [expectedVersion1, expectedVersion2] }
+        const input: ListPolicyVersionsCommandInput = { policyName }
+        const expectedVersion1: PolicyVersion = { versionId: '1' }
+        const expectedVersion2: PolicyVersion = { versionId: '2' }
+        const listResponse: ListPolicyVersionsCommandOutput = { policyVersions: [expectedVersion1, expectedVersion2] }
 
         it('lists policy versions', async function () {
             when(mockIot.listPolicyVersions(deepEqual(input))).thenReturn(success(listResponse))

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CognitoIdentity, CognitoIdentityCredentials } from 'aws-sdk'
+import { CognitoIdentityCredentials } from 'aws-sdk';
+import { CognitoIdentity } from "@aws-sdk/client-cognito-identity";
 import { MetricDatum } from './clienttelemetry'
 import { DefaultTelemetryClient } from './telemetryClient'
 import { TelemetryClient, TelemetryFeedback } from './telemetryClient'
@@ -92,7 +93,7 @@ export class DefaultTelemetryPublisher implements TelemetryPublisher {
         const region = identityPool.split(':')[0]
         try {
             const res = await new CognitoIdentity({
-                region: region,
+                region: region
             })
                 .getId({
                     IdentityPoolId: identityPool,

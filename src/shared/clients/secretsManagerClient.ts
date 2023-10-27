@@ -3,14 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SecretsManager } from 'aws-sdk'
-import globals from '../extensionGlobals'
+
+
 import {
-    CreateSecretRequest,
-    CreateSecretResponse,
-    ListSecretsRequest,
-    ListSecretsResponse,
-} from 'aws-sdk/clients/secretsmanager'
+    CreateSecretCommandInput,
+    CreateSecretCommandOutput,
+    ListSecretsCommandInput,
+    ListSecretsCommandOutput,
+    SecretsManager,
+} from "@aws-sdk/client-secrets-manager";
+
+import globals from '../extensionGlobals'
 import { productName } from '../constants'
 
 export class SecretsManagerClient {
@@ -26,9 +29,9 @@ export class SecretsManagerClient {
      * @param filter tagged key filter value
      * @returns a list of the secrets
      */
-    public async listSecrets(filter: string): Promise<ListSecretsResponse> {
+    public async listSecrets(filter: string): Promise<ListSecretsCommandOutput> {
         const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
-        const request: ListSecretsRequest = {
+        const request: ListSecretsCommandInput = {
             IncludePlannedDeletion: false,
             Filters: [
                 {
@@ -41,9 +44,9 @@ export class SecretsManagerClient {
         return secretsManagerClient.listSecrets(request).promise()
     }
 
-    public async createSecret(secretString: string, username: string, password: string): Promise<CreateSecretResponse> {
+    public async createSecret(secretString: string, username: string, password: string): Promise<CreateSecretCommandOutput> {
         const secretsManagerClient = await this.secretsManagerClientProvider(this.regionCode)
-        const request: CreateSecretRequest = {
+        const request: CreateSecretCommandInput = {
             Description: `Database secret created with ${productName}`,
             Name: secretString ? secretString : '',
             SecretString: JSON.stringify({ username, password }),

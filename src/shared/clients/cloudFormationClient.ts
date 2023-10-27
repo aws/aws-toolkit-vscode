@@ -3,7 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CloudFormation } from 'aws-sdk'
+
+
+import {
+    CloudFormation,
+    DescribeStackResourcesCommandOutput,
+    DescribeTypeCommandOutput,
+    ListStacksCommandInput,
+    ListStacksCommandOutput,
+    ListTypesCommandInput,
+    ListTypesCommandOutput,
+    StackSummary,
+    TypeSummary,
+} from "@aws-sdk/client-cloudformation";
+
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
@@ -23,7 +36,7 @@ export class DefaultCloudFormationClient {
             .promise()
     }
 
-    public async describeType(typeName: string): Promise<CloudFormation.DescribeTypeOutput> {
+    public async describeType(typeName: string): Promise<DescribeTypeCommandOutput> {
         const client = await this.createSdkClient()
 
         return await client
@@ -36,15 +49,15 @@ export class DefaultCloudFormationClient {
 
     public async *listStacks(
         statusFilter: string[] = ['CREATE_COMPLETE', 'UPDATE_COMPLETE']
-    ): AsyncIterableIterator<CloudFormation.StackSummary> {
+    ): AsyncIterableIterator<StackSummary> {
         const client = await this.createSdkClient()
 
-        const request: CloudFormation.ListStacksInput = {
+        const request: ListStacksCommandInput = {
             StackStatusFilter: statusFilter,
         }
 
         do {
-            const response: CloudFormation.ListStacksOutput = await client.listStacks(request).promise()
+            const response: ListStacksCommandOutput = await client.listStacks(request).promise()
 
             if (response.StackSummaries) {
                 yield* response.StackSummaries
@@ -54,25 +67,25 @@ export class DefaultCloudFormationClient {
         } while (request.NextToken)
     }
 
-    public listAllStacks(request: CloudFormation.ListStacksInput = {}): AsyncCollection<CloudFormation.StackSummary[]> {
+    public listAllStacks(request: ListStacksCommandInput = {}): AsyncCollection<StackSummary[]> {
         const client = this.createSdkClient()
-        const requester = async (req: CloudFormation.ListStacksInput) => (await client).listStacks(req).promise()
+        const requester = async (req: ListStacksCommandInput) => (await client).listStacks(req).promise()
         const collection = pageableToCollection(requester, request, 'NextToken', 'StackSummaries')
 
         return collection.filter(isNonNullable)
     }
 
-    public async *listTypes(): AsyncIterableIterator<CloudFormation.TypeSummary> {
+    public async *listTypes(): AsyncIterableIterator<TypeSummary> {
         const client = await this.createSdkClient()
 
-        const request: CloudFormation.ListTypesInput = {
+        const request: ListTypesCommandInput = {
             DeprecatedStatus: 'LIVE',
             Type: 'RESOURCE',
             Visibility: 'PUBLIC',
         }
 
         do {
-            const response: CloudFormation.ListTypesOutput = await client.listTypes(request).promise()
+            const response: ListTypesCommandOutput = await client.listTypes(request).promise()
 
             if (response.TypeSummaries) {
                 yield* response.TypeSummaries
@@ -82,7 +95,7 @@ export class DefaultCloudFormationClient {
         } while (request.NextToken)
     }
 
-    public async describeStackResources(name: string): Promise<CloudFormation.DescribeStackResourcesOutput> {
+    public async describeStackResources(name: string): Promise<DescribeStackResourcesCommandOutput> {
         const client = await this.createSdkClient()
 
         return await client

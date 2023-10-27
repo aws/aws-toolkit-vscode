@@ -21,7 +21,7 @@ import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogs
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../shared/logger'
 import { TimeFilterResponse, TimeFilterSubmenu } from '../timeFilterSubmenu'
-import { CloudWatchLogs } from 'aws-sdk'
+import { LogGroup } from "@aws-sdk/client-cloudwatch-logs";
 import { ExtendedInputBoxOptions, InputBox, InputBoxPrompter } from '../../shared/ui/inputPrompter'
 import { RegionSubmenu, RegionSubmenuResponse } from '../../shared/ui/common/regionSubmenu'
 import { truncate } from '../../shared/utilities/textUtilities'
@@ -120,7 +120,7 @@ async function getLogGroupsFromRegion(regionCode: string): Promise<DataQuickPick
     return options
 }
 
-async function logGroupsToArray(logGroups: AsyncIterableIterator<CloudWatchLogs.LogGroup>): Promise<string[]> {
+async function logGroupsToArray(logGroups: AsyncIterableIterator<LogGroup>): Promise<string[]> {
     const logGroupsArray = []
     for await (const logGroupObject of logGroups) {
         logGroupObject.logGroupName && logGroupsArray.push(logGroupObject.logGroupName)

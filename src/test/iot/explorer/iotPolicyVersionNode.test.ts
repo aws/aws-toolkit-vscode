@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { PolicyVersion } from "@aws-sdk/client-iot";
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import moment from 'moment'
@@ -17,8 +17,8 @@ describe('IotPolicyVersionNode', function () {
     const expectedPolicy: IotPolicy = { name: policyName, arn: 'arn' }
     const createDate = new Date(2021, 1, 1)
     const createDateFormatted = moment(createDate).format(LOCALIZED_DATE_FORMAT)
-    const policyVersion: Iot.PolicyVersion = { versionId: 'V1', isDefaultVersion: true, createDate }
-    const nonDefaultVersion: Iot.PolicyVersion = { versionId: 'V2', isDefaultVersion: false, createDate }
+    const policyVersion: PolicyVersion = { versionId: 'V1', isDefaultVersion: true, createDate }
+    const nonDefaultVersion: PolicyVersion = { versionId: 'V2', isDefaultVersion: false, createDate }
 
     it('creates an IoT Policy Version Node for default version', async function () {
         const node = new IotPolicyVersionNode(

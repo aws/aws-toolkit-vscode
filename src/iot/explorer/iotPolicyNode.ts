@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Iot } from 'aws-sdk'
+import { PolicyVersion } from "@aws-sdk/client-iot";
 import { IotClient, IotPolicy } from '../../shared/clients/iotClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
@@ -101,7 +101,7 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
     }
 
     public async updateChildren(): Promise<void> {
-        const versions: Map<string, Iot.PolicyVersion> = toMap(
+        const versions: Map<string, PolicyVersion> = toMap(
             await toArrayAsync(this.iot.listPolicyVersions({ policyName: this.policy.name })),
             version => version.versionId
         )

@@ -3,8 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
-import { _Blob } from 'aws-sdk/clients/lambda'
+
+
+import {
+    FunctionUrlConfig,
+    GetFunctionCommandOutput,
+    InvokeCommandOutput,
+    Lambda,
+    ListFunctionsCommandInput,
+    ListFunctionsCommandOutput,
+    UpdateFunctionConfigurationCommandOutput,
+} from "@aws-sdk/client-lambda";
+
 import { ToolkitError } from '../errors'
 import globals from '../extensionGlobals'
 import { getLogger } from '../logger'
@@ -33,7 +43,7 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async invoke(name: string, payload?: _Blob): Promise<Lambda.InvocationResponse> {
+    public async invoke(name: string, payload?: Uint8Array): Promise<InvokeCommandOutput> {
         const sdkClient = await this.createSdkClient()
 
         const response = await sdkClient
@@ -47,12 +57,12 @@ export class DefaultLambdaClient {
         return response
     }
 
-    public async *listFunctions(): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+    public async *listFunctions(): AsyncIterableIterator<UpdateFunctionConfigurationCommandOutput> {
         const client = await this.createSdkClient()
 
-        const request: Lambda.ListFunctionsRequest = {}
+        const request: ListFunctionsCommandInput = {}
         do {
-            const response: Lambda.ListFunctionsResponse = await client.listFunctions(request).promise()
+            const response: ListFunctionsCommandOutput = await client.listFunctions(request).promise()
 
             if (response.Functions) {
                 yield* response.Functions
@@ -62,7 +72,7 @@ export class DefaultLambdaClient {
         } while (request.Marker)
     }
 
-    public async getFunction(name: string): Promise<Lambda.GetFunctionResponse> {
+    public async getFunction(name: string): Promise<GetFunctionCommandOutput> {
         getLogger().debug(`GetFunction called for function: ${name}`)
         const client = await this.createSdkClient()
 
@@ -80,7 +90,7 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async getFunctionUrlConfigs(name: string): Promise<Lambda.FunctionUrlConfigList> {
+    public async getFunctionUrlConfigs(name: string): Promise<Array<FunctionUrlConfig>> {
         getLogger().debug(`GetFunctionUrlConfig called for function: ${name}`)
         const client = await this.createSdkClient()
 
@@ -98,7 +108,7 @@ export class DefaultLambdaClient {
         }
     }
 
-    public async updateFunctionCode(name: string, zipFile: Buffer): Promise<Lambda.FunctionConfiguration> {
+    public async updateFunctionCode(name: string, zipFile: Buffer): Promise<UpdateFunctionConfigurationCommandOutput> {
         getLogger().debug(`updateFunctionCode called for function: ${name}`)
         const client = await this.createSdkClient()
 

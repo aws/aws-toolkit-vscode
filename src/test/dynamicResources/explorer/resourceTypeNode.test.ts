@@ -15,7 +15,6 @@ import {
 } from '../../utilities/explorerNodeAssertions'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { CloudControlClient } from '../../../shared/clients/cloudControlClient'
-import { CloudControl } from 'aws-sdk'
 import { ResourceTypeMetadata } from '../../../dynamicResources/model/resources'
 
 const fakeTypeName = 'sometype'

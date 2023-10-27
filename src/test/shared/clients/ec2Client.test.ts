@@ -8,19 +8,19 @@ import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 import { toCollection } from '../../../shared/utilities/asyncCollection'
 import { intoCollection } from '../../../shared/utilities/collectionUtils'
 import { Ec2Client, instanceHasName } from '../../../shared/clients/ec2Client'
-import { EC2 } from 'aws-sdk'
+import { Filter, Instance, Reservation } from "@aws-sdk/client-ec2";
 
 class MockEc2Client extends Ec2Client {
     public override async getInstanceStatus(instanceId: string): Promise<string> {
         return instanceId.split('-')[0]
     }
 
-    public async testUpdateInstancesDetail(instances: EC2.Instance[]) {
+    public async testUpdateInstancesDetail(instances: Instance[]) {
         return await (await this.updateInstancesDetail(intoCollection(instances))).promise()
     }
 }
 
-const completeReservationsList: EC2.ReservationList = [
+const completeReservationsList: Array<Reservation> = [
     {
         Instances: [
             {
@@ -47,14 +47,14 @@ const completeReservationsList: EC2.ReservationList = [
     },
 ]
 
-const completeInstanceList: EC2.InstanceList = [
+const completeInstanceList: Array<Instance> = [
     { InstanceId: 'running-1', Tags: [{ Key: 'Name', Value: 'name1' }] },
     { InstanceId: 'stopped-2', Tags: [{ Key: 'Name', Value: 'name2' }] },
     { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
     { InstanceId: 'running-4', Tags: [{ Key: 'Name', Value: 'name4' }] },
 ]
 
-const incompleteReservationsList: EC2.ReservationList = [
+const incompleteReservationsList: Array<Reservation> = [
     {
         Instances: [
             {
@@ -77,7 +77,7 @@ const incompleteReservationsList: EC2.ReservationList = [
     },
 ]
 
-const incomepleteInstanceList: EC2.InstanceList = [
+const incomepleteInstanceList: Array<Instance> = [
     { InstanceId: 'running-1' },
     { InstanceId: 'stopped-2', Tags: [] },
     { InstanceId: 'pending-3', Tags: [{ Key: 'Name', Value: 'name3' }] },
@@ -91,7 +91,7 @@ describe('extractInstancesFromReservations', function () {
             .getInstancesFromReservations(
                 toCollection(async function* () {
                     yield []
-                }) as AsyncCollection<EC2.ReservationList>
+                }) as AsyncCollection<Array<Reservation>>
             )
             .promise()
 
@@ -151,7 +151,7 @@ describe('getInstancesFilter', function () {
     it('returns proper filter when given instanceId', function () {
         const testInstanceId1 = 'test'
         const actualFilters1 = client.getInstancesFilter([testInstanceId1])
-        const expectedFilters1: EC2.Filter[] = [
+        const expectedFilters1: Filter[] = [
             {
                 Name: 'instance-id',
                 Values: [testInstanceId1],
@@ -162,7 +162,7 @@ describe('getInstancesFilter', function () {
 
         const testInstanceId2 = 'test2'
         const actualFilters2 = client.getInstancesFilter([testInstanceId1, testInstanceId2])
-        const expectedFilters2: EC2.Filter[] = [
+        const expectedFilters2: Filter[] = [
             {
                 Name: 'instance-id',
                 Values: [testInstanceId1, testInstanceId2],

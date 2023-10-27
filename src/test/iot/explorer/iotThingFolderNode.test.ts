@@ -9,7 +9,7 @@ import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotClient, IotThing } from '../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { ThingAttribute } from "@aws-sdk/client-iot";
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
 import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
@@ -19,7 +19,7 @@ describe('IotThingFolderNode', function () {
     const maxResults = 150
 
     let iot: IotClient
-    const thing: Iot.ThingAttribute = { thingName: 'thing', thingArn: 'arn' }
+    const thing: ThingAttribute = { thingName: 'thing', thingArn: 'arn' }
     const expectedThing: IotThing = { name: 'thing', arn: 'arn' }
 
     function assertThingNode(node: AWSTreeNodeBase, expectedThing: IotThing): void {

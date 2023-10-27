@@ -11,7 +11,7 @@ import { IotClient } from '../../../shared/clients/iotClient'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
-import { Iot } from 'aws-sdk'
+import { CreateKeysAndCertificateCommandOutput } from "@aws-sdk/client-iot";
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createCertificateCommand', function () {
@@ -19,7 +19,7 @@ describe('createCertificateCommand', function () {
     const certificateArn = 'arn'
     const certificatePem = 'certPem'
     const keyPair = { PrivateKey: 'private', PublicKey: 'public' }
-    const certificate: Iot.CreateKeysAndCertificateResponse = { certificateId, certificateArn, certificatePem, keyPair }
+    const certificate: CreateKeysAndCertificateCommandOutput = { certificateId, certificateArn, certificatePem, keyPair }
     let iot: IotClient
     let node: IotCertsFolderNode
     let saveLocation: vscode.Uri | undefined = vscode.Uri.file('/certificate.txt')

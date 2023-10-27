@@ -5,7 +5,11 @@
 
 import assert from 'assert'
 
-import { Schemas } from 'aws-sdk'
+import {
+    DescribeSchemaCommandOutput,
+    SearchSchemaSummary,
+    SearchSchemaVersionSummary,
+} from "@aws-sdk/client-schemas";
 import * as sinon from 'sinon'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
@@ -42,25 +46,25 @@ describe('Search Schemas', function () {
     const failRegistry = 'failRegistry'
     const failRegistry2 = 'failRegistry2'
 
-    const versionSummary1: Schemas.SearchSchemaVersionSummary = {
+    const versionSummary1: SearchSchemaVersionSummary = {
         SchemaVersion: '1',
     }
-    const versionSummary2: Schemas.SearchSchemaVersionSummary = {
+    const versionSummary2: SearchSchemaVersionSummary = {
         SchemaVersion: '2',
     }
-    const searchSummary1: Schemas.SearchSchemaSummary = {
+    const searchSummary1: SearchSchemaSummary = {
         RegistryName: testRegistry,
         SchemaName: 'testSchema1',
         SchemaVersions: [versionSummary1, versionSummary2],
     }
 
-    const searchSummary2: Schemas.SearchSchemaSummary = {
+    const searchSummary2: SearchSchemaSummary = {
         RegistryName: testRegistry,
         SchemaName: 'testSchema2',
         SchemaVersions: [versionSummary1],
     }
 
-    const searchSummary3: Schemas.SearchSchemaSummary = {
+    const searchSummary3: SearchSchemaSummary = {
         RegistryName: testRegistry2,
         SchemaName: 'testSchema3',
         SchemaVersions: [versionSummary1],
@@ -178,7 +182,7 @@ describe('Search Schemas', function () {
         const multipleRegistryNames = [testRegistry, testRegistry2]
         const awsEventSchemaRaw =
             '{"openapi":"3.0.0","info":{"version":"1.0.0","title":"Event"},"paths":{},"components":{"schemas":{"Event":{"type":"object"}}}}'
-        const schemaResponse: Schemas.DescribeSchemaResponse = {
+        const schemaResponse: DescribeSchemaCommandOutput = {
             Content: awsEventSchemaRaw,
         }
 

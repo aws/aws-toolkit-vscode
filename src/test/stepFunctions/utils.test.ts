@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { IAM } from 'aws-sdk'
+import { Role } from "@aws-sdk/client-iam";
 import * as fs from 'fs-extra'
 import * as sinon from 'sinon'
 import * as vscode from 'vscode'
@@ -199,7 +199,7 @@ describe('StateMachineGraphCache', function () {
 })
 
 describe('isStepFunctionsRole', function () {
-    const baseIamRole: IAM.Role = {
+    const baseIamRole: Role = {
         Path: '',
         RoleName: '',
         RoleId: 'myRole',
@@ -208,7 +208,7 @@ describe('isStepFunctionsRole', function () {
     }
 
     it('return true if the Step Functions service principal is in the AssumeRolePolicyDocument', function () {
-        const role: IAM.Role = {
+        const role: Role = {
             ...baseIamRole,
             AssumeRolePolicyDocument: JSON.stringify({
                 Version: '2012-10-17',
@@ -231,7 +231,7 @@ describe('isStepFunctionsRole', function () {
     })
 
     it("returns false if the AssumeRolePolicyDocument does not contain Step Functions' service principal", () => {
-        const role: IAM.Role = {
+        const role: Role = {
             ...baseIamRole,
             AssumeRolePolicyDocument: JSON.stringify({
                 Version: '2012-10-17',

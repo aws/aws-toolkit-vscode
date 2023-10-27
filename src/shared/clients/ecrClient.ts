@@ -3,13 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ECR } from 'aws-sdk'
+
+
+import {
+    DescribeImagesCommandInput,
+    DescribeRepositoriesCommandInput,
+    ECR,
+    Repository,
+} from "@aws-sdk/client-ecr";
+
 import globals from '../extensionGlobals'
 import { AsyncCollection } from '../utilities/asyncCollection'
 import { pageableToCollection } from '../utilities/collectionUtils'
 import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 
-export type EcrRepository = RequiredProps<ECR.Repository, 'repositoryName' | 'repositoryUri' | 'repositoryArn'>
+export type EcrRepository = RequiredProps<Repository, 'repositoryName' | 'repositoryUri' | 'repositoryArn'>
 
 export type EcrClient = ClassToInterfaceType<DefaultEcrClient>
 export class DefaultEcrClient {
@@ -17,7 +25,7 @@ export class DefaultEcrClient {
 
     public async *describeTags(repositoryName: string): AsyncIterableIterator<string> {
         const sdkClient = await this.createSdkClient()
-        const request: ECR.DescribeImagesRequest = { repositoryName: repositoryName }
+        const request: DescribeImagesCommandInput = { repositoryName: repositoryName }
         do {
             const response = await sdkClient.describeImages(request).promise()
             if (response.imageDetails) {
@@ -35,7 +43,7 @@ export class DefaultEcrClient {
 
     public async *describeRepositories(): AsyncIterableIterator<EcrRepository> {
         const sdkClient = await this.createSdkClient()
-        const request: ECR.DescribeRepositoriesRequest = {}
+        const request: DescribeRepositoriesCommandInput = {}
         do {
             const response = await sdkClient.describeRepositories(request).promise()
             if (response.repositories) {
@@ -60,7 +68,7 @@ export class DefaultEcrClient {
     }
 
     public listAllRepositories(): AsyncCollection<EcrRepository[]> {
-        const requester = async (req: ECR.DescribeRepositoriesRequest) =>
+        const requester = async (req: DescribeRepositoriesCommandInput) =>
             (await this.createSdkClient()).describeRepositories(req).promise()
         const collection = pageableToCollection(requester, {}, 'nextToken', 'repositories')
 

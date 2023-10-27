@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { AppRunner } from 'aws-sdk'
+import { Service } from "@aws-sdk/client-apprunner";
 import { verify, instance, mock } from 'ts-mockito'
 import { AppRunnerNode } from '../../../apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServiceNode'
@@ -21,7 +21,7 @@ describe('AppRunnerServiceNode', function () {
     let mockParentNode: AppRunnerNode
     let node: AppRunnerServiceNode
 
-    const exampleInfo: AppRunner.Service = {
+    const exampleInfo: Service = {
         ServiceName: 'test1',
         Status: 'RUNNING',
         ServiceArn: 'test-arn1',

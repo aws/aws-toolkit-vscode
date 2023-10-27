@@ -7,7 +7,7 @@ import * as path from 'path'
 import * as mime from 'mime-types'
 import * as vscode from 'vscode'
 import { statSync } from 'fs'
-import { S3 } from 'aws-sdk'
+import { Bucket, ManagedUpload } from "@aws-sdk/client-s3";
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
 import { Commands } from '../../shared/vscode/commands'
@@ -39,7 +39,7 @@ interface UploadRequest {
     fileLocation: vscode.Uri
     fileSizeBytes: number
     s3Client: S3Client
-    ongoingUpload?: S3.ManagedUpload
+    ongoingUpload?: ManagedUpload
 }
 
 /**
@@ -390,7 +390,7 @@ async function uploadWithProgress(
 }
 
 export interface BucketQuickPickItem extends vscode.QuickPickItem {
-    bucket: S3.Bucket | undefined
+    bucket: Bucket | undefined
     folder?: Folder | undefined
 }
 
@@ -413,7 +413,7 @@ export async function promptUserForBucket(
     promptUserFunction = promptUser,
     createBucket = createBucketCommand
 ): Promise<BucketQuickPickItem | 'cancel' | 'back'> {
-    let allBuckets: S3.Bucket[]
+    let allBuckets: Bucket[]
     try {
         allBuckets = await s3client.listAllBuckets()
     } catch (e) {
@@ -426,7 +426,7 @@ export async function promptUserForBucket(
 
     const s3Buckets = allBuckets.filter(bucket => {
         return bucket && bucket.Name
-    }) as S3.Bucket[]
+    }) as Bucket[]
 
     const createNewBucket: BucketQuickPickItem = {
         label: localize('AWS.command.s3.createBucket', 'Create new bucket'),

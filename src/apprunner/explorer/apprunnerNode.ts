@@ -10,14 +10,14 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
 import { AppRunnerClient } from '../../shared/clients/apprunnerClient'
 import { getPaginatedAwsCallIter } from '../../shared/utilities/collectionUtils'
-import { AppRunner } from 'aws-sdk'
+import { CreateServiceCommandInput, ListServicesCommandInput, Service } from "@aws-sdk/client-apprunner";
 import globals from '../../shared/extensionGlobals'
 
 const localize = nls.loadMessageBundle()
 
 const pollingInterval = 20000
 export class AppRunnerNode extends AWSTreeNodeBase {
-    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
+    private readonly serviceNodes: Map<string, AppRunnerServiceNode> = new Map()
     private readonly pollingNodes: Set<string> = new Set()
     private pollTimer?: NodeJS.Timeout
 
@@ -42,7 +42,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
+    private async getServiceSummaries(request: ListServicesCommandInput = {}): Promise<Service[]> {
         const iterator = getPaginatedAwsCallIter({
             awsCall: async request => await this.client.listServices(request),
             nextTokenNames: {
@@ -52,12 +52,12 @@ export class AppRunnerNode extends AWSTreeNodeBase {
             request,
         })
 
-        const services: AppRunner.Service[] = []
+        const services: Service[] = []
 
         while (true) {
             const next = await iterator.next()
 
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
+            next.value.ServiceSummaryList.forEach((summary: Service) => services.push(summary))
 
             if (next.done) {
                 break
@@ -112,7 +112,7 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         this.pollingNodes.delete(id)
     }
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {
+    public async createService(request: CreateServiceCommandInput): Promise<void> {
         await this.client.createService(request)
         this.refresh()
     }

@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Lambda } from 'aws-sdk'
+
+
+import { UpdateFunctionConfigurationCommandOutput } from "@aws-sdk/client-lambda";
 import * as os from 'os'
 import { getIcon } from '../../shared/icons'
 
@@ -14,14 +16,14 @@ export class LambdaFunctionNode extends AWSTreeNodeBase implements AWSResourceNo
     public constructor(
         public readonly parent: AWSTreeNodeBase,
         public override readonly regionCode: string,
-        public configuration: Lambda.FunctionConfiguration
+        public configuration: UpdateFunctionConfigurationCommandOutput
     ) {
         super('')
         this.update(configuration)
         this.iconPath = getIcon('aws-lambda-function')
     }
 
-    public update(configuration: Lambda.FunctionConfiguration): void {
+    public update(configuration: UpdateFunctionConfigurationCommandOutput): void {
         this.configuration = configuration
         this.label = this.configuration.FunctionName || ''
         this.tooltip = `${this.configuration.FunctionName}${os.EOL}${this.configuration.FunctionArn}`

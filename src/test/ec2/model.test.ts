@@ -10,7 +10,7 @@ import { SsmClient } from '../../shared/clients/ssmClient'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { Ec2Selection } from '../../ec2/prompter'
 import { ToolkitError } from '../../shared/errors'
-import { IAM } from 'aws-sdk'
+import { Policy, Role } from "@aws-sdk/client-iam";
 import { SshKeyPair } from '../../ec2/sshKeyPair'
 import { DefaultIamClient } from '../../shared/clients/iamClient'
 
@@ -23,13 +23,13 @@ describe('Ec2ConnectClient', function () {
 
     describe('getAttachedIamRole', async function () {
         it('only returns role if recieves ARN from instance profile', async function () {
-            let role: IAM.Role | undefined
+            let role: Role | undefined
             const getInstanceProfileStub = sinon.stub(Ec2Client.prototype, 'getAttachedIamInstanceProfile')
 
             getInstanceProfileStub.resolves({ Arn: 'thisIsAnArn' })
             sinon
                 .stub(DefaultIamClient.prototype, 'getIAMRoleFromInstanceProfile')
-                .resolves({ Arn: 'ThisIsARoleArn' } as IAM.Role)
+                .resolves({ Arn: 'ThisIsARoleArn' } as Role)
 
             role = await client.getAttachedIamRole('test-instance')
             assert.ok(role)
@@ -44,7 +44,7 @@ describe('Ec2ConnectClient', function () {
 
     describe('hasProperPolicies', async function () {
         it('correctly determines if proper policies are included', async function () {
-            async function assertAcceptsPolicies(policies: IAM.Policy[], expectedResult: boolean) {
+            async function assertAcceptsPolicies(policies: Policy[], expectedResult: boolean) {
                 sinon.stub(DefaultIamClient.prototype, 'listAttachedRolePolicies').resolves(policies)
 
                 const result = await client.hasProperPolicies('')
@@ -130,7 +130,7 @@ describe('Ec2ConnectClient', function () {
 
         it('throws EC2SSMAgent error if instance is running and has IAM Role, but agent is not running', async function () {
             sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
-            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
+            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as Role)
             sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPolicies').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('offline')
 
@@ -144,7 +144,7 @@ describe('Ec2ConnectClient', function () {
 
         it('does not throw an error if all checks pass', async function () {
             sinon.stub(Ec2ConnectionManager.prototype, 'isInstanceRunning').resolves(true)
-            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as IAM.Role)
+            sinon.stub(Ec2ConnectionManager.prototype, 'getAttachedIamRole').resolves({ Arn: 'testRole' } as Role)
             sinon.stub(Ec2ConnectionManager.prototype, 'hasProperPolicies').resolves(true)
             sinon.stub(SsmClient.prototype, 'getInstanceAgentPingStatus').resolves('Online')
 

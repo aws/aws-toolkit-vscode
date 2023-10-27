@@ -6,7 +6,7 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { AppRunner } from 'aws-sdk'
+import { ServiceSummary } from "@aws-sdk/client-apprunner";
 import { verify, anything, instance, mock, when } from 'ts-mockito'
 import { AppRunnerNode } from '../../../apprunner/explorer/apprunnerNode'
 import { AppRunnerServiceNode } from '../../../apprunner/explorer/apprunnerServiceNode'
@@ -21,7 +21,7 @@ describe('AppRunnerNode', function () {
     let clock: FakeTimers.InstalledClock
     let refreshStub: sinon.SinonStub<[], void>
 
-    const exampleSummaries: AppRunner.ServiceSummaryList = [
+    const exampleSummaries: Array<ServiceSummary> = [
         {
             ServiceName: 'test1',
             Status: 'RUNNING',

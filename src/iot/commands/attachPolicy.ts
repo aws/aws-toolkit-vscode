@@ -13,7 +13,7 @@ import { PromptResult } from '../../shared/ui/prompter'
 import { IotClient } from '../../shared/clients/iotClient'
 import { isValidResponse } from '../../shared/wizards/wizard'
 import { IotCertWithPoliciesNode, IotThingCertNode } from '../explorer/iotCertificateNode'
-import { Iot } from 'aws-sdk'
+import { ListPoliciesCommandOutput, Policy } from "@aws-sdk/client-iot";
 import { IotNode } from '../explorer/iotNodes'
 
 export type PolicyGen = typeof getPolicyList
@@ -71,8 +71,8 @@ function getBaseNode(node: IotThingCertNode | IotCertWithPoliciesNode): IotNode 
 /**
  * Prompts the user to pick a policy to attach.
  */
-async function promptForPolicy(iot: IotClient, policyFetch: PolicyGen): Promise<PromptResult<Iot.Policy>> {
-    const placeHolder: DataQuickPickItem<Iot.Policy> = {
+async function promptForPolicy(iot: IotClient, policyFetch: PolicyGen): Promise<PromptResult<Policy>> {
+    const placeHolder: DataQuickPickItem<Policy> = {
         label: 'No policies found',
         data: undefined,
     }
@@ -89,10 +89,10 @@ async function promptForPolicy(iot: IotClient, policyFetch: PolicyGen): Promise<
  */
 async function* getPolicyList(iot: IotClient) {
     let marker: string | undefined = undefined
-    let filteredPolicies: Iot.Policy[]
+    let filteredPolicies: Policy[]
     do {
         try {
-            const policyResponse: Iot.ListPoliciesResponse = await iot.listPolicies({ marker })
+            const policyResponse: ListPoliciesCommandOutput = await iot.listPolicies({ marker })
             marker = policyResponse.nextMarker
 
             /* The policy name and arn should always be defined when using the

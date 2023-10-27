@@ -6,7 +6,6 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
 import { createCommonButtons } from '../../shared/ui/buttons'
 import { createRegionPrompter } from '../../shared/ui/common/region'
 import { createInputBox } from '../../shared/ui/inputPrompter'

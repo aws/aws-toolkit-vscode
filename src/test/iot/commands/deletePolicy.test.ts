@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import { Iot } from 'aws-sdk'
 import { deletePolicyCommand } from '../../../iot/commands/deletePolicy'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'

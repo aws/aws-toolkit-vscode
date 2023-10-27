@@ -13,14 +13,14 @@ import {
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../utilities/explorerNodeAssertions'
 import { Ec2InstanceNode } from '../../../ec2/explorer/ec2InstanceNode'
-import { EC2 } from 'aws-sdk'
+import { Filter, Instance } from "@aws-sdk/client-ec2";
 import { AsyncCollection } from '../../../shared/utilities/asyncCollection'
 
 describe('ec2ParentNode', function () {
     let testNode: Ec2ParentNode
     let instances: Ec2Instance[]
     let client: Ec2Client
-    let getInstanceStub: sinon.SinonStub<[filters?: EC2.Filter[] | undefined], Promise<AsyncCollection<EC2.Instance>>>
+    let getInstanceStub: sinon.SinonStub<[filters?: Filter[] | undefined], Promise<AsyncCollection<Instance>>>
 
     const testRegion = 'testRegion'
     const testPartition = 'testPartition'

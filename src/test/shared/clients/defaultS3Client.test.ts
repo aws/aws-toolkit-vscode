@@ -4,8 +4,18 @@
  */
 
 import assert from 'assert'
-import { AWSError, Request, S3 } from 'aws-sdk'
-import { DeleteObjectsRequest, ListObjectVersionsOutput, ListObjectVersionsRequest } from 'aws-sdk/clients/s3'
+import { AWSError, Request } from 'aws-sdk';
+import { Upload } from "@aws-sdk/lib-storage";
+
+import {
+    DeleteObjectsCommandInput,
+    Error,
+    ListObjectVersionsCommandInput,
+    ListObjectVersionsCommandOutput,
+    ManagedUpload,
+    S3,
+} from "@aws-sdk/client-s3";
+
 import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
@@ -59,14 +69,14 @@ describe('DefaultS3Client', function () {
     let mockS3: S3
 
     class ListObjectVersionsFixtures {
-        public readonly firstPageRequest: ListObjectVersionsRequest = {
+        public readonly firstPageRequest: ListObjectVersionsCommandInput = {
             Bucket: bucketName,
             MaxKeys: DEFAULT_MAX_KEYS,
             KeyMarker: undefined,
             VersionIdMarker: undefined,
         }
 
-        public readonly firstPageResponse: ListObjectVersionsOutput = {
+        public readonly firstPageResponse: ListObjectVersionsCommandOutput = {
             Versions: [
                 { Key: folderPath, VersionId: folderVersionId },
                 { Key: fileKey, VersionId: fileVersionId },
@@ -76,21 +86,21 @@ describe('DefaultS3Client', function () {
             NextVersionIdMarker: nextVersionIdMarker,
         }
 
-        public readonly secondPageRequest: ListObjectVersionsRequest = {
+        public readonly secondPageRequest: ListObjectVersionsCommandInput = {
             Bucket: bucketName,
             MaxKeys: DEFAULT_MAX_KEYS,
             KeyMarker: nextKeyMarker,
             VersionIdMarker: nextVersionIdMarker,
         }
 
-        public readonly secondPageResponse: ListObjectVersionsOutput = {
+        public readonly secondPageResponse: ListObjectVersionsCommandOutput = {
             Versions: [{ Key: fileKey, VersionId: undefined }],
             IsTruncated: false,
         }
     }
 
     class DeleteObjectsFixtures {
-        public readonly firstRequest: DeleteObjectsRequest = {
+        public readonly firstRequest: DeleteObjectsCommandInput = {
             Bucket: bucketName,
             Delete: {
                 Objects: [
@@ -101,7 +111,7 @@ describe('DefaultS3Client', function () {
             },
         }
 
-        public readonly secondRequest: DeleteObjectsRequest = {
+        public readonly secondRequest: DeleteObjectsCommandInput = {
             Bucket: bucketName,
             Delete: {
                 Objects: [{ Key: fileKey, VersionId: undefined }],
@@ -239,7 +249,10 @@ describe('DefaultS3Client', function () {
 
     describe('createFolder', function () {
         it('creates a folder', async function () {
-            when(mockS3.upload(deepEqual({ Bucket: bucketName, Key: folderPath, Body: '' }))).thenReturn(success())
+            when(new Upload({
+                client: mockS3,
+                params: deepEqual({ Bucket: bucketName, Key: folderPath, Body: '' })
+            })).thenReturn(success())
 
             const response = await createClient().createFolder({ bucketName, path: folderPath })
 
@@ -249,7 +262,10 @@ describe('DefaultS3Client', function () {
         })
 
         it('throws an Error on failure', async function () {
-            when(mockS3.upload(anything())).thenReturn(failure())
+            when(new Upload({
+                client: mockS3,
+                params: anything()
+            })).thenReturn(failure())
 
             await assert.rejects(createClient().createFolder({ bucketName, path: folderPath }), error)
         })
@@ -295,7 +311,10 @@ describe('DefaultS3Client', function () {
                 Promise.resolve({ Location: '', ETag: '', Bucket: '', Key: '' })
             )
             when(mockManagedUpload.on('httpUploadProgress', anyFunction())).thenReturn(undefined)
-            when(mockS3.upload(anything())).thenReturn(instance(mockManagedUpload))
+            when(new Upload({
+                client: mockS3,
+                params: anything()
+            })).thenReturn(instance(mockManagedUpload))
 
             const fileStreams = new FakeFileStreams({ readData: fileData, readAutomatically: true })
             const progressCaptor = new FakeProgressCaptor()
@@ -308,7 +327,10 @@ describe('DefaultS3Client', function () {
                 contentType: 'image/jpeg',
             })
 
-            verify(mockS3.upload(anything())).once()
+            verify(new Upload({
+                client: mockS3,
+                params: anything()
+            })).once()
             // eslint-disable-next-line @typescript-eslint/unbound-method
             const [{ Bucket, Key, Body, ContentType }] = capture(mockS3.upload).last()
             assert.strictEqual(Bucket, bucketName)
@@ -325,9 +347,12 @@ describe('DefaultS3Client', function () {
 
         it('throws an Error on failure', async function () {
             // TODO: rejected promise here since the impl. does not await the upload anymore
-            const managedMocked: S3.ManagedUpload = mock()
+            const managedMocked: ManagedUpload = mock()
             const expectedError = new Error('Expected an error')
-            when(mockS3.upload(anything())).thenReturn(instance(managedMocked))
+            when(new Upload({
+                client: mockS3,
+                params: anything()
+            })).thenReturn(instance(managedMocked))
             when(managedMocked.promise()).thenReject(expectedError)
 
             const managedUpload = await createClient().uploadFile({
@@ -581,7 +606,7 @@ describe('DefaultS3Client', function () {
         })
 
         it('returns a list of errors on partial failure', async function () {
-            const error: S3.Error = {
+            const error: Error = {
                 Key: folderPath,
                 VersionId: folderVersionId,
                 Code: '404',

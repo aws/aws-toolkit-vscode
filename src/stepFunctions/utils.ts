@@ -5,7 +5,8 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { IAM, StepFunctions } from 'aws-sdk'
+import { Role } from "@aws-sdk/client-iam";
+import { StateMachineListItem } from "@aws-sdk/client-sfn";
 import { mkdir, writeFile } from 'fs-extra'
 import * as vscode from 'vscode'
 import { StepFunctionsClient } from '../shared/clients/stepFunctionsClient'
@@ -188,7 +189,7 @@ async function httpsGetRequestWrapper(url: string): Promise<string> {
 
 export async function* listStateMachines(
     client: StepFunctionsClient
-): AsyncIterableIterator<StepFunctions.StateMachineListItem> {
+): AsyncIterableIterator<StateMachineListItem> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.statemachines', 'Loading State Machines...')
     )
@@ -206,7 +207,7 @@ export async function* listStateMachines(
  * Checks if the given IAM Role is assumable by AWS Step Functions.
  * @param role The IAM role to check
  */
-export function isStepFunctionsRole(role: IAM.Role): boolean {
+export function isStepFunctionsRole(role: Role): boolean {
     const stepFunctionsSevicePrincipal: string = 'states.amazonaws.com'
     const assumeRolePolicyDocument: string | undefined = role.AssumeRolePolicyDocument
 
