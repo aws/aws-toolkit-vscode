@@ -5,6 +5,7 @@
 
 import path from 'path'
 import { Uri, Webview } from 'vscode'
+import { weaverbirdEnabled } from '../../../weaverbird/config'
 
 export class WebViewContentGenerator {
     public generate(extensionURI: Uri, webView: Webview): string {
@@ -35,7 +36,7 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI();
+                createMynahUI(${weaverbirdEnabled});
             }
     </script>
         `

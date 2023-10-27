@@ -18,31 +18,39 @@ const WeaverBirdWelcomeMessage = `### How \`/assign\` works:
 3. Q generate code
 4. Review code suggestions, provide feedback if needed`
 
-const WelcomeFollowUps = {
+const WelcomeFollowUps = (weaverbirdEnabled: boolean) => ({
     text: 'Or you can select one of these',
     options: [
-        {
-            pillText: 'I want to assign a code task',
-            type: 'assign-code-task',
-        },
+        ...(weaverbirdEnabled
+            ? [
+                  {
+                      pillText: 'I want to assign a code task',
+                      type: 'assign-code-task',
+                  },
+              ]
+            : []),
         {
             pillText: 'I have a software development question',
             type: 'continue-to-chat',
         },
     ],
-}
+})
 
-const QuickActionCommands = [
-    {
-        groupName: 'Start a workflow',
-        commands: [
-            {
-                command: '/assign',
-                placeholder: 'Please specify the coding task in details',
-                description: 'Give Q a coding task',
-            },
-        ],
-    },
+const QuickActionCommands = (weaverbirdEnabled: boolean) => [
+    ...(weaverbirdEnabled
+        ? [
+              {
+                  groupName: 'Start a workflow',
+                  commands: [
+                      {
+                          command: '/assign',
+                          placeholder: 'Please specify the coding task in details',
+                          description: 'Give Q a coding task',
+                      },
+                  ],
+              },
+          ]
+        : []),
     // TODO after implementing the command handlers on the extension side
     // those items should be enabled one by one
     /* {
@@ -76,7 +84,8 @@ const QuickActionCommands = [
         ],
     },
 ]
-export const createMynahUI = (initialData?: MynahUIDataModel) => {
+
+export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     const ideApi = acquireVsCodeApi()
@@ -107,7 +116,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
                 tabTitle: 'Chat',
                 chatItems: [message],
                 showChatAvatars: false,
-                quickActionCommands: QuickActionCommands,
+                quickActionCommands: QuickActionCommands(weaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             })
 
@@ -282,7 +291,7 @@ ${message}`,
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
-            if (prompt.command !== undefined && prompt.command.trim() !== '') {
+            if (weaverbirdEnabled && prompt.command !== undefined && prompt.command.trim() !== '') {
                 if (prompt.command === '/assign') {
                     let affectedTabId = tabID
                     const realPromptText = prompt.escapedPrompt?.trim() ?? ''
@@ -416,11 +425,11 @@ ${message}`,
                         },
                         {
                             type: ChatItemType.ANSWER,
-                            followUp: WelcomeFollowUps,
+                            followUp: WelcomeFollowUps(weaverbirdEnabled),
                         },
                     ],
                     showChatAvatars: false,
-                    quickActionCommands: QuickActionCommands,
+                    quickActionCommands: QuickActionCommands(weaverbirdEnabled),
                     promptInputPlaceholder: 'Ask a question or "/" for capabilities',
                     ...initialData,
                 },
@@ -436,11 +445,11 @@ ${message}`,
                     },
                     {
                         type: ChatItemType.ANSWER,
-                        followUp: WelcomeFollowUps,
+                        followUp: WelcomeFollowUps(weaverbirdEnabled),
                     },
                 ],
                 showChatAvatars: false,
-                quickActionCommands: QuickActionCommands,
+                quickActionCommands: QuickActionCommands(weaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             },
         },

@@ -8,6 +8,7 @@ import { AwsQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as weaverbirdChatAppInit } from '../weaverbird/app'
 import { AwsQAppInitContext, DefaultAwsQAppInitContext } from './apps/initContext'
+import { weaverbirdEnabled } from '../weaverbird/config'
 
 export async function activate(context: ExtensionContext) {
     const appInitConext = new DefaultAwsQAppInitContext()
@@ -31,6 +32,7 @@ export async function activate(context: ExtensionContext) {
 
 function registerApps(appInitContext: AwsQAppInitContext) {
     cwChatAppInit(appInitContext)
-    // TODO: Register Weaverbird. Still needs to have quick action specific registration
-    weaverbirdChatAppInit(appInitContext)
+    if (weaverbirdEnabled) {
+        weaverbirdChatAppInit(appInitContext)
+    }
 }
