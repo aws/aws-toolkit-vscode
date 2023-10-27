@@ -40,7 +40,7 @@ const fs = FileSystemCommon.instance
 
 export class ConversationNotStartedState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = SessionStatePhase.Init
+    public readonly phase = 'Init'
 
     constructor(public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
@@ -55,7 +55,7 @@ export class ConversationNotStartedState implements SessionState {
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly conversationId: string
-    public readonly phase = SessionStatePhase.Approach
+    public readonly phase = 'Approach'
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
@@ -98,7 +98,7 @@ export class RefinementState implements SessionState {
 
 export class RefinementIterationState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = SessionStatePhase.Approach
+    public readonly phase = 'Approach'
     public readonly conversationId: string
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
@@ -156,7 +156,7 @@ abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
     readonly tokenSource: vscode.CancellationTokenSource
-    public phase = SessionStatePhase.Codegen
+    public phase: SessionStatePhase = 'Codegen'
     public readonly conversationId: string
 
     constructor(protected config: SessionStateConfig, public tabID: string) {

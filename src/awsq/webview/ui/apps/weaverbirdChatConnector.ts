@@ -93,7 +93,7 @@ export class Connector {
                 body: messageData.message ?? undefined,
                 relatedContent: undefined,
                 followUp:
-                    messageData.followUps !== undefined
+                    messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
                               text: 'Would you like to follow up with one of these?',
                               options: messageData.followUps,
@@ -150,6 +150,14 @@ export class Connector {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'stop-response',
+        })
+    }
+
+    onTabOpen = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID,
+            command: 'new-tab-was-created',
+            tabType: 'wb',
         })
     }
 

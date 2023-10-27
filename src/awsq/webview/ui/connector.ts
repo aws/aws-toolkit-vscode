@@ -99,6 +99,14 @@ export class Connector {
         })
     }
 
+    onKnownTabOpen = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'wb':
+                this.weaverbirdChatConnector.onTabOpen(tabID)
+                break
+        }
+    }
+
     onTabChange = (tabId: string): void => {
         this.tabsStorage.setSelectedTab(tabId)
     }

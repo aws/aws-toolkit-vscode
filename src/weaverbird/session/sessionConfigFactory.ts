@@ -11,6 +11,7 @@ import { defaultLlmConfig, weaverbirdScheme } from '../constants'
 import { getConfig } from '../config'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
+import { WorkspaceFolderNotFoundError } from '../errors'
 
 /**
  * Factory method for creating session configurations
@@ -24,7 +25,7 @@ export async function createSessionConfig(params?: {
 }): Promise<SessionConfig> {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders === undefined || workspaceFolders.length === 0) {
-        throw new Error('Could not find workspace folder')
+        throw new WorkspaceFolderNotFoundError()
     }
 
     // TODO figure out how we want to handle multi root workspaces

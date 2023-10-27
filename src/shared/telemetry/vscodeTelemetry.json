@@ -84,7 +84,17 @@
             "description": "Unique identifier for each message in an conversation"
         },
         {
-            "name": "cwsprChatCodeSnippetCount",
+            "name": "cwsprChatActiveEditorTotalCharacters",
+            "type": "int",
+            "description": "Total number of characters in the active editor"
+        },
+        {
+            "name": "cwsprChatActiveEditorImportCount",
+            "type": "int",
+            "description": "Number of import statements in the active editor"
+        },
+        {
+            "name": "cwsprChatResponseCodeSnippetCount",
             "type": "int",
             "description": "Number of code snippets in response"
         },
@@ -476,10 +486,19 @@
                     "type": "cwsprChatUserIntent"
                 },
                 {
-                    "type": "cwsprChatCodeSnippetCount"
+                    "type": "cwsprChatHasCodeSnippet"
                 },
                 {
                     "type": "cwsprChatProgrammingLanguage"
+                },
+                {
+                    "type": "cwsprChatActiveEditorTotalCharacters"
+                },
+                {
+                    "type": "cwsprChatActiveEditorImportCount"
+                },
+                {
+                    "type": "cwsprChatResponseCodeSnippetCount"
                 },
                 {
                     "type": "cwsprChatResponseCode",

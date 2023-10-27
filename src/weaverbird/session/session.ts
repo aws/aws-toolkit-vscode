@@ -16,6 +16,7 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { uploadCode } from '../util/upload'
 import { WeaverbirdLambdaClient } from '../client/weaverbird'
+import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 
 const fs = FileSystemCommon.instance
 
@@ -26,6 +27,8 @@ export class Session {
     public readonly config: SessionConfig
     private readonly tabID: string
     private lambdaClient: WeaverbirdLambdaClient
+    private approachRetries: number
+    private codeGenRetries: number
 
     private messenger: Messenger
 
@@ -36,6 +39,8 @@ export class Session {
 
         this.messenger = messenger
         this.lambdaClient = new WeaverbirdLambdaClient(sessionConfig.client, sessionConfig.backendConfig.lambdaArns)
+        this.approachRetries = approachRetryLimit
+        this.codeGenRetries = codeGenRetryLimit
     }
 
     /**
@@ -144,5 +149,27 @@ export class Session {
 
     get state() {
         return this._state
+    }
+
+    get retries() {
+        switch (this.state.phase) {
+            case 'Approach':
+                return this.approachRetries
+            case 'Codegen':
+                return this.codeGenRetries
+            default:
+                return this.approachRetries
+        }
+    }
+
+    decreaseRetries() {
+        switch (this.state.phase) {
+            case 'Approach':
+                this.approachRetries -= 1
+                break
+            case 'Codegen':
+                this.codeGenRetries -= 1
+                break
+        }
     }
 }

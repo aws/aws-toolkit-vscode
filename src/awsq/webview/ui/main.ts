@@ -153,6 +153,9 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
 
                 tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
                 tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
+
+                // Let weaverbird know a wb tab has been opened
+                connector.onKnownTabOpen(newTabId)
                 return
             }
 
@@ -287,6 +290,7 @@ ${message}`,
                         affectedTabId = mynahUI.updateStore('', {})
                     }
                     tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
+                    connector.onKnownTabOpen(affectedTabId)
 
                     mynahUI.updateStore(affectedTabId, { chatItems: [] })
                     mynahUI.updateStore(affectedTabId, {
