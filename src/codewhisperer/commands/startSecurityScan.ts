@@ -81,6 +81,7 @@ export async function startSecurityScan(
         codeScanServiceInvocationsDuration: 0,
         result: 'Succeeded',
         codewhispererCodeScanTotalIssues: 0,
+        codewhispererCodeScanIssuesWithFixes: 0,
         credentialStartUrl: AuthUtil.instance.startUrl,
     }
     try {
@@ -167,7 +168,11 @@ export async function startSecurityScan(
         const total = securityRecommendationCollection.reduce((accumulator, current) => {
             return accumulator + current.issues.length
         }, 0)
+        const issuesWithFixes = securityRecommendationCollection.reduce((accumulator, current) => {
+            return accumulator + current.issues.filter(issue => issue.suggestedFixes.length > 0).length
+        }, 0)
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
+        codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = issuesWithFixes
         throwIfCancelled()
         getLogger().verbose(`Security scan totally found ${total} issues.`)
         if (isCloud9()) {
