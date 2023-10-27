@@ -165,14 +165,15 @@ export async function startSecurityScan(
             CodeWhispererConstants.codeScanFindingsSchema,
             projectPath
         )
-        const total = securityRecommendationCollection.reduce((accumulator, current) => {
-            return accumulator + current.issues.length
-        }, 0)
-        const issuesWithFixes = securityRecommendationCollection.reduce((accumulator, current) => {
-            return accumulator + current.issues.filter(issue => issue.suggestedFixes.length > 0).length
-        }, 0)
+        const { total, withFixes } = securityRecommendationCollection.reduce(
+            (accumulator, current) => ({
+                total: accumulator.total + current.issues.length,
+                withFixes: accumulator.withFixes + current.issues.filter(i => i.suggestedFixes.length > 0).length,
+            }),
+            { total: 0, withFixes: 0 }
+        )
         codeScanTelemetryEntry.codewhispererCodeScanTotalIssues = total
-        codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = issuesWithFixes
+        codeScanTelemetryEntry.codewhispererCodeScanIssuesWithFixes = withFixes
         throwIfCancelled()
         getLogger().verbose(`Security scan totally found ${total} issues.`)
         if (isCloud9()) {
