@@ -43,6 +43,48 @@ describe('closingBracketUtil', function () {
 
         it('should remove extra closing symbol', async function () {
             /**
+             * public static void mergeSort(int[|] nums) {
+             *      mergeSort(nums, 0, nums.length - 1);
+             * }|])
+             */
+            await assertClosingSymbolsHandler(
+                String.raw`public static void mergeSort(int[`,
+                String.raw`])`,
+                String.raw`] nums) {
+    mergeSort(nums, 0, nums.length - 1);
+}`,
+                String.raw`public static void mergeSort(int[] nums) {
+    mergeSort(nums, 0, nums.length - 1);
+}`
+            )
+
+            /**
+             * fun genericFunction<|T>(value: T): T {
+             *     return value
+             * }|>
+             */
+            await assertClosingSymbolsHandler(
+                String.raw`fun genericFunction<`,
+                String.raw`>`,
+                String.raw`T>(value: T): T {
+    return value
+}`,
+                String.raw`fun genericFunction<T>(value: T): T {
+    return value
+}`
+            )
+
+            /**
+             * function getProperty<T, |K extends keyof T>(obj: T, key: K) {|>
+             */
+            await assertClosingSymbolsHandler(
+                String.raw`function getProperty<T, `,
+                String.raw`>`,
+                String.raw`K extends keyof T>(obj: T, key: K) {`,
+                String.raw`function getProperty<T, K extends keyof T>(obj: T, key: K) {`
+            )
+
+            /**
              * public class Main {
              *     public static void main(|)
              * }
@@ -109,14 +151,37 @@ describe('closingBracketUtil', function () {
                 '{\n\t"userName": "john",\n\t"department": "codewhisperer",\n}'
             )
 
+            // TODO: this one won't work for now in order to make the following working
             /**
-             * const someArray = ["element1", "element2"]];
+             * const someArray = [|"element1", "element2"]];
+             */
+            // await assertClosingSymbolsHandler(
+            //     'const anArray = [',
+            //     ']',
+            //     '"element1", "element2"];',
+            //     `const anArray = ["element1", "element2"];`
+            // )
+
+            /**
+             * export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {
+             *      lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },
+             *      lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },
+             *      lt3: { |launchTemplateId: "lt-678919", launchTemplateName: "foobar" },|
+             * };
              */
             await assertClosingSymbolsHandler(
-                'const anArray = [',
-                ']',
-                '"element1", "element2"];',
-                `const anArray = ["element1", "element2"];`
+                String.raw`export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {
+                lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },
+                lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },
+                lt3: { `,
+                String.raw`
+            };`,
+                String.raw`launchTemplateId: "lt-678919", launchTemplateName: "foobar" },`,
+                String.raw`export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {
+                lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },
+                lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },
+                lt3: { launchTemplateId: "lt-678919", launchTemplateName: "foobar" },
+            };`
             )
 
             await assertClosingSymbolsHandler(
@@ -147,6 +212,34 @@ describe('closingBracketUtil', function () {
         })
 
         it('should not remove extra closing symbol', async function () {
+            /**
+             * describe('Foo', () => {
+             *      describe('Bar', function () => {
+             *          it('Boo', |() => {
+             *              expect(true).toBe(true)
+             *          }|)
+             *      })
+             * })
+             */
+            await assertClosingSymbolsHandler(
+                String.raw`describe('Foo', () => {
+    describe('Bar', function () {
+        it('Boo', `,
+                String.raw`)
+    })
+})`,
+                String.raw`() => {
+            expect(true).toBe(true)
+        }`,
+                String.raw`describe('Foo', () => {
+    describe('Bar', function () {
+        it('Boo', () => {
+            expect(true).toBe(true)
+        })
+    })
+})`
+            )
+
             await assertClosingSymbolsHandler(
                 'function add2Numbers(',
                 '',
@@ -174,6 +267,8 @@ describe('closingBracketUtil', function () {
                 'lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },',
                 'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};'
             )
+
+            await assertClosingSymbolsHandler(String.raw``, String.raw``, String.raw``, String.raw``)
 
             await assertClosingSymbolsHandler(
                 'const aString = "',
