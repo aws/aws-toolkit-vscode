@@ -121,12 +121,9 @@ function getBracketsToRemove(
     end: vscode.Position,
     start: vscode.Position
 ) {
-    const char1 = findFirstNonClosedOpneingParen(leftContext)
-    const char2 = findFirstNonClosedClosingParen(recommendation)
-
-    const isPaired = char1 && char2 && closeToOpenParen[char2.char] === char1.char
-
-    const toRemove: number[] = []
+    const unpairedClosingsInReco = findFirstNonClosedClosingParen(recommendation)
+    const unpairedOpeningsInLeftContext = findFirstNonClosedOpneingParen(leftContext, unpairedClosingsInReco.length)
+    const unpairedClosingsInRightContext = findFirstNonClosedClosingParen(rightContext)
 
     let lastNonSpaceCharInReco: string | undefined = undefined
     for (let i = recommendation.length - 1; i >= 0; i--) {
@@ -137,16 +134,30 @@ function getBracketsToRemove(
         }
     }
 
-    if (isPaired) {
-        const char3 = findFirstNonClosedClosingParen(rightContext)
+    const toRemove: number[] = []
 
-        if (char3 && char3.char === char2.char) {
-            if (lastNonSpaceCharInReco === ';') {
-                toRemove.push(char3.strOffset)
-            } else if (lastNonSpaceCharInReco !== undefined && parenthesis.includes(lastNonSpaceCharInReco)) {
-                toRemove.push(char3.strOffset)
+    let i = 0
+    let j = 0
+    let k = 0
+    while (i < unpairedOpeningsInLeftContext.length && j < unpairedClosingsInReco.length) {
+        const opening = unpairedOpeningsInLeftContext[i]
+        const closing = unpairedClosingsInReco[j]
+
+        const isPaired = closeToOpenParen[closing.char] === opening.char
+        const toDelete = unpairedClosingsInRightContext[k]
+
+        if (isPaired) {
+            if (toDelete && toDelete.char === closing.char) {
+                if (lastNonSpaceCharInReco !== undefined && parenthesis.includes(lastNonSpaceCharInReco)) {
+                    toRemove.push(toDelete.strOffset)
+                }
+
+                k++
             }
         }
+
+        i++
+        j++
     }
 
     return toRemove
@@ -203,7 +214,8 @@ function getQuotesToRemove(
     return []
 }
 
-function findFirstNonClosedOpneingParen(str: string): { char: string; strOffset: number } | undefined {
+function findFirstNonClosedOpneingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
+    const resultSet: { char: string; strOffset: number }[] = []
     const stack: string[] = []
 
     for (let i = str.length - 1; i >= 0; i--) {
@@ -214,19 +226,23 @@ function findFirstNonClosedOpneingParen(str: string): { char: string; strOffset:
 
         if (char in closeToOpenParen) {
             stack.push(char)
+            if (cnt && cnt === resultSet.length) {
+                return resultSet
+            }
         } else if (char in openToCloseParen) {
             if (stack.length !== 0 && stack[stack.length - 1] === openToCloseParen[char]) {
                 stack.pop()
             } else {
-                return { char: char, strOffset: i }
+                resultSet.push({ char: char, strOffset: i })
             }
         }
     }
 
-    return undefined
+    return resultSet
 }
 
-function findFirstNonClosedClosingParen(str: string): { char: string; strOffset: number } | undefined {
+function findFirstNonClosedClosingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
+    const resultSet: { char: string; strOffset: number }[] = []
     const stack: string[] = []
 
     for (let i = 0; i < str.length; i++) {
@@ -237,14 +253,17 @@ function findFirstNonClosedClosingParen(str: string): { char: string; strOffset:
 
         if (char in openToCloseParen) {
             stack.push(char)
+            if (cnt && cnt === resultSet.length) {
+                return resultSet
+            }
         } else if (char in closeToOpenParen) {
             if (stack.length !== 0 && stack[stack.length - 1] === closeToOpenParen[char]) {
                 stack.pop()
             } else {
-                return { char: char, strOffset: i }
+                resultSet.push({ char: char, strOffset: i })
             }
         }
     }
 
-    return undefined
+    return resultSet
 }
