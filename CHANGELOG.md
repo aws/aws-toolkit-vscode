@@ -1,3 +1,6 @@
+# _1.84_ (2023-10-17)
+- **(Feature)** Public preview for CodeWhisperer Enterprise: Enterprise customers can now customize CodeWhisperer to adopt and suggest code based on organization specific codebases.
+
 # _1.83_ (2023-10-13)
 - **(Feature)** CodeWhisperer: improve auto-suggestions for additional languages
 
