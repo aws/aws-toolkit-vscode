@@ -8,7 +8,7 @@
 // "templates.json" support.
 //
 import * as vscode from 'vscode'
-import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 import { getNormalizedRelativePath } from '../../shared/utilities/pathUtils'
 import { load as loadTemplatesConfig } from '../config/templates'
 

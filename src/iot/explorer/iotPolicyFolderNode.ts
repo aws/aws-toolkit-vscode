@@ -13,11 +13,12 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { inspect } from 'util'
-import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { IotNode } from './iotNodes'
 import { Commands } from '../../shared/vscode/commands'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 //Length of certificate ID. The certificate ID is the last segment of the ARN.
 const certIdLength = 64
@@ -34,7 +35,7 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
     public constructor(
         public readonly iot: IotClient,
         public readonly parent: IotNode,
-        private readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super('Policies', vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = 'IoT Policies'
@@ -101,6 +102,6 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return this.workspace.getConfiguration('aws').get<number>('iot.maxItemsPerPage')
+        return this.settings.getSection('aws').get<number>('iot.maxItemsPerPage')
     }
 }

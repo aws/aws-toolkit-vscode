@@ -18,7 +18,7 @@ import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
 import globals from '../../../shared/extensionGlobals'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
