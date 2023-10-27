@@ -192,7 +192,7 @@ function findFirstNonClosedOpneingParen(str: string): { char: string; strOffset:
     return undefined
 }
 
-export function findFirstNonClosedClosingParen(str: string): { char: string; strOffset: number } | undefined {
+function findFirstNonClosedClosingParen(str: string): { char: string; strOffset: number } | undefined {
     const stack: string[] = []
 
     for (let i = 0; i < str.length; i++) {
