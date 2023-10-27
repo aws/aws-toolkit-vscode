@@ -139,14 +139,14 @@ export class Messenger {
     private showChatExceptionMessage(e: ChatException, tabID: string) {
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage != undefined) {
-            message += '\n\nDetails: ' + e.errorMessage
+            message += `\n\nDetails: ${e.errorMessage}`
         }
 
         if (e.statusCode != undefined) {
-            message += '\n\nStatus Code: ' + e.statusCode
+            message += `\n\nStatus Code: ${e.statusCode}`
         }
         if (e.sessionID != undefined) {
-            message += '\n\nSession ID: ' + e.sessionID
+            message += `\n\nSession ID: ${e.sessionID}`
         }
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
