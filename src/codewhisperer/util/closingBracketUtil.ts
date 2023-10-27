@@ -128,10 +128,24 @@ function getBracketsToRemove(
 
     const toRemove: number[] = []
 
+    let lastNonSpaceCharInReco: string | undefined = undefined
+    for (let i = recommendation.length - 1; i >= 0; i--) {
+        const char = recommendation[i]
+        if (!/\s/.test(char)) {
+            lastNonSpaceCharInReco = char
+            break
+        }
+    }
+
     if (isPaired) {
-        const obj = findFirstNonClosedClosingParen(rightContext)
-        if (obj && obj.char === char2.char) {
-            toRemove.push(obj.strOffset)
+        const char3 = findFirstNonClosedClosingParen(rightContext)
+
+        if (char3 && char3.char === char2.char) {
+            if (lastNonSpaceCharInReco === ';') {
+                toRemove.push(char3.strOffset)
+            } else if (lastNonSpaceCharInReco !== undefined && parenthesis.includes(lastNonSpaceCharInReco)) {
+                toRemove.push(char3.strOffset)
+            }
         }
     }
 
