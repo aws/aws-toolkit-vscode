@@ -209,12 +209,7 @@ class CodeWhispererTelemetryService {
         val classifierThreshold = CodeWhispererAutoTriggerService.getThreshold()
 
         val supplementalContext = requestContext.supplementalContext
-        val completionType = if (recommendationContext.details.any {
-                it.completionType == CodewhispererCompletionType.Block
-            }
-        ) {
-            CodewhispererCompletionType.Block
-        } else CodewhispererCompletionType.Line
+        val completionType = if (recommendationContext.details.isEmpty()) CodewhispererCompletionType.Line else recommendationContext.details[0].completionType
 
         // only send if it's a pro tier user
         projectCoroutineScope(project).launch {
