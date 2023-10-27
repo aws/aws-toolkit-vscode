@@ -6,6 +6,7 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
+import { telemetry } from '../../../../shared/telemetry/telemetry'
 
 interface ChatPayload {
     chatMessage: string
@@ -40,6 +41,9 @@ export class Connector {
     }
 
     followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+        // telemetry.codewhispererchat_interactWithMessage.emit({
+        //     cwsprChatInteractionType: 'clickFollowUp',
+        // })
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
@@ -57,6 +61,9 @@ export class Connector {
     }
 
     onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        // telemetry.codewhispererchat_interactWithMessage.emit({
+        //     cwsprChatInteractionType: 'insertAtCursor',
+        // })
         this.sendMessageToExtension({
             tabID: tabID,
             code,
@@ -66,6 +73,9 @@ export class Connector {
     }
 
     onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+        // telemetry.codewhispererchat_interactWithMessage.emit({
+        //     cwsprChatInteractionType: 'copySnippet',
+        // })
         this.sendMessageToExtension({
             tabID: tabID,
             code,
@@ -177,6 +187,9 @@ export class Connector {
                           }
                         : undefined,
             }
+            // telemetry.codewhispererchat_addMessage.emit({
+            //     cwsprChatFollowUpCount: messageData.followUps?.length ?? 0,
+            // })
             this.onChatAnswerReceived(messageData.tabID, answer)
 
             return
