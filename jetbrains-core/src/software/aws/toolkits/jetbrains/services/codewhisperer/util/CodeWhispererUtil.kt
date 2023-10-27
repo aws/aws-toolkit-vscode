@@ -146,7 +146,7 @@ object CodeWhispererUtil {
         val nonBlankLines = content.split("\n").count { it.isNotBlank() }
 
         return when {
-            content.isEmpty() -> CodewhispererCompletionType.Unknown
+            content.isEmpty() -> CodewhispererCompletionType.Line
             nonBlankLines > 1 -> CodewhispererCompletionType.Block
             else -> CodewhispererCompletionType.Line
         }

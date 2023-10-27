@@ -819,7 +819,8 @@ class CodeWhispererTelemetryTest : CodeWhispererTestBase() {
                 metricCaptor.allValues,
                 userDecision,
                 numOfEmptyRecommendations,
-                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString()
+                "codewhispererSuggestionState" to CodewhispererSuggestionState.Empty.toString(),
+                "codewhispererCompletionType" to CodewhispererCompletionType.Line.toString()
             )
         }
     }
