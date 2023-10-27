@@ -8,7 +8,6 @@ import { Iot } from 'aws-sdk'
 import { IotClient, IotPolicy } from '../../shared/clients/iotClient'
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { Workspace } from '../../shared/vscode/workspace'
 import { inspect } from 'util'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { localize } from '../../shared/utilities/vsCodeUtils'
@@ -24,8 +23,7 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
         public version: Iot.PolicyVersion,
         public isDefault: boolean,
         public readonly parent: IotPolicyWithVersionsNode,
-        public readonly iot: IotClient,
-        protected readonly workspace = Workspace.vscode()
+        public readonly iot: IotClient
     ) {
         super(
             localize(
