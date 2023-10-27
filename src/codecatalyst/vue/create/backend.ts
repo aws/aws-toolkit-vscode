@@ -33,7 +33,7 @@ import { isCloud9 } from '../../../shared/extensionUtilities'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { isNonNullable } from '../../../shared/utilities/tsUtils'
 import { createOrgPrompter, createProjectPrompter } from '../../wizards/selectResource'
-import { GetSourceRepositoryCloneUrlsRequest } from 'aws-sdk/clients/codecatalyst'
+import { GetSourceRepositoryCloneUrlsCommandInput } from "@aws-sdk/client-codecatalyst";
 import { QuickPickPrompter } from '../../../shared/ui/pickerPrompter'
 
 interface LinkedResponse {
@@ -135,7 +135,7 @@ export class CodeCatalystCreateWebview extends VueWebview {
         return branches.flatten().promise()
     }
 
-    public isThirdPartyRepo(codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest): Promise<boolean> {
+    public isThirdPartyRepo(codeCatalystRepo: GetSourceRepositoryCloneUrlsCommandInput): Promise<boolean> {
         return isThirdPartyRepo(this.client, codeCatalystRepo)
     }
 

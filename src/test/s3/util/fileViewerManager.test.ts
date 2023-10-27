@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { ManagedUpload } from 'aws-sdk/clients/s3'
+import { ManagedUpload } from "@aws-sdk/client-s3";
 import * as vscode from 'vscode'
 import { S3FileProvider, S3FileViewerManager } from '../../../s3/fileViewerManager'
 import { DefaultBucket, DefaultS3Client, File, toFile } from '../../../shared/clients/s3Client'

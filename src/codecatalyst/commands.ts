@@ -22,7 +22,7 @@ import { ToolkitError, errorCode } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
-import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { CreateDevEnvironmentCommandInput, UpdateDevEnvironmentCommandInput } from "@aws-sdk/client-codecatalyst";
 import { Auth } from '../auth/auth'
 import { SsoConnection } from '../auth/connection'
 
@@ -109,12 +109,12 @@ export async function deleteDevEnv(client: CodeCatalystClient, devenv: DevEnviro
 }
 
 export type DevEnvironmentSettings = Pick<
-    CreateDevEnvironmentRequest,
+    CreateDevEnvironmentCommandInput,
     'alias' | 'instanceType' | 'inactivityTimeoutMinutes' | 'persistentStorage'
 >
 
 export type UpdateDevEnvironmentSettings = Pick<
-    UpdateDevEnvironmentRequest,
+    UpdateDevEnvironmentCommandInput,
     'alias' | 'instanceType' | 'inactivityTimeoutMinutes'
 >
 

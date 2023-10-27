@@ -4,7 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { AppRunner, IAM } from 'aws-sdk'
+import { ImageRepository, SourceConfiguration } from "@aws-sdk/client-apprunner";
+import { Role } from "@aws-sdk/client-iam";
 import { createCommonButtons, QuickInputButton, QuickInputToggleButton } from '../../shared/ui/buttons'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { EcrClient, EcrRepository } from '../../shared/clients/ecrClient'
@@ -37,7 +38,7 @@ interface ImagePrompterOptions {
     extraButtons?: QuickInputButton<void | WizardControl>
 }
 
-function createEcrRole(client: IamClient): Promise<IAM.Role> {
+function createEcrRole(client: IamClient): Promise<Role> {
     const policy = {
         Version: '2008-10-17',
         Statement: [
@@ -221,7 +222,7 @@ export class ImageIdentifierForm extends WizardForm<{ repo: TaggedEcrRepository 
 function createImageRepositorySubForm(
     ecrClient: EcrClient,
     autoDeployButton: QuickInputToggleButton
-): WizardForm<AppRunner.ImageRepository> {
+): WizardForm<ImageRepository> {
     const subform = new WizardForm<AppRunner.ImageRepository>()
     const form = subform.body
 
@@ -251,7 +252,7 @@ function createImageRepositorySubForm(
     return subform
 }
 
-export class AppRunnerImageRepositoryWizard extends Wizard<AppRunner.SourceConfiguration> {
+export class AppRunnerImageRepositoryWizard extends Wizard<SourceConfiguration> {
     constructor(ecrClient: EcrClient, iamClient: IamClient, autoDeployButton = makeDeploymentButton()) {
         super()
         const form = this.form

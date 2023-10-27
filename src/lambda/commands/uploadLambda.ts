@@ -32,7 +32,7 @@ import { StepEstimator, Wizard, WIZARD_BACK } from '../../shared/wizards/wizard'
 import { createSingleFileDialog } from '../../shared/ui/common/openDialog'
 import { Prompter, PromptResult } from '../../shared/ui/prompter'
 import { ToolkitError } from '../../shared/errors'
-import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
+import { UpdateFunctionConfigurationCommandOutput } from "@aws-sdk/client-lambda";
 import globals from '../../shared/extensionGlobals'
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
 import { fromExtensionManifest } from '../../shared/settings'
@@ -79,7 +79,7 @@ class LambdaSettings extends fromExtensionManifest('aws.lambda', { recentlyUploa
 export interface LambdaFunction {
     readonly name: string
     readonly region: string
-    readonly configuration?: FunctionConfiguration
+    readonly configuration?: UpdateFunctionConfigurationCommandOutput
 }
 
 /**

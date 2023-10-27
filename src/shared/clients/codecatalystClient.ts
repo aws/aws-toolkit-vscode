@@ -9,6 +9,43 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as AWS from 'aws-sdk'
+
+import {
+    CodeCatalyst,
+    CreateAccessTokenCommandInput,
+    CreateAccessTokenCommandOutput,
+    CreateDevEnvironmentCommandInput,
+    CreateProjectCommandInput,
+    CreateSourceRepositoryBranchCommandInput,
+    CreateSourceRepositoryBranchCommandOutput,
+    DeleteDevEnvironmentCommandInput,
+    DeleteDevEnvironmentCommandOutput,
+    DevEnvironmentSummary,
+    GetDevEnvironmentCommandInput,
+    GetProjectCommandInput,
+    GetSourceRepositoryCloneUrlsCommandInput,
+    GetSpaceCommandInput,
+    GetSubscriptionCommandInput,
+    GetSubscriptionCommandOutput,
+    GetUserDetailsCommandInput,
+    GetUserDetailsCommandOutput,
+    ListDevEnvironmentsCommandInput,
+    ListProjectsCommandInput,
+    ListSourceRepositoriesCommandInput,
+    ListSourceRepositoriesItem,
+    ListSourceRepositoryBranchesCommandInput,
+    ListSourceRepositoryBranchesItem,
+    ListSpacesCommandInput,
+    StartDevEnvironmentCommandInput,
+    StartDevEnvironmentCommandOutput,
+    StartDevEnvironmentSessionCommandInput,
+    StartDevEnvironmentSessionCommandOutput,
+    StopDevEnvironmentCommandInput,
+    StopDevEnvironmentCommandOutput,
+    UpdateDevEnvironmentCommandInput,
+    UpdateDevEnvironmentCommandOutput,
+} from "@aws-sdk/client-codecatalyst";
+
 import * as logger from '../logger/logger'
 import { PerfLog } from '../logger/logger'
 import { ServiceConfigurationOptions } from 'aws-sdk/lib/service'
@@ -19,15 +56,9 @@ import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } fr
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
 import { DevSettings } from '../settings'
-import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { TokenProvider } from '../../auth/sso/sdkV2Compat'
 import { Uri } from 'vscode'
-import {
-    GetSourceRepositoryCloneUrlsRequest,
-    ListSourceRepositoriesItem,
-    ListSourceRepositoriesItems,
-} from 'aws-sdk/clients/codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
 
@@ -102,7 +133,7 @@ export type CodeCatalystResource =
     | CodeCatalystBranch
     | DevEnvironment
 
-function toDevEnv(spaceName: string, projectName: string, summary: CodeCatalyst.DevEnvironmentSummary): DevEnvironment {
+function toDevEnv(spaceName: string, projectName: string, summary: DevEnvironmentSummary): DevEnvironment {
     return {
         type: 'devEnvironment',
         org: { name: spaceName },
@@ -115,7 +146,7 @@ function toBranch(
     org: string,
     project: string,
     repo: string,
-    branch: CodeCatalyst.ListSourceRepositoryBranchesItem
+    branch: ListSourceRepositoryBranchesItem
 ): CodeCatalystBranch {
     assertHasProps(branch, 'name')
 
@@ -144,7 +175,7 @@ async function createCodeCatalystClient(
 }
 
 export type UserDetails = RequiredProps<
-    CodeCatalyst.GetUserDetailsResponse,
+    GetUserDetailsCommandOutput,
     'userId' | 'userName' | 'displayName' | 'primaryEmail'
 >
 
@@ -175,7 +206,7 @@ export async function createClient(
 
 // XXX: the backend currently rejects empty strings for `alias` so the field must be removed if falsey
 function fixAliasInRequest<
-    T extends CodeCatalyst.CreateDevEnvironmentRequest | CodeCatalyst.UpdateDevEnvironmentRequest
+    T extends CreateDevEnvironmentCommandInput | UpdateDevEnvironmentCommandInput
 >(request: T): T {
     if (!request.alias) {
         delete request.alias
@@ -311,8 +342,8 @@ class CodeCatalystClientInternal {
      * @returns PAT secret
      */
     public async createAccessToken(
-        args: CodeCatalyst.CreateAccessTokenRequest
-    ): Promise<CodeCatalyst.CreateAccessTokenResponse> {
+        args: CreateAccessTokenCommandInput
+    ): Promise<CreateAccessTokenCommandOutput> {
         try {
             return this.call(this.sdkClient.createAccessToken(args), false)
         } catch (e) {
@@ -324,8 +355,8 @@ class CodeCatalystClientInternal {
     }
 
     public async getSubscription(
-        request: CodeCatalyst.GetSubscriptionRequest
-    ): Promise<CodeCatalyst.GetSubscriptionResponse> {
+        request: GetSubscriptionCommandInput
+    ): Promise<GetSubscriptionCommandOutput> {
         return this.call(this.sdkClient.getSubscription(request), false)
     }
 
@@ -363,20 +394,20 @@ class CodeCatalystClientInternal {
         return (await this.connection.getToken()).accessToken
     }
 
-    private async getUserDetails(args: CodeCatalyst.GetUserDetailsRequest) {
+    private async getUserDetails(args: GetUserDetailsCommandInput) {
         const resp = await this.call(this.sdkClient.getUserDetails(args), false)
         assertHasProps(resp, 'userId', 'userName', 'displayName', 'primaryEmail')
 
         return { ...resp, version: resp.version } as const
     }
 
-    public async getSpace(request: CodeCatalyst.GetSpaceRequest): Promise<CodeCatalystOrg> {
+    public async getSpace(request: GetSpaceCommandInput): Promise<CodeCatalystOrg> {
         const resp = await this.call(this.sdkClient.getSpace(request), false)
 
         return { ...resp, type: 'org' }
     }
 
-    public async getProject(request: CodeCatalyst.GetProjectRequest): Promise<CodeCatalystProject> {
+    public async getProject(request: GetProjectCommandInput): Promise<CodeCatalystProject> {
         const resp = await this.call(this.sdkClient.getProject(request), false)
 
         return { ...resp, type: 'project', org: { name: request.spaceName } }
@@ -385,8 +416,8 @@ class CodeCatalystClientInternal {
     /**
      * Gets a list of all spaces (orgs) for the current CodeCatalyst user.
      */
-    public listSpaces(request: CodeCatalyst.ListSpacesRequest = {}): AsyncCollection<CodeCatalystOrg[]> {
-        const requester = async (request: CodeCatalyst.ListSpacesRequest) =>
+    public listSpaces(request: ListSpacesCommandInput = {}): AsyncCollection<CodeCatalystOrg[]> {
+        const requester = async (request: ListSpacesCommandInput) =>
             this.call(this.sdkClient.listSpaces(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -396,7 +427,7 @@ class CodeCatalystClientInternal {
     /**
      * Gets a list of all projects for the given CodeCatalyst user.
      */
-    public listProjects(request: CodeCatalyst.ListProjectsRequest): AsyncCollection<CodeCatalystProject[]> {
+    public listProjects(request: ListProjectsCommandInput): AsyncCollection<CodeCatalystProject[]> {
         // Only get projects the user is a member of.
         request.filters = [
             ...(request.filters ?? []),
@@ -406,7 +437,7 @@ class CodeCatalystClientInternal {
             },
         ]
 
-        const requester = async (request: CodeCatalyst.ListProjectsRequest) =>
+        const requester = async (request: ListProjectsCommandInput) =>
             this.call(this.sdkClient.listProjects(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -425,7 +456,7 @@ class CodeCatalystClientInternal {
      */
     public listDevEnvironments(proj: CodeCatalystProject): AsyncCollection<DevEnvironment[]> {
         const initRequest = { spaceName: proj.org.name, projectName: proj.name }
-        const requester = async (request: CodeCatalyst.ListDevEnvironmentsRequest) =>
+        const requester = async (request: ListDevEnvironmentsCommandInput) =>
             this.call(this.sdkClient.listDevEnvironments(request), true, {
                 // spaceName: proj.org.name,
                 // projectName: proj.name,
@@ -442,10 +473,10 @@ class CodeCatalystClientInternal {
      *                   your output.
      */
     public listSourceRepositories(
-        request: CodeCatalyst.ListSourceRepositoriesRequest,
+        request: ListSourceRepositoriesCommandInput,
         thirdParty: boolean = true
     ): AsyncCollection<CodeCatalystRepo[]> {
-        const requester = async (request: CodeCatalyst.ListSourceRepositoriesRequest) => {
+        const requester = async (request: ListSourceRepositoriesCommandInput) => {
             const allRepositories = this.call(this.sdkClient.listSourceRepositories(request), true, { items: [] })
             let finalRepositories = allRepositories
 
@@ -478,9 +509,9 @@ class CodeCatalystClientInternal {
     }
 
     public listBranches(
-        request: CodeCatalyst.ListSourceRepositoryBranchesRequest
+        request: ListSourceRepositoryBranchesCommandInput
     ): AsyncCollection<CodeCatalystBranch[]> {
-        const requester = async (request: CodeCatalyst.ListSourceRepositoryBranchesRequest) =>
+        const requester = async (request: ListSourceRepositoryBranchesCommandInput) =>
             this.call(this.sdkClient.listSourceRepositoryBranches(request), true, { items: [] })
         const collection = pageableToCollection(requester, request, 'nextToken', 'items')
 
@@ -528,15 +559,15 @@ class CodeCatalystClientInternal {
     }
 
     public async createSourceBranch(
-        args: CodeCatalyst.CreateSourceRepositoryBranchRequest
-    ): Promise<CodeCatalyst.CreateSourceRepositoryBranchResponse> {
+        args: CreateSourceRepositoryBranchCommandInput
+    ): Promise<CreateSourceRepositoryBranchCommandOutput> {
         return this.call(this.sdkClient.createSourceRepositoryBranch(args), false)
     }
 
     /**
      * Gets the git source host URL for the given CodeCatalyst or third-party repo.
      */
-    public async getRepoCloneUrl(args: CodeCatalyst.GetSourceRepositoryCloneUrlsRequest): Promise<string> {
+    public async getRepoCloneUrl(args: GetSourceRepositoryCloneUrlsCommandInput): Promise<string> {
         const r = await this.call(this.sdkClient.getSourceRepositoryCloneUrls(args), false)
 
         // The git extension skips over credential providers if the username is included in the authority
@@ -544,7 +575,7 @@ class CodeCatalystClientInternal {
         return uri.with({ authority: uri.authority.replace(/.*@/, '') }).toString();
     }
 
-    public async createDevEnvironment(args: CodeCatalyst.CreateDevEnvironmentRequest): Promise<DevEnvironment> {
+    public async createDevEnvironment(args: CreateDevEnvironmentCommandInput): Promise<DevEnvironment> {
         const { id } = await this.call(this.sdkClient.createDevEnvironment(fixAliasInRequest(args)), false)
 
         return this.getDevEnvironment({
@@ -555,20 +586,20 @@ class CodeCatalystClientInternal {
     }
 
     public async startDevEnvironment(
-        args: CodeCatalyst.StartDevEnvironmentRequest
-    ): Promise<CodeCatalyst.StartDevEnvironmentResponse> {
+        args: StartDevEnvironmentCommandInput
+    ): Promise<StartDevEnvironmentCommandOutput> {
         return this.call(this.sdkClient.startDevEnvironment(args), false)
     }
 
-    public async createProject(args: CodeCatalyst.CreateProjectRequest): Promise<CodeCatalystProject> {
+    public async createProject(args: CreateProjectCommandInput): Promise<CodeCatalystProject> {
         await this.call(this.sdkClient.createProject(args), false)
 
         return { ...args, name: args.displayName, type: 'project', org: { name: args.spaceName } }
     }
 
     public async startDevEnvironmentSession(
-        args: CodeCatalyst.StartDevEnvironmentSessionRequest
-    ): Promise<CodeCatalyst.StartDevEnvironmentSessionResponse & { sessionId: string }> {
+        args: StartDevEnvironmentSessionCommandInput
+    ): Promise<StartDevEnvironmentSessionCommandOutput & { sessionId: string }> {
         const r = await this.call(this.sdkClient.startDevEnvironmentSession(args), false)
         if (!r.sessionId) {
             throw new TypeError('got falsy dev environment "sessionId"')
@@ -577,12 +608,12 @@ class CodeCatalystClientInternal {
     }
 
     public async stopDevEnvironment(
-        args: CodeCatalyst.StopDevEnvironmentRequest
-    ): Promise<CodeCatalyst.StopDevEnvironmentResponse> {
+        args: StopDevEnvironmentCommandInput
+    ): Promise<StopDevEnvironmentCommandOutput> {
         return this.call(this.sdkClient.stopDevEnvironment(args), false)
     }
 
-    public async getDevEnvironment(args: CodeCatalyst.GetDevEnvironmentRequest): Promise<DevEnvironment> {
+    public async getDevEnvironment(args: GetDevEnvironmentCommandInput): Promise<DevEnvironment> {
         const a = { ...args }
         delete (a as any).ides
         delete (a as any).repositories
@@ -592,14 +623,14 @@ class CodeCatalystClientInternal {
     }
 
     public async deleteDevEnvironment(
-        args: CodeCatalyst.DeleteDevEnvironmentRequest
-    ): Promise<CodeCatalyst.DeleteDevEnvironmentResponse> {
+        args: DeleteDevEnvironmentCommandInput
+    ): Promise<DeleteDevEnvironmentCommandOutput> {
         return this.call(this.sdkClient.deleteDevEnvironment(args), false)
     }
 
     public updateDevEnvironment(
-        args: CodeCatalyst.UpdateDevEnvironmentRequest
-    ): Promise<CodeCatalyst.UpdateDevEnvironmentResponse> {
+        args: UpdateDevEnvironmentCommandInput
+    ): Promise<UpdateDevEnvironmentCommandOutput> {
         return this.call(this.sdkClient.updateDevEnvironment(fixAliasInRequest(args)), false)
     }
 
@@ -611,7 +642,7 @@ class CodeCatalystClientInternal {
      * on the dev environment starting should not progress.
      */
     public async startDevEnvironmentWithProgress(
-        args: CodeCatalyst.StartDevEnvironmentRequest,
+        args: StartDevEnvironmentCommandInput,
         timeout: Timeout = new Timeout(1000 * 60 * 60)
     ): Promise<DevEnvironment> {
         // Track the status changes chronologically so that we can
@@ -786,7 +817,7 @@ export async function excludeThirdPartyRepos(
     spaceName: CodeCatalystOrg['name'],
     projectName: CodeCatalystProject['name'],
     items?: Pick<ListSourceRepositoriesItem, 'name'>[]
-): Promise<ListSourceRepositoriesItems | undefined> {
+): Promise<Array<ListSourceRepositoriesItem> | undefined> {
     if (items === undefined) {
         return items
     }
@@ -804,7 +835,7 @@ export async function excludeThirdPartyRepos(
                     : item
             })
         )
-    ).filter(item => item !== undefined) as CodeCatalyst.ListSourceRepositoriesItem[]
+    ).filter(item => item !== undefined) as ListSourceRepositoriesItem[];
 }
 
 /**
@@ -814,7 +845,7 @@ export async function excludeThirdPartyRepos(
  */
 export async function isThirdPartyRepo(
     client: CodeCatalystClient,
-    codeCatalystRepo: GetSourceRepositoryCloneUrlsRequest
+    codeCatalystRepo: GetSourceRepositoryCloneUrlsCommandInput
 ): Promise<boolean> {
     const url = await client.getRepoCloneUrl(codeCatalystRepo)
     // TODO: Make more robust to work with getCodeCatalystConfig().

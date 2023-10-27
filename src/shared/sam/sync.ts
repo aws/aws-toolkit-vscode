@@ -29,7 +29,7 @@ import { getLogger } from '../logger'
 import { isCloud9 } from '../extensionUtilities'
 import { removeAnsi } from '../utilities/textUtilities'
 import { createExitPrompter } from '../ui/common/exitPrompter'
-import { StackSummary } from 'aws-sdk/clients/cloudformation'
+import { StackSummary, Template } from "@aws-sdk/client-cloudformation";
 import { SamCliSettings } from './cli/samCliSettings'
 import { SamConfig } from './config'
 import { cast, Instance, Optional, Union } from '../utilities/typeConstructors'
@@ -183,7 +183,7 @@ export function createEnvironmentPrompter(config: SamConfig, environments = conf
 
 interface TemplateItem {
     readonly uri: vscode.Uri
-    readonly data: CloudFormation.Template
+    readonly data: Template
 }
 
 function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
@@ -216,7 +216,7 @@ function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
     })
 }
 
-function hasImageBasedResources(template: CloudFormation.Template) {
+function hasImageBasedResources(template: Template) {
     const resources = template.Resources
 
     return resources === undefined

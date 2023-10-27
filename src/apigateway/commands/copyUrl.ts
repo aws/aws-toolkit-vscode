@@ -11,7 +11,7 @@ import * as picker from '../../shared/ui/picker'
 import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 
-import { Stage } from 'aws-sdk/clients/apigateway'
+import { UpdateStageCommandOutput } from "@aws-sdk/client-api-gateway";
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
 import { defaultDnsSuffix, RegionProvider } from '../../shared/regions/regionProvider'
 import { getLogger } from '../../shared/logger'
@@ -27,7 +27,7 @@ export async function copyUrlCommand(node: RestApiNode, regionProvider: RegionPr
     const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
     const client = new DefaultApiGatewayClient(region)
 
-    let stages: Stage[]
+    let stages: UpdateStageCommandOutput[]
     try {
         stages = await vscode.window.withProgress(
             {

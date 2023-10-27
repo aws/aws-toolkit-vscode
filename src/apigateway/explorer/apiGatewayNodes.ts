@@ -12,7 +12,7 @@ import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { compareTreeItems, makeChildrenNodes } from '../../shared/treeview/utils'
 import { DefaultApiGatewayClient } from '../../shared/clients/apiGatewayClient'
-import { RestApi } from 'aws-sdk/clients/apigateway'
+import { UpdateRestApiCommandOutput } from "@aws-sdk/client-api-gateway";
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { RestApiNode } from './apiNodes'
 
@@ -48,7 +48,7 @@ export class ApiGatewayNode extends AWSTreeNodeBase {
     }
 
     public async updateChildren(): Promise<void> {
-        const apis: Map<string, RestApi> = toMap(
+        const apis: Map<string, UpdateRestApiCommandOutput> = toMap(
             await toArrayAsync(this.client.listApis()),
             configuration => `${configuration.name} (${configuration.id})`
         )

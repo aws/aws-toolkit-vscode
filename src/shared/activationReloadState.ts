@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from "@aws-sdk/client-lambda";
 import globals from './extensionGlobals'
 
 export const activationTemplatePathKey = 'ACTIVATION_TEMPLATE_PATH_KEY'

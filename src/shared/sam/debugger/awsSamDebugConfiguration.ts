@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from "@aws-sdk/client-lambda";
 import { getNormalizedRelativePath } from '../../utilities/pathUtils'
 import {
     APIGatewayProperties,

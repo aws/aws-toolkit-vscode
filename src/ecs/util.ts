@@ -13,7 +13,7 @@ import { IamClient } from '../shared/clients/iamClient'
 import { ToolkitError } from '../shared/errors'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { getOrInstallCli } from '../shared/utilities/cliUtils'
-import { TaskDefinition } from 'aws-sdk/clients/ecs'
+import { TaskDefinition } from "@aws-sdk/client-ecs";
 import { getLogger } from '../shared/logger'
 import { fromExtensionManifest } from '../shared/settings'
 import { ecsTaskPermissionsUrl } from '../shared/constants'

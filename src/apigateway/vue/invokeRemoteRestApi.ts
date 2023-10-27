@@ -8,7 +8,7 @@ import { RestApiNode } from '../explorer/apiNodes'
 import { getLogger, Logger } from '../../shared/logger'
 
 import { toArrayAsync } from '../../shared/utilities/collectionUtils'
-import { Resource } from 'aws-sdk/clients/apigateway'
+import { UpdateResourceCommandOutput } from "@aws-sdk/client-api-gateway";
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Result } from '../../shared/telemetry/telemetry'
 import { VueWebview } from '../../webviews/main'
@@ -19,14 +19,14 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 interface InvokeApiMessage {
     region: string
     body: string
-    selectedApiResource: Resource
+    selectedApiResource: UpdateResourceCommandOutput
     selectedMethod: string
     queryString: string
     api: string
 }
 
 interface ResourceMap {
-    [key: string]: Resource
+    [key: string]: UpdateResourceCommandOutput
 }
 
 export interface InvokeRemoteRestApiInitialData {
@@ -58,7 +58,7 @@ export class RemoteRestInvokeWebview extends VueWebview {
         return this.data
     }
 
-    public listValidMethods(resource: Resource): string[] {
+    public listValidMethods(resource: UpdateResourceCommandOutput): string[] {
         return listValidMethods(resource)
     }
 
@@ -150,7 +150,7 @@ export async function invokeRemoteRestApi(
     }
 }
 
-export function listValidMethods(resource: Resource): string[] {
+export function listValidMethods(resource: UpdateResourceCommandOutput): string[] {
     // OpenAPI 2 (swagger) valid methods
     const supportedOperations = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 

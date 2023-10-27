@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { _Blob } from 'aws-sdk/clients/lambda'
+
+
 import { readFileSync } from 'fs'
 import * as _ from 'lodash'
 import * as vscode from 'vscode'

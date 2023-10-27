@@ -20,7 +20,7 @@ import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
-import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { GetDevEnvironmentCommandInput } from "@aws-sdk/client-codecatalyst";
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { patchObject, registerAuthHook, skipTest, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
@@ -603,7 +603,7 @@ describe.skip('Test how this codebase uses the CodeCatalyst API', function () {
      * if the timeout is reached.
      */
     async function waitUntilDevEnvStatus(
-        devEnv: GetDevEnvironmentRequest,
+        devEnv: GetDevEnvironmentCommandInput,
         status: DevEnvironment['status'][]
     ): Promise<void> {
         const result = await waitUntil(

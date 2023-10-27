@@ -10,7 +10,7 @@ import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
 import { DefaultLambdaClient, LambdaClient } from '../../../shared/clients/lambdaClient'
 import { addCodiconToString } from '../../../shared/utilities/textUtilities'
 import { env } from 'vscode'
-import { FunctionUrlConfig } from 'aws-sdk/clients/lambda'
+import { FunctionUrlConfig } from "@aws-sdk/client-lambda";
 import { createQuickPickPrompterTester } from '../../shared/ui/testUtils'
 import { getTestWindow } from '../../shared/vscode/window'
 

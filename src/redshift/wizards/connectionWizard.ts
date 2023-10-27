@@ -14,9 +14,9 @@ import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { Region } from '../../shared/regions/endpoints'
 import { RegionProvider } from '../../shared/regions/regionProvider'
 import { createRegionPrompter } from '../../shared/ui/common/region'
-import { ClustersMessage } from 'aws-sdk/clients/redshift'
+import { DescribeClustersCommandOutput } from "@aws-sdk/client-redshift";
+import { ListSecretsCommandOutput } from "@aws-sdk/client-secrets-manager";
 import { Prompter } from '../../shared/ui/prompter'
-import { ListSecretsResponse } from 'aws-sdk/clients/secretsmanager'
 import { SecretsManagerClient } from '../../shared/clients/secretsManagerClient'
 import { redshiftHelpUrl } from '../../shared/constants'
 
@@ -212,7 +212,7 @@ async function* fetchWarehouses(redshiftClient: DefaultRedshiftClient) {
     let hasMoreProvisioned = true
     while (hasMoreProvisioned || hasMoreServerless) {
         if (hasMoreProvisioned) {
-            const provisionedResponse: ClustersMessage = await redshiftClient.describeProvisionedClusters(
+            const provisionedResponse: DescribeClustersCommandOutput = await redshiftClient.describeProvisionedClusters(
                 provisionedToken
             )
             provisionedToken = provisionedResponse.Marker
@@ -271,7 +271,7 @@ function getSecretPrompter(region: string): QuickPickPrompter<string> {
 
 async function* fetchSecretList(secretsManagerClient: SecretsManagerClient) {
     const secretFilter = 'Redshift'
-    const listSecretsResponse: ListSecretsResponse = await secretsManagerClient.listSecrets(secretFilter)
+    const listSecretsResponse: ListSecretsCommandOutput = await secretsManagerClient.listSecrets(secretFilter)
     if (listSecretsResponse.SecretList) {
         for await (const secret of listSecretsResponse.SecretList) {
             yield [

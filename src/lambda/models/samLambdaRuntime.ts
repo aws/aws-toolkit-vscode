@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from "@aws-sdk/client-lambda";
 import { Map as ImmutableMap, Set as ImmutableSet } from 'immutable'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { PrompterButtons } from '../../shared/ui/buttons'

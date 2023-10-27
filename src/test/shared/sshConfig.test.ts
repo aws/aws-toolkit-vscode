@@ -19,7 +19,7 @@ import {
     connectScriptPrefix,
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
-import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
+import { StartDevEnvironmentSessionCommandInput } from "@aws-sdk/client-codecatalyst";
 import { mkdir, readFile, writeFile } from 'fs-extra'
 import { SystemUtilities } from '../../shared/systemUtilities'
 
@@ -208,7 +208,7 @@ describe('CodeCatalyst Connect Script', function () {
                 })
 
                 const body = JSON.parse(data)
-                const expected: Pick<StartDevEnvironmentSessionRequest, 'sessionConfiguration'> = {
+                const expected: Pick<StartDevEnvironmentSessionCommandInput, 'sessionConfiguration'> = {
                     sessionConfiguration: { sessionType: 'SSH' },
                 }
 
@@ -231,7 +231,7 @@ describe('CodeCatalyst Connect Script', function () {
                     sessionId: 'an id',
                 })
             )
-        })
+        });
     }
 
     it('can run the script with environment variables', async function () {

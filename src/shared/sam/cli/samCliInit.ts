@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+
+
+import { Runtime } from "@aws-sdk/client-lambda";
 import { SchemaTemplateExtraContext } from '../../../eventSchemas/templates/schemasAppTemplateUtils'
 import { Architecture, DependencyManager } from '../../../lambda/models/samLambdaRuntime'
 import { getSamCliTemplateParameter, SamTemplate } from '../../../lambda/models/samTemplates'

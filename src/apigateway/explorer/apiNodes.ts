@@ -5,7 +5,7 @@
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { RestApi } from 'aws-sdk/clients/apigateway'
+import { UpdateRestApiCommandOutput } from "@aws-sdk/client-api-gateway";
 
 export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
     public override id!: string
@@ -14,14 +14,14 @@ export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly parent: AWSTreeNodeBase,
         public readonly partitionId: string,
         public override readonly regionCode: string,
-        private api: RestApi
+        private api: UpdateRestApiCommandOutput
     ) {
         super('')
         this.update(api)
         this.contextValue = 'awsApiGatewayNode'
     }
 
-    public update(api: RestApi): void {
+    public update(api: UpdateRestApiCommandOutput): void {
         this.api = api
         this.label = `${this.api.name} (${this.api.id})` || ''
         this.tooltip = this.api.description

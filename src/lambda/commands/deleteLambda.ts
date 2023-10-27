@@ -10,7 +10,7 @@ import * as localizedText from '../../shared/localizedText'
 import { DefaultLambdaClient } from '../../shared/clients/lambdaClient'
 import { Result } from '../../shared/telemetry/telemetry'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
-import { FunctionConfiguration } from 'aws-sdk/clients/lambda'
+import { UpdateFunctionConfigurationCommandOutput } from "@aws-sdk/client-lambda";
 import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -27,7 +27,7 @@ async function confirmDeletion(functionName: string): Promise<boolean> {
 }
 
 export async function deleteLambda(
-    lambda: Pick<FunctionConfiguration, 'FunctionName'>,
+    lambda: Pick<UpdateFunctionConfigurationCommandOutput, 'FunctionName'>,
     client: Pick<DefaultLambdaClient, 'deleteFunction'>
 ): Promise<void> {
     if (!lambda.FunctionName) {

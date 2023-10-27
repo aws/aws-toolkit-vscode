@@ -6,7 +6,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as semver from 'semver'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from "@aws-sdk/client-lambda";
 import { Set as ImmutableSet } from 'immutable'
 import { supportsEventBridgeTemplates } from '../../../src/eventSchemas/models/schemaCodeLangs'
 import { RuntimePackageType } from './samLambdaRuntime'

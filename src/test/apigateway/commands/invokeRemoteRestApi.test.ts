@@ -5,12 +5,12 @@
 
 import assert from 'assert'
 import { listValidMethods } from '../../../apigateway/vue/invokeRemoteRestApi'
-import { Resource } from 'aws-sdk/clients/apigateway'
+import { UpdateResourceCommandOutput } from "@aws-sdk/client-api-gateway";
 
 describe('listValidMethods', function () {
     const allMethods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']
     it('returns all methods if "ANY" is a method', async function () {
-        const resource: Resource = {
+        const resource: UpdateResourceCommandOutput = {
             resourceMethods: {
                 ANY: {},
             },
@@ -21,7 +21,7 @@ describe('listValidMethods', function () {
         assert.deepStrictEqual(actual, allMethods)
     })
     it('returns dedupe-d all methods if "ANY" declared with another method', async function () {
-        const resource: Resource = {
+        const resource: UpdateResourceCommandOutput = {
             resourceMethods: {
                 ANY: {},
                 POST: {},
@@ -33,7 +33,7 @@ describe('listValidMethods', function () {
         assert.deepStrictEqual(actual, allMethods)
     })
     it('returns get if declares get', async function () {
-        const resource: Resource = {
+        const resource: UpdateResourceCommandOutput = {
             resourceMethods: {
                 GET: {},
             },
@@ -44,7 +44,7 @@ describe('listValidMethods', function () {
         assert.deepStrictEqual(actual, ['GET'])
     })
     it('returns nothing if no methods', async function () {
-        const resource: Resource = {}
+        const resource: UpdateResourceCommandOutput = {}
 
         const actual = listValidMethods(resource)
 

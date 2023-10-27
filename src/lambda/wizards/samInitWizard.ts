@@ -5,7 +5,7 @@
 
 import * as nls from 'vscode-nls'
 import * as AWS from '@aws-sdk/types'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from "@aws-sdk/client-lambda";
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { SchemasDataProvider } from '../../eventSchemas/providers/schemasDataProvider'

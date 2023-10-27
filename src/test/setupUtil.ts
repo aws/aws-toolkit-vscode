@@ -4,7 +4,8 @@
  */
 
 import { parse } from '@aws-sdk/util-arn-parser'
-import { Lambda, STS } from 'aws-sdk'
+import { Lambda } from "@aws-sdk/client-lambda";
+import { STS } from "@aws-sdk/client-sts";
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
@@ -127,13 +128,15 @@ export function patchObjectDescriptor<T extends Record<string, any>, U extends k
 
 async function createLambdaClient(functionId: string) {
     if (!functionId.startsWith('arn:aws:lambda')) {
-        return Object.assign(new Lambda(), { isCrossAccount: false })
+        return Object.assign(new Lambda(), { isCrossAccount: false });
     }
 
     const sts = new STS()
     const { region, accountId } = parse(functionId)
-    const identity = await sts.getCallerIdentity().promise()
-    const client = new Lambda({ region })
+    const identity = await sts.getCallerIdentity()
+    const client = new Lambda({
+        region
+    })
 
     return Object.assign(client, { isCrossAccount: identity.Account !== accountId })
 }
@@ -148,7 +151,6 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
             LogType: client.isCrossAccount ? 'None' : 'Tail',
             Payload: JSON.stringify(request),
         })
-        .promise()
         .catch(err => {
             if (err instanceof Error) {
                 err.message = maskArns(err.message)

@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from "@aws-sdk/client-lambda";
 import { mkdirpSync, mkdtemp } from 'fs-extra'
 import * as path from 'path'
 import * as semver from 'semver'

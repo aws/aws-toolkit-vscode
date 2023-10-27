@@ -3,7 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Ides } from 'aws-sdk/clients/codecatalyst'
+
+
+import { Ide } from "@aws-sdk/client-codecatalyst";
 import * as vscode from 'vscode'
 import { CodeCatalystResource, getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { pushIf } from '../shared/utilities/collectionUtils'
@@ -55,7 +57,7 @@ export function openCodeCatalystUrl(o: CodeCatalystResource) {
 }
 
 /** Returns true if the dev env has a "vscode" IDE runtime. */
-export function isDevenvVscode(ides: Ides | undefined): boolean {
+export function isDevenvVscode(ides: Array<Ide> | undefined): boolean {
     return ides !== undefined && ides.findIndex(ide => ide.name === 'VSCode') !== -1
 }
 

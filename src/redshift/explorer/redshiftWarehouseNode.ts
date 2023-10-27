@@ -14,7 +14,7 @@ import { ChildNodeLoader, ChildNodePage } from '../../awsexplorer/childNodeLoade
 import { DefaultRedshiftClient } from '../../shared/clients/redshiftClient'
 import { ConnectionParams, ConnectionType, RedshiftWarehouseType } from '../models/models'
 import { RedshiftNodeConnectionWizard } from '../wizards/connectionWizard'
-import { ListDatabasesResponse } from 'aws-sdk/clients/redshiftdata'
+import { ListDatabasesCommandOutput } from "@aws-sdk/client-redshift-data";
 import { getIcon } from '../../shared/icons'
 import { AWSCommandTreeNode } from '../../shared/treeview/nodes/awsCommandTreeNode'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -80,7 +80,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
             const childNodes: RedshiftDatabaseNode[] = []
             // this.connectionParams cannot null here because loadPage should be called only after the connection wizard runs.
             try {
-                const listDatabasesResponse: ListDatabasesResponse = await this.redshiftClient.listDatabases(
+                const listDatabasesResponse: ListDatabasesCommandOutput = await this.redshiftClient.listDatabases(
                     this.connectionParams!,
                     token
                 )
@@ -101,7 +101,7 @@ export class RedshiftWarehouseNode extends AWSTreeNodeBase implements AWSResourc
                 createLogsConnectionMessage(this.redshiftWarehouse.name, error as Error)
                 return Promise.reject(error)
             }
-        })
+        });
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
