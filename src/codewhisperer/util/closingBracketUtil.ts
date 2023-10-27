@@ -123,7 +123,7 @@ function getBracketsToRemove(
 
     if (isPaired) {
         const obj = findFirstNonClosedClosingParen(rightContext)
-        if (obj) {
+        if (obj && obj.char === char2.char) {
             toRemove.push(obj.strOffset)
         }
     }
