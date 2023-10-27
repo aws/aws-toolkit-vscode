@@ -121,9 +121,9 @@ function getBracketsToRemove(
     end: vscode.Position,
     start: vscode.Position
 ) {
-    const unpairedClosingsInReco = findFirstNonClosedClosingParen(recommendation)
-    const unpairedOpeningsInLeftContext = findFirstNonClosedOpneingParen(leftContext, unpairedClosingsInReco.length)
-    const unpairedClosingsInRightContext = findFirstNonClosedClosingParen(rightContext)
+    const unpairedClosingsInReco = nonClosedClosingParen(recommendation)
+    const unpairedOpeningsInLeftContext = nonClosedOpneingParen(leftContext, unpairedClosingsInReco.length)
+    const unpairedClosingsInRightContext = nonClosedClosingParen(rightContext)
 
     let lastNonSpaceCharInReco: string | undefined = undefined
     for (let i = recommendation.length - 1; i >= 0; i--) {
@@ -214,7 +214,7 @@ function getQuotesToRemove(
     return []
 }
 
-function findFirstNonClosedOpneingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
+function nonClosedOpneingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
     const resultSet: { char: string; strOffset: number }[] = []
     const stack: string[] = []
 
@@ -241,7 +241,7 @@ function findFirstNonClosedOpneingParen(str: string, cnt?: number): { char: stri
     return resultSet
 }
 
-function findFirstNonClosedClosingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
+function nonClosedClosingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
     const resultSet: { char: string; strOffset: number }[] = []
     const stack: string[] = []
 
