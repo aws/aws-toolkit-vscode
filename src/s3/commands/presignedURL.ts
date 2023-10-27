@@ -4,7 +4,6 @@
  */
 
 import { SignedUrlRequest } from '../../shared/clients/s3Client'
-import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import * as vscode from 'vscode'
@@ -13,7 +12,7 @@ import { invalidNumberWarning } from '../../shared/localizedText'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ToolkitError } from '../../shared/errors'
 
-export async function presignedURLCommand(node: S3FileNode, env = Env.vscode()): Promise<void> {
+export async function presignedURLCommand(node: S3FileNode): Promise<void> {
     await telemetry.s3_copyUrl.run(async span => {
         span.record({ presigned: true })
 
@@ -33,7 +32,7 @@ export async function presignedURLCommand(node: S3FileNode, env = Env.vscode()):
             )
         })
 
-        await copyToClipboard(url, 'URL', env)
+        await copyToClipboard(url, 'URL')
     })
 }
 

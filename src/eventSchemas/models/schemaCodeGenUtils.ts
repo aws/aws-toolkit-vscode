@@ -65,24 +65,20 @@ class CodeGenPackageBuilder {
 
     public append(segment: string): CodeGenPackageBuilder {
         if (this.builder.length > 0) {
-            this.builder = this.builder.concat(IdentifierFormatter.packageSeparator)
+            this.builder = this.builder.concat(packageSeparator)
         }
-        this.builder = this.builder.concat(IdentifierFormatter.toValidIdentifier(segment.toLowerCase()))
+        this.builder = this.builder.concat(toValidIdentifier(segment.toLowerCase()))
 
         return this
     }
 }
 
-export namespace IdentifierFormatter {
-    export const packageSeparator = '.'
-    const potentialPackageSeparator = '@'
-    const notValidIdentifierRegex = new RegExp(`[^a-zA-Z0-9_${potentialPackageSeparator}]`, 'g')
-    const potentialPackageSeparatorRegex = new RegExp(potentialPackageSeparator, 'g')
-    const underscore = '_'
+export const packageSeparator = '.'
+const potentialPackageSeparator = '@'
+const notValidIdentifierRegex = new RegExp(`[^a-zA-Z0-9_${potentialPackageSeparator}]`, 'g')
+const potentialPackageSeparatorRegex = new RegExp(potentialPackageSeparator, 'g')
+const underscore = '_'
 
-    export function toValidIdentifier(name: string): string {
-        return name
-            .replace(notValidIdentifierRegex, underscore)
-            .replace(potentialPackageSeparatorRegex, packageSeparator)
-    }
+export function toValidIdentifier(name: string): string {
+    return name.replace(notValidIdentifierRegex, underscore).replace(potentialPackageSeparatorRegex, packageSeparator)
 }

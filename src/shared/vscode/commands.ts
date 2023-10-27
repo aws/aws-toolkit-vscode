@@ -18,6 +18,7 @@ export interface Commands {
 /**
  * @deprecated Use `./commands2.ts` instead when possible.
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Commands {
     export function vscode(): Commands {
         return new DefaultCommands()

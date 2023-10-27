@@ -8,7 +8,6 @@ import * as nls from 'vscode-nls'
 import * as localizedText from '../localizedText'
 import { getLogger, showLogOutputChannel } from '../../shared/logger'
 import { ProgressEntry } from '../../shared/vscode/window'
-import { Env } from '../../shared/vscode/env'
 import { getIdeProperties, isCloud9 } from '../extensionUtilities'
 import { sleep } from './timeoutUtils'
 import { Timeout } from './timeoutUtils'
@@ -301,8 +300,8 @@ export async function showTimedMessage(message: string, duration: number) {
     )
 }
 
-export async function copyToClipboard(data: string, label?: string, env: Env = vscode.env): Promise<void> {
-    await env.clipboard.writeText(data)
+export async function copyToClipboard(data: string, label?: string): Promise<void> {
+    await vscode.env.clipboard.writeText(data)
     const message = localize('AWS.explorerNode.copiedToClipboard', 'Copied {0} to clipboard', label)
     vscode.window.setStatusBarMessage(addCodiconToString('clippy', message), 5000)
     getLogger().verbose('copied %s to clipboard: %O', label ?? '', data)

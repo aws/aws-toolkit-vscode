@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormation } from '../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../shared/cloudformation/cloudformation'
 import { getLogger, Logger } from '../../shared/logger'
 import { getChildrenRange, loadSymbols, LoadSymbolsContext } from '../../shared/utilities/symbolUtilities'
 import { getParameterNames } from '../config/parameterUtils'
