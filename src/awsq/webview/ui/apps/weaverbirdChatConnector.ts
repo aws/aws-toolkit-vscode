@@ -93,7 +93,7 @@ export class Connector {
                 body: messageData.message ?? undefined,
                 relatedContent: undefined,
                 followUp:
-                    messageData.followUps !== undefined
+                    messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
                               text: 'Would you like to follow up with one of these?',
                               options: messageData.followUps,

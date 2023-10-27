@@ -34,13 +34,10 @@ export enum FollowUpTypes {
     WriteCode = 'WriteCode',
     AcceptCode = 'AcceptCode',
     RejectCode = 'RejectCode',
+    Retry = 'Retry',
 }
 
-export enum SessionStatePhase {
-    Approach = 'Approach',
-    Codegen = 'Codegen',
-    Init = 'Init',
-}
+export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
 
 export interface SessionState {
     readonly conversationId?: string
