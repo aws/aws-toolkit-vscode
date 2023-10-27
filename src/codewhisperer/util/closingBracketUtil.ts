@@ -13,7 +13,7 @@ interface bracketMapType {
 }
 
 const quotes = ["'", '"', '`']
-const parenthesis = ['(', '[', '{', ')', ']', '}']
+const parenthesis = ['(', '[', '{', ')', ']', '}', '<', '>']
 
 const closeToOpenParen: bracketMapType = {
     ')': '(',
