@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import sanitizeHtml from 'sanitize-html'
 import { collectFiles } from '../util/files'
 import WeaverbirdClient, {
     FileMetadata,
@@ -76,9 +77,11 @@ export class RefinementState implements SessionState {
             payload
         )
 
-        this.approach =
+        this.approach = sanitizeHtml(
             response.approach ??
-            'There has been a problem generating an approach. Please open a conversation in a new tab'
+                'There has been a problem generating an approach. Please open a conversation in a new tab',
+            {}
+        )
 
         return {
             nextState: new RefinementIterationState(
@@ -126,9 +129,11 @@ export class RefinementIterationState implements SessionState {
             payload
         )
 
-        this.approach =
+        this.approach = sanitizeHtml(
             response.approach ??
-            'There has been a problem generating an approach. Please open a conversation in a new tab'
+                'There has been a problem generating an approach. Please open a conversation in a new tab',
+            {}
+        )
 
         return {
             nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
