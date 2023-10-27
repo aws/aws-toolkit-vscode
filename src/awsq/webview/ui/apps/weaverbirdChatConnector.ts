@@ -153,6 +153,14 @@ export class Connector {
         })
     }
 
+    onTabOpen = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID,
+            command: 'new-tab-was-created',
+            tabType: 'wb',
+        })
+    }
+
     onTabRemove = (tabID: string): void => {
         this.sendMessageToExtension({
             tabID: tabID,
