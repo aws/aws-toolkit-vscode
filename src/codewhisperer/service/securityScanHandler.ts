@@ -81,6 +81,15 @@ function mapToAggregatedList(
                                 : issue.endLine,
                         endLine: issue.endLine,
                         comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
+                        title: issue.title,
+                        description: issue.description,
+                        detectorId: issue.detectorId,
+                        detectorName: issue.detectorName,
+                        findingId: issue.findingId,
+                        relatedVulnerabilities: issue.relatedVulnerabilities,
+                        severity: issue.severity,
+                        recommendation: issue.remediation.recommendation,
+                        suggestedFixes: issue.remediation.suggestedFixes,
                     }
                 }),
             }

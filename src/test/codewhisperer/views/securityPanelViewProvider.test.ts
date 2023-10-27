@@ -17,6 +17,18 @@ const codeScanIssue: CodeScanIssue[] = [
         startLine: 0,
         endLine: 4,
         comment: 'foo',
+        title: 'bar',
+        description: {
+            text: 'foo',
+            markdown: 'foo',
+        },
+        detectorId: '',
+        detectorName: '',
+        findingId: '',
+        relatedVulnerabilities: [],
+        severity: 'low',
+        recommendation: { text: 'foo', url: 'foo' },
+        suggestedFixes: [],
     },
 ]
 
