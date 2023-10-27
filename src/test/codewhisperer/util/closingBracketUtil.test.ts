@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import assert from 'assert'
-import { handleExtraBrackets } from '../../../codewhisperer/util/closingBracketUtil'
+import { handleExtraBrackets, findFirstNonClosedClosingParen } from '../../../codewhisperer/util/closingBracketUtil'
 import { openATextEditorWithText } from '../../testUtil'
 
 describe('closingBracketUtil', function () {
