@@ -13,7 +13,7 @@ import { S3Client, File, Folder, Bucket } from '../../../shared/clients/s3Client
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
-import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
 
 describe('S3BucketNode', function () {
     const name = 'bucket-name'
@@ -23,6 +23,7 @@ describe('S3BucketNode', function () {
     const folder: Folder = { name: 'folder', path: 'path', arn: 'arn' }
     const maxResults = 200
     let s3: S3Client
+    let config: TestSettings
 
     function assertBucketNode(node: LoadMoreNode): void {
         assert.ok(node instanceof S3BucketNode, `Node ${node} should be a Bucket Node`)
@@ -48,6 +49,7 @@ describe('S3BucketNode', function () {
 
     beforeEach(function () {
         s3 = mock()
+        config = new TestSettings()
     })
 
     describe('getChildren', function () {
@@ -58,11 +60,8 @@ describe('S3BucketNode', function () {
                 continuationToken: undefined,
             })
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 's3.maxItemsPerPage', value: maxResults },
-            })
-            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), workspace)
+            await config.getSection('aws').update('s3.maxItemsPerPage', maxResults)
+            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), config)
             const [folderNode, fileNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(folderNode, folder)
@@ -77,11 +76,8 @@ describe('S3BucketNode', function () {
                 continuationToken,
             })
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 's3.maxItemsPerPage', value: maxResults },
-            })
-            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), workspace)
+            await config.getSection('aws').update('s3.maxItemsPerPage', maxResults)
+            const node = new S3BucketNode(bucket, new S3Node(instance(s3)), instance(s3), config)
             const [folderNode, fileNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertFolderNode(folderNode, folder)

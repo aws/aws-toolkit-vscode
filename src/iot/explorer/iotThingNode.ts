@@ -14,13 +14,14 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
-import { Workspace } from '../../shared/vscode/workspace'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { IotThingFolderNode } from './iotThingFolderNode'
 import { IotThingCertNode } from './iotCertificateNode'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 /**
  * Represents an IoT Thing that may have attached certificates.
@@ -32,7 +33,7 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         public readonly thing: IotThing,
         public readonly parent: IotThingFolderNode,
         public readonly iot: IotClient,
-        private readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(thing.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = thing.name
@@ -110,6 +111,6 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return this.workspace.getConfiguration('aws').get<number>('iot.maxItemsPerPage')
+        return this.settings.getSection('aws').get<number>('iot.maxItemsPerPage')
     }
 }

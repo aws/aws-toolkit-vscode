@@ -9,7 +9,6 @@ import { IotClient, IotPolicy } from '../../shared/clients/iotClient'
 
 import { AWSResourceNode } from '../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
-import { Workspace } from '../../shared/vscode/workspace'
 import { inspect } from 'util'
 import { IotPolicyFolderNode } from './iotPolicyFolderNode'
 import { IotCertificateNode } from './iotCertificateNode'
@@ -20,6 +19,8 @@ import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/colle
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -32,7 +33,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
         certs?: string[],
-        protected readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(policy.name, collapsibleState)
         this.tooltip = localize(
@@ -63,9 +64,9 @@ export class IotPolicyCertNode extends IotPolicyNode {
         public override readonly policy: IotPolicy,
         public override readonly parent: IotCertificateNode,
         public override readonly iot: IotClient,
-        protected override readonly workspace = Workspace.vscode()
+        protected override readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
-        super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, undefined, workspace)
+        super(policy, parent, iot, vscode.TreeItemCollapsibleState.None, undefined, settings)
         this.contextValue = 'awsIotPolicyNode.Certificates'
     }
 }
@@ -78,9 +79,9 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
         public override readonly parent: IotPolicyFolderNode,
         public override readonly iot: IotClient,
         certs?: string[],
-        protected override readonly workspace = Workspace.vscode()
+        protected override readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
-        super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, certs, workspace)
+        super(policy, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, certs, settings)
         this.contextValue = 'awsIotPolicyNode.WithVersions'
         this.versionNodes = new Map<string, IotPolicyVersionNode>()
     }

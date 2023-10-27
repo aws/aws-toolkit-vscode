@@ -14,13 +14,14 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
-import { Workspace } from '../../shared/vscode/workspace'
 import { S3FileNode } from './s3FileNode'
 import { S3FolderNode } from './s3FolderNode'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from './s3Nodes'
 import { getIcon } from '../../shared/icons'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 /**
  * Represents an S3 bucket that may contain folders and/or objects.
@@ -32,7 +33,7 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         public readonly bucket: Bucket,
         public readonly parent: S3Node,
         public readonly s3: S3Client,
-        private readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super(bucket.name, vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = bucket.name
@@ -110,6 +111,6 @@ export class S3BucketNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return this.workspace.getConfiguration('aws').get<number>('s3.maxItemsPerPage')
+        return this.settings.getSection('aws').get<number>('s3.maxItemsPerPage')
     }
 }

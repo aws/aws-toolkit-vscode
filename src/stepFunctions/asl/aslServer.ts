@@ -39,13 +39,9 @@ import { formatError, runSafe, runSafeAsync } from '../../shared/languageServer/
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'
 import globals from '../../shared/extensionGlobals'
 
-namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
-}
+export const ResultLimitReached: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
 
-namespace ForceValidateRequest {
-    export const type: RequestType<string, Diagnostic[], any, any> = new RequestType('asl/validate')
-}
+export const ForceValidateRequest: RequestType<string, Diagnostic[], any, any> = new RequestType('asl/validate')
 
 // Create a connection for the server
 const connection: IConnection = createConnection()
@@ -157,20 +153,20 @@ interface Settings {
     }
 }
 
-namespace LimitExceededWarnings {
-    const pendingWarnings: { [uri: string]: { features: { [name: string]: string }; timeout?: NodeJS.Timeout } } = {}
+class LimitExceededWarnings {
+    static pendingWarnings: { [uri: string]: { features: { [name: string]: string }; timeout?: NodeJS.Timeout } } = {}
 
-    export function cancel(uri: string) {
-        const warning = pendingWarnings[uri]
+    public static cancel(uri: string) {
+        const warning = LimitExceededWarnings.pendingWarnings[uri]
         if (warning && warning.timeout) {
             globals.clock.clearTimeout(warning.timeout)
-            delete pendingWarnings[uri]
+            delete LimitExceededWarnings.pendingWarnings[uri]
         }
     }
 
-    export function onResultLimitExceeded(uri: string, maxResults: number, name: string) {
+    public static onResultLimitExceeded(uri: string, maxResults: number, name: string) {
         return () => {
-            let warning = pendingWarnings[uri]
+            let warning = LimitExceededWarnings.pendingWarnings[uri]
             if (warning) {
                 if (!warning.timeout) {
                     // already shown
@@ -182,14 +178,14 @@ namespace LimitExceededWarnings {
                 warning = { features: { [name]: name } }
                 warning.timeout = globals.clock.setTimeout(() => {
                     connection.sendNotification(
-                        ResultLimitReachedNotification.type,
+                        ResultLimitReached,
                         `${posix.basename(uri)}: For performance reasons, ${Object.keys(warning.features).join(
                             ' and '
                         )} have been limited to ${maxResults} items.`
                     )
                     warning.timeout = undefined
                 }, 2000)
-                pendingWarnings[uri] = warning
+                LimitExceededWarnings.pendingWarnings[uri] = warning
             }
         }
     }
@@ -222,7 +218,7 @@ connection.onDidChangeConfiguration(change => {
 })
 
 // Retry schema validation on all open documents
-connection.onRequest(ForceValidateRequest.type, async uri => {
+connection.onRequest(ForceValidateRequest, async uri => {
     return new Promise<Diagnostic[]>(resolve => {
         const document = documents.get(uri)
         if (document) {

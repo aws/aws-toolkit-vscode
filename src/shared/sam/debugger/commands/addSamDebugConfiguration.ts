@@ -17,7 +17,7 @@ import {
     createTemplateAwsSamDebugConfig,
     TEMPLATE_TARGET_TYPE,
 } from '../awsSamDebugConfiguration'
-import { CloudFormation } from '../../../cloudformation/cloudformation'
+import * as CloudFormation from '../../../cloudformation/cloudformation'
 import { LaunchConfiguration } from '../../../debug/launchConfiguration'
 import { getIdeProperties } from '../../../extensionUtilities'
 import { isValidResponse } from '../../../wizards/wizard'
