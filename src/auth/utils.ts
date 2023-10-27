@@ -172,7 +172,7 @@ export async function createBuilderIdConnection(auth: Auth, scopes?: string[]) {
     const newProfile = createBuilderIdProfile(scopes)
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
     if (!existingConn) {
-        return auth.createConnection(newProfile)
+        return auth.createConnection(newProfile, 'curr-builder-id')
     }
 
     const userResponse = await promptLogoutExistingBuilderIdConnection()

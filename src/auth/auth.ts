@@ -263,13 +263,14 @@ export class Auth implements AuthService, ConnectionManager {
         return toCollection(load.bind(this))
     }
 
-    public async createConnection(profile: SsoProfile): Promise<SsoConnection>
-    public async createConnection(profile: Profile): Promise<Connection> {
+    public async createConnection(profile: SsoProfile, id?: string): Promise<SsoConnection>
+    public async createConnection(profile: Profile, id?: string): Promise<Connection> {
         if (profile.type === 'iam') {
             throw new Error('Creating IAM connections is not supported')
         }
 
-        const id = uuid.v4()
+        // builder ID uses a static ID, otherwise use random uuid
+        id = id ?? uuid.v4()
         const tokenProvider = this.getTokenProvider(id, {
             ...profile,
             metadata: { connectionState: 'unauthenticated' },
