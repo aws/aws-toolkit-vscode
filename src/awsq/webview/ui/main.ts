@@ -197,18 +197,7 @@ export const createMynahUI = (initialData?: MynahUIDataModel) => {
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART) {
-                if (typeof item.body === 'string') {
-                    mynahUI.updateLastChatAnswer(tabID, { body: item.body })
-                }
-                if (item.relatedContent !== undefined) {
-                    mynahUI.updateLastChatAnswer(tabID, {
-                        relatedContent: {
-                            title: item.relatedContent.title,
-                            content: item.relatedContent.content,
-                        },
-                    })
-                }
-
+                mynahUI.updateLastChatAnswer(tabID, { ...item })
                 return
             }
 
@@ -349,6 +338,10 @@ ${message}`,
                           },
                       }
                     : {}),
+            })
+            mynahUI.addChatItem(tabID, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
             })
 
             mynahUI.updateStore(tabID, {
