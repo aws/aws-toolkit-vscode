@@ -6,7 +6,6 @@
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IotNode } from '../explorer/iotNodes'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
-import { Env } from '../../shared/vscode/env'
 import { copyToClipboard } from '../../shared/utilities/messages'
 import { getLogger } from '../../shared/logger'
 
@@ -15,7 +14,7 @@ import { getLogger } from '../../shared/logger'
  *
  * Note that the path does not contain the bucket name or a leading slash.
  */
-export async function copyEndpointCommand(node: IotNode, env = Env.vscode()): Promise<void> {
+export async function copyEndpointCommand(node: IotNode): Promise<void> {
     getLogger().debug('CopyPath called for %O', node)
 
     let endpoint: string
@@ -27,5 +26,5 @@ export async function copyEndpointCommand(node: IotNode, env = Env.vscode()): Pr
         return
     }
 
-    copyToClipboard(endpoint, 'URL', env)
+    copyToClipboard(endpoint, 'URL')
 }

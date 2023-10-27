@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import * as CloudFormation from '../cloudformation/cloudformation'
 import { getResourcesForHandler } from '../fs/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'

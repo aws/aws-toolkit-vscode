@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as fs from 'fs'
 import * as path from 'path'
 import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
-import { CloudFormation } from '../../cloudformation/cloudformation'
+import * as CloudFormation from '../../cloudformation/cloudformation'
 import { localize } from '../../utilities/vsCodeUtils'
 import {
     awsSamDebugRequestTypes,

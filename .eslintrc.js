@@ -85,9 +85,7 @@ module.exports = {
         // TODO reenable this rule, tests mostly break this one (by changing off to error)
         // This currently produces 700 non fixable by --fix errors
         'sort-imports': 'off',
-        // TODO rennable this rule (by removing this off)
-        // namespaces are not great and we should stop using them
-        '@typescript-eslint/no-namespace': 'off',
+        '@typescript-eslint/no-namespace': 'error',
         // Turn this on by removing off when we fix namespaces
         'no-inner-declarations': 'off',
         // This is off because prettier takes care of it

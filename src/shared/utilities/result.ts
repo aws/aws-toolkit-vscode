@@ -102,6 +102,7 @@ export class Err<E> extends Base<never, E> {
 
 export type Result<T, E = unknown> = Ok<T> | Err<E>
 
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace Result {
     export function ok(): Ok<void>
     export function ok<T>(val: T): Ok<T>
