@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as path from 'path'
 import * as fs from 'fs-extra'
 
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { SystemUtilities } from '../../../shared/systemUtilities'
 import {

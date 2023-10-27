@@ -5,7 +5,7 @@
 
 import { writeFile } from 'fs-extra'
 
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 
 export function createBaseTemplate(): CloudFormation.Template {
     return {

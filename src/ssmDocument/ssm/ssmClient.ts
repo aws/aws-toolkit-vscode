@@ -22,9 +22,7 @@ import {
     TransportKind,
 } from 'vscode-languageclient'
 
-namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
-}
+export const ResultLimitReached: NotificationType<string, any> = new NotificationType('ssm/resultLimitReached')
 
 const jsonLanguageConfiguration: LanguageConfiguration = {
     wordPattern: /("(?:[^\\\"]*(?:\\.)?)*"?)|[^\s{}\[\],:]+/,
@@ -114,7 +112,7 @@ export async function activate(extensionContext: ExtensionContext) {
     languages.setLanguageConfiguration('ssm-yaml', yamlLanguageConfiguration)
 
     return client.onReady().then(() => {
-        client.onNotification(ResultLimitReachedNotification.type, message => {
+        client.onNotification(ResultLimitReached, message => {
             window.showInformationMessage(
                 `${message}\nUse setting 'aws.ssmDocument.ssm.maxItemsComputed' to configure the limit.`
             )

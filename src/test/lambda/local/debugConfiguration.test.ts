@@ -17,7 +17,7 @@ import * as pathutil from '../../../shared/utilities/pathUtils'
 import * as path from 'path'
 import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegistry'
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import globals from '../../../shared/extensionGlobals'
 import { Runtime } from '../../../shared/telemetry/telemetry'
 

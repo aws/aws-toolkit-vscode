@@ -7,7 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import { instance, mock, when } from 'ts-mockito'
 
-import { CloudFormation } from '../../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../../shared/cloudformation/cloudformation'
 import { CloudFormationTemplateRegistry } from '../../../../shared/fs/templateRegistry'
 import {
     AwsSamDebuggerConfiguration,
