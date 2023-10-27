@@ -63,7 +63,14 @@ export async function handleExtraBrackets(
         startPosition
     )
 
-    const quotesToRemove = getQuotesToRemove(recommendation, leftContext, rightContext)
+    const quotesToRemove = getQuotesToRemove(
+        editor,
+        recommendation,
+        leftContext,
+        rightContext,
+        endPosition,
+        startPosition
+    )
 
     const symbolsToRemove = [...bracketsToRemove, ...quotesToRemove]
 
@@ -132,12 +139,21 @@ function getBracketsToRemove(
 }
 
 // best effort to guess quotes since it's hard to differentiate opening from closing
-function getQuotesToRemove(recommendation: string, leftContext: string, rightContext: string) {
+function getQuotesToRemove(
+    editor: vscode.TextEditor,
+    recommendation: string,
+    leftContext: string,
+    rightContext: string,
+    endPosition: vscode.Position,
+    startPosition: vscode.Position
+) {
     let leftQuote: string | undefined = undefined
+    let leftIndex: number | undefined = undefined
     for (let i = leftContext.length - 1; i >= 0; i--) {
         const char = leftContext[i]
         if (quotes.includes(char)) {
             leftQuote = char
+            leftIndex = leftContext.length - i
             break
         }
     }
@@ -162,8 +178,12 @@ function getQuotesToRemove(recommendation: string, leftContext: string, rightCon
         }
     }
 
-    if (rightIndex !== undefined && quoteCountInReco % 2 !== 0) {
-        return [rightIndex]
+    if (leftIndex !== undefined && rightIndex !== undefined && quoteCountInReco % 2 !== 0) {
+        const p = editor.document.positionAt(editor.document.offsetAt(endPosition) + rightIndex)
+
+        if (endPosition.line === startPosition.line && endPosition.line === p.line) {
+            return [rightIndex]
+        }
     }
 
     return []
