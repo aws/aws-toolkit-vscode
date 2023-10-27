@@ -14,7 +14,6 @@ import * as assert from 'assert'
 import { RedshiftDatabaseNode } from '../../../redshift/explorer/redshiftDatabaseNode'
 import { AWSCommandTreeNode } from '../../../shared/treeview/nodes/awsCommandTreeNode'
 import { RedshiftNodeConnectionWizard } from '../../../redshift/wizards/connectionWizard'
-import RedshiftData = require('aws-sdk/clients/redshiftdata')
 import { MoreResultsNode } from '../../../awsexplorer/moreResultsNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 

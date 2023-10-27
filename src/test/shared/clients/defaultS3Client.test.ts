@@ -16,7 +16,6 @@ import {
     S3,
 } from "@aws-sdk/client-s3";
 
-import { ManagedUpload } from 'aws-sdk/lib/s3/managed_upload'
 import { FileStreams } from '../../../shared/utilities/streamUtilities'
 import { anyFunction, anything, capture, deepEqual, instance, mock, verify, when } from '../../utilities/mockito'
 import * as vscode from 'vscode'
