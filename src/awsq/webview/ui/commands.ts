@@ -5,6 +5,7 @@
 
 type MessageCommand =
     | 'chat-prompt'
+    | 'chat-answer'
     | 'trigger-message-processed'
     | 'new-tab-was-created'
     | 'tab-was-removed'

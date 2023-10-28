@@ -15,13 +15,29 @@ export interface TabClosedMessage {
 }
 
 export interface InsertCodeAtCursorPosition {
+    tabID: string
     code: string
+    insertionTarget: string | undefined
+}
+
+export interface CopyCodeToClipboard {
+    tabID: string
+    code: string
+    insertionTarget: string | undefined
 }
 
 export interface PromptMessage {
     message: string | undefined
     command: string | undefined
     tabID: string
+}
+
+export interface PromptAnswer {
+    messageLength: number
+    command: string | undefined
+    tabID: string
+    suggestionCount: number
+    followUpCount: number
 }
 
 export interface StopResponseMessage {

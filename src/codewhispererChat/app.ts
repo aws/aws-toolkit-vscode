@@ -10,7 +10,9 @@ import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import {
+    CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
+    PromptAnswer,
     PromptMessage,
     StopResponseMessage,
     TabClosedMessage,
@@ -21,8 +23,10 @@ import { EditorContextCommand, registerCommands } from './commands/registerComma
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
+        processChatAnswer: new EventEmitter<PromptAnswer>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
+        processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
         processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
         processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
@@ -32,11 +36,15 @@ export function init(appContext: AwsQAppInitContext) {
         processPromptChatMessage: new MessageListener<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
         ),
+        processChatAnswer: new MessageListener<PromptAnswer>(cwChatControllerEventEmitters.processChatAnswer),
         processTabClosedMessage: new MessageListener<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
         ),
         processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
+        ),
+        processCopyCodeToClipboard: new MessageListener<CopyCodeToClipboard>(
+            cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
         processContextMenuCommand: new MessageListener<EditorContextCommand>(
             cwChatControllerEventEmitters.processContextMenuCommand
@@ -53,11 +61,15 @@ export function init(appContext: AwsQAppInitContext) {
         processPromptChatMessage: new MessagePublisher<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
         ),
+        processChatAnswer: new MessagePublisher<PromptAnswer>(cwChatControllerEventEmitters.processChatAnswer),
         processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
         ),
         processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
+        ),
+        processCopyCodeToClipboard: new MessagePublisher<CopyCodeToClipboard>(
+            cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
         processContextMenuCommand: new MessagePublisher<EditorContextCommand>(
             cwChatControllerEventEmitters.processContextMenuCommand

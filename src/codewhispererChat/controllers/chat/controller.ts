@@ -14,6 +14,8 @@ import {
     InsertCodeAtCursorPosition,
     TriggerTabIDReceived,
     StopResponseMessage,
+    CopyCodeToClipboard,
+    PromptAnswer,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -28,8 +30,10 @@ import { CwsprChatTriggerInteraction, CwsprChatUserIntent, telemetry } from '../
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
+    readonly processChatAnswer: MessagePublisher<PromptAnswer>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
+    readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
@@ -37,8 +41,10 @@ export interface ChatControllerMessagePublishers {
 
 export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
+    readonly processChatAnswer: MessageListener<PromptAnswer>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
+    readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
@@ -67,12 +73,20 @@ export class ChatController {
             this.processPromptChatMessage(data)
         })
 
+        this.chatControllerMessageListeners.processChatAnswer.onMessage(data => {
+            this.processChatAnswer(data)
+        })
+
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
             this.processTabCloseMessage(data)
         })
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
             this.processInsertCodeAtCursorPosition(data)
+        })
+
+        this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage(data => {
+            this.processCopyCodeToClipboard(data)
         })
 
         this.chatControllerMessageListeners.processContextMenuCommand.onMessage(data => {
@@ -98,7 +112,29 @@ export class ChatController {
     }
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
-        this.editorContentController.insertTextAtCursorPosition(message.code)
+        const conversationId = this.sessionStorage.getSession(message.tabID).sessionId
+
+        telemetry.codewhispererchat_interactWithMessage.run(span => {
+            this.editorContentController.insertTextAtCursorPosition(message.code)
+            //TODO: message id and has reference
+            span.record({
+                cwsprChatConversationId: conversationId,
+                cwsprChatInteractionType: 'insertAtCursor',
+                cwsprChatAcceptedCharactersLength: message.code.length,
+                cwsprChatInteractionTarget: message.insertionTarget,
+            })
+        })
+    }
+
+    private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
+        const conversationId = this.sessionStorage.getSession(message.tabID).sessionId
+        //TODO: message id and has reference
+        telemetry.codewhispererchat_interactWithMessage.emit({
+            cwsprChatConversationId: conversationId,
+            cwsprChatInteractionType: 'copySnippet',
+            cwsprChatAcceptedCharactersLength: message.code.length,
+            cwsprChatInteractionTarget: message.insertionTarget,
+        })
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {
@@ -201,6 +237,14 @@ export class ChatController {
         }
 
         try {
+            if (message.command == 'follow-up-was-clicked') {
+                const session = this.sessionStorage.getSession(message.tabID)
+                //TODO: message id
+                telemetry.codewhispererchat_interactWithMessage.emit({
+                    cwsprChatConversationId: session.sessionId,
+                    cwsprChatInteractionType: 'clickFollowUp',
+                })
+            }
             await this.processPromptMessageAsNewThread(message)
         } catch (e) {
             if (typeof e === 'string') {
@@ -209,6 +253,27 @@ export class ChatController {
                 this.messenger.sendErrorMessage(e.message, message.tabID)
             }
         }
+    }
+
+    private async processChatAnswer(message: PromptAnswer) {
+        // TODO: add mesasge id, user intent, response code snippet length, response code, references count, time to first chunk, response latency, request length
+        this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
+            const session = this.sessionStorage.getSession(message.tabID)
+            const hasCodeSnippet =
+                context?.codeSelectionContext?.selectedCode != undefined &&
+                context.codeSelectionContext.selectedCode.length > 0
+
+            telemetry.codewhispererchat_addMessage.emit({
+                cwsprChatConversationId: session.sessionId,
+                cwsprChatHasCodeSnippet: hasCodeSnippet,
+                cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage ?? '',
+                cwsprChatActiveEditorTotalCharacters: context?.activeFileContext?.fileText?.length ?? 0,
+                cwsprChatSourceLinkCount: message.suggestionCount,
+                cwsprChatFollowUpCount: message.followUpCount,
+                cwsprChatResponseLength: message.messageLength,
+                cwsprChatActiveEditorImportCount: context?.activeFileContext?.matchPolicy?.must?.length ?? 0,
+            })
+        })
     }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
@@ -282,8 +347,10 @@ export class ChatController {
                 }
 
                 const response = await session.chat(request)
-                // TODO: record conversation type
-                telemetry.codewhispererchat_startConversation.record({ cwsprChatConversationId: session.sessionId })
+                telemetry.codewhispererchat_startConversation.record({
+                    cwsprChatConversationId: session.sessionId,
+                    cwsprChatConversationType: 'Chat',
+                })
                 this.messenger.sendAIResponse(response, session, tabID, triggerID)
             })
         } catch (e) {

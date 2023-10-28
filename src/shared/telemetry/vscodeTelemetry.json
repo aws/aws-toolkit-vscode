@@ -76,6 +76,7 @@
         {
             "name": "cwsprChatConversationType",
             "type": "string",
+            "allowedValues": ["Chat", "WB", "Gumby"],
             "description": "Identifies the type of conversation"
         },
         {
@@ -160,7 +161,7 @@
         },
         {
             "name": "cwsprChatAcceptedCharactersLength",
-            "type": "string",
+            "type": "int",
             "description": "Count of code characters copied to the editor"
         },
         {

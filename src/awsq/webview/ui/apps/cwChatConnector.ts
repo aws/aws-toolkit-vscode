@@ -6,7 +6,6 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
 
 interface ChatPayload {
     chatMessage: string
@@ -31,6 +30,10 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
+    private _answerMetadata: Record<string, any> = {}
+    public answerMetadata(): Record<string, any> {
+        return this._answerMetadata
+    }
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -41,9 +44,6 @@ export class Connector {
     }
 
     followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
-        // telemetry.codewhispererchat_interactWithMessage.emit({
-        //     cwsprChatInteractionType: 'clickFollowUp',
-        // })
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
@@ -61,26 +61,22 @@ export class Connector {
     }
 
     onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
-        // telemetry.codewhispererchat_interactWithMessage.emit({
-        //     cwsprChatInteractionType: 'insertAtCursor',
-        // })
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'insert_code_at_cursor_position',
             tabType: 'cwc',
+            insertionTarget: type,
         })
     }
 
     onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
-        // telemetry.codewhispererchat_interactWithMessage.emit({
-        //     cwsprChatInteractionType: 'copySnippet',
-        // })
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'code_was_copied_to_clipboard',
             tabType: 'cwc',
+            insertionTarget: type,
         })
     }
 
@@ -162,6 +158,11 @@ export class Connector {
                     content: messageData.relatedSuggestions,
                 }
             }
+            if (messageData.message) {
+                this._answerMetadata.messageLength = messageData.message.length
+            }
+            this._answerMetadata.suggestionCount = messageData.relatedSuggestions?.length ?? 0
+            this._answerMetadata.followUpCount = messageData.followUps?.length
             this.onChatAnswerReceived(messageData.tabID, answer)
 
             // Exit the function if we received an answer from AI
@@ -187,10 +188,15 @@ export class Connector {
                           }
                         : undefined,
             }
-            // telemetry.codewhispererchat_addMessage.emit({
-            //     cwsprChatFollowUpCount: messageData.followUps?.length ?? 0,
-            // })
             this.onChatAnswerReceived(messageData.tabID, answer)
+            this.sendMessageToExtension({
+                command: 'chat-answer',
+                tabType: 'cwc',
+                tabID: messageData.tabID,
+                messageLength: this._answerMetadata.messageLength,
+                suggestionCount: this._answerMetadata.suggestionCount,
+                followUpCount: this._answerMetadata.followUpCount ?? messageData.followUps?.length ?? 0,
+            })
 
             return
         }
