@@ -86,7 +86,9 @@ describe('closingBracketUtil', function () {
 
             /**
              * public class Main {
-             *     public static void main(|)
+             *     public static void main(|args: String[]) {
+             *         System.out.println("Hello World");
+             *     }|)
              * }
              */
             await assertClosingSymbolsHandler(
@@ -152,7 +154,7 @@ describe('closingBracketUtil', function () {
             )
 
             /**
-             * const someArray = [|"element1", "element2"]];
+             * const someArray = [|"element1", "element2"];|]
              */
             await assertClosingSymbolsHandler(
                 'const anArray = [',
@@ -183,6 +185,15 @@ describe('closingBracketUtil', function () {
             };`
             )
 
+            /**
+             * genericFunction<|T>|> () {
+             *     if (T isInstanceOf string) {
+             *         console.log(T)
+             *     } else {
+             *         // Do nothing
+             *     }
+             * }
+             */
             await assertClosingSymbolsHandler(
                 String.raw`genericFunction<`,
                 String.raw`> () {
@@ -202,11 +213,16 @@ describe('closingBracketUtil', function () {
 }`
             )
 
+            /**
+             * const rawStr = "|Foo";|"
+             * const anotherStr = "Bar"
+             */
             await assertClosingSymbolsHandler(
-                'const rawStr = String.raw`',
-                '`',
-                'Foo`;',
-                `const rawStr = String.raw\`Foo\`;`
+                'const rawStr = "',
+                '\nconst anotherStr = "Bar";',
+                'Foo";',
+                String.raw`const rawStr = "Foo";
+const anotherStr = "Bar";`
             )
         })
 
@@ -239,6 +255,11 @@ describe('closingBracketUtil', function () {
 })`
             )
 
+            /**
+             * function add2Numbers(|a: nuumber, b: number) {
+             *     return a + b;
+             * }|
+             */
             await assertClosingSymbolsHandler(
                 'function add2Numbers(',
                 '',
@@ -250,7 +271,7 @@ describe('closingBracketUtil', function () {
              * export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {
              *     lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },
              *     lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },
-             *     lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },
+             *     lt3: |{ launchTemplateId: "lt-3456", launchTemplateName: "baz" },|
              * }
              */
             await assertClosingSymbolsHandler(
@@ -260,6 +281,13 @@ describe('closingBracketUtil', function () {
                 `export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};`
             )
 
+            /**
+             * export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {
+             *     lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },
+             *     lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },
+             *     |lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },|
+             * }
+             */
             await assertClosingSymbolsHandler(
                 'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    ',
                 '\n};',
@@ -267,8 +295,9 @@ describe('closingBracketUtil', function () {
                 'export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {\n    lt1: { launchTemplateId: "lt-1", launchTemplateName: "foo" },\n    lt2: { launchTemplateId: "lt-2345", launchTemplateName: "bar" },\n    lt3: { launchTemplateId: "lt-3456", launchTemplateName: "baz" },\n};'
             )
 
-            await assertClosingSymbolsHandler(String.raw``, String.raw``, String.raw``, String.raw``)
-
+            /**
+             * const aString = "|hello world";|
+             */
             await assertClosingSymbolsHandler(
                 'const aString = "',
                 '',
@@ -276,6 +305,14 @@ describe('closingBracketUtil', function () {
                 'const aString = "hello world";'
             )
 
+            /** genericFunction<|T> ()|> {
+             *      if (T isInstanceOf string) {
+             *          console.log(T)
+             *      } else {
+             *          // Do nothing
+             *      }
+             * }
+             */
             await assertClosingSymbolsHandler(
                 'genericFunction<',
                 String.raw` {
@@ -295,11 +332,57 @@ describe('closingBracketUtil', function () {
 }`
             )
 
+            /**
+             * const rawStr = "|Foo";|
+             * const anotherStr = "Bar"
+             */
             await assertClosingSymbolsHandler(
-                'const rawStr = String.raw`',
-                '',
-                'Foo`;',
-                `const rawStr = String.raw\`Foo\`;`
+                'const rawStr = "',
+                String.raw`
+const anotherStr = "Bar";`,
+                'Foo";',
+                String.raw`const rawStr = "Foo";
+const anotherStr = "Bar";`
+            )
+
+            /**
+             * function shouldReturnAhtmlDiv( { name } : Props) {
+             *      if (!name) {
+             *          return undefined
+             *      }
+             *
+             *      return (
+             *          <div className = { name |}>
+             *              { name }
+             *          </div>
+             *      |)
+             * }
+             */
+            await assertClosingSymbolsHandler(
+                String.raw`function shouldReturnAhtmlDiv( { name } : Props) {
+    if (!name) {
+        return undefined
+    }
+
+    return (
+        <div className = { 'foo' `,
+                String.raw`
+    )
+}`,
+                String.raw`}>
+            { name }
+        </div>`,
+                String.raw`function shouldReturnAhtmlDiv( { name } : Props) {
+    if (!name) {
+        return undefined
+    }
+
+    return (
+        <div className = { 'foo' }>
+            { name }
+        </div>
+    )
+}`
             )
         })
     })
