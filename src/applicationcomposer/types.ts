@@ -7,12 +7,13 @@ import * as vscode from 'vscode'
 export type WebviewContext = {
     panel: vscode.WebviewPanel
     textDocument: vscode.TextDocument
-    disposables: vscode.Disposable[]
+    disposables?: vscode.Disposable[]
 }
 
 export enum Response {
     INIT = 'INIT',
     LOAD_FILE = 'LOAD_FILE',
+    SAVE_FILE = 'SAVE_FILE',
 }
 
 export interface ResponseMessage {
@@ -31,9 +32,15 @@ export interface LoadFileResponseMessage extends ResponseMessage {
     initFileContents: string
 }
 
+export interface SaveFileResponseMessage extends ResponseMessage {
+    eventId: string
+    status: boolean
+}
+
 export enum Command {
     INIT = 'INIT',
     LOAD_FILE = 'LOAD_FILE',
+    SAVE_FILE = 'SAVE_FILE',
 }
 
 export interface RequestMessage {
@@ -48,4 +55,11 @@ export interface LoadFileRequestMessage extends RequestMessage {
     eventId: string
     fileName: string
     filePath: string
+}
+
+export interface SaveFileRequestMessage extends RequestMessage {
+    eventId: string
+    fileName: string
+    filePath: string
+    fileContents: string
 }

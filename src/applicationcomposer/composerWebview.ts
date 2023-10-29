@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { handleCommand } from './handleCommand'
+import { handleRequestMessage } from './handleCommand'
 
 export class ApplicationComposer {
     public readonly documentUri: vscode.Uri
@@ -61,7 +61,7 @@ export class ApplicationComposer {
         // Handle messages from the webview
         this.disposables.push(
             panel.webview.onDidReceiveMessage(message =>
-                handleCommand(message, {
+                handleRequestMessage(message, {
                     panel: panel,
                     textDocument: textDocument,
                 })
