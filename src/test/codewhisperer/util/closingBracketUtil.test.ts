@@ -151,16 +151,15 @@ describe('closingBracketUtil', function () {
                 '{\n\t"userName": "john",\n\t"department": "codewhisperer",\n}'
             )
 
-            // TODO: this one won't work for now in order to make the following working
             /**
              * const someArray = [|"element1", "element2"]];
              */
-            // await assertClosingSymbolsHandler(
-            //     'const anArray = [',
-            //     ']',
-            //     '"element1", "element2"];',
-            //     `const anArray = ["element1", "element2"];`
-            // )
+            await assertClosingSymbolsHandler(
+                'const anArray = [',
+                ']',
+                '"element1", "element2"];',
+                `const anArray = ["element1", "element2"];`
+            )
 
             /**
              * export const launchTemplates: { [key: string]: AmazonEC2.LaunchTemplate } = {

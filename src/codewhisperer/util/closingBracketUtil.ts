@@ -125,15 +125,6 @@ function getBracketsToRemove(
     const unpairedOpeningsInLeftContext = nonClosedOpneingParen(leftContext, unpairedClosingsInReco.length)
     const unpairedClosingsInRightContext = nonClosedClosingParen(rightContext)
 
-    let lastNonSpaceCharInReco: string | undefined = undefined
-    for (let i = recommendation.length - 1; i >= 0; i--) {
-        const char = recommendation[i]
-        if (!/\s/.test(char)) {
-            lastNonSpaceCharInReco = char
-            break
-        }
-    }
-
     const toRemove: number[] = []
 
     let i = 0
@@ -144,12 +135,19 @@ function getBracketsToRemove(
         const closing = unpairedClosingsInReco[j]
 
         const isPaired = closeToOpen[closing.char] === opening.char
-        const toDelete = unpairedClosingsInRightContext[k]
+        const rightContextCharToDelete = unpairedClosingsInRightContext[k]
 
         if (isPaired) {
-            if (toDelete && toDelete.char === closing.char) {
-                if (lastNonSpaceCharInReco !== undefined && parenthesis.includes(lastNonSpaceCharInReco)) {
-                    toRemove.push(toDelete.strOffset)
+            if (rightContextCharToDelete && rightContextCharToDelete.char === closing.char) {
+                const rightContextStart = editor.document.offsetAt(end) + 1
+                const symbolPosition = editor.document.positionAt(
+                    rightContextStart + rightContextCharToDelete.strOffset
+                )
+                const lineCnt = recommendation.split('\n').length - 1
+                const isSameline = symbolPosition.line - lineCnt === start.line
+
+                if (isSameline) {
+                    toRemove.push(rightContextCharToDelete.strOffset)
                 }
 
                 k++
@@ -163,7 +161,6 @@ function getBracketsToRemove(
     return toRemove
 }
 
-// best effort to guess quotes since it's hard to differentiate opening from closing
 function getQuotesToRemove(
     editor: vscode.TextEditor,
     recommendation: string,
