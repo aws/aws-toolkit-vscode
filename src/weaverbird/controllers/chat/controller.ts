@@ -194,9 +194,9 @@ export class WeaverbirdController {
     // TODO add type
     private async acceptCode(message: any) {
         let session
-        telemetry.awsq_isAcceptedCodeChanges.emit({ enabled: true })
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+            telemetry.awsq_isAcceptedCodeChanges.emit({ enabled: true })
             await session.acceptChanges()
         } catch (err: any) {
             this.messenger.sendErrorMessage(
