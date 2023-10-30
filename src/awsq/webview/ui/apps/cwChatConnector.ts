@@ -69,7 +69,7 @@ export class Connector {
             code,
             command: 'insert_code_at_cursor_position',
             tabType: 'cwc',
-            insertionTarget: type,
+            insertionTargetType: type,
             codeReference,
         })
     }
@@ -85,7 +85,7 @@ export class Connector {
             code,
             command: 'code_was_copied_to_clipboard',
             tabType: 'cwc',
-            insertionTarget: type,
+            insertionTargetType: type,
             codeReference,
         })
     }

@@ -78,7 +78,7 @@ export class UIMessageListener {
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             tabID: msg.tabID,
             code: msg.code,
-            insertionTarget: msg.insertionTarget,
+            insertionTargetType: msg.insertionTargetType,
         })
     }
 
@@ -86,7 +86,7 @@ export class UIMessageListener {
         this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
             tabID: msg.tabID,
             code: msg.code,
-            insertionTarget: msg.insertionTarget,
+            insertionTargetType: msg.insertionTargetType,
         })
     }
 

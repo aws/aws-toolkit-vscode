@@ -122,17 +122,15 @@ export class ChatController {
     }
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
-        const conversationId = this.sessionStorage.getSession(message.tabID).sessionIdentifier
+        this.editorContentController.insertTextAtCursorPosition(message.code)
 
-        telemetry.codewhispererchat_interactWithMessage.run(span => {
-            this.editorContentController.insertTextAtCursorPosition(message.code)
-            //TODO: message id and has reference
-            span.record({
-                cwsprChatConversationId: conversationId,
-                cwsprChatInteractionType: 'insertAtCursor',
-                cwsprChatAcceptedCharactersLength: message.code.length,
-                cwsprChatInteractionTarget: message.insertionTarget,
-            })
+        const conversationId = this.sessionStorage.getSession(message.tabID).sessionIdentifier
+        //TODO: message id and has reference
+        telemetry.codewhispererchat_interactWithMessage.emit({
+            cwsprChatConversationId: conversationId,
+            cwsprChatInteractionType: 'insertAtCursor',
+            cwsprChatAcceptedCharactersLength: message.code.length,
+            cwsprChatInteractionTarget: message.insertionTargetType,
         })
     }
 
@@ -143,7 +141,7 @@ export class ChatController {
             cwsprChatConversationId: conversationId,
             cwsprChatInteractionType: 'copySnippet',
             cwsprChatAcceptedCharactersLength: message.code.length,
-            cwsprChatInteractionTarget: message.insertionTarget,
+            cwsprChatInteractionTarget: message.insertionTargetType,
         })
     }
 

@@ -18,13 +18,13 @@ export interface TabClosedMessage {
 export interface InsertCodeAtCursorPosition {
     tabID: string
     code: string
-    insertionTarget: string | undefined
+    insertionTargetType: string | undefined
 }
 
 export interface CopyCodeToClipboard {
     tabID: string
     code: string
-    insertionTarget: string | undefined
+    insertionTargetType: string | undefined
 }
 
 export interface PromptMessage {
