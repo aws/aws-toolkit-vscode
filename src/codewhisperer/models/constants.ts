@@ -286,6 +286,12 @@ export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
 
+export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
+
+export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
+
+export const runSecurityScanButtonTitle = 'Run security scan'
+
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,
     topK: 3,

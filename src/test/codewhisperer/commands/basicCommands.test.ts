@@ -7,9 +7,13 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import { resetCodeWhispererGlobalVariables } from '../testUtil'
+import { createCodeScanIssue, createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { assertTelemetryCurried } from '../../testUtil'
-import { toggleCodeSuggestions, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
+import {
+    toggleCodeSuggestions,
+    showSecurityScan,
+    applySecurityFix,
+} from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command } from '../../../shared/vscode/commands2'
@@ -20,6 +24,9 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
 import { get, set } from '../../../codewhisperer/util/commonUtil'
+import { MockDocument } from '../../fake/fakeDocument'
+import { FileSystemCommon } from '../../../srcShared/fs'
+import { getLogger } from '../../../shared/logger/logger'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -131,5 +138,139 @@ describe('CodeWhisperer-basicCommands', function () {
             await targetCommand.execute()
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
         })
+
+        it('should call applySecurityFix command successfully', async function () {
+            const fileName = 'sample.py'
+            const saveStub = sinon.stub()
+            saveStub.resolves(true)
+            const textDocumentMock = new MockDocument('first line\n second line\n fourth line', fileName, saveStub)
+
+            const openTextDocumentMock = sinon.stub()
+            openTextDocumentMock.resolves(textDocumentMock)
+            const sandbox = sinon.createSandbox()
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+
+            const writeFileMock = sinon.stub()
+            writeFileMock.resolves(true)
+            sinon.stub(FileSystemCommon.prototype, 'writeFile').value(writeFileMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            await targetCommand.execute({
+                filePath: fileName,
+                ...createCodeScanIssue({
+                    suggestedFixes: [
+                        {
+                            description: 'fix',
+                            code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
+                        },
+                    ],
+                }),
+            })
+            assert.ok(saveStub.calledOnce)
+            assert.ok(writeFileMock.calledOnceWith(fileName, 'first line\n third line\n fourth line'))
+
+            assert.strictEqual(
+                getTestWindow().shownMessages[0].message,
+                'Code fix was applied. Run a security scan to validate the fix.'
+            )
+
+            sandbox.restore()
+        })
+        it('handles patch failure', async function () {
+            const textDocumentMock = createMockDocument()
+
+            const openTextDocumentMock = sinon.stub()
+            openTextDocumentMock.resolves(textDocumentMock)
+
+            const sandbox = sinon.createSandbox()
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            await targetCommand.execute({
+                filePath: 'test.py',
+                ...createCodeScanIssue({
+                    suggestedFixes: [
+                        {
+                            code: '@@ -1,1 -1,1 @@\n-mock\n+line5',
+                            description: 'dummy',
+                        },
+                    ],
+                }),
+            })
+
+            assert.strictEqual(getTestWindow().shownMessages[0].message, 'Failed to apply suggested code fix.')
+
+            sandbox.restore()
+        })
+    })
+
+    it('handles document save failure', async function () {
+        const fileName = 'sample.py'
+        const saveStub = sinon.stub()
+        saveStub.resolves(false)
+        const textDocumentMock = new MockDocument('first line\n second line\n fourth line', fileName, saveStub)
+
+        const openTextDocumentMock = sinon.stub()
+        openTextDocumentMock.resolves(textDocumentMock)
+
+        const sandbox = sinon.createSandbox()
+        sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+        const loggerStub = sinon.stub(getLogger(), 'error')
+
+        targetCommand = testCommand(applySecurityFix)
+        await targetCommand.execute({
+            filePath: fileName,
+            ...createCodeScanIssue({
+                suggestedFixes: [
+                    {
+                        description: 'fix',
+                        code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
+                    },
+                ],
+            }),
+        })
+
+        assert.ok(saveStub.calledOnce)
+        assert.ok(loggerStub.calledOnce)
+        const actual = loggerStub.getCall(0).args[0]
+        assert.strictEqual(actual, 'Failed to save editor text changes into the file.')
+
+        sandbox.restore()
+    })
+    it('handles document write failure', async function () {
+        const fileName = 'sample.py'
+        const saveStub = sinon.stub()
+        saveStub.resolves(true)
+        const textDocumentMock = new MockDocument('first line\n second line\n fourth line', fileName, saveStub)
+
+        const openTextDocumentMock = sinon.stub()
+        openTextDocumentMock.resolves(textDocumentMock)
+        const writeFileMock = sinon.stub()
+        writeFileMock.rejects('writing to file failed.')
+
+        const sandbox = sinon.createSandbox()
+        sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+        sinon.stub(FileSystemCommon.prototype, 'writeFile').value(writeFileMock)
+        const loggerStub = sinon.stub(getLogger(), 'error')
+
+        targetCommand = testCommand(applySecurityFix)
+        await targetCommand.execute({
+            filePath: fileName,
+            ...createCodeScanIssue({
+                suggestedFixes: [
+                    {
+                        description: 'fix',
+                        code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
+                    },
+                ],
+            }),
+        })
+
+        assert.ok(saveStub.calledOnce)
+        assert.ok(loggerStub.calledOnce)
+        const actual = loggerStub.getCall(0).args[0]
+        assert.strictEqual(actual, 'Unable to write updated text content into the file: writing to file failed.')
+
+        sandbox.restore()
     })
 })

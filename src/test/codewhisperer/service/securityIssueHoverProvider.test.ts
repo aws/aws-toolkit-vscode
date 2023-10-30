@@ -47,7 +47,9 @@ describe('securityIssueHoverProvider', () => {
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify(issues[0])
                 )} 'Open "CodeWhisperer Security Issue"')\n` +
-                ' | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix "Apply suggested fix")\n\n' +
+                ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
+                    JSON.stringify({ ...issues[0], filePath: mockDocument.fileName })
+                )} "Apply suggested fix")\n\n` +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
                 '```language\n' +
                 'first line    \n' +

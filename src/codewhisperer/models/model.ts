@@ -218,6 +218,10 @@ export interface CodeScanIssue {
     suggestedFixes: SuggestedFix[]
 }
 
+export interface CodeScanIssueCommandArgs extends CodeScanIssue {
+    filePath: string
+}
+
 export interface AggregatedCodeScanIssue {
     filePath: string
     issues: CodeScanIssue[]

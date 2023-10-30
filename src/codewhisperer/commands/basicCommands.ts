@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssue, codeScanState } from '../models/model'
+import { CodeScanIssue, CodeScanIssueCommandArgs, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -30,7 +30,9 @@ import { get, set } from '../util/commonUtil'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import { applyPatch } from 'diff'
 import { showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
+import { FileSystemCommon } from '../../srcShared/fs'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -211,4 +213,51 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     () => () => {
         notifyNewCustomizations().then()
     }
+)
+
+export const applySecurityFix = Commands.declare(
+    'aws.codeWhisperer.applySecurityFix',
+    () =>
+        async ({ filePath, ...issue }: CodeScanIssueCommandArgs) => {
+            const [suggestedFix] = issue?.suggestedFixes ?? []
+
+            if (!suggestedFix || !filePath) {
+                return
+            }
+
+            const patch = suggestedFix.code
+            const document = await vscode.workspace.openTextDocument(filePath)
+            const fileContent = document.getText()
+
+            const updatedContent = applyPatch(fileContent, patch)
+
+            if (updatedContent) {
+                // saving the document text if not save
+                document.save().then(isSaved => {
+                    if (isSaved) {
+                        // writing the patch applied version of document into the file
+                        FileSystemCommon.instance
+                            .writeFile(filePath, updatedContent)
+                            .then(() => {
+                                vscode.window
+                                    .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
+                                        title: CodeWhispererConstants.runSecurityScanButtonTitle,
+                                    })
+                                    .then(res => {
+                                        if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
+                                            vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
+                                        }
+                                    })
+                            })
+                            .catch(err => {
+                                getLogger().error(`Unable to write updated text content into the file: ${err}`)
+                            })
+                    } else {
+                        getLogger().error('Failed to save editor text changes into the file.')
+                    }
+                })
+            } else {
+                vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
+            }
+        }
 )
