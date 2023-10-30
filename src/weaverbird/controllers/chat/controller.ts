@@ -12,18 +12,25 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 import { weaverbirdScheme } from '../../constants'
+import { defaultRetryLimit } from '../../limits'
+import { Session } from '../../session/session'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
     readonly followUpClicked: EventEmitter<any>
     readonly openDiff: EventEmitter<any>
     readonly stopResponse: EventEmitter<any>
+    readonly tabOpened: EventEmitter<any>
     readonly tabClosed: EventEmitter<any>
 }
 
 export class WeaverbirdController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
+
+    // Any events that have to be finished before we can actually serve requests e.g. code uploading
+    private preloader: () => Promise<void>
+    private preloaderFinished: boolean = false
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
@@ -32,6 +39,9 @@ export class WeaverbirdController {
     ) {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
+
+        // preloader is defined when a tab is opened
+        this.preloader = async () => {}
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processHumanChatMessage(data)
@@ -47,6 +57,8 @@ export class WeaverbirdController {
                 case FollowUpTypes.RejectCode:
                     // TODO figure out what we want to do here
                     break
+                case FollowUpTypes.Retry:
+                    this.retryRequest(data)
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
@@ -54,6 +66,9 @@ export class WeaverbirdController {
         })
         this.chatControllerMessageListeners.stopResponse.event(data => {
             this.stopResponse(data)
+        })
+        this.chatControllerMessageListeners.tabOpened.event(data => {
+            this.tabOpened(data)
         })
         this.chatControllerMessageListeners.tabClosed.event(data => {
             this.tabClosed(data)
@@ -63,32 +78,57 @@ export class WeaverbirdController {
     // TODO add type
     private async processHumanChatMessage(message: any) {
         if (message.message == undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
             return
         }
 
-        this.messenger.sendResponse(async () => {
-            const session = await this.sessionStorage.getSession(message.tabID)
+        let session
+        try {
+            session = await this.sessionStorage.getSession(message.tabID)
+
+            // Create the "..." bubbles
+            this.messenger.sendAnswer({
+                message: '',
+                type: 'answer-stream',
+                tabID: message.tabID,
+            })
+
+            await this.preloader()
+
             const interactions = await session.send(message.message)
-            return {
+
+            // Resolve the "..." with the content
+            this.messenger.sendAnswer({
                 message: interactions.content,
+                type: 'answer-part',
+                tabID: message.tabID,
+            })
+
+            // Follow up with action items and complete the request stream
+            this.messenger.sendAnswer({
+                type: 'answer',
                 followUps: this.getFollowUpOptions(session.state.phase),
-            }
-        }, message.tabID)
+                tabID: message.tabID,
+            })
+        } catch (err: any) {
+            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+            this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
+        }
     }
 
     // TODO add type
     private async writeCodeClicked(message: any) {
         // lock the UI/show loading bubbles
         this.messenger.sendCodeGeneration(message.tabID, true)
-        const session = await this.sessionStorage.getSession(message.tabID)
 
+        let session
         let filePaths: string[] = []
         try {
+            session = await this.sessionStorage.getSession(message.tabID)
             filePaths = await session.startCodegen()
         } catch (err: any) {
             const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
-            this.messenger.sendErrorMessage(errorMessage, message.tabID)
+            this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
 
         // unlock the UI
@@ -96,35 +136,64 @@ export class WeaverbirdController {
 
         // send the file path changes
         if (filePaths.length > 0) {
-            this.messenger.sendFilePaths(filePaths, message.tabID, session.state.conversationId ?? '')
+            this.messenger.sendFilePaths(filePaths, message.tabID, session?.state.conversationId ?? '')
         }
 
         // Only add the follow up when the tab hasn't been closed/request hasn't been cancelled
-        if (!session.state.tokenSource.token.isCancellationRequested && filePaths.length > 0) {
-            this.messenger.sendFollowUps(this.getFollowUpOptions(session.state.phase), message.tabID)
+        if (!session?.state.tokenSource.token.isCancellationRequested && filePaths.length > 0) {
+            this.messenger.sendAnswer({
+                message: undefined,
+                type: 'answer',
+                followUps: this.getFollowUpOptions(session?.state.phase),
+                tabID: message.tabID,
+            })
         }
     }
 
     // TODO add type
     private async acceptCode(message: any) {
+        let session
         try {
-            const session = await this.sessionStorage.getSession(message.tabID)
+            session = await this.sessionStorage.getSession(message.tabID)
             await session.acceptChanges()
         } catch (err: any) {
-            this.messenger.sendErrorMessage(`Failed to accept code changes: ${err.message}`, message.tabID)
+            this.messenger.sendErrorMessage(
+                `Failed to accept code changes: ${err.message}`,
+                message.tabID,
+                this.retriesRemaining(session)
+            )
+        }
+    }
+
+    private async retryRequest(message: any) {
+        let session
+        try {
+            session = await this.sessionStorage.getSession(message.tabID)
+
+            // Decrease retries before making this request, just in case this one fails as well
+            session.decreaseRetries()
+
+            // Sending an empty message will re-run the last state with the previous values
+            await session.send('')
+        } catch (err: any) {
+            this.messenger.sendErrorMessage(
+                `Failed to retry request: ${err.message}`,
+                message.tabID,
+                this.retriesRemaining(session)
+            )
         }
     }
 
     private getFollowUpOptions(phase: SessionStatePhase | undefined): ChatItemFollowUp[] {
         switch (phase) {
-            case SessionStatePhase.Approach:
+            case 'Approach':
                 return [
                     {
                         pillText: 'Write Code',
                         type: FollowUpTypes.WriteCode,
                     },
                 ]
-            case SessionStatePhase.Codegen:
+            case 'Codegen':
                 return [
                     {
                         pillText: 'Accept changes',
@@ -167,7 +236,26 @@ export class WeaverbirdController {
         session.state.tokenSource.cancel()
     }
 
+    private async tabOpened(message: any) {
+        let session: Session | undefined
+        try {
+            session = await this.sessionStorage.createSession(message.tabID)
+            this.preloader = async () => {
+                if (!this.preloaderFinished && session) {
+                    await session.setupConversation()
+                    this.preloaderFinished = true
+                }
+            }
+        } catch (err: any) {
+            this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+        }
+    }
+
     private tabClosed(message: any) {
         this.sessionStorage.deleteSession(message.tabID)
+    }
+
+    private retriesRemaining(session: Session | undefined) {
+        return session?.retries ?? defaultRetryLimit
     }
 }

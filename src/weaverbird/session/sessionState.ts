@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
+import sanitizeHtml from 'sanitize-html'
 import { collectFiles } from '../util/files'
 import WeaverbirdClient, {
     FileMetadata,
@@ -38,22 +39,35 @@ import { ToolkitError } from '../../shared/errors'
 
 const fs = FileSystemCommon.instance
 
+export class ConversationNotStartedState implements SessionState {
+    public tokenSource: vscode.CancellationTokenSource
+    public readonly phase = 'Init'
+
+    constructor(public approach: string, public tabID: string) {
+        this.tokenSource = new vscode.CancellationTokenSource()
+        this.approach = ''
+    }
+
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        throw new ToolkitError('Illegal transition between states, restart the conversation')
+    }
+}
+
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = SessionStatePhase.Approach
+    public readonly conversationId: string
+    public readonly phase = 'Approach'
 
-    constructor(
-        private config: Omit<SessionStateConfig, 'conversationId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
+        this.conversationId = config.conversationId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload = {
             task: action.task,
-            originalFileContents: action.files,
+            originalFileContents: [],
+            conversationId: this.conversationId,
             config: this.config.llmConfig,
         }
 
@@ -63,8 +77,11 @@ export class RefinementState implements SessionState {
             payload
         )
 
-        this.approach =
-            response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+        this.approach = sanitizeHtml(
+            response.approach ??
+                'There has been a problem generating an approach. Please open a conversation in a new tab',
+            {}
+        )
 
         return {
             nextState: new RefinementIterationState(
@@ -84,7 +101,7 @@ export class RefinementState implements SessionState {
 
 export class RefinementIterationState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = SessionStatePhase.Approach
+    public readonly phase = 'Approach'
     public readonly conversationId: string
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
@@ -112,8 +129,11 @@ export class RefinementIterationState implements SessionState {
             payload
         )
 
-        this.approach =
-            response.approach ?? "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+        this.approach = sanitizeHtml(
+            response.approach ??
+                'There has been a problem generating an approach. Please open a conversation in a new tab',
+            {}
+        )
 
         return {
             nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
@@ -141,7 +161,7 @@ abstract class CodeGenBase {
     private pollCount = 180
     private requestDelay = 10000
     readonly tokenSource: vscode.CancellationTokenSource
-    public phase = SessionStatePhase.Codegen
+    public phase: SessionStatePhase = 'Codegen'
     public readonly conversationId: string
 
     constructor(protected config: SessionStateConfig, public tabID: string) {
@@ -222,7 +242,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const payload: GenerateCodeInput = {
-            originalFileContents: action.files,
+            originalFileContents: [],
             approach: this.approach,
             task: action.task,
             config: this.config.llmConfig,
@@ -264,14 +284,12 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public filePaths: string[]
+    public readonly conversationId: string
 
-    constructor(
-        private config: Omit<SessionStateConfig, 'conversationId'>,
-        public approach: string,
-        public tabID: string
-    ) {
+    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
+        this.conversationId = config.conversationId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -296,8 +314,15 @@ export class MockCodeGenState implements SessionState {
         }
 
         return {
-            // no point in iterating after a mocked code gen
-            nextState: new RefinementState(this.config, this.approach, this.tabID),
+            // no point in iterating after a mocked code gen?
+            nextState: new RefinementState(
+                {
+                    ...this.config,
+                    conversationId: this.conversationId,
+                },
+                this.approach,
+                this.tabID
+            ),
             interaction: {},
         }
     }

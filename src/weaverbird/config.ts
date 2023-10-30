@@ -119,3 +119,9 @@ export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
         return defaultConfig
     }
 }
+
+/**
+ * If weaverbird for whatever reason cannot launch in time, disable weaverbird here
+ * and the chat follow up buttons/assist quick commands won't be shown
+ */
+export const weaverbirdEnabled = true

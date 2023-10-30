@@ -17,8 +17,8 @@ import { AwsSamDebuggerConfiguration } from '../../../shared/sam/debugger/awsSam
 import { AwsSamDebugConfigurationValidator } from '../../../shared/sam/debugger/awsSamDebugConfigurationValidator'
 import * as pathutils from '../../../shared/utilities/pathUtils'
 import * as testutil from '../../testUtil'
-import { templateFileGlobPattern } from '../../../shared/cloudformation/activation'
 import globals from '../../../shared/extensionGlobals'
+import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
 
 const samDebugConfiguration: AwsSamDebuggerConfiguration = {
     type: 'aws-sam',
@@ -106,7 +106,7 @@ describe('LaunchConfiguration', function () {
 
     beforeEach(async function () {
         const registry = await globals.templateRegistry
-        await registry.addWatchPatterns([templateFileGlobPattern])
+        await registry.addWatchPatterns([CloudFormation.templateFileGlobPattern])
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()

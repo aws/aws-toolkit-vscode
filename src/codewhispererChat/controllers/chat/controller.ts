@@ -248,8 +248,16 @@ export class ChatController {
         const request = this.triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         session.createNewTokenSource()
-        const response = await session.chat(request)
-        this.messenger.sendAIResponse(response, session, tabID, triggerID)
+        try {
+            const response = await session.chat(request)
+            this.messenger.sendAIResponse(response, session, tabID, triggerID)
+        } catch (e) {
+            if (typeof e === 'string') {
+                this.messenger.sendErrorMessage(e.toUpperCase(), tabID)
+            } else if (e instanceof Error) {
+                this.messenger.sendErrorMessage(e.message, tabID)
+            }
+        }
     }
 
     private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): ChatRequest {
@@ -270,6 +278,12 @@ export class ChatController {
                 },
             }
         }
+
+        let programmingLanguage = undefined
+        if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
+            programmingLanguage = { languageName: triggerPayload.fileLanguage }
+        }
+
         if (triggerPayload.trigger == ChatTriggerType.ChatMessage) {
             return {
                 conversationState: {
@@ -281,7 +295,7 @@ export class ChatController {
                                     document: {
                                         relativeFilePath: triggerPayload.filePath,
                                         text: triggerPayload.fileText,
-                                        programmingLanguage: { languageName: triggerPayload.fileLanguage },
+                                        programmingLanguage,
                                         documentSymbols: documentSymbolFqns,
                                     },
                                     ...(cursorState && { cursorState }),

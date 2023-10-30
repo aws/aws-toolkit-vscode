@@ -12,8 +12,9 @@ import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 
-interface ChatPayload {
+export interface ChatPayload {
     chatMessage: string
+    chatCommand?: string
     attachedAPIDocsSuggestion?: Suggestion
     attachedVanillaSuggestion?: Suggestion
 }
@@ -94,6 +95,14 @@ export class Connector {
             status: 'free',
             isSelected: true,
         })
+    }
+
+    onKnownTabOpen = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'wb':
+                this.weaverbirdChatConnector.onTabOpen(tabID)
+                break
+        }
     }
 
     onTabChange = (tabId: string): void => {

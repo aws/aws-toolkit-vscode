@@ -108,12 +108,30 @@ describe('sessionState', () => {
             const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
             const invokeFailureApproach =
-                "There has been a problem generating an approach. Please type 'CLEAR' and start over."
+                'There has been a problem generating an approach. Please open a conversation in a new tab'
 
             assert.deepStrictEqual(result, {
                 nextState: new RefinementIterationState(testConfig, invokeFailureApproach, tabId),
                 interaction: {
                     content: `${invokeFailureApproach}\n`,
+                },
+            })
+        })
+
+        it('invalid html gets sanitized', async () => {
+            const invalidHTMLApproach =
+                '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
+            sinon
+                .stub(invokeModule, 'invoke')
+                .resolves({ approach: invalidHTMLApproach, conversationId } satisfies GenerateApproachOutput)
+            const state = new RefinementState(testConfig, invalidHTMLApproach, tabId)
+            const result = await state.interact(testAction)
+
+            const expectedApproach = `<h1>hello world</h1>`
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementIterationState(testConfig, expectedApproach, tabId),
+                interaction: {
+                    content: `${expectedApproach}\n`,
                 },
             })
         })
@@ -185,6 +203,25 @@ describe('sessionState', () => {
                 nextState: new RefinementIterationState(testConfig, testApproach, tabId),
                 interaction: {
                     content: `${testApproach}\n`,
+                },
+            })
+        })
+
+        it('invalid html gets sanitized', async () => {
+            const invalidHTMLApproach =
+                '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
+            sinon
+                .stub(invokeModule, 'invoke')
+                .resolves({ approach: invalidHTMLApproach, conversationId } satisfies GenerateApproachOutput)
+            const state = new RefinementIterationState(testConfig, invalidHTMLApproach, tabId)
+            const testAction = mockSessionStateAction({})
+            const result = await state.interact(testAction)
+
+            const expectedApproach = `<h1>hello world</h1>`
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementIterationState(testConfig, expectedApproach, tabId),
+                interaction: {
+                    content: `${expectedApproach}\n`,
                 },
             })
         })

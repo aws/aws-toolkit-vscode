@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 
 import { collectFiles, getSourceCodePath, prepareRepoData } from '../util/files'
-import { CodeGenState, RefinementState } from './sessionState'
+import { CodeGenState, ConversationNotStartedState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { SessionConfig } from './sessionConfig'
 import { ConversationIdNotFoundError } from '../errors'
@@ -16,6 +16,7 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { uploadCode } from '../util/upload'
 import { WeaverbirdLambdaClient } from '../client/weaverbird'
+import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 
 const fs = FileSystemCommon.instance
 
@@ -26,15 +27,20 @@ export class Session {
     public readonly config: SessionConfig
     private readonly tabID: string
     private lambdaClient: WeaverbirdLambdaClient
+    private approachRetries: number
+    private codeGenRetries: number
 
     private messenger: Messenger
 
     constructor(sessionConfig: SessionConfig, messenger: Messenger, tabID: string) {
         this.config = sessionConfig
         this.tabID = tabID
-        this._state = new RefinementState(this.getSessionStateConfig(), '', tabID)
+        this._state = new ConversationNotStartedState('', tabID)
+
         this.messenger = messenger
         this.lambdaClient = new WeaverbirdLambdaClient(sessionConfig.client, sessionConfig.backendConfig.lambdaArns)
+        this.approachRetries = approachRetryLimit
+        this.codeGenRetries = codeGenRetryLimit
     }
 
     /**
@@ -51,6 +57,14 @@ export class Session {
         const uploadUrl = await this.lambdaClient.generatePresignedUrl(conversationId, zipFileChecksum)
 
         await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum)
+        this._state = new RefinementState(
+            {
+                ...this.getSessionStateConfig(),
+                conversationId: conversationId,
+            },
+            '',
+            this.tabID
+        )
     }
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
@@ -83,19 +97,6 @@ export class Session {
     }
 
     async send(msg: string): Promise<Interaction> {
-        const sessionStageConfig = this.getSessionStateConfig()
-
-        if (msg === 'CLEAR') {
-            this.task = ''
-            this.approach = ''
-            this._state = new RefinementState(sessionStageConfig, this.approach, this.tabID)
-            const message =
-                'Finished the session for you. Feel free to restart the session by typing the task you want to achieve.'
-            return {
-                content: message,
-            }
-        }
-
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
         if (this.task === '') {
             this.task = msg
@@ -148,5 +149,27 @@ export class Session {
 
     get state() {
         return this._state
+    }
+
+    get retries() {
+        switch (this.state.phase) {
+            case 'Approach':
+                return this.approachRetries
+            case 'Codegen':
+                return this.codeGenRetries
+            default:
+                return this.approachRetries
+        }
+    }
+
+    decreaseRetries() {
+        switch (this.state.phase) {
+            case 'Approach':
+                this.approachRetries -= 1
+                break
+            case 'Codegen':
+                this.codeGenRetries -= 1
+                break
+        }
     }
 }

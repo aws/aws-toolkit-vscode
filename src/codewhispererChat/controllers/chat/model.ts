@@ -21,6 +21,7 @@ export interface InsertCodeAtCursorPosition {
 
 export interface PromptMessage {
     message: string | undefined
+    command: string | undefined
     tabID: string
 }
 

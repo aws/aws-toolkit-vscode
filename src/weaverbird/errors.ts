@@ -28,3 +28,15 @@ export class ProjectSizeTooLargeError extends ToolkitError {
         super('Project size is too large', { code: 'ProjectSizeTooLarge' })
     }
 }
+
+export class WorkspaceFolderNotFoundError extends ToolkitError {
+    constructor() {
+        super(`Workspace folder was not found`, { code: 'WorkspaceFolderNotFound' })
+    }
+}
+
+export class SessionNotFoundError extends ToolkitError {
+    constructor() {
+        super(`Session was not found`, { code: 'SessionNotFound' })
+    }
+}

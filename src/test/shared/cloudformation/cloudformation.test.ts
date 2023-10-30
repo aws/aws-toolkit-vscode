@@ -34,6 +34,18 @@ describe('CloudFormation', function () {
         await fs.remove(filename)
     })
 
+    it('isValidFilename()', async function () {
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/bar.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/foo/template.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.yml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('/.aws-sam/template.yaml'), true)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('devfile.yml'), false)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('devfile.yaml'), false)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.yml.bk'), false)
+        assert.deepStrictEqual(CloudFormation.isValidFilename('template.txt'), false)
+    })
+
     describe('load', async function () {
         it('can successfully load a file', async function () {
             const yamlStr = makeSampleSamTemplateYaml(true)

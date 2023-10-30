@@ -40,6 +40,9 @@ export class UIMessageListener {
             case 'stop-response':
                 this.stopResponse(msg)
                 break
+            case 'new-tab-was-created':
+                this.tabOpened(msg)
+                break
             case 'tab-was-removed':
                 this.tabClosed(msg)
                 break
@@ -70,6 +73,12 @@ export class UIMessageListener {
 
     private stopResponse(msg: any) {
         this.weaverbirdControllerEventsEmitters?.stopResponse.fire({
+            tabID: msg.tabID,
+        })
+    }
+
+    private tabOpened(msg: any) {
+        this.weaverbirdControllerEventsEmitters?.tabOpened.fire({
             tabID: msg.tabID,
         })
     }

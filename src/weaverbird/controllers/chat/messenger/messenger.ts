@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { FollowUpTypes } from '../../../types'
 import { ChatMessage, CodeGenerationMessage, ErrorMessage, FilePathMessage } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
@@ -16,65 +17,47 @@ export interface ResponseProps {
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
-    /**
-     * Send a response to the UI
-     *
-     * Any failures that occur when attempting to resolve the request will automatically be handled
-     */
-    async sendResponse(request: () => Promise<ResponseProps>, tabID: string) {
-        try {
-            this.dispatcher.sendChatMessage(
-                new ChatMessage(
-                    {
-                        message: '',
-                        messageType: 'answer-stream',
-                        followUps: undefined,
-                        relatedSuggestions: undefined,
-                    },
-                    tabID
-                )
-            )
-
-            const resp = await request()
-            if (resp.message) {
-                this.dispatcher.sendChatMessage(
-                    new ChatMessage(
-                        {
-                            message: resp.message,
-                            messageType: 'answer-part',
-                            followUps: undefined,
-                            relatedSuggestions: undefined,
-                        },
-                        tabID
-                    )
-                )
-            }
-
-            this.sendFollowUps(resp.followUps, tabID)
-        } catch (err: any) {
-            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
-            this.sendErrorMessage(errorMessage, tabID)
-        }
-    }
-
-    public sendFollowUps(followUps: ChatItemFollowUp[] | undefined, tabID: string) {
+    public sendAnswer(params: {
+        message?: string
+        type: 'answer' | 'answer-part' | 'answer-stream'
+        followUps?: ChatItemFollowUp[]
+        tabID: string
+    }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
                 {
-                    message: undefined,
-                    messageType: 'answer',
-                    followUps: followUps,
+                    message: params.message,
+                    messageType: params.type,
+                    followUps: params.followUps,
                     relatedSuggestions: undefined,
                 },
-                tabID
+                params.tabID
             )
         )
     }
 
-    public sendErrorMessage(errorMessage: string, tabID: string) {
+    public sendErrorMessage(errorMessage: string, tabID: string, retries: number) {
+        if (retries === 0) {
+            this.dispatcher.sendErrorMessage(
+                new ErrorMessage(`We're unable to process your request at this time.`, errorMessage, tabID)
+            )
+            return
+        }
+
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occured while processing your request.', errorMessage, tabID)
         )
+        this.sendAnswer({
+            message: undefined,
+            type: 'answer',
+            followUps: [
+                {
+                    pillText: 'Retry',
+                    type: FollowUpTypes.Retry,
+                },
+            ],
+            tabID,
+        })
     }
 
     public sendFilePaths(filePaths: string[], tabID: string, sessionID: string) {
