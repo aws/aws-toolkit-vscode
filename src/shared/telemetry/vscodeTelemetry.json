@@ -453,10 +453,6 @@
                     "required": true
                 },
                 {
-                    "type": "cwsprChatTriggerInteraction",
-                    "required": true
-                },
-                {
                     "type": "cwsprChatUserIntent",
                     "required": false
                 },
@@ -556,10 +552,12 @@
                     "required": false
                 },
                 {
-                    "type": "cwsprChatAcceptedCharactersLength"
+                    "type": "cwsprChatAcceptedCharactersLength",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatHasReference"
+                    "type": "cwsprChatHasReference",
+                    "required": false
                 }
             ]
         },
