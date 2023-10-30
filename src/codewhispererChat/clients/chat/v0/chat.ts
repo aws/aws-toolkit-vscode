@@ -10,9 +10,9 @@ import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 
 export class ChatSession {
-    private _sessionId?: string
-    public get sessionId(): string | undefined {
-        return this._sessionId
+    private sessionId?: string
+    public get sessionIdentifier(): string | undefined {
+        return this.sessionId
     }
 
     public tokenSource!: vscode.CancellationTokenSource
@@ -45,7 +45,7 @@ export class ChatSession {
         // this assumes that the metadataEvent is the first event in the response stream.
         for await (const event of response.chatResponse) {
             if (event.messageMetadataEvent != undefined) {
-                this._sessionId = event.messageMetadataEvent!.conversationId
+                this.sessionId = event.messageMetadataEvent!.conversationId
             }
             break
         }

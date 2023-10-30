@@ -32,9 +32,6 @@ export class Connector {
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
     private answerMetadata: Record<string, any> = {}
-    public getAnswerMetadata(): Record<string, any> {
-        return this.answerMetadata
-    }
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension

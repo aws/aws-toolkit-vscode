@@ -122,7 +122,7 @@ export class ChatController {
     }
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
-        const conversationId = this.sessionStorage.getSession(message.tabID).sessionId
+        const conversationId = this.sessionStorage.getSession(message.tabID).sessionIdentifier
 
         telemetry.codewhispererchat_interactWithMessage.run(span => {
             this.editorContentController.insertTextAtCursorPosition(message.code)
@@ -137,7 +137,7 @@ export class ChatController {
     }
 
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
-        const conversationId = this.sessionStorage.getSession(message.tabID).sessionId
+        const conversationId = this.sessionStorage.getSession(message.tabID).sessionIdentifier
         //TODO: message id and has reference
         telemetry.codewhispererchat_interactWithMessage.emit({
             cwsprChatConversationId: conversationId,
@@ -237,7 +237,7 @@ export class ChatController {
                 const session = this.sessionStorage.getSession(message.tabID)
                 //TODO: message id
                 telemetry.codewhispererchat_interactWithMessage.emit({
-                    cwsprChatConversationId: session.sessionId,
+                    cwsprChatConversationId: session.sessionIdentifier,
                     cwsprChatInteractionType: 'clickFollowUp',
                 })
             }
@@ -256,11 +256,10 @@ export class ChatController {
         this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
             const session = this.sessionStorage.getSession(message.tabID)
             const hasCodeSnippet =
-                context?.codeSelectionContext?.selectedCode != undefined &&
-                context.codeSelectionContext.selectedCode.length > 0
+                context?.focusAreaContext?.codeBlock != undefined && context.focusAreaContext.codeBlock.length > 0
 
             telemetry.codewhispererchat_addMessage.emit({
-                cwsprChatConversationId: session.sessionId,
+                cwsprChatConversationId: session.sessionIdentifier,
                 cwsprChatHasCodeSnippet: hasCodeSnippet,
                 cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage ?? '',
                 cwsprChatActiveEditorTotalCharacters: context?.activeFileContext?.fileText?.length ?? 0,
@@ -336,11 +335,11 @@ export class ChatController {
 
             const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
             telemetry.codewhispererchat_startConversation.emit({
-                cwsprChatConversationId: session.sessionId,
+                cwsprChatConversationId: session.sessionIdentifier,
                 cwsprChatConversationType: 'Chat',
                 cwsprChatTriggerInteraction: triggerType,
                 cwsprChatUserIntent: telemetryUserIntent,
-                cwsprChatHasCodeSnippet: triggerPayload.code != undefined,
+                cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
                 cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             })
         } catch (e) {
