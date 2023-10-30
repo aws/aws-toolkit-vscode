@@ -233,7 +233,7 @@ export const applySecurityFix = Commands.declare(
 
             if (updatedContent) {
                 // saving the document text if not save
-                document.save().then((isSaved: any) => {
+                document.save().then(isSaved => {
                     if (isSaved) {
                         // writing the patch applied version of document into the file
                         FileSystemCommon.instance
