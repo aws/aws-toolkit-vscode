@@ -49,9 +49,6 @@ const baseConfig = {
             // But, for whatever reason, the ESM output is used if we don't explicitly set `mainFields` under webpack's `resolve`
             '@aws/fully-qualified-names$': '@aws/fully-qualified-names/node/aws_fully_qualified_names.js',
         },
-        fallback: {
-            async_hooks: false, // Reason for error: Can't resolve 'async_hooks' in shared/telemetry
-        },
     },
     node: {
         __dirname: false, //preserve the default node.js behavior for __dirname
