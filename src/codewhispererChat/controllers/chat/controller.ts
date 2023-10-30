@@ -382,8 +382,14 @@ export class ChatController {
             if (triggerPayload.codeSelection?.start) {
                 cursorState = {
                     range: {
-                        start: triggerPayload.codeSelection?.start,
-                        end: triggerPayload.codeSelection?.end,
+                        start: {
+                            line: triggerPayload.codeSelection.start.line,
+                            character: triggerPayload.codeSelection.start.character,
+                        },
+                        end: {
+                            line: triggerPayload.codeSelection.end.line,
+                            character: triggerPayload.codeSelection.end.character,
+                        },
                     },
                 }
             }
