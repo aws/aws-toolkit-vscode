@@ -215,8 +215,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getUserIntentFromContextMenuCommand(command),
                     },
-                    triggerID,
-                    'contextMenu'
+                    triggerID
                 )
             })
         } catch (e) {
@@ -306,8 +305,7 @@ export class ChatController {
                         codeQuery: context?.focusAreaContext?.names,
                         userIntent: this.userIntentRecognizer.getUserIntentFromPromptChatMessage(message),
                     },
-                    triggerID,
-                    'click'
+                    triggerID
                 )
             })
         } catch (e) {
@@ -319,11 +317,7 @@ export class ChatController {
         }
     }
 
-    private async generateResponse(
-        triggerPayload: TriggerPayload,
-        triggerID: string,
-        triggerType: CwsprChatTriggerInteraction
-    ) {
+    private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
@@ -331,7 +325,7 @@ export class ChatController {
         }
         if (triggerEvent.tabID === undefined) {
             setTimeout(() => {
-                this.generateResponse(triggerPayload, triggerID, triggerType)
+                this.generateResponse(triggerPayload, triggerID)
             }, 20)
             return
         }
