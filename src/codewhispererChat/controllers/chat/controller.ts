@@ -25,7 +25,6 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
-import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
@@ -241,30 +240,8 @@ export class ChatController {
     }
 
     private async processChatAnswer(message: PromptAnswer) {
-        // TODO: add mesasge id, user intent, response code snippet count, response code, references count, time to first chunk, response latency
         this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
-            const session = this.sessionStorage.getSession(message.tabID)
-            const hasCodeSnippet =
-                context?.focusAreaContext?.codeBlock != undefined && context.focusAreaContext.codeBlock.length > 0
-
-            telemetry.codewhispererchat_addMessage.emit({
-                cwsprChatConversationId: session.sessionIdentifier ?? '',
-                cwsprChatMessageId: '',
-                cwsprChatUserIntent: undefined,
-                cwsprChatHasCodeSnippet: hasCodeSnippet,
-                cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage ?? '',
-                cwsprChatActiveEditorTotalCharacters: context?.activeFileContext?.fileText?.length ?? 0,
-                cwsprChatActiveEditorImportCount: context?.activeFileContext?.matchPolicy?.must?.length ?? 0,
-                cwsprChatResponseCodeSnippetCount: 0,
-                cwsprChatResponseCode: 0,
-                cwsprChatSourceLinkCount: message.suggestionCount,
-                cwsprChatReferencesCount: 0,
-                cwsprChatFollowUpCount: message.followUpCount,
-                cwsprChatTimeToFirstChunk: 0,
-                cwsprChatFullResponseLatency: 0,
-                cwsprChatResponseLength: message.messageLength,
-                cwsprChatConversationType: 'Chat',
-            })
+            CWCTelemetryHelper.instance.recordAddMessage(context, message)
         })
     }
 

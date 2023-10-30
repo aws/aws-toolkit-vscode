@@ -6,8 +6,9 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { CwsprChatUserIntent, telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { CopyCodeToClipboard, InsertCodeAtCursorPosition, PromptMessage, TriggerPayload } from './model'
+import { CopyCodeToClipboard, InsertCodeAtCursorPosition, PromptAnswer, PromptMessage, TriggerPayload } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
+import { EditorContext } from '../../editor/context/model'
 
 export class CWCTelemetryHelper {
     private sessionStorage?: ChatSessionStorage
@@ -35,7 +36,7 @@ export class CWCTelemetryHelper {
     }
 
     public recordInteractWithMessage(message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage) {
-        const conversationId = this.sessionStorage?.getSession(message.tabID).sessionIdentifier
+        const conversationId = this.getConversationId(message.tabID)
 
         switch (message.command) {
             case 'insert_code_at_cursor_position':
@@ -80,21 +81,49 @@ export class CWCTelemetryHelper {
 
         if (
             this.triggerEventsStorage &&
-            this.triggerEventsStorage.getTriggerEventsByTabID(triggerEvent.tabID).length > 0
+            this.triggerEventsStorage.getTriggerEventsByTabID(triggerEvent.tabID).length > 1
         ) {
             return
         }
 
-        const conversationId = this.sessionStorage?.getSession(triggerEvent.tabID).sessionIdentifier
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
 
         telemetry.codewhispererchat_startConversation.emit({
-            cwsprChatConversationId: conversationId ?? '',
+            cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
         })
+    }
+
+    public recordAddMessage(context: EditorContext | undefined, message: PromptAnswer) {
+        const hasCodeSnippet =
+            context?.focusAreaContext?.codeBlock != undefined && context.focusAreaContext.codeBlock.length > 0
+
+        // TODO: add mesasge id, user intent, response code snippet count, response code, references count, time to first chunk, response latency
+        telemetry.codewhispererchat_addMessage.emit({
+            cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
+            cwsprChatMessageId: '',
+            cwsprChatUserIntent: undefined,
+            cwsprChatHasCodeSnippet: hasCodeSnippet,
+            cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage ?? '',
+            cwsprChatActiveEditorTotalCharacters: context?.activeFileContext?.fileText?.length ?? 0,
+            cwsprChatActiveEditorImportCount: context?.activeFileContext?.matchPolicy?.must?.length ?? 0,
+            cwsprChatResponseCodeSnippetCount: 0,
+            cwsprChatResponseCode: 0,
+            cwsprChatSourceLinkCount: message.suggestionCount,
+            cwsprChatReferencesCount: 0,
+            cwsprChatFollowUpCount: message.followUpCount,
+            cwsprChatTimeToFirstChunk: 0,
+            cwsprChatFullResponseLatency: 0,
+            cwsprChatResponseLength: message.messageLength,
+            cwsprChatConversationType: 'Chat',
+        })
+    }
+
+    private getConversationId(tabID: string): string | undefined {
+        return this.sessionStorage?.getSession(tabID).sessionIdentifier
     }
 
     public setChatSesionStorage(sessionStorage: ChatSessionStorage) {
