@@ -11,7 +11,7 @@ import { FocusAreaContext, FullyQualifiedName } from './model'
 const focusAreaCharLimit = 200
 
 export class FocusAreaContextExtractor {
-    public async extract (editor: TextEditor): Promise<FocusAreaContext | undefined> {
+    public async extract(editor: TextEditor): Promise<FocusAreaContext | undefined> {
         if (editor.document === undefined) {
             return undefined
         }
@@ -19,16 +19,14 @@ export class FocusAreaContextExtractor {
         let importantRange: Range = editor.selection
 
         // It means we don't really have a selection, but cursor position only
-        if (editor.selection.start.line === editor.selection.end.line && editor.selection.start.character === editor.selection.end.character) {
+        if (
+            editor.selection.start.line === editor.selection.end.line &&
+            editor.selection.start.character === editor.selection.end.character
+        ) {
             importantRange = editor.visibleRanges[0]
         }
 
-
-        const names = await this.findNamesInRange(
-            editor.document.getText(),
-            importantRange,
-            editor.document.languageId
-        )
+        const names = await this.findNamesInRange(editor.document.getText(), importantRange, editor.document.languageId)
 
         const [simpleNames] = this.prepareSimpleNames(names)
         const [usedFullyQualifiedNames] = this.prepareFqns(names)
@@ -39,13 +37,15 @@ export class FocusAreaContextExtractor {
 
         if (simpleNames.length === 0 && usedFullyQualifiedNames.length === 0) {
             simpleNames.push(codeBlock)
-        }        
-
+        }
 
         return {
             extendedCodeBlock: this.getRangeText(editor.document, extendedCodeBlockRange),
             codeBlock: codeBlock,
-            selectionInsideExtendedCodeBlock: this.getSelectionInsideExtendedCodeBlock(editor.selection, extendedCodeBlockRange),
+            selectionInsideExtendedCodeBlock: this.getSelectionInsideExtendedCodeBlock(
+                editor.selection,
+                extendedCodeBlockRange
+            ),
             names: {
                 simpleNames,
                 fullyQualifiedNames: {
@@ -55,8 +55,14 @@ export class FocusAreaContextExtractor {
         }
     }
 
-    private getSelectionInsideExtendedCodeBlock(originSelection: Selection, extendedCodeBlockRange: Range): Selection | undefined{
-        if (originSelection.start.line === originSelection.end.line && originSelection.start.character === originSelection.end.character){
+    private getSelectionInsideExtendedCodeBlock(
+        originSelection: Selection,
+        extendedCodeBlockRange: Range
+    ): Selection | undefined {
+        if (
+            originSelection.start.line === originSelection.end.line &&
+            originSelection.start.character === originSelection.end.character
+        ) {
             return undefined
         }
 
@@ -68,46 +74,48 @@ export class FocusAreaContextExtractor {
         )
     }
 
-    private getExtendedCodeBlockRange(document: TextDocument, importantRange: Range): Range{
+    private getExtendedCodeBlockRange(document: TextDocument, importantRange: Range): Range {
         let addLineBefore = true
-        while (this.getRangeText(document, importantRange).length < focusAreaCharLimit && 
-            (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount)) {
-                if (addLineBefore && importantRange.start.line !== 0){
-                    importantRange = new Range(
-                        importantRange.start.line - 1, 
-                        document.lineAt(importantRange.start.line -1).range.end.character,
-                        importantRange.end.line,
-                        importantRange.end.character
-                    )
-                    addLineBefore = false
-                    continue
-                } 
-
+        while (
+            this.getRangeText(document, importantRange).length < focusAreaCharLimit &&
+            (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount)
+        ) {
+            if (addLineBefore && importantRange.start.line !== 0) {
                 importantRange = new Range(
-                    importantRange.start.line, 
-                    importantRange.start.character,
-                    importantRange.end.line + 1,
-                    document.lineAt(importantRange.end.line + 1).range.end.character
+                    importantRange.start.line - 1,
+                    document.lineAt(importantRange.start.line - 1).range.end.character,
+                    importantRange.end.line,
+                    importantRange.end.character
                 )
-
-                addLineBefore = true
-
+                addLineBefore = false
+                continue
             }
+
+            importantRange = new Range(
+                importantRange.start.line,
+                importantRange.start.character,
+                importantRange.end.line + 1,
+                document.lineAt(importantRange.end.line + 1).range.end.character
+            )
+
+            addLineBefore = true
+        }
 
         return importantRange
     }
 
-    private trimRangeAccordingToLimits (document: TextDocument, importantRange: Range): Range {
-        while (this.getRangeText(document, importantRange).length > focusAreaCharLimit
-            && (importantRange.start.line !== importantRange.end.line
-                || (importantRange.start.line === importantRange.end.line && importantRange.start.character !== importantRange.end.character)
-            )
+    private trimRangeAccordingToLimits(document: TextDocument, importantRange: Range): Range {
+        while (
+            this.getRangeText(document, importantRange).length > focusAreaCharLimit &&
+            (importantRange.start.line !== importantRange.end.line ||
+                (importantRange.start.line === importantRange.end.line &&
+                    importantRange.start.character !== importantRange.end.character))
         ) {
-            if (importantRange.end.line === 0 ){
+            if (importantRange.end.line === 0) {
                 break
             }
             importantRange = new Range(
-                importantRange.start.line, 
+                importantRange.start.line,
                 importantRange.start.character,
                 importantRange.end.line - 1,
                 document.lineAt(importantRange.end.line - 1).range.end.character
@@ -117,11 +125,11 @@ export class FocusAreaContextExtractor {
         return importantRange
     }
 
-    private getRangeText (document: TextDocument, range: Range): string {
+    private getRangeText(document: TextDocument, range: Range): string {
         return document.getText(range)
     }
 
-    private async findNamesInRange (fileText: string, selection: Range, languageId: string) {
+    private async findNamesInRange(fileText: string, selection: Range, languageId: string) {
         fileText.replace(/([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g, '')
         const startLocation: Location = new Location(selection.start.line, selection.start.character)
         const endLocation: Location = new Location(selection.end.line, selection.end.character)
@@ -148,7 +156,10 @@ export class FocusAreaContextExtractor {
         return names
     }
 
-    private prepareFqns (names: any): [FullyQualifiedName[], boolean] {
+    private prepareFqns(names: any): [FullyQualifiedName[], boolean] {
+        if (names == undefined) {
+            return [[], false]
+        }
         const dedupedUsedFullyQualifiedNames: Map<string, FullyQualifiedName> = new Map(
             names.fullyQualified.usedSymbols.map((name: any) => [
                 JSON.stringify([name.source, name.symbol]),
@@ -169,7 +180,10 @@ export class FocusAreaContextExtractor {
         return [usedFullyQualifiedNames, false]
     }
 
-    private prepareSimpleNames (names: any): [string[], boolean] {
+    private prepareSimpleNames(names: any): [string[], boolean] {
+        if (names === undefined) {
+            return [[], false]
+        }
         let simpleNames: string[] = names.simple.usedSymbols
             .concat(names.simple.declaredSymbols)
             .filter(function (elem: any) {
