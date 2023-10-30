@@ -77,9 +77,9 @@ export class Session {
     }
 
     /**
-     * Triggered by the Write Code follow up button to start the code generation phase
+     * Triggered by the Write Code follow up button to move to the code generation phase
      */
-    async startCodegen(): Promise<string[]> {
+    initCodegen(): void {
         if (!this.state.conversationId) {
             throw new ConversationIdNotFoundError()
         }
@@ -92,8 +92,6 @@ export class Session {
             this.approach,
             this.tabID
         )
-        await this.nextInteraction(undefined)
-        return this._state.filePaths ?? []
     }
 
     async send(msg: string): Promise<Interaction> {
