@@ -123,7 +123,7 @@ export class RefinementIterationState implements SessionState {
             config: this.config.llmConfig,
             conversationId: this.config.conversationId,
         }
-
+        telemetry.awsq_approach.emit({ value: 1 })
         const response = await invoke<IterateApproachInput, IterateApproachOutput>(
             this.config.client,
             this.config.backendConfig.lambdaArns.approach.iterate,
@@ -136,7 +136,6 @@ export class RefinementIterationState implements SessionState {
             {}
         )
 
-        telemetry.awsq_approach.emit({ value: 1 })
         return {
             nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
             interaction: {

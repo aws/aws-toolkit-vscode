@@ -71,6 +71,7 @@ export class Connector {
     }
 
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
+        telemetry.awsq_filesReviewed.emit({ value: 1 })
         this.sendMessageToExtension({
             command: 'open-diff',
             tabID,

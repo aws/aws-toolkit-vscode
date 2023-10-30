@@ -205,7 +205,6 @@ export class Connector {
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
-                telemetry.awsq_filesReviewed.emit({ value: 1 })
                 this.weaverbirdChatConnector.onOpenDiff(tabID, leftPath, rightPath)
                 break
         }
