@@ -25,16 +25,10 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
-import { CwsprChatTriggerInteraction, CwsprChatUserIntent, telemetry } from '../../../shared/telemetry/telemetry'
-import {
-    ChatRequest,
-    CursorState,
-    UserIntent,
-    DocumentSymbol,
-    SymbolType,
-    TextDocument,
-} from '@amzn/codewhisperer-streaming'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
+import { CWCTelemetryHelper } from './telemetryHelper'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -78,6 +72,9 @@ export class ChatController {
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
+
+        CWCTelemetryHelper.instance.setChatSesionStorage(this.sessionStorage)
+        CWCTelemetryHelper.instance.setTriggerEventsStorage(this.triggerEventsStorage)
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
@@ -123,63 +120,16 @@ export class ChatController {
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code)
-
-        const conversationId = this.sessionStorage.getSession(message.tabID).sessionIdentifier
-        //TODO: message id and has reference
-        telemetry.codewhispererchat_interactWithMessage.emit({
-            cwsprChatConversationId: conversationId ?? '',
-            cwsprChatMessageId: '',
-            cwsprChatInteractionType: 'insertAtCursor',
-            cwsprChatAcceptedCharactersLength: message.code.length,
-            cwsprChatInteractionTarget: message.insertionTargetType,
-            cwsprChatHasReference: undefined,
-        })
+        CWCTelemetryHelper.instance.recordInteractWithMessage(message)
     }
 
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
-        const conversationId = this.sessionStorage.getSession(message.tabID).sessionIdentifier
-        //TODO: message id and has reference
-        telemetry.codewhispererchat_interactWithMessage.emit({
-            cwsprChatConversationId: conversationId ?? '',
-            cwsprChatMessageId: '',
-            cwsprChatInteractionType: 'copySnippet',
-            cwsprChatInteractionTarget: message.insertionTargetType,
-            cwsprChatAcceptedCharactersLength: message.code.length,
-            cwsprChatHasReference: undefined,
-        })
+        CWCTelemetryHelper.instance.recordInteractWithMessage(message)
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
-    }
-
-    private getUserIntentForTelemetry(userIntent: UserIntent | undefined): CwsprChatUserIntent | undefined {
-        switch (userIntent) {
-            case UserIntent.EXPLAIN_CODE_SELECTION:
-                return 'explainCodeSelection'
-            case UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION:
-                return 'suggestAlternateImplementation'
-            case UserIntent.APPLY_COMMON_BEST_PRACTICES:
-                return 'applyCommonBestPractices'
-            case UserIntent.IMPROVE_CODE:
-                return 'improveCode'
-            default:
-                return undefined
-        }
-    }
-
-    private getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
-        if (prompt.message?.startsWith('Explain')) {
-            return UserIntent.EXPLAIN_CODE_SELECTION
-        } else if (prompt.message?.startsWith('Refactor')) {
-            return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
-        } else if (prompt.message?.startsWith('Fix')) {
-            return UserIntent.APPLY_COMMON_BEST_PRACTICES
-        } else if (prompt.message?.startsWith('Optimize')) {
-            return UserIntent.IMPROVE_CODE
-        }
-        return undefined
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
@@ -234,16 +184,10 @@ export class ChatController {
         }
 
         try {
-            if (message.command == 'follow-up-was-clicked') {
-                const session = this.sessionStorage.getSession(message.tabID)
-                //TODO: message id
-                telemetry.codewhispererchat_interactWithMessage.emit({
-                    cwsprChatConversationId: session.sessionIdentifier ?? '',
-                    cwsprChatMessageId: '',
-                    cwsprChatInteractionType: 'clickFollowUp',
-                })
-            }
             await this.processPromptMessageAsNewThread(message)
+            if (message.command == 'follow-up-was-clicked') {
+                CWCTelemetryHelper.instance.recordInteractWithMessage(message)
+            }
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)
@@ -336,16 +280,8 @@ export class ChatController {
         session.createNewTokenSource()
         try {
             const response = await session.chat(request)
+            CWCTelemetryHelper.instance.recordStartConversation(triggerEvent, triggerPayload)
             this.messenger.sendAIResponse(response, session, tabID, triggerID)
-
-            const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
-            telemetry.codewhispererchat_startConversation.emit({
-                cwsprChatConversationId: session.sessionIdentifier ?? '',
-                cwsprChatConversationType: 'Chat',
-                cwsprChatUserIntent: telemetryUserIntent,
-                cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
-                cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
-            })
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), tabID)

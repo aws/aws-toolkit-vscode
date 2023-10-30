@@ -5,6 +5,7 @@
 
 export type TabStatus = 'free' | 'busy'
 export type TabType = 'cwc' | 'wb' | 'unknown'
+export type TabOpenType = 'click' | 'contextMenu' | 'hotkey'
 
 export interface Tab {
     readonly id: string

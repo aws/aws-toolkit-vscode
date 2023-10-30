@@ -76,6 +76,7 @@ export class UIMessageListener {
     private processInsertCodeAtCursorPosition(msg: any) {
         // TODO add reference tracker logs if msg contains any
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
+            command: msg.command,
             tabID: msg.tabID,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
@@ -84,6 +85,7 @@ export class UIMessageListener {
 
     private processCodeWasCopiedToClipboard(msg: any) {
         this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
+            command: msg.command,
             tabID: msg.tabID,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,

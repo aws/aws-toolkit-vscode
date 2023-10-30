@@ -16,12 +16,14 @@ export interface TabClosedMessage {
 }
 
 export interface InsertCodeAtCursorPosition {
+    command: string | undefined
     tabID: string
     code: string
     insertionTargetType: string | undefined
 }
 
 export interface CopyCodeToClipboard {
+    command: string | undefined
     tabID: string
     code: string
     insertionTargetType: string | undefined
