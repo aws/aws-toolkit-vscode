@@ -14,6 +14,7 @@ import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -44,7 +45,7 @@ export class WeaverbirdController {
         this.preloader = async () => {}
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
-            this.processHumanChatMessage(data)
+            this.processUserChatMessage(data)
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
@@ -76,7 +77,7 @@ export class WeaverbirdController {
     }
 
     // TODO add type
-    private async processHumanChatMessage(message: any) {
+    private async processUserChatMessage(message: any) {
         if (message.message == undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
             return
@@ -86,67 +87,107 @@ export class WeaverbirdController {
         try {
             session = await this.sessionStorage.getSession(message.tabID)
 
-            // Create the "..." bubbles
-            this.messenger.sendAnswer({
-                message: '',
-                type: 'answer-stream',
-                tabID: message.tabID,
-            })
-
-            await this.preloader()
-
-            const interactions = await session.send(message.message)
-
-            // Resolve the "..." with the content
-            this.messenger.sendAnswer({
-                message: interactions.content,
-                type: 'answer-part',
-                tabID: message.tabID,
-            })
-
-            // Follow up with action items and complete the request stream
-            this.messenger.sendAnswer({
-                type: 'answer',
-                followUps: this.getFollowUpOptions(session.state.phase),
-                tabID: message.tabID,
-            })
+            switch (session.state.phase) {
+                case 'Init':
+                case 'Approach':
+                    await this.onApproachGeneration(session, message.message, message.tabID)
+                    break
+                case 'Codegen':
+                    await this.onCodeGeneration(session, message.message, message.tabID)
+                    break
+            }
         } catch (err: any) {
             const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
     }
 
-    // TODO add type
-    private async writeCodeClicked(message: any) {
+    /**
+     * Handle a regular incoming message when a user is in the approach phase
+     */
+    private async onApproachGeneration(session: Session, message: string, tabID: string) {
+        await this.preloader()
+
+        const interactions = await session.send(message)
+
+        // Resolve the "..." with the content
+        this.messenger.sendAnswer({
+            message: interactions.content,
+            type: 'answer-part',
+            tabID: tabID,
+        })
+
+        // Follow up with action items and complete the request stream
+        this.messenger.sendAnswer({
+            type: 'answer',
+            followUps: this.getFollowUpOptions(session.state.phase),
+            tabID: tabID,
+        })
+    }
+
+    /**
+     * Handle a regular incoming message when a user is in the code generation phase
+     */
+    private async onCodeGeneration(session: Session, message: string, tabID: string) {
         // lock the UI/show loading bubbles
-        this.messenger.sendCodeGeneration(message.tabID, true)
+        telemetry.awsq_codeGenerateClick.emit({ value: 1 })
 
-        let session
-        let filePaths: string[] = []
+        this.messenger.sendAsyncFollowUp(tabID, true, 'Code generation started')
+
         try {
-            session = await this.sessionStorage.getSession(message.tabID)
-            filePaths = await session.startCodegen()
-        } catch (err: any) {
-            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
-            this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
-        }
+            await session.send(message)
+            const filePaths = session.state.filePaths
+            if (!filePaths || filePaths.length === 0) {
+                this.messenger.sendAnswer({
+                    message: 'Unable to generate any file changes',
+                    type: 'answer',
+                    tabID: tabID,
+                    followUps:
+                        this.retriesRemaining(session) > 0
+                            ? [
+                                  {
+                                      pillText: 'Retry',
+                                      type: FollowUpTypes.Retry,
+                                  },
+                              ]
+                            : [],
+                })
+                return
+            }
 
-        // unlock the UI
-        this.messenger.sendCodeGeneration(message.tabID, false)
+            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
+            if (session?.state.tokenSource.token.isCancellationRequested) {
+                return
+            }
 
-        // send the file path changes
-        if (filePaths.length > 0) {
-            this.messenger.sendFilePaths(filePaths, message.tabID, session?.state.conversationId ?? '')
-        }
-
-        // Only add the follow up when the tab hasn't been closed/request hasn't been cancelled
-        if (!session?.state.tokenSource.token.isCancellationRequested && filePaths.length > 0) {
+            this.messenger.sendAnswer({
+                message: 'Changes to files done. Please review:',
+                type: 'answer-part',
+                tabID: tabID,
+            })
+            this.messenger.sendFilePaths(filePaths, tabID, session?.state.conversationId ?? '')
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'answer',
                 followUps: this.getFollowUpOptions(session?.state.phase),
-                tabID: message.tabID,
+                tabID: tabID,
             })
+        } finally {
+            // Unlock the UI
+            this.messenger.sendAsyncFollowUp(tabID, false, undefined)
+        }
+    }
+
+    // TODO add type
+    private async writeCodeClicked(message: any) {
+        let session
+        try {
+            session = await this.sessionStorage.getSession(message.tabID)
+            session.initCodegen()
+            await this.onCodeGeneration(session, '', message.tabID)
+        } catch (err: any) {
+            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+            this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
     }
 
@@ -155,6 +196,7 @@ export class WeaverbirdController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+            telemetry.awsq_isAcceptedCodeChanges.emit({ enabled: true })
             await session.acceptChanges()
         } catch (err: any) {
             this.messenger.sendErrorMessage(
@@ -168,19 +210,26 @@ export class WeaverbirdController {
     private async retryRequest(message: any) {
         let session
         try {
+            this.messenger.sendAsyncFollowUp(message.tabID, true, undefined)
+
             session = await this.sessionStorage.getSession(message.tabID)
 
             // Decrease retries before making this request, just in case this one fails as well
             session.decreaseRetries()
 
             // Sending an empty message will re-run the last state with the previous values
-            await session.send('')
+            await this.processUserChatMessage({
+                message: '',
+                tabID: message.tabID,
+            })
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 `Failed to retry request: ${err.message}`,
                 message.tabID,
                 this.retriesRemaining(session)
             )
+        } finally {
+            this.messenger.sendAsyncFollowUp(message.tabID, false, undefined)
         }
     }
 
@@ -210,6 +259,7 @@ export class WeaverbirdController {
     }
 
     private async openDiff(message: any) {
+        telemetry.awsq_filesReviewed.emit({ value: 1 })
         const session = await this.sessionStorage.getSession(message.tabID)
         const workspaceRoot = session.config.workspaceRoot ?? ''
         const originalPath = path.join(workspaceRoot, message.rightPath)
@@ -239,6 +289,7 @@ export class WeaverbirdController {
     private async tabOpened(message: any) {
         let session: Session | undefined
         try {
+            telemetry.awsq_assignCommand.emit({ value: 1 })
             session = await this.sessionStorage.createSession(message.tabID)
             this.preloader = async () => {
                 if (!this.preloaderFinished && session) {

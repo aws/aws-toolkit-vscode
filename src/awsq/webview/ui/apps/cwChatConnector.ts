@@ -6,6 +6,7 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
+import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
 
 interface ChatPayload {
     chatMessage: string
@@ -56,21 +57,33 @@ export class Connector {
         })
     }
 
-    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCodeInsertToCursorPosition = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'insert_code_at_cursor_position',
             tabType: 'cwc',
+            codeReference,
         })
     }
 
-    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCopyCodeToClipboard = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'code_was_copied_to_clipboard',
             tabType: 'cwc',
+            codeReference,
         })
     }
 
@@ -139,7 +152,11 @@ export class Connector {
         if (this.onChatAnswerReceived === undefined) {
             return
         }
-        if (messageData.message !== undefined || messageData.relatedSuggestions !== undefined) {
+        if (
+            messageData.message !== undefined ||
+            messageData.relatedSuggestions !== undefined ||
+            messageData.codeReference !== undefined
+        ) {
             const followUps =
                 messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
@@ -150,8 +167,16 @@ export class Connector {
 
             const answer: ChatItem = {
                 type: messageData.messageType,
-                body: messageData.message !== undefined ? messageData.message : undefined,
+                messageId: messageData.triggerID,
+                body: messageData.message,
                 followUp: followUps,
+                canBeVoted: true,
+                codeReference: messageData.codeReference,
+            }
+
+            // If it is not there we will not set it
+            if (messageData.messageType === 'answer-part' || messageData.messageType === 'answer') {
+                answer.canBeVoted = true
             }
 
             if (messageData.relatedSuggestions !== undefined) {
@@ -177,6 +202,7 @@ export class Connector {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
+                codeReference: messageData.codeReference,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {

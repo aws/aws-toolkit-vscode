@@ -17,6 +17,7 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
 import { ProjectSizeTooLargeError } from '../errors'
 import { projectSizeLimit } from '../limits'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -93,7 +94,7 @@ export async function prepareRepoData(repoRootPath: string) {
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
         zip.addLocalFile(file.fsPath, zipFolderPath)
     }
-
+    telemetry.awsq_repo.emit({ awsqRepositorySize: totalBytes })
     const zipFileBuffer = zip.toBuffer()
     return {
         zipFileBuffer,

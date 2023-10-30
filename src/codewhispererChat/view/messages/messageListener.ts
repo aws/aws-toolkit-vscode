@@ -44,6 +44,7 @@ export class UIMessageListener {
                     this.processChatMessage({
                         chatMessage: msg.followUp.prompt,
                         tabID: msg.tabID,
+                        userIntent: msg.followUp.type,
                     })
                 }
                 break
@@ -70,12 +71,14 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
+        // TODO add reference tracker logs if msg contains any
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             code: msg.code,
         })
     }
 
     private processCodeWasCopiedToClipboard(msg: any) {
+        // TODO add reference tracker logs if msg contains any
         return
     }
     private processTabWasRemoved(msg: any) {
@@ -93,6 +96,7 @@ export class UIMessageListener {
             message: msg.chatMessage,
             command: msg.command,
             tabID: msg.tabID,
+            userIntent: msg.userIntent,
         })
     }
 

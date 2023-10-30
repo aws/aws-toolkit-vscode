@@ -4,7 +4,7 @@
  */
 
 import { FollowUpTypes } from '../../../types'
-import { ChatMessage, CodeGenerationMessage, ErrorMessage, FilePathMessage } from '../../../views/connector/connector'
+import { ChatMessage, AsyncFollowUpMessage, ErrorMessage, FilePathMessage } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 
@@ -64,7 +64,7 @@ export class Messenger {
         this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID, sessionID))
     }
 
-    public sendCodeGeneration(tabID: string, inProgress: boolean) {
-        this.dispatcher.sendCodeGeneration(new CodeGenerationMessage(tabID, inProgress))
+    public sendAsyncFollowUp(tabID: string, inProgress: boolean, message: string | undefined) {
+        this.dispatcher.sendAsyncFollowUp(new AsyncFollowUpMessage(tabID, inProgress, message))
     }
 }

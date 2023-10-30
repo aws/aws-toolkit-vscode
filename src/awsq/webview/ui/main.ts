@@ -107,6 +107,10 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                     promptInputDisabledState: true,
                 })
                 mynahUI.addChatItem(selectedTab.id, message)
+                mynahUI.addChatItem(selectedTab.id, {
+                    type: ChatItemType.ANSWER_STREAM,
+                    body: '',
+                })
                 tabsStorage.updateTabStatus(selectedTab.id, 'busy')
 
                 return selectedTab.id
@@ -118,6 +122,10 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 showChatAvatars: false,
                 quickActionCommands: QuickActionCommands(weaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+            })
+            mynahUI.addChatItem(newTabID, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
             })
 
             mynahUI.updateStore(newTabID, {
@@ -177,16 +185,18 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
         },
-        onWriteCodeFollowUpClicked: (tabID: string, inProgress: boolean) => {
+        onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string | undefined) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.ANSWER,
-                    body: 'Code generation started',
-                })
+                if (message) {
+                    mynahUI.addChatItem(tabID, {
+                        type: ChatItemType.ANSWER,
+                        body: message,
+                    })
+                }
                 mynahUI.addChatItem(tabID, {
                     type: ChatItemType.ANSWER_STREAM,
                     body: '',
@@ -195,9 +205,6 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
 
-            mynahUI.updateLastChatAnswer(tabID, {
-                body: 'Changes to files done. Please review:',
-            })
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
                 promptInputDisabledState: false,
@@ -209,8 +216,13 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART) {
-                mynahUI.updateLastChatAnswer(tabID, item)
-
+                mynahUI.updateLastChatAnswer(tabID, {
+                    ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
+                    ...(item.canBeVoted !== undefined ? { canBeVoted: item.canBeVoted } : {}),
+                    ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
+                    ...(item.body !== undefined ? { body: item.body } : {}),
+                    ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
+                })
                 return
             }
 
@@ -350,6 +362,10 @@ ${message}`,
                       }
                     : {}),
             })
+            mynahUI.addChatItem(tabID, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
+            })
 
             mynahUI.updateStore(tabID, {
                 loadingChat: true,
@@ -387,6 +403,10 @@ ${message}`,
                 mynahUI.addChatItem(tabID, {
                     type: ChatItemType.PROMPT,
                     body: followUp.prompt,
+                })
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER_STREAM,
+                    body: '',
                 })
                 tabsStorage.updateTabStatus(tabID, 'busy')
             }
