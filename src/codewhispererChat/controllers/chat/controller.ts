@@ -53,7 +53,7 @@ export class ChatController {
     private readonly promptGenerator: PromptsGenerator
     private readonly userIntentRecognizer: UserIntentRecognizer
 
-    public constructor (
+    public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
         appsToWebViewMessagePublisher: MessagePublisher<any>
     ) {
@@ -90,26 +90,25 @@ export class ChatController {
         })
     }
 
-    private async processStopResponseMessage (message: StopResponseMessage) {
+    private async processStopResponseMessage(message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
     }
 
-    private async processTriggerTabIDReceived (message: TriggerTabIDReceived) {
+    private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
         this.triggerEventsStorage.updateTriggerEventTabIDFromUnknown(message.triggerID, message.tabID)
     }
 
-    private async processInsertCodeAtCursorPosition (message: InsertCodeAtCursorPosition) {
+    private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code)
     }
 
-    private async processTabCloseMessage (message: TabClosedMessage) {
+    private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
     }
 
-
-    private async processContextMenuCommand (command: EditorContextCommand) {
+    private async processContextMenuCommand(command: EditorContextCommand) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ContextMenu).then(context => {
                 const triggerID = randomUUID()
@@ -154,7 +153,7 @@ export class ChatController {
         }
     }
 
-    private async processPromptChatMessage (message: PromptMessage) {
+    private async processPromptChatMessage(message: PromptMessage) {
         if (message.message == undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
             return
@@ -171,7 +170,7 @@ export class ChatController {
         }
     }
 
-    private async processPromptMessageAsNewThread (message: PromptMessage) {
+    private async processPromptMessageAsNewThread(message: PromptMessage) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
                 const triggerID = randomUUID()
@@ -207,7 +206,7 @@ export class ChatController {
         }
     }
 
-    private async generateResponse (triggerPayload: TriggerPayload, triggerID: string) {
+    private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
@@ -236,7 +235,7 @@ export class ChatController {
         }
     }
 
-    private triggerPayloadToChatRequest (triggerPayload: TriggerPayload): ChatRequest {
+    private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): ChatRequest {
         let document: TextDocument | undefined = undefined
         let cursorState: CursorState | undefined = undefined
 
@@ -249,8 +248,7 @@ export class ChatController {
                     source: fqn.source?.join('.'),
                 })
             })
-            
-    
+
             let programmingLanguage = undefined
             if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
                 programmingLanguage = { languageName: triggerPayload.fileLanguage }
@@ -264,17 +262,21 @@ export class ChatController {
                 // documentSymbols: documentSymbolFqns,
             }
 
-
             if (triggerPayload.codeSelection?.start) {
-                cursorState = {                    
+                cursorState = {
                     range: {
-                        start: triggerPayload.codeSelection?.start,
-                        end: triggerPayload.codeSelection?.end,
+                        start: {
+                            line: triggerPayload.codeSelection.start.line,
+                            character: triggerPayload.codeSelection.start.character,
+                        },
+                        end: {
+                            line: triggerPayload.codeSelection.end.line,
+                            character: triggerPayload.codeSelection.end.character,
+                        },
                     },
                 }
             }
         }
-        
 
         return {
             conversationState: {
@@ -284,7 +286,7 @@ export class ChatController {
                         userInputMessageContext: {
                             editorState: {
                                 document,
-                                cursorState
+                                cursorState,
                             },
                         },
                         userIntent: triggerPayload.userIntent,
