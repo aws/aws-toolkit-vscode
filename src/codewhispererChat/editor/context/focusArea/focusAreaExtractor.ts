@@ -157,6 +157,9 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareFqns(names: any): [FullyQualifiedName[], boolean] {
+        if (names == undefined) {
+            return [[], false]
+        }
         const dedupedUsedFullyQualifiedNames: Map<string, FullyQualifiedName> = new Map(
             names.fullyQualified.usedSymbols.map((name: any) => [
                 JSON.stringify([name.source, name.symbol]),
@@ -178,6 +181,9 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareSimpleNames(names: any): [string[], boolean] {
+        if (names === undefined) {
+            return [[], false]
+        }
         let simpleNames: string[] = names.simple.usedSymbols
             .concat(names.simple.declaredSymbols)
             .filter(function (elem: any) {
