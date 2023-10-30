@@ -457,13 +457,15 @@
                     "required": true
                 },
                 {
-                    "type": "cwsprChatUserIntent"
+                    "type": "cwsprChatUserIntent",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatHasCodeSnippet"
                 },
                 {
-                    "type": "cwsprChatProgrammingLanguage"
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatConversationType",
@@ -484,13 +486,15 @@
                     "required": true
                 },
                 {
-                    "type": "cwsprChatUserIntent"
+                    "type": "cwsprChatUserIntent",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatHasCodeSnippet"
                 },
                 {
-                    "type": "cwsprChatProgrammingLanguage"
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatActiveEditorTotalCharacters"
@@ -548,7 +552,8 @@
                     "required": true
                 },
                 {
-                    "type": "cwsprChatInteractionTarget"
+                    "type": "cwsprChatInteractionTarget",
+                    "required": false
                 },
                 {
                     "type": "cwsprChatAcceptedCharactersLength"

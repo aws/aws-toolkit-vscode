@@ -334,24 +334,17 @@ export class ChatController {
         const session = this.sessionStorage.getSession(tabID)
         session.createNewTokenSource()
         try {
-            telemetry.codewhispererchat_startConversation.run(async span => {
-                span.record({
-                    cwsprChatTriggerInteraction: triggerType,
-                    cwsprChatHasCodeSnippet: triggerPayload.code != undefined,
-                    cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
-                })
+            const response = await session.chat(request)
+            this.messenger.sendAIResponse(response, session, tabID, triggerID)
 
-                const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
-                if (telemetryUserIntent) {
-                    span.record({ cwsprChatUserIntent: telemetryUserIntent })
-                }
-
-                const response = await session.chat(request)
-                telemetry.codewhispererchat_startConversation.record({
-                    cwsprChatConversationId: session.sessionId,
-                    cwsprChatConversationType: 'Chat',
-                })
-                this.messenger.sendAIResponse(response, session, tabID, triggerID)
+            const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
+            telemetry.codewhispererchat_startConversation.emit({
+                cwsprChatConversationId: session.sessionId,
+                cwsprChatConversationType: 'Chat',
+                cwsprChatTriggerInteraction: triggerType,
+                cwsprChatUserIntent: telemetryUserIntent,
+                cwsprChatHasCodeSnippet: triggerPayload.code != undefined,
+                cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             })
         } catch (e) {
             if (typeof e === 'string') {

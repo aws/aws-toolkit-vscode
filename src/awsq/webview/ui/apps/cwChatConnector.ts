@@ -30,9 +30,9 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
-    private _answerMetadata: Record<string, any> = {}
-    public answerMetadata(): Record<string, any> {
-        return this._answerMetadata
+    private answerMetadata: Record<string, any> = {}
+    public getAnswerMetadata(): Record<string, any> {
+        return this.answerMetadata
     }
 
     constructor(props: ConnectorProps) {
@@ -159,10 +159,10 @@ export class Connector {
                 }
             }
             if (messageData.message) {
-                this._answerMetadata.messageLength = messageData.message.length
+                this.answerMetadata.messageLength = messageData.message.length
             }
-            this._answerMetadata.suggestionCount = messageData.relatedSuggestions?.length ?? 0
-            this._answerMetadata.followUpCount = messageData.followUps?.length
+            this.answerMetadata.suggestionCount = messageData.relatedSuggestions?.length ?? 0
+            this.answerMetadata.followUpCount = messageData.followUps?.length
             this.onChatAnswerReceived(messageData.tabID, answer)
 
             // Exit the function if we received an answer from AI
@@ -193,9 +193,9 @@ export class Connector {
                 command: 'chat-answer',
                 tabType: 'cwc',
                 tabID: messageData.tabID,
-                messageLength: this._answerMetadata.messageLength,
-                suggestionCount: this._answerMetadata.suggestionCount,
-                followUpCount: this._answerMetadata.followUpCount ?? messageData.followUps?.length ?? 0,
+                messageLength: this.answerMetadata.messageLength,
+                suggestionCount: this.answerMetadata.suggestionCount,
+                followUpCount: this.answerMetadata.followUpCount ?? messageData.followUps?.length ?? 0,
             })
 
             return
