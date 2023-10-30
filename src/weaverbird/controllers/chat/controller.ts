@@ -14,6 +14,7 @@ import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -129,6 +130,8 @@ export class WeaverbirdController {
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
         // lock the UI/show loading bubbles
+        telemetry.awsq_codeGenerateClick.emit({ value: 1 })
+
         this.messenger.sendAsyncFollowUp(tabID, true, 'Code generation started')
 
         try {
@@ -193,6 +196,7 @@ export class WeaverbirdController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+            telemetry.awsq_isAcceptedCodeChanges.emit({ enabled: true })
             await session.acceptChanges()
         } catch (err: any) {
             this.messenger.sendErrorMessage(
@@ -255,6 +259,7 @@ export class WeaverbirdController {
     }
 
     private async openDiff(message: any) {
+        telemetry.awsq_filesReviewed.emit({ value: 1 })
         const session = await this.sessionStorage.getSession(message.tabID)
         const workspaceRoot = session.config.workspaceRoot ?? ''
         const originalPath = path.join(workspaceRoot, message.rightPath)
@@ -284,6 +289,7 @@ export class WeaverbirdController {
     private async tabOpened(message: any) {
         let session: Session | undefined
         try {
+            telemetry.awsq_assignCommand.emit({ value: 1 })
             session = await this.sessionStorage.createSession(message.tabID)
             this.preloader = async () => {
                 if (!this.preloaderFinished && session) {
