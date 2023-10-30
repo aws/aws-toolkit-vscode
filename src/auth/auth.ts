@@ -17,7 +17,7 @@ import { Timeout } from '../shared/utilities/timeoutUtils'
 import { errorCode, isAwsError, isNetworkError, ToolkitError, UnknownError } from '../shared/errors'
 import { getCache } from './sso/cache'
 import { createFactoryFunction, isNonNullable, Mutable } from '../shared/utilities/tsUtils'
-import { builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
+import { builderIdCacheKey, builderIdStartUrl, SsoToken, truncateStartUrl } from './sso/model'
 import { SsoClient } from './sso/clients'
 import { getLogger } from '../shared/logger'
 import { CredentialsProviderManager } from './providers/credentialsProviderManager'
@@ -189,6 +189,11 @@ export class Auth implements AuthService, ConnectionManager {
 
         this.#activeConnection = conn
         this.#onDidChangeActiveConnection.fire(conn)
+        // XXX: force builder id to use the common builder ID cache key
+        // we can remove this eventually: this is to force users who have already registered with a random UUID onto the common key
+        if (isBuilderIdConnection(conn)) {
+            id = builderIdCacheKey
+        }
         await this.store.setCurrentProfileId(id)
 
         return conn

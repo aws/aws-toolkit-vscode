@@ -78,6 +78,7 @@ export interface SsoProfile {
 
 export const builderIdStartUrl = 'https://view.awsapps.com/start'
 export const trustedDomainCancellation = 'TrustedDomainCancellation'
+export const builderIdCacheKey = 'curr-builder-id'
 
 const tryOpenHelpUrl = (url: vscode.Uri) =>
     openUrl(url).catch(e => getLogger().verbose('auth: failed to open help URL: %s', e))

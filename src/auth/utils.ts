@@ -49,6 +49,7 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
 import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
+import { builderIdCacheKey } from './sso/model'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -172,7 +173,7 @@ export async function createBuilderIdConnection(auth: Auth, scopes?: string[]) {
     const newProfile = createBuilderIdProfile(scopes)
     const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
     if (!existingConn) {
-        return auth.createConnection(newProfile, 'curr-builder-id')
+        return auth.createConnection(newProfile, builderIdCacheKey)
     }
 
     const userResponse = await promptLogoutExistingBuilderIdConnection()
