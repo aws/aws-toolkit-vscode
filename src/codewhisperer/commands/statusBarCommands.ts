@@ -10,7 +10,7 @@ import { codewhispererNode } from '../explorer/codewhispererNode'
 
 export const showCodeWhispererQuickPickCommand = 'aws.codewhisperer.quickpick'
 export const showCodeWhispererQuickPick = Commands.declare({ id: showCodeWhispererQuickPickCommand }, () => () => {
-    createQuickPick(codewhispererNode.getChildren('item'), {
+    return createQuickPick(codewhispererNode.getChildren('item'), {
         title: 'CodeWhisperer',
         buttons: [createExitButton()],
         ignoreFocusOut: false,
