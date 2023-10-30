@@ -71,6 +71,14 @@ export class Connector {
             }
         })
 
+    clearChat = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.clearChat(tabID)
+                break
+        }
+    }
+
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
         if (message.data === undefined) {
             return

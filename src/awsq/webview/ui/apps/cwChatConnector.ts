@@ -101,6 +101,14 @@ export class Connector {
             })
         })
 
+    clearChat = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'clear',
+            tabType: 'cwc',
+        })
+    }
+
     private sendTriggerMessageProcessed = async (requestID: any): Promise<void> => {
         this.sendMessageToExtension({
             command: 'trigger-message-processed',

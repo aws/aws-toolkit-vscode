@@ -327,13 +327,10 @@ ${message}`,
 
                     return
                 } else if (prompt.command === '/clear') {
-                    // TODO clear command should also be sent to extension,
-                    // command sending is already added,
-                    // however the extension layer doesn't do anything with it yet
-                    // it should clear the cache or anything related with that tab
                     mynahUI.updateStore(tabID, {
                         chatItems: [],
                     })
+                    connector.clearChat(tabID)
                     return
                 } else {
                     // TODO we should send all commands to the extension
