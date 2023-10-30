@@ -12,7 +12,6 @@ import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
-import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export interface ChatPayload {
     chatMessage: string

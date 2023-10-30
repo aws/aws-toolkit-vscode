@@ -7,6 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion }
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
+import { telemetry } from '../../../../shared/telemetry/telemetry'
 
 interface ChatPayload {
     chatMessage: string
