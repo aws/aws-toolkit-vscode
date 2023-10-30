@@ -4,7 +4,11 @@
  */
 
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
-import { AppToWebViewMessageDispatcher, EditorContextCommandMessage } from '../../../view/connector/connector'
+import {
+    AppToWebViewMessageDispatcher,
+    CodeReference,
+    EditorContextCommandMessage,
+} from '../../../view/connector/connector'
 import { ChatResponseStream, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -33,6 +37,7 @@ export class Messenger {
         )
 
         let message = ''
+        let codeReference: CodeReference[] = []
         const followUps: FollowUp[] = []
         const relatedSuggestions: Suggestion[] = []
 
@@ -42,6 +47,21 @@ export class Messenger {
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
+
+                    if (
+                        chatEvent.codeReferenceEvent?.references != undefined &&
+                        chatEvent.codeReferenceEvent.references.length > 0
+                    ) {
+                        codeReference = chatEvent.codeReferenceEvent.references.map(reference => ({
+                            ...reference,
+                            recommendationContentSpan: {
+                                start: reference.recommendationContentSpan?.start ?? 0,
+                                end: reference.recommendationContentSpan?.end ?? 0,
+                            },
+                            information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
+                        }))
+                    }
+
                     if (
                         chatEvent.assistantResponseEvent?.content != undefined &&
                         chatEvent.assistantResponseEvent.content.length > 0
@@ -55,6 +75,7 @@ export class Messenger {
                                     messageType: 'answer-part',
                                     followUps: undefined,
                                     relatedSuggestions: undefined,
+                                    codeReference,
                                     triggerID,
                                 },
                                 tabID

@@ -6,6 +6,7 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
+import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
 
 interface ChatPayload {
     chatMessage: string
@@ -16,7 +17,7 @@ interface ChatPayload {
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onWriteCodeFollowUpClicked: (tabID: string, inProgress: boolean) => void
+    onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
@@ -29,30 +30,42 @@ export class Connector {
     private readonly onError
     private readonly onWarning
     private readonly onChatAnswerReceived
-    private readonly onWriteCodeFollowUpClicked
+    private readonly onAsyncFollowUpClicked
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
         this.onWarning = props.onWarning
         this.onError = props.onError
-        this.onWriteCodeFollowUpClicked = props.onWriteCodeFollowUpClicked
+        this.onAsyncFollowUpClicked = props.onAsyncFollowUpClicked
     }
 
-    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCodeInsertToCursorPosition = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'insert_code_at_cursor_position',
+            codeReference,
             tabType: 'wb',
         })
     }
 
-    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCopyCodeToClipboard = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'code_was_copied_to_clipboard',
+            codeReference,
             tabType: 'wb',
         })
     }
@@ -140,8 +153,8 @@ export class Connector {
             return
         }
 
-        if (messageData.type === 'codeGenerationMessage') {
-            this.onWriteCodeFollowUpClicked(messageData.tabID, messageData.inProgress)
+        if (messageData.type === 'asyncFollowUpMessage') {
+            this.onAsyncFollowUpClicked(messageData.tabID, messageData.inProgress, messageData.message ?? undefined)
             return
         }
     }

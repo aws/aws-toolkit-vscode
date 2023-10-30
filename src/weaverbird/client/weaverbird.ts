@@ -98,6 +98,11 @@ export class WeaverbirdLambdaClient {
                 this.client,
                 this.lambdaArns.setup.createUploadUrl,
                 {
+                    clientMetadata: {
+                        userIdentity: {
+                            oidcUserID: 'fake-user-id',
+                        },
+                    },
                     conversationId,
                     contentChecksumSha256,
                     uploadIntent: WBUploadIntent,

@@ -74,6 +74,7 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
+        // TODO add reference tracker logs if msg contains any
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             tabID: msg.tabID,
             code: msg.code,
