@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Selection } from 'vscode'
+
 export interface CodeNames {
     simpleNames: string[]
     fullyQualifiedNames: {
@@ -15,7 +17,9 @@ export interface FullyQualifiedName {
     readonly symbol: string[]
 }
 
-export interface CodeSelectionContext {
-    readonly selectedCode: string
+export interface FocusAreaContext {
+    readonly codeBlock: string
+    readonly extendedCodeBlock: string
+    readonly selectionInsideExtendedCodeBlock: Selection | undefined
     readonly names: CodeNames | undefined
 }

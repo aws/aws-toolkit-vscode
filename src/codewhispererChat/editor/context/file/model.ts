@@ -8,5 +8,6 @@ import { MatchPolicy } from '../../../clients/chat/v0/model'
 export interface FileContext {
     readonly fileText: string | undefined
     readonly fileLanguage: string | undefined
+    readonly filePath: string | undefined
     readonly matchPolicy: MatchPolicy | undefined
 }

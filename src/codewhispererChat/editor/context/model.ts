@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CodeSelectionContext } from './codeSelection/model'
+import { FocusAreaContext } from './focusArea/model'
 import { FileContext } from './file/model'
 
 export interface EditorContext {
     readonly activeFileContext: FileContext | undefined
-    readonly codeSelectionContext: CodeSelectionContext | undefined
+    readonly focusAreaContext: FocusAreaContext | undefined
 }
