@@ -22,6 +22,8 @@ import { ExtContext } from '../../../shared/extensions'
 import { get, set } from '../../../codewhisperer/util/commonUtil'
 import { createAutoSuggestions, createGettingStarted, createLearnMore, createOpenReferenceLog, createReconnect, createSecurityScan, createSelectCustomization, createSeparator, createSignIn, createSignout } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
 import { showCodeWhispererQuickPick } from '../../../codewhisperer/commands/statusBarCommands'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -61,33 +63,84 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('toggleCodeSuggestion', function () {
+        class TestCodeSuggestionsState extends CodeSuggestionsState {
+            public constructor(initialState?: boolean) {
+                super(new FakeMemento(), initialState)
+            }
+        }
+
+        let codeSuggestionsState: CodeSuggestionsState
+
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
+            codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
-        it('should emit aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
-            const fakeMemeto = new FakeMemento()
-            targetCommand = testCommand(toggleCodeSuggestions, fakeMemeto)
-            fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
-            assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), true)
+        it ('has suggestions disabled by default', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+        })
 
+        it ('toggles states as expected', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
             await targetCommand.execute()
-            const res = fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey)
-            assert.strictEqual(res, false)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+            await targetCommand.execute()
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            await targetCommand.execute()
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+        })
+
+        it ('setSuggestionsEnabled() works as expected', async function () {
+            // initially false
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+
+            await codeSuggestionsState.setSuggestionsEnabled(true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+
+            // set new state to current state
+            await codeSuggestionsState.setSuggestionsEnabled(true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+
+            // set to opposite state
+            await codeSuggestionsState.setSuggestionsEnabled(false)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+        })
+
+        it('triggers event listener when toggled', async function () {
+            const eventListener = sinon.stub()
+            codeSuggestionsState.onDidChangeState(() => {
+                eventListener()
+            })
+            assert.strictEqual(eventListener.callCount, 0)
+            
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute()
+            
+            await waitUntil(async () => eventListener.callCount === 1, {timeout: 1000, interval: 1})
+            assert.strictEqual(eventListener.callCount, 1)
+        })
+
+        it('emits aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
+            codeSuggestionsState = new TestCodeSuggestionsState(true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute()
+
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
         })
 
-        it('should emit aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
-            const fakeMemeto = new FakeMemento()
-            targetCommand = testCommand(toggleCodeSuggestions, fakeMemeto)
-
-            assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), undefined)
+        it('emits aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             await targetCommand.execute()
-            const res = fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey)
-            assert.strictEqual(res, true)
+
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.activated,

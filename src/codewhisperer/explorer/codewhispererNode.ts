@@ -4,8 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import globals from '../../shared/extensionGlobals'
-import * as CodeWhispererConstants from '../models/constants'
 import {
     createAutoSuggestions,
     createOpenReferenceLog,
@@ -25,6 +23,7 @@ import { hasVendedIamCredentials } from '../../auth/auth'
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
+import { CodeSuggestionsState } from '../models/model'
 
 export class CodeWhispererNode implements RootNode {
     public readonly id = 'codewhisperer'
@@ -37,7 +36,11 @@ export class CodeWhispererNode implements RootNode {
     public readonly onDidChangeVisibility = this.onDidChangeVisibilityEmitter.event
     private _showFreeTierLimitReachedNode = false
 
-    constructor() {}
+    constructor() {
+        CodeSuggestionsState.instance.onDidChangeState(() => {
+            this.refresh()
+        })
+    }
 
     public getTreeItem() {
         const item = new vscode.TreeItem('CodeWhisperer')
@@ -78,8 +81,7 @@ export class CodeWhispererNode implements RootNode {
     public getChildren(type: 'tree' | 'item'): TreeNode<Command>[] | DataQuickPickItem<string>[]
     public getChildren(type: 'tree' | 'item' = 'tree'): any[] {
         const _getChildren = () => {
-            const autoTriggerEnabled =
-                globals.context.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
+            const autoTriggerEnabled = CodeSuggestionsState.instance.isSuggestionsEnabled()
             if (AuthUtil.instance.isConnectionExpired()) {
                 return [createReconnect(type), createLearnMore(type)]
             }

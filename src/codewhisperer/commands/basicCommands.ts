@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { codeScanState } from '../models/model'
+import { CodeSuggestionsState, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -25,18 +25,14 @@ import {
     selectCustomization,
     showCustomizationPrompt,
 } from '../util/customizationUtil'
-import { get, set } from '../util/commonUtil'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
-    (globalState: vscode.Memento) => async () => {
-        const autoTriggerEnabled: boolean = get(CodeWhispererConstants.autoTriggerEnabledKey, globalState) || false
-        const toSet: boolean = !autoTriggerEnabled
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, toSet, globalState)
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+    (suggestionState: CodeSuggestionsState) => async () => {
+        const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
         telemetry.aws_modifySetting.emit({
             settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
-            settingState: toSet
+            settingState: isSuggestionsEnabled
                 ? CodeWhispererConstants.autoSuggestionConfig.activated
                 : CodeWhispererConstants.autoSuggestionConfig.deactivated,
         })
@@ -47,7 +43,7 @@ export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
     (context: ExtContext) =>
         async (isAuto: boolean = true) => {
-            await set(CodeWhispererConstants.autoTriggerEnabledKey, isAuto, context.extensionContext.globalState)
+            await CodeSuggestionsState.instance.setSuggestionsEnabled(isAuto)
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
             await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
             if (!isCloud9()) {
