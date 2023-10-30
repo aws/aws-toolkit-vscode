@@ -36,6 +36,7 @@ import {
 import { invoke } from '../util/invoke'
 import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const fs = FileSystemCommon.instance
 
@@ -135,6 +136,7 @@ export class RefinementIterationState implements SessionState {
             {}
         )
 
+        telemetry.awsq_approach.emit({ value: 1 })
         return {
             nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
             interaction: {
@@ -152,6 +154,7 @@ async function createFilePaths(fs: VirtualFileSystem, newFileContents: NewFileCo
         const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         filePaths.push(filePath)
+        telemetry.awsq_filesChanged.emit({ value: 1 })
     }
 
     return filePaths
@@ -241,6 +244,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        telemetry.awsq_isApproachAccepted.emit({ enabled: true })
         const payload: GenerateCodeInput = {
             originalFileContents: [],
             approach: this.approach,
@@ -340,6 +344,7 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        telemetry.awsq_codeReGeneration.emit({ value: 1 })
         const fileContents = [...this.newFileContents].concat(
             ...action.files.filter(
                 originalFile => !this.newFileContents.some(newFile => newFile.filePath === originalFile.filePath)

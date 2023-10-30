@@ -14,6 +14,7 @@ import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -129,6 +130,8 @@ export class WeaverbirdController {
      */
     private async onCodeGeneration(session: Session, message: string, tabID: string) {
         // lock the UI/show loading bubbles
+        telemetry.awsq_codeGenerateClick.emit({ value: 1 })
+
         this.messenger.sendAsyncFollowUp(tabID, true, 'Code generation started')
 
         try {
@@ -191,6 +194,7 @@ export class WeaverbirdController {
     // TODO add type
     private async acceptCode(message: any) {
         let session
+        telemetry.awsq_isAcceptedCodeChanges.emit({ enabled: true })
         try {
             session = await this.sessionStorage.getSession(message.tabID)
             await session.acceptChanges()

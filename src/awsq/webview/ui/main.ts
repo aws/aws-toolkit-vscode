@@ -8,6 +8,7 @@ import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 
 const WelcomeMessage = `Hi, I am AWS Q. I can answer your software development questions. 
 Ask me to explain, debug, or optimize your code. 
@@ -140,6 +141,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
         },
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
             if (welcomeFollowUpType === 'assign-code-task') {
+                telemetry.awsq_assignCommand.emit({ value: 1 })
                 const newTabId = mynahUI.updateStore('', {
                     tabTitle: 'Q - Task',
                     quickActionCommands: [],
@@ -287,6 +289,7 @@ ${message}`,
             }
             if (weaverbirdEnabled && prompt.command !== undefined && prompt.command.trim() !== '') {
                 if (prompt.command === '/assign') {
+                    telemetry.awsq_assignCommand.emit({ value: 1 })
                     let affectedTabId = tabID
                     const realPromptText = prompt.escapedPrompt?.trim() ?? ''
                     if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
