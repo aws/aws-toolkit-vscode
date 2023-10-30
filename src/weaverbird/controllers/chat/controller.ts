@@ -259,6 +259,7 @@ export class WeaverbirdController {
     }
 
     private async openDiff(message: any) {
+        telemetry.awsq_filesReviewed.emit({ value: 1 })
         const session = await this.sessionStorage.getSession(message.tabID)
         const workspaceRoot = session.config.workspaceRoot ?? ''
         const originalPath = path.join(workspaceRoot, message.rightPath)
@@ -288,6 +289,7 @@ export class WeaverbirdController {
     private async tabOpened(message: any) {
         let session: Session | undefined
         try {
+            telemetry.awsq_assignCommand.emit({ value: 1 })
             session = await this.sessionStorage.createSession(message.tabID)
             this.preloader = async () => {
                 if (!this.preloaderFinished && session) {

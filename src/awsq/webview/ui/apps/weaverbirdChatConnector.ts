@@ -7,7 +7,6 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion }
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
-import { telemetry } from '../../../../shared/telemetry/telemetry'
 
 interface ChatPayload {
     chatMessage: string
@@ -72,7 +71,6 @@ export class Connector {
     }
 
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
-        telemetry.awsq_filesReviewed.emit({ value: 1 })
         this.sendMessageToExtension({
             command: 'open-diff',
             tabID,
