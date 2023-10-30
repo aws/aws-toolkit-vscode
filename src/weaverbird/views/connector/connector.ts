@@ -41,13 +41,15 @@ export class FilePathMessage extends UiMessage {
     }
 }
 
-export class CodeGenerationMessage extends UiMessage {
+export class AsyncFollowUpMessage extends UiMessage {
     readonly inProgress: boolean
-    override type = 'codeGenerationMessage'
+    readonly message: string | undefined
+    override type = 'asyncFollowUpMessage'
 
-    constructor(tabID: string, inProgress: boolean) {
+    constructor(tabID: string, inProgress: boolean, message: string | undefined) {
         super(tabID)
         this.inProgress = inProgress
+        this.message = message
     }
 }
 
@@ -90,7 +92,7 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendCodeGeneration(message: CodeGenerationMessage) {
+    public sendAsyncFollowUp(message: AsyncFollowUpMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

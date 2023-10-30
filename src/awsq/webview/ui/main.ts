@@ -177,16 +177,18 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
         },
-        onWriteCodeFollowUpClicked: (tabID: string, inProgress: boolean) => {
+        onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string | undefined) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
                     promptInputDisabledState: true,
                 })
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.ANSWER,
-                    body: 'Code generation started',
-                })
+                if (message) {
+                    mynahUI.addChatItem(tabID, {
+                        type: ChatItemType.ANSWER,
+                        body: message,
+                    })
+                }
                 mynahUI.addChatItem(tabID, {
                     type: ChatItemType.ANSWER_STREAM,
                     body: '',
@@ -195,9 +197,6 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
 
-            mynahUI.updateLastChatAnswer(tabID, {
-                body: 'Changes to files done. Please review:',
-            })
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
                 promptInputDisabledState: false,
