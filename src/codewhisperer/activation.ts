@@ -9,7 +9,7 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry } from './models/model'
+import { vsCodeState, ConfigurationEntry, CodeSuggestionsState } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -172,7 +172,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // direct CodeWhisperer connection setup with customization
         connectWithCustomization.register(),
         // toggle code suggestions
-        toggleCodeSuggestions.register(context.extensionContext.globalState),
+        toggleCodeSuggestions.register(CodeSuggestionsState.instance),
         // enable code suggestions
         enableCodeSuggestions.register(context),
         // code scan
@@ -253,7 +253,7 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     function getAutoTriggerStatus(): boolean {
-        return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
+        return CodeSuggestionsState.instance.isSuggestionsEnabled()
     }
 
     async function getConfigEntry(): Promise<ConfigurationEntry> {

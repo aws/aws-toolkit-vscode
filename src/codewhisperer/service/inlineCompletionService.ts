@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
+import { CodeSuggestionsState, ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { RecommendationHandler } from './recommendationHandler'
@@ -25,13 +25,19 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export class InlineCompletionService {
     private maxPage = 100
-    private statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
+    private statusBar: CodeWhispererStatusBar
     private _showRecommendationTimer?: NodeJS.Timer
     private _isPaginationRunning = false
 
-    constructor() {
+    constructor(statusBar: CodeWhispererStatusBar = CodeWhispererStatusBar.instance) {
+        this.statusBar = statusBar
+
         RecommendationHandler.instance.onDidReceiveRecommendation(e => {
             this.startShowRecommendationTimer()
+        })
+
+        CodeSuggestionsState.instance.onDidChangeState(() => {
+            this.refreshStatusBar()
         })
     }
 
@@ -101,7 +107,7 @@ export class InlineCompletionService {
             return
         }
 
-        this.setCodeWhispererStatusBarLoading()
+        this.setState('loading')
 
         TelemetryHelper.instance.setInvocationStartTime(performance.now())
         RecommendationHandler.instance.checkAndResetCancellationTokens()
@@ -144,51 +150,100 @@ export class InlineCompletionService {
         TelemetryHelper.instance.tryRecordClientComponentLatency()
     }
 
-    setCodeWhispererStatusBarLoading() {
-        this._isPaginationRunning = true
-        const selectedCustomization = getSelectedCustomization()
-        this.statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer${
-            selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
-        }`
-        this.statusBar.command = showCodeWhispererQuickPickCommand
-        ;(this.statusBar as any).backgroundColor = undefined
-        this.statusBar.show()
+    /** Updates the status bar to represent the latest CW state */
+    refreshStatusBar() {
+        if (AuthUtil.instance.isConnectionValid()) {
+            return this.setState('ok')
+        } else if (AuthUtil.instance.isConnectionExpired()) {
+            return this.setState('expired')
+        } else {
+            return this.setState('notConnected')
+        }
     }
 
-    setCodeWhispererStatusBarOk() {
+    private async setState(state: keyof typeof states) {
         this._isPaginationRunning = false
-        const selectedCustomization = getSelectedCustomization()
-        this.statusBar.text = codicon`${getIcon('vscode-check')} CodeWhisperer${
-            selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
-        }`
-        this.statusBar.command = showCodeWhispererQuickPickCommand
-        ;(this.statusBar as any).backgroundColor = undefined
-        this.statusBar.show()
-    }
-
-    setCodeWhispererStatusBarExpired() {
-        this._isPaginationRunning = false
-        this.statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
-        this.statusBar.command = showCodeWhispererQuickPickCommand
-        ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
-        this.statusBar.show()
-    }
-
-    setCodeWhispererStatusBarNotConnected() {
-        this._isPaginationRunning = false
-        this.statusBar.text = codicon` ${getIcon('vscode-chrome-close')} CodeWhisperer`
-        this.statusBar.command = showCodeWhispererQuickPickCommand
-        ;(this.statusBar as any).backgroundColor = undefined
-        this.statusBar.show()
+        switch (state) {
+            case 'loading': {
+                this._isPaginationRunning = true
+                await this.statusBar.setState('loading')
+                break
+            }
+            case 'ok': {
+                await this.statusBar.setState('ok', CodeSuggestionsState.instance.isSuggestionsEnabled())
+                break
+            }
+            case 'expired': {
+                await this.statusBar.setState('expired')
+                break
+            }
+            case 'notConnected': {
+                await this.statusBar.setState('notConnected')
+                break
+            }
+        }
     }
 
     isPaginationRunning(): boolean {
         return this._isPaginationRunning
     }
+}
 
-    hideCodeWhispererStatusBar() {
-        this._isPaginationRunning = false
-        this.statusBar.hide()
+
+
+/** The states that the completion service can be in */
+const states = {
+    loading: 'loading',
+    ok: 'ok',
+    expired: 'expired',
+    notConnected: 'notConnected',
+} as const
+
+export class CodeWhispererStatusBar {
+    protected statusBar: vscode.StatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1)
+
+    static #instance: CodeWhispererStatusBar
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor() {}
+
+    async setState(state: keyof Omit<typeof states, 'ok'>): Promise<void>
+    async setState(status: keyof Pick<typeof states, 'ok'>, isSuggestionsEnabled: boolean): Promise<void>
+    async setState(status: keyof typeof states, isSuggestionsEnabled?: boolean): Promise<void> {
+        const statusBar = this.statusBar
+        statusBar.command = showCodeWhispererQuickPickCommand
+        statusBar.backgroundColor = undefined
+
+        switch (status) {
+            case 'loading': {
+                const selectedCustomization = getSelectedCustomization()
+                statusBar.text = codicon` ${getIcon('vscode-loading~spin')} CodeWhisperer${
+                    selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
+                }`
+                break
+            }
+            case 'ok': {
+                const selectedCustomization = getSelectedCustomization()
+                const icon = isSuggestionsEnabled ? getIcon('vscode-debug-start') : getIcon('vscode-debug-pause')
+                statusBar.text = codicon`${icon} CodeWhisperer${
+                    selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
+                }`
+                break;
+            }
+                
+            case 'expired': {
+                statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
+                statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
+                break;
+            }
+            case 'notConnected':
+                statusBar.text = codicon` ${getIcon('vscode-chrome-close')} CodeWhisperer`
+                break;
+        }
+
+        statusBar.show()
     }
 }
 
@@ -196,12 +251,6 @@ export class InlineCompletionService {
 export const refreshStatusBar = Commands.declare(
     { id: 'aws.codeWhisperer.refreshStatusBar', logging: false },
     () => () => {
-        if (AuthUtil.instance.isConnectionValid()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarOk()
-        } else if (AuthUtil.instance.isConnectionExpired()) {
-            InlineCompletionService.instance.setCodeWhispererStatusBarExpired()
-        } else {
-            InlineCompletionService.instance.setCodeWhispererStatusBarNotConnected()
-        }
+        InlineCompletionService.instance.refreshStatusBar()
     }
 )

@@ -12,6 +12,9 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
+import globals from '../../shared/extensionGlobals'
+import { autoTriggerEnabledKey } from './constants'
+import { get, set } from '../util/commonUtil'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -40,6 +43,45 @@ export const vsCodeState: VsCodeState = {
 export interface GetRecommendationsResponse {
     readonly result: 'Succeeded' | 'Failed'
     readonly errorMessage: string | undefined
+}
+
+/** Manages the state of CodeWhisperer code suggestions */
+export class CodeSuggestionsState {
+    #context: vscode.Memento
+    /** The initial state if suggestion state was not defined */
+    #fallback: boolean
+    #onDidChangeState = new vscode.EventEmitter<boolean>()
+    /** Set a callback for when the state of code suggestions changes */
+    onDidChangeState = this.#onDidChangeState.event
+
+    static #instance: CodeSuggestionsState
+    static get instance() {
+        return this.#instance ??= new this()
+    }
+
+    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = false) {
+        this.#context = context
+        this.#fallback = fallback
+    }
+
+    async toggleSuggestions() {
+        const autoTriggerEnabled = this.isSuggestionsEnabled()
+        const toSet: boolean = !autoTriggerEnabled
+        await set(autoTriggerEnabledKey, toSet, this.#context)
+        this.#onDidChangeState.fire(toSet)
+        return toSet
+    }
+
+    async setSuggestionsEnabled(isEnabled: boolean) {
+        if (this.isSuggestionsEnabled() !== isEnabled) {
+            await this.toggleSuggestions()
+        }
+    }
+
+    isSuggestionsEnabled(): boolean {
+        const isEnabled = get(autoTriggerEnabledKey, this.#context)
+        return isEnabled !== undefined ? isEnabled : this.#fallback
+    }
 }
 
 export interface AcceptedSuggestionEntry {
