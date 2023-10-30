@@ -5,7 +5,7 @@
 
 import { EditorContext } from '../editor/context/model'
 
-export type TriggerEventType = 'chat_message' | 'editor_context_command'
+export type TriggerEventType = 'chat_message' | 'editor_context_command' | 'follow_up'
 
 export interface TriggerEvent {
     readonly id: string
@@ -26,6 +26,16 @@ export class TriggerEventsStorage {
         })
 
         this.triggerEventsByTabID.delete(tabID)
+    }
+
+    public getLastTriggerEventByTabID(tabID: string): TriggerEvent | undefined {
+        const events = this.triggerEventsByTabID.get(tabID) ?? []
+
+        if (events.length === 0) {
+            return undefined
+        }
+
+        return events[events.length - 1]
     }
 
     private pushEventToTriggerEventsByTabID(event: TriggerEvent) {

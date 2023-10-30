@@ -43,6 +43,7 @@ export class UIMessageListener {
                     this.processChatMessage({
                         chatMessage: msg.followUp.prompt,
                         tabID: msg.tabID,
+                        userIntent: msg.followUp.type,
                     })
                 }
                 break
@@ -94,6 +95,7 @@ export class UIMessageListener {
             message: msg.chatMessage,
             command: msg.command,
             tabID: msg.tabID,
+            userIntent: msg.userIntent,
         })
     }
 

@@ -107,6 +107,10 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                     promptInputDisabledState: true,
                 })
                 mynahUI.addChatItem(selectedTab.id, message)
+                mynahUI.addChatItem(selectedTab.id, {
+                    type: ChatItemType.ANSWER_STREAM,
+                    body: '',
+                })
                 tabsStorage.updateTabStatus(selectedTab.id, 'busy')
 
                 return selectedTab.id
@@ -118,6 +122,10 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 showChatAvatars: false,
                 quickActionCommands: QuickActionCommands(weaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+            })
+            mynahUI.addChatItem(newTabID, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
             })
 
             mynahUI.updateStore(newTabID, {
