@@ -6,6 +6,7 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
+import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
 
 interface ChatPayload {
     chatMessage: string
@@ -39,20 +40,32 @@ export class Connector {
         this.onWriteCodeFollowUpClicked = props.onWriteCodeFollowUpClicked
     }
 
-    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCodeInsertToCursorPosition = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'insert_code_at_cursor_position',
+            codeReference,
             tabType: 'wb',
         })
     }
 
-    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCopyCodeToClipboard = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             code,
             command: 'code_was_copied_to_clipboard',
+            codeReference,
             tabType: 'wb',
         })
     }

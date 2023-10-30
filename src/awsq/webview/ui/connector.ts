@@ -114,15 +114,14 @@ export class Connector {
         tabID: string,
         code?: string,
         type?: 'selection' | 'block',
-        referenceTrackerInformation?: CodeReference[]
+        codeReference?: CodeReference[]
     ): void => {
-        console.log(referenceTrackerInformation)
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, code, type)
+                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type)
+                this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
         }
     }
@@ -131,15 +130,14 @@ export class Connector {
         tabID: string,
         code?: string,
         type?: 'selection' | 'block',
-        referenceTrackerInformation?: CodeReference[]
+        codeReference?: CodeReference[]
     ): void => {
-        console.log(referenceTrackerInformation)
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCopyCodeToClipboard(tabID, code, type)
+                this.cwChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type)
+                this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
         }
     }
