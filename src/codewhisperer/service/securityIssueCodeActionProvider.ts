@@ -29,6 +29,14 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
             for (const issue of group.issues) {
                 const issueRange = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                 if (issueRange.contains(range)) {
+                    const openIssue = new vscode.CodeAction(`Open "${issue.title}"`)
+                    openIssue.command = {
+                        title: 'Open "CodeWhisperer Security Issue"',
+                        command: 'aws.codeWhisperer.openSecurityIssuePanel',
+                        arguments: [issue],
+                    }
+                    codeActions.push(openIssue)
+
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
                         const fixIssue = new vscode.CodeAction(`Fix "${issue.title}"`, vscode.CodeActionKind.QuickFix)
