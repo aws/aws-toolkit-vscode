@@ -365,7 +365,7 @@ export class ChatController {
                 })
             })
 
-            let programmingLanguage = undefined
+            let programmingLanguage
             if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
                 programmingLanguage = { languageName: triggerPayload.fileLanguage }
             }
