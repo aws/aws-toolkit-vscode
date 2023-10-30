@@ -69,12 +69,14 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
+        // TODO add reference tracker logs if msg contains any
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             code: msg.code,
         })
     }
 
     private processCodeWasCopiedToClipboard(msg: any) {
+        // TODO add reference tracker logs if msg contains any
         return
     }
     private processTabWasRemoved(msg: any) {

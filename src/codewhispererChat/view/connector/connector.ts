@@ -96,11 +96,21 @@ export class SearchView extends UiMessage {
 
 export type ChatMessageType = 'answer-stream' | 'answer-part' | 'answer'
 
+export interface CodeReference {
+    licenseName?: string
+    repository?: string
+    url?: string
+    recommendationContentSpan?: {
+        start?: number
+        end?: number
+    }
+}
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
     readonly followUps: FollowUp[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
+    readonly codeReference?: CodeReference[]
     readonly triggerID: string
 }
 
@@ -108,6 +118,7 @@ export class ChatMessage extends UiMessage {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
     readonly followUps: FollowUp[] | undefined
+    readonly codeReference: CodeReference[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly searchResults: Suggestion[] | undefined
     readonly triggerID: string
@@ -119,6 +130,7 @@ export class ChatMessage extends UiMessage {
         this.messageType = props.messageType
         this.followUps = props.followUps
         this.relatedSuggestions = props.relatedSuggestions
+        this.codeReference = props.codeReference
         this.triggerID = props.triggerID
     }
 }

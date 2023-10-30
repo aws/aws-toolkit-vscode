@@ -11,6 +11,7 @@ import { ExtensionMessage } from './commands'
 import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
+import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 
 export interface ChatPayload {
     chatMessage: string
@@ -109,24 +110,34 @@ export class Connector {
         this.tabsStorage.setSelectedTab(tabId)
     }
 
-    onCodeInsertToCursorPosition = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCodeInsertToCursorPosition = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, code, type)
+                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type)
+                this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
         }
     }
 
-    onCopyCodeToClipboard = (tabID: string, code?: string, type?: 'selection' | 'block'): void => {
+    onCopyCodeToClipboard = (
+        tabID: string,
+        code?: string,
+        type?: 'selection' | 'block',
+        codeReference?: CodeReference[]
+    ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCopyCodeToClipboard(tabID, code, type)
+                this.cwChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type)
+                this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
         }
     }
