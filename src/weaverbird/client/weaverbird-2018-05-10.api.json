@@ -2,7 +2,7 @@
     "version": "2.0",
     "metadata": {
         "apiVersion": "2018-05-10",
-        "endpointPrefix": "weaverbirdservice",
+        "endpointPrefix": "execute-api",
         "jsonVersion": "1.1",
         "protocol": "rest-json",
         "serviceFullName": "A beautiful and amazing WeaverbirdService",
@@ -141,6 +141,13 @@
         }
     },
     "shapes": {
+        "AbTestingCohort": {
+            "type": "map",
+            "key": { "shape": "ExperimentName" },
+            "value": { "shape": "CohortType" },
+            "max": 100,
+            "min": 1
+        },
         "AssistantResponseEvent": {
             "type": "structure",
             "required": ["content"],
@@ -211,6 +218,20 @@
             "type": "string",
             "enum": ["MANUAL", "DIAGNOSTIC"]
         },
+        "ClientMetadata": {
+            "type": "structure",
+            "members": {
+                "featureFlags": { "shape": "FeatureFlags" },
+                "abTestingCohort": { "shape": "AbTestingCohort" },
+                "httpHeaders": { "shape": "HTTPHeaders" },
+                "requestIdentifier": { "shape": "RequestIdentifier" },
+                "isOptedOut": { "shape": "Boolean" },
+                "userEntityType": { "shape": "UserEntityType" },
+                "userIdentity": { "shape": "UserIdentity" },
+                "encryptionConfiguration": { "shape": "EncryptionConfiguration" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" }
+            }
+        },
         "CodeGenStatus": {
             "type": "structure",
             "required": ["status", "currentStage"],
@@ -245,6 +266,10 @@
             },
             "event": true
         },
+        "CohortType": {
+            "type": "string",
+            "enum": ["CONTROL", "TREATMENT"]
+        },
         "Config": {
             "type": "structure",
             "members": {
@@ -276,11 +301,12 @@
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
-            "required": ["conversationId", "contentChecksumSha256", "uploadIntent"],
+            "required": ["conversationId", "contentChecksumSha256", "uploadIntent", "clientMetadata"],
             "members": {
                 "conversationId": { "shape": "ConversationId" },
                 "contentChecksumSha256": { "shape": "CreateUploadUrlRequestContentChecksumSha256String" },
-                "uploadIntent": { "shape": "UploadIntent" }
+                "uploadIntent": { "shape": "UploadIntent" },
+                "clientMetadata": { "shape": "ClientMetadata" }
             }
         },
         "CreateUploadUrlRequestContentChecksumSha256String": {
@@ -380,6 +406,31 @@
                 "cursorState": { "shape": "CursorState" }
             }
         },
+        "EncryptionConfiguration": {
+            "type": "structure",
+            "members": {
+                "kmsConfiguration": { "shape": "KmsConfiguration" },
+                "keyArn": { "shape": "EncryptionConfigurationKeyArnString" }
+            }
+        },
+        "EncryptionConfigurationKeyArnString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "ExperimentName": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "sensitive": true
+        },
+        "FeatureFlags": {
+            "type": "map",
+            "key": { "shape": "FlagName" },
+            "value": { "shape": "FlagValue" },
+            "max": 128,
+            "min": 1
+        },
         "FileMetadata": {
             "type": "structure",
             "required": ["filePath", "fileContent"],
@@ -391,6 +442,24 @@
         "FileMetadataList": {
             "type": "list",
             "member": { "shape": "FileMetadata" }
+        },
+        "FilePaths": {
+            "type": "list",
+            "member": { "shape": "SensitiveString" },
+            "max": 100,
+            "min": 0
+        },
+        "FlagName": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "sensitive": true
+        },
+        "FlagValue": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "sensitive": true
         },
         "FollowupPrompt": {
             "type": "structure",
@@ -453,9 +522,10 @@
         },
         "GetCodeGenInteractionResultRequest": {
             "type": "structure",
-            "required": ["conversationId"],
+            "required": ["conversationId", "clientMetadata"],
             "members": {
-                "conversationId": { "shape": "ConversationId" }
+                "conversationId": { "shape": "ConversationId" },
+                "clientMetadata": { "shape": "ClientMetadata" }
             }
         },
         "GetCodeGenInteractionResultResponse": {
@@ -465,7 +535,8 @@
                 "conversationId": { "shape": "ConversationId" },
                 "codeGenStatus": { "shape": "CodeGenStatus" },
                 "generatedCodeSummary": { "shape": "String" },
-                "generatedCode": { "shape": "SourceRepositoryFiles" }
+                "generatedCode": { "shape": "SourceRepositoryFiles" },
+                "deletedFiles": { "shape": "FilePaths" }
             }
         },
         "GetCodeGenerationResultInput": {
@@ -501,6 +572,25 @@
                 "result": { "shape": "CodeGenerationResult" },
                 "conversationId": { "shape": "String" }
             }
+        },
+        "HTTPHeaders": {
+            "type": "map",
+            "key": { "shape": "HeaderName" },
+            "value": { "shape": "HeaderValue" },
+            "max": 100,
+            "min": 1
+        },
+        "HeaderName": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "sensitive": true
+        },
+        "HeaderValue": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "sensitive": true
         },
         "Integer": {
             "type": "integer",
@@ -567,6 +657,10 @@
                 "conversationId": { "shape": "String" }
             }
         },
+        "KmsConfiguration": {
+            "type": "string",
+            "enum": ["CM_CMK", "AO_CMK"]
+        },
         "MessageMetadataEvent": {
             "type": "structure",
             "members": {
@@ -590,10 +684,11 @@
         },
         "PlanningInteractionRequest": {
             "type": "structure",
-            "required": ["conversationState", "workspaceState"],
+            "required": ["conversationState", "workspaceState", "clientMetadata"],
             "members": {
                 "conversationState": { "shape": "ConversationState" },
-                "workspaceState": { "shape": "WorkspaceState" }
+                "workspaceState": { "shape": "WorkspaceState" },
+                "clientMetadata": { "shape": "ClientMetadata" }
             }
         },
         "PlanningInteractionResponse": {
@@ -632,6 +727,10 @@
                 "end": { "shape": "Position" }
             }
         },
+        "RecommendationsWithReferencesPreference": {
+            "type": "string",
+            "enum": ["BLOCK", "ALLOW"]
+        },
         "Reference": {
             "type": "structure",
             "members": {
@@ -651,6 +750,13 @@
             "max": 1024,
             "min": 1
         },
+        "ReferenceTrackerConfiguration": {
+            "type": "structure",
+            "required": ["recommendationsWithReferences"],
+            "members": {
+                "recommendationsWithReferences": { "shape": "RecommendationsWithReferencesPreference" }
+            }
+        },
         "ReferenceUrlString": {
             "type": "string",
             "max": 1024,
@@ -661,6 +767,12 @@
             "member": { "shape": "Reference" },
             "max": 10,
             "min": 0
+        },
+        "RequestIdentifier": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "sensitive": true
         },
         "RuntimeDiagnostic": {
             "type": "structure",
@@ -681,6 +793,10 @@
             "type": "string",
             "max": 1024,
             "min": 0,
+            "sensitive": true
+        },
+        "SensitiveString": {
+            "type": "string",
             "sensitive": true
         },
         "SourceRepositoryFiles": {
@@ -708,10 +824,11 @@
         },
         "StartCodeGenerationInteractionRequest": {
             "type": "structure",
-            "required": ["conversationState", "workspaceState"],
+            "required": ["conversationState", "workspaceState", "clientMetadata"],
             "members": {
                 "conversationState": { "shape": "ConversationState" },
-                "workspaceState": { "shape": "WorkspaceState" }
+                "workspaceState": { "shape": "WorkspaceState" },
+                "clientMetadata": { "shape": "ClientMetadata" }
             }
         },
         "StartCodeGenerationInteractionResponse": {
@@ -722,7 +839,10 @@
         },
         "StartConversationRequest": {
             "type": "structure",
-            "members": {}
+            "required": ["clientMetadata"],
+            "members": {
+                "clientMetadata": { "shape": "ClientMetadata" }
+            }
         },
         "StartConversationResponse": {
             "type": "structure",
@@ -829,6 +949,18 @@
         "UploadIntent": {
             "type": "string",
             "enum": ["WeaverBirdPlanning", "WeaverBirdGeneration"]
+        },
+        "UserEntityType": {
+            "type": "string",
+            "enum": ["INDIVIDUAL", "PROFESSIONAL", "ENTERPRISE"]
+        },
+        "UserIdentity": {
+            "type": "structure",
+            "members": {
+                "managementAccountID": { "shape": "String" },
+                "oidcUserID": { "shape": "String" }
+            },
+            "union": true
         },
         "UserInputMessage": {
             "type": "structure",
