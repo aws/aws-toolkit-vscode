@@ -20,6 +20,8 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
 import { get, set } from '../../../codewhisperer/util/commonUtil'
+import { createAutoSuggestions, createGettingStarted, createLearnMore, createOpenReferenceLog, createReconnect, createSecurityScan, createSelectCustomization, createSeparator, createSignIn, createSignout } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
+import { showCodeWhispererQuickPick } from '../../../codewhisperer/commands/statusBarCommands'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -130,6 +132,75 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.ok(vscode.window.activeTextEditor === undefined)
             await targetCommand.execute()
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
+        })
+    })
+
+    describe('showCodeWhispererQuickPick', function () {
+        it('shows expected items when not connected', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertItems([
+                    createSignIn('item'), createLearnMore('item')
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await showCodeWhispererQuickPick.execute()
+        })
+
+        it('shows expected items when connection is expired', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertItems([
+                    createReconnect('item'), createLearnMore('item'), createSeparator(), createSignout('item')
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await showCodeWhispererQuickPick.execute()
+        })
+
+        it('shows expected quick pick items when connected', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertItems([
+                    createAutoSuggestions('item', false),
+                    createSecurityScan('item'),
+                    createOpenReferenceLog('item'),
+                    createGettingStarted('item'),
+                    createSeparator(),
+                    createSignout('item'),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await showCodeWhispererQuickPick.execute()
+        })
+
+        it('also shows customizations when connected to valid sso', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
+            sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertItems([
+                    createAutoSuggestions('item', false),
+                    createSecurityScan('item'),
+                    createSelectCustomization('item'),
+                    createOpenReferenceLog('item'),
+                    createGettingStarted('item'),
+                    createSeparator(),
+                    createSignout('item'),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await showCodeWhispererQuickPick.execute()
         })
     })
 })

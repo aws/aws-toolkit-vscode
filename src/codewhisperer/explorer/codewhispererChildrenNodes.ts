@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import vscode from 'vscode'
 import { AuthCommandDeclarations } from '../../auth/commands'
 import { ToolkitError } from '../../shared/errors'
 import { codicon, getIcon } from '../../shared/icons'
@@ -283,5 +284,13 @@ export function createSignout(type: 'item' | 'tree'): any {
                 label: codicon`${icon} ${label}`,
                 onClick: () => signoutCodeWhisperer.execute(),
             } as DataQuickPickItem<'signout'>
+    }
+}
+
+export function createSeparator(): DataQuickPickItem<'separator'> {
+    return {
+        kind: vscode.QuickPickItemKind.Separator,
+        data: 'separator',
+        label: '',
     }
 }

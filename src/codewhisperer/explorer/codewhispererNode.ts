@@ -17,6 +17,7 @@ import {
     createReconnect,
     createGettingStarted,
     createSignout,
+    createSeparator,
 } from './codewhispererChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
@@ -121,7 +122,7 @@ export class CodeWhispererNode implements RootNode {
 
         // Add 'Sign Out' to quick pick if user is connected
         if (AuthUtil.instance.isConnected() && type === 'item' && !hasVendedIamCredentials()) {
-            return [...children, { kind: vscode.QuickPickItemKind.Separator, data: 'separator' }, createSignout('item')]
+            return [...children, createSeparator(), createSignout('item')]
         }
 
         return children
