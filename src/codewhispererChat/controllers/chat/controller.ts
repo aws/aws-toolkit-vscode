@@ -160,7 +160,52 @@ export class ChatController {
         }
 
         try {
-            await this.processPromptMessageAsNewThread(message)
+            if (message.userIntent !== undefined) {
+                await this.processFollowUp(message)
+            } else {
+                await this.processPromptMessageAsNewThread(message)
+            }
+        } catch (e) {
+            if (typeof e === 'string') {
+                this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)
+            } else if (e instanceof Error) {
+                this.messenger.sendErrorMessage(e.message, message.tabID)
+            }
+        }
+    }
+
+    private async processFollowUp(message: PromptMessage) {
+        try {
+            const lastTriggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
+
+            if (lastTriggerEvent === undefined) {
+                throw "It's impossible to ask follow-ups on empty tabs"
+            }
+
+            const triggerID = randomUUID()
+            this.triggerEventsStorage.addTriggerEvent({
+                id: triggerID,
+                tabID: message.tabID,
+                message: message.message,
+                type: 'follow_up',
+                context: lastTriggerEvent.context,
+            })
+
+            this.generateResponse(
+                {
+                    message: message.message,
+                    trigger: ChatTriggerType.ChatMessage,
+                    query: message.message,
+                    codeSelection: lastTriggerEvent.context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                    fileText: lastTriggerEvent.context?.focusAreaContext?.extendedCodeBlock,
+                    fileLanguage: lastTriggerEvent.context?.activeFileContext?.fileLanguage,
+                    filePath: lastTriggerEvent.context?.activeFileContext?.filePath,
+                    matchPolicy: lastTriggerEvent.context?.activeFileContext?.matchPolicy,
+                    codeQuery: lastTriggerEvent.context?.focusAreaContext?.names,
+                    userIntent: message.userIntent,
+                },
+                triggerID
+            )
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)

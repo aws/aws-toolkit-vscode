@@ -8,7 +8,7 @@ import { TextEditor, Selection, TextDocument, Range } from 'vscode'
 import { Extent, Java, Python, Tsx, TypeScript, Location } from '@aws/fully-qualified-names'
 import { FocusAreaContext, FullyQualifiedName } from './model'
 
-const focusAreaCharLimit = 200
+const focusAreaCharLimit = 9_000
 
 export class FocusAreaContextExtractor {
     public async extract(editor: TextEditor): Promise<FocusAreaContext | undefined> {
@@ -78,12 +78,12 @@ export class FocusAreaContextExtractor {
         let addLineBefore = true
         while (
             this.getRangeText(document, importantRange).length < focusAreaCharLimit &&
-            (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount)
+            (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount - 1)
         ) {
             if (addLineBefore && importantRange.start.line !== 0) {
                 importantRange = new Range(
                     importantRange.start.line - 1,
-                    document.lineAt(importantRange.start.line - 1).range.end.character,
+                    0,
                     importantRange.end.line,
                     importantRange.end.character
                 )
@@ -91,12 +91,14 @@ export class FocusAreaContextExtractor {
                 continue
             }
 
-            importantRange = new Range(
-                importantRange.start.line,
-                importantRange.start.character,
-                importantRange.end.line + 1,
-                document.lineAt(importantRange.end.line + 1).range.end.character
-            )
+            if (importantRange.end.line !== document.lineCount - 1) {
+                importantRange = new Range(
+                    importantRange.start.line,
+                    importantRange.start.character,
+                    importantRange.end.line + 1,
+                    document.lineAt(importantRange.end.line + 1).range.end.character
+                )
+            }
 
             addLineBefore = true
         }
