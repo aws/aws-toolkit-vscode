@@ -17,8 +17,9 @@ export interface FullyQualifiedName {
     readonly symbol: string[]
 }
 
-export interface CodeSelectionContext {
-    readonly selectedCode: string
-    readonly selection: Selection
+export interface FocusAreaContext {
+    readonly codeBlock: string
+    readonly extendedCodeBlock: string
+    readonly selectionInsideExtendedCodeBlock: Selection | undefined
     readonly names: CodeNames | undefined
 }

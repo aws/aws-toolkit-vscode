@@ -16,9 +16,6 @@ export class FileContextExtractor {
         const filePath = file.fileName
         const matchPolicy = await this.extractMatchPolicyFromFile(file, false)
 
-        // TODO: Implement CodeQuery extraction
-        // const codeQuery = await extractCodeQuery()
-
         return {
             fileText,
             fileLanguage,

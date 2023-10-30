@@ -209,7 +209,8 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
         },
         onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART) {
-                mynahUI.updateLastChatAnswer(tabID, { ...item })
+                mynahUI.updateLastChatAnswer(tabID, item)
+
                 return
             }
 
@@ -351,10 +352,6 @@ ${message}`,
                           },
                       }
                     : {}),
-            })
-            mynahUI.addChatItem(tabID, {
-                type: ChatItemType.ANSWER_STREAM,
-                body: '',
             })
 
             mynahUI.updateStore(tabID, {

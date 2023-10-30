@@ -23,7 +23,8 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
-import { ChatRequest, CursorState, DocumentSymbol, UserIntent } from '@amzn/codewhisperer-streaming'
+import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
+import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -50,8 +51,9 @@ export class ChatController {
     private readonly editorContextExtractor: EditorContextExtractor
     private readonly editorContentController: EditorContentController
     private readonly promptGenerator: PromptsGenerator
+    private readonly userIntentRecognizer: UserIntentRecognizer
 
-    public constructor(
+    public constructor (
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
         appsToWebViewMessagePublisher: MessagePublisher<any>
     ) {
@@ -61,6 +63,7 @@ export class ChatController {
         this.editorContextExtractor = new EditorContextExtractor()
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
+        this.userIntentRecognizer = new UserIntentRecognizer()
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
@@ -87,60 +90,33 @@ export class ChatController {
         })
     }
 
-    private async processStopResponseMessage(message: StopResponseMessage) {
+    private async processStopResponseMessage (message: StopResponseMessage) {
         const session = this.sessionStorage.getSession(message.tabID)
         session.tokenSource.cancel()
     }
 
-    private async processTriggerTabIDReceived(message: TriggerTabIDReceived) {
+    private async processTriggerTabIDReceived (message: TriggerTabIDReceived) {
         this.triggerEventsStorage.updateTriggerEventTabIDFromUnknown(message.triggerID, message.tabID)
     }
 
-    private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
+    private async processInsertCodeAtCursorPosition (message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code)
     }
 
-    private async processTabCloseMessage(message: TabClosedMessage) {
+    private async processTabCloseMessage (message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
     }
 
-    private getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
-        switch (command) {
-            case 'aws.awsq.explainCode':
-                return UserIntent.EXPLAIN_CODE_SELECTION
-            case 'aws.awsq.refactorCode':
-                return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
-            case 'aws.awsq.fixCode':
-                return UserIntent.APPLY_COMMON_BEST_PRACTICES
-            case 'aws.awsq.optimizeCode':
-                return UserIntent.IMPROVE_CODE
-            default:
-                return undefined
-        }
-    }
 
-    private getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
-        if (prompt.message?.startsWith('Explain')) {
-            return UserIntent.EXPLAIN_CODE_SELECTION
-        } else if (prompt.message?.startsWith('Refactor')) {
-            return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
-        } else if (prompt.message?.startsWith('Fix')) {
-            return UserIntent.APPLY_COMMON_BEST_PRACTICES
-        } else if (prompt.message?.startsWith('Optimize')) {
-            return UserIntent.IMPROVE_CODE
-        }
-        return undefined
-    }
-
-    private async processContextMenuCommand(command: EditorContextCommand) {
+    private async processContextMenuCommand (command: EditorContextCommand) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ContextMenu).then(context => {
                 const triggerID = randomUUID()
 
                 const prompt = this.promptGenerator.getPromptForContextMenuCommand(
                     command,
-                    context?.codeSelectionContext?.selectedCode ?? ''
+                    context?.focusAreaContext?.codeBlock ?? ''
                 )
 
                 this.triggerEventsStorage.addTriggerEvent({
@@ -158,13 +134,13 @@ export class ChatController {
                         message: prompt,
                         trigger: ChatTriggerType.ChatMessage,
                         query: undefined,
-                        codeSelection: context?.codeSelectionContext?.selection,
-                        fileText: context?.activeFileContext?.fileText,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock,
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: context?.codeSelectionContext?.names,
-                        userIntent: this.getUserIntentFromContextMenuCommand(command),
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: this.userIntentRecognizer.getUserIntentFromContextMenuCommand(command),
                     },
                     triggerID
                 )
@@ -178,7 +154,7 @@ export class ChatController {
         }
     }
 
-    private async processPromptChatMessage(message: PromptMessage) {
+    private async processPromptChatMessage (message: PromptMessage) {
         if (message.message == undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
             return
@@ -195,7 +171,7 @@ export class ChatController {
         }
     }
 
-    private async processPromptMessageAsNewThread(message: PromptMessage) {
+    private async processPromptMessageAsNewThread (message: PromptMessage) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
                 const triggerID = randomUUID()
@@ -211,13 +187,13 @@ export class ChatController {
                         message: message.message,
                         trigger: ChatTriggerType.ChatMessage,
                         query: message.message,
-                        codeSelection: undefined,
-                        fileText: context?.activeFileContext?.fileText,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock,
                         fileLanguage: context?.activeFileContext?.fileLanguage,
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
-                        codeQuery: undefined,
-                        userIntent: this.getUserIntentFromPromptChatMessage(message),
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: this.userIntentRecognizer.getUserIntentFromPromptChatMessage(message),
                     },
                     triggerID
                 )
@@ -231,7 +207,7 @@ export class ChatController {
         }
     }
 
-    private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
+    private async generateResponse (triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
         if (triggerEvent === undefined) {
@@ -260,76 +236,62 @@ export class ChatController {
         }
     }
 
-    private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): ChatRequest {
-        const documentSymbolFqns: DocumentSymbol[] = []
-        triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
-            documentSymbolFqns.push({
-                name: fqn.symbol?.join('.'),
-                type: undefined,
-                source: fqn.source?.join('.'),
-            })
-        })
+    private triggerPayloadToChatRequest (triggerPayload: TriggerPayload): ChatRequest {
+        let document: TextDocument | undefined = undefined
         let cursorState: CursorState | undefined = undefined
-        if (triggerPayload.codeSelection?.start) {
-            cursorState = {
-                range: {
-                    start: triggerPayload.codeSelection?.start,
-                    end: triggerPayload.codeSelection?.end,
-                },
+
+        if (triggerPayload.filePath !== undefined || triggerPayload.filePath !== '') {
+            const documentSymbolFqns: DocumentSymbol[] = []
+            triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
+                documentSymbolFqns.push({
+                    name: fqn.symbol?.join('.'),
+                    type: SymbolType.USAGE,
+                    source: fqn.source?.join('.'),
+                })
+            })
+            
+    
+            let programmingLanguage = undefined
+            if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
+                programmingLanguage = { languageName: triggerPayload.fileLanguage }
+            }
+
+            document = {
+                relativeFilePath: triggerPayload.filePath,
+                text: triggerPayload.fileText,
+                programmingLanguage,
+                // TODO: Fix it
+                // documentSymbols: documentSymbolFqns,
+            }
+
+
+            if (triggerPayload.codeSelection?.start) {
+                cursorState = {                    
+                    range: {
+                        start: triggerPayload.codeSelection?.start,
+                        end: triggerPayload.codeSelection?.end,
+                    },
+                }
             }
         }
+        
 
-        let programmingLanguage = undefined
-        if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
-            programmingLanguage = { languageName: triggerPayload.fileLanguage }
-        }
-
-        if (triggerPayload.trigger == ChatTriggerType.ChatMessage) {
-            return {
-                conversationState: {
-                    currentMessage: {
-                        userInputMessage: {
-                            content: triggerPayload.message ?? '',
-                            userInputMessageContext: {
-                                editorState: {
-                                    document: {
-                                        relativeFilePath: triggerPayload.filePath,
-                                        text: triggerPayload.fileText,
-                                        programmingLanguage,
-                                        documentSymbols: documentSymbolFqns,
-                                    },
-                                    ...(cursorState && { cursorState }),
-                                },
+        return {
+            conversationState: {
+                currentMessage: {
+                    userInputMessage: {
+                        content: triggerPayload.message ?? '',
+                        userInputMessageContext: {
+                            editorState: {
+                                document,
+                                cursorState
                             },
-                            userIntent: triggerPayload.userIntent,
                         },
+                        userIntent: triggerPayload.userIntent,
                     },
-                    chatTriggerType: 'MANUAL',
                 },
-            }
-        } else {
-            return {
-                conversationState: {
-                    currentMessage: {
-                        userInputMessage: {
-                            content: triggerPayload.message ?? '',
-                            userInputMessageContext: {
-                                editorState: {
-                                    document: {
-                                        relativeFilePath: triggerPayload.filePath,
-                                        text: triggerPayload.fileText,
-                                        programmingLanguage: { languageName: triggerPayload.fileLanguage },
-                                        documentSymbols: documentSymbolFqns,
-                                    },
-                                    ...(cursorState && { cursorState }),
-                                },
-                            },
-                            userIntent: triggerPayload.userIntent,
-                        },
-                    },
-                    chatTriggerType: 'MANUAL',
-                },
-            }
+                chatTriggerType: 'MANUAL',
+            },
         }
     }
 }
