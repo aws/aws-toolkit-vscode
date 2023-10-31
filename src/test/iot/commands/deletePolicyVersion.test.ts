@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { deletePolicyVersionCommand } from '../../../iot/commands/deletePolicyVersion'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
@@ -19,7 +19,13 @@ describe('deletePolicyVersionCommand', function () {
     let node: IotPolicyVersionNode
     let parentNode: IotPolicyWithVersionsNode
 
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
+
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         parentNode = new IotPolicyWithVersionsNode(
             { name: policyName, arn: 'arn' },
@@ -35,10 +41,13 @@ describe('deletePolicyVersionCommand', function () {
         )
     })
 
+    afterEach(function () {
+        sandbox.restore()
+    })
+
     it('confirms deletion, deletes policy, and refreshes node', async function () {
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
-        await deletePolicyVersionCommand(node, commands)
+        await deletePolicyVersionCommand(node)
 
         getTestWindow()
             .getFirstMessage()
@@ -46,12 +55,12 @@ describe('deletePolicyVersionCommand', function () {
 
         verify(iot.deletePolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 
     it('does nothing when deletion is cancelled', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-        await deletePolicyVersionCommand(node, new FakeCommands())
+        await deletePolicyVersionCommand(node)
 
         verify(iot.deletePolicyVersion(anything())).never()
     })
@@ -60,13 +69,12 @@ describe('deletePolicyVersionCommand', function () {
         when(iot.deletePolicyVersion(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
-        await deletePolicyVersionCommand(node, commands)
+        await deletePolicyVersionCommand(node)
 
         getTestWindow()
             .getSecondMessage()
             .assertError(/Failed to delete Version V1 of Policy test-policy/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 })

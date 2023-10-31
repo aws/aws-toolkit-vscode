@@ -6,12 +6,11 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { EcrRepositoryNode } from '../explorer/ecrRepositoryNode'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-export async function deleteRepository(node: EcrRepositoryNode, commands = Commands.vscode()): Promise<void> {
+export async function deleteRepository(node: EcrRepositoryNode): Promise<void> {
     getLogger().debug('DeleteRepository called for %O', node)
 
     const repositoryName = node.repository.repositoryName
@@ -40,7 +39,7 @@ export async function deleteRepository(node: EcrRepositoryNode, commands = Comma
         )
         telemetry.ecr_deleteRepository.emit({ result: 'Failed' })
     } finally {
-        await commands.execute('aws.refreshAwsExplorerNode', node.parent)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
     }
 }
 
