@@ -86,8 +86,6 @@ module.exports = {
         // This currently produces 700 non fixable by --fix errors
         'sort-imports': 'off',
         '@typescript-eslint/no-namespace': 'error',
-        // Turn this on by removing off when we fix namespaces
-        'no-inner-declarations': 'off',
         // This is off because prettier takes care of it
         'no-extra-semi': 'off',
         'no-null/no-null': 'error',

@@ -420,6 +420,20 @@ describe('SAM Integration Tests', async function () {
         })
     })
 
+    function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
+        assert.ok(codeLens.command, 'CodeLens did not have a command')
+        const command = codeLens.command!
+
+        assert.ok(command.arguments, 'CodeLens command had no arguments')
+        const commandArguments = command.arguments!
+
+        assert.strictEqual(commandArguments.length, 3, 'CodeLens command had unexpected arg count')
+        const params: AddSamDebugConfigurationInput = commandArguments[0]
+        assert.ok(params, 'unexpected non-defined command argument')
+
+        assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedUri.fsPath))
+    }
+
     for (let scenarioIndex = 0; scenarioIndex < scenarios.length; scenarioIndex++) {
         const scenario = scenarios[scenarioIndex]
 
@@ -624,20 +638,6 @@ describe('SAM Integration Tests', async function () {
                 }
             })
         })
-
-        function assertCodeLensReferencesHasSameRoot(codeLens: vscode.CodeLens, expectedUri: vscode.Uri) {
-            assert.ok(codeLens.command, 'CodeLens did not have a command')
-            const command = codeLens.command!
-
-            assert.ok(command.arguments, 'CodeLens command had no arguments')
-            const commandArguments = command.arguments!
-
-            assert.strictEqual(commandArguments.length, 3, 'CodeLens command had unexpected arg count')
-            const params: AddSamDebugConfigurationInput = commandArguments[0]
-            assert.ok(params, 'unexpected non-defined command argument')
-
-            assert.strictEqual(path.dirname(params.rootUri.fsPath), path.dirname(expectedUri.fsPath))
-        }
     }
 
     async function createSamApplication(location: string, scenario: TestScenario): Promise<void> {
