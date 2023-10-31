@@ -16,7 +16,6 @@ import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { IotNode } from './iotNodes'
-import { Commands } from '../../shared/vscode/commands'
 import { Settings } from '../../shared/settings'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
@@ -92,9 +91,9 @@ export class IotPolicyFolderNode extends AWSTreeNodeBase implements LoadMoreNode
         }
     }
 
-    public async refreshNode(commands: Commands): Promise<void> {
+    public async refreshNode(): Promise<void> {
         this.clearChildren()
-        return commands.execute('aws.refreshAwsExplorerNode', this)
+        return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 
     public [inspect.custom](): string {

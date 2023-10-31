@@ -4,14 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { Commands } from '../../shared/vscode/commands'
 import { EcrTagNode } from '../explorer/ecrTagNode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showConfirmationMessage, showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-export async function deleteTag(node: EcrTagNode, commands = Commands.vscode()): Promise<void> {
+export async function deleteTag(node: EcrTagNode): Promise<void> {
     getLogger().debug('deleteTag called for %O', node)
     const ok = await showConfirmationMessage({
         prompt: localize(
@@ -54,6 +53,6 @@ export async function deleteTag(node: EcrTagNode, commands = Commands.vscode()):
         )
         telemetry.ecr_deleteTags.emit({ result: 'Failed', value: 1 })
     } finally {
-        await commands.execute('aws.refreshAwsExplorerNode', node.parent)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node.parent)
     }
 }

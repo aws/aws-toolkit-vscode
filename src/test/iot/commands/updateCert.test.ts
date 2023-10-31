@@ -15,7 +15,6 @@ import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import globals from '../../../shared/extensionGlobals'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -43,8 +42,7 @@ describe('updateCertificate', function () {
 
         it('confirms deactivation, deactivates cert, and refreshes tree', async function () {
             getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Deactivate')?.select())
-            const commands = new FakeCommands()
-            await deactivateCertificateCommand(node, commands)
+            await deactivateCertificateCommand(node)
 
             getTestWindow().getFirstMessage().assertWarn('Are you sure you want to deactivate certificate test-cert?')
             getTestWindow().getSecondMessage().assertInfo('Deactivated: test-cert')
@@ -54,7 +52,7 @@ describe('updateCertificate', function () {
 
         it('does nothing when deactivation is cancelled', async function () {
             getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-            await deactivateCertificateCommand(node, new FakeCommands())
+            await deactivateCertificateCommand(node)
 
             verify(iot.updateCertificate(anything())).never()
         })
@@ -62,8 +60,7 @@ describe('updateCertificate', function () {
         it('shows an error message if deactivating the certificate fails', async function () {
             when(iot.updateCertificate(anything())).thenReject(new Error('Expected failure'))
             getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Deactivate')?.select())
-            const commands = new FakeCommands()
-            await deactivateCertificateCommand(node, commands)
+            await deactivateCertificateCommand(node)
 
             getTestWindow()
                 .getSecondMessage()
@@ -87,8 +84,7 @@ describe('updateCertificate', function () {
 
         it('confirms activation, activates cert, and refreshes tree', async function () {
             getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Activate')?.select())
-            const commands = new FakeCommands()
-            await activateCertificateCommand(node, commands)
+            await activateCertificateCommand(node)
 
             getTestWindow().getFirstMessage().assertWarn('Are you sure you want to activate certificate test-cert?')
             getTestWindow()
@@ -100,7 +96,7 @@ describe('updateCertificate', function () {
 
         it('does nothing when activation is cancelled', async function () {
             getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-            await activateCertificateCommand(node, new FakeCommands())
+            await activateCertificateCommand(node)
 
             verify(iot.updateCertificate(anything())).never()
         })
@@ -108,8 +104,7 @@ describe('updateCertificate', function () {
         it('shows an error message if deactivating the certificate fails', async function () {
             when(iot.updateCertificate(anything())).thenReject(new Error('Expected failure'))
             getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Activate')?.select())
-            const commands = new FakeCommands()
-            await activateCertificateCommand(node, commands)
+            await activateCertificateCommand(node)
 
             getTestWindow()
                 .getSecondMessage()
@@ -129,8 +124,7 @@ describe('updateCertificate', function () {
 
         it('confirms revocation, revokes cert, and refreshes tree', async function () {
             getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Revoke')?.select())
-            const commands = new FakeCommands()
-            await revokeCertificateCommand(node, commands)
+            await revokeCertificateCommand(node)
 
             getTestWindow().getFirstMessage().assertWarn('Are you sure you want to revoke certificate test-cert?')
             getTestWindow()
@@ -142,7 +136,7 @@ describe('updateCertificate', function () {
 
         it('does nothing when revocation is cancelled', async function () {
             getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-            await revokeCertificateCommand(node, new FakeCommands())
+            await revokeCertificateCommand(node)
 
             verify(iot.updateCertificate(anything())).never()
         })
@@ -150,8 +144,7 @@ describe('updateCertificate', function () {
         it('shows an error message if revoking the certificate fails', async function () {
             when(iot.updateCertificate(anything())).thenReject(new Error('Expected failure'))
             getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Revoke')?.select())
-            const commands = new FakeCommands()
-            await revokeCertificateCommand(node, commands)
+            await revokeCertificateCommand(node)
 
             getTestWindow()
                 .getSecondMessage()
