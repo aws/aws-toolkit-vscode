@@ -5,12 +5,12 @@
 
 import * as vscode from 'vscode'
 import { VueWebview } from '../../../webviews/main'
-import { CodeScanIssue } from '../../models/model'
+import { CodeScanIssueCommandArgs } from '../../models/model'
 
 export class SecurityIssueWebview extends VueWebview {
     public readonly id = 'aws.codeWhisperer.securityIssue'
     public readonly source = 'src/codewhisperer/views/securityIssue/vue/index.js'
-    private issue: CodeScanIssue | undefined
+    private issue: CodeScanIssueCommandArgs | undefined
 
     public constructor() {
         super()
@@ -20,19 +20,25 @@ export class SecurityIssueWebview extends VueWebview {
         return this.issue
     }
 
-    public setIssue(issue: CodeScanIssue) {
+    public setIssue(issue: CodeScanIssueCommandArgs) {
         this.issue = issue
     }
 
     public applyFix() {
-        // TODO
+        vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', this.issue)
+    }
+
+    public closeWebview(findingId: string) {
+        if (this.issue?.findingId === findingId) {
+            this.dispose()
+        }
     }
 }
 
 const Panel = VueWebview.compilePanel(SecurityIssueWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 
-export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, issue: CodeScanIssue) {
+export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, issue: CodeScanIssueCommandArgs) {
     activePanel ??= new Panel(ctx)
     activePanel.server.setIssue(issue)
 
@@ -47,4 +53,8 @@ export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, iss
     }
 
     webviewPanel.onDidDispose(() => (activePanel = undefined))
+}
+
+export async function closeSecurityIssueWebview(findingId: string) {
+    activePanel?.server.closeWebview(findingId)
 }

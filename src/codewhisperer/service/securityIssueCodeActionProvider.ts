@@ -29,20 +29,29 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
             for (const issue of group.issues) {
                 const issueRange = new vscode.Range(issue.startLine, 0, issue.endLine, 0)
                 if (issueRange.contains(range)) {
-                    const openIssue = new vscode.CodeAction(`Open "${issue.title}"`)
+                    const [suggestedFix] = issue.suggestedFixes
+                    if (suggestedFix) {
+                        const fixIssue = new vscode.CodeAction(
+                            `Apply fix "${issue.title}"`,
+                            vscode.CodeActionKind.QuickFix
+                        )
+                        fixIssue.command = {
+                            title: 'Apply suggested fix',
+                            command: 'aws.codeWhisperer.applySecurityFix',
+                            arguments: [{ ...issue, filePath: group.filePath }],
+                        }
+                        codeActions.push(fixIssue)
+                    }
+                    const openIssue = new vscode.CodeAction(
+                        `View details "${issue.title}"`,
+                        vscode.CodeActionKind.QuickFix
+                    )
                     openIssue.command = {
                         title: 'Open "CodeWhisperer Security Issue"',
                         command: 'aws.codeWhisperer.openSecurityIssuePanel',
-                        arguments: [issue],
+                        arguments: [{ ...issue, filePath: group.filePath }],
                     }
                     codeActions.push(openIssue)
-
-                    const [suggestedFix] = issue.suggestedFixes
-                    if (suggestedFix) {
-                        const fixIssue = new vscode.CodeAction(`Fix "${issue.title}"`, vscode.CodeActionKind.QuickFix)
-                        // TODO: Add apply fix command
-                        codeActions.push(fixIssue)
-                    }
                 }
             }
         }

@@ -65,7 +65,9 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.appendMarkdown(`${issue.description.markdown}\n\n`)
 
         const viewDetailsCommand = vscode.Uri.parse(
-            `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(issue))}`
+            `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
+                JSON.stringify({ ...issue, filePath })
+            )}`
         )
 
         markdownString.appendMarkdown(

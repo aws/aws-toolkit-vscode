@@ -11,7 +11,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssue, CodeScanIssueCommandArgs, codeScanState } from '../models/model'
+import { CodeScanIssueCommandArgs, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -31,7 +31,7 @@ import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPage
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { applyPatch } from 'diff'
-import { showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
+import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 import { FileSystemCommon } from '../../srcShared/fs'
 
 export const toggleCodeSuggestions = Commands.declare(
@@ -203,7 +203,7 @@ export const refreshStatusBar = Commands.declare(
 
 export const openSecurityIssuePanel = Commands.declare(
     'aws.codeWhisperer.openSecurityIssuePanel',
-    (context: ExtContext) => async (issue: CodeScanIssue) => {
+    (context: ExtContext) => (issue: CodeScanIssueCommandArgs) => {
         showSecurityIssueWebview(context.extensionContext, issue)
     }
 )
@@ -248,6 +248,7 @@ export const applySecurityFix = Commands.declare(
                                             vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
                                         }
                                     })
+                                closeSecurityIssueWebview(issue.findingId)
                             })
                             .catch(err => {
                                 getLogger().error(`Unable to write updated text content into the file: ${err}`)
