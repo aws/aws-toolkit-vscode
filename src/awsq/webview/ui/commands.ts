@@ -18,5 +18,7 @@ type MessageCommand =
     | 'chat-item-voted'
     | 'chat-item-feedback'
     | 'clear'
+    | 'chat-item-voted'
+    | 'chat-item-feedback'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }
