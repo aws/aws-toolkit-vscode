@@ -16,7 +16,17 @@ export interface TabClosedMessage {
 }
 
 export interface InsertCodeAtCursorPosition {
+    command: string | undefined
+    tabID: string
     code: string
+    insertionTargetType: string | undefined
+}
+
+export interface CopyCodeToClipboard {
+    command: string | undefined
+    tabID: string
+    code: string
+    insertionTargetType: string | undefined
 }
 
 export interface PromptMessage {
@@ -24,6 +34,13 @@ export interface PromptMessage {
     command: string | undefined
     userIntent: UserIntent | undefined
     tabID: string
+}
+
+export interface PromptAnswer {
+    messageLength: number
+    tabID: string
+    suggestionCount: number
+    followUpCount: number
 }
 
 export interface StopResponseMessage {

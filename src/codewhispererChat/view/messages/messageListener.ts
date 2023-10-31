@@ -5,6 +5,7 @@
 
 import { MessageListener } from '../../../awsq/messages/messageListener'
 import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
+import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 
 export interface UIMessageListenerProps {
@@ -44,6 +45,7 @@ export class UIMessageListener {
                     this.processChatMessage({
                         chatMessage: msg.followUp.prompt,
                         tabID: msg.tabID,
+                        command: msg.command,
                         userIntent: msg.followUp.type,
                     })
                 }
@@ -73,14 +75,22 @@ export class UIMessageListener {
     private processInsertCodeAtCursorPosition(msg: any) {
         // TODO add reference tracker logs if msg contains any
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
+            command: msg.command,
+            tabID: msg.tabID,
             code: msg.code,
+            insertionTargetType: msg.insertionTargetType,
         })
     }
 
     private processCodeWasCopiedToClipboard(msg: any) {
-        // TODO add reference tracker logs if msg contains any
-        return
+        this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
+            command: msg.command,
+            tabID: msg.tabID,
+            code: msg.code,
+            insertionTargetType: msg.insertionTargetType,
+        })
     }
+
     private processTabWasRemoved(msg: any) {
         this.chatControllerMessagePublishers.processTabClosedMessage.publish({
             tabID: msg.tabID,
@@ -88,7 +98,7 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        return
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
     }
 
     private processChatMessage(msg: any) {

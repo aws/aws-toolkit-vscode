@@ -14,6 +14,7 @@ import {
     InsertCodeAtCursorPosition,
     TriggerTabIDReceived,
     StopResponseMessage,
+    CopyCodeToClipboard,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -25,11 +26,13 @@ import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
 import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
+import { CWCTelemetryHelper } from './telemetryHelper'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
+    readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
@@ -39,6 +42,7 @@ export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
+    readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
@@ -52,6 +56,7 @@ export class ChatController {
     private readonly editorContentController: EditorContentController
     private readonly promptGenerator: PromptsGenerator
     private readonly userIntentRecognizer: UserIntentRecognizer
+    private readonly telemetryHelper: CWCTelemetryHelper
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
@@ -59,7 +64,11 @@ export class ChatController {
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
-        this.messenger = new Messenger(new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher))
+        this.telemetryHelper = new CWCTelemetryHelper(this.sessionStorage, this.triggerEventsStorage)
+        this.messenger = new Messenger(
+            new AppToWebViewMessageDispatcher(appsToWebViewMessagePublisher),
+            this.telemetryHelper
+        )
         this.editorContextExtractor = new EditorContextExtractor()
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
@@ -75,6 +84,10 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
             this.processInsertCodeAtCursorPosition(data)
+        })
+
+        this.chatControllerMessageListeners.processCopyCodeToClipboard.onMessage(data => {
+            this.processCopyCodeToClipboard(data)
         })
 
         this.chatControllerMessageListeners.processContextMenuCommand.onMessage(data => {
@@ -101,6 +114,11 @@ export class ChatController {
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code)
+        this.telemetryHelper.recordInteractWithMessage(message)
+    }
+
+    private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
+        this.telemetryHelper.recordInteractWithMessage(message)
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {
@@ -164,6 +182,7 @@ export class ChatController {
                 await this.processCommandMessage(message)
             } else if (message.userIntent !== undefined) {
                 await this.processFollowUp(message)
+                this.telemetryHelper.recordInteractWithMessage(message)
             } else {
                 await this.processPromptMessageAsNewThread(message)
             }
@@ -280,7 +299,9 @@ export class ChatController {
         session.createNewTokenSource()
         try {
             const response = await session.chat(request)
-            this.messenger.sendAIResponse(response, session, tabID, triggerID)
+            this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
+
+            this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), tabID)
@@ -304,7 +325,7 @@ export class ChatController {
                 })
             })
 
-            let programmingLanguage = undefined
+            let programmingLanguage
             if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
                 programmingLanguage = { languageName: triggerPayload.fileLanguage }
             }

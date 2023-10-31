@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UserIntent } from "@amzn/codewhisperer-streaming"
-import { EditorContextCommand } from "../../../commands/registerCommands"
-import { PromptMessage } from "../model"
-
+import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { EditorContextCommand } from '../../../commands/registerCommands'
+import { PromptMessage } from '../model'
 
 export class UserIntentRecognizer {
-    public getUserIntentFromContextMenuCommand (command: EditorContextCommand): UserIntent | undefined {
+    public getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
         switch (command) {
             case 'aws.awsq.explainCode':
                 return UserIntent.EXPLAIN_CODE_SELECTION
@@ -24,7 +23,7 @@ export class UserIntentRecognizer {
         }
     }
 
-    public getUserIntentFromPromptChatMessage (prompt: PromptMessage): UserIntent | undefined {
+    public getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
         if (prompt.message === undefined) {
             return undefined
         }
@@ -40,5 +39,4 @@ export class UserIntentRecognizer {
         }
         return undefined
     }
-
 }
