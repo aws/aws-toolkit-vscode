@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Env } from '../../shared/vscode/env'
-import { copyToClipboard } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { copyToClipboard } from '../../shared/utilities/messages'
 
-export async function copyIdentifier(typeName: string, identifier: string, env = Env.vscode()) {
-    copyToClipboard(identifier, 'identifier', env)
+export async function copyIdentifier(typeName: string, identifier: string) {
+    copyToClipboard(identifier, 'identifier')
     telemetry.dynamicresource_copyIdentifier.emit({ resourceType: typeName })
 }

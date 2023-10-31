@@ -42,9 +42,7 @@ import {
 import { YAML_ASL, JSON_ASL, ASL_FORMATS } from '../constants/aslFormats'
 import { StepFunctionsSettings } from '../utils'
 
-namespace ResultLimitReachedNotification {
-    export const type: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
-}
+export const ResultLimitReached: NotificationType<string, any> = new NotificationType('asl/resultLimitReached')
 
 interface Settings {
     asl?: {
@@ -159,7 +157,7 @@ export async function activate(extensionContext: ExtensionContext) {
         toDispose.push(disposableFunc)
         toDispose.push(config.onDidChange(({ key }) => key === 'format.enable' && updateFormatterRegistration()))
 
-        client.onNotification(ResultLimitReachedNotification.type, message => {
+        client.onNotification(ResultLimitReached, message => {
             window.showInformationMessage(
                 `${message}\nUse setting 'aws.stepfunctions.asl.maxItemsComputed' to configure the limit.`
             )

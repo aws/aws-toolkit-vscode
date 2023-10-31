@@ -9,7 +9,7 @@ import * as CodeWhispererUserClient from './codewhispereruserclient'
 import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { hasVendedIamCredentials } from '../../auth/auth'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { PromiseResult } from 'aws-sdk/lib/request'
 import { AuthUtil } from '../util/authUtil'
@@ -85,7 +85,8 @@ export class DefaultCodeWhispererClient {
                         }
                         // This logic is for backward compatability with legacy SDK v2 behavior for refreshing
                         // credentials. Once the Toolkit adds a file watcher for credentials it won't be needed.
-                        if (isCloud9()) {
+
+                        if (hasVendedIamCredentials()) {
                             req.on('retry', resp => {
                                 if (
                                     resp.error?.code === 'AccessDeniedException' &&

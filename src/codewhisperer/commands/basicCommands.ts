@@ -60,14 +60,15 @@ export const createGettingStartedNode = () =>
 
 export const enableCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.enableCodeSuggestions',
-    (context: ExtContext) => async () => {
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, context.extensionContext.globalState)
-        await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        if (!isCloud9()) {
-            await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+    (context: ExtContext) =>
+        async (isAuto: boolean = true) => {
+            await set(CodeWhispererConstants.autoTriggerEnabledKey, isAuto, context.extensionContext.globalState)
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', true)
+            await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+            if (!isCloud9()) {
+                await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
+            }
         }
-    }
 )
 
 export const showReferenceLog = Commands.declare(

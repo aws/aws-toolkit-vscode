@@ -14,7 +14,8 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
     isInlineCompletionEnabled,
@@ -40,6 +41,7 @@ import { AuthUtil } from '../util/authUtil'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
+import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 
 /**
@@ -110,8 +112,10 @@ export class RecommendationHandler {
         isFirstPaginationCall: boolean,
         promise: Promise<any>
     ): Promise<any> {
-        const timeoutMessage = isCloud9() ? `Generate recommendation timeout.` : `List recommendation timeout`
-        if (isManualTriggerOn && triggerType === 'OnDemand' && (isCloud9() || isFirstPaginationCall)) {
+        const timeoutMessage = hasVendedIamCredentials()
+            ? 'Generate recommendation timeout.'
+            : 'List recommendation timeout'
+        if (isManualTriggerOn && triggerType === 'OnDemand' && (hasVendedIamCredentials() || isFirstPaginationCall)) {
             return vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -154,6 +158,7 @@ export class RecommendationHandler {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0,
+        isSM: boolean = isSageMaker(),
         retry: boolean = false
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
@@ -227,9 +232,8 @@ export class RecommendationHandler {
             startTime = performance.now()
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
-            const codewhispererPromise = pagination
-                ? client.listRecommendations(mappedReq)
-                : client.generateRecommendations(mappedReq)
+            const codewhispererPromise =
+                pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(
                 triggerType,
                 config.isManualTriggerEnabled,
@@ -270,6 +274,18 @@ export class RecommendationHandler {
                 errorCode = error.code
                 reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
+
+                if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
+                    getLogger().error('CodeWhisperer AccessDeniedException : %s', (error as Error).message)
+                    vscode.window
+                        .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
+                        .then(async resp => {
+                            if (resp === CodeWhispererConstants.settingsLearnMore) {
+                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
+                            }
+                        })
+                    await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions', false)
+                }
             } else {
                 errorMessage = error as string
                 reason = error ? String(error) : 'unknown'
