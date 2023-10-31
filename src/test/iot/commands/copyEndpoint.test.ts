@@ -4,14 +4,21 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { copyEndpointCommand } from '../../../iot/commands/copyEndpoint'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { getTestWindow } from '../../shared/vscode/window'
-import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { mock, instance, when } from '../../utilities/mockito'
+import { FakeClipboard } from '../../shared/vscode/fakeEnv'
 
 describe('copyEndpointCommand', function () {
+    beforeEach(function () {
+        const fakeClipboard = new FakeClipboard()
+        sinon.stub(vscode.env, 'clipboard').value(fakeClipboard)
+    })
+
     let iot: IotClient
     let node: IotNode
 
@@ -23,17 +30,15 @@ describe('copyEndpointCommand', function () {
     it('copies endpoint to clipboard', async function () {
         when(iot.getEndpoint()).thenResolve('endpoint')
 
-        const env = new FakeEnv()
-        await copyEndpointCommand(node, env)
+        await copyEndpointCommand(node)
 
-        assert.strictEqual(env.clipboard.text, 'endpoint')
+        assert.strictEqual(await vscode.env.clipboard.readText(), 'endpoint')
     })
 
     it('shows an error message when retrieval fails', async function () {
         when(iot.getEndpoint()).thenReject(new Error('Expected failure'))
 
-        const env = new FakeEnv()
-        await copyEndpointCommand(node, env)
+        await copyEndpointCommand(node)
 
         getTestWindow().getFirstMessage().assertError('Failed to retrieve endpoint')
     })

@@ -22,6 +22,8 @@ phases:
             java: latest
 
         commands:
+            # Disable engine-strict in CI.
+            - sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'

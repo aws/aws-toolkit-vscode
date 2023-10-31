@@ -8,14 +8,15 @@ import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
-import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
 
 describe('IotPolicyNode', function () {
     let iot: IotClient
+    let config: TestSettings
     const policyName = 'policy'
     const expectedPolicy: IotPolicy = { name: policyName, arn: 'arn' }
     const policyVersion: Iot.PolicyVersion = { versionId: 'V1', isDefaultVersion: true }
@@ -32,6 +33,7 @@ describe('IotPolicyNode', function () {
 
     beforeEach(function () {
         iot = mock()
+        config = new TestSettings()
     })
 
     describe('getChildren', function () {
@@ -41,15 +43,12 @@ describe('IotPolicyNode', function () {
                 asyncGenerator<Iot.PolicyVersion>(versions)
             )
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-            })
             const node = new IotPolicyWithVersionsNode(
                 expectedPolicy,
                 {} as IotPolicyFolderNode,
                 instance(iot),
                 undefined,
-                workspace
+                config
             )
             const [policyVersionNode, ...otherNodes] = await node.getChildren()
 

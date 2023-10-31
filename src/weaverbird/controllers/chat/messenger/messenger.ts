@@ -4,7 +4,12 @@
  */
 
 import { FollowUpTypes } from '../../../types'
-import { ChatMessage, AsyncFollowUpMessage, ErrorMessage, FilePathMessage } from '../../../views/connector/connector'
+import {
+    ChatMessage,
+    AsyncEventProgressMessage,
+    ErrorMessage,
+    FilePathMessage,
+} from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 
@@ -64,7 +69,7 @@ export class Messenger {
         this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID, sessionID))
     }
 
-    public sendAsyncFollowUp(tabID: string, inProgress: boolean, message: string | undefined) {
-        this.dispatcher.sendAsyncFollowUp(new AsyncFollowUpMessage(tabID, inProgress, message))
+    public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
+        this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
     }
 }

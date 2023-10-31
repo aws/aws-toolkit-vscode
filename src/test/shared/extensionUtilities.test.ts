@@ -166,10 +166,24 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
         assert.strictEqual(getComputeRegion(), 'us-weast-1')
     })
 
+    it('returns a compute region for sagemaker', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'us-weast-1' })
+
+        await initializeComputeRegion(metadataService, false, true)
+        assert.strictEqual(getComputeRegion(), 'us-weast-1')
+    })
+
     it('returns "unknown" if cloud9 and the MetadataService request fails', async function () {
         sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
 
         await initializeComputeRegion(metadataService, true)
+        assert.strictEqual(getComputeRegion(), 'unknown')
+    })
+
+    it('returns "unknown" if sagemaker and the MetadataService request fails', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
+
+        await initializeComputeRegion(metadataService, false, true)
         assert.strictEqual(getComputeRegion(), 'unknown')
     })
 
@@ -180,10 +194,17 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
         assert.strictEqual(getComputeRegion(), 'unknown')
     })
 
-    it('returns undefined if not cloud9', async function () {
+    it('returns "unknown" if sagemaker and can not find a region', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({} as InstanceIdentity)
+
+        await initializeComputeRegion(metadataService, false, true)
+        assert.strictEqual(getComputeRegion(), 'unknown')
+    })
+
+    it('returns undefined if not cloud9 or sagemaker', async function () {
         sandbox.stub(metadataService, 'getInstanceIdentity').callsArgWith(1, undefined, 'lol')
 
-        await initializeComputeRegion(metadataService, false)
+        await initializeComputeRegion(metadataService, false, false)
         assert.strictEqual(getComputeRegion(), undefined)
     })
 

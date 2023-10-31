@@ -4,23 +4,24 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { copyIdentifier } from '../../../dynamicResources/commands/copyIdentifier'
-import { FakeEnv } from '../../shared/vscode/fakeEnv'
 import { assertNoErrorMessages } from '../../shared/vscode/window'
+import { FakeClipboard } from '../../shared/vscode/fakeEnv'
 
 describe('copyIdentifierCommand', function () {
-    let env: FakeEnv
-
     beforeEach(function () {
-        env = new FakeEnv()
+        const fakeClipboard = new FakeClipboard()
+        sinon.stub(vscode.env, 'clipboard').value(fakeClipboard)
     })
 
     it('copies identifier to clipboard and shows status bar confirmation', async function () {
         const fakeIdentifier = 'resource1'
 
-        await copyIdentifier('fakeResourceType', fakeIdentifier, env)
+        await copyIdentifier('fakeResourceType', fakeIdentifier)
 
-        assert.strictEqual(env.clipboard.text, fakeIdentifier)
+        assert.strictEqual(await vscode.env.clipboard.readText(), fakeIdentifier)
         assertNoErrorMessages()
     })
 })

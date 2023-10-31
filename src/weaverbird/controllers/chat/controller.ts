@@ -132,7 +132,7 @@ export class WeaverbirdController {
         // lock the UI/show loading bubbles
         telemetry.awsq_codeGenerateClick.emit({ value: 1 })
 
-        this.messenger.sendAsyncFollowUp(tabID, true, 'Code generation started')
+        this.messenger.sendAsyncEventProgress(tabID, true, 'Code generation started')
 
         try {
             await session.send(message)
@@ -174,7 +174,7 @@ export class WeaverbirdController {
             })
         } finally {
             // Unlock the UI
-            this.messenger.sendAsyncFollowUp(tabID, false, undefined)
+            this.messenger.sendAsyncEventProgress(tabID, false, undefined)
         }
     }
 
@@ -210,7 +210,7 @@ export class WeaverbirdController {
     private async retryRequest(message: any) {
         let session
         try {
-            this.messenger.sendAsyncFollowUp(message.tabID, true, undefined)
+            this.messenger.sendAsyncEventProgress(message.tabID, true, undefined)
 
             session = await this.sessionStorage.getSession(message.tabID)
 
@@ -229,7 +229,7 @@ export class WeaverbirdController {
                 this.retriesRemaining(session)
             )
         } finally {
-            this.messenger.sendAsyncFollowUp(message.tabID, false, undefined)
+            this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
         }
     }
 
@@ -295,6 +295,11 @@ export class WeaverbirdController {
                 if (!this.preloaderFinished && session) {
                     await session.setupConversation()
                     this.preloaderFinished = true
+                    this.messenger.sendAsyncEventProgress(
+                        message.tabID,
+                        true,
+                        `You conversation has been started with ID: <pre><code>${session.state.conversationId}</code></pre>`
+                    )
                 }
             }
         } catch (err: any) {

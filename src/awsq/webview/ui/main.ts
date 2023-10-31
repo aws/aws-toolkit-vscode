@@ -185,7 +185,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
         },
-        onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string | undefined) => {
+        onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
@@ -332,6 +332,17 @@ ${message}`,
                                   }
                                 : {}),
                         })
+
+                        mynahUI.addChatItem(tabID, {
+                            type: ChatItemType.ANSWER_STREAM,
+                            body: '',
+                        })
+
+                        mynahUI.updateStore(tabID, {
+                            loadingChat: true,
+                            promptInputDisabledState: true,
+                        })
+
                         connector.requestGenerativeAIAnswer(affectedTabId, {
                             chatMessage: realPromptText,
                         })
@@ -339,13 +350,10 @@ ${message}`,
 
                     return
                 } else if (prompt.command === '/clear') {
-                    // TODO clear command should also be sent to extension,
-                    // command sending is already added,
-                    // however the extension layer doesn't do anything with it yet
-                    // it should clear the cache or anything related with that tab
                     mynahUI.updateStore(tabID, {
                         chatItems: [],
                     })
+                    connector.clearChat(tabID)
                     return
                 } else {
                     // TODO we should send all commands to the extension

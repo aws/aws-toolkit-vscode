@@ -10,15 +10,17 @@ import { IotCertificate, IotClient } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
-import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
 import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
 
 describe('IotCertFolderNode', function () {
     const nextMarker = 'nextToken'
     const pageSize = 250
 
     let iot: IotClient
+    let config: TestSettings
+
     const cert: Iot.Certificate = {
         certificateId: 'cert',
         certificateArn: 'arn',
@@ -43,6 +45,7 @@ describe('IotCertFolderNode', function () {
 
     beforeEach(function () {
         iot = mock()
+        config = new TestSettings()
     })
 
     describe('getChildren', function () {
@@ -53,11 +56,9 @@ describe('IotCertFolderNode', function () {
             })
             when(iot.listThingsForCert(deepEqual({ principal: 'arn' }))).thenResolve([])
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 'iot.maxItemsPerPage', value: pageSize },
-            })
-            const node = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)), workspace)
+            await config.getSection('aws').update('iot.maxItemsPerPage', pageSize)
+
+            const node = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)), config)
             const [certNode, ...otherNodes] = await node.getChildren()
 
             assertCertNode(certNode, expectedCert)
@@ -71,11 +72,8 @@ describe('IotCertFolderNode', function () {
             })
             when(iot.listPolicyTargets(deepEqual({ policyName: 'policy' }))).thenResolve([])
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 'iot.maxItemsPerPage', value: pageSize },
-            })
-            const node = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)), workspace)
+            await config.getSection('aws').update('iot.maxItemsPerPage', pageSize)
+            const node = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)), config)
             const [certNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertCertNode(certNode, expectedCert)
