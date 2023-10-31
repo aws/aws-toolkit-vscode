@@ -20,11 +20,11 @@ describe('deleteBucketCommand', function () {
     let parentNode: S3Node
     let node: S3BucketNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         s3 = mock()
         parentNode = new S3Node(instance(s3))
@@ -47,7 +47,7 @@ describe('deleteBucketCommand', function () {
 
         getTestWindow().getFirstMessage().assertProgress('Deleting bucket-name...')
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when deletion is cancelled', async function () {
@@ -57,7 +57,7 @@ describe('deleteBucketCommand', function () {
         verify(s3.deleteBucket(anything())).never()
 
         assertNoErrorMessages()
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message and refreshes node when bucket deletion fails', async function () {
@@ -66,7 +66,7 @@ describe('deleteBucketCommand', function () {
         getTestWindow().onDidShowInputBox(input => input.acceptValue(bucketName))
         await assert.rejects(() => deleteBucketCommand(node), /failed to delete bucket bucket-name/i)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('warns when confirmation is invalid', async function () {

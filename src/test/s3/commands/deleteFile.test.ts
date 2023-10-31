@@ -24,11 +24,11 @@ describe('deleteFileCommand', function () {
     let parentNode: S3BucketNode
     let node: S3FileNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         s3 = mock()
         parentNode = new S3BucketNode(bucket, {} as S3Node, instance(s3))
@@ -49,7 +49,7 @@ describe('deleteFileCommand', function () {
 
         verify(s3.deleteObject(deepEqual({ bucketName, key }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when deletion is cancelled', async function () {
@@ -59,7 +59,7 @@ describe('deleteFileCommand', function () {
         verify(s3.deleteObject(anything())).never()
         assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
         assertNoErrorMessages()
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message and refreshes node when file deletion fails', async function () {
@@ -68,6 +68,6 @@ describe('deleteFileCommand', function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Delete'))
         await assert.rejects(() => deleteFileCommand(node), /failed to delete file bar.jpg/i)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

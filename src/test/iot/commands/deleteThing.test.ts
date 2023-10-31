@@ -19,11 +19,11 @@ describe('deleteThingCommand', function () {
     let node: IotThingNode
     let parentNode: IotThingFolderNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         parentNode = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)))
@@ -44,7 +44,7 @@ describe('deleteThingCommand', function () {
 
         verify(iot.deleteThing(deepEqual({ thingName }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing if thing principals are attached', async function () {
@@ -57,7 +57,7 @@ describe('deleteThingCommand', function () {
             .getSecondMessage()
             .assertError(/Cannot delete Thing iot-thing/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('does nothing when deletion is cancelled', async function () {
@@ -77,7 +77,7 @@ describe('deleteThingCommand', function () {
             .getSecondMessage()
             .assertError(/Failed to delete Thing: iot-thing/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('shows an error message and refreshes node if principals are not fetched', async function () {
@@ -90,6 +90,6 @@ describe('deleteThingCommand', function () {
             .getSecondMessage()
             .assertError(/Failed to delete Thing: iot-thing/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

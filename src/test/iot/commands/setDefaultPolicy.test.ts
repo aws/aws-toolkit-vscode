@@ -21,11 +21,11 @@ describe('setDefaultPolicy', function () {
     let parentNode: IotPolicyWithVersionsNode
     let parentParentNode: IotPolicyFolderNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         parentParentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
@@ -51,7 +51,7 @@ describe('setDefaultPolicy', function () {
             .assertInfo(/Set V1 as default version of test-policy/)
         verify(iot.setDefaultPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 
     it('shows an error message and refreshes node when deletion fails', async function () {
@@ -62,6 +62,6 @@ describe('setDefaultPolicy', function () {
             .getFirstMessage()
             .assertError(/Failed to set default policy version/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 })

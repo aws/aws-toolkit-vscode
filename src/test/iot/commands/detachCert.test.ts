@@ -23,11 +23,11 @@ describe('detachThingCertCommand', function () {
     let parentNode: IotThingNode
 
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         parentNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
@@ -52,7 +52,7 @@ describe('detachThingCertCommand', function () {
 
         verify(iot.detachThingPrincipal(deepEqual({ thingName, principal }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when cancelled', async function () {
@@ -72,6 +72,6 @@ describe('detachThingCertCommand', function () {
             .getSecondMessage()
             .assertError(/Failed to detach: test-certificate/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

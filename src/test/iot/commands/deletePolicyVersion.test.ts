@@ -20,11 +20,11 @@ describe('deletePolicyVersionCommand', function () {
     let parentNode: IotPolicyWithVersionsNode
 
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         parentNode = new IotPolicyWithVersionsNode(
@@ -55,7 +55,7 @@ describe('deletePolicyVersionCommand', function () {
 
         verify(iot.deletePolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 
     it('does nothing when deletion is cancelled', async function () {
@@ -75,6 +75,6 @@ describe('deletePolicyVersionCommand', function () {
             .getSecondMessage()
             .assertError(/Failed to delete Version V1 of Policy test-policy/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 })

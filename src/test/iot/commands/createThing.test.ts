@@ -18,11 +18,11 @@ describe('createThingCommand', function () {
     let iot: IotClient
     let node: IotThingFolderNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)))
@@ -48,7 +48,7 @@ describe('createThingCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created Thing newIotThing/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -89,6 +89,6 @@ describe('createThingCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to create Thing/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 })

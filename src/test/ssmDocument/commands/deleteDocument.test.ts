@@ -18,7 +18,7 @@ describe('deleteDocument', async function () {
     let node: DocumentItemNodeWriteable
     let parentNode: RegistryItemNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
     const fakeName: string = 'testDocument'
 
     const fakeDoc: SSM.Types.DocumentIdentifier = {
@@ -32,7 +32,7 @@ describe('deleteDocument', async function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         ssmClient = mock()
         parentNode = mock()
@@ -47,6 +47,6 @@ describe('deleteDocument', async function () {
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
         await deleteDocument(node)
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete document testDocument?')
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

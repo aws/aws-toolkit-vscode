@@ -23,7 +23,7 @@ describe('attachCertCommand', function () {
     let thingNode: IotThingNode
     let selection: number = 0
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     const prompt: (iot: IotClient, certFetch: CertGen) => Promise<PromptResult<Iot.Certificate>> = async (
         iot,
@@ -39,7 +39,7 @@ describe('attachCertCommand', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         thingNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
@@ -72,7 +72,7 @@ describe('attachCertCommand', function () {
 
         verify(iot.attachThingPrincipal(deepEqual({ thingName, principal: 'arn1' }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', thingNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', thingNode)
     })
 
     it('shows an error message if certificates are not fetched', async function () {
@@ -87,7 +87,7 @@ describe('attachCertCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to retrieve certificate/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if attaching certificate fails', async function () {
@@ -101,7 +101,7 @@ describe('attachCertCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to attach certificate cert2/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('Does nothing if no certificate is chosen', async function () {
@@ -112,6 +112,6 @@ describe('attachCertCommand', function () {
 
         verify(iot.attachThingPrincipal(anything())).never()
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 })

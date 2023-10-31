@@ -26,11 +26,11 @@ describe('createFolderCommand', function () {
     let s3: S3Client
     let node: S3BucketNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         s3 = mock()
         node = new S3BucketNode(
@@ -60,7 +60,7 @@ describe('createFolderCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created folder: foo/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -74,7 +74,7 @@ describe('createFolderCommand', function () {
         getTestWindow().onDidShowInputBox(input => input.acceptValue(folderName))
         await assert.rejects(() => createFolderCommand(node), /failed to create folder/i)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     invalidFolderNames.forEach(invalid => {

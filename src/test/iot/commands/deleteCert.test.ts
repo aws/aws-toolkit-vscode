@@ -16,7 +16,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 
 describe('deleteCertCommand', function () {
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     const certificateId = 'test-cert'
     const status = 'INACTIVE'
@@ -26,7 +26,7 @@ describe('deleteCertCommand', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         iot = mock()
         parentNode = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
         node = new IotCertWithPoliciesNode(
@@ -51,7 +51,7 @@ describe('deleteCertCommand', function () {
 
         verify(iot.deleteCertificate(deepEqual({ certificateId, forceDelete: false }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing if things are attached', async function () {
@@ -64,7 +64,7 @@ describe('deleteCertCommand', function () {
             .getFirstMessage()
             .assertError(/Certificate has attached resources: iot-thing/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('does nothing when deletion is cancelled', async function () {
@@ -99,7 +99,7 @@ describe('deleteCertCommand', function () {
             .getSecondMessage()
             .assertError(/Failed to delete certificate: test-cert/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('shows an error message if Things are not fetched', async function () {
@@ -113,7 +113,7 @@ describe('deleteCertCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to retrieve Things attached to certificate/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('confirms force deletion if policies are attached', async function () {
@@ -129,7 +129,7 @@ describe('deleteCertCommand', function () {
 
         verify(iot.deleteCertificate(deepEqual({ certificateId, forceDelete: true }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('shows an error message but refreshes node if policies are not fetched', async function () {
@@ -142,6 +142,6 @@ describe('deleteCertCommand', function () {
         getTestWindow().getSecondMessage().assertError('Failed to retrieve policies attached to certificate')
         verify(iot.deleteCertificate(deepEqual({ certificateId, forceDelete: false }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

@@ -15,7 +15,7 @@ import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createCertificateCommand', function () {
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     const certificateId = 'new-certificate'
     const certificateArn = 'arn'
@@ -41,7 +41,7 @@ describe('createCertificateCommand', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         node = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
@@ -64,7 +64,7 @@ describe('createCertificateCommand', function () {
 
         verify(iot.deleteCertificate(anything())).never()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when no save folder is selected', async function () {
@@ -72,7 +72,7 @@ describe('createCertificateCommand', function () {
         await createCertificateCommand(node, promptFolder, saveFiles)
 
         verify(iot.createCertificateAndKeys(anything())).never()
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if creating certificate fails', async function () {
@@ -84,7 +84,7 @@ describe('createCertificateCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to create certificate/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if created certificate is invalid', async function () {
@@ -96,7 +96,7 @@ describe('createCertificateCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to create certificate/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('deletes certificate if it cannot be saved', async function () {

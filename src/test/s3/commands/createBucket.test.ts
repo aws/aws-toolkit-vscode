@@ -18,11 +18,11 @@ describe('createBucketCommand', function () {
     let s3: S3Client
     let node: S3Node
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         s3 = mock()
         node = new S3Node(instance(s3))
@@ -48,7 +48,7 @@ describe('createBucketCommand', function () {
             .getFirstMessage()
             .assertInfo(/Created bucket: buc.ket-n4.m3/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -64,6 +64,6 @@ describe('createBucketCommand', function () {
         getTestWindow().onDidShowInputBox(input => input.acceptValue(bucketName))
         await assert.rejects(() => createBucketCommand(node), /Failed to create bucket/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 })

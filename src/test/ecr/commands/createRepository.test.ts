@@ -15,11 +15,11 @@ describe('createRepositoryCommand', function () {
     const ecr = new DefaultEcrClient('')
     let node: EcrNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         node = new EcrNode(ecr)
     })
 
@@ -44,7 +44,7 @@ describe('createRepositoryCommand', function () {
 
         assert.ok(stub.calledOnce)
         getTestWindow().getFirstMessage().assertInfo(`Created repository: ${repoName}`)
-        assert(spy_executeCommand.calledWith('aws.refreshAwsExplorerNode', node))
+        assert(spyExecuteCommand.calledWith('aws.refreshAwsExplorerNode', node))
     })
 
     it('does nothing when prompt is cancelled', async function () {
@@ -68,7 +68,7 @@ describe('createRepositoryCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to create repository/)
 
-        assert(spy_executeCommand.calledWith('aws.refreshAwsExplorerNode', node))
+        assert(spyExecuteCommand.calledWith('aws.refreshAwsExplorerNode', node))
     })
 
     it('Warns when repository name is invalid', async function () {

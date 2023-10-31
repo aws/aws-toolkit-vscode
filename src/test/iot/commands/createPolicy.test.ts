@@ -21,7 +21,7 @@ describe('createPolicyCommand', function () {
     let node: IotPolicyFolderNode
     let returnUndefined: boolean = false
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     const getPolicy: () => Promise<Buffer | undefined> = async () => {
         if (returnUndefined) {
@@ -32,7 +32,7 @@ describe('createPolicyCommand', function () {
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
@@ -59,7 +59,7 @@ describe('createPolicyCommand', function () {
 
         verify(iot.createPolicy(deepEqual({ policyName, policyDocument }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', node)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is canceled', async function () {
@@ -95,7 +95,7 @@ describe('createPolicyCommand', function () {
         await createPolicyCommand(node, getPolicy)
 
         verify(iot.createPolicy(anything())).never()
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message when JSON is invalid', async function () {
@@ -110,7 +110,7 @@ describe('createPolicyCommand', function () {
 
         verify(iot.createPolicy(anything())).never()
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if creating policy fails', async function () {
@@ -124,6 +124,6 @@ describe('createPolicyCommand', function () {
             .getFirstMessage()
             .assertError(/Failed to create policy test-policy/)
 
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 })

@@ -19,11 +19,11 @@ describe('deleteTag', function () {
     const ecr = new DefaultEcrClient('')
     let node: EcrTagNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         node = new EcrTagNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository, tagName)
     })
 
@@ -46,7 +46,7 @@ describe('deleteTag', function () {
 
         getTestWindow().getSecondMessage().assertInfo(`Deleted tag ${tagName} from repository ${repositoryName}`)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when deletion is cancelled', async function () {
@@ -59,7 +59,7 @@ describe('deleteTag', function () {
 
         assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
         assertNoErrorMessages()
-        sandbox.assert.notCalled(spy_executeCommand)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message and refreshes node when file deletion fails', async function () {
@@ -75,6 +75,6 @@ describe('deleteTag', function () {
             .getSecondMessage()
             .assertError(new RegExp(`^Failed to delete tag ${tagName}`))
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

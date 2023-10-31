@@ -18,11 +18,11 @@ describe('deleteRepositoryCommand', function () {
     const ecr = new DefaultEcrClient('')
     let node: EcrRepositoryNode
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         node = new EcrRepositoryNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository)
     })
 
@@ -44,7 +44,7 @@ describe('deleteRepositoryCommand', function () {
 
         getTestWindow().getFirstMessage().assertInfo(`Deleted repository: ${repositoryName}`)
         assert.strictEqual(stub.calledOnce, true)
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('Does nothing when deletion is cancelled', async function () {
@@ -65,7 +65,7 @@ describe('deleteRepositoryCommand', function () {
         await deleteRepository(node)
 
         getTestWindow().getFirstMessage().assertError(`Failed to delete repository: ${repositoryName}`)
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('Warns when confirmation is invalid', async function () {

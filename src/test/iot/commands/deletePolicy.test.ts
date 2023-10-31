@@ -22,11 +22,11 @@ describe('deletePolicyCommand', function () {
     let parentNode: IotPolicyFolderNode
 
     let sandbox: sinon.SinonSandbox
-    let spy_executeCommand: sinon.SinonSpy
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
-        spy_executeCommand = sandbox.spy(vscode.commands, 'executeCommand')
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
 
         iot = mock()
         parentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
@@ -57,7 +57,7 @@ describe('deletePolicyCommand', function () {
 
         verify(iot.deletePolicy(deepEqual({ policyName }))).once()
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when certificates are attached', async function () {
@@ -107,6 +107,6 @@ describe('deletePolicyCommand', function () {
             .getSecondMessage()
             .assertError(/Failed to delete Policy: test-policy/)
 
-        sandbox.assert.calledWith(spy_executeCommand, 'aws.refreshAwsExplorerNode', parentNode)
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })
