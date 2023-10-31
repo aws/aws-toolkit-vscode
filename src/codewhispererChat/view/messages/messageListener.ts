@@ -39,8 +39,6 @@ export class UIMessageListener {
                 this.processTabWasRemoved(msg)
                 break
             case 'follow-up-was-clicked':
-                // TODO if another api is available for follow ups
-                // connect to that instead of using prompt handler
                 if (msg.followUp?.prompt !== undefined) {
                     this.processChatMessage({
                         chatMessage: msg.followUp.prompt,
@@ -106,7 +104,7 @@ export class UIMessageListener {
             message: msg.chatMessage,
             command: msg.command,
             tabID: msg.tabID,
-            userIntent: msg.userIntent,
+            userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
         })
     }
 

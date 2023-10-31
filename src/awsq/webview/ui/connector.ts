@@ -67,7 +67,7 @@ export class Connector {
             } else {
                 setTimeout(() => {
                     this.requestGenerativeAIAnswer(tabID, payload)
-                }, 50)
+                }, 2000)
                 return
             }
         })
