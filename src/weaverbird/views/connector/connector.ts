@@ -41,10 +41,10 @@ export class FilePathMessage extends UiMessage {
     }
 }
 
-export class AsyncFollowUpMessage extends UiMessage {
+export class AsyncEventProgressMessage extends UiMessage {
     readonly inProgress: boolean
     readonly message: string | undefined
-    override type = 'asyncFollowUpMessage'
+    override type = 'asyncEventProgressMessage'
 
     constructor(tabID: string, inProgress: boolean, message: string | undefined) {
         super(tabID)
@@ -92,7 +92,7 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendAsyncFollowUp(message: AsyncFollowUpMessage) {
+    public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

@@ -25,7 +25,7 @@ export interface ConnectorProps {
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
-    onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string | undefined) => void
+    onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onCWCContextCommandMessage: (message: ChatItem) => string
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
