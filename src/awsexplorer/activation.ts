@@ -8,7 +8,7 @@ import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
-import { isCloud9 } from '../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../shared/extensionUtilities'
 import { ExtContext } from '../shared/extensions'
 import { getLogger } from '../shared/logger'
 import { RegionProvider } from '../shared/regions/regionProvider'
@@ -31,7 +31,6 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { hasVendedIamCredentials } from '../auth/auth'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -77,9 +76,7 @@ export async function activate(args: {
     )
 
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
-    const codecatalystNode = hasVendedIamCredentials(isCloud9('classic'))
-        ? []
-        : [new CodeCatalystRootNode(authProvider)]
+    const codecatalystNode = isCloud9('classic') || isSageMaker() ? [] : [new CodeCatalystRootNode(authProvider)]
     const nodes = [...codecatalystNode, cdkNode, codewhispererNode]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
