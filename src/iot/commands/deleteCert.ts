@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
 
@@ -19,7 +18,7 @@ import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
  * Deletes the policy.
  * Refreshes the parent node.
  */
-export async function deleteCertCommand(node: IotCertWithPoliciesNode, commands = Commands.vscode()): Promise<void> {
+export async function deleteCertCommand(node: IotCertWithPoliciesNode): Promise<void> {
     getLogger().debug('DeleteThing called for %O', node)
 
     const certArn = node.certificate.arn

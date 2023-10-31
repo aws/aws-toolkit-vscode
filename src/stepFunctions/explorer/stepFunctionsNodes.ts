@@ -17,7 +17,6 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { listStateMachines } from '../../stepFunctions/utils'
-import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 
 export const contextValueStateMachine = 'awsStateMachineNode'
@@ -28,7 +27,7 @@ export function refreshStepFunctionsTree(regionCode: string) {
     const node = sfnNodeMap.get(regionCode)
 
     if (node) {
-        Commands.vscode().execute('aws.refreshAwsExplorerNode', node)
+        vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
     }
 }
 

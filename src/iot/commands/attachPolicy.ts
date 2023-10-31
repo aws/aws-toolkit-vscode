@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { createQuickPick, DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { PromptResult } from '../../shared/ui/prompter'
@@ -27,8 +26,7 @@ export type PolicyGen = typeof getPolicyList
  */
 export async function attachPolicyCommand(
     node: IotThingCertNode | IotCertWithPoliciesNode,
-    promptFun = promptForPolicy,
-    commands = Commands.vscode()
+    promptFun = promptForPolicy
 ): Promise<void> {
     getLogger().debug('AttachPolicy called for %O', node)
 
