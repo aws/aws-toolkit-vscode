@@ -35,7 +35,7 @@ export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEn
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
         try {
-            await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end)
+            await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end, start)
         } catch (error) {
             getLogger().error(`${error} in handleAutoClosingBrackets`)
         }

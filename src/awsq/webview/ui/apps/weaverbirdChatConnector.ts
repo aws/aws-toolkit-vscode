@@ -17,7 +17,7 @@ interface ChatPayload {
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string) => void
+    onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
@@ -30,14 +30,14 @@ export class Connector {
     private readonly onError
     private readonly onWarning
     private readonly onChatAnswerReceived
-    private readonly onAsyncFollowUpClicked
+    private readonly onAsyncEventProgress
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
         this.onWarning = props.onWarning
         this.onError = props.onError
-        this.onAsyncFollowUpClicked = props.onAsyncFollowUpClicked
+        this.onAsyncEventProgress = props.onAsyncEventProgress
     }
 
     onCodeInsertToCursorPosition = (
@@ -153,8 +153,8 @@ export class Connector {
             return
         }
 
-        if (messageData.type === 'asyncFollowUpMessage') {
-            this.onAsyncFollowUpClicked(messageData.tabID, messageData.inProgress, messageData.message ?? undefined)
+        if (messageData.type === 'asyncEventProgressMessage') {
+            this.onAsyncEventProgress(messageData.tabID, messageData.inProgress, messageData.message ?? undefined)
             return
         }
     }

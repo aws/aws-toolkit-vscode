@@ -4,19 +4,25 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { copyPathCommand } from '../../../s3/commands/copyPath'
 import { S3FolderNode } from '../../../s3/explorer/s3FolderNode'
 import { S3Client } from '../../../shared/clients/s3Client'
-import { FakeEnv } from '../../shared/vscode/fakeEnv'
+import { FakeClipboard } from '../../shared/vscode/fakeEnv'
 
 describe('copyPathCommand', function () {
+    beforeEach(function () {
+        const fakeClipboard = new FakeClipboard()
+        sinon.stub(vscode.env, 'clipboard').value(fakeClipboard)
+    })
+
     it('copies path to clipboard and shows status bar confirmation', async function () {
         const node = createS3FolderNode()
 
-        const env = new FakeEnv()
-        await copyPathCommand(node, env)
+        await copyPathCommand(node)
 
-        assert.strictEqual(env.clipboard.text, 'path')
+        assert.strictEqual(await vscode.env.clipboard.readText(), 'path')
     })
 })
 

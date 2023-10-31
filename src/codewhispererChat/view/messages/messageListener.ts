@@ -28,6 +28,7 @@ export class UIMessageListener {
 
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
+            case 'clear':
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break

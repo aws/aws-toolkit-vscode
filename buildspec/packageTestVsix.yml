@@ -15,6 +15,8 @@ phases:
         runtime-versions:
             nodejs: 16
         commands:
+            # Disable engine-strict in CI.
+            - sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
             # Prepare env for unprivileged user.
             - |
                 mkdir -p ~codebuild-user

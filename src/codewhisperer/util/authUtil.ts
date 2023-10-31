@@ -8,7 +8,7 @@ import * as CodeWhispererConstants from '../models/constants'
 import { Auth } from '../../auth/auth'
 import { ToolkitError } from '../../shared/errors'
 import { getSecondaryAuth } from '../../auth/secondaryAuth'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
 import { PromptSettings } from '../../shared/settings'
 import {
     ssoAccountAccessScopes,
@@ -29,6 +29,10 @@ export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
 
 export const isValidCodeWhispererConnection = (conn?: Connection): conn is Connection => {
     if (isCloud9('classic')) {
+        return isIamConnection(conn)
+    }
+
+    if (isSageMaker()) {
         return isIamConnection(conn)
     }
 

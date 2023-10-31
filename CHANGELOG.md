@@ -1,3 +1,16 @@
+## 1.96.0 2023-10-26
+
+- **Bug Fix** SAM debugging: "Invalid (or missing) template file" may occur even when a valid template.yaml is specified by `invokeTarget.templatePath` in the launch config. #2614
+- **Bug Fix** Redshift: The output message is not clear when a sql query is successful but returns no record.
+- **Bug Fix** Redshift: Re-launched connection wizard shows the old (stale) connection.
+- **Bug Fix** `AWS: Add SAM Debug Configuration` command only works the first time it is invoked.
+- **Bug Fix** Improved performance of CloudFormation file watcher startup
+- **Bug Fix** Output panel always opens at VS Code launch.
+- **Feature** Detect and notify about invalid settings.json #3910
+- **Feature** Redshift: "Create Notebook" opens an untitled document instead of prompting to "Save As"
+- **Feature** CloudWatch Logs: Preserve quickpick menu position when loading more items.
+- **Feature** CodeWhisperer: reduce auto-suggestions when there is immediate right context
+
 ## 1.95.0 2023-10-17
 
 - **Feature** Amazon Redshift is now available in AWS Explorer. You can author and execute SQL queries from VS Code notebooks, and view your database objects in their Redshift warehouses.

@@ -5,7 +5,7 @@
 
 import { writeFile } from 'fs-extra'
 import { EOL } from 'os'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 
 export async function saveTemplate(templatePath: string, runtime: string, ...functionNames: string[]) {
     const functionResources = functionNames

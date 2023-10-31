@@ -178,9 +178,11 @@ export class ChatController {
         }
 
         try {
-            if (message.userIntent !== undefined) {
-                this.telemetryHelper.recordInteractWithMessage(message)
+            if (message.command !== undefined) {
+                await this.processCommandMessage(message)
+            } else if (message.userIntent !== undefined) {
                 await this.processFollowUp(message)
+                this.telemetryHelper.recordInteractWithMessage(message)
             } else {
                 await this.processPromptMessageAsNewThread(message)
             }
@@ -190,6 +192,14 @@ export class ChatController {
             } else if (e instanceof Error) {
                 this.messenger.sendErrorMessage(e.message, message.tabID)
             }
+        }
+    }
+
+    private async processCommandMessage(message: PromptMessage) {
+        if (message.command == 'clear') {
+            this.sessionStorage.deleteSession(message.tabID)
+            this.triggerEventsStorage.removeTabEvents(message.tabID)
+            return
         }
     }
 
