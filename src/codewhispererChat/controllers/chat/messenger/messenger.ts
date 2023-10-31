@@ -13,15 +13,21 @@ import { ChatResponseStream, SupplementaryWebLink } from '@amzn/codewhisperer-st
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
+import { CWCTelemetryHelper } from '../telemetryHelper'
+import { TriggerPayload } from '../model'
 
 export class Messenger {
-    public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
+    public constructor(
+        private readonly dispatcher: AppToWebViewMessageDispatcher,
+        private readonly telemetryHelper: CWCTelemetryHelper
+    ) {}
 
     async sendAIResponse(
         response: AsyncIterable<ChatResponseStream>,
         session: ChatSession,
         tabID: string,
-        triggerID: string
+        triggerID: string,
+        triggerPayload: TriggerPayload
     ) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -146,6 +152,13 @@ export class Messenger {
                 tabID
             )
         )
+
+        this.telemetryHelper.recordAddMessage(triggerPayload, {
+            followUpCount: followUps.length,
+            suggestionCount: relatedSuggestions.length,
+            tabID: tabID,
+            messageLength: message.length,
+        })
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string) {
@@ -166,14 +179,14 @@ export class Messenger {
     private showChatExceptionMessage(e: ChatException, tabID: string) {
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage != undefined) {
-            message += '\n\nDetails: ' + e.errorMessage
+            message += `\n\nDetails: ${e.errorMessage}`
         }
 
         if (e.statusCode != undefined) {
-            message += '\n\nStatus Code: ' + e.statusCode
+            message += `\n\nStatus Code: ${e.statusCode}`
         }
         if (e.sessionID != undefined) {
-            message += '\n\nSession ID: ' + e.sessionID
+            message += `\n\nSession ID: ${e.sessionID}`
         }
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)

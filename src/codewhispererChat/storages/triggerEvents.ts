@@ -72,4 +72,8 @@ export class TriggerEventsStorage {
     public getTriggerEvent(id: string): TriggerEvent | undefined {
         return this.triggerEvents.get(id)
     }
+
+    public getTriggerEventsByTabID(tabID: string): TriggerEvent[] {
+        return this.triggerEventsByTabID.get(tabID) ?? []
+    }
 }

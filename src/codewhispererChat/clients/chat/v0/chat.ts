@@ -11,6 +11,10 @@ import { ToolkitError } from '../../../../shared/errors'
 
 export class ChatSession {
     private sessionId?: string
+    public get sessionIdentifier(): string | undefined {
+        return this.sessionId
+    }
+
     public tokenSource!: vscode.CancellationTokenSource
 
     constructor() {

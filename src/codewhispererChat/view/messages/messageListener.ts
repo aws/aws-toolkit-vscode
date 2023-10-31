@@ -49,6 +49,7 @@ export class UIMessageListener {
                     this.processChatMessage({
                         chatMessage: msg.followUp.prompt,
                         tabID: msg.tabID,
+                        command: msg.command,
                         userIntent: msg.followUp.type,
                     })
                 }
@@ -91,13 +92,22 @@ export class UIMessageListener {
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
         }
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
+            command: msg.command,
+            tabID: msg.tabID,
             code: msg.code,
+            insertionTargetType: msg.insertionTargetType,
         })
     }
 
     private processCodeWasCopiedToClipboard(msg: any) {
-        return
+        this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
+            command: msg.command,
+            tabID: msg.tabID,
+            code: msg.code,
+            insertionTargetType: msg.insertionTargetType,
+        })
     }
+
     private processTabWasRemoved(msg: any) {
         this.chatControllerMessagePublishers.processTabClosedMessage.publish({
             tabID: msg.tabID,
@@ -105,7 +115,7 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        return
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
     }
 
     private processChatMessage(msg: any) {

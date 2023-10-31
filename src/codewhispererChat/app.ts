@@ -10,6 +10,7 @@ import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import {
+    CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
     StopResponseMessage,
@@ -23,6 +24,7 @@ export function init(appContext: AwsQAppInitContext) {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
+        processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
         processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
         processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
@@ -37,6 +39,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
+        ),
+        processCopyCodeToClipboard: new MessageListener<CopyCodeToClipboard>(
+            cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
         processContextMenuCommand: new MessageListener<EditorContextCommand>(
             cwChatControllerEventEmitters.processContextMenuCommand
@@ -58,6 +63,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
+        ),
+        processCopyCodeToClipboard: new MessagePublisher<CopyCodeToClipboard>(
+            cwChatControllerEventEmitters.processCopyCodeToClipboard
         ),
         processContextMenuCommand: new MessagePublisher<EditorContextCommand>(
             cwChatControllerEventEmitters.processContextMenuCommand
