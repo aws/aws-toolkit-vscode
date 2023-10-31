@@ -15,5 +15,6 @@ type MessageCommand =
     | 'insert_code_at_cursor_position'
     | 'stop-response'
     | 'trigger-tabID-received'
+    | 'clear'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }
