@@ -17,7 +17,10 @@ import { CWCTelemetryHelper } from '../telemetryHelper'
 import { TriggerPayload } from '../model'
 
 export class Messenger {
-    public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
+    public constructor(
+        private readonly dispatcher: AppToWebViewMessageDispatcher,
+        private readonly telemetryHelper: CWCTelemetryHelper
+    ) {}
 
     async sendAIResponse(
         response: AsyncIterable<ChatResponseStream>,
@@ -144,7 +147,7 @@ export class Messenger {
             )
         )
 
-        CWCTelemetryHelper.instance.recordAddMessage(triggerPayload, {
+        this.telemetryHelper.recordAddMessage(triggerPayload, {
             followUpCount: followUps.length,
             suggestionCount: relatedSuggestions.length,
             tabID: tabID,
