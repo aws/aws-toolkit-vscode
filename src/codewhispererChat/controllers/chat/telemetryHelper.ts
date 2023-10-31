@@ -8,16 +8,14 @@ import { CwsprChatTriggerInteraction, CwsprChatUserIntent, telemetry } from '../
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { CopyCodeToClipboard, InsertCodeAtCursorPosition, PromptAnswer, PromptMessage, TriggerPayload } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
-import { EditorContext } from '../../editor/context/model'
 
 export class CWCTelemetryHelper {
-    private sessionStorage?: ChatSessionStorage
-    private triggerEventsStorage?: TriggerEventsStorage
+    private sessionStorage: ChatSessionStorage
+    private triggerEventsStorage: TriggerEventsStorage
 
-    static #instance: CWCTelemetryHelper
-
-    public static get instance() {
-        return (this.#instance ??= new this())
+    constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
+        this.sessionStorage = sessionStorage
+        this.triggerEventsStorage = triggerEventsStorage
     }
 
     private getUserIntentForTelemetry(userIntent: UserIntent | undefined): CwsprChatUserIntent | undefined {
@@ -95,10 +93,7 @@ export class CWCTelemetryHelper {
             return
         }
 
-        if (
-            this.triggerEventsStorage &&
-            this.triggerEventsStorage.getTriggerEventsByTabID(triggerEvent.tabID).length > 1
-        ) {
+        if (this.triggerEventsStorage.getTriggerEventsByTabID(triggerEvent.tabID).length > 1) {
             return
         }
 
@@ -150,14 +145,6 @@ export class CWCTelemetryHelper {
     }
 
     private getConversationId(tabID: string): string | undefined {
-        return this.sessionStorage?.getSession(tabID).sessionIdentifier
-    }
-
-    public setChatSesionStorage(sessionStorage: ChatSessionStorage) {
-        this.sessionStorage = sessionStorage
-    }
-
-    public setTriggerEventsStorage(triggerEventsStorage: TriggerEventsStorage) {
-        this.triggerEventsStorage = triggerEventsStorage
+        return this.sessionStorage.getSession(tabID).sessionIdentifier
     }
 }
