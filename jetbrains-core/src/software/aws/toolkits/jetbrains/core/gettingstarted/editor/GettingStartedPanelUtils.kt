@@ -17,6 +17,8 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConn
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.gettingstarted.SourceOfEntry
+import software.aws.toolkits.jetbrains.services.caws.CawsConstants
 
 enum class ActiveConnectionType {
     BUILDER_ID,
@@ -115,4 +117,10 @@ fun isCredentialSso(providerId: String): ActiveConnectionType {
         )
     }
     return if (profileName in ssoSessionIds) ActiveConnectionType.IAM_IDC else ActiveConnectionType.IAM
+}
+
+fun getSourceOfEntry(sourceOfEntry: SourceOfEntry, isStartup: Boolean = false, connectionInitiatedFromExplorer: Boolean = false): String {
+    val src = if (connectionInitiatedFromExplorer) SourceOfEntry.EXPLORER.name else sourceOfEntry.name
+    val source = if (isStartup) SourceOfEntry.FIRST_STARTUP.name else src
+    return if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) "REMOTE_$source" else source
 }

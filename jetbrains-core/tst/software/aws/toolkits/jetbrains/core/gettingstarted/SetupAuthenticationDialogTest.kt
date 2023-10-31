@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.region.MockRegionProviderExtension
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.FeatureId
 
 @ExtendWith(MockKExtension::class)
 class SetupAuthenticationDialogTest {
@@ -79,7 +80,14 @@ class SetupAuthenticationDialogTest {
         }
 
         runInEdtAndWait {
-            SetupAuthenticationDialog(projectExtension.project, scopes = scopes, state = state, configFilesFacade = configFacade).apply {
+            SetupAuthenticationDialog(
+                projectExtension.project,
+                scopes = scopes,
+                state = state,
+                configFilesFacade = configFacade,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            ).apply {
                 try {
                     doOKAction()
                 } finally {
@@ -124,7 +132,9 @@ class SetupAuthenticationDialogTest {
                 scopes = scopes,
                 state = state,
                 promptForIdcPermissionSet = true,
-                configFilesFacade = configFacade
+                configFilesFacade = configFacade,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
             ).apply {
                 try {
                     doOKAction()
@@ -154,7 +164,12 @@ class SetupAuthenticationDialogTest {
         }
 
         runInEdtAndWait {
-            SetupAuthenticationDialog(projectExtension.project, state = state).apply {
+            SetupAuthenticationDialog(
+                projectExtension.project,
+                state = state,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            ).apply {
                 try {
                     doOKAction()
                 } finally {
@@ -175,7 +190,12 @@ class SetupAuthenticationDialogTest {
         }
 
         runInEdtAndWait {
-            val validation = SetupAuthenticationDialog(projectExtension.project, state = state).run {
+            val validation = SetupAuthenticationDialog(
+                projectExtension.project,
+                state = state,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            ).run {
                 try {
                     performValidateAll()
                 } finally {
@@ -199,7 +219,12 @@ class SetupAuthenticationDialogTest {
         }
 
         runInEdtAndWait {
-            val validation = SetupAuthenticationDialog(projectExtension.project, state = state).run {
+            val validation = SetupAuthenticationDialog(
+                projectExtension.project,
+                state = state,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            ).run {
                 try {
                     performValidateAll()
                 } finally {
@@ -219,7 +244,12 @@ class SetupAuthenticationDialogTest {
         }
 
         runInEdtAndWait {
-            val validation = SetupAuthenticationDialog(projectExtension.project, state = state).run {
+            val validation = SetupAuthenticationDialog(
+                projectExtension.project,
+                state = state,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            ).run {
                 try {
                     performValidateAll()
                 } finally {
@@ -252,7 +282,12 @@ class SetupAuthenticationDialogTest {
         }
 
         runInEdtAndWait {
-            val sut = SetupAuthenticationDialog(projectExtension.project, state = state)
+            val sut = SetupAuthenticationDialog(
+                projectExtension.project,
+                state = state,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            )
             val exception = assertThrows<Exception> { sut.doOKAction() }
             assertThat(exception.message).isEqualTo(message("gettingstarted.setup.iam.profile.invalid_credentials"))
         }
@@ -275,7 +310,13 @@ class SetupAuthenticationDialogTest {
 
         val configFacade = mockk<ConfigFilesFacade>(relaxed = true)
         runInEdtAndWait {
-            SetupAuthenticationDialog(projectExtension.project, state = state, configFilesFacade = configFacade)
+            SetupAuthenticationDialog(
+                projectExtension.project,
+                state = state,
+                configFilesFacade = configFacade,
+                sourceOfEntry = SourceOfEntry.UNKNOWN,
+                featureId = FeatureId.Unknown
+            )
                 .doOKAction()
         }
 

@@ -12,6 +12,8 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getConnectionCount
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getEnabledConnections
 import software.aws.toolkits.jetbrains.settings.GettingStartedSettings
 import software.aws.toolkits.telemetry.AuthTelemetry
 import software.aws.toolkits.telemetry.CredentialSourceId
@@ -36,10 +38,20 @@ class GettingStartedOnStartup : StartupActivity {
                 GettingStartedPanel.openPanel(project)
                 AuthTelemetry.addConnection(
                     project,
-                    source = "firstStartup",
+                    source = SourceOfEntry.FIRST_STARTUP.name,
                     featureId = FeatureId.Unknown,
                     credentialSourceId = CredentialSourceId.Unknown,
                     isAggregated = true,
+                    result = Result.Succeeded
+                )
+                AuthTelemetry.addedConnections(
+                    project,
+                    source = SourceOfEntry.FIRST_STARTUP.name,
+                    authConnectionsCount = getConnectionCount(),
+                    newAuthConnectionsCount = 0,
+                    enabledAuthConnections = getEnabledConnections(project),
+                    newEnabledAuthConnections = "",
+                    attempts = 1,
                     result = Result.Succeeded
                 )
                 settings.shouldDisplayPage = false
@@ -48,12 +60,22 @@ class GettingStartedOnStartup : StartupActivity {
             LOG.error(e) { "Error opening getting started panel" }
             AuthTelemetry.addConnection(
                 project,
-                source = "firstStartup",
+                source = SourceOfEntry.FIRST_STARTUP.name,
                 featureId = FeatureId.Unknown,
                 credentialSourceId = CredentialSourceId.Unknown,
                 isAggregated = false,
                 result = Result.Failed,
                 reason = "Error opening getting started panel"
+            )
+            AuthTelemetry.addedConnections(
+                project,
+                source = SourceOfEntry.FIRST_STARTUP.name,
+                authConnectionsCount = getConnectionCount(),
+                newAuthConnectionsCount = 0,
+                enabledAuthConnections = getEnabledConnections(project),
+                newEnabledAuthConnections = "",
+                attempts = 1,
+                result = Result.Failed
             )
         }
     }

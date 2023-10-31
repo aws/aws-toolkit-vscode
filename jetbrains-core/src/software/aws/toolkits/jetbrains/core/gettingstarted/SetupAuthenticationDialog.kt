@@ -29,7 +29,6 @@ import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.sts.StsClient
 import software.aws.toolkits.core.region.AwsRegion
-import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.ToolkitPlaces
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -41,11 +40,16 @@ import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.gettingstarted.editor.getSourceOfEntry
 import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.jetbrains.utils.ui.editorNotificationCompoundBorder
 import software.aws.toolkits.jetbrains.utils.ui.selected
 import software.aws.toolkits.resources.message
+import software.aws.toolkits.telemetry.AuthTelemetry
+import software.aws.toolkits.telemetry.CredentialSourceId
+import software.aws.toolkits.telemetry.FeatureId
+import software.aws.toolkits.telemetry.Result
 import java.awt.BorderLayout
 import javax.swing.Action
 import javax.swing.BorderFactory
@@ -99,19 +103,33 @@ data class SetupAuthenticationNotice(
     }
 }
 
+enum class SourceOfEntry {
+    RESOURCE_EXPLORER,
+    CODECATALYST,
+    CODEWHISPERER,
+    EXPLORER,
+    FIRST_STARTUP,
+    UNKNOWN
+}
+
 class SetupAuthenticationDialog(
     private val project: Project,
     private val scopes: List<String> = emptyList(),
     private val state: SetupAuthenticationDialogState = SetupAuthenticationDialogState(),
     private val tabSettings: Map<SetupAuthenticationTabs, AuthenticationTabSettings> = emptyMap(),
     private val promptForIdcPermissionSet: Boolean = false,
-    private val configFilesFacade: ConfigFilesFacade = DefaultConfigFilesFacade()
+    private val configFilesFacade: ConfigFilesFacade = DefaultConfigFilesFacade(),
+    private val sourceOfEntry: SourceOfEntry,
+    private val featureId: FeatureId,
+    private val isFirstInstance: Boolean = false,
+    private val connectionInitiatedFromExplorer: Boolean = false
 ) : DialogWrapper(project) {
     private val rootTabPane = JBTabbedPane()
     private val idcTab = idcTab()
     private val builderIdTab = builderIdTab()
     private val iamTab = iamTab()
     private val wrappers = SetupAuthenticationTabs.values().associateWith { BorderLayoutPanel() }
+    var attempts = 0
 
     init {
         title = message("gettingstarted.setup.title")
@@ -233,6 +251,17 @@ class SetupAuthenticationDialog(
                 val profileName = state.idcTabState.profileName
                 if (configFilesFacade.readSsoSessions().containsKey(profileName)) {
                     Messages.showErrorDialog(project, message("gettingstarted.setup.iam.session.exists", profileName), title)
+                    AuthTelemetry.addConnection(
+                        project,
+                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
+                        featureId = featureId,
+                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                        isAggregated = false,
+                        attempts = attempts + 1,
+                        result = Result.Failed,
+                        reason = "DuplicateSessionName"
+                    )
+                    attempts += 1
                     return
                 }
 
@@ -245,6 +274,17 @@ class SetupAuthenticationDialog(
 
                 val connection = authAndUpdateConfig(project, profile, configFilesFacade) {
                     Messages.showErrorDialog(project, it, title)
+                    AuthTelemetry.addConnection(
+                        project,
+                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
+                        featureId = featureId,
+                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                        isAggregated = false,
+                        attempts = attempts + 1,
+                        result = Result.Failed,
+                        reason = "ConnectionUnsuccessful"
+                    )
+                    attempts += 1
                 } ?: return
 
                 if (!promptForIdcPermissionSet) {
@@ -277,6 +317,17 @@ class SetupAuthenticationDialog(
                 val profileName = state.iamTabState.profileName
                 if (configFilesFacade.readAllProfiles().containsKey(profileName)) {
                     Messages.showErrorDialog(project, message("gettingstarted.setup.iam.profile.exists", profileName), title)
+                    AuthTelemetry.addConnection(
+                        project,
+                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
+                        featureId = featureId,
+                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                        isAggregated = false,
+                        attempts = attempts + 1,
+                        result = Result.Failed,
+                        reason = "DuplicateProfileName"
+                    )
+                    attempts += 1
                     return
                 }
 
@@ -293,6 +344,17 @@ class SetupAuthenticationDialog(
 
                 if (callerIdentity == null) {
                     Messages.showErrorDialog(project, message("gettingstarted.setup.iam.profile.invalid_credentials"), title)
+                    AuthTelemetry.addConnection(
+                        project,
+                        source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
+                        featureId = featureId,
+                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                        isAggregated = false,
+                        attempts = attempts + 1,
+                        result = Result.Failed,
+                        reason = "InvalidCredentials"
+                    )
+                    attempts += 1
                     return
                 }
 

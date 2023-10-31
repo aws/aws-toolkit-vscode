@@ -12,11 +12,17 @@ import com.intellij.ui.components.JBScrollPane
 import java.beans.PropertyChangeListener
 import javax.swing.JComponent
 
-class GettingStartedEditor(private val project: Project, private val file: VirtualFile) : UserDataHolderBase(), FileEditor {
+class GettingStartedEditor(
+    private val project: Project,
+    private val file: VirtualFile,
+    private val isFirstInstance: Boolean,
+    private val connectionInitiatedFromExplorer: Boolean = false
+) :
+    UserDataHolderBase(), FileEditor {
     override fun dispose() {
     }
 
-    override fun getComponent(): JComponent = JBScrollPane(GettingStartedPanel(project))
+    override fun getComponent(): JComponent = JBScrollPane(GettingStartedPanel(project, isFirstInstance, connectionInitiatedFromExplorer))
 
     override fun getFile(): VirtualFile = file
 
