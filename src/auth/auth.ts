@@ -766,7 +766,7 @@ export class Auth implements AuthService, ConnectionManager {
                 return partition(globals.context.globalState, devEnvId)
             }
 
-            return globals.context.workspaceState
+            return partition(globals.context.globalState, globals.hostname)
         }
     }
 

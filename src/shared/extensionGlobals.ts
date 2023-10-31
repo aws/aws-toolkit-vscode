@@ -115,6 +115,7 @@ interface ToolkitGlobals {
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
     uriHandler: UriHandler
+    hostname: string
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
