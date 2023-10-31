@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { IotThingCertNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 
@@ -18,7 +17,7 @@ import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utili
  * Detaches the certificate.
  * Refreshes the parent node.
  */
-export async function detachThingCertCommand(node: IotThingCertNode, commands = Commands.vscode()): Promise<void> {
+export async function detachThingCertCommand(node: IotThingCertNode): Promise<void> {
     getLogger().debug('DetachCert called for %O', node)
 
     const certId = node.certificate.id
@@ -51,5 +50,5 @@ export async function detachThingCertCommand(node: IotThingCertNode, commands = 
     }
 
     //Refresh the parent Thing node
-    await node.parent.refreshNode(commands)
+    await node.parent.refreshNode()
 }

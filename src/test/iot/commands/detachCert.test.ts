@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { detachThingCertCommand } from '../../../iot/commands/detachCert'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../iot/explorer/iotThingNode'
 import { IotThingCertNode } from '../../../iot/explorer/iotCertificateNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import globals from '../../../shared/extensionGlobals'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -22,7 +22,13 @@ describe('detachThingCertCommand', function () {
     let node: IotThingCertNode
     let parentNode: IotThingNode
 
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
+
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         parentNode = new IotThingNode({ name: thingName, arn: 'arn' }, {} as IotThingFolderNode, instance(iot))
         node = new IotThingCertNode(
@@ -32,10 +38,13 @@ describe('detachThingCertCommand', function () {
         )
     })
 
+    afterEach(function () {
+        sandbox.restore()
+    })
+
     it('confirms detach, detaches certificate, and refreshes node', async function () {
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
-        const commands = new FakeCommands()
-        await detachThingCertCommand(node, commands)
+        await detachThingCertCommand(node)
 
         getTestWindow()
             .getFirstMessage()
@@ -43,13 +52,12 @@ describe('detachThingCertCommand', function () {
 
         verify(iot.detachThingPrincipal(deepEqual({ thingName, principal }))).once()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when cancelled', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-        await detachThingCertCommand(node, new FakeCommands())
+        await detachThingCertCommand(node)
 
         verify(iot.detachThingPrincipal(anything())).never()
     })
@@ -58,14 +66,12 @@ describe('detachThingCertCommand', function () {
         when(iot.detachThingPrincipal(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
-        const commands = new FakeCommands()
-        await detachThingCertCommand(node, commands)
+        await detachThingCertCommand(node)
 
         getTestWindow()
             .getSecondMessage()
             .assertError(/Failed to detach: test-certificate/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

@@ -6,13 +6,12 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { EcrNode } from '../explorer/ecrNode'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { validateRepositoryName } from '../utils'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
-export async function createRepository(node: EcrNode, commands = Commands.vscode()): Promise<void> {
+export async function createRepository(node: EcrNode): Promise<void> {
     getLogger().debug('createRepository called for %O', node)
 
     const repositoryName = await vscode.window.showInputBox({
@@ -43,6 +42,6 @@ export async function createRepository(node: EcrNode, commands = Commands.vscode
         )
         telemetry.ecr_createRepository.emit({ result: 'Failed' })
     } finally {
-        await commands.execute('aws.refreshAwsExplorerNode', node)
+        await vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
     }
 }
