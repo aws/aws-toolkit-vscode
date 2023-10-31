@@ -178,13 +178,16 @@ export class ChatController {
         }
 
         try {
-            if (message.command !== undefined) {
-                await this.processCommandMessage(message)
-            } else if (message.userIntent !== undefined) {
-                await this.processFollowUp(message)
-                this.telemetryHelper.recordInteractWithMessage(message)
-            } else {
-                await this.processPromptMessageAsNewThread(message)
+            switch (message.command) {
+                case 'follow-up-was-clicked':
+                    await this.processFollowUp(message)
+                    this.telemetryHelper.recordInteractWithMessage(message)
+                    break
+                case 'chat-prompt':
+                    await this.processPromptMessageAsNewThread(message)
+                    break
+                default:
+                    await this.processCommandMessage(message)
             }
         } catch (e) {
             if (typeof e === 'string') {
@@ -334,8 +337,7 @@ export class ChatController {
                 relativeFilePath: triggerPayload.filePath,
                 text: triggerPayload.fileText,
                 programmingLanguage,
-                // TODO: Fix it
-                // documentSymbols: documentSymbolFqns,
+                documentSymbols: documentSymbolFqns,
             }
 
             if (triggerPayload.codeSelection?.start) {
