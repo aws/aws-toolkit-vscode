@@ -18,7 +18,6 @@ import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { IotThingFolderNode } from './iotThingFolderNode'
 import { IotThingCertNode } from './iotCertificateNode'
-import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 import { Settings } from '../../shared/settings'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
@@ -101,9 +100,9 @@ export class IotThingNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
         return this.thing.name
     }
 
-    public async refreshNode(commands: Commands): Promise<void> {
+    public async refreshNode(): Promise<void> {
         this.clearChildren()
-        return commands.execute('aws.refreshAwsExplorerNode', this)
+        return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 
     public [inspect.custom](): string {

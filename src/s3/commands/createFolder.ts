@@ -8,7 +8,6 @@ import { DEFAULT_DELIMITER } from '../../shared/clients/s3Client'
 import { getLogger } from '../../shared/logger'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { readablePath } from '../util'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -26,10 +25,7 @@ import { ToolkitError } from '../../shared/errors'
  * The folder that is created won't necessary fall on the first page.
  * The user may need to load more pages to see the created folder reflected in the tree.
  */
-export async function createFolderCommand(
-    node: S3BucketNode | S3FolderNode,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function createFolderCommand(node: S3BucketNode | S3FolderNode): Promise<void> {
     getLogger().debug('CreateFolder called for %O', node)
 
     await telemetry.s3_createFolder.run(async () => {
@@ -56,7 +52,7 @@ export async function createFolderCommand(
                 )
                 throw ToolkitError.chain(e, message)
             })
-            .finally(() => refreshNode(node, commands))
+            .finally(() => refreshNode(node))
 
         getLogger().info('created folder: %O', folder)
         vscode.window.showInformationMessage(localize('AWS.s3.createFolder.success', 'Created folder: {0}', folderName))
@@ -78,7 +74,7 @@ function validateFolderName(name: string): string | undefined {
     return undefined
 }
 
-async function refreshNode(node: S3BucketNode | S3FolderNode, commands: Commands): Promise<void> {
+async function refreshNode(node: S3BucketNode | S3FolderNode): Promise<void> {
     node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 }

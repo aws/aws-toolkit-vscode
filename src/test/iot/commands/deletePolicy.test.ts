@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { Iot } from 'aws-sdk'
 import { deletePolicyCommand } from '../../../iot/commands/deletePolicy'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -21,10 +21,20 @@ describe('deletePolicyCommand', function () {
     let node: IotPolicyWithVersionsNode
     let parentNode: IotPolicyFolderNode
 
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
+
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         parentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
         node = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentNode, instance(iot))
+    })
+
+    afterEach(function () {
+        sandbox.restore()
     })
 
     it('confirms deletion, deletes policy, and refreshes node', async function () {
@@ -41,22 +51,19 @@ describe('deletePolicyCommand', function () {
         )
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
-        await deletePolicyCommand(node, commands)
+        await deletePolicyCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete Policy test-policy?')
 
         verify(iot.deletePolicy(deepEqual({ policyName }))).once()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when certificates are attached', async function () {
         when(iot.listPolicyTargets(deepEqual({ policyName }))).thenResolve(['cert'])
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
-        await deletePolicyCommand(node, commands)
+        await deletePolicyCommand(node)
 
         getTestWindow()
             .getSecondMessage()
@@ -78,15 +85,14 @@ describe('deletePolicyCommand', function () {
             )
         )
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
-        await deletePolicyCommand(node, commands)
+        await deletePolicyCommand(node)
 
         verify(iot.deletePolicy(anything())).never()
     })
 
     it('does nothing when deletion is cancelled', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-        await deletePolicyCommand(node, new FakeCommands())
+        await deletePolicyCommand(node)
 
         verify(iot.deletePolicy(anything())).never()
     })
@@ -95,14 +101,12 @@ describe('deletePolicyCommand', function () {
         when(iot.deletePolicy(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
-        await deletePolicyCommand(node, commands)
+        await deletePolicyCommand(node)
 
         getTestWindow()
             .getSecondMessage()
             .assertError(/Failed to delete Policy: test-policy/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

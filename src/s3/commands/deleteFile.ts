@@ -8,7 +8,6 @@ import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { addCodiconToString } from '../../shared/utilities/textUtilities'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3FileNode } from '../explorer/s3FileNode'
 import { S3FolderNode } from '../explorer/s3FolderNode'
@@ -28,7 +27,7 @@ const deleteFileDisplayTimeoutMs = 2000
  * Shows status bar message.
  * Refreshes the parent node.
  */
-export async function deleteFileCommand(node: S3FileNode, commands = Commands.vscode()): Promise<void> {
+export async function deleteFileCommand(node: S3FileNode): Promise<void> {
     const filePath = readablePath(node)
     getLogger().debug('DeleteFile called for %O', node)
 
@@ -50,7 +49,7 @@ export async function deleteFileCommand(node: S3FileNode, commands = Commands.vs
                 const message = localize('AWS.s3.deleteFile.error.general', 'Failed to delete file {0}', node.file.name)
                 throw ToolkitError.chain(e, message)
             })
-            .finally(() => refreshNode(node.parent, commands))
+            .finally(() => refreshNode(node.parent))
 
         getLogger().info(`deleted file: ${filePath}`)
         vscode.window.setStatusBarMessage(
@@ -60,7 +59,7 @@ export async function deleteFileCommand(node: S3FileNode, commands = Commands.vs
     })
 }
 
-async function refreshNode(node: S3BucketNode | S3FolderNode, commands: Commands): Promise<void> {
+async function refreshNode(node: S3BucketNode | S3FolderNode): Promise<void> {
     node.clearChildren()
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+    return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 }

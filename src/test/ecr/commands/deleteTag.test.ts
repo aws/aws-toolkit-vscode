@@ -4,9 +4,9 @@
  */
 
 import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import assert from 'assert'
 import { EcrTagNode } from '../../../ecr/explorer/ecrTagNode'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
 import { deleteTag } from '../../../ecr/commands/deleteTag'
@@ -19,9 +19,11 @@ describe('deleteTag', function () {
     const ecr = new DefaultEcrClient('')
     let node: EcrTagNode
     let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         node = new EcrTagNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository, tagName)
     })
 
@@ -31,13 +33,12 @@ describe('deleteTag', function () {
 
     it('confirms deletion, deletes file, shows status bar confirmation, and refreshes parent node', async function () {
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
         const stub = sandbox.stub(ecr, 'deleteTag').callsFake(async (name, tag) => {
             assert.strictEqual(name, repositoryName)
             assert.strictEqual(tag, tagName)
         })
 
-        await deleteTag(node, commands)
+        await deleteTag(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to delete tag tag from repository reponame')
 
@@ -45,22 +46,20 @@ describe('deleteTag', function () {
 
         getTestWindow().getSecondMessage().assertInfo(`Deleted tag ${tagName} from repository ${repositoryName}`)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('does nothing when deletion is cancelled', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-        const commands = new FakeCommands()
         const spy = sandbox.spy(ecr, 'deleteTag')
 
-        await deleteTag(node, commands)
+        await deleteTag(node)
 
         assert.strictEqual(spy.notCalled, true)
 
         assert.deepStrictEqual(getTestWindow().statusBar.messages, [])
         assertNoErrorMessages()
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message and refreshes node when file deletion fails', async function () {
@@ -69,15 +68,13 @@ describe('deleteTag', function () {
         })
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Delete')?.select())
-        const commands = new FakeCommands()
 
-        await deleteTag(node, commands)
+        await deleteTag(node)
 
         getTestWindow()
             .getSecondMessage()
             .assertError(new RegExp(`^Failed to delete tag ${tagName}`))
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 })

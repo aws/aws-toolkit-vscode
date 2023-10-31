@@ -3,21 +3,23 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { DefaultEcrClient } from '../../../shared/clients/ecrClient'
 import { createRepository } from '../../../ecr/commands/createRepository'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createRepositoryCommand', function () {
     const ecr = new DefaultEcrClient('')
     let node: EcrNode
     let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         node = new EcrNode(ecr)
     })
 
@@ -30,7 +32,6 @@ describe('createRepositoryCommand', function () {
 
         const stub = sandbox.stub(ecr, 'createRepository').callsFake(async name => {
             assert.strictEqual(name, repoName)
-
             return {} as any
         })
 
@@ -39,20 +40,18 @@ describe('createRepositoryCommand', function () {
             assert.strictEqual(input.placeholder, 'Repository Name')
             input.acceptValue(repoName)
         })
-        const commands = new FakeCommands()
-        await createRepository(node, commands)
+        await createRepository(node)
 
         assert.ok(stub.calledOnce)
         getTestWindow().getFirstMessage().assertInfo(`Created repository: ${repoName}`)
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        assert(spyExecuteCommand.calledWith('aws.refreshAwsExplorerNode', node))
     })
 
     it('does nothing when prompt is cancelled', async function () {
         getTestWindow().onDidShowInputBox(input => input.hide())
         const spy = sandbox.spy(ecr, 'createRepository')
 
-        await createRepository(node, new FakeCommands())
+        await createRepository(node)
 
         assert.ok(spy.notCalled)
     })
@@ -63,15 +62,13 @@ describe('createRepositoryCommand', function () {
         })
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue('input'))
-        const commands = new FakeCommands()
-        await createRepository(node, commands)
+        await createRepository(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create repository/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        assert(spyExecuteCommand.calledWith('aws.refreshAwsExplorerNode', node))
     })
 
     it('Warns when repository name is invalid', async function () {
@@ -81,6 +78,6 @@ describe('createRepositoryCommand', function () {
             input.hide()
         })
 
-        await createRepository(node, new FakeCommands())
+        await createRepository(node)
     })
 })
