@@ -7,6 +7,7 @@ import { CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
 import { SecurityIssueProvider } from './securityIssueProvider'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import path from 'path'
 
 export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
     static #instance: SecurityIssueHoverProvider
@@ -47,6 +48,9 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.isTrusted = true
         markdownString.supportHtml = true
         markdownString.supportThemeIcons = true
+        markdownString.baseUri = vscode.Uri.file(
+            path.join(globals.context.extensionPath, 'dist/src/codewhisperer/images/')
+        )
 
         const [suggestedFix] = issue.suggestedFixes
 
@@ -87,10 +91,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         if (!severity) {
             return ''
         }
-        return `![${severity}](${vscode.Uri.joinPath(
-            globals.context.extensionUri,
-            `src/codewhisperer/images/severity-${severity.toLowerCase()}.svg`
-        )})`
+        return `![${severity}](severity-${severity.toLowerCase()}.svg)`
     }
 
     /**

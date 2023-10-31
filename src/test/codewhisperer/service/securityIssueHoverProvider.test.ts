@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
 import { createCodeScanIssue, createMockDocument } from '../testUtil'
 import assert from 'assert'
-import sinon from 'sinon'
 import { assertTelemetry } from '../../testUtil'
 
 describe('securityIssueHoverProvider', () => {
@@ -22,10 +21,13 @@ describe('securityIssueHoverProvider', () => {
     })
 
     it('should return hover for each issue for the current position', () => {
-        sinon.stub(vscode.Uri, 'joinPath').callsFake(() => vscode.Uri.parse('myPath'))
         const issues = [
             createCodeScanIssue({ findingId: 'finding-1', detectorId: 'language/detector-1' }),
-            createCodeScanIssue({ findingId: 'finding-2', detectorId: 'language/detector-2', suggestedFixes: [] }),
+            createCodeScanIssue({
+                findingId: 'finding-2',
+                detectorId: 'language/detector-2',
+                suggestedFixes: [],
+            }),
         ]
 
         securityIssueHoverProvider.issues = [
@@ -40,7 +42,7 @@ describe('securityIssueHoverProvider', () => {
         assert.strictEqual(actual.contents.length, 2)
         assert.strictEqual(
             (actual.contents[0] as vscode.MarkdownString).value,
-            '## Suggested Fix for title ![High](file:///myPath)\n' +
+            '## Suggested Fix for title ![High](severity-high.svg)\n' +
                 'description\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify(issues[0])
@@ -74,7 +76,7 @@ describe('securityIssueHoverProvider', () => {
         )
         assert.strictEqual(
             (actual.contents[1] as vscode.MarkdownString).value,
-            '## title ![High](file:///myPath)\n' +
+            '## title ![High](severity-high.svg)\n' +
                 'description\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify(issues[1])
