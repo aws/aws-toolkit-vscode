@@ -10,7 +10,6 @@ import { statSync } from 'fs'
 import { S3 } from 'aws-sdk'
 import { getLogger } from '../../shared/logger'
 import { S3Node } from '../explorer/s3Nodes'
-import { Commands } from '../../shared/vscode/commands'
 import { readablePath } from '../util'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showOutputMessage } from '../../shared/utilities/messages'
@@ -55,8 +54,7 @@ export async function uploadFileCommand(
     fileSizeBytes: FileSizeBytes = statFile,
     getBucket = promptUserForBucket,
     getFile = getFilesToUpload,
-    outputChannel = globals.outputChannel,
-    commands = Commands.vscode()
+    outputChannel = globals.outputChannel
 ): Promise<void> {
     let node: S3BucketNode | S3FolderNode | undefined
     let document: vscode.Uri | undefined
@@ -179,7 +177,7 @@ export async function uploadFileCommand(
 
     await runBatchUploads(uploadRequests, outputChannel)
 
-    commands.execute('aws.refreshAwsExplorer', true)
+    vscode.commands.executeCommand('aws.refreshAwsExplorer', true)
 }
 
 async function promptForFileLocation(): Promise<vscode.Uri[] | undefined> {
@@ -530,7 +528,7 @@ export async function promptUserForBucket(
         }
         if (response.label === 'Create new bucket') {
             const s3Node = new S3Node(s3client)
-            await createBucket(s3Node, Commands.vscode())
+            await createBucket(s3Node)
             return promptUserForBucket(s3client)
         }
     } else {

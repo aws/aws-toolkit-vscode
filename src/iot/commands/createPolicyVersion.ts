@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
@@ -16,8 +15,7 @@ import { getPolicyDocument } from './createPolicy'
  */
 export async function createPolicyVersionCommand(
     node: IotPolicyWithVersionsNode,
-    getPolicyDoc = getPolicyDocument,
-    commands = Commands.vscode()
+    getPolicyDoc = getPolicyDocument
 ): Promise<void> {
     getLogger().debug('CreatePolicyVersion called for %O', node)
 

@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyCertNode } from '../explorer/iotPolicyNode'
 import { IotPolicyFolderNode } from '../explorer/iotPolicyFolderNode'
@@ -21,7 +20,7 @@ import { IotNode } from '../explorer/iotNodes'
  * Detaches the policy.
  * Refreshes the parent node.
  */
-export async function detachPolicyCommand(node: IotPolicyCertNode, commands = Commands.vscode()): Promise<void> {
+export async function detachPolicyCommand(node: IotPolicyCertNode): Promise<void> {
     getLogger().debug('DetachPolicy called for %O', node)
 
     const policyName = node.policy.name
@@ -55,8 +54,8 @@ export async function detachPolicyCommand(node: IotPolicyCertNode, commands = Co
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await baseNode?.thingFolderNode?.refreshNode(commands)
-    await baseNode?.certFolderNode?.refreshNode(commands)
+    await baseNode?.thingFolderNode?.refreshNode()
+    await baseNode?.certFolderNode?.refreshNode()
 }
 
 /**
