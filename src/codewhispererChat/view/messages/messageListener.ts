@@ -7,9 +7,6 @@ import * as vs from 'vscode'
 import { MessageListener } from '../../../awsq/messages/messageListener'
 import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
-import globals from '../../../shared/extensionGlobals'
-import { getLogger } from '../../../shared/logger'
-import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 
 export interface UIMessageListenerProps {
@@ -115,7 +112,7 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
+        this.chatControllerMessagePublishers.processTabCreatedMessage.publish('click')
     }
 
     private processChatMessage(msg: any) {
@@ -134,46 +131,21 @@ export class UIMessageListener {
     }
 
     private chatItemVoted(msg: any) {
-        // TODO add telemetry records
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-        telemetry.codewhispererchat_interactWithMessage.emit({
-            // TODO Those are not the real messageId and conversationId, needs to be confirmed
-            cwsprChatMessageId: msg.messageId,
-            cwsprChatConversationId: msg.tabID,
-            cwsprChatInteractionType: msg.vote,
+        this.chatControllerMessagePublishers.processChatItemVotedMessage.publish({
+            tabID: msg.tabID,
+            command: msg.command,
+            vote: msg.vote,
+            messageId: msg.messageId,
         })
     }
 
     private async chatItemFeedback(msg: any) {
-        // TODO add telemetry records
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-        const logger = getLogger()
-        try {
-            await globals.telemetry.postFeedback({
-                comment: JSON.stringify({
-                    type: 'codewhisperer-chat-answer-feedback',
-                    sessionId: msg.messageId,
-                    requestId: msg.tabId,
-                    reason: msg.selectedOption,
-                    userComment: msg.comment,
-                }),
-                sentiment: 'Negative',
-            })
-        } catch (err) {
-            const errorMessage = (err as Error).message || 'Failed to submit feedback'
-            logger.error(`CodeWhispererChat answer feedback failed: "Negative": ${errorMessage}`)
-
-            telemetry.feedback_result.emit({ result: 'Failed' })
-
-            return errorMessage
-        }
-
-        logger.info(`CodeWhispererChat answer feedback sent: "Negative"`)
-
-        telemetry.feedback_result.emit({ result: 'Succeeded' })
+        this.chatControllerMessagePublishers.processChatItemFeedbackMessage.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            command: msg.command,
+            selectedOption: msg.selectedOption,
+            comment: msg.comment,
+        })
     }
 }

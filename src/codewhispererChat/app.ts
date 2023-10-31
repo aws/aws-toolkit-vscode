@@ -10,6 +10,8 @@ import { AwsQAppInitContext } from '../awsq/apps/initContext'
 import { MessageListener } from '../awsq/messages/messageListener'
 import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import {
+    ChatItemFeedbackMessage,
+    ChatItemVotedMessage,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
@@ -18,6 +20,7 @@ import {
     TriggerTabIDReceived,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
+import { CwsprChatTriggerInteraction } from '../shared/telemetry/telemetry.gen'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -28,6 +31,9 @@ export function init(appContext: AwsQAppInitContext) {
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
         processTriggerTabIDReceived: new EventEmitter<TriggerTabIDReceived>(),
         processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
+        processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
+        processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
+        processTabCreatedMessage: new EventEmitter<CwsprChatTriggerInteraction>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -52,6 +58,15 @@ export function init(appContext: AwsQAppInitContext) {
         processStopResponseMessage: new MessageListener<StopResponseMessage>(
             cwChatControllerEventEmitters.processStopResponseMessage
         ),
+        processChatItemVotedMessage: new MessageListener<ChatItemVotedMessage>(
+            cwChatControllerEventEmitters.processChatItemVotedMessage
+        ),
+        processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
+            cwChatControllerEventEmitters.processChatItemFeedbackMessage
+        ),
+        processTabCreatedMessage: new MessageListener<CwsprChatTriggerInteraction>(
+            cwChatControllerEventEmitters.processTabCreatedMessage
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -75,6 +90,15 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processStopResponseMessage: new MessagePublisher<StopResponseMessage>(
             cwChatControllerEventEmitters.processStopResponseMessage
+        ),
+        processChatItemVotedMessage: new MessagePublisher<ChatItemVotedMessage>(
+            cwChatControllerEventEmitters.processChatItemVotedMessage
+        ),
+        processChatItemFeedbackMessage: new MessagePublisher<ChatItemFeedbackMessage>(
+            cwChatControllerEventEmitters.processChatItemFeedbackMessage
+        ),
+        processTabCreatedMessage: new MessagePublisher<CwsprChatTriggerInteraction>(
+            cwChatControllerEventEmitters.processTabCreatedMessage
         ),
     }
 

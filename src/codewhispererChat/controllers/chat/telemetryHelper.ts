@@ -4,11 +4,25 @@
  */
 
 import { UserIntent } from '@amzn/codewhisperer-streaming'
-import { CwsprChatTriggerInteraction, CwsprChatUserIntent, telemetry } from '../../../shared/telemetry/telemetry'
+import {
+    CwsprChatTriggerInteraction,
+    CwsprChatUserIntent,
+    Result,
+    telemetry,
+} from '../../../shared/telemetry/telemetry'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { CopyCodeToClipboard, InsertCodeAtCursorPosition, PromptAnswer, PromptMessage, TriggerPayload } from './model'
+import {
+    ChatItemFeedbackMessage,
+    ChatItemVotedMessage,
+    CopyCodeToClipboard,
+    InsertCodeAtCursorPosition,
+    PromptAnswer,
+    PromptMessage,
+    TriggerPayload,
+} from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
+import { getLogger } from '../../../shared/logger'
 
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
@@ -66,7 +80,47 @@ export class CWCTelemetryHelper {
         telemetry.codewhispererchat_exitFocusChat.emit()
     }
 
-    public recordInteractWithMessage(message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage) {
+    public async recordFeedback(message: ChatItemFeedbackMessage) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+        const logger = getLogger()
+        try {
+            await globals.telemetry.postFeedback({
+                comment: JSON.stringify({
+                    type: 'codewhisperer-chat-answer-feedback',
+                    sessionId: message.messageId,
+                    requestId: message.tabID,
+                    reason: message.selectedOption,
+                    userComment: message.comment,
+                }),
+                sentiment: 'Negative',
+            })
+        } catch (err) {
+            const errorMessage = (err as Error).message || 'Failed to submit feedback'
+            logger.error(`CodeWhispererChat answer feedback failed: "Negative": ${errorMessage}`)
+
+            this.recordFeedbackResult('Failed')
+
+            return errorMessage
+        }
+
+        logger.info(`CodeWhispererChat answer feedback sent: "Negative"`)
+
+        this.recordFeedbackResult('Succeeded')
+    }
+
+    public recordFeedbackResult(feedbackResult: Result) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
+        telemetry.feedback_result.emit({ result: feedbackResult })
+    }
+
+    public recordInteractWithMessage(
+        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage
+    ) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
@@ -105,6 +159,15 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: '',
                     cwsprChatInteractionType: 'clickFollowUp',
+                })
+                break
+            case 'chat-item-voted':
+                message = message as ChatItemVotedMessage
+                telemetry.codewhispererchat_interactWithMessage.emit({
+                    // TODO Those are not the real messageId and conversationId, needs to be confirmed
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: message.tabID,
+                    cwsprChatInteractionType: message.vote,
                 })
         }
     }

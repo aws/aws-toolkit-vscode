@@ -15,6 +15,8 @@ import {
     TriggerTabIDReceived,
     StopResponseMessage,
     CopyCodeToClipboard,
+    ChatItemVotedMessage,
+    ChatItemFeedbackMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -27,6 +29,7 @@ import { randomUUID } from 'crypto'
 import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
+import { CwsprChatTriggerInteraction } from '../../../shared/telemetry/telemetry.gen'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -36,6 +39,9 @@ export interface ChatControllerMessagePublishers {
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessagePublisher<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
+    readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
+    readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
+    readonly processTabCreatedMessage: MessagePublisher<CwsprChatTriggerInteraction>
 }
 
 export interface ChatControllerMessageListeners {
@@ -46,6 +52,9 @@ export interface ChatControllerMessageListeners {
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
     readonly processTriggerTabIDReceived: MessageListener<TriggerTabIDReceived>
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
+    readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
+    readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
+    readonly processTabCreatedMessage: MessageListener<CwsprChatTriggerInteraction>
 }
 
 export class ChatController {
@@ -101,6 +110,30 @@ export class ChatController {
         this.chatControllerMessageListeners.processStopResponseMessage.onMessage(data => {
             this.processStopResponseMessage(data)
         })
+
+        this.chatControllerMessageListeners.processChatItemVotedMessage.onMessage(data => {
+            this.processChatItemVotedMessage(data)
+        })
+
+        this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage(data => {
+            this.processChatItemFeedbackMessage(data)
+        })
+
+        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
+            this.processTabCreatedMessage(data)
+        })
+    }
+
+    private async processTabCreatedMessage(triggerInteractionType: CwsprChatTriggerInteraction) {
+        this.telemetryHelper.recordOpenChat(triggerInteractionType)
+    }
+
+    private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {
+        await this.telemetryHelper.recordFeedback(message)
+    }
+
+    private async processChatItemVotedMessage(message: ChatItemVotedMessage) {
+        this.telemetryHelper.recordInteractWithMessage(message)
     }
 
     private async processStopResponseMessage(message: StopResponseMessage) {

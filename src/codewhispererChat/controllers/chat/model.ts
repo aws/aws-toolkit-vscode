@@ -47,6 +47,21 @@ export interface StopResponseMessage {
     tabID: string
 }
 
+export interface ChatItemVotedMessage {
+    tabID: string
+    command: string
+    vote: 'upvote' | 'downvote'
+    messageId: string
+}
+
+export interface ChatItemFeedbackMessage {
+    messageId: string
+    tabID: string
+    command: string
+    selectedOption: string
+    comment?: string
+}
+
 export enum ChatTriggerType {
     ChatMessage = 'ChatMessage',
 }
