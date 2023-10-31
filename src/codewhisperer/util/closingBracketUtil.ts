@@ -12,71 +12,74 @@ interface bracketMapType {
     [k: string]: string
 }
 
-const bracketMap: bracketMapType = {
+const quotes = ["'", '"', '`']
+const parenthesis = ['(', '[', '{', ')', ']', '}', '<', '>']
+
+const closeToOpen: bracketMapType = {
     ')': '(',
     ']': '[',
     '}': '{',
+    '>': '<',
 }
 
-export const calculateBracketsLevel = (code: string, isRightContext: boolean = false) => {
-    const bracketCounts: Map<string, number> = new Map([
-        ['(', 0],
-        ['[', 0],
-        ['{', 0],
-    ])
-    const bracketsIndexLevel = []
+const openToClose: bracketMapType = {
+    '(': ')',
+    '[': ']',
+    '{': '}',
+    '<': '>',
+}
 
-    for (let i = 0; i < code.length; i++) {
-        const char = code[i]
-        if (bracketCounts.has(char)) {
-            const count = bracketCounts.get(char) || 0
-            const newCount = count + 1
-            bracketCounts.set(char, newCount)
-            bracketsIndexLevel.push({
-                char,
-                count: newCount,
-                idx: i,
-            })
-        } else if (char in bracketMap) {
-            const correspondingBracket = bracketMap[char as keyof bracketMapType]
-            const count = bracketCounts.get(correspondingBracket) || 0
-            const newCount = count === 0 ? 0 : count - 1
-            bracketCounts.set(bracketMap[char], newCount)
-            bracketsIndexLevel.push({
-                char: correspondingBracket,
-                count: newCount,
-                idx: i,
-            })
-        } else if (isRightContext && !(char in bracketMap) && !bracketCounts.has(char) && !/\s/.test(char)) {
-            // we can stop processing right context when we encounter a char that is not a bracket nor white space
-            break
-        }
+/**
+ * @param endPosition: end position of the recommendation
+ * @param startPosition: start position of the recommendation
+ */
+export async function handleExtraBrackets(
+    editor: vscode.TextEditor,
+    recommendation: string,
+    endPosition: vscode.Position,
+    startPosition: vscode.Position
+) {
+    const endOffset = editor.document.offsetAt(endPosition)
+    const startOffset = editor.document.offsetAt(startPosition)
+    const leftContext = editor.document.getText(
+        new vscode.Range(
+            startPosition,
+            editor.document.positionAt(Math.max(startOffset - CodeWhispererConstants.charactersLimit, 0))
+        )
+    )
+
+    const rightContext = editor.document.getText(
+        new vscode.Range(
+            editor.document.positionAt(endOffset),
+            editor.document.positionAt(endOffset + CodeWhispererConstants.charactersLimit)
+        )
+    )
+    const bracketsToRemove = getBracketsToRemove(
+        editor,
+        recommendation,
+        leftContext,
+        rightContext,
+        endPosition,
+        startPosition
+    )
+
+    const quotesToRemove = getQuotesToRemove(
+        editor,
+        recommendation,
+        leftContext,
+        rightContext,
+        endPosition,
+        startPosition
+    )
+
+    const symbolsToRemove = [...bracketsToRemove, ...quotesToRemove]
+
+    if (symbolsToRemove.length) {
+        await removeBracketsFromRightContext(editor, symbolsToRemove, endPosition)
     }
-    return bracketsIndexLevel
 }
 
-export const getBracketsToRemove = (recommendation: string, rightContext: string) => {
-    const recommendationBrackets = calculateBracketsLevel(recommendation)
-    const rightContextBrackets = calculateBracketsLevel(rightContext, true)
-    let i = 0
-    let j = 0
-    const toBeRemoved = []
-
-    while (i < recommendationBrackets.length && j < rightContextBrackets.length) {
-        const { char: char1, count: level1 } = recommendationBrackets[i]
-        const { char: char2, count: level2, idx: idx2 } = rightContextBrackets[j]
-        if (char1 !== char2 || level1 !== level2) {
-            i++
-            continue
-        }
-        toBeRemoved.push(idx2)
-        i++
-        j++
-    }
-    return toBeRemoved
-}
-
-export const removeBracketsFromRightContext = async (
+const removeBracketsFromRightContext = async (
     editor: vscode.TextEditor,
     idxToRemove: number[],
     endPosition: vscode.Position
@@ -110,20 +113,154 @@ export const removeBracketsFromRightContext = async (
     }
 }
 
-export async function handleExtraBrackets(
+function getBracketsToRemove(
     editor: vscode.TextEditor,
     recommendation: string,
-    endPosition: vscode.Position
+    leftContext: string,
+    rightContext: string,
+    end: vscode.Position,
+    start: vscode.Position
 ) {
-    const end = editor.document.offsetAt(endPosition)
-    const rightContext = editor.document.getText(
-        new vscode.Range(
-            editor.document.positionAt(end),
-            editor.document.positionAt(end + CodeWhispererConstants.charactersLimit)
-        )
-    )
-    const bracketsToRemove = getBracketsToRemove(recommendation, rightContext)
-    if (bracketsToRemove.length) {
-        await removeBracketsFromRightContext(editor, bracketsToRemove, endPosition)
+    const unpairedClosingsInReco = nonClosedClosingParen(recommendation)
+    const unpairedOpeningsInLeftContext = nonClosedOpneingParen(leftContext, unpairedClosingsInReco.length)
+    const unpairedClosingsInRightContext = nonClosedClosingParen(rightContext)
+
+    const toRemove: number[] = []
+
+    let i = 0
+    let j = 0
+    let k = 0
+    while (i < unpairedOpeningsInLeftContext.length && j < unpairedClosingsInReco.length) {
+        const opening = unpairedOpeningsInLeftContext[i]
+        const closing = unpairedClosingsInReco[j]
+
+        const isPaired = closeToOpen[closing.char] === opening.char
+        const rightContextCharToDelete = unpairedClosingsInRightContext[k]
+
+        if (isPaired) {
+            if (rightContextCharToDelete && rightContextCharToDelete.char === closing.char) {
+                const rightContextStart = editor.document.offsetAt(end) + 1
+                const symbolPosition = editor.document.positionAt(
+                    rightContextStart + rightContextCharToDelete.strOffset
+                )
+                const lineCnt = recommendation.split('\n').length - 1
+                const isSameline = symbolPosition.line - lineCnt === start.line
+
+                if (isSameline) {
+                    toRemove.push(rightContextCharToDelete.strOffset)
+                }
+
+                k++
+            }
+        }
+
+        i++
+        j++
     }
+
+    return toRemove
+}
+
+function getQuotesToRemove(
+    editor: vscode.TextEditor,
+    recommendation: string,
+    leftContext: string,
+    rightContext: string,
+    endPosition: vscode.Position,
+    startPosition: vscode.Position
+) {
+    let leftQuote: string | undefined = undefined
+    let leftIndex: number | undefined = undefined
+    for (let i = leftContext.length - 1; i >= 0; i--) {
+        const char = leftContext[i]
+        if (quotes.includes(char)) {
+            leftQuote = char
+            leftIndex = leftContext.length - i
+            break
+        }
+    }
+
+    let rightQuote: string | undefined = undefined
+    let rightIndex: number | undefined = undefined
+    for (let i = 0; i < rightContext.length; i++) {
+        const char = rightContext[i]
+        if (quotes.includes(char)) {
+            rightQuote = char
+            rightIndex = i
+            break
+        }
+    }
+
+    let quoteCountInReco = 0
+    if (leftQuote && rightQuote && leftQuote === rightQuote) {
+        for (const char of recommendation) {
+            if (quotes.includes(char) && char === leftQuote) {
+                quoteCountInReco++
+            }
+        }
+    }
+
+    if (leftIndex !== undefined && rightIndex !== undefined && quoteCountInReco % 2 !== 0) {
+        const p = editor.document.positionAt(editor.document.offsetAt(endPosition) + rightIndex)
+
+        if (endPosition.line === startPosition.line && endPosition.line === p.line) {
+            return [rightIndex]
+        }
+    }
+
+    return []
+}
+
+function nonClosedOpneingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
+    const resultSet: { char: string; strOffset: number }[] = []
+    const stack: string[] = []
+
+    for (let i = str.length - 1; i >= 0; i--) {
+        const char = str[i]
+        if (char! in parenthesis) {
+            continue
+        }
+
+        if (char in closeToOpen) {
+            stack.push(char)
+            if (cnt && cnt === resultSet.length) {
+                return resultSet
+            }
+        } else if (char in openToClose) {
+            if (stack.length !== 0 && stack[stack.length - 1] === openToClose[char]) {
+                stack.pop()
+            } else {
+                resultSet.push({ char: char, strOffset: i })
+            }
+        }
+    }
+
+    return resultSet
+}
+
+function nonClosedClosingParen(str: string, cnt?: number): { char: string; strOffset: number }[] {
+    const resultSet: { char: string; strOffset: number }[] = []
+    const stack: string[] = []
+
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i]
+        if (char! in parenthesis) {
+            continue
+        }
+
+        if (char in openToClose) {
+            stack.push(char)
+            if (cnt && cnt === resultSet.length) {
+                return resultSet
+            }
+        } else if (char in closeToOpen) {
+            if (stack.length !== 0 && stack[stack.length - 1] === closeToOpen[char]) {
+                stack.pop()
+            } else {
+                resultSet.push({ char: char, strOffset: i })
+            }
+        }
+    }
+
+    return resultSet
 }
