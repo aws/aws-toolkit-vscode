@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { S3Node } from '../explorer/s3Nodes'
 import { validateBucketName } from '../util'
 import { ToolkitError } from '../../shared/errors'
@@ -20,7 +19,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
  * Creates the bucket.
  * Refreshes the node.
  */
-export async function createBucketCommand(node: S3Node, commands = Commands.vscode()): Promise<void> {
+export async function createBucketCommand(node: S3Node): Promise<void> {
     await telemetry.s3_createBucket.run(async () => {
         const bucketName = await vscode.window.showInputBox({
             prompt: localize('AWS.s3.createBucket.prompt', 'Enter a new bucket name'),
@@ -43,13 +42,13 @@ export async function createBucketCommand(node: S3Node, commands = Commands.vsco
                 )
                 throw ToolkitError.chain(e, message)
             })
-            .finally(() => refreshNode(node, commands))
+            .finally(() => refreshNode(node))
 
         getLogger().info('Created bucket: %O', bucket)
         vscode.window.showInformationMessage(localize('AWS.s3.createBucket.success', 'Created bucket: {0}', bucketName))
     })
 }
 
-async function refreshNode(node: S3Node, commands: Commands): Promise<void> {
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+async function refreshNode(node: S3Node): Promise<void> {
+    return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 }
