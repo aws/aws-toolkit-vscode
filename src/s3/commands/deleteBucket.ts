@@ -6,7 +6,6 @@
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { S3BucketNode } from '../explorer/s3BucketNode'
 import { S3Node } from '../explorer/s3Nodes'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -27,7 +26,7 @@ import { ToolkitError } from '../../shared/errors'
  * This is unfortunate, but it's still a valuable feature and partial failures
  * don't result in a state of too much confusion for the user.
  */
-export async function deleteBucketCommand(node: S3BucketNode, commands = Commands.vscode()): Promise<void> {
+export async function deleteBucketCommand(node: S3BucketNode): Promise<void> {
     getLogger().debug('DeleteBucket called for %O', node)
 
     await telemetry.s3_deleteBucket.run(async () => {
@@ -46,7 +45,7 @@ export async function deleteBucketCommand(node: S3BucketNode, commands = Command
                 )
                 throw ToolkitError.chain(e, message)
             })
-            .finally(() => refreshNode(node.parent, commands))
+            .finally(() => refreshNode(node.parent))
         getLogger().info(`deleted bucket: ${node.bucket.name}`)
     })
 }
@@ -74,6 +73,6 @@ async function deleteWithProgress(node: S3BucketNode): Promise<void> {
     )
 }
 
-async function refreshNode(node: S3Node, commands: Commands): Promise<void> {
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+async function refreshNode(node: S3Node): Promise<void> {
+    return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 }

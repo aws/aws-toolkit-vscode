@@ -8,7 +8,6 @@ import { IotCertWithPoliciesNode } from '../../../iot/explorer/iotCertificateNod
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { IotPolicyCertNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import globals from '../../../shared/extensionGlobals'
@@ -33,8 +32,7 @@ describe('detachPolicyCommand', function () {
 
     it('confirms detach, detaches policy, and refreshes node', async function () {
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
-        const commands = new FakeCommands()
-        await detachPolicyCommand(node, commands)
+        await detachPolicyCommand(node)
 
         getTestWindow().getFirstMessage().assertWarn('Are you sure you want to detach policy test-policy?')
 
@@ -43,7 +41,7 @@ describe('detachPolicyCommand', function () {
 
     it('does nothing when cancelled', async function () {
         getTestWindow().onDidShowMessage(m => m.selectItem('Cancel'))
-        await detachPolicyCommand(node, new FakeCommands())
+        await detachPolicyCommand(node)
 
         verify(iot.detachPolicy(anything())).never()
     })
@@ -52,8 +50,7 @@ describe('detachPolicyCommand', function () {
         when(iot.detachPolicy(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowMessage(m => m.items.find(i => i.title === 'Detach')?.select())
-        const commands = new FakeCommands()
-        await detachPolicyCommand(node, commands)
+        await detachPolicyCommand(node)
 
         getTestWindow()
             .getSecondMessage()
