@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger'
-import { Commands } from '../../shared/vscode/commands'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -16,7 +15,7 @@ import { IotPolicyWithVersionsNode } from '../explorer/iotPolicyNode'
  *
  * Note that the path does not contain the bucket name or a leading slash.
  */
-export async function setDefaultPolicy(node: IotPolicyVersionNode, commands = Commands.vscode()): Promise<void> {
+export async function setDefaultPolicy(node: IotPolicyVersionNode): Promise<void> {
     getLogger().debug('SetDefaultPolicy called for %O', node)
 
     try {
@@ -37,9 +36,9 @@ export async function setDefaultPolicy(node: IotPolicyVersionNode, commands = Co
         showViewLogsMessage(localize('AWS.iot.setDefaultPolicy.error', 'Failed to set default policy version'))
     }
 
-    await refreshBase(node.parent, commands)
+    await refreshBase(node.parent)
 }
 
-async function refreshBase(node: IotPolicyWithVersionsNode, commands: Commands): Promise<void> {
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+async function refreshBase(node: IotPolicyWithVersionsNode): Promise<void> {
+    return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 }

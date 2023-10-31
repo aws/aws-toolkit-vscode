@@ -4,11 +4,12 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { createPolicyCommand } from '../../../iot/commands/createPolicy'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -19,6 +20,9 @@ describe('createPolicyCommand', function () {
     let policyDocument: string
     let node: IotPolicyFolderNode
     let returnUndefined: boolean = false
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
+
     const getPolicy: () => Promise<Buffer | undefined> = async () => {
         if (returnUndefined) {
             return undefined
@@ -27,11 +31,18 @@ describe('createPolicyCommand', function () {
     }
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         node = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
         policyObject = { Version: '2012-10-17', Statement: '' }
         policyDocument = JSON.stringify(policyObject)
         returnUndefined = false
+    })
+
+    afterEach(function () {
+        sandbox.restore()
     })
 
     it('prompts for policy name, creates policy, and shows success', async function () {
@@ -40,22 +51,19 @@ describe('createPolicyCommand', function () {
             assert.strictEqual(input.placeholder, 'Policy Name')
             input.acceptValue(policyName)
         })
-        const commands = new FakeCommands()
         returnUndefined = false
-        await createPolicyCommand(node, getPolicy, commands)
+        await createPolicyCommand(node, getPolicy)
         getTestWindow()
             .getFirstMessage()
             .assertInfo(/Created Policy test-policy/)
 
         verify(iot.createPolicy(deepEqual({ policyName, policyDocument }))).once()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is canceled', async function () {
         getTestWindow().onDidShowInputBox(input => input.hide())
-        await createPolicyCommand(node, getPolicy, new FakeCommands())
 
         verify(iot.createPolicy(anything())).never()
     })
@@ -66,8 +74,7 @@ describe('createPolicyCommand', function () {
             assert.strictEqual(input.validationMessage, 'Policy name must be between 1 and 128 characters long')
             input.hide()
         })
-        const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, commands)
+        await createPolicyCommand(node, getPolicy)
     })
 
     it('warns when policy name has invalid characters', async function () {
@@ -79,26 +86,23 @@ describe('createPolicyCommand', function () {
             )
             input.hide()
         })
-        const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, commands)
+        await createPolicyCommand(node, getPolicy)
     })
 
     it('does nothing when policy document is not read', async function () {
         returnUndefined = true
         getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
-        const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, commands)
+        await createPolicyCommand(node, getPolicy)
 
         verify(iot.createPolicy(anything())).never()
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message when JSON is invalid', async function () {
         getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
-        const commands = new FakeCommands()
         returnUndefined = false
         policyDocument = 'not a JSON'
-        await createPolicyCommand(node, getPolicy, commands)
+        await createPolicyCommand(node, getPolicy)
 
         getTestWindow()
             .getFirstMessage()
@@ -106,7 +110,7 @@ describe('createPolicyCommand', function () {
 
         verify(iot.createPolicy(anything())).never()
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if creating policy fails', async function () {
@@ -114,13 +118,12 @@ describe('createPolicyCommand', function () {
         when(iot.createPolicy(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(policyName))
-        const commands = new FakeCommands()
-        await createPolicyCommand(node, getPolicy, commands)
+        await createPolicyCommand(node, getPolicy)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create policy test-policy/)
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 })

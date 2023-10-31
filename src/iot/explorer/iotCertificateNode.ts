@@ -21,7 +21,6 @@ import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotThingNode } from './iotThingNode'
 import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
-import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 import { truncate } from '../../shared/utilities/textUtilities'
 import { Settings } from '../../shared/settings'
@@ -107,9 +106,9 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         }
     }
 
-    public async refreshNode(commands: Commands): Promise<void> {
+    public async refreshNode(): Promise<void> {
         this.clearChildren()
-        return commands.execute('aws.refreshAwsExplorerNode', this)
+        return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 
     private getMaxItemsPerPage(): number | undefined {
