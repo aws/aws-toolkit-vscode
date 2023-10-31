@@ -289,8 +289,7 @@ export class ChatController {
             const response = await session.chat(request)
             CWCTelemetryHelper.instance.recordStartConversation(triggerEvent, triggerPayload)
 
-            const editorContext = await this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage)
-            this.messenger.sendAIResponse(response, session, tabID, triggerID, editorContext)
+            this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), tabID)

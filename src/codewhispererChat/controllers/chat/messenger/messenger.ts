@@ -14,7 +14,7 @@ import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/c
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
-import { EditorContext } from '../../../editor/context/model'
+import { TriggerPayload } from '../model'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
@@ -24,7 +24,7 @@ export class Messenger {
         session: ChatSession,
         tabID: string,
         triggerID: string,
-        context?: EditorContext
+        triggerPayload: TriggerPayload
     ) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -144,7 +144,7 @@ export class Messenger {
             )
         )
 
-        CWCTelemetryHelper.instance.recordAddMessage(context, {
+        CWCTelemetryHelper.instance.recordAddMessage(triggerPayload, {
             followUpCount: followUps.length,
             suggestionCount: relatedSuggestions.length,
             tabID: tabID,

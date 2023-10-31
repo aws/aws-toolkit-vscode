@@ -113,9 +113,8 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public recordAddMessage(context: EditorContext | undefined, message: PromptAnswer) {
-        const hasCodeSnippet =
-            context?.focusAreaContext?.codeBlock != undefined && context.focusAreaContext.codeBlock.length > 0
+    public recordAddMessage(triggerPayload: TriggerPayload | undefined, message: PromptAnswer) {
+        const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
 
         // TODO: add mesasge id, user intent, response code snippet count, response code, references count, time to first chunk, response latency
         telemetry.codewhispererchat_addMessage.emit({
@@ -123,9 +122,9 @@ export class CWCTelemetryHelper {
             cwsprChatMessageId: '',
             cwsprChatUserIntent: undefined,
             cwsprChatHasCodeSnippet: hasCodeSnippet,
-            cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage,
-            cwsprChatActiveEditorTotalCharacters: context?.activeFileContext?.fileText?.length ?? 0,
-            cwsprChatActiveEditorImportCount: context?.activeFileContext?.matchPolicy?.must?.length ?? 0,
+            cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
+            cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
+            cwsprChatActiveEditorImportCount: triggerPayload?.matchPolicy?.must?.length ?? 0,
             cwsprChatResponseCodeSnippetCount: 0,
             cwsprChatResponseCode: 0,
             cwsprChatSourceLinkCount: message.suggestionCount,
