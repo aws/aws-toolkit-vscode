@@ -175,21 +175,21 @@ async function makeInstallScript(debuggerPath: string, isWindows: boolean): Prom
     // Go from trying to find the manifest file and uses GOPATH provided below.
     installOptions.env!['GO111MODULE'] = 'off'
 
+    function getDelveVersion(repo: string, silent: boolean): string {
+        try {
+            return execFileSync('git', ['-C', repo, 'describe', '--tags', '--abbrev=0']).toString().trim()
+        } catch (e) {
+            if (!silent) {
+                throw e
+            }
+            return ''
+        }
+    }
+
     // It's fine if we can't get the latest Delve version, the Toolkit will use the last built one instead
     try {
         const goPath: string = JSON.parse(execFileSync('go', ['env', '-json']).toString()).GOPATH
         let repoPath: string = path.join(goPath, 'src', delveRepo)
-
-        function getDelveVersion(repo: string, silent: boolean): string {
-            try {
-                return execFileSync('git', ['-C', repo, 'describe', '--tags', '--abbrev=0']).toString().trim()
-            } catch (e) {
-                if (!silent) {
-                    throw e
-                }
-                return ''
-            }
-        }
 
         if (!getDelveVersion(repoPath, true)) {
             getLogger('channel').info(
