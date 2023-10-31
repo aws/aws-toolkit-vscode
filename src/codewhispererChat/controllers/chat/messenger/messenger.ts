@@ -13,6 +13,8 @@ import { ChatResponseStream, SupplementaryWebLink } from '@amzn/codewhisperer-st
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
+import { CWCTelemetryHelper } from '../telemetryHelper'
+import { EditorContext } from '../../../editor/context/model'
 
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
@@ -21,7 +23,8 @@ export class Messenger {
         response: AsyncIterable<ChatResponseStream>,
         session: ChatSession,
         tabID: string,
-        triggerID: string
+        triggerID: string,
+        context?: EditorContext
     ) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -140,6 +143,13 @@ export class Messenger {
                 tabID
             )
         )
+
+        CWCTelemetryHelper.instance.recordAddMessage(context, {
+            followUpCount: followUps.length,
+            suggestionCount: relatedSuggestions.length,
+            tabID: tabID,
+            messageLength: message.length,
+        })
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string) {

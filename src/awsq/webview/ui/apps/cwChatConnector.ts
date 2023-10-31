@@ -31,7 +31,6 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
-    private answerMetadata: Record<string, any> = {}
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -180,11 +179,6 @@ export class Connector {
                     content: messageData.relatedSuggestions,
                 }
             }
-            if (messageData.message) {
-                this.answerMetadata.messageLength = messageData.message.length
-            }
-            this.answerMetadata.suggestionCount = messageData.relatedSuggestions?.length ?? 0
-            this.answerMetadata.followUpCount = messageData.followUps?.length
             this.onChatAnswerReceived(messageData.tabID, answer)
 
             // Exit the function if we received an answer from AI
@@ -212,14 +206,6 @@ export class Connector {
                         : undefined,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
-            this.sendMessageToExtension({
-                command: 'chat-answer',
-                tabType: 'cwc',
-                tabID: messageData.tabID,
-                messageLength: this.answerMetadata.messageLength,
-                suggestionCount: this.answerMetadata.suggestionCount,
-                followUpCount: this.answerMetadata.followUpCount ?? messageData.followUps?.length ?? 0,
-            })
 
             return
         }

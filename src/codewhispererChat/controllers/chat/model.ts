@@ -38,7 +38,6 @@ export interface PromptMessage {
 
 export interface PromptAnswer {
     messageLength: number
-    command: string | undefined
     tabID: string
     suggestionCount: number
     followUpCount: number

@@ -15,7 +15,6 @@ import {
     TriggerTabIDReceived,
     StopResponseMessage,
     CopyCodeToClipboard,
-    PromptAnswer,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -31,7 +30,6 @@ import { CWCTelemetryHelper } from './telemetryHelper'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
-    readonly processChatAnswer: MessagePublisher<PromptAnswer>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
@@ -42,7 +40,6 @@ export interface ChatControllerMessagePublishers {
 
 export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
-    readonly processChatAnswer: MessageListener<PromptAnswer>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
@@ -77,10 +74,6 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
-        })
-
-        this.chatControllerMessageListeners.processChatAnswer.onMessage(data => {
-            this.processChatAnswer(data)
         })
 
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
@@ -118,6 +111,7 @@ export class ChatController {
     }
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
+        console.log('controller insert code')
         this.editorContentController.insertTextAtCursorPosition(message.code)
         CWCTelemetryHelper.instance.recordInteractWithMessage(message)
     }
@@ -239,12 +233,6 @@ export class ChatController {
         }
     }
 
-    private async processChatAnswer(message: PromptAnswer) {
-        this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
-            CWCTelemetryHelper.instance.recordAddMessage(context, message)
-        })
-    }
-
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         try {
             this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
@@ -301,7 +289,9 @@ export class ChatController {
         try {
             const response = await session.chat(request)
             CWCTelemetryHelper.instance.recordStartConversation(triggerEvent, triggerPayload)
-            this.messenger.sendAIResponse(response, session, tabID, triggerID)
+
+            const editorContext = await this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage)
+            this.messenger.sendAIResponse(response, session, tabID, triggerID, editorContext)
         } catch (e) {
             if (typeof e === 'string') {
                 this.messenger.sendErrorMessage(e.toUpperCase(), tabID)

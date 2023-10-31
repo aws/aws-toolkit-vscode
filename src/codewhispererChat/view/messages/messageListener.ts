@@ -31,9 +31,6 @@ export class UIMessageListener {
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break
-            case 'chat-answer':
-                this.processChatAnswer(msg)
-                break
             case 'new-tab-was-created':
                 this.processNewTabWasCreated(msg)
                 break
@@ -109,16 +106,6 @@ export class UIMessageListener {
             command: msg.command,
             tabID: msg.tabID,
             userIntent: msg.userIntent,
-        })
-    }
-
-    private processChatAnswer(msg: any) {
-        this.chatControllerMessagePublishers.processChatAnswer.publish({
-            messageLength: msg.messageLength,
-            command: msg.command,
-            tabID: msg.tabID,
-            suggestionCount: msg.suggestionCount,
-            followUpCount: msg.followUpCount,
         })
     }
 
