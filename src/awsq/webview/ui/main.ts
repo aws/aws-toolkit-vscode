@@ -332,6 +332,17 @@ ${message}`,
                                   }
                                 : {}),
                         })
+
+                        mynahUI.addChatItem(tabID, {
+                            type: ChatItemType.ANSWER_STREAM,
+                            body: '',
+                        })
+
+                        mynahUI.updateStore(tabID, {
+                            loadingChat: true,
+                            promptInputDisabledState: true,
+                        })
+
                         connector.requestGenerativeAIAnswer(affectedTabId, {
                             chatMessage: realPromptText,
                         })
