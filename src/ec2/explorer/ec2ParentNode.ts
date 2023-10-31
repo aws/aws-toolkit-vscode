@@ -9,7 +9,6 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
 import { Ec2Client } from '../../shared/clients/ec2Client'
 import { updateInPlace } from '../../shared/utilities/collectionUtils'
-import { Commands } from '../../shared/vscode/commands'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
@@ -56,6 +55,6 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
 
     public async refreshNode(): Promise<void> {
         this.clearChildren()
-        Commands.vscode().execute('aws.refreshAwsExplorerNode', this)
+        vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }

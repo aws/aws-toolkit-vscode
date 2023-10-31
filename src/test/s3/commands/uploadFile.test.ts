@@ -18,8 +18,6 @@ import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Client } from '../../../shared/clients/s3Client'
 import { MockOutputChannel } from '../../mockOutputChannel'
 import { anything, mock, instance, when, capture } from '../../utilities/mockito'
-import { Commands } from '../../../shared/vscode/commands'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('uploadFileCommand', function () {
@@ -44,13 +42,11 @@ describe('uploadFileCommand', function () {
     let bucketNode: S3BucketNode
     let getBucket: (s3client: S3Client) => Promise<BucketQuickPickItem | 'cancel' | 'back'>
     let getFile: (document?: vscode.Uri) => Promise<vscode.Uri[] | undefined>
-    let commands: Commands
     let mockedUpload: S3.ManagedUpload
 
     beforeEach(function () {
         mockedUpload = mock()
         s3 = mock()
-        commands = new FakeCommands()
         bucketNode = new S3BucketNode(
             { name: bucketName, region: 'region', arn: 'arn' },
             new S3Node(instance(s3)),
@@ -62,7 +58,6 @@ describe('uploadFileCommand', function () {
     describe('with node parameter', async function () {
         this.beforeEach(function () {
             s3 = mock()
-            commands = new FakeCommands()
             bucketNode = new S3BucketNode(
                 { name: bucketName, region: 'region', arn: 'arn' },
                 new S3Node(instance(s3)),
@@ -81,7 +76,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel, commands)
+            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel)
 
             // eslint-disable-next-line @typescript-eslint/unbound-method
             const [uploadFileRequest] = capture(s3.uploadFile).last()
@@ -103,7 +98,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel, commands)
+            await uploadFileCommand(instance(s3), bucketNode, statFile, undefined, getFile, outputChannel)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'])
         })
     })
@@ -112,7 +107,6 @@ describe('uploadFileCommand', function () {
         this.beforeEach(function () {
             s3 = mock()
             outputChannel = new MockOutputChannel()
-            commands = new FakeCommands()
             getFile = document => {
                 return new Promise((resolve, reject) => {
                     resolve([fileLocation])
@@ -130,7 +124,7 @@ describe('uploadFileCommand', function () {
             when(s3.uploadFile(anything())).thenResolve(instance(mockedUpload))
             when(mockedUpload.promise()).thenResolve()
 
-            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel, commands)
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel)
 
             assert.deepStrictEqual(outputChannel.lines, [
                 'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -145,7 +139,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel, commands)
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel)
             assert.deepStrictEqual(outputChannel.lines, ['No bucket selected, cancelling upload'])
         })
 
@@ -156,7 +150,7 @@ describe('uploadFileCommand', function () {
                 })
             }
 
-            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel, commands)
+            await uploadFileCommand(instance(s3), undefined, statFile, getBucket, getFile, outputChannel)
             assert.deepStrictEqual(outputChannel.lines, ['No file selected, cancelling upload'])
         })
     })
@@ -179,9 +173,9 @@ describe('uploadFileCommand', function () {
         getTestWindow().onDidShowDialog(d => d.selectItem(fileLocation))
 
         // Upload to bucket.
-        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel, commands)
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel)
         // Upload to folder.
-        await uploadFileCommand(instance(s3), fileLocation, statFile, getFolder, getFile, outputChannel, commands)
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getFolder, getFile, outputChannel)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -197,7 +191,7 @@ describe('uploadFileCommand', function () {
         getTestWindow().onDidShowMessage(m => m.close())
 
         outputChannel = new MockOutputChannel()
-        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel, commands)
+        await uploadFileCommand(instance(s3), fileLocation, statFile, getBucket, getFile, outputChannel)
 
         assert.deepStrictEqual(outputChannel.lines, [
             'Uploading file file.jpg to s3://bucket-name/file.jpg',
@@ -328,7 +322,7 @@ describe('promptUserForBucket', async function () {
         selection.label = 'Create new bucket'
         selection.bucket = undefined
 
-        const createBucket: (node?: S3Node, commands?: Commands) => Promise<void> = () => {
+        const createBucket: (node?: S3Node) => Promise<void> = () => {
             throw new Error('Error expected')
         }
         await assert.rejects(() => promptUserForBucket(instance(s3), promptSelect, createBucket))

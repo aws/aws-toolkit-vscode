@@ -53,8 +53,8 @@ export async function attachPolicyCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node)
-    await baseNode.thingFolderNode?.refreshNode(commands)
-    await baseNode.certFolderNode?.refreshNode(commands)
+    await baseNode.thingFolderNode?.refreshNode()
+    await baseNode.certFolderNode?.refreshNode()
 }
 
 /**
