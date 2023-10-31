@@ -123,7 +123,7 @@ export class CWCTelemetryHelper {
             cwsprChatMessageId: '',
             cwsprChatUserIntent: undefined,
             cwsprChatHasCodeSnippet: hasCodeSnippet,
-            cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage ?? '',
+            cwsprChatProgrammingLanguage: context?.activeFileContext?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: context?.activeFileContext?.fileText?.length ?? 0,
             cwsprChatActiveEditorImportCount: context?.activeFileContext?.matchPolicy?.must?.length ?? 0,
             cwsprChatResponseCodeSnippetCount: 0,
