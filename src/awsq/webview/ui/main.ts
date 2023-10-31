@@ -185,7 +185,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
         },
-        onAsyncFollowUpClicked: (tabID: string, inProgress: boolean, message: string | undefined) => {
+        onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: true,
