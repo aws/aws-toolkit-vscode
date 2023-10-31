@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vs from 'vscode'
 import { MessageListener } from '../../../awsq/messages/messageListener'
 import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
-import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
+import { ReferenceLogController } from './referenceLogController'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -17,10 +16,12 @@ export interface UIMessageListenerProps {
 export class UIMessageListener {
     private chatControllerMessagePublishers: ChatControllerMessagePublishers
     private webViewMessageListener: MessageListener<any>
+    private referenceLogController: ReferenceLogController
 
     constructor(props: UIMessageListenerProps) {
         this.chatControllerMessagePublishers = props.chatControllerMessagePublishers
         this.webViewMessageListener = props.webViewMessageListener
+        this.referenceLogController = new ReferenceLogController()
 
         this.webViewMessageListener.onMessage(msg => {
             this.handleMessage(msg)
@@ -80,14 +81,7 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
-        if (msg.codeReference !== undefined && vs.window.activeTextEditor !== undefined) {
-            const referenceLog = ReferenceLogViewProvider.getReferenceLog(
-                '',
-                msg.codeReference,
-                vs.window.activeTextEditor as vs.TextEditor
-            )
-            ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
-        }
+        this.referenceLogController.addReferenceLog(msg.codeReference)
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
             tabID: msg.tabID,
