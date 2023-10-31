@@ -5,7 +5,7 @@ src/codewhisperer/client/codewhispererclient.d.ts
 src/codewhisperer/client/codewhispereruserclient.d.ts
 src/weaverbird/client/weaverbirdclient.d.ts
 **/*.gen.ts
-src/testFixtures/workspaceFolder/ts-plain-sam-app/
+src/testFixtures/**
 dist/**
 types/*.d.ts
 src.gen/**

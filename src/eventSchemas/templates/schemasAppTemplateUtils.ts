@@ -4,7 +4,7 @@
  */
 
 import _ = require('lodash')
-import { IdentifierFormatter, SchemaCodeGenUtils } from '../../eventSchemas/models/schemaCodeGenUtils'
+import { SchemaCodeGenUtils, toValidIdentifier } from '../../eventSchemas/models/schemaCodeGenUtils'
 import { SchemaClient } from '../../shared/clients/schemaClient'
 
 const xAmazonEventSource = 'x-amazon-events-source'
@@ -92,13 +92,13 @@ function buildRootSchemaEventName(schemaNode: any, awsEventNode: any) {
     if (_.isString(refValue) && refValue.includes(componentsSchemasPath)) {
         const awsEventDetailRef = refValue.split(componentsSchemasPath).pop()
         if (!_.isEmpty(awsEventDetailRef)) {
-            return IdentifierFormatter.toValidIdentifier(awsEventDetailRef!)
+            return toValidIdentifier(awsEventDetailRef!)
         }
     }
 
     const schemaRoots = _.keysIn(_.get(schemaNode, components.concat('.', schemas)))
     if (!_.isEmpty(schemaRoots)) {
-        return IdentifierFormatter.toValidIdentifier(schemaRoots[0])
+        return toValidIdentifier(schemaRoots[0])
     }
 
     return undefined

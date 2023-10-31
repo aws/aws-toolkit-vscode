@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { readFileSync } from 'fs'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import * as CloudFormation from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { isInDirectory } from '../filesystemUtilities'

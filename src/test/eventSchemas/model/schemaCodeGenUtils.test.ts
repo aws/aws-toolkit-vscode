@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { IdentifierFormatter, SchemaCodeGenUtils } from '../../../eventSchemas/models/schemaCodeGenUtils'
+import { SchemaCodeGenUtils, toValidIdentifier } from '../../../eventSchemas/models/schemaCodeGenUtils'
 
 describe('SchemaCodeGenUtils', async function () {
     const testScenarios = [
@@ -66,14 +66,12 @@ describe('SchemaCodeGenUtils', async function () {
     })
 })
 
-describe('IdentifierFormatter', async function () {
-    describe('toValidIdentifier', async function () {
-        it('replaces invalid identifier characters with underscore', async function () {
-            assert.strictEqual(IdentifierFormatter.toValidIdentifier('Review.created?today'), 'Review_created_today')
-        })
+describe('toValidIdentifier', async function () {
+    it('replaces invalid identifier characters with underscore', async function () {
+        assert.strictEqual(toValidIdentifier('Review.created?today'), 'Review_created_today')
+    })
 
-        it('replaces package seperator @ with dot', async function () {
-            assert.strictEqual(IdentifierFormatter.toValidIdentifier('Review@created'), 'Review.created')
-        })
+    it('replaces package seperator @ with dot', async function () {
+        assert.strictEqual(toValidIdentifier('Review@created'), 'Review.created')
     })
 })

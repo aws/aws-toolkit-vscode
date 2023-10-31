@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.96.0-SNAPSHOT",
+    "version": "1.97.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -13,6 +13,7 @@
         "url": "https://github.com/aws/aws-toolkit-vscode"
     },
     "engines": {
+        "npm": "^10.1.0",
         "vscode": "^1.68.0"
     },
     "icon": "resources/marketplace/aws-icon-256x256.png",
