@@ -164,9 +164,9 @@ export class CWCTelemetryHelper {
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
                 telemetry.codewhispererchat_interactWithMessage.emit({
-                    // TODO Those are not the real messageId and conversationId, needs to be confirmed
+                    // TODO: message id
                     cwsprChatMessageId: message.messageId,
-                    cwsprChatConversationId: message.tabID,
+                    cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
                 })
         }
