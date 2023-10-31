@@ -12,12 +12,11 @@ import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable
 import { RegistryItemNode } from '../explorer/registryItemNode'
 import { showConfirmationMessage } from '../util/util'
 import * as localizedText from '../../shared/localizedText'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
 
-export async function deleteDocument(node: DocumentItemNodeWriteable, commands = Commands.vscode()) {
+export async function deleteDocument(node: DocumentItemNodeWriteable) {
     const logger: Logger = getLogger()
 
     let result: Result = 'Succeeded'
@@ -56,7 +55,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable, commands =
                     node.documentName
                 )
             )
-            await refreshNode(node.parent, commands)
+            await refreshNode(node.parent)
         }
     } catch (err) {
         result = 'Failed'
@@ -74,6 +73,6 @@ export async function deleteDocument(node: DocumentItemNodeWriteable, commands =
     }
 }
 
-async function refreshNode(node: RegistryItemNode, commands: Commands): Promise<void> {
-    return commands.execute('aws.refreshAwsExplorerNode', node)
+async function refreshNode(node: RegistryItemNode): Promise<void> {
+    return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', node)
 }

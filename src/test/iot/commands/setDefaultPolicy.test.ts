@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { setDefaultPolicy } from '../../../iot/commands/setDefaultPolicy'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { IotPolicyVersionNode } from '../../../iot/explorer/iotPolicyVersionNode'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 
@@ -20,9 +20,13 @@ describe('setDefaultPolicy', function () {
     let node: IotPolicyVersionNode
     let parentNode: IotPolicyWithVersionsNode
     let parentParentNode: IotPolicyFolderNode
-    let commands: FakeCommands
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         parentParentNode = new IotPolicyFolderNode(instance(iot), new IotNode(instance(iot)))
         parentNode = new IotPolicyWithVersionsNode({ name: policyName, arn: 'arn' }, parentParentNode, instance(iot))
@@ -33,28 +37,31 @@ describe('setDefaultPolicy', function () {
             parentNode,
             instance(iot)
         )
-        commands = new FakeCommands()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
     })
 
     it('sets default version and refreshes node', async function () {
-        await setDefaultPolicy(node, commands)
+        await setDefaultPolicy(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertInfo(/Set V1 as default version of test-policy/)
         verify(iot.setDefaultPolicyVersion(deepEqual({ policyName, policyVersionId: 'V1' }))).once()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 
     it('shows an error message and refreshes node when deletion fails', async function () {
         when(iot.setDefaultPolicyVersion(anything())).thenReject(new Error('Expected failure'))
-        await setDefaultPolicy(node, commands)
+        await setDefaultPolicy(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to set default policy version/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode')
     })
 })

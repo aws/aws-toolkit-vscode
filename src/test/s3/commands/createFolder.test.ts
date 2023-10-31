@@ -4,11 +4,12 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { createFolderCommand } from '../../../s3/commands/createFolder'
 import { S3BucketNode } from '../../../s3/explorer/s3BucketNode'
 import { S3Node } from '../../../s3/explorer/s3Nodes'
 import { S3Client } from '../../../shared/clients/s3Client'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { getTestWindow } from '../../shared/vscode/window'
 import { anything, mock, instance, when, deepEqual } from '../../utilities/mockito'
 
@@ -24,14 +25,23 @@ describe('createFolderCommand', function () {
 
     let s3: S3Client
     let node: S3BucketNode
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         s3 = mock()
         node = new S3BucketNode(
             { name: bucketName, region: 'region', arn: 'arn' },
             new S3Node(instance(s3)),
             instance(s3)
         )
+    })
+
+    afterEach(function () {
+        sandbox.restore()
     })
 
     it('prompts for folder name, creates folder, shows success, and refreshes node', async function () {
@@ -44,31 +54,27 @@ describe('createFolderCommand', function () {
             assert.strictEqual(input.placeholder, 'Folder Name')
             input.acceptValue(folderName)
         })
-        const commands = new FakeCommands()
-        await createFolderCommand(node, commands)
+        await createFolderCommand(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertInfo(/Created folder: foo/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
         getTestWindow().onDidShowInputBox(input => input.hide())
-        await assert.rejects(() => createFolderCommand(node, new FakeCommands()), /cancelled/i)
+        await assert.rejects(() => createFolderCommand(node), /cancelled/i)
     })
 
     it('shows an error message and refreshes node when folder creation fails', async function () {
         when(s3.createFolder(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(folderName))
-        const commands = new FakeCommands()
-        await assert.rejects(() => createFolderCommand(node, commands), /failed to create folder/i)
+        await assert.rejects(() => createFolderCommand(node), /failed to create folder/i)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     invalidFolderNames.forEach(invalid => {
@@ -78,8 +84,7 @@ describe('createFolderCommand', function () {
                 assert.strictEqual(input.validationMessage, invalid.error)
                 input.hide()
             })
-            const commands = new FakeCommands()
-            await assert.rejects(() => createFolderCommand(node, commands))
+            await assert.rejects(() => createFolderCommand(node))
         })
     })
 })
