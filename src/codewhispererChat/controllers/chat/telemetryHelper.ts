@@ -4,7 +4,7 @@
  */
 
 import { UserIntent } from '@amzn/codewhisperer-streaming'
-import { CwsprChatUserIntent, telemetry } from '../../../shared/telemetry/telemetry'
+import { CwsprChatTriggerInteraction, CwsprChatUserIntent, telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { CopyCodeToClipboard, InsertCodeAtCursorPosition, PromptAnswer, PromptMessage, TriggerPayload } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
@@ -33,6 +33,22 @@ export class CWCTelemetryHelper {
             default:
                 return undefined
         }
+    }
+
+    public recordOpenChat(triggerInteractionType: CwsprChatTriggerInteraction) {
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: triggerInteractionType })
+    }
+
+    public recordCloseChat() {
+        telemetry.codewhispererchat_closeChat.emit()
+    }
+
+    public recordEnterFocusChat() {
+        telemetry.codewhispererchat_enterFocusChat.emit()
+    }
+
+    public recordExitFocusChat() {
+        telemetry.codewhispererchat_exitFocusChat.emit()
     }
 
     public recordInteractWithMessage(message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage) {
@@ -119,6 +135,18 @@ export class CWCTelemetryHelper {
             cwsprChatFullResponseLatency: 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
+        })
+    }
+
+    public recordEnterFocusConversation(tabID: string) {
+        telemetry.codewhispererchat_enterFocusConversation.emit({
+            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
+        })
+    }
+
+    public recordExitFocusConversation(tabID: string) {
+        telemetry.codewhispererchat_exitFocusConversation.emit({
+            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
         })
     }
 

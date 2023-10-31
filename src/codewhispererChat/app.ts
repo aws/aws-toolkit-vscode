@@ -12,7 +12,6 @@ import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import {
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
-    PromptAnswer,
     PromptMessage,
     StopResponseMessage,
     TabClosedMessage,
@@ -23,7 +22,6 @@ import { EditorContextCommand, registerCommands } from './commands/registerComma
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
-        processChatAnswer: new EventEmitter<PromptAnswer>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
         processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
@@ -36,7 +34,6 @@ export function init(appContext: AwsQAppInitContext) {
         processPromptChatMessage: new MessageListener<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
         ),
-        processChatAnswer: new MessageListener<PromptAnswer>(cwChatControllerEventEmitters.processChatAnswer),
         processTabClosedMessage: new MessageListener<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
         ),
@@ -61,7 +58,6 @@ export function init(appContext: AwsQAppInitContext) {
         processPromptChatMessage: new MessagePublisher<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
         ),
-        processChatAnswer: new MessagePublisher<PromptAnswer>(cwChatControllerEventEmitters.processChatAnswer),
         processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
         ),

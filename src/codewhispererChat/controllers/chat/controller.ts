@@ -111,7 +111,6 @@ export class ChatController {
     }
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
-        console.log('controller insert code')
         this.editorContentController.insertTextAtCursorPosition(message.code)
         CWCTelemetryHelper.instance.recordInteractWithMessage(message)
     }
