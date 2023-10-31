@@ -118,6 +118,7 @@ export class Connector {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'clear',
+            chatMessage: '',
             tabType: 'cwc',
         })
     }
