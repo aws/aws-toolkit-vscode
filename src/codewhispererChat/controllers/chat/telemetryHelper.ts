@@ -8,6 +8,7 @@ import { CwsprChatTriggerInteraction, CwsprChatUserIntent, telemetry } from '../
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { CopyCodeToClipboard, InsertCodeAtCursorPosition, PromptAnswer, PromptMessage, TriggerPayload } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
+import globals from '../../../shared/extensionGlobals'
 
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
@@ -34,22 +35,42 @@ export class CWCTelemetryHelper {
     }
 
     public recordOpenChat(triggerInteractionType: CwsprChatTriggerInteraction) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: triggerInteractionType })
     }
 
     public recordCloseChat() {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         telemetry.codewhispererchat_closeChat.emit()
     }
 
     public recordEnterFocusChat() {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         telemetry.codewhispererchat_enterFocusChat.emit()
     }
 
     public recordExitFocusChat() {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         telemetry.codewhispererchat_exitFocusChat.emit()
     }
 
     public recordInteractWithMessage(message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         const conversationId = this.getConversationId(message.tabID)
 
         switch (message.command) {
@@ -89,6 +110,10 @@ export class CWCTelemetryHelper {
     }
 
     public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         if (triggerEvent.tabID == undefined) {
             return
         }
@@ -109,6 +134,10 @@ export class CWCTelemetryHelper {
     }
 
     public recordAddMessage(triggerPayload: TriggerPayload | undefined, message: PromptAnswer) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
 
         // TODO: add mesasge id, user intent, response code snippet count, response code, references count, time to first chunk, response latency
@@ -133,12 +162,20 @@ export class CWCTelemetryHelper {
     }
 
     public recordEnterFocusConversation(tabID: string) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         telemetry.codewhispererchat_enterFocusConversation.emit({
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
         })
     }
 
     public recordExitFocusConversation(tabID: string) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
         telemetry.codewhispererchat_exitFocusConversation.emit({
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
         })
