@@ -14,6 +14,8 @@ export enum Response {
     INIT = 'INIT',
     LOAD_FILE = 'LOAD_FILE',
     SAVE_FILE = 'SAVE_FILE',
+    ADD_FILE_WATCH = 'ADD_FILE_WATCH',
+    FILE_CHANGED = 'FILE_CHANGED',
 }
 
 export interface ResponseMessage {
@@ -37,10 +39,21 @@ export interface SaveFileResponseMessage extends ResponseMessage {
     status: boolean
 }
 
+export interface AddFileWatchResponseMessage extends ResponseMessage {
+    eventId: string
+    status: boolean
+}
+
+export interface FileChangedResponseMessage extends ResponseMessage {
+    fileName: string
+    fileContents: string
+}
+
 export enum Command {
     INIT = 'INIT',
     LOAD_FILE = 'LOAD_FILE',
     SAVE_FILE = 'SAVE_FILE',
+    ADD_FILE_WATCH = 'ADD_FILE_WATCH',
 }
 
 export interface RequestMessage {
@@ -62,4 +75,10 @@ export interface SaveFileRequestMessage extends RequestMessage {
     fileName: string
     filePath: string
     fileContents: string
+}
+
+export interface AddFileWatchRequestMessage extends RequestMessage {
+    eventId: string
+    fileName: string
+    filePath: string
 }

@@ -32,6 +32,7 @@ export function saveFileMessageHandler(request: SaveFileRequestMessage, context:
 
     // TODO be smarter about how this check happens; check external files as needed
     if (!context.textDocument.isDirty) {
+        globalThis.previousFileContents = request.fileContents
         const content = Buffer.from(request.fileContents, 'utf8')
         const uri = request.filePath === '' ? context.textDocument.uri : vscode.Uri.file(request.filePath)
         try {
