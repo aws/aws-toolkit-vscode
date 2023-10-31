@@ -48,6 +48,12 @@ export class Messenger {
                         return true
                     }
 
+                    // TODO we should send messageId and conversationId from the response headers and send them to UI level
+                    // chatEvent.messageMetadataEvent?.conversationId
+                    // On the main.ts UI level, we should associate the conversationId with the tabs store items,
+                    // since UI doesn't need them for anything, should be done on the extensions main.ts
+                    // and instead of triggerId we need to send the messageId which should come from backend
+
                     if (
                         chatEvent.codeReferenceEvent?.references != undefined &&
                         chatEvent.codeReferenceEvent.references.length > 0

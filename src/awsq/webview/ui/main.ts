@@ -383,6 +383,7 @@ ${message}`,
 
             connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
         },
+        onVote: connector.onChatItemVoted,
         onSendFeedback: connector.sendFeedback,
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
         onCopyCodeToClipboard: connector.onCopyCodeToClipboard,

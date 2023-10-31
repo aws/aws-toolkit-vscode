@@ -7,6 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
+import { FeedbackPayload } from '@aws/mynah-ui-chat'
 
 interface ChatPayload {
     chatMessage: string
@@ -100,6 +101,24 @@ export class Connector {
             tabID: tabID,
             command: 'stop-response',
             tabType: 'cwc',
+        })
+    }
+
+    onChatItemVoted = (tabID: string, messageId: string, vote: 'upvote' | 'downvote'): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'chat-item-voted',
+            messageId,
+            vote,
+            tabType: 'cwc',
+        })
+    }
+    onSendFeedback = (tabID: string, feedbackPayload: FeedbackPayload): void | undefined => {
+        this.sendMessageToExtension({
+            command: 'chat-item-feedback',
+            ...feedbackPayload,
+            tabType: 'cwc',
+            tabID: tabID,
         })
     }
 

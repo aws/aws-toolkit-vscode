@@ -426,8 +426,7 @@
             "description": "When user opens CWSPR chat panel",
             "metadata": [
                 {
-                    "type": "cwsprChatTriggerInteraction",
-                    "required": true
+                    "type": "cwsprChatTriggerInteraction"
                 }
             ]
         },
@@ -448,25 +447,25 @@
             "description": "When user starts a new conversation",
             "metadata": [
                 {
-                    "type": "cwsprChatConversationId",
-                    "required": true
+                    "type": "cwsprChatConversationId"
                 },
                 {
-                    "type": "cwsprChatTriggerInteraction",
-                    "required": true
+                    "type": "cwsprChatTriggerInteraction"
                 },
                 {
-                    "type": "cwsprChatUserIntent"
+                    "type": "cwsprChatUserIntent",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatHasCodeSnippet"
+                    "type": "cwsprChatHasCodeSnippet",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatProgrammingLanguage"
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatConversationType",
-                    "required": true
+                    "type": "cwsprChatConversationType"
                 }
             ]
         },
@@ -475,58 +474,62 @@
             "description": "When a message is added to the conversation",
             "metadata": [
                 {
-                    "type": "cwsprChatConversationId",
-                    "required": true
+                    "type": "cwsprChatConversationId"
                 },
                 {
-                    "type": "cwsprChatMessageId",
-                    "required": true
+                    "type": "cwsprChatMessageId"
                 },
                 {
-                    "type": "cwsprChatUserIntent"
+                    "type": "cwsprChatUserIntent",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatHasCodeSnippet"
+                    "type": "cwsprChatHasCodeSnippet",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatProgrammingLanguage"
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatActiveEditorTotalCharacters"
+                    "type": "cwsprChatActiveEditorTotalCharacters",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatActiveEditorImportCount"
+                    "type": "cwsprChatActiveEditorImportCount",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatResponseCodeSnippetCount"
+                    "type": "cwsprChatResponseCodeSnippetCount",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatResponseCode",
-                    "required": true
+                    "type": "cwsprChatResponseCode"
                 },
                 {
-                    "type": "cwsprChatSourceLinkCount"
+                    "type": "cwsprChatSourceLinkCount",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatReferencesCount"
+                    "type": "cwsprChatReferencesCount",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatFollowUpCount"
+                    "type": "cwsprChatFollowUpCount",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatTimeToFirstChunk",
-                    "required": true
+                    "type": "cwsprChatTimeToFirstChunk"
                 },
                 {
-                    "type": "cwsprChatFullResponseLatency",
-                    "required": true
+                    "type": "cwsprChatFullResponseLatency"
                 },
                 {
-                    "type": "cwsprChatResponseLength"
+                    "type": "cwsprChatResponseLength",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatConversationType",
-                    "required": true
+                    "type": "cwsprChatConversationType"
                 }
             ]
         },
@@ -535,25 +538,25 @@
             "description": "When a user interacts with a message in the conversation",
             "metadata": [
                 {
-                    "type": "cwsprChatConversationId",
-                    "required": true
+                    "type": "cwsprChatConversationId"
                 },
                 {
-                    "type": "cwsprChatMessageId",
-                    "required": true
+                    "type": "cwsprChatMessageId"
                 },
                 {
-                    "type": "cwsprChatInteractionType",
-                    "required": true
+                    "type": "cwsprChatInteractionType"
                 },
                 {
-                    "type": "cwsprChatInteractionTarget"
+                    "type": "cwsprChatInteractionTarget",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatAcceptedCharactersLength"
+                    "type": "cwsprChatAcceptedCharactersLength",
+                    "required": false
                 },
                 {
-                    "type": "cwsprChatHasReference"
+                    "type": "cwsprChatHasReference",
+                    "required": false
                 }
             ]
         },
@@ -562,16 +565,13 @@
             "description": "% of code modified by the user after copying/inserting code from a message",
             "metadata": [
                 {
-                    "type": "cwsprChatConversationId",
-                    "required": true
+                    "type": "cwsprChatConversationId"
                 },
                 {
-                    "type": "cwsprChatMessageId",
-                    "required": true
+                    "type": "cwsprChatMessageId"
                 },
                 {
-                    "type": "cwsprChatModificationPercentage",
-                    "required": true
+                    "type": "cwsprChatModificationPercentage"
                 }
             ]
         },
@@ -580,8 +580,7 @@
             "description": "When a conversation comes into focus",
             "metadata": [
                 {
-                    "type": "cwsprChatConversationId",
-                    "required": true
+                    "type": "cwsprChatConversationId"
                 }
             ]
         },
@@ -590,8 +589,7 @@
             "description": "When a conversation goes out of focus",
             "metadata": [
                 {
-                    "type": "cwsprChatConversationId",
-                    "required": true
+                    "type": "cwsprChatConversationId"
                 }
             ]
         }

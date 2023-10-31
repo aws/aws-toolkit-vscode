@@ -15,5 +15,7 @@ type MessageCommand =
     | 'insert_code_at_cursor_position'
     | 'stop-response'
     | 'trigger-tabID-received'
+    | 'chat-item-voted'
+    | 'chat-item-feedback'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }
