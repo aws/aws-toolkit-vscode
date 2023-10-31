@@ -32,14 +32,14 @@ describe('securityIssueCodeActionProvider', () => {
         const actual = securityIssueCodeActionProvider.provideCodeActions(mockDocument, range, context, token.token)
 
         assert.strictEqual(actual.length, 4)
-        assert.strictEqual(actual[0].title, 'Apply fix "issue 1"')
+        assert.strictEqual(actual[0].title, 'Apply fix for "issue 1"')
         assert.strictEqual(actual[0].kind, vscode.CodeActionKind.QuickFix)
-        assert.strictEqual(actual[1].title, 'View details "issue 1"')
-        assert.strictEqual(actual[1].kind, vscode.CodeActionKind.QuickFix)
-        assert.strictEqual(actual[2].title, 'Apply fix "issue 2"')
+        assert.strictEqual(actual[1].title, 'View details for "issue 1"')
+        assert.strictEqual(actual[1].kind, undefined)
+        assert.strictEqual(actual[2].title, 'Apply fix for "issue 2"')
         assert.strictEqual(actual[2].kind, vscode.CodeActionKind.QuickFix)
-        assert.strictEqual(actual[3].title, 'View details "issue 2"')
-        assert.strictEqual(actual[3].kind, vscode.CodeActionKind.QuickFix)
+        assert.strictEqual(actual[3].title, 'View details for "issue 2"')
+        assert.strictEqual(actual[3].kind, undefined)
     })
 
     it('should not provide quick fix if the issue does not have a suggested fix', () => {
@@ -53,7 +53,7 @@ describe('securityIssueCodeActionProvider', () => {
         const actual = securityIssueCodeActionProvider.provideCodeActions(mockDocument, range, context, token.token)
 
         assert.strictEqual(actual.length, 1)
-        assert.strictEqual(actual[0].title, 'View details "issue 1"')
-        assert.strictEqual(actual[0].kind, vscode.CodeActionKind.QuickFix)
+        assert.strictEqual(actual[0].title, 'View details for "issue 1"')
+        assert.strictEqual(actual[0].kind, undefined)
     })
 })

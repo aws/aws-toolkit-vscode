@@ -32,7 +32,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     const [suggestedFix] = issue.suggestedFixes
                     if (suggestedFix) {
                         const fixIssue = new vscode.CodeAction(
-                            `Apply fix "${issue.title}"`,
+                            `Apply fix for "${issue.title}"`,
                             vscode.CodeActionKind.QuickFix
                         )
                         fixIssue.command = {
@@ -42,10 +42,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                         }
                         codeActions.push(fixIssue)
                     }
-                    const openIssue = new vscode.CodeAction(
-                        `View details "${issue.title}"`,
-                        vscode.CodeActionKind.QuickFix
-                    )
+                    const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
                     openIssue.command = {
                         title: 'Open "CodeWhisperer Security Issue"',
                         command: 'aws.codeWhisperer.openSecurityIssuePanel',
