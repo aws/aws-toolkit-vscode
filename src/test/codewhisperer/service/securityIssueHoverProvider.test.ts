@@ -45,7 +45,7 @@ describe('securityIssueHoverProvider', () => {
             '## Suggested Fix for title ![High](severity-high.svg)\n' +
                 'description\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
-                    JSON.stringify(issues[0])
+                    JSON.stringify({ ...issues[0], filePath: mockDocument.fileName })
                 )} 'Open "CodeWhisperer Security Issue"')\n` +
                 ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
                     JSON.stringify({ ...issues[0], filePath: mockDocument.fileName })
@@ -79,7 +79,7 @@ describe('securityIssueHoverProvider', () => {
             '## title ![High](severity-high.svg)\n' +
                 'description\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
-                    JSON.stringify(issues[1])
+                    JSON.stringify({ ...issues[1], filePath: mockDocument.fileName })
                 )} 'Open "CodeWhisperer Security Issue"')\n`
         )
         assertTelemetry('codewhisperer_codeScanIssueHover', [
