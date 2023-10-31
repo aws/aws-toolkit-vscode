@@ -65,38 +65,45 @@ export class RefinementState implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const payload = {
-            task: action.task,
-            originalFileContents: [],
-            conversationId: this.conversationId,
-            config: this.config.llmConfig,
-        }
+        return telemetry.awsq_approachInvoke.run(async span => {
+            try {
+                const payload = {
+                    task: action.task,
+                    originalFileContents: [],
+                    conversationId: this.conversationId,
+                    config: this.config.llmConfig,
+                }
+                span.record({ result: 'Failed', reason: 'This is the start so Approach is not successful yet' })
+                const response = await invoke<GenerateApproachInput, GenerateApproachOutput>(
+                    this.config.client,
+                    this.config.backendConfig.lambdaArns.approach.generate,
+                    payload
+                )
 
-        const response = await invoke<GenerateApproachInput, GenerateApproachOutput>(
-            this.config.client,
-            this.config.backendConfig.lambdaArns.approach.generate,
-            payload
-        )
-
-        this.approach = sanitizeHtml(
-            response.approach ??
-                'There has been a problem generating an approach. Please open a conversation in a new tab',
-            {}
-        )
-
-        return {
-            nextState: new RefinementIterationState(
-                {
-                    ...this.config,
-                    conversationId: response.conversationId,
-                },
-                this.approach,
-                this.tabID
-            ),
-            interaction: {
-                content: `${this.approach}\n`,
-            },
-        }
+                this.approach = sanitizeHtml(
+                    response.approach ??
+                        'There has been a problem generating an approach. Please open a conversation in a new tab',
+                    {}
+                )
+                span.record({ result: 'Succeeded' })
+                return {
+                    nextState: new RefinementIterationState(
+                        {
+                            ...this.config,
+                            conversationId: response.conversationId,
+                        },
+                        this.approach,
+                        this.tabID
+                    ),
+                    interaction: {
+                        content: `${this.approach}\n`,
+                    },
+                }
+            } catch (e) {
+                span.record({ result: 'Failed', reason: `Code Generation Failed with error: ${e}` })
+                throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
+            }
+        })
     }
 }
 
@@ -244,43 +251,53 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         telemetry.awsq_isApproachAccepted.emit({ enabled: true })
-        const payload: GenerateCodeInput = {
-            originalFileContents: [],
-            approach: this.approach,
-            task: action.task,
-            config: this.config.llmConfig,
-            conversationId: this.config.conversationId,
-        }
 
-        const response = await invoke<GenerateCodeInput, GenerateCodeOutput>(
-            this.config.client,
-            this.config.backendConfig.lambdaArns.codegen.generate,
-            payload
-        )
+        return telemetry.awsq_codeGenerationInvoke.run(async span => {
+            try {
+                span.record({ result: 'Failed', reason: 'This is the start so Code Generation is not successful yet' })
 
-        const genId = response.generationId
+                const payload: GenerateCodeInput = {
+                    originalFileContents: [],
+                    approach: this.approach,
+                    task: action.task,
+                    config: this.config.llmConfig,
+                    conversationId: this.config.conversationId,
+                }
 
-        const codeGeneration = await this.generateCode({
-            getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
-            fs: action.fs,
-            generationId: genId,
+                const response = await invoke<GenerateCodeInput, GenerateCodeOutput>(
+                    this.config.client,
+                    this.config.backendConfig.lambdaArns.codegen.generate,
+                    payload
+                )
+
+                const genId = response.generationId
+
+                const codeGeneration = await this.generateCode({
+                    getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
+                    fs: action.fs,
+                    generationId: genId,
+                })
+
+                this.filePaths = codeGeneration.newFilePaths
+                this.newFileContents = codeGeneration.newFiles
+
+                const nextState = new CodeGenIterationState(
+                    this.config,
+                    this.approach,
+                    this.newFileContents,
+                    this.filePaths,
+                    this.tabID
+                )
+                span.record({ result: 'Succeeded' })
+                return {
+                    nextState,
+                    interaction: {},
+                }
+            } catch (e) {
+                span.record({ result: 'Failed', reason: `Code Generation Failed with error: ${e}` })
+                throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
+            }
         })
-
-        this.filePaths = codeGeneration.newFilePaths
-        this.newFileContents = codeGeneration.newFiles
-
-        const nextState = new CodeGenIterationState(
-            this.config,
-            this.approach,
-            this.newFileContents,
-            this.filePaths,
-            this.tabID
-        )
-
-        return {
-            nextState,
-            interaction: {},
-        }
     }
 }
 

@@ -218,6 +218,10 @@ export class TelemetryTracer extends TelemetryBase {
      * State that is applied to all new spans within the current or subsequent executions.
      */
     public get attributes(): Readonly<Attributes> | undefined {
+        return this._attributes
+    }
+
+    private get _attributes(): Attributes | undefined {
         return this.#context.getStore()?.attributes
     }
 
@@ -233,8 +237,8 @@ export class TelemetryTracer extends TelemetryBase {
     public record(data: Attributes): void {
         this.activeSpan?.record(data)
 
-        if (this.attributes) {
-            Object.assign(this.attributes, data)
+        if (this._attributes) {
+            Object.assign(this._attributes, data)
         }
     }
 
