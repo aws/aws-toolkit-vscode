@@ -292,7 +292,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         this.reset()
 
         const exclude = getExcludePatternOnce()
-        getLogger().info(`Building registry with the following criteria: ${this.outputPatterns()}`)
+        getLogger().info(`${this.name}: Building registry with the following criteria: ${this.outputPatterns()}`)
         cancellationPromise.then(
             () => {},
             () => {
@@ -310,11 +310,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
                 // file not processable
                 skips++
                 const err = e as Error
-                getLogger().error('watchedFiles: findFiles("%s", "%s"): %s', glob, exclude, err.message)
+                getLogger().error(`${this.name}: watchedFiles: findFiles("%s", "%s"): %s`, glob, exclude, err.message)
             }
         }
         getLogger().info(
-            'Registered %s items%s%s',
+            `${this.name}: Registered %s items%s%s`,
             this.registryData.size,
             isCanceled ? ' (cancelled)' : '',
             skips > 0 ? `, skipped ${skips} entries` : ''

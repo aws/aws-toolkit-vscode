@@ -87,8 +87,10 @@ export class AsyncCloudFormationTemplateRegistry {
         }
 
         let perf: PerfLog
+        let resolver: () => void
         let rejector: () => void
-        const cancelSetupPromise = new Promise<void>((_, reject) => {
+        const cancelSetupPromise = new Promise<void>((resolve, reject) => {
+            resolver = resolve
             rejector = reject
         })
         if (!this.setupPromise) {
@@ -100,6 +102,7 @@ export class AsyncCloudFormationTemplateRegistry {
                 perf.done()
             }
             this.isSetup = true
+            resolver()
         })
         // Show user a message indicating setup is in progress
         if (this.setupProgressMessage === undefined) {
