@@ -7,13 +7,13 @@ import { createPolicyVersionCommand } from '../../../iot/commands/createPolicyVe
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { IotPolicyFolderNode } from '../../../iot/explorer/iotPolicyFolderNode'
 import { IotPolicyWithVersionsNode } from '../../../iot/explorer/iotPolicyNode'
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createPolicyVersionCommand', function () {
     const policyName = 'test-policy'
+
     let iot: IotClient
     let policyObject: any
     let policyDocument: string
@@ -37,9 +37,8 @@ describe('createPolicyVersionCommand', function () {
     })
 
     it('creates new policy version and shows success', async function () {
-        const commands = new FakeCommands()
         returnUndefined = false
-        await createPolicyVersionCommand(node, getPolicy, commands)
+        await createPolicyVersionCommand(node, getPolicy)
 
         getTestWindow()
             .getFirstMessage()
@@ -50,17 +49,15 @@ describe('createPolicyVersionCommand', function () {
 
     it('does nothing when policy document is not read', async function () {
         returnUndefined = true
-        const commands = new FakeCommands()
-        await createPolicyVersionCommand(node, getPolicy, commands)
+        await createPolicyVersionCommand(node, getPolicy)
 
         verify(iot.createPolicyVersion(anything())).never()
     })
 
     it('shows an error message when JSON is invalid', async function () {
-        const commands = new FakeCommands()
         returnUndefined = false
         policyDocument = 'not a JSON'
-        await createPolicyVersionCommand(node, getPolicy, commands)
+        await createPolicyVersionCommand(node, getPolicy)
 
         getTestWindow()
             .getFirstMessage()
@@ -73,8 +70,7 @@ describe('createPolicyVersionCommand', function () {
         returnUndefined = false
         when(iot.createPolicyVersion(anything())).thenReject(new Error('Expected failure'))
 
-        const commands = new FakeCommands()
-        await createPolicyVersionCommand(node, getPolicy, commands)
+        await createPolicyVersionCommand(node, getPolicy)
 
         getTestWindow()
             .getFirstMessage()

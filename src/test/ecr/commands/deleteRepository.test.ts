@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import assert from 'assert'
 import { EcrNode } from '../../../ecr/explorer/ecrNode'
 import { DefaultEcrClient, EcrRepository } from '../../../shared/clients/ecrClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { EcrRepositoryNode } from '../../../ecr/explorer/ecrRepositoryNode'
 import { deleteRepository } from '../../../ecr/commands/deleteRepository'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -18,9 +18,11 @@ describe('deleteRepositoryCommand', function () {
     const ecr = new DefaultEcrClient('')
     let node: EcrRepositoryNode
     let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
         sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
         node = new EcrRepositoryNode(parentNode, ecr, { repositoryName: repositoryName } as EcrRepository)
     })
 
@@ -34,26 +36,22 @@ describe('deleteRepositoryCommand', function () {
             assert.strictEqual(input.placeholder, repositoryName)
             input.acceptValue(repositoryName)
         })
-        const commands = new FakeCommands()
         const stub = sandbox.stub(ecr, 'deleteRepository').callsFake(async name => {
             assert.strictEqual(name, repositoryName)
         })
 
-        await deleteRepository(node, commands)
+        await deleteRepository(node)
 
         getTestWindow().getFirstMessage().assertInfo(`Deleted repository: ${repositoryName}`)
-
         assert.strictEqual(stub.calledOnce, true)
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('Does nothing when deletion is cancelled', async function () {
         getTestWindow().onDidShowInputBox(input => input.hide())
         const spy = sandbox.spy(ecr, 'deleteRepository')
 
-        await deleteRepository(node, new FakeCommands())
+        await deleteRepository(node)
 
         assert.ok(spy.notCalled)
     })
@@ -64,13 +62,10 @@ describe('deleteRepositoryCommand', function () {
         })
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(repositoryName))
-        const commands = new FakeCommands()
-        await deleteRepository(node, commands)
+        await deleteRepository(node)
 
         getTestWindow().getFirstMessage().assertError(`Failed to delete repository: ${repositoryName}`)
-
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [parentNode])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', parentNode)
     })
 
     it('Warns when confirmation is invalid', async function () {
@@ -79,8 +74,7 @@ describe('deleteRepositoryCommand', function () {
             assert.strictEqual(input.validationMessage, `Enter ${repositoryName} to confirm deletion`)
             input.hide()
         })
-        const commands = new FakeCommands()
 
-        await deleteRepository(node, commands)
+        await deleteRepository(node)
     })
 })

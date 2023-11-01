@@ -17,7 +17,6 @@ import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { toArrayAsync, toMap, updateInPlace } from '../../shared/utilities/collectionUtils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 import { Settings } from '../../shared/settings'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
@@ -115,7 +114,7 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
         )
     }
 
-    public async refreshNode(commands: Commands): Promise<void> {
-        return commands.execute('aws.refreshAwsExplorerNode', this)
+    public async refreshNode(): Promise<void> {
+        return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 }

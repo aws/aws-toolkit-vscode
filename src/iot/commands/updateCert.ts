@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { IotCertificateNode } from '../explorer/iotCertificateNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotThingNode } from '../explorer/iotThingNode'
@@ -25,10 +24,7 @@ const statusInactive = 'INACTIVE'
  * Deactivates the certificate.
  * Refreshes the parent node.
  */
-export async function deactivateCertificateCommand(
-    node: IotCertificateNode,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function deactivateCertificateCommand(node: IotCertificateNode): Promise<void> {
     getLogger().debug('DeactivateCert called for %O', node)
 
     const certId = node.certificate.id
@@ -63,8 +59,8 @@ export async function deactivateCertificateCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await baseNode.thingFolderNode?.refreshNode(commands)
-    await baseNode.certFolderNode?.refreshNode(commands)
+    await baseNode.thingFolderNode?.refreshNode()
+    await baseNode.certFolderNode?.refreshNode()
 }
 
 /**
@@ -74,10 +70,7 @@ export async function deactivateCertificateCommand(
  * Activates the certificate.
  * Refreshes the parent node.
  */
-export async function activateCertificateCommand(
-    node: IotCertificateNode,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function activateCertificateCommand(node: IotCertificateNode): Promise<void> {
     getLogger().debug('ActivateCert called for %O', node)
 
     const certId = node.certificate.id
@@ -108,8 +101,8 @@ export async function activateCertificateCommand(
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await baseNode.thingFolderNode?.refreshNode(commands)
-    await baseNode.certFolderNode?.refreshNode(commands)
+    await baseNode.thingFolderNode?.refreshNode()
+    await baseNode.certFolderNode?.refreshNode()
 }
 
 /**
@@ -119,7 +112,7 @@ export async function activateCertificateCommand(
  * Revokes the certificate.
  * Refreshes the parent node.
  */
-export async function revokeCertificateCommand(node: IotCertificateNode, commands = Commands.vscode()): Promise<void> {
+export async function revokeCertificateCommand(node: IotCertificateNode): Promise<void> {
     getLogger().debug('RevokeCert called for %O', node)
 
     const certId = node.certificate.id
@@ -150,8 +143,8 @@ export async function revokeCertificateCommand(node: IotCertificateNode, command
     /* Refresh both things and certificates nodes so the status is updated in
      * both trees. */
     const baseNode = getBaseNode(node.parent)
-    await baseNode.thingFolderNode?.refreshNode(commands)
-    await baseNode.certFolderNode?.refreshNode(commands)
+    await baseNode.thingFolderNode?.refreshNode()
+    await baseNode.certFolderNode?.refreshNode()
 }
 
 function getBaseNode(node: IotThingNode | IotCertsFolderNode): IotNode {
