@@ -9,6 +9,7 @@ import { getLogger } from '../logger'
 import { isInDirectory } from '../filesystemUtilities'
 import { normalizedDirnameWithTrailingSlash, normalize } from './pathUtils'
 import globals from '../extensionGlobals'
+import { ChildProcess } from './childProcess'
 
 /**
  * Resolves `relPath` against parent `workspaceFolder`, or returns `relPath` if
@@ -168,4 +169,9 @@ export function getWorkspaceRelativePath(
  */
 export function checkUnsavedChanges(): boolean {
     return vscode.workspace.textDocuments.some(doc => doc.isDirty)
+}
+
+export async function getMachineId(): Promise<string> {
+    const proc = new ChildProcess('hostname', [], { collect: true })
+    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }

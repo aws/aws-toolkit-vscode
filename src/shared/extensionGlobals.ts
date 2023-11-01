@@ -16,7 +16,7 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
-import { ChildProcess } from './utilities/childProcess'
+import { getMachineId } from './utilities/workspaceUtils'
 
 type Clock = Pick<
     typeof globalThis,
@@ -147,9 +147,4 @@ interface ToolkitGlobals {
         endpoints: string
         lambdaSampleRequests: string
     }
-}
-
-async function getMachineId(): Promise<string> {
-    const proc = new ChildProcess('hostname', [], { collect: true })
-    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
