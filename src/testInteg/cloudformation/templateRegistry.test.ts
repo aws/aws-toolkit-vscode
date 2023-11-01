@@ -109,6 +109,9 @@ describe('CloudFormation Template Registry', async function () {
         await registry.rebuild(new Promise(() => {}))
         await assert.rejects(async () => {
             registry.addWatchPatterns(['second/set'])
+        }, new Error('CloudFormationTemplateRegistry: cannot add watch patterns after watcher has begun watching'))
+        await assert.rejects(async () => {
+            registry.addExcludedPattern(/exclude me/)
         }, new Error('CloudFormationTemplateRegistry: cannot add excluded patterns after watcher has begun watching'))
     })
 
