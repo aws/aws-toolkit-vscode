@@ -246,6 +246,9 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
+            case 'wb':
+                this.weaverbirdChatConnector.onChatItemVoted(tabId, messageId, vote)
+                break
         }
     }
 }

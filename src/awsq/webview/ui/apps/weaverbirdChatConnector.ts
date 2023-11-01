@@ -106,6 +106,7 @@ export class Connector {
                 body: messageData.message ?? undefined,
                 messageId: messageData.messageID ?? messageData.triggerID ?? '',
                 relatedContent: undefined,
+                canBeVoted: true,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
@@ -185,5 +186,15 @@ export class Connector {
 
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
         // TODO implement telemetry
+    }
+
+    onChatItemVoted = (tabId: string, messageId: string, vote: string): void | undefined => {
+        this.sendMessageToExtension({
+            tabID: tabId,
+            messageId: messageId,
+            vote: vote,
+            command: 'chat-item-voted',
+            tabType: 'wb',
+        })
     }
 }

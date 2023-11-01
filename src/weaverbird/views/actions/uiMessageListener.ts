@@ -37,6 +37,9 @@ export class UIMessageListener {
             case 'open-diff':
                 this.openDiff(msg)
                 break
+            case 'chat-item-voted':
+                this.chatItemVoted(msg)
+                break
             case 'stop-response':
                 this.stopResponse(msg)
                 break
@@ -47,6 +50,15 @@ export class UIMessageListener {
                 this.tabClosed(msg)
                 break
         }
+    }
+
+    private chatItemVoted(msg: any) {
+        this.weaverbirdControllerEventsEmitters?.processChatItemVotedMessage.fire({
+            tabID: msg.tabID,
+            command: msg.command,
+            vote: msg.vote,
+            messageId: msg.messageId,
+        })
     }
 
     private processChatMessage(msg: any) {

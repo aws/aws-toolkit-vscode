@@ -23,6 +23,7 @@ export interface ChatControllerEventEmitters {
     readonly stopResponse: EventEmitter<any>
     readonly tabOpened: EventEmitter<any>
     readonly tabClosed: EventEmitter<any>
+    readonly processChatItemVotedMessage: EventEmitter<any>
 }
 
 export class WeaverbirdController {
@@ -46,6 +47,9 @@ export class WeaverbirdController {
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data)
+        })
+        this.chatControllerMessageListeners.processChatItemVotedMessage.event(data => {
+            this.processChatItemVotedMessage(data.tabID, data.messageId, data.vote)
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
@@ -74,6 +78,27 @@ export class WeaverbirdController {
         this.chatControllerMessageListeners.tabClosed.event(data => {
             this.tabClosed(data)
         })
+    }
+
+    private async processChatItemVotedMessage(tabId: string, messageId: string, vote: string) {
+        const session = await this.sessionStorage.getSession(tabId)
+
+        switch (session?.state.phase) {
+            case 'Approach':
+                if (vote === 'upvote') {
+                    telemetry.awsq_approachThumbsUp.emit({ value: 1 })
+                } else if (vote === 'downvote') {
+                    telemetry.awsq_approachThumbsDown.emit({ value: 1 })
+                }
+                break
+            case 'Codegen':
+                if (vote === 'upvote') {
+                    telemetry.awsq_codeGenerationThumbsUp.emit({ value: 1 })
+                } else if (vote === 'downvote') {
+                    telemetry.awsq_codeGenerationThumbsDown.emit({ value: 1 })
+                }
+                break
+        }
     }
 
     // TODO add type
