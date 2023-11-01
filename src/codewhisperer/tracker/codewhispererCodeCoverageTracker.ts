@@ -133,20 +133,13 @@ export class CodeWhispererCodeCoverageTracker {
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         })
 
-        let codewhispererRuntimeLanguage: string = this._language
-        if (this._language === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (this._language === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
                     codeCoverageEvent: {
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: codewhispererRuntimeLanguage,
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(this._language),
                         },
                         acceptedCharacterCount: acceptedTokens,
                         totalCharacterCount: totalTokens,
@@ -250,7 +243,7 @@ export class CodeWhispererCodeCoverageTracker {
         this.addTotalTokens(e.document.fileName, content.text.length)
     }
 
-    public static readonly instances = new Map<string, CodeWhispererCodeCoverageTracker>()
+    public static readonly instances = new Map<CodewhispererLanguage, CodeWhispererCodeCoverageTracker>()
 
     public static getTracker(
         language: string,
@@ -259,12 +252,12 @@ export class CodeWhispererCodeCoverageTracker {
         if (!runtimeLanguageContext.isLanguageSupported(language)) {
             return undefined
         }
-        const cwsprLanguage = runtimeLanguageContext.mapVscLanguageToCodeWhispererLanguage(language)
+        const cwsprLanguage = runtimeLanguageContext.normalizeLanguage(language)
         if (!cwsprLanguage) {
             return undefined
         }
-        const instance = this.instances.get(language) ?? new this(cwsprLanguage)
-        this.instances.set(language, instance)
+        const instance = this.instances.get(cwsprLanguage) ?? new this(cwsprLanguage)
+        this.instances.set(cwsprLanguage, instance)
         return instance
     }
 }
