@@ -29,7 +29,17 @@ export class Messenger {
         triggerID: string,
         triggerPayload: TriggerPayload
     ) {
+        let message = ''
+        let messageID = ''
+        let codeReference: CodeReference[] = []
+        const followUps: FollowUp[] = []
+        const relatedSuggestions: Suggestion[] = []
+
         this.dispatcher.sendChatMessage(
+            // TODO This one somehow doesn't return immediately to the client,
+            // stucks on the await process,
+            // We need to solve it from here
+            // then we can remove the unnecessary addition on the UI side
             new ChatMessage(
                 {
                     message: '',
@@ -37,28 +47,22 @@ export class Messenger {
                     followUps: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
+                    messageID,
                 },
                 tabID
             )
         )
 
-        let message = ''
-        let codeReference: CodeReference[] = []
-        const followUps: FollowUp[] = []
-        const relatedSuggestions: Suggestion[] = []
-
         await waitUntil(
             async () => {
                 for await (const chatEvent of response) {
+                    // TODO we should set the messageId from the incoming response instead of using local triggerID
+                    // we need to send the messageId which should come from backend through the message
+                    messageID = triggerID
+
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
-
-                    // TODO we should send messageId and conversationId from the response headers and send them to UI level
-                    // chatEvent.messageMetadataEvent?.conversationId
-                    // On the main.ts UI level, we should associate the conversationId with the tabs store items,
-                    // since UI doesn't need them for anything, should be done on the extensions main.ts
-                    // and instead of triggerId we need to send the messageId which should come from backend
 
                     if (
                         chatEvent.codeReferenceEvent?.references != undefined &&
@@ -89,6 +93,7 @@ export class Messenger {
                                     relatedSuggestions: undefined,
                                     codeReference,
                                     triggerID,
+                                    messageID,
                                 },
                                 tabID
                             )
@@ -134,6 +139,7 @@ export class Messenger {
                         followUps: undefined,
                         relatedSuggestions,
                         triggerID,
+                        messageID,
                     },
                     tabID
                 )
@@ -148,6 +154,7 @@ export class Messenger {
                     followUps: followUps,
                     relatedSuggestions: undefined,
                     triggerID,
+                    messageID,
                 },
                 tabID
             )

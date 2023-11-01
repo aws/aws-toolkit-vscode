@@ -189,7 +189,7 @@ export class Connector {
 
             const answer: ChatItem = {
                 type: messageData.messageType,
-                messageId: messageData.triggerID,
+                messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,

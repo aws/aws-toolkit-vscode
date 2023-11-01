@@ -112,6 +112,7 @@ export interface ChatMessageProps {
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly codeReference?: CodeReference[]
     readonly triggerID: string
+    readonly messageID: string
 }
 
 export class ChatMessage extends UiMessage {
@@ -122,6 +123,7 @@ export class ChatMessage extends UiMessage {
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly searchResults: Suggestion[] | undefined
     readonly triggerID: string
+    readonly messageID: string | undefined
     override type = 'chatMessage'
 
     constructor(props: ChatMessageProps, tabID: string) {
@@ -132,6 +134,7 @@ export class ChatMessage extends UiMessage {
         this.relatedSuggestions = props.relatedSuggestions
         this.codeReference = props.codeReference
         this.triggerID = props.triggerID
+        this.messageID = props.messageID
     }
 }
 

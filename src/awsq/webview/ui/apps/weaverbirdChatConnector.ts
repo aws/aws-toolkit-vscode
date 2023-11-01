@@ -104,6 +104,7 @@ export class Connector {
             const answer: ChatItem = {
                 type: messageData.messageType,
                 body: messageData.message ?? undefined,
+                messageId: messageData.messageID ?? messageData.triggerID ?? '',
                 relatedContent: undefined,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
@@ -126,7 +127,7 @@ export class Connector {
                 followUp: undefined,
                 canBeVoted: true,
                 // TODO get the backend to store a message id in addition to conversationID
-                messageId: messageData.conversationID,
+                messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
         }
