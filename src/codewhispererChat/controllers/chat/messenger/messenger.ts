@@ -31,7 +31,7 @@ export class Messenger {
     ) {
         let message = ''
         let messageID = ''
-        let codeReference: CodeReference[] = []
+        const codeReference: CodeReference[] = []
         const followUps: FollowUp[] = []
         const relatedSuggestions: Suggestion[] = []
 
@@ -64,19 +64,20 @@ export class Messenger {
                         return true
                     }
 
-                    if (
-                        chatEvent.codeReferenceEvent?.references != undefined &&
-                        chatEvent.codeReferenceEvent.references.length > 0
-                    ) {
-                        codeReference = chatEvent.codeReferenceEvent.references.map(reference => ({
-                            ...reference,
-                            recommendationContentSpan: {
-                                start: reference.recommendationContentSpan?.start ?? 0,
-                                end: reference.recommendationContentSpan?.end ?? 0,
-                            },
-                            information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
-                        }))
-                    }
+                    // TODO: Uncomment when we will have valide data from the backend side
+                    // if (
+                    //     chatEvent.codeReferenceEvent?.references != undefined &&
+                    //     chatEvent.codeReferenceEvent.references.length > 0
+                    // ) {
+                    //     codeReference = chatEvent.codeReferenceEvent.references.map(reference => ({
+                    //         ...reference,
+                    //         recommendationContentSpan: {
+                    //             start: reference.recommendationContentSpan?.start ?? 0,
+                    //             end: reference.recommendationContentSpan?.end ?? 0,
+                    //         },
+                    //         information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
+                    //     }))
+                    // }
 
                     if (
                         chatEvent.assistantResponseEvent?.content != undefined &&

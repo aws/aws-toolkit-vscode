@@ -274,12 +274,29 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
 ${message}`,
             }
 
-            mynahUI.addChatItem(tabID, answer)
-            mynahUI.updateStore(tabID, {
-                loadingChat: false,
-                promptInputDisabledState: false,
-            })
-            tabsStorage.updateTabStatus(tabID, 'free')
+            if (tabID !== '') {
+                mynahUI.addChatItem(tabID, answer)
+                mynahUI.updateStore(tabID, {
+                    loadingChat: false,
+                    promptInputDisabledState: false,
+                })
+                tabsStorage.updateTabStatus(tabID, 'free')
+            } else {
+                const newTabId = mynahUI.updateStore('', {
+                    tabTitle: 'Error',
+                    quickActionCommands: [],
+                    promptInputPlaceholder: '',
+                    chatItems: [answer],
+                })
+                // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
+                // It means that it cannot trigger after the updateStore function returns.
+                tabsStorage.addTab({
+                    id: newTabId,
+                    status: 'busy',
+                    type: 'unknown',
+                    isSelected: true,
+                })
+            }
             return
         },
     })
