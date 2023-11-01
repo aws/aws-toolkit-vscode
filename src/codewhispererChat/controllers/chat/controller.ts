@@ -157,6 +157,7 @@ export class ChatController {
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
+        this.telemetryHelper.recordCloseChat(message.tabID)
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
