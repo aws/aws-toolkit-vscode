@@ -267,6 +267,12 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
         }
+        vscode.commands.registerCommand('showNewView', () => {
+            vscode.commands.executeCommand('setContext', 'showTempView', true)
+        })
+        vscode.commands.registerCommand('hideNewView', () => {
+            vscode.commands.executeCommand('setContext', 'showTempView', false)
+        })
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
