@@ -16,6 +16,7 @@ import {
     InsertCodeAtCursorPosition,
     PromptMessage,
     StopResponseMessage,
+    TabChangedMessage,
     TabClosedMessage,
     TabCreatedMessage,
     TriggerTabIDReceived,
@@ -28,6 +29,7 @@ export function init(appContext: AwsQAppInitContext) {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
+        processTabChangedMessage: new EventEmitter<TabChangedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
         processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
@@ -47,6 +49,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processTabClosedMessage: new MessageListener<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+        processTabChangedMessage: new MessageListener<TabChangedMessage>(
+            cwChatControllerEventEmitters.processTabChangedMessage
         ),
         processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
@@ -83,6 +88,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+        processTabChangedMessage: new MessagePublisher<TabChangedMessage>(
+            cwChatControllerEventEmitters.processTabChangedMessage
         ),
         processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition

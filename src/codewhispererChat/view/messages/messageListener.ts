@@ -40,6 +40,9 @@ export class UIMessageListener {
             case 'tab-was-removed':
                 this.processTabWasRemoved(msg)
                 break
+            case 'tab-was-changed':
+                this.processTabWasChanged(msg)
+                break
             case 'follow-up-was-clicked':
                 if (msg.followUp?.prompt !== undefined) {
                     this.processChatMessage({
@@ -107,6 +110,12 @@ export class UIMessageListener {
         this.chatControllerMessagePublishers.processTabCreatedMessage.publish({
             tabID: msg.tabID,
             tabOpenInteractionType: msg.tabOpenInteractionType,
+        })
+    }
+
+    private processTabWasChanged(msg: any) {
+        this.chatControllerMessagePublishers.processTabChangedMessage.publish({
+            tabID: msg.tabID,
         })
     }
 

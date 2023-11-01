@@ -18,6 +18,7 @@ import {
     ChatItemVotedMessage,
     ChatItemFeedbackMessage,
     TabCreatedMessage,
+    TabChangedMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -36,6 +37,7 @@ export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
     readonly processTabCreatedMessage: MessagePublisher<TabCreatedMessage>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
+    readonly processTabChangedMessage: MessagePublisher<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
@@ -50,6 +52,7 @@ export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
     readonly processTabCreatedMessage: MessageListener<TabCreatedMessage>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
+    readonly processTabChangedMessage: MessageListener<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
@@ -96,6 +99,10 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
             this.processTabCloseMessage(data)
+        })
+
+        this.chatControllerMessageListeners.processTabChangedMessage.onMessage(data => {
+            this.processTabChangedMessage(data)
         })
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
@@ -169,6 +176,10 @@ export class ChatController {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
         this.telemetryHelper.recordCloseChat(message.tabID)
+    }
+
+    private async processTabChangedMessage(message: TabChangedMessage) {
+        this.telemetryHelper.recordEnterFocusConversation(message.tabID)
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {

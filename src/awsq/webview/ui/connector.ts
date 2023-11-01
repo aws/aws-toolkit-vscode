@@ -127,6 +127,7 @@ export class Connector {
 
     onTabChange = (tabId: string): void => {
         this.tabsStorage.setSelectedTab(tabId)
+        this.cwChatConnector.onTabChange(tabId)
     }
 
     onCodeInsertToCursorPosition = (

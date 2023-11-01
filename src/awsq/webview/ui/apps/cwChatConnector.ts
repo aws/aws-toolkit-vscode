@@ -99,6 +99,14 @@ export class Connector {
         })
     }
 
+    onTabChange = (tabID: string) => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'tab-was-changed',
+            tabType: 'cwc',
+        })
+    }
+
     onStopChatResponse = (tabID: string): void => {
         this.sendMessageToExtension({
             tabID: tabID,
