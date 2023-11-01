@@ -6,12 +6,6 @@
 import vscode from 'vscode'
 import { SaveFileRequestMessage, SaveFileResponseMessage, WebviewContext, Response } from '../types'
 
-export type SaveFileRequest = {
-    command: 'SAVE_FILE'
-    filePath: string
-    fileContents: string
-}
-
 export function saveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
     const sendSuccessMessage = () => {
         const saveFileSuccessMessage: SaveFileResponseMessage = {
@@ -29,14 +23,15 @@ export function saveFileMessageHandler(request: SaveFileRequestMessage, context:
         }
         context.panel.webview.postMessage(saveFileFailMessage)
     }
-
     // TODO be smarter about how this check happens; check external files as needed
     if (!context.textDocument.isDirty) {
-        globalThis.previousFileContents = request.fileContents
-        const content = Buffer.from(request.fileContents, 'utf8')
-        const uri = request.filePath === '' ? context.textDocument.uri : vscode.Uri.file(request.filePath)
+        const contents = Buffer.from(request.fileContents, 'utf8')
+        const filePath =
+            request.filePath === '' ? context.defaultTemplatePath : context.workSpacePath + '/' + request.filePath
+        context.fileWatchs[filePath] = { fileContents: request.fileContents }
+        const uri = vscode.Uri.file(filePath)
         try {
-            vscode.workspace.fs.writeFile(uri, content)
+            vscode.workspace.fs.writeFile(uri, contents)
             sendSuccessMessage()
         } catch (exception) {
             sendFailMessage()

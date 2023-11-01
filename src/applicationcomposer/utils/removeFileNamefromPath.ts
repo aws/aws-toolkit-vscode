@@ -3,6 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export function getFileNameFromPath(filePath: string) {
-    return filePath.replace(/^.*(\\|\/|\:)/, '')
+export function removeFileNamefromPath(filePath: string) {
+    return filePath.substring(0, filePath.lastIndexOf('/'))
 }

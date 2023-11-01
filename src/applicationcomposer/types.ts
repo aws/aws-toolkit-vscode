@@ -8,6 +8,13 @@ export type WebviewContext = {
     panel: vscode.WebviewPanel
     textDocument: vscode.TextDocument
     disposables?: vscode.Disposable[]
+    workSpacePath: string
+    defaultTemplatePath: string
+    fileWatchs: Record<string, FileWatchInfo>
+}
+
+export type FileWatchInfo = {
+    fileContents: string
 }
 
 export enum Response {

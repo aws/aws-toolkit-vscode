@@ -22,20 +22,19 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
     }
     context.panel.webview.postMessage(addFileWatchResponseMessage)
 
-    const filePath = context.textDocument.uri.fsPath
+    const filePath = context.defaultTemplatePath
     const fileName = getFileNameFromPath(filePath)
-    // const fileWatch = vscode.workspace.createFileSystemWatcher(request.filePath)
     const fileWatch = vscode.workspace.createFileSystemWatcher(filePath)
     fileWatch.onDidChange(async () => {
         const fileContents = (await readFile(filePath, context)) ?? ''
-        if (fileContents !== globalThis.previousFileContents) {
+        if (fileContents !== context.fileWatchs[filePath].fileContents) {
             const fileChangedResponseMessage: FileChangedResponseMessage = {
                 response: Response.FILE_CHANGED,
                 fileName: fileName,
                 fileContents: fileContents,
             }
             context.panel.webview.postMessage(fileChangedResponseMessage)
-            globalThis.previousFileContents = fileContents
+            context.fileWatchs[filePath] = { fileContents: fileContents }
         }
     })
 }

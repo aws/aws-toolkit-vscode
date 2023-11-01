@@ -7,7 +7,7 @@ import { InitResponseMessage, Response, WebviewContext } from '../types'
 import { getFileNameFromPath } from '../utils/getFileNameFromPath'
 
 export function initMessageHandler(context: WebviewContext) {
-    const filePath = context.textDocument.uri.fsPath
+    const filePath = context.defaultTemplatePath
     const responseMessage: InitResponseMessage = {
         response: Response.INIT,
         templateFileName: getFileNameFromPath(filePath),

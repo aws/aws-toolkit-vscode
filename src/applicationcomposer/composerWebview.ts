@@ -8,7 +8,9 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { handleRequestMessage } from './handleCommand'
+import { handleRequestMessage } from './handleRequestMessage'
+import { FileWatchInfo } from './types'
+import { removeFileNamefromPath } from './utils/removeFileNamefromPath'
 
 export class ApplicationComposer {
     public readonly documentUri: vscode.Uri
@@ -16,10 +18,16 @@ export class ApplicationComposer {
     protected readonly disposables: vscode.Disposable[] = []
     protected isPanelDisposed = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
+    public workSpacePath: string
+    public defaultTemplatePath: string
+    public fileWatchs: Record<string, FileWatchInfo>
 
     public constructor(textDocument: vscode.TextDocument, context: vscode.ExtensionContext) {
         this.documentUri = textDocument.uri
         this.webviewPanel = this.setupWebviewPanel(textDocument, context)
+        this.workSpacePath = removeFileNamefromPath(textDocument.uri.fsPath)
+        this.defaultTemplatePath = textDocument.uri.fsPath
+        this.fileWatchs = {}
     }
 
     public get onVisualizationDisposeEvent(): vscode.Event<void> {
@@ -64,6 +72,9 @@ export class ApplicationComposer {
                 handleRequestMessage(message, {
                     panel: panel,
                     textDocument: textDocument,
+                    workSpacePath: this.workSpacePath,
+                    defaultTemplatePath: this.defaultTemplatePath,
+                    fileWatchs: this.fileWatchs,
                 })
             )
         )

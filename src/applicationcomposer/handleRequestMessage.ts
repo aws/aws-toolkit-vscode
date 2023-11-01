@@ -16,11 +16,6 @@ import {
 import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 
-// TODO: a better solution to avoid events loop emitting
-declare global {
-    // eslint-disable-next-line no-var
-    var previousFileContents: string
-}
 export async function handleRequestMessage(request: unknown, context: WebviewContext) {
     const requestMessage = request as RequestMessage
     switch (requestMessage.command) {

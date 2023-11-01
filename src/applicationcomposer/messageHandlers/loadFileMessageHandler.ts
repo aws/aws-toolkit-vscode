@@ -8,12 +8,13 @@ import { readFile } from '../fileSystemAccess/readFile'
 import { getFileNameFromPath } from '../utils/getFileNameFromPath'
 
 export async function loadFileMessageHandler(request: LoadFileRequestMessage, context: WebviewContext) {
-    const initFileContents = await readFile(context.textDocument.uri.fsPath, context)
+    const initFileContents = await readFile(context.defaultTemplatePath, context)
+    context.fileWatchs[context.defaultTemplatePath] = { fileContents: initFileContents ?? '' }
     const loadFileResponseMessage: LoadFileResponseMessage = {
         response: Response.LOAD_FILE,
         eventId: request.eventId,
-        fileName: getFileNameFromPath(context.textDocument.uri.fsPath),
-        filePath: context.textDocument.uri.fsPath,
+        fileName: getFileNameFromPath(context.defaultTemplatePath),
+        filePath: context.defaultTemplatePath,
         initFileContents: initFileContents ?? '',
     }
     context.panel.webview.postMessage(loadFileResponseMessage)
