@@ -160,9 +160,14 @@ export class ChatController {
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
-        try {
-            this.editorContextExtractor.extractContextForTrigger(TriggerType.ContextMenu).then(context => {
+        this.editorContextExtractor
+            .extractContextForTrigger(TriggerType.ContextMenu)
+            .then(context => {
                 const triggerID = randomUUID()
+
+                if (context?.focusAreaContext?.codeBlock === undefined) {
+                    throw 'Sorry, we cannot help with the selected language code snippet'
+                }
 
                 const prompt = this.promptGenerator.getPromptForContextMenuCommand(
                     command,
@@ -195,13 +200,13 @@ export class ChatController {
                     triggerID
                 )
             })
-        } catch (e) {
-            if (typeof e === 'string') {
-                this.messenger.sendErrorMessage(e.toUpperCase(), 'tab-1')
-            } else if (e instanceof Error) {
-                this.messenger.sendErrorMessage(e.message, 'tab-1')
-            }
-        }
+            .catch(e => {
+                if (typeof e === 'string') {
+                    this.messenger.sendErrorMessage(e.toUpperCase(), '')
+                } else if (e instanceof Error) {
+                    this.messenger.sendErrorMessage(e.message, '')
+                }
+            })
     }
 
     private async processPromptChatMessage(message: PromptMessage) {
@@ -351,7 +356,7 @@ export class ChatController {
         let document: TextDocument | undefined = undefined
         let cursorState: CursorState | undefined = undefined
 
-        if (triggerPayload.filePath !== undefined || triggerPayload.filePath !== '') {
+        if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
             const documentSymbolFqns: DocumentSymbol[] = []
             triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
                 documentSymbolFqns.push({

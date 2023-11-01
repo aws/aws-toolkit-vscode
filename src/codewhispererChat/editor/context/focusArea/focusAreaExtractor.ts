@@ -16,6 +16,35 @@ export class FocusAreaContextExtractor {
             return undefined
         }
 
+        if (
+            ![
+                'vue',
+                'typescript',
+                'swift',
+                'sql',
+                'rust',
+                'ruby',
+                'r',
+                'python',
+                'php',
+                'javascript',
+                'java',
+                'html',
+                'go',
+                'css',
+                'c',
+                'coffeescript',
+                'clojure',
+                'cpp',
+                'csharp',
+                'cuda-cpp',
+                'javascriptreact',
+                'typescriptreact',
+            ].includes(editor.document.languageId)
+        ) {
+            return undefined
+        }
+
         let importantRange: Range = editor.selection
 
         // It means we don't really have a selection, but cursor position only
@@ -35,10 +64,6 @@ export class FocusAreaContextExtractor {
         const codeBlock = this.getRangeText(editor.document, importantRange)
         const extendedCodeBlockRange = this.getExtendedCodeBlockRange(editor.document, importantRange)
 
-        if (simpleNames.length === 0 && usedFullyQualifiedNames.length === 0) {
-            simpleNames.push(codeBlock)
-        }
-
         return {
             extendedCodeBlock: this.getRangeText(editor.document, extendedCodeBlockRange),
             codeBlock: codeBlock,
@@ -46,12 +71,15 @@ export class FocusAreaContextExtractor {
                 editor.selection,
                 extendedCodeBlockRange
             ),
-            names: {
-                simpleNames,
-                fullyQualifiedNames: {
-                    used: usedFullyQualifiedNames,
-                },
-            },
+            names:
+                simpleNames.length === 0 && usedFullyQualifiedNames.length === 0
+                    ? undefined
+                    : {
+                          simpleNames,
+                          fullyQualifiedNames: {
+                              used: usedFullyQualifiedNames,
+                          },
+                      },
         }
     }
 
@@ -159,7 +187,8 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareFqns(names: any): [FullyQualifiedName[], boolean] {
-        if (names == undefined) {
+        // eslint-disable-next-line no-prototype-builtins
+        if (names == undefined || !names.hasOwnProperty('fullyQualified')) {
             return [[], false]
         }
         const dedupedUsedFullyQualifiedNames: Map<string, FullyQualifiedName> = new Map(
@@ -183,7 +212,8 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareSimpleNames(names: any): [string[], boolean] {
-        if (names === undefined) {
+        // eslint-disable-next-line no-prototype-builtins
+        if (names === undefined || !names.hasOwnProperty('simple')) {
             return [[], false]
         }
         let simpleNames: string[] = names.simple.usedSymbols
