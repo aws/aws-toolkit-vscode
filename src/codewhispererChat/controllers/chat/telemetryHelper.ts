@@ -89,8 +89,8 @@ export class CWCTelemetryHelper {
             await globals.telemetry.postFeedback({
                 comment: JSON.stringify({
                     type: 'codewhisperer-chat-answer-feedback',
-                    sessionId: message.messageId,
-                    requestId: message.tabID,
+                    conversationId: this.getConversationId(message.tabID) ?? '',
+                    messageId: message.messageId,
                     reason: message.selectedOption,
                     userComment: message.comment,
                 }),
