@@ -223,16 +223,16 @@ export class CWCTelemetryHelper {
 
         const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
 
-        // TODO: add mesasge id, user intent, response code snippet count, response code, references count, time to first chunk, response latency
+        // TODO: user intent, response code snippet count, references count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
-            cwsprChatMessageId: '',
+            cwsprChatMessageId: message.messageID,
             cwsprChatHasCodeSnippet: hasCodeSnippet,
             cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
             cwsprChatActiveEditorImportCount: triggerPayload?.matchPolicy?.must?.length ?? 0,
             cwsprChatResponseCodeSnippetCount: 0,
-            cwsprChatResponseCode: 0,
+            cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: 0,
             cwsprChatFollowUpCount: message.followUpCount,

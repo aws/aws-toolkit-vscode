@@ -160,11 +160,17 @@ export class Messenger {
         )
 
         this.telemetryHelper.setResponseStreamTotalTime()
+
+        // TODO: verify and fix
+        // const requestID = response?.httpResponse?.headers['x-amz-request-id']
+        // const responseCode = response?.httpResponse?.responseCode
         this.telemetryHelper.recordAddMessage(triggerPayload, {
             followUpCount: followUps.length,
             suggestionCount: relatedSuggestions.length,
             tabID: tabID,
             messageLength: message.length,
+            messageID: 'requestID',
+            responseCode: 200,
         })
     }
 

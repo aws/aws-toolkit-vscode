@@ -48,6 +48,8 @@ export interface PromptAnswer {
     tabID: string
     suggestionCount: number
     followUpCount: number
+    messageID: string
+    responseCode: number
 }
 
 export interface StopResponseMessage {
