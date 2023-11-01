@@ -62,7 +62,7 @@ describe('telemetryHelper', function () {
             sut = new TelemetryHelper()
         })
 
-        it('should return Block and Accept', function () {
+        it('should return Line and Accept', function () {
             sut.sessionInvocations.push(aServiceInvocation())
 
             const decisions: CodewhispererUserDecision[] = [
@@ -74,7 +74,7 @@ describe('telemetryHelper', function () {
 
             const actual = sut.aggregateUserDecisionByRequest(decisions, 'aFakeRequestId', 'aFakeSessionId')
             assert.ok(actual)
-            assert.strictEqual(actual?.codewhispererCompletionType, 'Block')
+            assert.strictEqual(actual?.codewhispererCompletionType, 'Line')
             assert.strictEqual(actual?.codewhispererSuggestionState, 'Accept')
         })
 
@@ -121,7 +121,7 @@ describe('telemetryHelper', function () {
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
         })
 
-        it('should return Block and Accept', function () {
+        it('should return Line and Accept', function () {
             sut.recordUserDecisionTelemetry(
                 'aFakeRequestId',
                 'aFakeSessionId',
@@ -149,7 +149,7 @@ describe('telemetryHelper', function () {
                 codewhispererSuggestionImportCount: 0,
                 codewhispererSuggestionState: 'Accept',
                 codewhispererUserGroup: 'Control',
-                codewhispererCompletionType: 'Block',
+                codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
                 codewhispererCharactersAccepted: aCompletion().content.length,
             })
@@ -189,7 +189,7 @@ describe('telemetryHelper', function () {
             })
         })
 
-        it('should return Block and Reject', function () {
+        it('should return Line and Reject', function () {
             sut.recordUserDecisionTelemetry(
                 'aFakeRequestId',
                 'aFakeSessionId',
