@@ -603,7 +603,7 @@ export class RecommendationHandler {
             this.inlineCompletionProviderDisposable?.dispose()
             // when suggestion is active, registering a new provider will let VS Code invoke inline API automatically
             this.inlineCompletionProviderDisposable = vscode.languages.registerInlineCompletionItemProvider(
-                Object.assign([], CodeWhispererConstants.supportedLanguages),
+                Object.assign([], CodeWhispererConstants.platformLanguageIds),
                 inlineCompletionProvider
             )
             this.inlineCompletionProvider = inlineCompletionProvider
