@@ -108,6 +108,15 @@ export class Connector {
         })
     }
 
+    onUpdateTabType = (tabID: string) => {
+        const tab = this.tabsStorage.getTab(tabID)
+        switch (tab?.type) {
+            case 'cwc':
+                this.cwChatConnector.onTabAdd(tabID, tab.openInteractionType)
+                break
+        }
+    }
+
     onKnownTabOpen = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':

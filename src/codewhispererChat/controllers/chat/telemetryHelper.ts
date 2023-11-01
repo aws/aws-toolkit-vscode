@@ -23,6 +23,7 @@ import {
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
+import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
 
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
@@ -48,12 +49,25 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public recordOpenChat(triggerInteractionType: CwsprChatTriggerInteraction) {
+    public recordOpenChat(triggerInteractionType: TabOpenType) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: triggerInteractionType })
+        let cwsprChatTriggerInteraction: CwsprChatTriggerInteraction = 'click'
+        switch (triggerInteractionType) {
+            case 'click':
+                cwsprChatTriggerInteraction = 'click'
+                break
+            case 'contextMenu':
+                cwsprChatTriggerInteraction = 'contextMenu'
+                break
+            case 'hotkeys':
+                cwsprChatTriggerInteraction = 'hotkeys'
+                break
+        }
+
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
     }
 
     public recordCloseChat(tabID: string) {

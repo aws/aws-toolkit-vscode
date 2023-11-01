@@ -5,13 +5,14 @@
 
 export type TabStatus = 'free' | 'busy'
 export type TabType = 'cwc' | 'wb' | 'unknown'
-export type TabOpenType = 'click' | 'contextMenu' | 'hotkey'
+export type TabOpenType = 'click' | 'contextMenu' | 'hotkeys'
 
 export interface Tab {
     readonly id: string
     status: TabStatus
     type: TabType
     isSelected: boolean
+    openInteractionType?: TabOpenType
 }
 
 export class TabsStorage {

@@ -5,9 +5,9 @@
 
 import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
-import { TabsStorage } from '../storages/tabsStorage'
 import { FeedbackPayload } from '@aws/mynah-ui-chat'
 import { CodeReference } from './awsqCommonsConnector'
+import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 
 interface ChatPayload {
     chatMessage: string
@@ -50,11 +50,12 @@ export class Connector {
         })
     }
 
-    onTabAdd = (tabID: string): void => {
+    onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'new-tab-was-created',
             tabType: 'cwc',
+            tabOpenInteractionType,
         })
     }
 

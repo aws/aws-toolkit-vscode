@@ -6,11 +6,18 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
+import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
 
 export interface TriggerTabIDReceived {
     tabID: string
     triggerID: string
 }
+
+export interface TabCreatedMessage {
+    tabID: string
+    tabOpenInteractionType: TabOpenType
+}
+
 export interface TabClosedMessage {
     tabID: string
 }

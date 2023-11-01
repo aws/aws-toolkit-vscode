@@ -17,6 +17,7 @@ import {
     CopyCodeToClipboard,
     ChatItemVotedMessage,
     ChatItemFeedbackMessage,
+    TabCreatedMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -33,6 +34,7 @@ import { CwsprChatTriggerInteraction } from '../../../shared/telemetry/telemetry
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
+    readonly processTabCreatedMessage: MessagePublisher<TabCreatedMessage>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
@@ -46,6 +48,7 @@ export interface ChatControllerMessagePublishers {
 
 export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
+    readonly processTabCreatedMessage: MessageListener<TabCreatedMessage>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
@@ -85,6 +88,10 @@ export class ChatController {
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
+        })
+
+        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
+            this.processTabCreateMessage(data)
         })
 
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
@@ -152,6 +159,10 @@ export class ChatController {
 
     private async processCopyCodeToClipboard(message: CopyCodeToClipboard) {
         this.telemetryHelper.recordInteractWithMessage(message)
+    }
+
+    private async processTabCreateMessage(message: TabCreatedMessage) {
+        this.telemetryHelper.recordOpenChat(message.tabOpenInteractionType)
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {

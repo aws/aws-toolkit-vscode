@@ -104,7 +104,10 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        this.chatControllerMessagePublishers.processTabCreatedMessage.publish('click')
+        this.chatControllerMessagePublishers.processTabCreatedMessage.publish({
+            tabID: msg.tabID,
+            tabOpenInteractionType: msg.tabOpenInteractionType,
+        })
     }
 
     private processChatMessage(msg: any) {

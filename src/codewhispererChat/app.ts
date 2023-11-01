@@ -17,6 +17,7 @@ import {
     PromptMessage,
     StopResponseMessage,
     TabClosedMessage,
+    TabCreatedMessage,
     TriggerTabIDReceived,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
@@ -25,6 +26,7 @@ import { CwsprChatTriggerInteraction } from '../shared/telemetry/telemetry.gen'
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
+        processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
         processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
@@ -39,6 +41,9 @@ export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerMessageListeners = {
         processPromptChatMessage: new MessageListener<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
+        ),
+        processTabCreatedMessage: new MessageListener<TabCreatedMessage>(
+            cwChatControllerEventEmitters.processTabCreatedMessage
         ),
         processTabClosedMessage: new MessageListener<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
@@ -72,6 +77,9 @@ export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerMessagePublishers = {
         processPromptChatMessage: new MessagePublisher<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
+        ),
+        processTabCreatedMessage: new MessagePublisher<TabCreatedMessage>(
+            cwChatControllerEventEmitters.processTabCreatedMessage
         ),
         processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
