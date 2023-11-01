@@ -303,11 +303,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             const glob = this.globs[i]
             try {
                 const found = await vscode.workspace.findFiles(glob, exclude)
-                for (const item of found) {
-                    await this.addItem(item, true)
+                for (let j = 0; j < found.length && !isCanceled; j++) {
+                    await this.addItem(found[j], true)
                 }
             } catch (e) {
-                // inner try/catch skips over problematic files
+                // file not processable
                 skips++
                 const err = e as Error
                 getLogger().error('watchedFiles: findFiles("%s", "%s"): %s', glob, exclude, err.message)
