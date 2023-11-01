@@ -25,6 +25,8 @@ import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
 import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
 
+const performance = globalThis.performance ?? require('perf_hooks').performance
+
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
@@ -261,16 +263,16 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public setResponseStreamStartTime(time: number) {
-        this.responseStreamStartTime = time
+    public setResponseStreamStartTime() {
+        this.responseStreamStartTime = performance.now()
     }
 
-    public setReponseStreamTimeToFirstChunk(time: number) {
-        this.responseStreamTimeToFirstChunk = time - this.responseStreamStartTime
+    public setReponseStreamTimeToFirstChunk() {
+        this.responseStreamTimeToFirstChunk = performance.now() - this.responseStreamStartTime
     }
 
-    public setResponseStreamTotalTime(time: number) {
-        this.responseStreamTotalTime = time - this.responseStreamStartTime
+    public setResponseStreamTotalTime() {
+        this.responseStreamTotalTime = performance.now() - this.responseStreamStartTime
     }
 
     private getConversationId(tabID: string): string | undefined {

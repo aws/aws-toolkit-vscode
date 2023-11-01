@@ -52,6 +52,7 @@ export class Messenger {
                 tabID
             )
         )
+        this.telemetryHelper.setResponseStreamStartTime()
 
         await waitUntil(
             async () => {
@@ -95,6 +96,7 @@ export class Messenger {
                                 tabID
                             )
                         )
+                        this.telemetryHelper.setReponseStreamTimeToFirstChunk()
                     }
 
                     if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks != undefined) {
@@ -157,6 +159,7 @@ export class Messenger {
             )
         )
 
+        this.telemetryHelper.setResponseStreamTotalTime()
         this.telemetryHelper.recordAddMessage(triggerPayload, {
             followUpCount: followUps.length,
             suggestionCount: relatedSuggestions.length,
