@@ -74,10 +74,12 @@ import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/mess
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
+import { initializeNetworkAgent } from './codewhisperer/client/agent'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    initializeNetworkAgent()
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()

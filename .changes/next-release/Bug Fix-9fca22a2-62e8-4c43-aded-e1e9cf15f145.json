@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Enable HTTP connection reuse for CodeWhisperer completions API"
+}
