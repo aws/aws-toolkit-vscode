@@ -31,7 +31,6 @@ import { randomUUID } from 'crypto'
 import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
-import { CwsprChatTriggerInteraction } from '../../../shared/telemetry/telemetry.gen'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -45,7 +44,6 @@ export interface ChatControllerMessagePublishers {
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
-    readonly processTabCreatedMessage: MessagePublisher<CwsprChatTriggerInteraction>
 }
 
 export interface ChatControllerMessageListeners {
@@ -60,7 +58,6 @@ export interface ChatControllerMessageListeners {
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
-    readonly processTabCreatedMessage: MessageListener<CwsprChatTriggerInteraction>
 }
 
 export class ChatController {
@@ -132,14 +129,6 @@ export class ChatController {
         this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage(data => {
             this.processChatItemFeedbackMessage(data)
         })
-
-        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
-            this.processTabCreatedMessage(data)
-        })
-    }
-
-    private async processTabCreatedMessage(triggerInteractionType: CwsprChatTriggerInteraction) {
-        this.telemetryHelper.recordOpenChat(triggerInteractionType)
     }
 
     private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {

@@ -22,7 +22,6 @@ import {
     TriggerTabIDReceived,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
-import { CwsprChatTriggerInteraction } from '../shared/telemetry/telemetry.gen'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
@@ -37,7 +36,6 @@ export function init(appContext: AwsQAppInitContext) {
         processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
-        processTabCreatedMessage: new EventEmitter<CwsprChatTriggerInteraction>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -74,9 +72,6 @@ export function init(appContext: AwsQAppInitContext) {
         processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
-        processTabCreatedMessage: new MessageListener<CwsprChatTriggerInteraction>(
-            cwChatControllerEventEmitters.processTabCreatedMessage
-        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -112,9 +107,6 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processChatItemFeedbackMessage: new MessagePublisher<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
-        ),
-        processTabCreatedMessage: new MessagePublisher<CwsprChatTriggerInteraction>(
-            cwChatControllerEventEmitters.processTabCreatedMessage
         ),
     }
 
