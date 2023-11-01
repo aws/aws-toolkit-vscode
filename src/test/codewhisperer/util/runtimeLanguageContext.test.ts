@@ -7,6 +7,8 @@ import assert from 'assert'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
 import { runtimeLanguageContext, RuntimeLanguageContext } from '../../../codewhisperer/util/runtimeLanguageContext'
 import * as codewhispererClient from '../../../codewhisperer/client/codewhispererclient'
+import { CodewhispererLanguage } from '../../../shared/telemetry/telemetry.gen'
+import { PlatformLanguageId } from '../../../codewhisperer/models/constants'
 
 describe('runtimeLanguageContext', function () {
     const languageContext = new RuntimeLanguageContext()
@@ -89,39 +91,166 @@ describe('runtimeLanguageContext', function () {
         })
     })
 
-    describe('mapVscLanguageToCodeWhispererLanguage', function () {
-        const cases = [
-            [undefined, undefined],
-            ['typescript', 'typescript'],
-            ['javascriptreact', 'jsx'],
-            ['typescriptreact', 'tsx'],
-            ['csharp', 'csharp'],
-            ['java', 'java'],
-            ['javascript', 'javascript'],
-            ['python', 'python'],
-            ['c', 'c'],
-            ['cpp', 'cpp'],
-            ['go', 'go'],
-            ['kotlin', 'kotlin'],
-            ['php', 'php'],
-            ['ruby', 'ruby'],
-            ['rust', 'rust'],
-            ['scala', 'scala'],
-            ['shellscript', 'shell'],
-            ['sql', 'sql'],
-            ['html', undefined],
-            ['r', undefined],
-            ['vb', undefined],
-        ]
-
+    describe('normalizeLanguage', function () {
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
         })
 
-        for (const [languageId, expected] of cases) {
-            it(`should return ${expected} if languageId is ${languageId}`, function () {
-                const actual = languageContext.mapVscLanguageToCodeWhispererLanguage(languageId)
-                assert.strictEqual(actual, expected)
+        const codewhispererLanguageIds: CodewhispererLanguage[] = [
+            'c',
+            'cpp',
+            'csharp',
+            'go',
+            'java',
+            'javascript',
+            'jsx',
+            'kotlin',
+            'php',
+            'plaintext',
+            'python',
+            'ruby',
+            'rust',
+            'scala',
+            'sql',
+            'shell',
+            'tsx',
+            'typescript',
+        ]
+
+        for (const inputCwsprLanguageId of codewhispererLanguageIds) {
+            it(`should return itself if input language is codewhispererLanguageId - ${inputCwsprLanguageId}`, function () {
+                const actual = languageContext.normalizeLanguage(inputCwsprLanguageId)
+                assert.strictEqual(actual, inputCwsprLanguageId)
+            })
+        }
+
+        const platformLanguageIds: [PlatformLanguageId, CodewhispererLanguage][] = [
+            ['cpp', 'cpp'],
+            ['c_cpp', 'cpp'],
+            ['cpp', 'cpp'],
+            ['csharp', 'csharp'],
+            ['go', 'go'],
+            ['golang', 'go'],
+            ['java', 'java'],
+            ['javascript', 'javascript'],
+            ['javascriptreact', 'jsx'],
+            ['kotlin', 'kotlin'],
+            ['php', 'php'],
+            ['python', 'python'],
+            ['ruby', 'ruby'],
+            ['rust', 'rust'],
+            ['scala', 'scala'],
+            ['sh', 'shell'],
+            ['shellscript', 'shell'],
+            ['sql', 'sql'],
+            ['typescript', 'typescript'],
+            ['typescriptreact', 'tsx'],
+        ]
+
+        for (const [platformLanguageId, expectedCwsprLanguageId] of platformLanguageIds) {
+            it(`should return mapped codewhispererLanguageId ${expectedCwsprLanguageId} if input language is platformLanguageId - ${platformLanguageId}`, function () {
+                const actual = languageContext.normalizeLanguage(platformLanguageId)
+                assert.strictEqual(actual, expectedCwsprLanguageId)
+            })
+        }
+
+        const arbitraryIds: [string | undefined, CodewhispererLanguage | undefined][] = [
+            [undefined, undefined],
+            ['r', undefined],
+            ['fooo', undefined],
+            ['bar', undefined],
+        ]
+
+        for (const [arbitraryId, _] of arbitraryIds) {
+            it(`should return undefined if languageId is undefined or not neither is type of codewhispererLanguageId or platformLanguageId - ${arbitraryId}`, function () {
+                const actual = languageContext.normalizeLanguage(undefined)
+                assert.strictEqual(actual, undefined)
+            })
+        }
+    })
+
+    describe('toRuntimeLanguage', function () {
+        const codewhispererLanguageIds: CodewhispererLanguage[][] = [
+            ['c', 'c'],
+            ['cpp', 'cpp'],
+            ['csharp', 'csharp'],
+            ['go', 'go'],
+            ['java', 'java'],
+            ['javascript', 'javascript'],
+            ['jsx', 'javascript'],
+            ['kotlin', 'kotlin'],
+            ['php', 'php'],
+            ['plaintext', 'plaintext'],
+            ['python', 'python'],
+            ['ruby', 'ruby'],
+            ['rust', 'rust'],
+            ['scala', 'scala'],
+            ['shell', 'shell'],
+            ['sql', 'sql'],
+            ['tsx', 'typescript'],
+            ['typescript', 'typescript'],
+        ]
+
+        for (const [inputCwsprLanguageId, expectedCwsprLanguageId] of codewhispererLanguageIds) {
+            it(`should return ${expectedCwsprLanguageId} if input codewhispererLanguageId is - ${inputCwsprLanguageId}`, function () {
+                const actual = languageContext.toRuntimeLanguage(inputCwsprLanguageId)
+                assert.strictEqual(actual, expectedCwsprLanguageId)
+            })
+        }
+    })
+
+    describe('getLanguageExtensionForNotebook', function () {
+        const codewhispererLanguageIds: [CodewhispererLanguage, string][] = [
+            ['c', 'c'],
+            ['cpp', 'cpp'],
+            ['csharp', 'cs'],
+            ['go', 'go'],
+            ['java', 'java'],
+            ['javascript', 'js'],
+            ['jsx', 'jsx'],
+            ['kotlin', 'kt'],
+            ['php', 'php'],
+            ['plaintext', 'txt'],
+            ['python', 'py'],
+            ['ruby', 'rb'],
+            ['rust', 'rs'],
+            ['scala', 'scala'],
+            ['shell', 'sh'],
+            ['sql', 'sql'],
+            ['tsx', 'tsx'],
+            ['typescript', 'ts'],
+        ]
+
+        for (const [inputCwsprLanguageId, expectedExt] of codewhispererLanguageIds) {
+            it(`should return file extension ${expectedExt} given codewhipsererLanguageId - ${inputCwsprLanguageId}`, function () {
+                const actual = languageContext.getLanguageExtensionForNotebook(inputCwsprLanguageId)
+                assert.strictEqual(actual, expectedExt)
+            })
+        }
+
+        const platformLanguageIds: [PlatformLanguageId, string][] = [
+            ['c_cpp', 'cpp'],
+            ['cpp', 'cpp'],
+            ['golang', 'go'],
+            ['javascriptreact', 'jsx'],
+            ['sh', 'sh'],
+            ['shellscript', 'sh'],
+            ['sql', 'sql'],
+            ['typescriptreact', 'tsx'],
+        ]
+
+        for (const [inputPlatformLanguageId, expectedExt] of platformLanguageIds) {
+            it(`should return file extension ${expectedExt} given platformLanguageId - ${inputPlatformLanguageId}`, function () {
+                const actual = languageContext.getLanguageExtensionForNotebook(inputPlatformLanguageId)
+                assert.strictEqual(actual, expectedExt)
+            })
+        }
+
+        const arbitraryStrs: (string | undefined)[] = ['foo', undefined, 'bar', 'R', 'r', 'unknown']
+        for (const inputStr of arbitraryStrs) {
+            it(`should return undefined when input str is ${inputStr}`, function () {
+                const actual = languageContext.getLanguageExtensionForNotebook(inputStr)
+                assert.strictEqual(actual, undefined)
             })
         }
     })
