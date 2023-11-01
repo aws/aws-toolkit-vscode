@@ -16,6 +16,7 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
+import { ChildProcess } from './utilities/childProcess'
 
 type Clock = Pick<
     typeof globalThis,
@@ -81,13 +82,14 @@ export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
-export function initialize(context: ExtensionContext): ToolkitGlobals {
+export async function initialize(context: ExtensionContext): Promise<ToolkitGlobals> {
     Object.assign(globals, {
         context,
         clock: copyClock(),
         didReload: checkDidReload(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
+        machineId: await getMachineId(),
     })
 
     return globals
@@ -115,7 +117,8 @@ interface ToolkitGlobals {
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
     uriHandler: UriHandler
-    hostname: string
+    /** An id to differentiate the current machine being run on. Can help distinguish a remote from a local machine.  */
+    readonly machineId: string
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
@@ -144,4 +147,9 @@ interface ToolkitGlobals {
         endpoints: string
         lambdaSampleRequests: string
     }
+}
+
+async function getMachineId(): Promise<string> {
+    const proc = new ChildProcess('hostname', [], { collect: true })
+    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }

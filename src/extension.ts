@@ -73,7 +73,6 @@ import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
-import { ChildProcess } from './shared/utilities/childProcess'
 
 let localize: nls.LocalizeFunc
 
@@ -82,10 +81,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    initialize(context)
-    // async init global hostname so it's accessible later to memento
-    const proc = new ChildProcess('hostname', [], { collect: true })
-    globals.hostname = (await proc.run()).stdout.trim() ?? 'unknown-host'
+    await initialize(context)
 
     initializeManifestPaths(context)
 
