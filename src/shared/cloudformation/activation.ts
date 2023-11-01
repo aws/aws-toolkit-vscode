@@ -56,12 +56,12 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
  * and slowing down the extension starting up.
  */
 function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) {
-    const registrySetupFunc = async (registry: CloudFormationTemplateRegistry) => {
-        await registry.addExcludedPattern(CloudFormation.devfileExcludePattern)
-        await registry.addExcludedPattern(CloudFormation.templateFileExcludePattern)
-        await registry.addWatchPatterns([CloudFormation.templateFileGlobPattern])
-        await registry.watchUntitledFiles()
-
+    const registrySetupFunc = async (registry: CloudFormationTemplateRegistry, cancellationPromise: Promise<void>) => {
+        registry.addExcludedPattern(CloudFormation.devfileExcludePattern)
+        registry.addExcludedPattern(CloudFormation.templateFileExcludePattern)
+        registry.addWatchPatterns([CloudFormation.templateFileGlobPattern])
+        registry.watchUntitledFiles()
+        await registry.rebuild(cancellationPromise)
         return registry
     }
 

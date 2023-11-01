@@ -71,7 +71,8 @@ export class AsyncCloudFormationTemplateRegistry {
     constructor(
         private readonly instance: CloudFormationTemplateRegistry,
         private readonly asyncSetupFunc: (
-            instance: CloudFormationTemplateRegistry
+            instance: CloudFormationTemplateRegistry,
+            cancelSetup: Promise<void>
         ) => Promise<CloudFormationTemplateRegistry>
     ) {}
 
@@ -86,9 +87,13 @@ export class AsyncCloudFormationTemplateRegistry {
         }
 
         let perf: PerfLog
+        let rejector: () => void
+        const cancelSetupPromise = new Promise<void>((_, reject) => {
+            rejector = reject
+        })
         if (!this.setupPromise) {
             perf = new PerfLog('cfn: template registry setup')
-            this.setupPromise = this.asyncSetupFunc(this.instance)
+            this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetupPromise)
         }
         this.setupPromise.then(() => {
             if (perf) {
@@ -111,6 +116,7 @@ export class AsyncCloudFormationTemplateRegistry {
                     token.onCancellationRequested(() => {
                         // Allows for new message to be created if templateRegistry variable attempted to be used again
                         this.setupProgressMessage = undefined
+                        rejector()
                     })
                     getLogger().debug('cfn: getInstance() requested, still initializing')
                     while (!this.isSetup) {
