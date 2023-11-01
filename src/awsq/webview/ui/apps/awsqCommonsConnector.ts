@@ -10,6 +10,15 @@ export type WelcomeFollowupType = 'continue-to-chat' | 'assign-code-task'
 export interface ConnectorProps {
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
 }
+export interface CodeReference {
+    licenseName?: string
+    repository?: string
+    url?: string
+    recommendationContentSpan?: {
+        start?: number
+        end?: number
+    }
+}
 
 export class Connector {
     private readonly onWelcomeFollowUpClicked
