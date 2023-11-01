@@ -192,9 +192,9 @@ export class RecommendationHandler {
             } else {
                 session.requestContext = {
                     request: {
-                        fileContext: session.requestContext.request.fileContext,
+                        ...session.requestContext.request,
+                        // Putting nextToken assignment in the end so it overwrites the existing nextToken
                         nextToken: this.nextToken,
-                        supplementalContexts: session.requestContext.request.supplementalContexts,
                     },
                     supplementalMetadata: session.requestContext.supplementalMetadata,
                 }

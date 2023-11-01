@@ -18,6 +18,7 @@ import {
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import { getOptOutPreference } from './commonUtil'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -75,7 +76,7 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
 export async function buildListRecommendationRequest(
     editor: vscode.TextEditor,
     nextToken: string,
-    allowCodeWithReference: boolean | undefined = undefined
+    allowCodeWithReference: boolean
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
     supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
@@ -109,18 +110,6 @@ export async function buildListRecommendationRequest(
           })
         : []
 
-    if (allowCodeWithReference === undefined) {
-        return {
-            request: {
-                fileContext: fileContext,
-                nextToken: nextToken,
-                supplementalContexts: supplementalContext,
-                customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            },
-            supplementalMetadata: supplementalMetadata,
-        }
-    }
-
     return {
         request: {
             fileContext: fileContext,
@@ -130,6 +119,7 @@ export async function buildListRecommendationRequest(
             },
             supplementalContexts: supplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+            optOutPreference: getOptOutPreference(),
         },
         supplementalMetadata: supplementalMetadata,
     }
