@@ -14,29 +14,22 @@ import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import * as WeaverbirdProxyClient from './weaverbirdproxyclient'
 import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
 
-const cwsprEndpoint = 'https://rts-641299012133.test.codewhisperer.ai.aws.dev'
+// GAMMA-IAD endpoint
+const cwsprEndpoint = 'https://rts-732200995377.test.codewhisperer.ai.aws.dev/'
 export async function createWeaverbirdProxyClient(): Promise<WeaverbirdProxyClient> {
     const conn = Auth.instance.activeConnection
     if (!isSsoConnection(conn)) {
         throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
     }
     const weaverbirdConfig = getConfig()
-    const bearerToken = await conn.getToken()
+    const bearerToken = (await conn.getToken()).accessToken
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
         {
             apiConfig: apiConfig,
             region: weaverbirdConfig.region,
             endpoint: cwsprEndpoint, //CodeWhispererConstants.endpoint,
-            onRequestSetup: [
-                req => {
-                    req.on('build', ({ httpRequest }) => {
-                        httpRequest.headers['Authorization'] = `Bearer ${bearerToken.accessToken}`
-                    })
-                    console.log(JSON.stringify(req.httpRequest))
-                },
-            ],
-            token: new Token({ token: bearerToken.accessToken, expireTime: bearerToken.expiresAt }),
+            token: new Token({ token: bearerToken }),
         } as ServiceOptions,
         undefined
     )) as WeaverbirdProxyClient
