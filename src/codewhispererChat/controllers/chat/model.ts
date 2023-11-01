@@ -29,6 +29,7 @@ export interface TabChangedMessage {
 export interface InsertCodeAtCursorPosition {
     command: string | undefined
     tabID: string
+    messageId: string
     code: string
     insertionTargetType: string | undefined
 }
@@ -36,12 +37,14 @@ export interface InsertCodeAtCursorPosition {
 export interface CopyCodeToClipboard {
     command: string | undefined
     tabID: string
+    messageId: string
     code: string
     insertionTargetType: string | undefined
 }
 
 export interface PromptMessage {
     message: string | undefined
+    messageId: string
     command: string | undefined
     userIntent: UserIntent | undefined
     tabID: string

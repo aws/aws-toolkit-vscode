@@ -41,11 +41,12 @@ export class Connector {
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
     }
 
-    followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+    followUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
             tabID,
+            messageId,
             tabType: 'cwc',
         })
     }
@@ -61,12 +62,14 @@ export class Connector {
 
     onCodeInsertToCursorPosition = (
         tabID: string,
+        messageId: string,
         code?: string,
         type?: 'selection' | 'block',
         codeReference?: CodeReference[]
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
+            messageId,
             code,
             command: 'insert_code_at_cursor_position',
             tabType: 'cwc',
@@ -77,12 +80,14 @@ export class Connector {
 
     onCopyCodeToClipboard = (
         tabID: string,
+        messageId: string,
         code?: string,
         type?: 'selection' | 'block',
         codeReference?: CodeReference[]
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
+            messageId,
             code,
             command: 'code_was_copied_to_clipboard',
             tabType: 'cwc',

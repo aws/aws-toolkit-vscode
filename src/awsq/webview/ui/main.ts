@@ -428,7 +428,7 @@ ${message}`,
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: (tabID, followUp) => {
+        onFollowUpClicked: (tabID, messageId, followUp) => {
             // we need to check if there is a prompt
             // which will cause an api call
             // then we can set the loading state to true
@@ -447,7 +447,7 @@ ${message}`,
                 })
                 tabsStorage.updateTabStatus(tabID, 'busy')
             }
-            connector.onFollowUpClicked(tabID, followUp)
+            connector.onFollowUpClicked(tabID, messageId, followUp)
         },
         onOpenDiff: connector.onOpenDiff,
         onStopChatResponse: (tabID: string) => {

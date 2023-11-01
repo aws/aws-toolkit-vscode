@@ -149,11 +149,11 @@ export class CWCTelemetryHelper {
 
         switch (message.command) {
             case 'insert_code_at_cursor_position':
-                //TODO: message id and has reference
+                //TODO: has reference
                 message = message as InsertCodeAtCursorPosition
                 telemetry.codewhispererchat_interactWithMessage.emit({
                     cwsprChatConversationId: conversationId ?? '',
-                    cwsprChatMessageId: '',
+                    cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
@@ -161,11 +161,11 @@ export class CWCTelemetryHelper {
                 })
                 break
             case 'code_was_copied_to_clipboard':
-                //TODO: message id and has reference
+                //TODO: has reference
                 message = message as CopyCodeToClipboard
                 telemetry.codewhispererchat_interactWithMessage.emit({
                     cwsprChatConversationId: conversationId ?? '',
-                    cwsprChatMessageId: '',
+                    cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
@@ -173,18 +173,16 @@ export class CWCTelemetryHelper {
                 })
                 break
             case 'follow-up-was-clicked':
-                //TODO: message id
                 message = message as PromptMessage
                 telemetry.codewhispererchat_interactWithMessage.emit({
                     cwsprChatConversationId: conversationId ?? '',
-                    cwsprChatMessageId: '',
+                    cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
                 })
                 break
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
                 telemetry.codewhispererchat_interactWithMessage.emit({
-                    // TODO: message id
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
