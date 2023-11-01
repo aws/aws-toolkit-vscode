@@ -5,13 +5,11 @@ import {
     ServiceOutputTypes,
 } from '../CodeWhispererStreamingClient'
 import {
-    GetCodeGenerationInteractionResultRequest,
-    GetCodeGenerationInteractionResultResponse,
+    ExportResultArchiveRequest,
+    ExportResultArchiveResponse,
+    ExportResultArchiveResponseFilterSensitiveLog,
 } from '../models/models_0'
-import {
-    de_GetCodeGenerationInteractionResultCommand,
-    se_GetCodeGenerationInteractionResultCommand,
-} from '../protocols/Aws_json1_0'
+import { de_ExportResultArchiveCommand, se_ExportResultArchiveCommand } from '../protocols/Aws_json1_0'
 import { getSerdePlugin } from '@smithy/middleware-serde'
 import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
 import { Command as $Command } from '@smithy/smithy-client'
@@ -20,7 +18,7 @@ import {
     Handler,
     HandlerExecutionContext,
     MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
+    EventStreamSerdeContext as __EventStreamSerdeContext,
     HttpHandlerOptions as __HttpHandlerOptions,
     MetadataBearer as __MetadataBearer,
     SerdeContext as __SerdeContext,
@@ -33,46 +31,54 @@ export { __MetadataBearer, $Command }
 /**
  * @public
  *
- * The input for {@link GetCodeGenerationInteractionResultCommand}.
+ * The input for {@link ExportResultArchiveCommand}.
  */
-export interface GetCodeGenerationInteractionResultCommandInput extends GetCodeGenerationInteractionResultRequest {}
+export interface ExportResultArchiveCommandInput extends ExportResultArchiveRequest {}
 /**
  * @public
  *
- * The output of {@link GetCodeGenerationInteractionResultCommand}.
+ * The output of {@link ExportResultArchiveCommand}.
  */
-export interface GetCodeGenerationInteractionResultCommandOutput
-    extends GetCodeGenerationInteractionResultResponse,
-        __MetadataBearer {}
+export interface ExportResultArchiveCommandOutput extends ExportResultArchiveResponse, __MetadataBearer {}
 
 /**
  * @public
- * API to get results of code generation.
+ * API to export operation result as an archive
  * @example
  * Use a bare-bones client and the command you need to make an API call.
  * ```javascript
- * import { CodeWhispererStreamingClient, GetCodeGenerationInteractionResultCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
- * // const { CodeWhispererStreamingClient, GetCodeGenerationInteractionResultCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
+ * import { CodeWhispererStreamingClient, ExportResultArchiveCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
+ * // const { CodeWhispererStreamingClient, ExportResultArchiveCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
  * const client = new CodeWhispererStreamingClient(config);
- * const input = { // GetCodeGenerationInteractionResultRequest
- *   conversationId: "STRING_VALUE", // required
+ * const input = { // ExportResultArchiveRequest
+ *   exportId: "STRING_VALUE", // required
+ *   exportIntent: "TRANSFORMATION" || "TASK_ASSIST", // required
  * };
- * const command = new GetCodeGenerationInteractionResultCommand(input);
+ * const command = new ExportResultArchiveCommand(input);
  * const response = await client.send(command);
- * // { // GetCodeGenerationInteractionResultResponse
- * //   conversationId: "STRING_VALUE", // required
- * //   codeGenStatus: { // CodeGenStatus
- * //     status: "InProgress" || "Complete" || "Failed", // required
- * //     currentStage: "InitialCodeGeneration" || "Debate", // required
+ * // { // ExportResultArchiveResponse
+ * //   body: { // ResultArchiveStream Union: only one key present
+ * //     binaryMetadataEvent: { // BinaryMetadataEvent
+ * //       size: Number("long"),
+ * //       mimeType: "STRING_VALUE",
+ * //       contentChecksum: "STRING_VALUE",
+ * //       contentChecksumType: "SHA_256",
+ * //     },
+ * //     binaryPayloadEvent: { // BinaryPayloadEvent
+ * //       bytes: "BLOB_VALUE",
+ * //     },
+ * //     internalServerException: { // InternalServerException
+ * //       message: "STRING_VALUE", // required
+ * //     },
  * //   },
  * // };
  *
  * ```
  *
- * @param GetCodeGenerationInteractionResultCommandInput - {@link GetCodeGenerationInteractionResultCommandInput}
- * @returns {@link GetCodeGenerationInteractionResultCommandOutput}
- * @see {@link GetCodeGenerationInteractionResultCommandInput} for command's `input` shape.
- * @see {@link GetCodeGenerationInteractionResultCommandOutput} for command's `response` shape.
+ * @param ExportResultArchiveCommandInput - {@link ExportResultArchiveCommandInput}
+ * @returns {@link ExportResultArchiveCommandOutput}
+ * @see {@link ExportResultArchiveCommandInput} for command's `input` shape.
+ * @see {@link ExportResultArchiveCommandOutput} for command's `response` shape.
  * @see {@link CodeWhispererStreamingClientResolvedConfig | config} for CodeWhispererStreamingClient's `config` shape.
  *
  * @throws {@link InternalServerException} (server fault)
@@ -91,9 +97,9 @@ export interface GetCodeGenerationInteractionResultCommandOutput
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class GetCodeGenerationInteractionResultCommand extends $Command<
-    GetCodeGenerationInteractionResultCommandInput,
-    GetCodeGenerationInteractionResultCommandOutput,
+export class ExportResultArchiveCommand extends $Command<
+    ExportResultArchiveCommandInput,
+    ExportResultArchiveCommandOutput,
     CodeWhispererStreamingClientResolvedConfig
 > {
     // Start section: command_properties
@@ -102,7 +108,7 @@ export class GetCodeGenerationInteractionResultCommand extends $Command<
     /**
      * @public
      */
-    constructor(readonly input: GetCodeGenerationInteractionResultCommandInput) {
+    constructor(readonly input: ExportResultArchiveCommandInput) {
         // Start section: command_constructor
         super()
         // End section: command_constructor
@@ -115,24 +121,20 @@ export class GetCodeGenerationInteractionResultCommand extends $Command<
         clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
         configuration: CodeWhispererStreamingClientResolvedConfig,
         options?: __HttpHandlerOptions
-    ): Handler<GetCodeGenerationInteractionResultCommandInput, GetCodeGenerationInteractionResultCommandOutput> {
+    ): Handler<ExportResultArchiveCommandInput, ExportResultArchiveCommandOutput> {
         this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
 
         const stack = clientStack.concat(this.middlewareStack)
 
         const { logger } = configuration
         const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'GetCodeGenerationInteractionResultCommand'
+        const commandName = 'ExportResultArchiveCommand'
         const handlerExecutionContext: HandlerExecutionContext = {
             logger,
             clientName,
             commandName,
             inputFilterSensitiveLog: (_: any) => _,
-            outputFilterSensitiveLog: (_: any) => _,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'GetCodeGenerationInteractionResult',
-            },
+            outputFilterSensitiveLog: ExportResultArchiveResponseFilterSensitiveLog,
         }
         const { requestHandler } = configuration
         return stack.resolve(
@@ -145,11 +147,8 @@ export class GetCodeGenerationInteractionResultCommand extends $Command<
     /**
      * @internal
      */
-    private serialize(
-        input: GetCodeGenerationInteractionResultCommandInput,
-        context: __SerdeContext
-    ): Promise<__HttpRequest> {
-        return se_GetCodeGenerationInteractionResultCommand(input, context)
+    private serialize(input: ExportResultArchiveCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
+        return se_ExportResultArchiveCommand(input, context)
     }
 
     /**
@@ -157,9 +156,9 @@ export class GetCodeGenerationInteractionResultCommand extends $Command<
      */
     private deserialize(
         output: __HttpResponse,
-        context: __SerdeContext
-    ): Promise<GetCodeGenerationInteractionResultCommandOutput> {
-        return de_GetCodeGenerationInteractionResultCommand(output, context)
+        context: __SerdeContext & __EventStreamSerdeContext
+    ): Promise<ExportResultArchiveCommandOutput> {
+        return de_ExportResultArchiveCommand(output, context)
     }
 
     // Start section: command_body_extra

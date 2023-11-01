@@ -21,19 +21,16 @@ using your favorite package manager:
 
 The AWS SDK is modulized by clients and commands.
 To send a request, you only need to import the `CodeWhispererStreamingClient` and
-the commands you need, for example `GetCodeGenerationInteractionResultCommand`:
+the commands you need, for example `ChatCommand`:
 
 ```js
 // ES5 example
-const {
-    CodeWhispererStreamingClient,
-    GetCodeGenerationInteractionResultCommand,
-} = require('@amzn/codewhisperer-streaming')
+const { CodeWhispererStreamingClient, ChatCommand } = require('@amzn/codewhisperer-streaming')
 ```
 
 ```ts
 // ES6+ example
-import { CodeWhispererStreamingClient, GetCodeGenerationInteractionResultCommand } from '@amzn/codewhisperer-streaming'
+import { CodeWhispererStreamingClient, ChatCommand } from '@amzn/codewhisperer-streaming'
 ```
 
 ### Usage
@@ -52,7 +49,7 @@ const client = new CodeWhispererStreamingClient({ region: 'REGION' })
 const params = {
     /** input parameters */
 }
-const command = new GetCodeGenerationInteractionResultCommand(params)
+const command = new ChatCommand(params)
 ```
 
 #### Async/await
@@ -131,7 +128,7 @@ const client = new AWS.CodeWhispererStreaming({ region: 'REGION' })
 
 // async/await.
 try {
-    const data = await client.getCodeGenerationInteractionResult(params)
+    const data = await client.chat(params)
     // process data.
 } catch (error) {
     // error handling.
@@ -139,7 +136,7 @@ try {
 
 // Promises.
 client
-    .getCodeGenerationInteractionResult(params)
+    .chat(params)
     .then(data => {
         // process data.
     })
@@ -148,7 +145,7 @@ client
     })
 
 // callbacks.
-client.getCodeGenerationInteractionResult(params, (err, data) => {
+client.chat(params, (err, data) => {
     // process err and data.
 })
 ```
@@ -206,146 +203,18 @@ see LICENSE for more information.
 
 <details>
 <summary>
-AssociateCustomizationPermission
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/associatecustomizationpermissioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/associatecustomizationpermissioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/associatecustomizationpermissioncommandoutput.html)
-
-</details>
-<details>
-<summary>
-CreateCustomization
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/createcustomizationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createcustomizationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createcustomizationcommandoutput.html)
-
-</details>
-<details>
-<summary>
-CreateProfile
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/createprofilecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createprofilecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createprofilecommandoutput.html)
-
-</details>
-<details>
-<summary>
-DeleteCustomization
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/deletecustomizationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/deletecustomizationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/deletecustomizationcommandoutput.html)
-
-</details>
-<details>
-<summary>
-DeleteProfile
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/deleteprofilecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/deleteprofilecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/deleteprofilecommandoutput.html)
-
-</details>
-<details>
-<summary>
-DisassociateCustomizationPermission
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/disassociatecustomizationpermissioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/disassociatecustomizationpermissioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/disassociatecustomizationpermissioncommandoutput.html)
-
-</details>
-<details>
-<summary>
-GenerateRecommendations
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/generaterecommendationscommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/generaterecommendationscommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/generaterecommendationscommandoutput.html)
-
-</details>
-<details>
-<summary>
-GetCustomization
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/getcustomizationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcustomizationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcustomizationcommandoutput.html)
-
-</details>
-<details>
-<summary>
-ListCustomizationPermissions
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/listcustomizationpermissionscommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listcustomizationpermissionscommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listcustomizationpermissionscommandoutput.html)
-
-</details>
-<details>
-<summary>
-ListCustomizations
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/listcustomizationscommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listcustomizationscommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listcustomizationscommandoutput.html)
-
-</details>
-<details>
-<summary>
-ListProfiles
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/listprofilescommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listprofilescommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listprofilescommandoutput.html)
-
-</details>
-<details>
-<summary>
-ListTagsForResource
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/listtagsforresourcecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listtagsforresourcecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/listtagsforresourcecommandoutput.html)
-
-</details>
-<details>
-<summary>
-TagResource
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/tagresourcecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/tagresourcecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/tagresourcecommandoutput.html)
-
-</details>
-<details>
-<summary>
-UntagResource
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/untagresourcecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/untagresourcecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/untagresourcecommandoutput.html)
-
-</details>
-<details>
-<summary>
-UpdateCustomization
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/updatecustomizationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updatecustomizationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updatecustomizationcommandoutput.html)
-
-</details>
-<details>
-<summary>
-UpdateProfile
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/updateprofilecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updateprofilecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/updateprofilecommandoutput.html)
-
-</details>
-<details>
-<summary>
-BootstrapConversation
-</summary>
-
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/bootstrapconversationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/bootstrapconversationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/bootstrapconversationcommandoutput.html)
-
-</details>
-<details>
-<summary>
 CreateArtifactUploadUrl
 </summary>
 
 [Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/createartifactuploadurlcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createartifactuploadurlcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createartifactuploadurlcommandoutput.html)
+
+</details>
+<details>
+<summary>
+CreateTaskAssistConversation
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/createtaskassistconversationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createtaskassistconversationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/createtaskassistconversationcommandoutput.html)
 
 </details>
 <details>
@@ -374,26 +243,26 @@ GetCodeAnalysis
 </details>
 <details>
 <summary>
-GetCodeGenerationInteraction
+GetTaskAssistCodeGeneration
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/getcodegenerationinteractioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodegenerationinteractioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodegenerationinteractioncommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/gettaskassistcodegenerationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettaskassistcodegenerationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettaskassistcodegenerationcommandoutput.html)
 
 </details>
 <details>
 <summary>
-GetCodeMigration
+GetTransformation
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/getcodemigrationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodemigrationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodemigrationcommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/gettransformationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettransformationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettransformationcommandoutput.html)
 
 </details>
 <details>
 <summary>
-GetCodeMigrationPlan
+GetTransformationPlan
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/getcodemigrationplancommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodemigrationplancommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodemigrationplancommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/gettransformationplancommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettransformationplancommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/gettransformationplancommandoutput.html)
 
 </details>
 <details>
@@ -430,18 +299,26 @@ StartCodeAnalysis
 </details>
 <details>
 <summary>
-StartCodeGenerationInteraction
+StartTaskAssistCodeGeneration
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/startcodegenerationinteractioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/startcodegenerationinteractioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/startcodegenerationinteractioncommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/starttaskassistcodegenerationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttaskassistcodegenerationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttaskassistcodegenerationcommandoutput.html)
 
 </details>
 <details>
 <summary>
-StartCodeMigration
+StartTransformation
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/startcodemigrationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/startcodemigrationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/startcodemigrationcommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/starttransformationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttransformationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/starttransformationcommandoutput.html)
+
+</details>
+<details>
+<summary>
+StopTransformation
+</summary>
+
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/stoptransformationcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/stoptransformationcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/stoptransformationcommandoutput.html)
 
 </details>
 <details>
@@ -454,18 +331,18 @@ Chat
 </details>
 <details>
 <summary>
-ExecutePlanningInteraction
+ExportResultArchive
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/executeplanninginteractioncommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/executeplanninginteractioncommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/executeplanninginteractioncommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/exportresultarchivecommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/exportresultarchivecommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/exportresultarchivecommandoutput.html)
 
 </details>
 <details>
 <summary>
-GetCodeGenerationInteractionResult
+GenerateTaskAssistPlan
 </summary>
 
-[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/getcodegenerationinteractionresultcommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodegenerationinteractionresultcommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/getcodegenerationinteractionresultcommandoutput.html)
+[Command API Reference](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/classes/generatetaskassistplancommand.html) / [Input](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/generatetaskassistplancommandinput.html) / [Output](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-codewhispererstreaming/interfaces/generatetaskassistplancommandoutput.html)
 
 </details>
 <details>

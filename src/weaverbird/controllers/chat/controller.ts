@@ -190,7 +190,7 @@ export class WeaverbirdController {
                 type: 'answer-part',
                 tabID: tabID,
             })
-            this.messenger.sendFilePaths(filePaths, tabID, session?.state.conversationId ?? '')
+            this.messenger.sendFilePaths(filePaths, tabID, session.conversationId)
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'answer',
@@ -323,7 +323,7 @@ export class WeaverbirdController {
                     this.messenger.sendAsyncEventProgress(
                         message.tabID,
                         true,
-                        `You conversation has been started with ID: <pre><code>${session.state.conversationId}</code></pre>`
+                        `You conversation has been started with ID: <pre><code>${session.conversationId}</code></pre>`
                     )
                 }
             }

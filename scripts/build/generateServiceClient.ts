@@ -242,8 +242,8 @@ ${fileContents}
             serviceName: 'CodeWhispererUserClient',
         },
         {
-            serviceJsonPath: 'src/weaverbird/client/weaverbird-2018-05-10.api.json',
-            serviceName: 'WeaverbirdClient',
+            serviceJsonPath: 'src/weaverbird/client/codewhispererruntime-2022-11-11.json',
+            serviceName: 'WeaverbirdProxyClient',
         },
     ]
     await generateServiceClients(serviceClientDefinitions)

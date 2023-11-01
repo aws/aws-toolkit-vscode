@@ -12,7 +12,7 @@ import { getLogger } from '../../shared/logger/logger'
  *
  * uses a presigned url and files checksum to transfer data to s3 through http.
  */
-export async function uploadCode(url: string, buffer: Buffer, contentChecksumSha256: string) {
+export async function uploadCode(url: string, buffer: Buffer) {
     try {
         await got(url, {
             method: 'PUT',

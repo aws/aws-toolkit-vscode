@@ -7,7 +7,7 @@ import { getLogger } from '../shared/logger/logger'
 import type { LocalResolvedConfig } from './types'
 import globals from '../shared/extensionGlobals'
 
-export const getConfig: () => Promise<LocalResolvedConfig> = async () => {
+export const getConfig: () => LocalResolvedConfig = () => {
     const appConfigFormatVersion = 2
     const config = process.env.WEAVERBIRD_CONFIG
 

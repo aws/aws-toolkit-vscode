@@ -1,58 +1,63 @@
 // smithy-typescript generated code
 import {
-    CodeWhispererStreamingClientResolvedConfig,
-    ServiceInputTypes,
-    ServiceOutputTypes,
-} from '../CodeWhispererStreamingClient'
+  CodeWhispererStreamingClientResolvedConfig,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from "../CodeWhispererStreamingClient";
 import {
-    ExecutePlanningInteractionRequest,
-    ExecutePlanningInteractionRequestFilterSensitiveLog,
-    ExecutePlanningInteractionResponse,
-    ExecutePlanningInteractionResponseFilterSensitiveLog,
-} from '../models/models_0'
-import { de_ExecutePlanningInteractionCommand, se_ExecutePlanningInteractionCommand } from '../protocols/Aws_json1_0'
-import { getSerdePlugin } from '@smithy/middleware-serde'
-import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
-import { Command as $Command } from '@smithy/smithy-client'
+  GenerateTaskAssistPlanRequest,
+  GenerateTaskAssistPlanRequestFilterSensitiveLog,
+  GenerateTaskAssistPlanResponse,
+  GenerateTaskAssistPlanResponseFilterSensitiveLog,
+} from "../models/models_0";
 import {
-    FinalizeHandlerArguments,
-    Handler,
-    HandlerExecutionContext,
-    MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
-    EventStreamSerdeContext as __EventStreamSerdeContext,
-    HttpHandlerOptions as __HttpHandlerOptions,
-    MetadataBearer as __MetadataBearer,
-    SerdeContext as __SerdeContext,
-} from '@smithy/types'
+  de_GenerateTaskAssistPlanCommand,
+  se_GenerateTaskAssistPlanCommand,
+} from "../protocols/Aws_json1_0";
+import { getSerdePlugin } from "@smithy/middleware-serde";
+import {
+  HttpRequest as __HttpRequest,
+  HttpResponse as __HttpResponse,
+} from "@smithy/protocol-http";
+import { Command as $Command } from "@smithy/smithy-client";
+import {
+  FinalizeHandlerArguments,
+  Handler,
+  HandlerExecutionContext,
+  MiddlewareStack,
+  EventStreamSerdeContext as __EventStreamSerdeContext,
+  HttpHandlerOptions as __HttpHandlerOptions,
+  MetadataBearer as __MetadataBearer,
+  SerdeContext as __SerdeContext,
+} from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command }
+export { __MetadataBearer, $Command };
 /**
  * @public
  *
- * The input for {@link ExecutePlanningInteractionCommand}.
+ * The input for {@link GenerateTaskAssistPlanCommand}.
  */
-export interface ExecutePlanningInteractionCommandInput extends ExecutePlanningInteractionRequest {}
+export interface GenerateTaskAssistPlanCommandInput extends GenerateTaskAssistPlanRequest {}
 /**
  * @public
  *
- * The output of {@link ExecutePlanningInteractionCommand}.
+ * The output of {@link GenerateTaskAssistPlanCommand}.
  */
-export interface ExecutePlanningInteractionCommandOutput extends ExecutePlanningInteractionResponse, __MetadataBearer {}
+export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistPlanResponse, __MetadataBearer {}
 
 /**
  * @public
- * API to execute planning interaction.
+ * API to generate task assit plan.
  * @example
  * Use a bare-bones client and the command you need to make an API call.
  * ```javascript
- * import { CodeWhispererStreamingClient, ExecutePlanningInteractionCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
- * // const { CodeWhispererStreamingClient, ExecutePlanningInteractionCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
+ * import { CodeWhispererStreamingClient, GenerateTaskAssistPlanCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
+ * // const { CodeWhispererStreamingClient, GenerateTaskAssistPlanCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
  * const client = new CodeWhispererStreamingClient(config);
- * const input = { // ExecutePlanningInteractionRequest
+ * const input = { // GenerateTaskAssistPlanRequest
  *   conversationState: { // ConversationState
  *     conversationId: "STRING_VALUE",
  *     history: [ // ChatHistory
@@ -228,9 +233,9 @@ export interface ExecutePlanningInteractionCommandOutput extends ExecutePlanning
  *     contextTruncationScheme: "ANALYSIS" || "GUMBY",
  *   },
  * };
- * const command = new ExecutePlanningInteractionCommand(input);
+ * const command = new GenerateTaskAssistPlanCommand(input);
  * const response = await client.send(command);
- * // { // ExecutePlanningInteractionResponse
+ * // { // GenerateTaskAssistPlanResponse
  * //   planningResponseStream: { // ChatResponseStream Union: only one key present
  * //     messageMetadataEvent: { // MessageMetadataEvent
  * //       conversationId: "STRING_VALUE",
@@ -274,10 +279,10 @@ export interface ExecutePlanningInteractionCommandOutput extends ExecutePlanning
  *
  * ```
  *
- * @param ExecutePlanningInteractionCommandInput - {@link ExecutePlanningInteractionCommandInput}
- * @returns {@link ExecutePlanningInteractionCommandOutput}
- * @see {@link ExecutePlanningInteractionCommandInput} for command's `input` shape.
- * @see {@link ExecutePlanningInteractionCommandOutput} for command's `response` shape.
+ * @param GenerateTaskAssistPlanCommandInput - {@link GenerateTaskAssistPlanCommandInput}
+ * @returns {@link GenerateTaskAssistPlanCommandOutput}
+ * @see {@link GenerateTaskAssistPlanCommandInput} for command's `input` shape.
+ * @see {@link GenerateTaskAssistPlanCommandOutput} for command's `response` shape.
  * @see {@link CodeWhispererStreamingClientResolvedConfig | config} for CodeWhispererStreamingClient's `config` shape.
  *
  * @throws {@link InternalServerException} (server fault)
@@ -296,74 +301,71 @@ export interface ExecutePlanningInteractionCommandOutput extends ExecutePlanning
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class ExecutePlanningInteractionCommand extends $Command<
-    ExecutePlanningInteractionCommandInput,
-    ExecutePlanningInteractionCommandOutput,
-    CodeWhispererStreamingClientResolvedConfig
-> {
-    // Start section: command_properties
-    // End section: command_properties
+export class GenerateTaskAssistPlanCommand extends $Command<GenerateTaskAssistPlanCommandInput, GenerateTaskAssistPlanCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
+  // Start section: command_properties
+  // End section: command_properties
 
-    /**
-     * @public
-     */
-    constructor(readonly input: ExecutePlanningInteractionCommandInput) {
-        // Start section: command_constructor
-        super()
-        // End section: command_constructor
+  /**
+   * @public
+   */
+  constructor(readonly input: GenerateTaskAssistPlanCommandInput) {
+    // Start section: command_constructor
+    super();
+    // End section: command_constructor
+  }
+
+  /**
+   * @internal
+   */
+  resolveMiddleware(
+    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
+    configuration: CodeWhispererStreamingClientResolvedConfig,
+    options?: __HttpHandlerOptions
+  ): Handler<GenerateTaskAssistPlanCommandInput, GenerateTaskAssistPlanCommandOutput> {
+    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
+
+    const stack = clientStack.concat(this.middlewareStack);
+
+    const { logger } = configuration;
+    const clientName = "CodeWhispererStreamingClient";
+    const commandName = "GenerateTaskAssistPlanCommand";
+    const handlerExecutionContext: HandlerExecutionContext = {
+      logger,
+      clientName,
+      commandName,
+      inputFilterSensitiveLog:
+        GenerateTaskAssistPlanRequestFilterSensitiveLog,
+      outputFilterSensitiveLog:
+        GenerateTaskAssistPlanResponseFilterSensitiveLog,
     }
+    const { requestHandler } = configuration;
+    return stack.resolve(
+      (request: FinalizeHandlerArguments<any>) =>
+        requestHandler.handle(request.request as __HttpRequest, options || {}),
+      handlerExecutionContext
+    );
+  }
 
-    /**
-     * @internal
-     */
-    resolveMiddleware(
-        clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-        configuration: CodeWhispererStreamingClientResolvedConfig,
-        options?: __HttpHandlerOptions
-    ): Handler<ExecutePlanningInteractionCommandInput, ExecutePlanningInteractionCommandOutput> {
-        this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
+  /**
+   * @internal
+   */
+  private serialize(
+    input: GenerateTaskAssistPlanCommandInput,
+    context: __SerdeContext
+  ): Promise<__HttpRequest> {
+    return se_GenerateTaskAssistPlanCommand(input, context);
+  }
 
-        const stack = clientStack.concat(this.middlewareStack)
+  /**
+   * @internal
+   */
+  private deserialize(
+    output: __HttpResponse,
+    context: __SerdeContext & __EventStreamSerdeContext
+  ): Promise<GenerateTaskAssistPlanCommandOutput> {
+    return de_GenerateTaskAssistPlanCommand(output, context);
+  }
 
-        const { logger } = configuration
-        const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'ExecutePlanningInteractionCommand'
-        const handlerExecutionContext: HandlerExecutionContext = {
-            logger,
-            clientName,
-            commandName,
-            inputFilterSensitiveLog: ExecutePlanningInteractionRequestFilterSensitiveLog,
-            outputFilterSensitiveLog: ExecutePlanningInteractionResponseFilterSensitiveLog,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'ExecutePlanningInteraction',
-            },
-        }
-        const { requestHandler } = configuration
-        return stack.resolve(
-            (request: FinalizeHandlerArguments<any>) =>
-                requestHandler.handle(request.request as __HttpRequest, options || {}),
-            handlerExecutionContext
-        )
-    }
-
-    /**
-     * @internal
-     */
-    private serialize(input: ExecutePlanningInteractionCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
-        return se_ExecutePlanningInteractionCommand(input, context)
-    }
-
-    /**
-     * @internal
-     */
-    private deserialize(
-        output: __HttpResponse,
-        context: __SerdeContext & __EventStreamSerdeContext
-    ): Promise<ExecutePlanningInteractionCommandOutput> {
-        return de_ExecutePlanningInteractionCommand(output, context)
-    }
-
-    // Start section: command_body_extra
-    // End section: command_body_extra
+  // Start section: command_body_extra
+  // End section: command_body_extra
 }

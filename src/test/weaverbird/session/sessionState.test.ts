@@ -13,14 +13,13 @@ import {
     CodeGenIterationState,
     CodeGenState,
 } from '../../../weaverbird/session/sessionState'
-import { LambdaClient } from '../../../shared/clients/lambdaClient'
-import * as invokeModule from '../../../weaverbird/util/invoke'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
-import { GenerateApproachOutput } from '../../../weaverbird/client/weaverbirdclient'
 import { Messenger } from '../../../weaverbird/controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from '../../../weaverbird/views/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
+import { WeaverbirdClient } from '../../../weaverbird/client/weaverbird'
+import { ToolkitError } from '../../../shared/errors'
 
 interface MockSessionStateActionInput {
     msg?: 'MOCK CODE' | 'OTHER'
@@ -38,8 +37,16 @@ const mockSessionStateAction = ({ msg }: MockSessionStateActionInput): SessionSt
     }
 }
 
-const mockSessionStateConfig = ({ conversationId }: { conversationId: string }): SessionStateConfig => ({
-    client: {} as unknown as LambdaClient,
+let mockGeneratePlan: sinon.SinonStub
+let mockGetCodeGeneration: sinon.SinonStub
+let mockExportResultArchive: sinon.SinonStub
+const mockSessionStateConfig = ({
+    conversationId,
+    uploadId,
+}: {
+    conversationId: string
+    uploadId: string
+}): SessionStateConfig => ({
     llmConfig: {
         model: 'test-model',
         maxTokensToSample: 1,
@@ -70,14 +77,23 @@ const mockSessionStateConfig = ({ conversationId }: { conversationId: string }):
         },
     },
     conversationId,
+    proxyClient: {
+        createConversation: () => sinon.stub(),
+        createUploadUrl: () => sinon.stub(),
+        generatePlan: () => mockGeneratePlan(),
+        startCodeGeneration: () => sinon.stub(),
+        getCodeGeneration: () => mockGetCodeGeneration(),
+        exportResultArchive: () => mockExportResultArchive(),
+    } as unknown as WeaverbirdClient,
+    uploadId,
 })
 
 describe('sessionState', () => {
     const testApproach = 'test-approach'
-    const generationId = 'test-id'
     const conversationId = 'conversation-id'
+    const uploadId = 'upload-id'
     const tabId = 'tab-id'
-    const testConfig = mockSessionStateConfig({ conversationId })
+    const testConfig = mockSessionStateConfig({ conversationId, uploadId })
 
     beforeEach(() => {})
 
@@ -89,9 +105,7 @@ describe('sessionState', () => {
         const testAction = mockSessionStateAction({})
 
         it('transitions to RefinementIterationState and returns an approach', async () => {
-            sinon
-                .stub(invokeModule, 'invoke')
-                .resolves({ approach: testApproach, conversationId } satisfies GenerateApproachOutput)
+            mockGeneratePlan = sinon.stub().resolves(testApproach)
             const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
@@ -104,7 +118,7 @@ describe('sessionState', () => {
         })
 
         it('transitions to RefinementIterationState but does not return an approach', async () => {
-            sinon.stub(invokeModule, 'invoke').resolves({ conversationId } satisfies GenerateApproachOutput)
+            mockGeneratePlan = sinon.stub().resolves(undefined)
             const state = new RefinementState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
             const invokeFailureApproach =
@@ -121,9 +135,7 @@ describe('sessionState', () => {
         it('invalid html gets sanitized', async () => {
             const invalidHTMLApproach =
                 '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
-            sinon
-                .stub(invokeModule, 'invoke')
-                .resolves({ approach: invalidHTMLApproach, conversationId } satisfies GenerateApproachOutput)
+            mockGeneratePlan = sinon.stub().resolves(invalidHTMLApproach)
             const state = new RefinementState(testConfig, invalidHTMLApproach, tabId)
             const result = await state.interact(testAction)
 
@@ -153,12 +165,13 @@ describe('sessionState', () => {
 
     describe('CodeGenState', () => {
         it('transitions to  generate CodeGenIterationState when codeGenerationStatus ready ', async () => {
-            sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
+            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+            mockExportResultArchive = sinon.stub().resolves([])
             const testAction = mockSessionStateAction({})
             const state = new CodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
+            const nextState = new CodeGenIterationState(testConfig, testApproach, [], tabId)
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -167,7 +180,7 @@ describe('sessionState', () => {
         })
 
         it('fails when codeGenerationStatus failed ', async () => {
-            sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'failed' })
+            mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
             const testAction = mockSessionStateAction({})
             const state = new CodeGenState(testConfig, testApproach, tabId)
             try {
@@ -193,9 +206,7 @@ describe('sessionState', () => {
         })
 
         it('keeps on RefinementIterationState after interaction in any other case', async () => {
-            sinon
-                .stub(invokeModule, 'invoke')
-                .resolves({ approach: testApproach, conversationId } satisfies GenerateApproachOutput)
+            mockGeneratePlan = sinon.stub().resolves(testApproach)
             const testAction = mockSessionStateAction({ msg: 'OTHER' })
             const interactionResult = await refinementIterationState.interact(testAction)
 
@@ -210,9 +221,7 @@ describe('sessionState', () => {
         it('invalid html gets sanitized', async () => {
             const invalidHTMLApproach =
                 '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
-            sinon
-                .stub(invokeModule, 'invoke')
-                .resolves({ approach: invalidHTMLApproach, conversationId } satisfies GenerateApproachOutput)
+            mockGeneratePlan = sinon.stub().resolves(invalidHTMLApproach)
             const state = new RefinementIterationState(testConfig, invalidHTMLApproach, tabId)
             const testAction = mockSessionStateAction({})
             const result = await state.interact(testAction)
@@ -229,10 +238,11 @@ describe('sessionState', () => {
 
     describe('CodeGenIterationState', () => {
         it('transitions to generate CodeGenIterationState', async () => {
-            sinon.stub(invokeModule, 'invoke').resolves({ generationId, codeGenerationStatus: 'ready' })
+            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+            mockExportResultArchive = sinon.stub().resolves([])
             const testAction = mockSessionStateAction({})
 
-            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], [], tabId)
+            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], tabId)
             const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
 
             assert.deepStrictEqual(codeGenIterationStateResult, {

@@ -15,30 +15,25 @@ import { weaverbirdScheme } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { uploadCode } from '../util/upload'
-import { WeaverbirdLambdaClient } from '../client/weaverbird'
+import { WeaverbirdClient } from '../client/weaverbird'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 
 const fs = FileSystemCommon.instance
 
 export class Session {
-    private _state: SessionState
+    private _state?: SessionState
     private task: string = ''
     private approach: string = ''
-    public readonly config: SessionConfig
-    private readonly tabID: string
-    private lambdaClient: WeaverbirdLambdaClient
+    private proxyClient: WeaverbirdClient
+    private _conversationId?: string
+    private _uploadId?: string
     private approachRetries: number
     private codeGenRetries: number
 
-    private messenger: Messenger
-
-    constructor(sessionConfig: SessionConfig, messenger: Messenger, tabID: string) {
-        this.config = sessionConfig
-        this.tabID = tabID
+    constructor(public readonly config: SessionConfig, private messenger: Messenger, private readonly tabID: string) {
         this._state = new ConversationNotStartedState('', tabID)
+        this.proxyClient = new WeaverbirdClient()
 
-        this.messenger = messenger
-        this.lambdaClient = new WeaverbirdLambdaClient(sessionConfig.client, sessionConfig.backendConfig.lambdaArns)
         this.approachRetries = approachRetryLimit
         this.codeGenRetries = codeGenRetryLimit
     }
@@ -49,30 +44,33 @@ export class Session {
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
      */
     public async setupConversation() {
-        const conversationId = await this.lambdaClient.startConversation()
+        this._conversationId = await this.proxyClient.createConversation()
 
         const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
         const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
 
-        const uploadUrl = await this.lambdaClient.generatePresignedUrl(conversationId, zipFileChecksum)
+        const { uploadUrl, uploadId } = await this.proxyClient.createUploadUrl(this._conversationId, zipFileChecksum)
+        this._uploadId = uploadId
 
-        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum)
+        await uploadCode(uploadUrl, zipFileBuffer)
         this._state = new RefinementState(
             {
                 ...this.getSessionStateConfig(),
-                conversationId: conversationId,
+                conversationId: this.conversationId,
             },
             '',
             this.tabID
         )
     }
 
-    private getSessionStateConfig(): Omit<SessionStateConfig, 'conversationId'> {
+    private getSessionStateConfig(): SessionStateConfig {
         return {
-            client: this.config.client,
             llmConfig: this.config.llmConfig,
             workspaceRoot: this.config.workspaceRoot,
             backendConfig: this.config.backendConfig,
+            proxyClient: this.proxyClient,
+            conversationId: this.conversationId,
+            uploadId: this.uploadId,
         }
     }
 
@@ -80,14 +78,10 @@ export class Session {
      * Triggered by the Write Code follow up button to move to the code generation phase
      */
     initCodegen(): void {
-        if (!this.state.conversationId) {
-            throw new ConversationIdNotFoundError()
-        }
-
         this._state = new CodeGenState(
             {
                 ...this.getSessionStateConfig(),
-                conversationId: this.state.conversationId,
+                conversationId: this.conversationId,
             },
             this.approach,
             this.tabID
@@ -133,7 +127,7 @@ export class Session {
     }
 
     public async acceptChanges() {
-        for (const filePath of this._state.filePaths ?? []) {
+        for (const filePath of this.state.filePaths ?? []) {
             const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
 
             const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
@@ -146,6 +140,9 @@ export class Session {
     }
 
     get state() {
+        if (!this._state) {
+            throw new Error("State should be initialized before it's read")
+        }
         return this._state
     }
 
@@ -169,5 +166,18 @@ export class Session {
                 this.codeGenRetries -= 1
                 break
         }
+    }
+    get conversationId() {
+        if (!this._conversationId) {
+            throw new ConversationIdNotFoundError()
+        }
+        return this._conversationId
+    }
+
+    get uploadId() {
+        if (!this._uploadId) {
+            throw new Error("UploadId should be initialized before it's read")
+        }
+        return this._uploadId
     }
 }

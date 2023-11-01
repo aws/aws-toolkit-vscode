@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import WeaverbirdClient, { FileMetadata } from './client/weaverbirdclient'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
-import { LambdaClient } from '../shared/clients/lambdaClient'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
+import { WeaverbirdClient } from './client/weaverbird'
 
 const GenerationFlowOptions = ['fargate', 'lambda', 'stepFunction'] as const
 type GenerationFlowOption = (typeof GenerationFlowOptions)[number]
@@ -16,7 +15,8 @@ export function isGenerationFlowOption(value: string): value is GenerationFlowOp
     return GenerationFlowOptions.includes(value as GenerationFlowOption)
 }
 
-export interface LLMConfig extends Required<WeaverbirdClient.Config> {
+// TODO: Reintroduce WeaverbirdConfigs and remove any
+export interface LLMConfig extends Required<any> {
     generationFlow: GenerationFlowOption
 }
 
@@ -40,7 +40,6 @@ export enum FollowUpTypes {
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
 
 export interface SessionState {
-    readonly conversationId?: string
     readonly filePaths?: string[]
     readonly phase?: SessionStatePhase
     approach: string
@@ -50,16 +49,17 @@ export interface SessionState {
 }
 
 export interface SessionStateConfig {
-    client: LambdaClient
     llmConfig: LLMConfig
     workspaceRoot: string
     backendConfig: LocalResolvedConfig
     conversationId: string
+    proxyClient: WeaverbirdClient
+    uploadId: string
 }
 
 export interface SessionStateAction {
     task: string
-    files: FileMetadata[]
+    files: any[] // TODO: remove any
     msg?: string
     messenger: Messenger
     fs: VirtualFileSystem

@@ -1,16 +1,15 @@
 // smithy-typescript generated code
 import { ChatCommandInput, ChatCommandOutput } from './commands/ChatCommand'
 import {
-    ExecutePlanningInteractionCommandInput,
-    ExecutePlanningInteractionCommandOutput,
-} from './commands/ExecutePlanningInteractionCommand'
+    ExportResultArchiveCommandInput,
+    ExportResultArchiveCommandOutput,
+} from './commands/ExportResultArchiveCommand'
 import {
-    GetCodeGenerationInteractionResultCommandInput,
-    GetCodeGenerationInteractionResultCommandOutput,
-} from './commands/GetCodeGenerationInteractionResultCommand'
+    GenerateTaskAssistPlanCommandInput,
+    GenerateTaskAssistPlanCommandOutput,
+} from './commands/GenerateTaskAssistPlanCommand'
 import { StartConversationCommandInput, StartConversationCommandOutput } from './commands/StartConversationCommand'
 import { getRuntimeConfig as __getRuntimeConfig } from './runtimeConfig'
-import { RuntimeExtension, RuntimeExtensionsConfig, resolveRuntimeExtensions } from './runtimeExtensions'
 import {
     HostHeaderInputConfig,
     HostHeaderResolvedConfig,
@@ -52,7 +51,6 @@ import {
     Provider,
     RegionInfoProvider,
     BodyLengthCalculator as __BodyLengthCalculator,
-    CheckOptionalClientConfig as __CheckOptionalClientConfig,
     Checksum as __Checksum,
     ChecksumConstructor as __ChecksumConstructor,
     Decoder as __Decoder,
@@ -75,8 +73,8 @@ export { __Client }
  */
 export type ServiceInputTypes =
     | ChatCommandInput
-    | ExecutePlanningInteractionCommandInput
-    | GetCodeGenerationInteractionResultCommandInput
+    | ExportResultArchiveCommandInput
+    | GenerateTaskAssistPlanCommandInput
     | StartConversationCommandInput
 
 /**
@@ -84,8 +82,8 @@ export type ServiceInputTypes =
  */
 export type ServiceOutputTypes =
     | ChatCommandOutput
-    | ExecutePlanningInteractionCommandOutput
-    | GetCodeGenerationInteractionResultCommandOutput
+    | ExportResultArchiveCommandOutput
+    | GenerateTaskAssistPlanCommandOutput
     | StartConversationCommandOutput
 
 /**
@@ -193,8 +191,6 @@ export interface ClientDefaults extends Partial<__SmithyResolvedConfiguration<__
 
     /**
      * Specifies which retry algorithm to use.
-     * @see https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/Package/-smithy-util-retry/Enum/RETRY_MODES/
-     *
      */
     retryMode?: string | __Provider<string>
 
@@ -202,11 +198,6 @@ export interface ClientDefaults extends Partial<__SmithyResolvedConfiguration<__
      * Optional logger for logging debug/info/warn/error.
      */
     logger?: __Logger
-
-    /**
-     * Optional extensions
-     */
-    extensions?: RuntimeExtension[]
 
     /**
      * The function that provides necessary utilities for generating and parsing event stream
@@ -243,7 +234,6 @@ export interface CodeWhispererStreamingClientConfig extends CodeWhispererStreami
  */
 export type CodeWhispererStreamingClientResolvedConfigType = __SmithyResolvedConfiguration<__HttpHandlerOptions> &
     Required<ClientDefaults> &
-    RuntimeExtensionsConfig &
     RegionResolvedConfig &
     EndpointsResolvedConfig &
     RetryResolvedConfig &
@@ -272,8 +262,8 @@ export class CodeWhispererStreamingClient extends __Client<
      */
     readonly config: CodeWhispererStreamingClientResolvedConfig
 
-    constructor(...[configuration]: __CheckOptionalClientConfig<CodeWhispererStreamingClientConfig>) {
-        let _config_0 = __getRuntimeConfig(configuration || {})
+    constructor(configuration: CodeWhispererStreamingClientConfig) {
+        let _config_0 = __getRuntimeConfig(configuration)
         let _config_1 = resolveRegionConfig(_config_0)
         let _config_2 = resolveEndpointsConfig(_config_1)
         let _config_3 = resolveRetryConfig(_config_2)
@@ -281,9 +271,8 @@ export class CodeWhispererStreamingClient extends __Client<
         let _config_5 = resolveTokenConfig(_config_4)
         let _config_6 = resolveUserAgentConfig(_config_5)
         let _config_7 = resolveEventStreamSerdeConfig(_config_6)
-        let _config_8 = resolveRuntimeExtensions(_config_7, configuration?.extensions || [])
-        super(_config_8)
-        this.config = _config_8
+        super(_config_7)
+        this.config = _config_7
         this.middlewareStack.use(getRetryPlugin(this.config))
         this.middlewareStack.use(getContentLengthPlugin(this.config))
         this.middlewareStack.use(getHostHeaderPlugin(this.config))

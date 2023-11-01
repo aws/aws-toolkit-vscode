@@ -2,15 +2,15 @@
 import { CodeWhispererStreamingClient, CodeWhispererStreamingClientConfig } from './CodeWhispererStreamingClient'
 import { ChatCommand, ChatCommandInput, ChatCommandOutput } from './commands/ChatCommand'
 import {
-    ExecutePlanningInteractionCommand,
-    ExecutePlanningInteractionCommandInput,
-    ExecutePlanningInteractionCommandOutput,
-} from './commands/ExecutePlanningInteractionCommand'
+    ExportResultArchiveCommand,
+    ExportResultArchiveCommandInput,
+    ExportResultArchiveCommandOutput,
+} from './commands/ExportResultArchiveCommand'
 import {
-    GetCodeGenerationInteractionResultCommand,
-    GetCodeGenerationInteractionResultCommandInput,
-    GetCodeGenerationInteractionResultCommandOutput,
-} from './commands/GetCodeGenerationInteractionResultCommand'
+    GenerateTaskAssistPlanCommand,
+    GenerateTaskAssistPlanCommandInput,
+    GenerateTaskAssistPlanCommandOutput,
+} from './commands/GenerateTaskAssistPlanCommand'
 import {
     StartConversationCommand,
     StartConversationCommandInput,
@@ -21,8 +21,8 @@ import { HttpHandlerOptions as __HttpHandlerOptions } from '@smithy/types'
 
 const commands = {
     ChatCommand,
-    ExecutePlanningInteractionCommand,
-    GetCodeGenerationInteractionResultCommand,
+    ExportResultArchiveCommand,
+    GenerateTaskAssistPlanCommand,
     StartConversationCommand,
 }
 
@@ -35,37 +35,37 @@ export interface CodeWhispererStreaming {
     chat(args: ChatCommandInput, options: __HttpHandlerOptions, cb: (err: any, data?: ChatCommandOutput) => void): void
 
     /**
-     * @see {@link ExecutePlanningInteractionCommand}
+     * @see {@link ExportResultArchiveCommand}
      */
-    executePlanningInteraction(
-        args: ExecutePlanningInteractionCommandInput,
+    exportResultArchive(
+        args: ExportResultArchiveCommandInput,
         options?: __HttpHandlerOptions
-    ): Promise<ExecutePlanningInteractionCommandOutput>
-    executePlanningInteraction(
-        args: ExecutePlanningInteractionCommandInput,
-        cb: (err: any, data?: ExecutePlanningInteractionCommandOutput) => void
+    ): Promise<ExportResultArchiveCommandOutput>
+    exportResultArchive(
+        args: ExportResultArchiveCommandInput,
+        cb: (err: any, data?: ExportResultArchiveCommandOutput) => void
     ): void
-    executePlanningInteraction(
-        args: ExecutePlanningInteractionCommandInput,
+    exportResultArchive(
+        args: ExportResultArchiveCommandInput,
         options: __HttpHandlerOptions,
-        cb: (err: any, data?: ExecutePlanningInteractionCommandOutput) => void
+        cb: (err: any, data?: ExportResultArchiveCommandOutput) => void
     ): void
 
     /**
-     * @see {@link GetCodeGenerationInteractionResultCommand}
+     * @see {@link GenerateTaskAssistPlanCommand}
      */
-    getCodeGenerationInteractionResult(
-        args: GetCodeGenerationInteractionResultCommandInput,
+    generateTaskAssistPlan(
+        args: GenerateTaskAssistPlanCommandInput,
         options?: __HttpHandlerOptions
-    ): Promise<GetCodeGenerationInteractionResultCommandOutput>
-    getCodeGenerationInteractionResult(
-        args: GetCodeGenerationInteractionResultCommandInput,
-        cb: (err: any, data?: GetCodeGenerationInteractionResultCommandOutput) => void
+    ): Promise<GenerateTaskAssistPlanCommandOutput>
+    generateTaskAssistPlan(
+        args: GenerateTaskAssistPlanCommandInput,
+        cb: (err: any, data?: GenerateTaskAssistPlanCommandOutput) => void
     ): void
-    getCodeGenerationInteractionResult(
-        args: GetCodeGenerationInteractionResultCommandInput,
+    generateTaskAssistPlan(
+        args: GenerateTaskAssistPlanCommandInput,
         options: __HttpHandlerOptions,
-        cb: (err: any, data?: GetCodeGenerationInteractionResultCommandOutput) => void
+        cb: (err: any, data?: GenerateTaskAssistPlanCommandOutput) => void
     ): void
 
     /**

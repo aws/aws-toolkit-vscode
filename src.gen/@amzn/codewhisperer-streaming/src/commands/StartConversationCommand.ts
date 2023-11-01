@@ -1,35 +1,40 @@
 // smithy-typescript generated code
 import {
-    CodeWhispererStreamingClientResolvedConfig,
-    ServiceInputTypes,
-    ServiceOutputTypes,
-} from '../CodeWhispererStreamingClient'
+  CodeWhispererStreamingClientResolvedConfig,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from "../CodeWhispererStreamingClient";
 import {
-    StartConversationRequest,
-    StartConversationRequestFilterSensitiveLog,
-    StartConversationResponse,
-    StartConversationResponseFilterSensitiveLog,
-} from '../models/models_0'
-import { de_StartConversationCommand, se_StartConversationCommand } from '../protocols/Aws_json1_0'
-import { getSerdePlugin } from '@smithy/middleware-serde'
-import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
-import { Command as $Command } from '@smithy/smithy-client'
+  StartConversationRequest,
+  StartConversationRequestFilterSensitiveLog,
+  StartConversationResponse,
+  StartConversationResponseFilterSensitiveLog,
+} from "../models/models_0";
 import {
-    FinalizeHandlerArguments,
-    Handler,
-    HandlerExecutionContext,
-    MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
-    EventStreamSerdeContext as __EventStreamSerdeContext,
-    HttpHandlerOptions as __HttpHandlerOptions,
-    MetadataBearer as __MetadataBearer,
-    SerdeContext as __SerdeContext,
-} from '@smithy/types'
+  de_StartConversationCommand,
+  se_StartConversationCommand,
+} from "../protocols/Aws_json1_0";
+import { getSerdePlugin } from "@smithy/middleware-serde";
+import {
+  HttpRequest as __HttpRequest,
+  HttpResponse as __HttpResponse,
+} from "@smithy/protocol-http";
+import { Command as $Command } from "@smithy/smithy-client";
+import {
+  FinalizeHandlerArguments,
+  Handler,
+  HandlerExecutionContext,
+  MiddlewareStack,
+  EventStreamSerdeContext as __EventStreamSerdeContext,
+  HttpHandlerOptions as __HttpHandlerOptions,
+  MetadataBearer as __MetadataBearer,
+  SerdeContext as __SerdeContext,
+} from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command }
+export { __MetadataBearer, $Command };
 /**
  * @public
  *
@@ -94,74 +99,71 @@ export interface StartConversationCommandOutput extends StartConversationRespons
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class StartConversationCommand extends $Command<
-    StartConversationCommandInput,
-    StartConversationCommandOutput,
-    CodeWhispererStreamingClientResolvedConfig
-> {
-    // Start section: command_properties
-    // End section: command_properties
+export class StartConversationCommand extends $Command<StartConversationCommandInput, StartConversationCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
+  // Start section: command_properties
+  // End section: command_properties
 
-    /**
-     * @public
-     */
-    constructor(readonly input: StartConversationCommandInput) {
-        // Start section: command_constructor
-        super()
-        // End section: command_constructor
+  /**
+   * @public
+   */
+  constructor(readonly input: StartConversationCommandInput) {
+    // Start section: command_constructor
+    super();
+    // End section: command_constructor
+  }
+
+  /**
+   * @internal
+   */
+  resolveMiddleware(
+    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
+    configuration: CodeWhispererStreamingClientResolvedConfig,
+    options?: __HttpHandlerOptions
+  ): Handler<StartConversationCommandInput, StartConversationCommandOutput> {
+    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
+
+    const stack = clientStack.concat(this.middlewareStack);
+
+    const { logger } = configuration;
+    const clientName = "CodeWhispererStreamingClient";
+    const commandName = "StartConversationCommand";
+    const handlerExecutionContext: HandlerExecutionContext = {
+      logger,
+      clientName,
+      commandName,
+      inputFilterSensitiveLog:
+        StartConversationRequestFilterSensitiveLog,
+      outputFilterSensitiveLog:
+        StartConversationResponseFilterSensitiveLog,
     }
+    const { requestHandler } = configuration;
+    return stack.resolve(
+      (request: FinalizeHandlerArguments<any>) =>
+        requestHandler.handle(request.request as __HttpRequest, options || {}),
+      handlerExecutionContext
+    );
+  }
 
-    /**
-     * @internal
-     */
-    resolveMiddleware(
-        clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-        configuration: CodeWhispererStreamingClientResolvedConfig,
-        options?: __HttpHandlerOptions
-    ): Handler<StartConversationCommandInput, StartConversationCommandOutput> {
-        this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
+  /**
+   * @internal
+   */
+  private serialize(
+    input: StartConversationCommandInput,
+    context: __SerdeContext
+  ): Promise<__HttpRequest> {
+    return se_StartConversationCommand(input, context);
+  }
 
-        const stack = clientStack.concat(this.middlewareStack)
+  /**
+   * @internal
+   */
+  private deserialize(
+    output: __HttpResponse,
+    context: __SerdeContext & __EventStreamSerdeContext
+  ): Promise<StartConversationCommandOutput> {
+    return de_StartConversationCommand(output, context);
+  }
 
-        const { logger } = configuration
-        const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'StartConversationCommand'
-        const handlerExecutionContext: HandlerExecutionContext = {
-            logger,
-            clientName,
-            commandName,
-            inputFilterSensitiveLog: StartConversationRequestFilterSensitiveLog,
-            outputFilterSensitiveLog: StartConversationResponseFilterSensitiveLog,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'StartConversation',
-            },
-        }
-        const { requestHandler } = configuration
-        return stack.resolve(
-            (request: FinalizeHandlerArguments<any>) =>
-                requestHandler.handle(request.request as __HttpRequest, options || {}),
-            handlerExecutionContext
-        )
-    }
-
-    /**
-     * @internal
-     */
-    private serialize(input: StartConversationCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
-        return se_StartConversationCommand(input, context)
-    }
-
-    /**
-     * @internal
-     */
-    private deserialize(
-        output: __HttpResponse,
-        context: __SerdeContext & __EventStreamSerdeContext
-    ): Promise<StartConversationCommandOutput> {
-        return de_StartConversationCommand(output, context)
-    }
-
-    // Start section: command_body_extra
-    // End section: command_body_extra
+  // Start section: command_body_extra
+  // End section: command_body_extra
 }

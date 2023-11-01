@@ -19,7 +19,6 @@ import {
     Handler,
     HandlerExecutionContext,
     MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
     EventStreamSerdeContext as __EventStreamSerdeContext,
     HttpHandlerOptions as __HttpHandlerOptions,
     MetadataBearer as __MetadataBearer,
@@ -329,10 +328,6 @@ export class ChatCommand extends $Command<
             commandName,
             inputFilterSensitiveLog: ChatRequestFilterSensitiveLog,
             outputFilterSensitiveLog: ChatResponseFilterSensitiveLog,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'Chat',
-            },
         }
         const { requestHandler } = configuration
         return stack.resolve(

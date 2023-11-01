@@ -7,19 +7,6 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import sanitizeHtml from 'sanitize-html'
 import { collectFiles } from '../util/files'
-import WeaverbirdClient, {
-    FileMetadata,
-    GenerateApproachInput,
-    GenerateApproachOutput,
-    GenerateCodeInput,
-    GenerateCodeOutput,
-    GetCodeGenerationResultInput,
-    GetCodeGenerationResultOutput,
-    IterateApproachInput,
-    IterateApproachOutput,
-    IterateCodeInput,
-    IterateCodeOutput,
-} from '../client/weaverbirdclient'
 import { getLogger } from '../../shared/logger'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
@@ -33,7 +20,6 @@ import {
     NewFileContents,
     SessionStatePhase,
 } from '../types'
-import { invoke } from '../util/invoke'
 import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
@@ -49,7 +35,7 @@ export class ConversationNotStartedState implements SessionState {
         this.approach = ''
     }
 
-    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+    async interact(_action: SessionStateAction): Promise<SessionStateInteraction> {
         throw new ToolkitError('Illegal transition between states, restart the conversation')
     }
 }
@@ -67,21 +53,15 @@ export class RefinementState implements SessionState {
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.awsq_approachInvoke.run(async span => {
             try {
-                const payload = {
-                    task: action.task,
-                    originalFileContents: [],
-                    conversationId: this.conversationId,
-                    config: this.config.llmConfig,
-                }
                 span.record({ result: 'Failed', reason: 'This is the start so Approach is not successful yet' })
-                const response = await invoke<GenerateApproachInput, GenerateApproachOutput>(
-                    this.config.client,
-                    this.config.backendConfig.lambdaArns.approach.generate,
-                    payload
+                const approach = await this.config.proxyClient.generatePlan(
+                    this.config.conversationId,
+                    this.config.uploadId,
+                    action.msg!
                 )
 
                 this.approach = sanitizeHtml(
-                    response.approach ??
+                    approach ??
                         'There has been a problem generating an approach. Please open a conversation in a new tab',
                     {}
                 )
@@ -90,7 +70,7 @@ export class RefinementState implements SessionState {
                     nextState: new RefinementIterationState(
                         {
                             ...this.config,
-                            conversationId: response.conversationId,
+                            conversationId: this.conversationId,
                         },
                         this.approach,
                         this.tabID
@@ -122,24 +102,15 @@ export class RefinementIterationState implements SessionState {
             return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
         }
 
-        const payload: IterateApproachInput = {
-            task: action.task,
-            request: action.msg ?? '',
-            approach: this.approach,
-            originalFileContents: action.files,
-            config: this.config.llmConfig,
-            conversationId: this.config.conversationId,
-        }
         telemetry.awsq_approach.emit({ value: 1 })
-        const response = await invoke<IterateApproachInput, IterateApproachOutput>(
-            this.config.client,
-            this.config.backendConfig.lambdaArns.approach.iterate,
-            payload
+        const approach = await this.config.proxyClient.generatePlan(
+            this.config.conversationId,
+            this.config.uploadId,
+            action.msg!
         )
 
         this.approach = sanitizeHtml(
-            response.approach ??
-                'There has been a problem generating an approach. Please open a conversation in a new tab',
+            approach ?? 'There has been a problem generating an approach. Please open a conversation in a new tab',
             {}
         )
 
@@ -178,8 +149,8 @@ abstract class CodeGenBase {
         this.conversationId = config.conversationId
     }
 
-    async generateCode(params: { getResultLambdaArn: string; fs: VirtualFileSystem; generationId: string }): Promise<{
-        newFiles: WeaverbirdClient.FileMetadataList
+    async generateCode({ fs, codeGenerationId }: { fs: VirtualFileSystem; codeGenerationId: string }): Promise<{
+        newFiles: any
         newFilePaths: string[]
     }> {
         for (
@@ -187,42 +158,31 @@ abstract class CodeGenBase {
             pollingIteration < this.pollCount && !this.tokenSource.token.isCancellationRequested;
             ++pollingIteration
         ) {
-            const payload: GetCodeGenerationResultInput = {
-                generationId: params.generationId,
-                conversationId: this.config.conversationId,
-            }
-
-            const codegenResult = await invoke<GetCodeGenerationResultInput, GetCodeGenerationResultOutput>(
-                this.config.client,
-                params.getResultLambdaArn,
-                payload
-            )
+            const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
             getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
 
-            switch (codegenResult.codeGenerationStatus) {
-                case 'ready': {
-                    const newFiles = codegenResult.result?.newFileContents ?? []
-                    const newFilePaths = await createFilePaths(params.fs, newFiles)
+            switch (codegenResult.codeGenerationStatus.status) {
+                case 'Complete': {
+                    // const newFiles = codegenResult.result?.newFileContents ?? []
+                    const newFiles = await this.config.proxyClient.exportResultArchive(this.conversationId)
+                    const newFilePaths = await createFilePaths(fs, newFiles)
                     return {
                         newFiles,
                         newFilePaths,
                     }
                 }
-                case 'predict-ready': {
-                    await new Promise(f => globals.clock.setTimeout(f, this.requestDelay))
-                    break
-                }
-                case 'in-progress': {
+                case 'predict-ready':
+                case 'InProgress': {
                     await new Promise(f => globals.clock.setTimeout(f, this.requestDelay))
                     break
                 }
                 case 'predict-failed':
                 case 'debate-failed':
-                case 'failed': {
+                case 'Failed': {
                     throw new ToolkitError('Code generation failed')
                 }
                 default: {
-                    const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus}\n`
+                    const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus.status}\n`
                     throw new ToolkitError(errorMessage)
                 }
             }
@@ -241,12 +201,10 @@ abstract class CodeGenBase {
 
 export class CodeGenState extends CodeGenBase implements SessionState {
     public filePaths: string[]
-    private newFileContents: FileMetadata[]
 
     constructor(config: SessionStateConfig, public approach: string, tabID: string) {
         super(config, tabID)
         this.filePaths = []
-        this.newFileContents = []
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -256,38 +214,19 @@ export class CodeGenState extends CodeGenBase implements SessionState {
             try {
                 span.record({ result: 'Failed', reason: 'This is the start so Code Generation is not successful yet' })
 
-                const payload: GenerateCodeInput = {
-                    originalFileContents: [],
-                    approach: this.approach,
-                    task: action.task,
-                    config: this.config.llmConfig,
-                    conversationId: this.config.conversationId,
-                }
-
-                const response = await invoke<GenerateCodeInput, GenerateCodeOutput>(
-                    this.config.client,
-                    this.config.backendConfig.lambdaArns.codegen.generate,
-                    payload
+                // TODO: Upload code once more before starting code generation
+                const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
+                    this.config.conversationId,
+                    this.config.uploadId
                 )
-
-                const genId = response.generationId
 
                 const codeGeneration = await this.generateCode({
-                    getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getResults,
                     fs: action.fs,
-                    generationId: genId,
+                    codeGenerationId,
                 })
-
                 this.filePaths = codeGeneration.newFilePaths
-                this.newFileContents = codeGeneration.newFiles
 
-                const nextState = new CodeGenIterationState(
-                    this.config,
-                    this.approach,
-                    this.newFileContents,
-                    this.filePaths,
-                    this.tabID
-                )
+                const nextState = new CodeGenIterationState(this.config, this.approach, this.filePaths, this.tabID)
                 span.record({ result: 'Succeeded' })
                 return {
                     nextState,
@@ -349,50 +288,24 @@ export class MockCodeGenState implements SessionState {
 }
 
 export class CodeGenIterationState extends CodeGenBase implements SessionState {
-    constructor(
-        config: SessionStateConfig,
-        public approach: string,
-        private newFileContents: FileMetadata[],
-        public filePaths: string[],
-        tabID: string
-    ) {
+    constructor(config: SessionStateConfig, public approach: string, public filePaths: string[], tabID: string) {
         super(config, tabID)
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         telemetry.awsq_codeReGeneration.emit({ value: 1 })
-        const fileContents = [...this.newFileContents].concat(
-            ...action.files.filter(
-                originalFile => !this.newFileContents.some(newFile => newFile.filePath === originalFile.filePath)
-            )
+        const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
+            this.config.conversationId,
+            this.config.uploadId,
+            action.msg
         )
-        const payload: IterateCodeInput = {
-            originalFileContents: fileContents,
-            approach: this.approach,
-            task: action.task,
-            comment: action.msg ?? '',
-            config: this.config.llmConfig,
-            conversationId: this.config.conversationId,
-        }
-
-        const response = await invoke<IterateCodeInput, IterateCodeOutput>(
-            this.config.client,
-            // going to the `generate` lambda here because the `iterate` one doesn't work on a
-            // task/poll-results strategy yet
-            this.config.backendConfig.lambdaArns.codegen.iterate,
-            payload
-        )
-
-        const genId = response.generationId
 
         const codeGeneration = await this.generateCode({
-            getResultLambdaArn: this.config.backendConfig.lambdaArns.codegen.getIterationResults,
             fs: action.fs,
-            generationId: genId,
+            codeGenerationId,
         })
 
         this.filePaths = codeGeneration.newFilePaths
-        this.newFileContents = codeGeneration.newFiles
 
         return {
             nextState: this,

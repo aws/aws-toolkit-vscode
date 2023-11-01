@@ -31,7 +31,7 @@ export async function createSessionConfig(params?: {
     // TODO figure out how we want to handle multi root workspaces
     const workspace = params?.workspaceRoot ?? workspaceFolders[0].uri.fsPath
     const llmConfig = params?.llmConfiguration ?? defaultLlmConfig
-    const backendConfig = params?.backendConfiguration ?? (await getConfig())
+    const backendConfig = params?.backendConfiguration ?? getConfig()
     const lambdaClient = params?.client ?? new DefaultLambdaClient(backendConfig.region)
 
     const fs = new VirtualFileSystem()

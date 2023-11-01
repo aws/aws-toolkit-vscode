@@ -360,7 +360,7 @@ export class ChatController {
             const documentSymbolFqns: DocumentSymbol[] = []
             triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
                 documentSymbolFqns.push({
-                    name: fqn.symbol?.join('.'),
+                    name: fqn.symbol?.join('.') ?? '',
                     type: SymbolType.USAGE,
                     source: fqn.source?.join('.'),
                 })
@@ -372,7 +372,7 @@ export class ChatController {
             }
 
             document = {
-                relativeFilePath: triggerPayload.filePath,
+                relativeFilePath: triggerPayload.filePath ?? '',
                 text: triggerPayload.fileText,
                 programmingLanguage,
                 documentSymbols: documentSymbolFqns,

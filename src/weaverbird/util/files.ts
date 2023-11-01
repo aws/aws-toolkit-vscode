@@ -5,7 +5,6 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { FileMetadata } from '../client/weaverbirdclient'
 import { SystemUtilities } from '../../shared/systemUtilities'
 import { getGlobDirExcludedPatterns } from '../../shared/fs/watchedFiles'
 import { getWorkspaceRelativePath } from '../../shared/utilities/workspaceUtils'
@@ -49,7 +48,8 @@ async function filterOutGitignoredFiles(rootPath: string, files: Uri[]): Promise
     return gitIgnoreFilter.filterFiles(files)
 }
 
-export async function collectFiles(rootPath: string, respectGitIgnore: boolean = true): Promise<FileMetadata[]> {
+// TODO: remove any
+export async function collectFiles(rootPath: string, respectGitIgnore: boolean = true): Promise<any[]> {
     const allFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(rootPath, '**'), getExcludePattern())
     const files = respectGitIgnore ? await filterOutGitignoredFiles(rootPath, allFiles) : allFiles
 
