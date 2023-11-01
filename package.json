@@ -693,6 +693,11 @@
                             "icon": "resources/aws-cn-logo.svg"
                         }
                     }
+                },
+                {
+                    "id": "foo",
+                    "title": "foo",
+                    "icon": "$(squirrel)"
                 }
             ],
             "panel": [
@@ -704,6 +709,13 @@
             ]
         },
         "views": {
+            "foo": [
+                {
+                    "id": "bar",
+                    "name": "bar",
+                    "when": "showTempView"
+                }
+            ],
             "aws-explorer": [
                 {
                     "id": "aws.explorer",
@@ -2028,6 +2040,18 @@
             ]
         },
         "commands": [
+            {
+                "command": "showNewView",
+                "title": "Show the temp view!",
+                "category": "%AWS.title%",
+                "enablement": "!showTempView"
+            },
+            {
+                "command": "hideNewView",
+                "title": "Hide the temp view!",
+                "category": "%AWS.title%",
+                "enablement": "showTempView"
+            },
             {
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
