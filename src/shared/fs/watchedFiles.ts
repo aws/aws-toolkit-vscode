@@ -286,49 +286,37 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * @param cancellationPromise Cancels additional registrations when rejected. Otherwise, this
      */
     public async rebuild(cancellationPromise: Promise<void>): Promise<void> {
-        const cancellationMessage = 'cancelRebuild'
+        let isCanceled = false
         let skips = 0
-        let exitMessage = ''
         this.isWatching = true
         this.reset()
 
         const exclude = getExcludePatternOnce()
         getLogger().info(`Building registry with the following criteria: ${this.outputPatterns()}`)
-        try {
-            cancellationPromise.then(
-                () => {},
-                () => {
-                    throw new Error(cancellationMessage)
-                }
-            )
-            for (const glob of this.globs) {
-                try {
-                    const found = await vscode.workspace.findFiles(glob, exclude)
-                    for (const item of found) {
-                        await this.addItem(item, true)
-                    }
-                } catch (e) {
-                    // inner try/catch skips over problematic files
-                    skips++
-                    const err = e as Error
-                    getLogger().error('watchedFiles: findFiles("%s", "%s"): %s', glob, exclude, err.message)
-                }
+        cancellationPromise.then(
+            () => {},
+            () => {
+                isCanceled = true
             }
-        } catch (e) {
-            // outer try/catch cancels either systemic failures or cancellations
-            const err = e as Error
-            if (err.message === cancellationMessage) {
-                exitMessage = ' (cancelled)'
-                getLogger().info('watchedFiles: rebuild cancelled')
-            } else {
-                exitMessage = ' (errored)'
-                getLogger().error('watchedFiles: rebuild error: %s', err.message)
+        )
+        for (let i = 0; i < this.globs.length && !isCanceled; i++) {
+            const glob = this.globs[i]
+            try {
+                const found = await vscode.workspace.findFiles(glob, exclude)
+                for (const item of found) {
+                    await this.addItem(item, true)
+                }
+            } catch (e) {
+                // inner try/catch skips over problematic files
+                skips++
+                const err = e as Error
+                getLogger().error('watchedFiles: findFiles("%s", "%s"): %s', glob, exclude, err.message)
             }
         }
         getLogger().info(
             'Registered %s items%s%s',
             this.registryData.size,
-            exitMessage,
+            isCanceled ? ' (cancelled)' : '',
             skips > 0 ? `, skipped ${skips} entries` : ''
         )
     }

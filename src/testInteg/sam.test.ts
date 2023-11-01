@@ -657,6 +657,6 @@ describe('SAM Integration Tests', async function () {
         // XXX: Fixes flakiness. Ensures the files from creation of sam
         // app are processed by code lens file watcher. Otherwise, potential
         // issues of file not in registry before it is found.
-        await globals.codelensRootRegistry.rebuild()
+        await globals.codelensRootRegistry.rebuild(new Promise(() => {}))
     }
 })
