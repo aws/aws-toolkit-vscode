@@ -95,13 +95,6 @@ export class CodeWhispererTracker {
         } catch (e) {
             getLogger().verbose(`Exception Thrown from CodeWhispererTracker: ${e}`)
         } finally {
-            let codewhispererRuntimeLanguage: string = suggestion.language
-            if (codewhispererRuntimeLanguage === 'jsx') {
-                codewhispererRuntimeLanguage = 'javascript'
-            } else if (codewhispererRuntimeLanguage === 'tsx') {
-                codewhispererRuntimeLanguage = 'typescript'
-            }
-
             telemetry.codewhisperer_userModification.emit({
                 codewhispererRequestId: suggestion.requestId ? suggestion.requestId : 'undefined',
                 codewhispererSessionId: suggestion.sessionId ? suggestion.sessionId : undefined,
