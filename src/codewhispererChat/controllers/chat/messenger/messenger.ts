@@ -52,7 +52,7 @@ export class Messenger {
                 tabID
             )
         )
-        this.telemetryHelper.setResponseStreamStartTime()
+        this.telemetryHelper.setResponseStreamStartTime(tabID)
 
         await waitUntil(
             async () => {
@@ -96,7 +96,7 @@ export class Messenger {
                                 tabID
                             )
                         )
-                        this.telemetryHelper.setReponseStreamTimeToFirstChunk()
+                        this.telemetryHelper.setReponseStreamTimeToFirstChunk(tabID)
                     }
 
                     if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks != undefined) {
@@ -159,7 +159,7 @@ export class Messenger {
             )
         )
 
-        this.telemetryHelper.setResponseStreamTotalTime()
+        this.telemetryHelper.setResponseStreamTotalTime(tabID)
 
         // TODO: verify and fix
         // const requestID = response?.httpResponse?.headers['x-amz-request-id']

@@ -30,9 +30,9 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
-    private responseStreamStartTime: number = 0
-    private responseStreamTotalTime: number = 0
-    private responseStreamTimeToFirstChunk: number = 0
+    private responseStreamStartTime: Map<string, number> = new Map()
+    private responseStreamTotalTime: Map<string, number> = new Map()
+    private responseStreamTimeToFirstChunk: Map<string, number> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -236,8 +236,8 @@ export class CWCTelemetryHelper {
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: 0,
             cwsprChatFollowUpCount: message.followUpCount,
-            cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk,
-            cwsprChatFullResponseLatency: this.responseStreamTotalTime,
+            cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk.get(message.tabID) ?? 0,
+            cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
         })
@@ -263,16 +263,19 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public setResponseStreamStartTime() {
-        this.responseStreamStartTime = performance.now()
+    public setResponseStreamStartTime(tabID: string) {
+        this.responseStreamStartTime.set(tabID, performance.now())
     }
 
-    public setReponseStreamTimeToFirstChunk() {
-        this.responseStreamTimeToFirstChunk = performance.now() - this.responseStreamStartTime
+    public setReponseStreamTimeToFirstChunk(tabID: string) {
+        this.responseStreamTimeToFirstChunk.set(
+            tabID,
+            performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+        )
     }
 
-    public setResponseStreamTotalTime() {
-        this.responseStreamTotalTime = performance.now() - this.responseStreamStartTime
+    public setResponseStreamTotalTime(tabID: string) {
+        this.responseStreamTotalTime.set(tabID, performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0))
     }
 
     private getConversationId(tabID: string): string | undefined {
