@@ -28,6 +28,9 @@ import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
+    private responseStreamStartTime: number = 0
+    private responseStreamTotalTime: number = 0
+    private responseStreamTimeToFirstChunk: number = 0
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -222,7 +225,6 @@ export class CWCTelemetryHelper {
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: '',
-            cwsprChatUserIntent: undefined,
             cwsprChatHasCodeSnippet: hasCodeSnippet,
             cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
@@ -232,8 +234,8 @@ export class CWCTelemetryHelper {
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: 0,
             cwsprChatFollowUpCount: message.followUpCount,
-            cwsprChatTimeToFirstChunk: 0,
-            cwsprChatFullResponseLatency: 0,
+            cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk,
+            cwsprChatFullResponseLatency: this.responseStreamTotalTime,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
         })
@@ -257,6 +259,18 @@ export class CWCTelemetryHelper {
         telemetry.codewhispererchat_exitFocusConversation.emit({
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
         })
+    }
+
+    public setResponseStreamStartTime(time: number) {
+        this.responseStreamStartTime = time
+    }
+
+    public setReponseStreamTimeToFirstChunk(time: number) {
+        this.responseStreamTimeToFirstChunk = time - this.responseStreamStartTime
+    }
+
+    public setResponseStreamTotalTime(time: number) {
+        this.responseStreamTotalTime = time - this.responseStreamStartTime
     }
 
     private getConversationId(tabID: string): string | undefined {
