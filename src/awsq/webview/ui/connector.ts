@@ -235,6 +235,17 @@ export class Connector {
             case 'wb':
                 this.weaverbirdChatConnector.sendFeedback(tabId, feedbackPayload)
                 break
+            case 'cwc':
+                this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)
+                break
+        }
+    }
+
+    onChatItemVoted = (tabId: string, messageId: string, vote: 'upvote' | 'downvote'): void | undefined => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onChatItemVoted(tabId, messageId, vote)
+                break
         }
     }
 }

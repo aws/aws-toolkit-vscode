@@ -16,5 +16,7 @@ type MessageCommand =
     | 'stop-response'
     | 'trigger-tabID-received'
     | 'clear'
+    | 'chat-item-voted'
+    | 'chat-item-feedback'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

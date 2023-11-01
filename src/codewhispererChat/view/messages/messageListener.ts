@@ -5,8 +5,8 @@
 
 import { MessageListener } from '../../../awsq/messages/messageListener'
 import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
-import { telemetry } from '../../../shared/telemetry/telemetry'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
+import { ReferenceLogController } from './referenceLogController'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -16,10 +16,12 @@ export interface UIMessageListenerProps {
 export class UIMessageListener {
     private chatControllerMessagePublishers: ChatControllerMessagePublishers
     private webViewMessageListener: MessageListener<any>
+    private referenceLogController: ReferenceLogController
 
     constructor(props: UIMessageListenerProps) {
         this.chatControllerMessagePublishers = props.chatControllerMessagePublishers
         this.webViewMessageListener = props.webViewMessageListener
+        this.referenceLogController = new ReferenceLogController()
 
         this.webViewMessageListener.onMessage(msg => {
             this.handleMessage(msg)
@@ -60,6 +62,12 @@ export class UIMessageListener {
             case 'stop-response':
                 this.stopResponse(msg)
                 break
+            case 'chat-item-voted':
+                this.chatItemVoted(msg)
+                break
+            case 'chat-item-feedback':
+                this.chatItemFeedback(msg)
+                break
         }
     }
 
@@ -71,7 +79,7 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
-        // TODO add reference tracker logs if msg contains any
+        this.referenceLogController.addReferenceLog(msg.codeReference)
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
             tabID: msg.tabID,
@@ -96,7 +104,7 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: 'click' })
+        this.chatControllerMessagePublishers.processTabCreatedMessage.publish('click')
     }
 
     private processChatMessage(msg: any) {
@@ -111,6 +119,25 @@ export class UIMessageListener {
     private stopResponse(msg: any) {
         this.chatControllerMessagePublishers.processStopResponseMessage.publish({
             tabID: msg.tabID,
+        })
+    }
+
+    private chatItemVoted(msg: any) {
+        this.chatControllerMessagePublishers.processChatItemVotedMessage.publish({
+            tabID: msg.tabID,
+            command: msg.command,
+            vote: msg.vote,
+            messageId: msg.messageId,
+        })
+    }
+
+    private async chatItemFeedback(msg: any) {
+        this.chatControllerMessagePublishers.processChatItemFeedbackMessage.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            command: msg.command,
+            selectedOption: msg.selectedOption,
+            comment: msg.comment,
         })
     }
 }

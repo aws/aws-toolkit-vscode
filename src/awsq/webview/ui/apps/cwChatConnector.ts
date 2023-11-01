@@ -7,6 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
+import { FeedbackPayload } from '@aws/mynah-ui-chat'
 
 interface ChatPayload {
     chatMessage: string
@@ -105,6 +106,24 @@ export class Connector {
         })
     }
 
+    onChatItemVoted = (tabID: string, messageId: string, vote: 'upvote' | 'downvote'): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'chat-item-voted',
+            messageId,
+            vote,
+            tabType: 'cwc',
+        })
+    }
+    onSendFeedback = (tabID: string, feedbackPayload: FeedbackPayload): void | undefined => {
+        this.sendMessageToExtension({
+            command: 'chat-item-feedback',
+            ...feedbackPayload,
+            tabType: 'cwc',
+            tabID: tabID,
+        })
+    }
+
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             this.sendMessageToExtension({
@@ -170,7 +189,7 @@ export class Connector {
 
             const answer: ChatItem = {
                 type: messageData.messageType,
-                messageId: messageData.triggerID,
+                messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,
