@@ -6,7 +6,7 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
-import { CodeReference } from '../../../../codewhispererChat/view/connector/connector'
+import { CodeReference } from './awsqCommonsConnector'
 
 interface ChatPayload {
     chatMessage: string
