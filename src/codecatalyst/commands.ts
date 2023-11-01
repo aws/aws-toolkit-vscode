@@ -136,7 +136,10 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
         telemetry.record({ userId: AccountStatus.NotSet })
 
         await authProvider.restore()
-        const conn = await authProvider.tryGetBuilderIdConnection()
+        const conn = authProvider.activeConnection
+        if (!conn) {
+            throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
+        }
         const validatedConn = await validateConnection(conn, authProvider.auth)
         const client = await createClient(validatedConn)
         telemetry.record({ userId: client.identity.id })
