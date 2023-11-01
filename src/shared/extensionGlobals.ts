@@ -16,7 +16,6 @@ import { SchemaService } from './schemas'
 import { TelemetryLogger } from './telemetry/telemetryLogger'
 import { TelemetryService } from './telemetry/telemetryService'
 import { UriHandler } from './vscode/uriHandler'
-import { getMachineId } from './utilities/workspaceUtils'
 
 type Clock = Pick<
     typeof globalThis,
@@ -89,7 +88,6 @@ export async function initialize(context: ExtensionContext): Promise<ToolkitGlob
         didReload: checkDidReload(context),
         manifestPaths: {} as ToolkitGlobals['manifestPaths'],
         visualizationResourcePaths: {} as ToolkitGlobals['visualizationResourcePaths'],
-        machineId: await getMachineId(),
     })
 
     return globals
@@ -118,7 +116,7 @@ interface ToolkitGlobals {
     resourceManager: AwsResourceManager
     uriHandler: UriHandler
     /** An id to differentiate the current machine being run on. Can help distinguish a remote from a local machine.  */
-    readonly machineId: string
+    machineId: string
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
