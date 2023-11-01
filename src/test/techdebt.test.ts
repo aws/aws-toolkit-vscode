@@ -51,4 +51,12 @@ describe('tech debt', function () {
             'Remove use of 1.94.0 for aws-sam-cli in linuxIntegrationTests.yml and see if integration tests are passing now'
         )
     })
+
+    it('stop skipping CodeCatalyst E2E Tests', function () {
+        // https://issues.amazon.com/issues/IDE-10496
+        assert(
+            new Date() < new Date(2024, 1, 15),
+            'Re-evaluate if we should still keep skipping CodeCatalyst E2E Tests'
+        )
+    })
 })

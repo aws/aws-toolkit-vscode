@@ -17,7 +17,20 @@ import globals from '../../shared/extensionGlobals'
 import { fromString } from '../../auth/providers/credentials'
 import { mergeAndValidateSections, parseIni } from '../../auth/credentials/sharedCredentials'
 import { SharedCredentialsProvider } from '../../auth/providers/sharedCredentialsProvider'
-import { Connection, ProfileStore, SsoConnection, SsoProfile } from '../../auth/connection'
+import { Connection, IamConnection, ProfileStore, SsoConnection, SsoProfile } from '../../auth/connection'
+import * as sinon from 'sinon'
+
+/** Mock Connection objects for test usage */
+export const ssoConnection: SsoConnection = {
+    type: 'sso',
+    id: '0',
+    label: 'sso',
+    ssoRegion: 'us-east-1',
+    startUrl: 'https://nkomonen.awsapps.com/start',
+    getToken: sinon.stub(),
+}
+export const builderIdConnection: SsoConnection = { ...ssoConnection, startUrl: builderIdStartUrl, label: 'builderId' }
+export const iamConnection: IamConnection = { type: 'iam', id: '0', label: 'iam', getCredentials: sinon.stub() }
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {

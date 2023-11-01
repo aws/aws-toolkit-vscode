@@ -13,11 +13,11 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../awsexplorer/childNodeLoader'
 import { inspect } from 'util'
-import { Workspace } from '../../shared/vscode/workspace'
 import { getLogger } from '../../shared/logger'
 import { IotCertWithPoliciesNode } from './iotCertificateNode'
 import { IotNode } from './iotNodes'
-import { Commands } from '../../shared/vscode/commands'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 /**
  * Represents the group of all IoT Certificates.
@@ -28,7 +28,7 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
     public constructor(
         public readonly iot: IotClient,
         public readonly parent: IotNode,
-        private readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         super('Certificates', vscode.TreeItemCollapsibleState.Collapsed)
         this.tooltip = 'IoT Certificates'
@@ -89,9 +89,9 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
         }
     }
 
-    public async refreshNode(commands: Commands): Promise<void> {
+    public async refreshNode(): Promise<void> {
         this.clearChildren()
-        return commands.execute('aws.refreshAwsExplorerNode', this)
+        return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 
     public [inspect.custom](): string {
@@ -99,6 +99,6 @@ export class IotCertsFolderNode extends AWSTreeNodeBase implements LoadMoreNode 
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return this.workspace.getConfiguration('aws').get<number>('iot.maxItemsPerPage')
+        return this.settings.getSection('aws').get<number>('iot.maxItemsPerPage')
     }
 }

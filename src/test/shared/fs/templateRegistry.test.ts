@@ -16,7 +16,7 @@ import {
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { badYaml, makeSampleSamTemplateYaml, strToYamlFile } from '../cloudformation/cloudformationTestUtils'
 import { assertEqualPaths, toFile } from '../../testUtil'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { WatchedItem } from '../../../shared/fs/watchedFiles'
 
 // TODO almost all of these tests should be moved to test WatchedFiles instead
@@ -36,15 +36,15 @@ describe('CloudFormation Template Registry', async function () {
             await fs.remove(tempFolder)
         })
 
-        describe('addItemToRegistry', async function () {
+        describe('addItem', async function () {
             it("adds data from a template to the registry and can receive the template's data", async () => {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addItemToRegistry(filename)
+                await testRegistry.addItem(filename)
 
-                assert.strictEqual(testRegistry.registeredItems.length, 1)
+                assert.strictEqual(testRegistry.items.length, 1)
 
-                const data = testRegistry.getRegisteredItem(filename.fsPath)
+                const data = testRegistry.getItem(filename.fsPath)
 
                 assertValidTestTemplate(data, filename.fsPath)
             })
@@ -53,14 +53,14 @@ describe('CloudFormation Template Registry', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(badYaml, filename.fsPath)
 
-                assert.strictEqual(await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath)), undefined)
+                assert.strictEqual(await testRegistry.addItem(vscode.Uri.file(filename.fsPath)), undefined)
             })
         })
 
         // other get cases are tested in the add section
-        describe('registeredItems', async function () {
+        describe('items', async function () {
             it('returns an empty array if the registry has no registered templates', function () {
-                assert.strictEqual(testRegistry.registeredItems.length, 0)
+                assert.strictEqual(testRegistry.items.length, 0)
             })
         })
 
@@ -69,23 +69,23 @@ describe('CloudFormation Template Registry', async function () {
             it('Returns the item from the VSCode URI', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addItemToRegistry(filename)
+                await testRegistry.addItem(filename)
 
-                const data = testRegistry.getRegisteredItem(filename)
+                const data = testRegistry.getItem(filename)
 
                 assertValidTestTemplate(data, filename.fsPath)
             })
 
             it('returns undefined if the registry has no registered templates', function () {
-                assert.strictEqual(testRegistry.getRegisteredItem('/template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getItem('/template.yaml'), undefined)
             })
 
             it('returns undefined if the registry does not contain the template in question', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
+                await testRegistry.addItem(vscode.Uri.file(filename.fsPath))
 
-                assert.strictEqual(testRegistry.getRegisteredItem('/not-the-template.yaml'), undefined)
+                assert.strictEqual(testRegistry.getItem('/not-the-template.yaml'), undefined)
             })
         })
 
@@ -93,21 +93,21 @@ describe('CloudFormation Template Registry', async function () {
             it('removes an added template', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
-                assert.strictEqual(testRegistry.registeredItems.length, 1)
+                await testRegistry.addItem(vscode.Uri.file(filename.fsPath))
+                assert.strictEqual(testRegistry.items.length, 1)
 
                 await testRegistry.remove(filename)
-                assert.strictEqual(testRegistry.registeredItems.length, 0)
+                assert.strictEqual(testRegistry.items.length, 0)
             })
 
             it('does not affect the registry if a nonexistant template is removed', async function () {
                 const filename = vscode.Uri.file(path.join(tempFolder, 'template.yaml'))
                 await strToYamlFile(goodYaml1, filename.fsPath)
-                await testRegistry.addItemToRegistry(vscode.Uri.file(filename.fsPath))
-                assert.strictEqual(testRegistry.registeredItems.length, 1)
+                await testRegistry.addItem(vscode.Uri.file(filename.fsPath))
+                assert.strictEqual(testRegistry.items.length, 1)
 
                 await testRegistry.remove(vscode.Uri.file(path.join(tempFolder, 'wrong-template.yaml')))
-                assert.strictEqual(testRegistry.registeredItems.length, 1)
+                assert.strictEqual(testRegistry.items.length, 1)
             })
         })
     })

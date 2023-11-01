@@ -7,13 +7,13 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 import * as constants from '../shared/constants'
 import * as aslFormats from '../stepFunctions/constants/aslFormats'
-import * as pathutil from '../shared/utilities/pathUtils'
 import * as fsutil from '../shared/filesystemUtilities'
 import * as sysutil from '../shared/systemUtilities'
 import * as collectionUtil from '../shared/utilities/collectionUtils'
 import globals from './extensionGlobals'
 import { telemetry } from './telemetry/telemetry'
 import { AwsFiletype } from './telemetry/telemetry'
+import * as CloudFormation from './cloudformation/cloudformation'
 
 /** AWS filetypes: vscode language ids */
 export const awsFiletypeLangIds = {
@@ -67,9 +67,12 @@ export function activate(): void {
         vscode.workspace.onDidOpenTextDocument(async (doc: vscode.TextDocument) => {
             const isAwsFileExt = isAwsFiletype(doc)
             const isSchemaHandled = globals.schemaService.isMapped(doc.uri)
-            const isCfnTemplate = !!globals.templateRegistry.registeredItems.find(
-                t => pathutil.normalize(t.path) === pathutil.normalize(doc.fileName)
-            )
+            const cfnTemplate =
+                CloudFormation.isValidFilename(doc.uri) && doc.languageId === 'yaml'
+                    ? await CloudFormation.tryLoad(doc.uri)
+                    : undefined
+            const isCfnTemplate = cfnTemplate?.template !== undefined
+
             if (!isAwsFileExt && !isSchemaHandled && !isCfnTemplate) {
                 return
             }
@@ -78,11 +81,12 @@ export function activate(): void {
             let fileExt: string | undefined = path.extname(doc.fileName)
             fileExt = fileExt ? fileExt : undefined // Telemetry client will fail on empty string.
 
-            // TODO: ask templateRegistry if this is SAM or CFN.
             // TODO: ask schemaService for the precise filetype.
             let telemKind = isAwsConfig(doc.fileName) ? 'awsCredentials' : langidToAwsFiletype(doc.languageId)
-            if (telemKind === 'other') {
-                telemKind = isCfnTemplate ? 'cloudformationSam' : isSchemaHandled ? 'cloudformation' : 'other'
+            if (isCfnTemplate) {
+                telemKind = cfnTemplate.kind === 'sam' ? 'cloudformationSam' : 'cloudformation'
+            } else if (telemKind === 'other') {
+                telemKind = isSchemaHandled ? 'cloudformation' : 'other'
             }
 
             // HACK: for "~/.aws/foo" vscode sometimes _only_ emits "~/.aws/foo.git".

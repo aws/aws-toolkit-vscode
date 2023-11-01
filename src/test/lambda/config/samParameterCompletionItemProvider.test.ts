@@ -10,7 +10,7 @@ import {
     SamParameterCompletionItemProvider,
     SamParameterCompletionItemProviderContext,
 } from '../../../lambda/config/samParameterCompletionItemProvider'
-import { CloudFormation } from '../../../shared/cloudformation/cloudformation'
+import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import { Logger } from '../../../shared/logger'
 
 function createTemplatesSymbol({

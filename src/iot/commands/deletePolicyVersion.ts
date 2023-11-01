@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 
@@ -18,10 +17,7 @@ import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
  * Deletes the policy version.
  * Refreshes the parent node.
  */
-export async function deletePolicyVersionCommand(
-    node: IotPolicyVersionNode,
-    commands = Commands.vscode()
-): Promise<void> {
+export async function deletePolicyVersionCommand(node: IotPolicyVersionNode): Promise<void> {
     getLogger().debug('DeletePolicyVersion called for %O', node)
 
     const policyName = node.policy.name
@@ -68,5 +64,5 @@ export async function deletePolicyVersionCommand(
     }
 
     //Refresh the policy node
-    node.parent.refreshNode(commands)
+    node.parent.refreshNode()
 }

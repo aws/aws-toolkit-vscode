@@ -12,13 +12,14 @@ import { IotClient, IotThing } from '../../../shared/clients/iotClient'
 import { Iot } from 'aws-sdk'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { deepEqual, instance, mock, when } from '../../utilities/mockito'
-import { FakeWorkspace } from '../../shared/vscode/fakeWorkspace'
+import { TestSettings } from '../../utilities/testSettingsConfiguration'
 
 describe('IotThingFolderNode', function () {
     const nextToken = 'nextToken'
     const maxResults = 150
 
     let iot: IotClient
+    let config: TestSettings
     const thing: Iot.ThingAttribute = { thingName: 'thing', thingArn: 'arn' }
     const expectedThing: IotThing = { name: 'thing', arn: 'arn' }
 
@@ -33,6 +34,7 @@ describe('IotThingFolderNode', function () {
 
     beforeEach(function () {
         iot = mock()
+        config = new TestSettings()
     })
 
     describe('getChildren', function () {
@@ -42,11 +44,8 @@ describe('IotThingFolderNode', function () {
                 nextToken: undefined,
             })
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 'iot.maxItemsPerPage', value: maxResults },
-            })
-            const node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)), workspace)
+            await config.getSection('aws').update('iot.maxItemsPerPage', maxResults)
+            const node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)), config)
             const [thingNode, ...otherNodes] = await node.getChildren()
 
             assertThingNode(thingNode, expectedThing)
@@ -59,11 +58,8 @@ describe('IotThingFolderNode', function () {
                 nextToken,
             })
 
-            const workspace = new FakeWorkspace({
-                section: 'aws',
-                configuration: { key: 'iot.maxItemsPerPage', value: maxResults },
-            })
-            const node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)), workspace)
+            await config.getSection('aws').update('iot.maxItemsPerPage', maxResults)
+            const node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)), config)
             const [thingNode, moreResultsNode, ...otherNodes] = await node.getChildren()
 
             assertThingNode(thingNode, expectedThing)

@@ -15,16 +15,16 @@ import { PlaceholderNode } from '../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../shared/treeview/utils'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../awsexplorer/childNodeLoader'
-import { Workspace } from '../../shared/vscode/workspace'
 import { inspect } from 'util'
 import { getLogger } from '../../shared/logger'
 import { IotCertsFolderNode } from './iotCertFolderNode'
 import { IotThingNode } from './iotThingNode'
 import { IotPolicyCertNode } from './iotPolicyNode'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
-import { Commands } from '../../shared/vscode/commands'
 import { getIcon } from '../../shared/icons'
 import { truncate } from '../../shared/utilities/textUtilities'
+import { Settings } from '../../shared/settings'
+import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 
 const contextBase = 'awsIotCertificateNode'
 /**
@@ -40,7 +40,7 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         public readonly iot: IotClient,
         collapsibleState: vscode.TreeItemCollapsibleState,
         public readonly things?: string[],
-        protected readonly workspace = Workspace.vscode()
+        protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
         //Show only 8 characters in the explorer instead of the full 64. The entire
         //ID can be copied from the context menu or viewed when hovered over.
@@ -106,13 +106,13 @@ export abstract class IotCertificateNode extends AWSTreeNodeBase implements AWSR
         }
     }
 
-    public async refreshNode(commands: Commands): Promise<void> {
+    public async refreshNode(): Promise<void> {
         this.clearChildren()
-        return commands.execute('aws.refreshAwsExplorerNode', this)
+        return vscode.commands.executeCommand('aws.refreshAwsExplorerNode', this)
     }
 
     private getMaxItemsPerPage(): number | undefined {
-        return this.workspace.getConfiguration('aws').get<number>('iot.maxItemsPerPage')
+        return this.settings.getSection('aws').get<number>('iot.maxItemsPerPage')
     }
 
     public get arn(): string {
@@ -134,9 +134,9 @@ export class IotThingCertNode extends IotCertificateNode {
         public override readonly parent: IotThingNode,
         public override readonly iot: IotClient,
         public override readonly things?: string[],
-        protected override readonly workspace = Workspace.vscode()
+        protected override readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
-        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
+        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, settings)
         this.contextValue = `${contextBase}.Things.${this.certificate.activeStatus}`
     }
 }
@@ -150,9 +150,9 @@ export class IotCertWithPoliciesNode extends IotCertificateNode implements LoadM
         public override readonly parent: IotCertsFolderNode,
         public override readonly iot: IotClient,
         public override readonly things?: string[],
-        protected override readonly workspace = Workspace.vscode()
+        protected override readonly settings: ClassToInterfaceType<Settings> = Settings.instance
     ) {
-        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, workspace)
+        super(certificate, parent, iot, vscode.TreeItemCollapsibleState.Collapsed, things, settings)
         this.contextValue = `${contextBase}.Policies.${this.certificate.activeStatus}`
     }
 }

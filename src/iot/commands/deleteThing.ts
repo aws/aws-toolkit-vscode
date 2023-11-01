@@ -7,7 +7,6 @@ import * as vscode from 'vscode'
 import * as localizedText from '../../shared/localizedText'
 import { getLogger } from '../../shared/logger'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Commands } from '../../shared/vscode/commands'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utilities/messages'
 
@@ -18,7 +17,7 @@ import { showViewLogsMessage, showConfirmationMessage } from '../../shared/utili
  * Deletes the thing.
  * Refreshes the parent node.
  */
-export async function deleteThingCommand(node: IotThingNode, commands = Commands.vscode()): Promise<void> {
+export async function deleteThingCommand(node: IotThingNode): Promise<void> {
     getLogger().debug('DeleteThing called for %O', node)
 
     const thingName = node.thing.name
@@ -58,5 +57,5 @@ export async function deleteThingCommand(node: IotThingNode, commands = Commands
     }
 
     //Refresh the Things Folder node
-    node.parent.refreshNode(commands)
+    node.parent.refreshNode()
 }

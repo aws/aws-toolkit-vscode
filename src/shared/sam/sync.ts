@@ -13,7 +13,7 @@ import { DefaultS3Client } from '../clients/s3Client'
 import { Wizard } from '../wizards/wizard'
 import { createQuickPick } from '../ui/pickerPrompter'
 import { DefaultCloudFormationClient } from '../clients/cloudFormationClient'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import * as CloudFormation from '../cloudformation/cloudformation'
 import { DefaultEcrClient } from '../clients/ecrClient'
 import { createRegionPrompter } from '../ui/common/region'
 import { CancellationError } from '../utilities/timeoutUtils'
@@ -46,6 +46,7 @@ import { getAwsConsoleUrl } from '../awsConsole'
 import { openUrl } from '../utilities/vsCodeUtils'
 import { showOnce } from '../utilities/messages'
 import { IamConnection } from '../../auth/connection'
+import { CloudFormationTemplateRegistry } from '../fs/templateRegistry'
 
 const localize = nls.loadMessageBundle()
 
@@ -185,10 +186,10 @@ interface TemplateItem {
     readonly data: CloudFormation.Template
 }
 
-function createTemplatePrompter() {
+function createTemplatePrompter(registry: CloudFormationTemplateRegistry) {
     const folders = new Set<string>()
     const recentTemplatePath = getRecentResponse('global', 'templatePath')
-    const items = globals.templateRegistry.registeredItems.map(({ item, path: filePath }) => {
+    const items = registry.items.map(({ item, path: filePath }) => {
         const uri = vscode.Uri.file(filePath)
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(uri)
         const label = workspaceFolder ? path.relative(workspaceFolder.uri.fsPath, uri.fsPath) : uri.fsPath
@@ -227,11 +228,14 @@ function hasImageBasedResources(template: CloudFormation.Template) {
 }
 
 export class SyncWizard extends Wizard<SyncParams> {
-    public constructor(state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>) {
+    public constructor(
+        state: Pick<SyncParams, 'deployType'> & Partial<SyncParams>,
+        registry: CloudFormationTemplateRegistry
+    ) {
         super({ initState: state, exitPrompterProvider: createExitPrompter })
 
         this.form.region.bindPrompter(() => createRegionPrompter().transform(r => r.id))
-        this.form.template.bindPrompter(() => createTemplatePrompter())
+        this.form.template.bindPrompter(() => createTemplatePrompter(registry))
         this.form.stackName.bindPrompter(({ region }) => createStackPrompter(new DefaultCloudFormationClient(region!)))
         this.form.bucketName.bindPrompter(({ region }) => createBucketPrompter(new DefaultS3Client(region!)))
         this.form.ecrRepoUri.bindPrompter(({ region }) => createEcrPrompter(new DefaultEcrClient(region!)), {
@@ -538,7 +542,8 @@ export function registerSync() {
         const input = cast(arg, Optional(Union(Instance(Uri), Instance(AWSTreeNodeBase))))
 
         await confirmDevStack()
-        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(input)) }).run()
+        const registry = await globals.templateRegistry
+        const params = await new SyncWizard({ deployType, ...(await prepareSyncParams(input)) }, registry).run()
         if (params === undefined) {
             throw new CancellationError('user')
         }

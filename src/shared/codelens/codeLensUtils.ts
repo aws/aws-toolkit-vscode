@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
-import { CloudFormation } from '../cloudformation/cloudformation'
+import * as CloudFormation from '../cloudformation/cloudformation'
 import { getResourcesForHandler } from '../fs/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
 import { getLogger } from '../logger'
@@ -25,6 +25,7 @@ import * as goCodelens from './goCodeLensProvider'
 import { VSCODE_EXTENSION_ID } from '../extensions'
 import { getIdeProperties } from '../extensionUtilities'
 import { SamCliSettings } from '../sam/cli/samCliSettings'
+import globals from '../extensionGlobals'
 
 export type Language = 'python' | 'javascript' | 'csharp' | 'go' | 'java' | 'typescript'
 
@@ -59,7 +60,8 @@ export async function makeCodeLenses({
                   )
 
         try {
-            const associatedResources = getResourcesForHandler(handler.filename, handler.handlerName)
+            const registry = await globals.templateRegistry
+            const associatedResources = getResourcesForHandler(handler.filename, handler.handlerName, registry.items)
             const templateConfigs: AddSamDebugConfigurationInput[] = []
 
             if (associatedResources.length > 0) {

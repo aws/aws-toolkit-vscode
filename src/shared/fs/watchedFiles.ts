@@ -90,8 +90,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Creates a watcher across all opened workspace folders (or see below to
+     * Creates watchers for each glob across all opened workspace folders (or see below to
      * watch _outside_ the workspace).
+     *
+     * Fails if the watcher is disposed, or if globs have already been set;
+     * enforce setting once to reduce rebuilds looping through all existing globs
      *
      * (since vscode 1.64):
      * - Watches RECURSIVELY if `pattern` is complex (e.g. contains `**` or
@@ -102,8 +105,8 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      *   It cannot be used to add more folders for watching, nor will it report
      *   events outside of workspace folders.
      * - To watch _outside_ the workspace, pass `vscode.RelativePattern(vscode.Uri(…))`:
-     *   - non-recursive: `addWatchPattern(new RelativePattern(Uri.file(…), '*.js'))`
-     *   - recursive: `addWatchPattern(new RelativePattern(Uri.file(…), '**x/*.js'))`
+     *   - non-recursive: `addWatchPatterns(new RelativePattern(Uri.file(…), '*.js'))`
+     *   - recursive: `addWatchPatterns(new RelativePattern(Uri.file(…), '**x/*.js'))`
      * - **Note** recursive files may be excluded by user configuration
      *   (`files.watcherExclude`, e.g. "node_modules"). To avoid that, watch
      *   simple (non-recursive) patterns.
@@ -115,19 +118,24 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * > workspace, because that would result in multiple watchers on the same
      * > paths competing against each other.
      *
-     * @param glob Pattern to match against (across all opened workspace folders)
+     * @param globs Patterns to match against (across all opened workspace folders)
      */
-    public async addWatchPattern(glob: vscode.GlobPattern): Promise<void> {
+    public async addWatchPatterns(globs: vscode.GlobPattern[]): Promise<void> {
         if (this._isDisposed) {
             throw new Error(`${this.name}: manager has already been disposed!`)
         }
-        if (typeof glob === 'string' && !vscode.workspace.workspaceFolders?.[0]) {
-            getLogger().warn(`${this.name}: addWatchPattern(${glob}): no workspace`)
+        if (this.globs.length > 0) {
+            throw new Error(`${this.name}: watch patterns have already been established`)
         }
-        this.globs.push(glob)
+        for (const glob of globs) {
+            if (typeof glob === 'string' && !vscode.workspace.workspaceFolders?.[0]) {
+                getLogger().warn(`${this.name}: addWatchPatterns(${glob}): no workspace`)
+            }
+            this.globs.push(glob)
 
-        const watcher = vscode.workspace.createFileSystemWatcher(glob)
-        this.addWatcher(watcher)
+            const watcher = vscode.workspace.createFileSystemWatcher(glob)
+            this.addWatcher(watcher)
+        }
 
         await this.rebuild()
     }
@@ -140,7 +148,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         this.disposables.push(
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
                 if (isUntitledScheme(event.document.uri)) {
-                    this.addItemToRegistry(event.document.uri, true, event.document.getText())
+                    this.addItem(event.document.uri, true, event.document.getText())
                 }
             }),
             vscode.workspace.onDidCloseTextDocument((event: vscode.TextDocument) => {
@@ -164,14 +172,21 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Adds an item to registry. Wipes any existing item in its place with new copy of the data
-     * @param uri vscode.Uri containing the item to load in
+     * Adds or updates an item in the registry, and returns the result.
+     *
+     * If the item matches an "exclude" rule, it is not added nor does it update/replace any existing item.
+     *
+     * @param uri vscode.Uri containing the item to register.
+     * @param quiet On failure, log a message instead of throwing an exception.
+     * @param contents Optional data to associate with the item, for logical (non-filesystem) URIs.
+     *
+     * @returns Item, or undefined if (1) processing fails or (2) the name matches an "exclude" rule.
      */
-    public async addItemToRegistry(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<void> {
+    public async addItem(uri: vscode.Uri, quiet?: boolean, contents?: string): Promise<WatchedItem<T> | undefined> {
         const excluded = this.excludedFilePatterns.find(pattern => uri.fsPath.match(pattern))
         if (excluded) {
-            getLogger().verbose(`${this.name}: excluding path (matches "${excluded}"): ${uri.fsPath}`)
-            return
+            getLogger().verbose(`${this.name}: excluded (matches "${excluded}"): ${uri.fsPath}`)
+            return undefined
         }
         this.assertAbsolute(uri)
         const pathAsString = normalizeVSCodeUri(uri)
@@ -179,7 +194,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             const item = await this.process(uri, contents)
             if (item) {
                 this.registryData.set(pathAsString, item)
+                return {
+                    path: pathAsString,
+                    item: item,
+                }
             } else {
+                getLogger().info(`${this.name}: failed to process: ${uri}`)
                 // if value isn't valid for type, remove from registry
                 this.registryData.delete(pathAsString)
             }
@@ -187,17 +207,19 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().verbose(`${this.name}: failed to load(): ${uri}: ${(e as Error).message}`)
+            getLogger().info(`${this.name}: failed to process: ${uri}: ${(e as Error).message}`)
         }
+        return undefined
     }
 
     /**
-     * Get a specific item's data
-     * Untitled files must be referred to by their URI
+     * Gets an item by filepath or URI.
+     *
+     * Untitled files must be referred to by URI.
+     *
      * @param path Absolute path to item of interest or a vscode.Uri to the item
      */
-    public getRegisteredItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
-        // fsPath is needed for Windows, it's equivalent to path on mac/linux
+    public getItem(path: string | vscode.Uri): WatchedItem<T> | undefined {
         const normalizedPath = typeof path === 'string' ? pathutils.normalize(path) : normalizeVSCodeUri(path)
         this.assertAbsolute(normalizedPath)
         const item = this.registryData.get(normalizedPath)
@@ -211,13 +233,13 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Returns the registry's data as an array of paths to type T objects
+     * Gets all registry items as an array of paths to type `T` objects.
      */
-    public get registeredItems(): WatchedItem<T>[] {
+    public get items(): WatchedItem<T>[] {
         const arr: WatchedItem<T>[] = []
 
         for (const itemPath of this.registryData.keys()) {
-            const item = this.getRegisteredItem(itemPath)
+            const item = this.getItem(itemPath)
             if (item) {
                 arr.push(item)
             }
@@ -264,7 +286,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             try {
                 const found = await vscode.workspace.findFiles(glob, exclude)
                 for (const item of found) {
-                    await this.addItemToRegistry(item, true)
+                    await this.addItem(item, true)
                 }
             } catch (e) {
                 const err = e as Error
@@ -291,11 +313,11 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             watcher,
             watcher.onDidChange(async uri => {
                 getLogger().verbose(`${this.name}: detected change: ${uri.fsPath}`)
-                await this.addItemToRegistry(uri)
+                await this.addItem(uri)
             }),
             watcher.onDidCreate(async uri => {
                 getLogger().verbose(`${this.name}: detected new file: ${uri.fsPath}`)
-                await this.addItemToRegistry(uri)
+                await this.addItem(uri)
             }),
             watcher.onDidDelete(async uri => {
                 getLogger().verbose(`${this.name}: detected delete: ${uri.fsPath}`)

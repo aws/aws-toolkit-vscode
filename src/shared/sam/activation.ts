@@ -72,8 +72,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
     Commands.register('aws.addSamDebugConfig', async () => {
         if (!didActivateCodeLensProviders) {
             await activateSlowCodeLensesOnce()
-            await samDebugConfigCmd()
         }
+        await samDebugConfigCmd()
     })
 
     ctx.extensionContext.subscriptions.push(
@@ -168,14 +168,16 @@ async function activateCodeLensRegistry(context: ExtContext) {
 
         //
         // "**/…" string patterns watch recursively across _all_ workspace
-        // folders (see documentation for addWatchPattern()).
+        // folders (see documentation for addWatchPatterns()).
         //
-        await registry.addWatchPattern(pyLensProvider.pythonBasePattern)
-        await registry.addWatchPattern(jsLensProvider.javascriptBasePattern)
-        await registry.addWatchPattern(csLensProvider.csharpBasePattern)
-        await registry.addWatchPattern(goLensProvider.goBasePattern)
-        await registry.addWatchPattern(javaLensProvider.gradleBasePattern)
-        await registry.addWatchPattern(javaLensProvider.mavenBasePattern)
+        await registry.addWatchPatterns([
+            pyLensProvider.pythonBasePattern,
+            jsLensProvider.javascriptBasePattern,
+            csLensProvider.csharpBasePattern,
+            goLensProvider.goBasePattern,
+            javaLensProvider.gradleBasePattern,
+            javaLensProvider.mavenBasePattern,
+        ])
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(
@@ -296,6 +298,26 @@ async function activateCodefileOverlays(
 async function createYamlExtensionPrompt(): Promise<void> {
     const settings = PromptSettings.instance
 
+    /**
+     * Prompt the user to install the YAML plugin when AWSTemplateFormatVersion becomes available as a top level key
+     * in the document
+     * @param event An vscode text document change event
+     * @returns nothing
+     */
+    async function promptOnAWSTemplateFormatVersion(
+        event: vscode.TextDocumentChangeEvent,
+        yamlPromptDisposables: vscode.Disposable[]
+    ): Promise<void> {
+        for (const change of event.contentChanges) {
+            const changedLine = event.document.lineAt(change.range.start.line)
+            if (changedLine.text.includes('AWSTemplateFormatVersion')) {
+                promptInstallYamlPlugin(yamlPromptDisposables)
+                return
+            }
+        }
+        return
+    }
+
     // Show this only in VSCode since other VSCode-like IDEs (e.g. Theia) may
     // not have a marketplace or contain the YAML plugin.
     if (
@@ -325,23 +347,6 @@ async function createYamlExtensionPrompt(): Promise<void> {
             yamlPromptDisposables
         )
 
-        /**
-         * Prompt the user to install the YAML plugin when AWSTemplateFormatVersion becomes available as a top level key
-         * in the document
-         * @param event An vscode text document change event
-         * @returns nothing
-         */
-        async function promptOnAWSTemplateFormatVersion(event: vscode.TextDocumentChangeEvent): Promise<void> {
-            for (const change of event.contentChanges) {
-                const changedLine = event.document.lineAt(change.range.start.line)
-                if (changedLine.text.includes('AWSTemplateFormatVersion')) {
-                    promptInstallYamlPlugin(yamlPromptDisposables)
-                    return
-                }
-            }
-            return
-        }
-
         const promptNotifications = new Map<string, Promise<unknown>>()
         vscode.workspace.onDidChangeTextDocument(
             (event: vscode.TextDocumentChangeEvent) => {
@@ -353,7 +358,9 @@ async function createYamlExtensionPrompt(): Promise<void> {
                 ) {
                     promptNotifications.set(
                         uri,
-                        promptOnAWSTemplateFormatVersion(event).finally(() => promptNotifications.delete(uri))
+                        promptOnAWSTemplateFormatVersion(event, yamlPromptDisposables).finally(() =>
+                            promptNotifications.delete(uri)
+                        )
                     )
                 }
             },
