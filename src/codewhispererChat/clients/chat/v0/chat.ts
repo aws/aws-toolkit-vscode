@@ -5,7 +5,7 @@
 
 import { CodeWhispererStreamingClient } from '../../../../shared/clients/codeWhispererChatStreamingClient'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
-import { ChatRequest, ChatResponseStream } from '@amzn/codewhisperer-streaming'
+import { ChatCommandOutput, ChatRequest } from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 
@@ -25,7 +25,7 @@ export class ChatSession {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async chat(chatRequest: ChatRequest): Promise<AsyncIterable<ChatResponseStream>> {
+    async chat(chatRequest: ChatRequest): Promise<ChatCommandOutput> {
         if (AuthUtil.instance.isConnectionExpired()) {
             await AuthUtil.instance.showReauthenticatePrompt()
         }
@@ -50,6 +50,6 @@ export class ChatSession {
             break
         }
 
-        return response.chatResponse
+        return response
     }
 }

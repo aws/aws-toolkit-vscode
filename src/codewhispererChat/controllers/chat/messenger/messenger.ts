@@ -9,7 +9,7 @@ import {
     CodeReference,
     EditorContextCommandMessage,
 } from '../../../view/connector/connector'
-import { ChatResponseStream, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
+import { ChatCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
@@ -23,14 +23,14 @@ export class Messenger {
     ) {}
 
     async sendAIResponse(
-        response: AsyncIterable<ChatResponseStream>,
+        response: ChatCommandOutput,
         session: ChatSession,
         tabID: string,
         triggerID: string,
         triggerPayload: TriggerPayload
     ) {
         let message = ''
-        let messageID = ''
+        const messageID = response.$metadata.requestId ?? ''
         const codeReference: CodeReference[] = []
         const followUps: FollowUp[] = []
         const relatedSuggestions: Suggestion[] = []
@@ -47,7 +47,7 @@ export class Messenger {
                     followUps: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID,
+                    messageID: '',
                 },
                 tabID
             )
@@ -55,11 +55,7 @@ export class Messenger {
 
         await waitUntil(
             async () => {
-                for await (const chatEvent of response) {
-                    // TODO we should set the messageId from the incoming response instead of using local triggerID
-                    // we need to send the messageId which should come from backend through the message
-                    messageID = triggerID
-
+                for await (const chatEvent of response.chatResponse) {
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
