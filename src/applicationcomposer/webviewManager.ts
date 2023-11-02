@@ -11,13 +11,40 @@ import { getLogger, Logger } from '../shared/logger'
 
 const localize = nls.loadMessageBundle()
 
+// TODO turn this into a flag to make local dev easier
+// Change this to true for local dev
+const isLocalDev = false
+const localhost = 'http://127.0.0.1:3000'
+const cdn = 'https://d1rviuszewp7pc.cloudfront.net'
+
 export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
+
     protected readonly managedVisualizations = new Map<string, ApplicationComposer>()
     protected extensionContext: vscode.ExtensionContext
+    protected webviewHtml?: string
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
+        void this.fetchWebviewHtml()
+    }
+
+    private async fetchWebviewHtml() {
+        const source = isLocalDev ? localhost : cdn
+        const response = await fetch(`${source}/index.html`)
+        this.webviewHtml = await response.text()
+        for (const visualization of this.managedVisualizations.values()) {
+            await visualization.refreshPanel(this.extensionContext)
+        }
+    }
+
+    private getWebviewContent = () => {
+        const source = isLocalDev ? localhost : cdn
+        if (!this.webviewHtml) {
+            return ''
+        }
+        const htmlFileSplit = this.webviewHtml.split('<head>')
+        return htmlFileSplit[0] + '<head><base href="' + source + '/" >' + htmlFileSplit[1]
     }
 
     public async visualizeTemplate(
@@ -37,7 +64,7 @@ export class ApplicationComposerManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            const newVisualization = new ApplicationComposer(document, this.extensionContext)
+            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             return newVisualization.getPanel()
@@ -53,7 +80,7 @@ export class ApplicationComposerManager {
             const document = await vscode.workspace.openTextDocument({
                 language: 'yaml',
             })
-            const newVisualization = new ApplicationComposer(document, this.extensionContext)
+            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             return newVisualization.getPanel()

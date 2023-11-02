@@ -15,6 +15,7 @@ import {
 } from './types'
 import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
+import { deployMessageHandler } from './messageHandlers/deployMessageHandler'
 
 export async function handleRequestMessage(request: unknown, context: WebviewContext) {
     const requestMessage = request as RequestMessage
@@ -30,6 +31,9 @@ export async function handleRequestMessage(request: unknown, context: WebviewCon
             break
         case Command.ADD_FILE_WATCH:
             addFileWatchMessageHandler(request as AddFileWatchRequestMessage, context)
+            break
+        case Command.DEPLOY:
+            deployMessageHandler(context)
             break
     }
 }
