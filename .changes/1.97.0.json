@@ -1,0 +1,10 @@
+{
+	"date": "2023-11-02",
+	"version": "1.97.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CodeWhisperer: fix and improve closing symbols handling (brackets, parenthesis, quotes etc)"
+		}
+	]
+}
