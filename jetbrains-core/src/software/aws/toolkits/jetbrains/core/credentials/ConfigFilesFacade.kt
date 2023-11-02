@@ -73,39 +73,24 @@ class DefaultConfigFilesFacade(
         # [profile user1]
         # aws_access_key_id = [accessKey1]
         # aws_secret_access_key = [secretKey1]
-        
-        
+
+
         # AWS IAM Identity Center (successor to AWS Single Sign-On) helps you stay logged into AWS tools 
         # without needing to enter your info all the time
-        # For information about how to create and manage AWS IAM Identity Center 
-        # see: https://docs.aws.amazon.com/singlesignon/latest/userguide/get-started-enable-identity-center.html
-        # This config file can store the named profile and sso-session 
-        # Sso-Session structure configures the SDK to request SSO credentials and supports automated token refresh
-        # For more information see: https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile-token.html
-        # sso_account_id and sso_role_name are usually set in the profile section to request AWS SSO credentials.
-         
-        [profile [profileName]]
-        sso_session = [startUrlSubDomain+region]
-        sso_account_id = [accountId]
-        sso_role_name = [roleName]
-        
-        # The sso-session section in the config file groups SSO-related configuration variables, 
-        # including sso_region and sso_start_url are required properties
-        # sso-session name is given as startUrlSubDomain-region
-        
-        [sso-session [startUrlSubDomain-region]]
-        sso_region = [region]
-        sso_start_url = [startUrl]
-        sso_registration_scopes = [scopes]
-        
-        # [profile dev]
-        # sso_session = my-sso-portal-us-east-1
-        # sso_account_id = 111122223333
-        # sso_role_name = SampleRole
+        # For information about how to create and manage AWS IAM Identity Center see:
+        # https://docs.aws.amazon.com/singlesignon/latest/userguide/get-started-enable-identity-center.html
+        # For more information on how to configure this file to use AWS IAM Identity Center, see:
+        # https://docs.aws.amazon.com/cli/latest/userguide/sso-configure-profile-token.html
 
-        # [sso-session my-sso-portal-us-east-1]
+        # [sso-session my-sso]
         # sso_region = us-east-1
         # sso_start_url = https://my-sso-portal.awsapps.com/start
+        # sso_registration_scopes = sso:account:access
+
+        # [profile dev]
+        # sso_session = my-sso
+        # sso_account_id = 111122223333
+        # sso_role_name = SampleRole
             """.trimIndent()
     }
 
