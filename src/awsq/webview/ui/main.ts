@@ -310,8 +310,8 @@ ${message}`,
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
-            if (weaverbirdEnabled && prompt.command !== undefined && prompt.command.trim() !== '') {
-                if (prompt.command === '/assign') {
+            if (prompt.command !== undefined && prompt.command.trim() !== '') {
+                if (weaverbirdEnabled && prompt.command === '/assign') {
                     let affectedTabId = tabID
                     const realPromptText = prompt.escapedPrompt?.trim() ?? ''
                     if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
@@ -350,12 +350,12 @@ ${message}`,
                                 : {}),
                         })
 
-                        mynahUI.addChatItem(tabID, {
+                        mynahUI.addChatItem(affectedTabId, {
                             type: ChatItemType.ANSWER_STREAM,
                             body: '',
                         })
 
-                        mynahUI.updateStore(tabID, {
+                        mynahUI.updateStore(affectedTabId, {
                             loadingChat: true,
                             promptInputDisabledState: true,
                         })
