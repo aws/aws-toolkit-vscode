@@ -14,15 +14,21 @@ import { removeFileNamefromPath } from './utils/removeFileNamefromPath'
 
 export class ApplicationComposer {
     public readonly documentUri: vscode.Uri
-    public readonly webviewPanel: vscode.WebviewPanel
+    public webviewPanel: vscode.WebviewPanel
     protected readonly disposables: vscode.Disposable[] = []
     protected isPanelDisposed = false
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
     public workSpacePath: string
     public defaultTemplatePath: string
     public fileWatchs: Record<string, FileWatchInfo>
+    private getWebviewContent: () => string
 
-    public constructor(textDocument: vscode.TextDocument, context: vscode.ExtensionContext) {
+    public constructor(
+        textDocument: vscode.TextDocument,
+        context: vscode.ExtensionContext,
+        getWebviewContent: () => string
+    ) {
+        this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
         this.webviewPanel = this.setupWebviewPanel(textDocument, context)
         this.workSpacePath = removeFileNamefromPath(textDocument.uri.fsPath)
@@ -40,14 +46,16 @@ export class ApplicationComposer {
         }
     }
 
-    public getWebview(): vscode.Webview | undefined {
-        if (!this.isPanelDisposed) {
-            return this.webviewPanel?.webview
-        }
-    }
-
     public showPanel(): void {
         this.getPanel()?.reveal()
+    }
+
+    public async refreshPanel(context: vscode.ExtensionContext) {
+        if (!this.isPanelDisposed) {
+            this.webviewPanel.dispose()
+            const document = await vscode.workspace.openTextDocument(this.documentUri)
+            this.webviewPanel = this.setupWebviewPanel(document, context)
+        }
     }
 
     protected getText(textDocument: vscode.TextDocument): string {
@@ -128,53 +136,5 @@ export class ApplicationComposer {
             )
         }
         return panel
-    }
-
-    // TODO: This only works on localhost right now. We need to do some testing once we have a non-console CDN working.
-    private getWebviewContent(): string {
-        return `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-        <base href="http://127.0.0.1:3000/" >
-            <script>self["MonacoEnvironment"] = (function (paths) {
-                return {
-                    globalAPI: false,
-                    getWorkerUrl : function (moduleId, label) {
-                    var result =  paths[label];
-                    if (/^((http:)|(https:)|(file:)|(\/\/))/.test(result)) {
-                        var currentUrl = String(window.location);
-                        var currentOrigin = currentUrl.substr(0, currentUrl.length - window.location.hash.length - window.location.search.length - window.location.pathname.length);
-                        if (result.substring(0, currentOrigin.length) !== currentOrigin) {
-                        var js = '/*' + label + '*/importScripts("' + result + '");';
-                        var blob = new Blob([js], { type: 'application/javascript' });
-                        return URL.createObjectURL(blob);
-                        }
-                    }
-                    return result;
-                    }
-                };
-                })({
-        "json": "/monacoeditorwork/json.worker.bundle.js",
-        "yaml": "/monacoeditorwork/yaml.worker.bundle.js"
-        });</script>
-            <script type="module">
-        import RefreshRuntime from "/@react-refresh"
-        RefreshRuntime.injectIntoGlobalHook(window)
-        window.$RefreshReg$ = () => {}
-        window.$RefreshSig$ = () => (type) => type
-        window.__vite_plugin_react_preamble_installed__ = true
-        </script>
-            <script type="module" src="/@vite/client"></script>
-            <meta charset="UTF-8" />
-            <meta name="description" content="File used to serve Application Composer" />
-            <title>Application Composer</title>
-        </head>
-        <body>
-            <div id="app"></div>
-            <script type="module" src="/main.js?isDarkMode=true"></script>
-        </body>
-        </html>
-        `
     }
 }

@@ -61,6 +61,7 @@ export enum Command {
     LOAD_FILE = 'LOAD_FILE',
     SAVE_FILE = 'SAVE_FILE',
     ADD_FILE_WATCH = 'ADD_FILE_WATCH',
+    DEPLOY = 'DEPLOY',
 }
 
 export interface RequestMessage {
