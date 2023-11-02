@@ -178,7 +178,7 @@ async function activateCodeLensRegistry(context: ExtContext) {
             javaLensProvider.gradleBasePattern,
             javaLensProvider.mavenBasePattern,
         ])
-        await registry.rebuild(new Promise(() => {}))
+        await registry.rebuild()
     } catch (e) {
         vscode.window.showErrorMessage(
             localize(

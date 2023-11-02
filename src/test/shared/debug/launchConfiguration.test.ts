@@ -107,7 +107,7 @@ describe('LaunchConfiguration', function () {
     beforeEach(async function () {
         const registry = await globals.templateRegistry
         registry.addWatchPatterns([CloudFormation.templateFileGlobPattern])
-        await registry.rebuild(new Promise(() => {}))
+        await registry.rebuild()
 
         // TODO: remove mocks in favor of testing src/testFixtures/ data.
         mockConfigSource = mock()

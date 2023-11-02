@@ -10,6 +10,7 @@ import * as path from 'path'
 import { globDirs, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { Settings } from '../settings'
 import { once } from '../utilities/functionUtils'
+import { Timeout } from '../utilities/timeoutUtils'
 
 /**
  * Prevent `findFiles()` from recursing into these directories.
@@ -90,7 +91,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     public constructor() {
         this.disposables.push(
             vscode.workspace.onDidChangeWorkspaceFolders(async () => {
-                await this.rebuild(new Promise(() => {}))
+                await this.rebuild()
             })
         )
     }
@@ -285,25 +286,18 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      *
      * @param cancellationPromise Cancels additional registrations when rejected. Otherwise, this
      */
-    public async rebuild(cancellationPromise: Promise<void>): Promise<void> {
-        let isCanceled = false
+    public async rebuild(cancellationTimeout?: Timeout): Promise<void> {
         let skips = 0
         this.isWatching = true
         this.reset()
 
         const exclude = getExcludePatternOnce()
         getLogger().info(`${this.name}: Building registry with the following criteria: ${this.outputPatterns()}`)
-        cancellationPromise.then(
-            () => {},
-            () => {
-                isCanceled = true
-            }
-        )
-        for (let i = 0; i < this.globs.length && !isCanceled; i++) {
+        for (let i = 0; i < this.globs.length && !cancellationTimeout?.completed; i++) {
             const glob = this.globs[i]
             try {
                 const found = await vscode.workspace.findFiles(glob, exclude)
-                for (let j = 0; j < found.length && !isCanceled; j++) {
+                for (let j = 0; j < found.length && !cancellationTimeout?.completed; j++) {
                     await this.addItem(found[j], true)
                 }
             } catch (e) {
@@ -316,7 +310,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         getLogger().info(
             `${this.name}: Registered %s items%s%s`,
             this.registryData.size,
-            isCanceled ? ' (cancelled)' : '',
+            cancellationTimeout?.completed ? ' (cancelled)' : '',
             skips > 0 ? `, skipped ${skips} entries` : ''
         )
     }
