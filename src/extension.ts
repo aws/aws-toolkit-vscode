@@ -273,6 +273,18 @@ export async function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('hideNewView', () => {
             vscode.commands.executeCommand('setContext', 'showTempView', false)
         })
+        vscode.commands.registerCommand('showBar', () => {
+            vscode.commands.executeCommand('setContext', 'view.bar.visible', true)
+        })
+        vscode.commands.registerCommand('hideBar', () => {
+            vscode.commands.executeCommand('setContext', 'view.bar.visible', false)
+        })
+        vscode.commands.registerCommand('showBaz', () => {
+            vscode.commands.executeCommand('setContext', 'view.baz.visible', true)
+        })
+        vscode.commands.registerCommand('hideBaz', () => {
+            vscode.commands.executeCommand('setContext', 'view.baz.visible', false)
+        })
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long

@@ -714,6 +714,12 @@
                     "id": "bar",
                     "name": "bar",
                     "when": "showTempView"
+                },
+                {
+                    "id": "baz",
+                    "name": "baz",
+                    "when": "showTempView",
+                    "visibility": "collapsed"
                 }
             ],
             "aws-explorer": [
@@ -2051,6 +2057,30 @@
                 "title": "Hide the temp view!",
                 "category": "%AWS.title%",
                 "enablement": "showTempView"
+            },
+            {
+                "command": "showBar",
+                "title": "Show bar!",
+                "category": "%AWS.title%",
+                "enablement": "!view.bar.visible"
+            },
+            {
+                "command": "hideBar",
+                "title": "Hide bar!",
+                "category": "%AWS.title%",
+                "enablement": "view.bar.visible"
+            },
+            {
+                "command": "showBaz",
+                "title": "Show baz!",
+                "category": "%AWS.title%",
+                "enablement": "!view.baz.visible"
+            },
+            {
+                "command": "hideBaz",
+                "title": "Hide baz!",
+                "category": "%AWS.title%",
+                "enablement": "view.baz.visible"
             },
             {
                 "command": "aws.launchConfigForm",
