@@ -457,6 +457,9 @@
                     "type": "cwsprChatConversationId"
                 },
                 {
+                    "type": "cwsprChatTriggerInteraction"
+                },
+                {
                     "type": "cwsprChatUserIntent",
                     "required": false
                 },

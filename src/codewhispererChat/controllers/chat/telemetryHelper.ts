@@ -204,9 +204,23 @@ export class CWCTelemetryHelper {
         }
 
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
+        let triggerInteraction: CwsprChatTriggerInteraction
+        switch (triggerEvent.type) {
+            case 'chat_message':
+            case 'follow_up':
+                triggerInteraction = 'click'
+                break
+            case 'editor_context_command':
+                triggerInteraction = 'contextMenu'
+                break
+            default:
+                triggerInteraction = 'click'
+                break
+        }
 
         telemetry.codewhispererchat_startConversation.emit({
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
+            cwsprChatTriggerInteraction: triggerInteraction,
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
