@@ -716,7 +716,6 @@ export const AuthSources = {
     addConnectionQuickPick: 'addConnectionQuickPick',
     firstStartup: 'firstStartup',
     codecatalystDeveloperTools: 'codecatalystDeveloperTools',
-    codewhispererDeveloperTools: 'codewhispererDeveloperTools',
     unknown: 'unknown',
     cwQuickPick: cwQuickPickSource,
     cwTreeNode: cwTreeNodeSource

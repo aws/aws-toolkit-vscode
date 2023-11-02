@@ -4,7 +4,6 @@
  */
 
 import vscode from 'vscode'
-import { AuthCommandDeclarations } from '../../auth/commands'
 import { ToolkitError } from '../../shared/errors'
 import { codicon, getIcon } from '../../shared/icons'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
@@ -20,6 +19,7 @@ import {
     reconnect,
     selectCustomizationPrompt,
     signoutCodeWhisperer,
+    showManageConnections,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
@@ -122,20 +122,15 @@ export function createSignIn(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return AuthCommandDeclarations.instance.declared.showManageConnections
-                .build(cwTreeNodeSource)
-                .asTreeNode({
-                    label: label,
-                    iconPath: icon,
-                })
+            return showManageConnections.build(cwTreeNodeSource).asTreeNode({
+                label: label,
+                iconPath: icon,
+            })
         case 'item':
             return {
                 data: 'signIn',
                 label: codicon`${icon} ${label}`,
-                onClick: () =>
-                    AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                        cwQuickPickSource)
-                    ,
+                onClick: () => showManageConnections.execute(cwQuickPickSource),
             } as DataQuickPickItem<'signIn'>
     }
 }
