@@ -248,10 +248,10 @@ export class TelemetryHelper {
             codewhispererSessionId: sessionId,
             codewhispererFirstRequestId: this.sessionInvocations[0].codewhispererRequestId ?? requestId,
             credentialStartUrl: events[0].credentialStartUrl,
-            codewhispererCompletionType: this.getAggregatedCompletionType(events),
             codewhispererLanguage: events[0].codewhispererLanguage,
             codewhispererGettingStartedTask: session.taskType,
             codewhispererTriggerType: events[0].codewhispererTriggerType,
+            codewhispererCompletionType: events[0].codewhispererCompletionType,
             codewhispererSuggestionCount: events.length,
             codewhispererAutomatedTriggerType: serviceInvocation.codewhispererAutomatedTriggerType,
             codewhispererLineNumber: serviceInvocation.codewhispererLineNumber,
@@ -284,7 +284,7 @@ export class TelemetryHelper {
         // TODO: add partial acceptance related metrics
         const autoTriggerType = this.sessionDecisions[0].codewhispererAutomatedTriggerType
         const language = this.sessionDecisions[0].codewhispererLanguage
-        const aggregatedCompletionType = this.getAggregatedCompletionType(this.sessionDecisions)
+        const aggregatedCompletionType = this.sessionDecisions[0].codewhispererCompletionType
         const aggregatedSuggestionState = this.getAggregatedSuggestionState(this.sessionDecisions)
         const selectedCustomization = getSelectedCustomization()
         const generatedLines =
@@ -340,13 +340,6 @@ export class TelemetryHelper {
             e2eLatency = performance.now() - session.invokeSuggestionStartTime
         }
 
-        let codewhispererRuntimeLanguage: string = this.sessionDecisions[0].codewhispererLanguage
-        if (codewhispererRuntimeLanguage === 'jsx') {
-            codewhispererRuntimeLanguage = 'javascript'
-        } else if (codewhispererRuntimeLanguage === 'tsx') {
-            codewhispererRuntimeLanguage = 'typescript'
-        }
-
         client
             .sendTelemetryEvent({
                 telemetryEvent: {
@@ -355,7 +348,9 @@ export class TelemetryHelper {
                         requestId: this.sessionDecisions[0].codewhispererFirstRequestId,
                         customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
                         programmingLanguage: {
-                            languageName: codewhispererRuntimeLanguage,
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(
+                                this.sessionDecisions[0].codewhispererLanguage
+                            ),
                         },
                         completionType: this.getSendTelemetryCompletionType(aggregatedCompletionType),
                         suggestionState: this.getSendTelemetrySuggestionState(aggregatedSuggestionState),
@@ -442,13 +437,6 @@ export class TelemetryHelper {
         this.timeToFirstRecommendation = 0
         this.classifierResult = undefined
         this.classifierThreshold = undefined
-    }
-
-    private getAggregatedCompletionType(
-        // if there is any Block completion within the session, mark the session as Block completion
-        events: CodewhispererUserDecision[] | CodewhispererUserTriggerDecision[]
-    ): CodewhispererCompletionType {
-        return events.some(e => e.codewhispererCompletionType === 'Block') ? 'Block' : 'Line'
     }
 
     private getSendTelemetryCompletionType(completionType: CodewhispererCompletionType) {
@@ -601,7 +589,7 @@ export class TelemetryHelper {
                 telemetryEvent: {
                     codeScanEvent: {
                         programmingLanguage: {
-                            languageName: languageId,
+                            languageName: runtimeLanguageContext.toRuntimeLanguage(languageId as CodewhispererLanguage),
                         },
                         codeScanJobId: jobId,
                         timestamp: new Date(Date.now()),
