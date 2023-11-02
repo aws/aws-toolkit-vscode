@@ -44,6 +44,8 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
+import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
+import { BaseCommandSource } from '../../../shared/vscode/commands2'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -716,8 +718,15 @@ export type AuthSource =
     | 'firstStartup'
     | 'codecatalystDeveloperTools'
     | 'codewhispererDeveloperTools'
-    | 'codewhispererQuickPick'
     | 'unknown'
+    | typeof cwQuickPickSource
+    | typeof cwTreeNodeSource
+
+export class AuthCommandSource extends BaseCommandSource {
+    constructor(override readonly source: AuthSource) {
+        super(source)
+    }
+}
 
 export async function showAuthWebview(
     ctx: vscode.ExtensionContext,

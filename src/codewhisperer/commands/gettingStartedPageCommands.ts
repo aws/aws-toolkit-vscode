@@ -4,21 +4,22 @@
  */
 import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../../shared/vscode/commands2'
-import { showCodeWhispererWebview, CodeWhispererSource } from '../vue/backend'
+import { showCodeWhispererWebview } from '../vue/backend'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { PromptSettings } from '../../shared/settings'
+import { CodeWhispererCommandSource } from './types'
 /**
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
 export class CodeWhispererCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext) {}
-    public async showGettingStartedPage(source: CodeWhispererSource) {
+    public async showGettingStartedPage(source: CodeWhispererCommandSource) {
         const prompts = PromptSettings.instance
         //To check the condition If the user has already seen the welcome message
         if (!(await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage'))) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick', passive: true })
         }
-        return showCodeWhispererWebview(this.extContext, source)
+        return showCodeWhispererWebview(this.extContext, source.source)
     }
 }
 /**

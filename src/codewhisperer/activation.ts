@@ -56,6 +56,7 @@ import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
 import { showCodeWhispererQuickPick } from './commands/statusBarCommands'
+import { cwSource } from './commands/types'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -96,7 +97,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /** Opens the Add Connections webview with CW highlighted */
         Commands.register('aws.codewhisperer.manageConnections', () => {
             AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                'codewhispererDeveloperTools',
+                cwSource('codewhispererTreeNode'),
                 'codewhisperer'
             )
         }),

@@ -24,6 +24,7 @@ import { getThisDevEnv } from './model'
 import { getLogger } from '../shared/logger/logger'
 import { InactivityMessage, shouldTrackUserActivity } from './devEnv'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { AuthCommandSource } from '../auth/ui/vue/show'
 
 const localize = nls.loadMessageBundle()
 
@@ -40,7 +41,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),
         Commands.register('aws.codecatalyst.manageConnections', () => {
             AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                'codecatalystDeveloperTools',
+                new AuthCommandSource('codecatalystDeveloperTools'),
                 'codecatalyst'
             )
         }),

@@ -18,6 +18,7 @@ import { getLogger } from '../shared/logger'
 import { Connection, isBuilderIdConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { AuthCommandSource } from '../auth/ui/vue/show'
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
@@ -36,7 +37,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
             AuthCommandDeclarations.instance.declared.showManageConnections
-                .build('codecatalystDeveloperTools', 'codecatalyst')
+                .build(new AuthCommandSource('codecatalystDeveloperTools'), 'codecatalyst')
                 .asTreeNode({
                     label: 'Start',
                     iconPath: getIcon('vscode-debug-start'),

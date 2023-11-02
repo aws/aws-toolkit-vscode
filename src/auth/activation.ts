@@ -14,6 +14,7 @@ import { getLogger } from '../shared/logger'
 import { ExtensionUse } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { isInDevEnv } from '../codecatalyst/utils'
+import { AuthCommandSource } from './ui/vue/show'
 
 export async function initialize(
     extensionContext: vscode.ExtensionContext,
@@ -57,5 +58,5 @@ async function showManageConnectionsOnStartup() {
     }
 
     // Show connection management to user
-    AuthCommandDeclarations.instance.declared.showManageConnections.execute('firstStartup')
+    AuthCommandDeclarations.instance.declared.showManageConnections.execute( new AuthCommandSource('firstStartup'))
 }
