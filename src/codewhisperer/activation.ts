@@ -96,7 +96,7 @@ export async function activate(context: ExtContext): Promise<void> {
         /** Opens the Add Connections webview with CW highlighted */
         Commands.register('aws.codewhisperer.manageConnections', () => {
             AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                'codewhispererDeveloperTools',
+                'codewhispererTreeNode',
                 'codewhisperer'
             )
         }),
@@ -216,7 +216,7 @@ export async function activate(context: ExtContext): Promise<void> {
             ReferenceHoverProvider.instance
         ),
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
-        showReferenceLog.register(context),
+        showReferenceLog.register(),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             ReferenceInlineProvider.instance

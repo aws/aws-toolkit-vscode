@@ -193,7 +193,6 @@ describe('codewhisperer status bar', function () {
         getStatusBar() {
             return this.statusBar
         }
-        
     }
 
     beforeEach(function () {
@@ -252,6 +251,9 @@ describe('codewhisperer status bar', function () {
         const actualStatusBar = statusBar.getStatusBar()
         assert.strictEqual(actualStatusBar.text, '$(debug-disconnect) CodeWhisperer')
         assert.strictEqual(actualStatusBar.command, showCodeWhispererQuickPickCommand)
-        assert.deepStrictEqual(actualStatusBar.backgroundColor, new vscode.ThemeColor('statusBarItem.warningBackground'))
+        assert.deepStrictEqual(
+            actualStatusBar.backgroundColor,
+            new vscode.ThemeColor('statusBarItem.warningBackground')
+        )
     })
 })

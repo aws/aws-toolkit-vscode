@@ -45,7 +45,7 @@ describe('codewhisperer children nodes', function () {
     it('should build showSsoSignIn command node', function () {
         const node = createSignIn('tree')
 
-        assert.strictEqual(node.resource.id, 'aws.auth.manageConnections')
+        assert.strictEqual(node.resource.id, 'aws.codewhisperer.manageConnections')
     })
 
     it('builds the reconnect command node', async function () {

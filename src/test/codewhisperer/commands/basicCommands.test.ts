@@ -8,8 +8,8 @@ import assert from 'assert'
 import * as sinon from 'sinon'
 import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { assertTelemetryCurried } from '../../testUtil'
-import { toggleCodeSuggestions, showSecurityScan } from '../../../codewhisperer/commands/basicCommands'
+import { assertTelemetry, assertTelemetryCurried } from '../../testUtil'
+import { toggleCodeSuggestions, showSecurityScan, showReferenceLog, selectCustomizationPrompt, reconnect, signoutCodeWhisperer } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command } from '../../../shared/vscode/commands2'
@@ -20,10 +20,22 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
 import { get, set } from '../../../codewhisperer/util/commonUtil'
-import { createAutoSuggestions, createGettingStarted, createLearnMore, createOpenReferenceLog, createReconnect, createSecurityScan, createSelectCustomization, createSeparator, createSignIn, createSignout } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
+import {
+    createAutoSuggestions,
+    createGettingStarted,
+    createLearnMore,
+    createOpenReferenceLog,
+    createReconnect,
+    createSecurityScan,
+    createSelectCustomization,
+    createSeparator,
+    createSignIn,
+    createSignout,
+} from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
 import { showCodeWhispererQuickPick } from '../../../codewhisperer/commands/statusBarCommands'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
+import { cwQuickPickSource} from '../../../codewhisperer/commands/types'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -76,23 +88,23 @@ describe('CodeWhisperer-basicCommands', function () {
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
-        it ('has suggestions disabled by default', async function () {
+        it('has suggestions disabled by default', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
         })
 
-        it ('toggles states as expected', async function () {
+        it('toggles states as expected', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
         })
 
-        it ('setSuggestionsEnabled() works as expected', async function () {
+        it('setSuggestionsEnabled() works as expected', async function () {
             // initially false
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
 
@@ -114,11 +126,11 @@ describe('CodeWhisperer-basicCommands', function () {
                 eventListener()
             })
             assert.strictEqual(eventListener.callCount, 0)
-            
+
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            await targetCommand.execute()
-            
-            await waitUntil(async () => eventListener.callCount === 1, {timeout: 1000, interval: 1})
+            await targetCommand.execute(cwQuickPickSource)
+
+            await waitUntil(async () => eventListener.callCount === 1, { timeout: 1000, interval: 1 })
             assert.strictEqual(eventListener.callCount, 1)
         })
 
@@ -127,7 +139,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
 
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
 
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
             assertTelemetryCurried('aws_modifySetting')({
@@ -138,13 +150,19 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('emits aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
 
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.activated,
             })
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
         })
     })
 
@@ -173,7 +191,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
 
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.ok(spy.called)
         })
 
@@ -183,8 +201,89 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
 
             assert.ok(vscode.window.activeTextEditor === undefined)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('showReferenceLog', function () {
+        
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+            
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(showReferenceLog)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('selectCustomizationPrompt', function () {
+        
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(selectCustomizationPrompt)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('reconnect', function () {
+        
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            sinon.stub(AuthUtil.instance, 'reauthenticate')
+            targetCommand = testCommand(reconnect)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('signoutCodeWhisperer', function () {
+        
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            sinon.stub(AuthUtil.instance.secondaryAuth, 'deleteConnection')
+            targetCommand = testCommand(signoutCodeWhisperer, AuthUtil.instance)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
         })
     })
 
@@ -193,10 +292,8 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
 
-            getTestWindow().onDidShowQuickPick((e) => {
-                e.assertItems([
-                    createSignIn('item'), createLearnMore('item')
-                ])
+            getTestWindow().onDidShowQuickPick(e => {
+                e.assertItems([createSignIn('item'), createLearnMore('item')])
                 e.dispose() // skip needing to select an item to continue
             })
 
@@ -207,9 +304,12 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
 
-            getTestWindow().onDidShowQuickPick((e) => {
+            getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
-                    createReconnect('item'), createLearnMore('item'), createSeparator(), createSignout('item')
+                    createReconnect('item'),
+                    createLearnMore('item'),
+                    createSeparator(),
+                    createSignout('item'),
                 ])
                 e.dispose() // skip needing to select an item to continue
             })
@@ -220,7 +320,7 @@ describe('CodeWhisperer-basicCommands', function () {
         it('shows expected quick pick items when connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            getTestWindow().onDidShowQuickPick((e) => {
+            getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
                     createAutoSuggestions('item', false),
                     createSecurityScan('item'),
@@ -241,7 +341,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
 
-            getTestWindow().onDidShowQuickPick((e) => {
+            getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
                     createAutoSuggestions('item', false),
                     createSecurityScan('item'),

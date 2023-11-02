@@ -56,7 +56,7 @@ export class CodeSuggestionsState {
 
     static #instance: CodeSuggestionsState
     static get instance() {
-        return this.#instance ??= new this()
+        return (this.#instance ??= new this())
     }
 
     protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = false) {

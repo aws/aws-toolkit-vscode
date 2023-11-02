@@ -24,6 +24,7 @@ import {
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
 import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/customizationUtil'
+import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
 
 export function createAutoSuggestions(type: 'item', pause: boolean): DataQuickPickItem<'autoSuggestions'>
 export function createAutoSuggestions(type: 'tree', pause: boolean): TreeNode<Command>
@@ -39,7 +40,7 @@ export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): an
 
     switch (type) {
         case 'tree':
-            return toggleCodeSuggestions.build().asTreeNode(
+            return toggleCodeSuggestions.build(cwTreeNodeSource).asTreeNode(
                 pause
                     ? {
                           label: labelPause,
@@ -55,7 +56,7 @@ export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): an
                 data: 'autoSuggestions',
                 label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
                 description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
-                onClick: () => toggleCodeSuggestions.execute(),
+                onClick: () => toggleCodeSuggestions.execute(cwQuickPickSource),
             } as DataQuickPickItem<'autoSuggestions'>
     }
 }
@@ -69,7 +70,7 @@ export function createOpenReferenceLog(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showReferenceLog.build().asTreeNode({
+            return showReferenceLog.build(cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 tooltip: localize(
@@ -82,7 +83,7 @@ export function createOpenReferenceLog(type: 'item' | 'tree'): any {
             return {
                 data: 'openReferenceLog',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showReferenceLog.execute(),
+                onClick: () => showReferenceLog.execute(cwQuickPickSource),
             } as DataQuickPickItem<'openReferenceLog'>
     }
 }
@@ -97,7 +98,7 @@ export function createSecurityScan(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showSecurityScan.build().asTreeNode({
+            return showSecurityScan.build(cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 tooltip: label,
@@ -107,7 +108,7 @@ export function createSecurityScan(type: 'item' | 'tree'): any {
             return {
                 data: 'securityScan',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showSecurityScan.execute(),
+                onClick: () => showSecurityScan.execute(cwQuickPickSource),
             } as DataQuickPickItem<'securityScan'>
     }
 }
@@ -122,7 +123,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
     switch (type) {
         case 'tree':
             return AuthCommandDeclarations.instance.declared.showManageConnections
-                .build('codewhispererDeveloperTools', 'codewhisperer')
+                .build(cwTreeNodeSource)
                 .asTreeNode({
                     label: label,
                     iconPath: icon,
@@ -133,9 +134,8 @@ export function createSignIn(type: 'item' | 'tree'): any {
                 label: codicon`${icon} ${label}`,
                 onClick: () =>
                     AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                        'codewhispererQuickPick',
-                        'codewhisperer'
-                    ),
+                        cwQuickPickSource)
+                    ,
             } as DataQuickPickItem<'signIn'>
     }
 }
@@ -149,7 +149,7 @@ export function createReconnect(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return reconnect.build().asTreeNode({
+            return reconnect.build(cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -157,7 +157,7 @@ export function createReconnect(type: 'item' | 'tree'): any {
             return {
                 data: 'reconnect',
                 label: codicon`${icon} ${label}`,
-                onClick: () => reconnect.execute(),
+                onClick: () => reconnect.execute(cwQuickPickSource),
             } as DataQuickPickItem<'reconnect'>
     }
 }
@@ -171,7 +171,7 @@ export function createLearnMore(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showLearnMore.build().asTreeNode({
+            return showLearnMore.build(cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 contextValue: 'awsCodeWhispererLearnMoreNode',
@@ -180,7 +180,7 @@ export function createLearnMore(type: 'item' | 'tree'): any {
             return {
                 data: 'learnMore',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showLearnMore.execute(),
+                onClick: () => showLearnMore.execute(cwQuickPickSource),
             } as DataQuickPickItem<'learnMore'>
     }
 }
@@ -197,7 +197,7 @@ export function createFreeTierLimitMet(type: 'tree' | 'item'): any {
 
     switch (type) {
         case 'tree':
-            return showFreeTierLimit.build().asTreeNode({
+            return showFreeTierLimit.build(cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
@@ -207,7 +207,7 @@ export function createFreeTierLimitMet(type: 'tree' | 'item'): any {
             return {
                 data: 'freeTierLimitMet',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showFreeTierLimit.execute(),
+                onClick: () => showFreeTierLimit.execute(cwQuickPickSource),
             } as DataQuickPickItem<'freeTierLimitMet'>
     }
 }
@@ -227,7 +227,7 @@ export function createSelectCustomization(type: 'tree' | 'item'): any {
 
     switch (type) {
         case 'tree':
-            return selectCustomizationPrompt.build().asTreeNode({
+            return selectCustomizationPrompt.build(cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 description: `${newText}${selectedCustomization.arn === '' ? '' : selectedCustomization.name}`,
@@ -236,7 +236,7 @@ export function createSelectCustomization(type: 'tree' | 'item'): any {
             return {
                 data: 'selectCustomization',
                 label: codicon`${icon} ${label}`,
-                onClick: () => selectCustomizationPrompt.execute(),
+                onClick: () => selectCustomizationPrompt.execute(cwQuickPickSource),
             } as DataQuickPickItem<'selectCustomization'>
     }
 }
@@ -251,7 +251,7 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
     switch (type) {
         case 'tree':
             return CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
-                .build('codewhispererDeveloperTools')
+                .build(cwTreeNodeSource)
                 .asTreeNode({
                     label: label,
                     iconPath: icon,
@@ -263,8 +263,8 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
                 label: codicon`${icon} ${label}`,
                 onClick: () =>
                     CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage.execute(
-                        'codewhispererDeveloperTools'
-                    ),
+                        cwQuickPickSource)
+                    ,
             } as DataQuickPickItem<'gettingStarted'>
     }
 }
@@ -282,7 +282,7 @@ export function createSignout(type: 'item' | 'tree'): any {
             return {
                 data: 'signout',
                 label: codicon`${icon} ${label}`,
-                onClick: () => signoutCodeWhisperer.execute(),
+                onClick: () => signoutCodeWhisperer.execute(cwQuickPickSource),
             } as DataQuickPickItem<'signout'>
     }
 }

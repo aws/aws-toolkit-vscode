@@ -189,8 +189,6 @@ export class InlineCompletionService {
     }
 }
 
-
-
 /** The states that the completion service can be in */
 const states = {
     loading: 'loading',
@@ -230,17 +228,17 @@ export class CodeWhispererStatusBar {
                 statusBar.text = codicon`${icon} CodeWhisperer${
                     selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
                 }`
-                break;
+                break
             }
-                
+
             case 'expired': {
                 statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
                 statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
-                break;
+                break
             }
             case 'notConnected':
                 statusBar.text = codicon` ${getIcon('vscode-chrome-close')} CodeWhisperer`
-                break;
+                break
         }
 
         statusBar.show()
