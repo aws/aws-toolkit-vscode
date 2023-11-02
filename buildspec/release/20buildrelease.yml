@@ -1,0 +1,31 @@
+version: 0.2
+
+env:
+    variables:
+        NODE_OPTIONS: '--max-old-space-size=8192'
+
+phases:
+    pre_build:
+        commands:
+            - aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO"
+    install:
+        runtime-versions:
+            nodejs: 16
+
+        commands:
+            - apt-get update
+            - apt-get install -y libgtk-3-dev libxss1 xvfb
+            - apt-get install -y libnss3-dev libasound2
+            - apt-get install -y libasound2-plugins
+    build:
+        commands:
+            # --unsafe-perm is needed because we run as root
+            - npm ci --unsafe-perm
+            - cp ./README.quickstart.vscode.md ./README.md
+            - npm run package
+
+artifacts:
+    files:
+        - aws-toolkit-vscode*
+        - package.json
+    discard-paths: true
