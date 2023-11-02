@@ -7,11 +7,11 @@ import * as vscode from 'vscode'
 import { CloudWatchLogs } from 'aws-sdk'
 import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, msgKey } from '../cloudWatchLogsUtils'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
-import { waitTimeout } from '../../shared/utilities/timeoutUtils'
+import { CancellationError, waitTimeout } from '../../shared/utilities/timeoutUtils'
 import { Messages } from '../../shared/utilities/messages'
-import { pageableToCollection } from '../../shared/utilities/collectionUtils'
+import { isAwsError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
 import { Settings } from '../../shared/settings'
-// TODO: Add debug logging statements
 
 /** Uri as a string */
 export type UriString = string
@@ -59,105 +59,111 @@ export class LogDataRegistry {
         return this.getRegisteredLog(uri).events
     }
 
+    /** Gets adjusted start/end times for extending existing search results. */
+    private getStartEnd(logData: CloudWatchLogsData, direction: 'head' | 'tail', isSearch: boolean) {
+        const r = {
+            startTime: logData.parameters.startTime,
+            endTime: logData.parameters.endTime,
+        }
+        const evStart = logData.events[0]?.timestamp
+        const evEnd = logData.events[logData.events.length - 1]?.timestamp
+        const startStr = evStart ? new Date(evStart).toUTCString() : 'none'
+        const endStr = evEnd ? new Date(evEnd).toUTCString() : 'none'
+        getLogger().debug('cloudwatch logs: eventsStart: "%s", eventsEnd: "%s"', startStr, endStr)
+        if (isSearch) {
+            // Update start/end parameters, choose intuitive range based on previously chosen range
+            // (fall back: extend by 1 day).
+            const oneDay = 1000 * 60 * 60 * 24
+            const delta = r.endTime && r.startTime ? r.endTime - r.startTime : oneDay
+            if (direction === 'head') {
+                r.endTime = (r.startTime && (!evStart || r.startTime < evStart) ? r.startTime : evStart) ?? Date.now()
+                r.startTime = r.endTime - delta
+            } else {
+                r.startTime = (r.endTime && (!evEnd || r.endTime > evEnd) ? r.endTime : evEnd) ?? Date.now()
+                r.endTime = r.startTime + delta
+            }
+        }
+        return r
+    }
+
     /**
-     * Retrieves the next set of data for a log and adds it to the registry. Data can either be added to the front of the log (`'head'`) or end (`'tail'`)
-     * @param uri Document URI
-     * @param headOrTail Determines update behavior: `'head'` retrieves the most recent previous token and appends data to the top of the log, `'tail'` does the opposite. Default: `'tail'`
-     * @param getLogEventsFromUriComponentsFn Override for testing purposes.
+     * Fetches the next ("tail") or previous ("head") events batch for a log stream or log group
+     * search, and adds them to the registry.
+     *
+     * Not "thread safe": multiple simultaneous requests to the same URI will have a data race.
+     *
+     * @param uri Document that presents the log stream or search results.
+     * @param isNew If true, the existing document for `uri` will be cleared before loading results. If false, results are appended/prepended to the existing document.
+     * @param direction `'head'` gets events before `logData.previous.token` (or before the oldest event, if extending existing _search_ results), `'tail'` gets events from `logData.next.token` (or after the newest event, if extending existing _search_ results).
      */
     public async fetchNextLogEvents(
         uri: vscode.Uri,
-        headOrTail: 'head' | 'tail' = 'tail'
+        isNew: boolean,
+        direction: 'head' | 'tail' = 'tail'
     ): Promise<CloudWatchLogsEvent[]> {
+        const isHead = direction === 'head'
+
         if (!this.isRegistered(uri)) {
             this.registerInitialLog(uri)
         }
 
+        // Get existing data. It will be modified in various ways below (not "thread safe", thanks to the "registry").
         const logData = this.getRegisteredLog(uri)
         const request: CloudWatchLogsResponse = {
             events: [],
             nextForwardToken: logData.next?.token,
             nextBackwardToken: logData.previous?.token,
         }
+        // Is this a filter request or a full (unfiltered) log stream?
+        const isSearch = !logData.logGroupInfo.streamName
 
-        const isHead = headOrTail === 'head'
-
-        // We are at the earliest data and trying to go back in time, there is nothing to see.
-        // If we don't return now, redundant data will be retrieved.
-        if (isHead && logData.previous?.token === undefined) {
-            // show something so the user doesn't think nothing happened.
-            await Messages.putMessage(
-                msgKey(logData.logGroupInfo),
-                `Loading from: '${logData.logGroupInfo.groupName}'`,
-                undefined,
-                500
-            )
+        if (!isSearch && isHead && logData.previous?.token === undefined) {
+            // If we don't return now, redundant data will be retrieved.
             return []
         }
 
-        const stream = pageableToCollection(
-            (r: typeof request) =>
-                logData.retrieveLogsFunction(
-                    logData.logGroupInfo,
-                    logData.parameters,
-                    isHead ? r.nextBackwardToken : r.nextForwardToken
-                ),
-            request,
-            isHead ? 'nextBackwardToken' : 'nextForwardToken'
+        // For search results ("Load newer/older..."): adjust the start/end "window".
+        const oldRange = { startTime: logData.parameters.startTime, endTime: logData.parameters.endTime }
+        const startEnd = isNew ? logData.parameters : this.getStartEnd(logData, direction, isSearch)
+        logData.parameters.startTime = startEnd.startTime
+        logData.parameters.endTime = startEnd.endTime
+
+        const response = await logData.retrieveLogsFunction(
+            logData.logGroupInfo,
+            logData.parameters,
+            isHead ? request.nextBackwardToken : request.nextForwardToken
         )
 
-        async function firstOrLast<T>(
-            iterable: AsyncIterable<T>,
-            predicate: (item: T) => boolean
-        ): Promise<T | undefined> {
-            let last: T | undefined
-            for await (const item of iterable) {
-                if (predicate((last = item))) {
-                    return item
-                }
-            }
-            return last
+        // For search results: before storing (setLogData), expand the range to the maximum
+        // start/end so that the "window" covers all results batches in the document.
+        logData.parameters.startTime = logData.parameters.startTime
+            ? Math.min(oldRange.startTime ?? Number.MAX_VALUE, logData.parameters.startTime)
+            : undefined
+        logData.parameters.endTime = logData.parameters.endTime
+            ? Math.max(oldRange.endTime ?? 0, logData.parameters.endTime)
+            : undefined
+
+        // Replace (if "new") or extend existing results.
+        logData.events = isNew
+            ? response.events
+            : isHead
+            ? (response.events ?? []).concat(logData.events)
+            : logData.events.concat(response.events ?? [])
+
+        // Update tokens on the existing logData entry.
+        if ((!logData.previous || isHead) && response.nextBackwardToken) {
+            logData.previous = { token: response.nextBackwardToken }
         }
-
-        const msgTimeout = await Messages.putMessage(
-            msgKey(logData.logGroupInfo),
-            `Loading from: '${logData.logGroupInfo.groupName}'`
-        )
-        const responseData = await firstOrLast(stream, resp => resp.events.length > 0).finally(() => {
-            msgTimeout.dispose()
-        })
-
-        if (!responseData) {
-            return []
-        }
-
-        const newData =
-            headOrTail === 'head'
-                ? (responseData.events ?? []).concat(logData.events)
-                : logData.events.concat(responseData.events ?? [])
-
-        const tokens: Pick<CloudWatchLogsData, 'next' | 'previous'> = {}
-        // update if no token exists or if the token is updated in the correct direction.
-        if (!logData.previous || headOrTail === 'head') {
-            const token = responseData.nextBackwardToken
+        if (!logData.next || !isHead) {
+            const token = response.nextForwardToken ?? request.nextForwardToken
             if (token) {
-                tokens.previous = { token }
+                logData.next = { token: token }
             }
         }
-        if (!logData.next || headOrTail === 'tail') {
-            const token = responseData.nextForwardToken ?? request.nextForwardToken
-            if (token) {
-                tokens.next = { token }
-            }
-        }
-        this.setLogData(uri, {
-            ...logData,
-            ...tokens,
-            events: newData,
-        })
+        this.setLogData(uri, logData)
 
         this._onDidChange.fire(uri)
-        return newData
+        return logData.events
     }
 
     public setBusyStatus(uri: vscode.Uri, isBusy: boolean): void {
@@ -185,7 +191,7 @@ export class LogDataRegistry {
 
     public registerInitialLog(
         uri: vscode.Uri,
-        retrieveLogsFunction: CloudWatchLogsAction = filterLogEventsFromUri
+        retrieveLogsFunction: typeof filterLogEventsFromUri = filterLogEventsFromUri
     ): void {
         if (this.isRegistered(uri)) {
             throw new Error(`Already registered: ${uri.toString()}`)
@@ -204,73 +210,166 @@ export class LogDataRegistry {
 }
 
 /**
- * @param completeTimeout True to close the vscode cancel window when request is completed.
+ * Fetches logs, optionally matching a log group and search pattern (`CloudWatchLogsParameters.filterPattern`).
+ * Continues requesting pages (if any) until `CloudWatchLogsParameters.limit` is reached.
+ *
+ * @param completeTimeout Close the progress message before returning.
  */
 export async function filterLogEventsFromUri(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
-    nextToken?: string,
-    completeTimeout = false
+    initialNextToken?: string,
+    completeTimeout = true
 ): Promise<CloudWatchLogsResponse> {
     const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
+    // Is this a filter request or a full (unfiltered) log stream?
+    const isSearch = !logGroupInfo.streamName
 
-    const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
+    const request: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,
         filterPattern: parameters.filterPattern,
-        nextToken,
+        nextToken: initialNextToken,
         limit: parameters.limit,
+        startTime: parameters.startTime,
+        endTime: parameters.endTime,
+        logStreamNames: logGroupInfo.streamName ? [logGroupInfo.streamName] : [],
     }
-
-    if (logGroupInfo.streamName !== undefined) {
-        cwlParameters.logStreamNames = [logGroupInfo.streamName]
-    }
-
-    if (parameters.startTime && parameters.endTime) {
-        cwlParameters.startTime = parameters.startTime
-        cwlParameters.endTime = parameters.endTime
-    }
-
-    cwlParameters.logStreamNames = []
 
     if (parameters.streamNameOptions) {
-        cwlParameters.logStreamNames.concat(parameters.streamNameOptions)
-    }
-
-    if (logGroupInfo.streamName) {
-        cwlParameters.logStreamNames.push(logGroupInfo.streamName)
-    }
-
-    if (cwlParameters.logStreamNames.length === 0) {
+        request.logStreamNames?.concat(parameters.streamNameOptions)
+    } else if (request.logStreamNames?.length === 0) {
         // API fails on empty array
-        delete cwlParameters.logStreamNames
+        request.logStreamNames = undefined
     }
 
-    const msgTimeout = await Messages.putMessage(msgKey(logGroupInfo), `Loading from: '${logGroupInfo.groupName}'`, {
-        message: logGroupInfo.streamName ?? '',
-    })
+    let pages = 0
+    let failed = 0
+    const limit = request.limit ?? 10_000
+    const result: CloudWatchLogsResponse = {
+        events: [],
+        nextBackwardToken: initialNextToken,
+        nextForwardToken: undefined,
+    }
 
-    const responsePromise = client.filterLogEvents(cwlParameters)
-    const response = await waitTimeout(responsePromise, msgTimeout, { allowUndefined: false, completeTimeout })
+    // Fetch pages (if any) until limit is reached.
+    while ((pages === 0 && failed === 0) || (request.nextToken && limit > 1 && result.events.length < limit)) {
+        const eventsMsg = `${result.events.length} events${
+            pages > 0 && result.events.length === 0 ? ' (only empty pages so far)' : ''
+        }`
+        const progressMsg = logGroupInfo.streamName ?? (limit > 1 ? `${eventsMsg}, page ${pages + 1}` : eventsMsg)
+        const msgTimeout = await Messages.putMessage(
+            msgKey(logGroupInfo),
+            `${isSearch ? 'Searching' : 'Loading from'}: ${logGroupInfo.groupName}`,
+            { message: progressMsg },
+            1000 * 60 * 60 * 24 // 24 hours, want "infinite"...
+        )
+        try {
+            let response: Pick<CloudWatchLogs.FilterLogEventsResponse, 'events' | 'nextToken'> | undefined
+            if (isSearch) {
+                const requestPromise = client.filterLogEvents(request)
+                response = await waitTimeout(requestPromise, msgTimeout, {
+                    allowUndefined: false,
+                    completeTimeout: false,
+                })
+            } else {
+                const requestPromise = client.getLogEvents({
+                    startFromHead: true, // Important! #3295
+                    logStreamName: logGroupInfo.streamName ?? '?',
+                    logGroupName: request.logGroupName,
+                    logGroupIdentifier: request.logGroupIdentifier,
+                    limit: request.limit,
+                    nextToken: request.nextToken,
+                })
+                response = await waitTimeout(requestPromise, msgTimeout, {
+                    allowUndefined: false,
+                    completeTimeout: false,
+                })
+                if (response) {
+                    // Hack around SDK inconsistency...
+                    response.nextToken = (response as CloudWatchLogs.GetLogEventsResponse).nextForwardToken
+                }
+            }
 
-    // Use heuristic of last token as backward token and next token as forward to generalize token form.
-    // Note that this may become inconsistent if the contents of the calls are changing as they are being made.
-    // However, this fail wouldn't really impact customers.
-    if (response) {
-        return {
-            events: response.events ? response.events : [],
-            nextForwardToken: response.nextToken,
-            nextBackwardToken: nextToken,
+            if (!response) {
+                break // ??
+            }
+
+            // Accumulate data.
+            result.events.push(...(response?.events ?? []))
+            pages += 1
+
+            // Return the last nextToken as the "forward token".
+            result.nextForwardToken = response.nextToken ?? result.nextForwardToken
+
+            // "If you have reached the end of the stream, it returns the same token you passed in."
+            // https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_GetLogEvents.html
+            if (!response.nextToken || request.nextToken === response.nextToken) {
+                break // End of pages.
+            }
+
+            // Prepare next request.
+            request.nextToken = response.nextToken
+        } catch (e) {
+            if (CancellationError.isUserCancelled(e)) {
+                msgTimeout.cancel()
+                if (result.events.length > 0) {
+                    break // Show results if there are any.
+                }
+                throw e // No results. Don't show empty document.
+            }
+
+            failed += 1
+
+            if (isAwsError(e)) {
+                // TODO: add getLogger().logAwsError() or something like that...
+                getLogger().error(
+                    'cloudwatch logs: fetch failed: %s (statuscode: %O request-id: %O): %s',
+                    e.code,
+                    e.statusCode,
+                    e.requestId,
+                    e.message
+                )
+                result.events.push({
+                    message: `[request failed: ${e.message}]`,
+                    // logStreamName: 'invalid',
+                    // timestamp: 0,
+                    // ingestionTime?: Timestamp;
+                    // eventId?: EventId;
+                })
+            } else {
+                getLogger().error('cloudwatch logs: fetch failed: %s', (e as Error).message)
+            }
+
+            if (failed > 3) {
+                break
+            }
         }
-    } else {
-        throw new Error('cwl: filterLogEvents returned null')
     }
+
+    if (completeTimeout) {
+        const msgTimeout = await Messages.putMessage(msgKey(logGroupInfo), '')
+        msgTimeout.dispose()
+    }
+
+    if (limit > 1) {
+        // Don't log the validation request (limit=1).
+        getLogger().info(
+            'cloudwatch logs: fetched %d events (%d pages, %d failed) from log group: %s',
+            result.events.length,
+            pages,
+            failed,
+            logGroupInfo.groupName
+        )
+    }
+
+    return result
 }
 
 /** Creates a log data container including a log fetcher which will populate the data if called. */
 export function initLogData(
     logGroupInfo: CloudWatchLogsGroupInfo,
     parameters: CloudWatchLogsParameters,
-    retrieveLogsFunction: CloudWatchLogsAction
+    retrieveLogsFunction: typeof filterLogEventsFromUri
 ): CloudWatchLogsData {
     return {
         events: [],
@@ -301,12 +400,6 @@ export type CloudWatchLogsResponse = {
     nextBackwardToken?: CloudWatchLogs.NextToken
 }
 
-export type CloudWatchLogsAction = (
-    logGroupInfo: CloudWatchLogsGroupInfo,
-    apiParameters: CloudWatchLogsParameters,
-    nextToken?: string
-) => Promise<CloudWatchLogsResponse>
-
 export type CloudWatchLogsEvent = CloudWatchLogs.OutputLogEvent & {
     logStreamName?: string
     eventId?: string
@@ -316,7 +409,7 @@ export class CloudWatchLogsData {
     events: CloudWatchLogsEvent[] = []
     parameters: CloudWatchLogsParameters = {}
     logGroupInfo!: CloudWatchLogsGroupInfo
-    retrieveLogsFunction!: CloudWatchLogsAction
+    retrieveLogsFunction!: typeof filterLogEventsFromUri
     next?: {
         token: CloudWatchLogs.NextToken
     }

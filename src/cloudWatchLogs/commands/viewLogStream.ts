@@ -16,19 +16,14 @@ import { CloudWatchLogs } from 'aws-sdk'
 import { DefaultCloudWatchLogsClient } from '../../shared/clients/cloudWatchLogsClient'
 import { LOCALIZED_DATE_FORMAT } from '../../shared/constants'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../shared/utilities/collectionUtils'
-import {
-    CloudWatchLogsGroupInfo,
-    CloudWatchLogsParameters,
-    LogDataRegistry,
-    initLogData as initLogData,
-    filterLogEventsFromUri,
-} from '../registry/logDataRegistry'
+import { CloudWatchLogsGroupInfo, CloudWatchLogsParameters, LogDataRegistry } from '../registry/logDataRegistry'
 import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../shared/telemetry/telemetry'
 import { CancellationError } from '../../shared/utilities/timeoutUtils'
 
-export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
+/** Shows a quickpick menu of log streams. */
+export async function selectLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async span => {
         span.record({ cloudWatchResourceType: 'logStream', source: 'Explorer' })
         const r = await new SelectLogStreamWizard(node).run()
@@ -54,8 +49,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistr
         }
 
         const uri = createURIFromArgs(logGroupInfo, parameters)
-        const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
-        await prepareDocument(uri, logData, registry)
+        await prepareDocument(uri, registry, true)
     })
 }
 

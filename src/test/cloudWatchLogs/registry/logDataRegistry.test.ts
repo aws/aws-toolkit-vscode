@@ -8,11 +8,11 @@ import moment from 'moment'
 import * as vscode from 'vscode'
 import {
     LogDataRegistry,
-    CloudWatchLogsAction,
     CloudWatchLogsGroupInfo,
     CloudWatchLogsParameters,
     CloudWatchLogsResponse,
     CloudWatchLogsData,
+    filterLogEventsFromUri,
 } from '../../../cloudWatchLogs/registry/logDataRegistry'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../../../shared/constants'
 import { Settings } from '../../../shared/settings'
@@ -88,7 +88,7 @@ describe('LogDataRegistry', async function () {
             // Manually set a backwards token to exist
             registry.setLogData(paginatedUri, { ...paginatedData, previous: { token: backwardToken } })
 
-            const newEvents = await registry.fetchNextLogEvents(paginatedUri, 'head')
+            const newEvents = await registry.fetchNextLogEvents(paginatedUri, false, 'head')
 
             // // check that newData is changed to what it should be.
             const expected = (await fakeSearchLogGroup()).events
@@ -96,7 +96,7 @@ describe('LogDataRegistry', async function () {
         })
 
         it("properly paginates the results with 'tail'", async () => {
-            const newEvents = await registry.fetchNextLogEvents(paginatedUri, 'tail')
+            const newEvents = await registry.fetchNextLogEvents(paginatedUri, false, 'tail')
 
             // // check that newData is changed to what it should be.
             const expected = (await fakeGetLogEvents()).events
@@ -104,7 +104,7 @@ describe('LogDataRegistry', async function () {
         })
 
         it("returns empty list if no 'head' token", async () => {
-            const newEvents = await registry.fetchNextLogEvents(paginatedUri, 'head')
+            const newEvents = await registry.fetchNextLogEvents(paginatedUri, false, 'head')
             // // check that newData is changed to what it should be.
             assert.deepStrictEqual(newEvents, [])
         })
@@ -123,7 +123,7 @@ describe('LogDataRegistry', async function () {
             return events
         }
 
-        async function buildCwlAction(isPage1Empty: boolean): Promise<CloudWatchLogsAction> {
+        async function buildCwlAction(isPage1Empty: boolean): Promise<typeof filterLogEventsFromUri> {
             return async function (
                 logGroupInfo: CloudWatchLogsGroupInfo,
                 parameters: CloudWatchLogsParameters,
@@ -170,12 +170,12 @@ describe('LogDataRegistry', async function () {
             paginatedData.retrieveLogsFunction = await buildCwlAction(noEventsOnPage1)
 
             // -- Make first call.
-            const firstUpdatedEvents = await registry.fetchNextLogEvents(paginatedUri)
+            const firstUpdatedEvents = await registry.fetchNextLogEvents(paginatedUri, false)
             const firstExpectedEvents = getSimulatedCwlResponse(pageToken0, noEventsOnPage1).events
             assert.deepStrictEqual(firstUpdatedEvents, firstExpectedEvents)
 
             // -- Make second call.
-            const secondUpdatedData = await registry.fetchNextLogEvents(paginatedUri)
+            const secondUpdatedData = await registry.fetchNextLogEvents(paginatedUri, false)
             // Expect the output to equal the first call since page 1 'does not exist yet'
             assert.deepStrictEqual(secondUpdatedData, firstExpectedEvents)
 
@@ -185,7 +185,7 @@ describe('LogDataRegistry', async function () {
             logData.retrieveLogsFunction = await buildCwlAction(!noEventsOnPage1)
 
             // -- Make third call.
-            const thirdActual = await registry.fetchNextLogEvents(paginatedUri)
+            const thirdActual = await registry.fetchNextLogEvents(paginatedUri, false)
             const thirdExpected = firstExpectedEvents.concat(
                 getSimulatedCwlResponse(pageToken1, !noEventsOnPage1).events
             )

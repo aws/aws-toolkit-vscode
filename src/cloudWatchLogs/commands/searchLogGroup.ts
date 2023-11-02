@@ -61,10 +61,18 @@ function handleWizardResponse(response: SearchLogGroupWizardResponse, registry: 
     return logData
 }
 
-export async function prepareDocument(uri: vscode.Uri, logData: CloudWatchLogsData, registry: LogDataRegistry) {
+/**
+ * Creates (or shows existing) editor document from an `aws-cwl:` URI.
+ *
+ * @param uri
+ * @param registry
+ * @param isNew If true, the existing document for `uri` will be cleared before loading results.
+ *              If false, results are appended/prepended to the existing document.
+ */
+export async function prepareDocument(uri: vscode.Uri, registry: LogDataRegistry, isNew: boolean) {
     try {
         // Gets the data: calls filterLogEventsFromUri().
-        await registry.fetchNextLogEvents(uri)
+        await registry.fetchNextLogEvents(uri, isNew)
         const doc = await vscode.workspace.openTextDocument(uri)
         await vscode.window.showTextDocument(doc, { preview: false })
         vscode.languages.setTextDocumentLanguage(doc, 'log')
@@ -106,7 +114,7 @@ export async function searchLogGroup(
 
         const userResponse = handleWizardResponse(response, registry)
         const uri = createURIFromArgs(userResponse.logGroupInfo, userResponse.parameters)
-        await prepareDocument(uri, userResponse, registry)
+        await prepareDocument(uri, registry, true)
     })
 }
 
@@ -198,8 +206,11 @@ export class SearchPatternPrompter extends InputBoxPrompter {
         } catch (e) {
             // Validation error. Get the progress message from the global map and cancel it.
             const msgTimeout = await Messages.putMessage(msgKey(this.logGroup), '')
-            msgTimeout.cancel()
+            msgTimeout.dispose()
 
+            if (CancellationError.isUserCancelled(e)) {
+                throw e
+            }
             return (e as Error).message
         }
         return undefined

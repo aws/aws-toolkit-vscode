@@ -122,9 +122,7 @@ export const LOCALIZED_DATE_FORMAT = 'll LTS [GMT]ZZ' // eslint-disable-line @ty
 // TODO: Do we want this this verbose? Log stream just shows HH:mm:ss
 export const INSIGHTS_TIMESTAMP_FORMAT = 'YYYY-MM-DDTHH:mm:ss.SSSZ' // eslint-disable-line @typescript-eslint/naming-convention
 
-/**
- * URI scheme for CloudWatch Logs Virtual Documents
- */
+// URI schemes for vscode virtual documents.
 export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl' // eslint-disable-line @typescript-eslint/naming-convention
 export const AWS_SCHEME = 'aws' // eslint-disable-line @typescript-eslint/naming-convention
 

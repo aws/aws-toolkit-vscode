@@ -16,6 +16,7 @@ import { LogDataDocumentProvider } from './logDataDocumentProvider'
 
 type IdWithLine = { streamId: string; lineNum: number }
 
+/** Provides the "View Full Log Stream..." codelens. */
 export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     /**
      * Constructor
@@ -103,11 +104,11 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
     }
 }
 
-export async function loadAndOpenInitialLogStreamFile(uri: vscode.Uri, registry: LogDataRegistry): Promise<void> {
+export async function openLogStreamFile(uri: vscode.Uri, registry: LogDataRegistry): Promise<void> {
     const td = await vscode.workspace.openTextDocument(uri)
     await Promise.all([
         vscode.window.showTextDocument(td),
         vscode.languages.setTextDocumentLanguage(td, 'log'),
-        registry.fetchNextLogEvents(uri),
+        registry.fetchNextLogEvents(uri, true),
     ])
 }

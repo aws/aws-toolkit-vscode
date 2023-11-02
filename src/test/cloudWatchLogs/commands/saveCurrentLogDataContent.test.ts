@@ -57,7 +57,7 @@ describe('saveCurrentLogDataContent', async function () {
         }
         const uri = createURIFromArgs(logGroupInfo, {})
         LogDataRegistry.instance.registerInitialLog(uri, testFilterLogEvents)
-        await LogDataRegistry.instance.fetchNextLogEvents(uri)
+        await LogDataRegistry.instance.fetchNextLogEvents(uri, true)
         vscode.window.showTextDocument(uri)
         await assertTextEditorContains(expectedText, false) // Wait for document provider.
 
