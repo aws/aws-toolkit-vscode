@@ -47,7 +47,7 @@ export class Messenger {
                     followUps: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
-                    messageID: '',
+                    messageID: messageID,
                 },
                 tabID
             )
