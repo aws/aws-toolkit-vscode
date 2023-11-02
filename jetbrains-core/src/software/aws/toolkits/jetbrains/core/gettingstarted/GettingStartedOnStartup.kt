@@ -35,7 +35,7 @@ class GettingStartedOnStartup : StartupActivity {
             if (!settings.shouldDisplayPage) {
                 return
             } else {
-                GettingStartedPanel.openPanel(project)
+                GettingStartedPanel.openPanel(project, firstInstance = true, connectionInitiatedFromExplorer = false)
                 AuthTelemetry.addConnection(
                     project,
                     source = SourceOfEntry.FIRST_STARTUP.name,

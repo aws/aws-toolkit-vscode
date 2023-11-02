@@ -51,6 +51,7 @@ import software.aws.toolkits.telemetry.CredentialSourceId
 import software.aws.toolkits.telemetry.FeatureId
 import software.aws.toolkits.telemetry.Result
 import java.awt.BorderLayout
+import java.util.Locale
 import javax.swing.Action
 import javax.swing.BorderFactory
 import javax.swing.JComponent
@@ -109,7 +110,22 @@ enum class SourceOfEntry {
     CODEWHISPERER,
     EXPLORER,
     FIRST_STARTUP,
-    UNKNOWN
+    UNKNOWN;
+    override fun toString(): String {
+        val value = this.name.lowercase()
+        // If the string in lowercase contains an _ eg RESOURCE_EXPLORER, this function returns camelCase of the string i.e resourceExplorer
+        return if (value.contains("_")) {
+            // convert to camelCase
+            (
+                value.substringBefore("_") +
+                    value.substringAfter("_").replaceFirstChar {
+                        if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
+                    }
+                )
+        } else {
+            value
+        }
+    }
 }
 
 class SetupAuthenticationDialog(

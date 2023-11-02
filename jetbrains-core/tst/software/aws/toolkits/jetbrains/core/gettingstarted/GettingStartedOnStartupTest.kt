@@ -88,7 +88,7 @@ class GettingStartedOnStartupTest {
         }
 
         verify {
-            GettingStartedPanel.openPanel(projectExtension.project)
+            GettingStartedPanel.openPanel(projectExtension.project, any(), any())
         }
     }
 
@@ -99,7 +99,7 @@ class GettingStartedOnStartupTest {
         sut.runActivity(projectExtension.project)
 
         verify {
-            GettingStartedPanel.openPanel(projectExtension.project)
+            GettingStartedPanel.openPanel(projectExtension.project, any(), any())
         }
     }
 }

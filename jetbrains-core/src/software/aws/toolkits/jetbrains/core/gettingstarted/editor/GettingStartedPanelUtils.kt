@@ -120,7 +120,7 @@ fun isCredentialSso(providerId: String): ActiveConnectionType {
 }
 
 fun getSourceOfEntry(sourceOfEntry: SourceOfEntry, isStartup: Boolean = false, connectionInitiatedFromExplorer: Boolean = false): String {
-    val src = if (connectionInitiatedFromExplorer) SourceOfEntry.EXPLORER.name else sourceOfEntry.name
-    val source = if (isStartup) SourceOfEntry.FIRST_STARTUP.name else src
+    val src = if (connectionInitiatedFromExplorer) SourceOfEntry.EXPLORER.toString() else sourceOfEntry.toString()
+    val source = if (isStartup) SourceOfEntry.FIRST_STARTUP.toString() else src
     return if (System.getenv(CawsConstants.CAWS_ENV_ID_VAR) != null) "REMOTE_$source" else source
 }
