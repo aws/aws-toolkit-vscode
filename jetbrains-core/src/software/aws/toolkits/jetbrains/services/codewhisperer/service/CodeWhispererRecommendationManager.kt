@@ -3,103 +3,46 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer.service
 
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.components.service
-import com.intellij.openapi.editor.RangeMarker
-import com.intellij.openapi.util.TextRange
-import com.intellij.psi.PsiDocumentManager
-import com.intellij.psi.PsiFileFactory
-import com.intellij.psi.codeStyle.CodeStyleManager
-import com.intellij.util.LocalTimeCounter
 import software.amazon.awssdk.services.codewhispererruntime.model.Completion
-import software.amazon.awssdk.services.codewhispererruntime.model.Reference
 import software.amazon.awssdk.services.codewhispererruntime.model.Span
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.RecommendationChunk
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererUtil.getCompletionType
 import kotlin.math.max
+import kotlin.math.min
 
 class CodeWhispererRecommendationManager {
-    fun reformat(requestContext: RequestContext, recommendation: Completion): Completion {
-        val project = requestContext.project
-        val editor = requestContext.editor
-        val document = editor.document
-
+    fun reformatReference(requestContext: RequestContext, recommendation: Completion): Completion {
         // startOffset is the offset at the start of user input since invocation
         val invocationStartOffset = requestContext.caretPosition.offset
-        val startOffsetSinceUserInput = editor.caretModel.offset
 
-        // Create a temp file for capturing reformatted text and updated content spans
-        val tempPsiFile = PsiDocumentManager.getInstance(project).getPsiFile(document)?.let { psiFile ->
-            PsiFileFactory.getInstance(project).createFileFromText(
-                "codewhisperer_temp",
-                psiFile.fileType,
-                document.text,
-                LocalTimeCounter.currentTime(),
-                true
-            )
-        }
-        val tempDocument = tempPsiFile?.let { psiFile ->
-            PsiDocumentManager.getInstance(project).getDocument(psiFile)
-        } ?: return recommendation
-
+        val startOffsetSinceUserInput = requestContext.editor.caretModel.offset
         val endOffset = invocationStartOffset + recommendation.content().length
+
         if (startOffsetSinceUserInput > endOffset) return recommendation
-        WriteCommandAction.runWriteCommandAction(project) {
-            tempDocument.insertString(invocationStartOffset, recommendation.content())
-            PsiDocumentManager.getInstance(project).commitDocument(tempDocument)
-        }
-        val rangeMarkers = mutableMapOf<RangeMarker, Reference>()
-        recommendation.references().forEach {
+
+        val reformattedReferences = recommendation.references().filter {
             val referenceStart = invocationStartOffset + it.recommendationContentSpan().start()
-            if (referenceStart >= endOffset) return@forEach
-            val tempEnd = invocationStartOffset + it.recommendationContentSpan().end()
-            val referenceEnd = if (tempEnd <= endOffset) tempEnd else endOffset
-            rangeMarkers[
-                tempDocument.createRangeMarker(
-                    referenceStart,
-                    referenceEnd
-                )
-            ] = it
-        }
-        val tempRangeMarker = tempDocument.createRangeMarker(invocationStartOffset, endOffset)
-
-        // Currently, only reformat(adjust line indent) starting from user's input
-        WriteCommandAction.runWriteCommandAction(project) {
-            CodeStyleManager.getInstance(project).adjustLineIndent(tempPsiFile, TextRange(startOffsetSinceUserInput, endOffset))
+            val referenceEnd = invocationStartOffset + it.recommendationContentSpan().end()
+            referenceStart < endOffset && referenceEnd > startOffsetSinceUserInput
+        }.map {
+            val referenceStart = invocationStartOffset + it.recommendationContentSpan().start()
+            val referenceEnd = invocationStartOffset + it.recommendationContentSpan().end()
+            val updatedReferenceStart = max(referenceStart, startOffsetSinceUserInput)
+            val updatedReferenceEnd = min(referenceEnd, endOffset)
+            it.toBuilder().recommendationContentSpan(
+                Span.builder()
+                    .start(updatedReferenceStart - invocationStartOffset)
+                    .end(updatedReferenceEnd - invocationStartOffset)
+                    .build()
+            ).build()
         }
 
-        val reformattedRecommendation = tempDocument.getText(TextRange(tempRangeMarker.startOffset, tempRangeMarker.endOffset))
-
-        val reformattedReferences = rangeMarkers.map { (rangeMarker, reference) ->
-            reformatReference(reference, rangeMarker, invocationStartOffset)
-        }
         return Completion.builder()
-            .content(reformattedRecommendation)
+            .content(recommendation.content())
             .references(reformattedReferences)
             .build()
-    }
-
-    /**
-     * Build new reference with updated contentSpan(start and end). Since it's reformatted, take the new start and
-     * end from the rangeMarker which automatically tracks the range after reformatting
-     */
-    fun reformatReference(originalReference: Reference, rangeMarker: RangeMarker, invocationStartOffset: Int): Reference {
-        rangeMarker.apply {
-            val documentContent = document.charsSequence
-
-            // has to plus 1 because right boundary is exclusive
-            val spanEndOffset = documentContent.subSequence(0, endOffset).indexOfLast { char -> char != '\n' } + 1
-            return originalReference
-                .toBuilder()
-                .recommendationContentSpan(
-                    Span.builder()
-                        .start(startOffset - invocationStartOffset)
-                        .end(spanEndOffset - invocationStartOffset)
-                        .build()
-                )
-                .build()
-        }
     }
 
     fun buildRecommendationChunks(
@@ -157,13 +100,25 @@ class CodeWhispererRecommendationManager {
                 )
             }
 
-            val reformatted = reformat(requestContext, truncated)
-            val isDiscardedByRightContextTruncationDedupe = !seen.add(reformatted.content())
+            val isDiscardedByRightContextTruncationDedupe = !seen.add(truncated.content())
+            val isDiscardedByBlankAfterTruncation = truncated.content().isBlank()
+            if (isDiscardedByRightContextTruncationDedupe || isDiscardedByBlankAfterTruncation) {
+                return@map DetailContext(
+                    requestId,
+                    it,
+                    truncated,
+                    isDiscarded = true,
+                    truncated.content().length != it.content().length,
+                    overlap,
+                    getCompletionType(it)
+                )
+            }
+            val reformatted = reformatReference(requestContext, truncated)
             DetailContext(
                 requestId,
                 it,
                 reformatted,
-                isDiscardedByRightContextTruncationDedupe,
+                isDiscarded = false,
                 truncated.content().length != it.content().length,
                 overlap,
                 getCompletionType(it)
@@ -171,7 +126,7 @@ class CodeWhispererRecommendationManager {
         }
     }
 
-    private fun findRightContextOverlap(
+    fun findRightContextOverlap(
         requestContext: RequestContext,
         recommendation: Completion
     ): String {

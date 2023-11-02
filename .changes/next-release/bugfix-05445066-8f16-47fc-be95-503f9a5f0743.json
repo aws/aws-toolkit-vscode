@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "CodeWhisperer: Fix an issue where an IndexOutOfBoundException could be thrown when using CodeWhisperer"
+}

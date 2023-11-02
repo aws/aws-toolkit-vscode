@@ -3,17 +3,21 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.fixtures.CodeInsightTestFixture
-import com.intellij.testFramework.runInEdtAndGet
+import com.intellij.testFramework.replaceService
 import com.intellij.testFramework.runInEdtAndWait
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import software.amazon.awssdk.services.codewhispererruntime.model.Reference
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.stub
+import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererRecommendationManager
 import software.aws.toolkits.jetbrains.utils.rules.PythonCodeInsightTestFixtureRule
 
@@ -27,12 +31,9 @@ class CodeWhispererRecommendationManagerTest {
     val disposableRule = DisposableRule()
 
     private val documentContentContent = "012345678"
+    private lateinit var sut: CodeWhispererRecommendationManager
     private lateinit var fixture: CodeInsightTestFixture
     private lateinit var project: Project
-    private val originalReference = Reference.builder()
-        .licenseName("test_license")
-        .repository("test_repo")
-        .build()
 
     @Before
     fun setup() {
@@ -43,43 +44,62 @@ class CodeWhispererRecommendationManagerTest {
         runInEdtAndWait {
             fixture.editor.caretModel.moveToOffset(documentContentContent.length)
         }
+        sut = spy(CodeWhispererRecommendationManager.getInstance())
+        ApplicationManager.getApplication().replaceService(
+            CodeWhispererRecommendationManager::class.java,
+            sut,
+            disposableRule.disposable
+        )
     }
 
     @Test
-    fun `test reformatReference() should generate a new reference with span based on rangeMarker and no surfix newline char`() {
-        // invocationOffset and markerStartOffset is of our choice as long as invocationOffset <= markerStartOffset
-        val recommendationManager = CodeWhispererRecommendationManager()
-        testReformatReferenceUtil(recommendationManager, documentContentSurfix = "", invocationOffset = 2, markerStartOffset = 5)
-        testReformatReferenceUtil(recommendationManager, documentContentSurfix = "\n", invocationOffset = 2, markerStartOffset = 5)
-        testReformatReferenceUtil(recommendationManager, documentContentSurfix = "\n\n", invocationOffset = 1, markerStartOffset = 4)
+    fun `test overlap()`() {
+        assertThat(sut.overlap("def", "abc")).isEqualTo("")
+        assertThat(sut.overlap("def", "fgh")).isEqualTo("f")
+        assertThat(sut.overlap("    ", "    }")).isEqualTo("    ")
+        assertThat(sut.overlap("abcd", "abc")).isEqualTo("")
     }
 
-    private fun testReformatReferenceUtil(
-        recommendationManager: CodeWhispererRecommendationManager,
-        documentContentSurfix: String,
-        invocationOffset: Int,
-        markerStartOffset: Int
-    ) {
-        // insert newline characters
-        WriteCommandAction.runWriteCommandAction(project) {
-            fixture.editor.document.insertString(fixture.editor.caretModel.offset, documentContentSurfix)
-        }
+    @Test
+    fun `test recommendation will be discarded when it's a exact match to user's input`() {
+        val userInput = "def"
+        val detail = sut.buildDetailContext(aRequestContext(project), userInput, listOf(aCompletion("def")), aString())
+        assertThat(detail[0].isDiscarded).isTrue
+        assertThat(detail[0].isTruncatedOnRight).isFalse
+    }
 
-        val rangeMarker =
-            runInEdtAndGet { fixture.editor.document.createRangeMarker(markerStartOffset, documentContentContent.length + documentContentSurfix.length) }
-
-        val reformattedReference = runInEdtAndGet { recommendationManager.reformatReference(originalReference, rangeMarker, invocationOffset) }
-        assertThat(reformattedReference.licenseName()).isEqualTo("test_license")
-        assertThat(reformattedReference.repository()).isEqualTo("test_repo")
-        assertThat(reformattedReference.recommendationContentSpan().start()).isEqualTo(rangeMarker.startOffset - invocationOffset)
-        assertThat(reformattedReference.recommendationContentSpan().end()).isEqualTo(rangeMarker.endOffset - invocationOffset - documentContentSurfix.length)
-        val span = runInEdtAndGet {
-            fixture.editor.document.charsSequence.subSequence(
-                reformattedReference.recommendationContentSpan().start(),
-                reformattedReference.recommendationContentSpan().end()
-            )
+    @Test
+    fun `test duplicated recommendation after truncation will be discarded`() {
+        val userInput = ""
+        sut.stub {
+            onGeneric { findRightContextOverlap(any(), any()) } doReturn "}"
+            onGeneric { reformatReference(any(), any()) } doReturn aCompletion("def")
         }
-        // span should not include newline char
-        assertThat(span.last()).isNotEqualTo('\n')
+        val detail = sut.buildDetailContext(
+            aRequestContext(project),
+            userInput,
+            listOf(aCompletion("def"), aCompletion("def}")),
+            aString()
+        )
+        assertThat(detail[0].isDiscarded).isFalse
+        assertThat(detail[0].isTruncatedOnRight).isFalse
+        assertThat(detail[1].isDiscarded).isTrue
+        assertThat(detail[1].isTruncatedOnRight).isTrue
+    }
+
+    @Test
+    fun `test blank recommendation after truncation will be discarded`() {
+        val userInput = ""
+        sut.stub {
+            onGeneric { findRightContextOverlap(any(), any()) } doReturn "}"
+        }
+        val detail = sut.buildDetailContext(
+            aRequestContext(project),
+            userInput,
+            listOf(aCompletion("    }")),
+            aString()
+        )
+        assertThat(detail[0].isDiscarded).isTrue
+        assertThat(detail[0].isTruncatedOnRight).isTrue
     }
 }
