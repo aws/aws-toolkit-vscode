@@ -235,10 +235,11 @@ export class CWCTelemetryHelper {
 
         const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
 
-        // TODO: user intent, response code snippet count, references count
+        // TODO: response code snippet count, references count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
+            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload?.userIntent),
             cwsprChatHasCodeSnippet: hasCodeSnippet,
             cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
