@@ -32,7 +32,7 @@ export class CWCTelemetryHelper {
     private triggerEventsStorage: TriggerEventsStorage
     private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
-    private responseStreamTimeToFirstChunk: Map<string, number> = new Map()
+    private responseStreamTimeToFirstChunk: Map<string, number | undefined> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -277,13 +277,16 @@ export class CWCTelemetryHelper {
 
     public setResponseStreamStartTime(tabID: string) {
         this.responseStreamStartTime.set(tabID, performance.now())
+        this.responseStreamTimeToFirstChunk.set(tabID, undefined)
     }
 
     public setReponseStreamTimeToFirstChunk(tabID: string) {
-        this.responseStreamTimeToFirstChunk.set(
-            tabID,
-            performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
-        )
+        if (this.responseStreamTimeToFirstChunk.get(tabID) == undefined) {
+            this.responseStreamTimeToFirstChunk.set(
+                tabID,
+                performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+            )
+        }
     }
 
     public setResponseStreamTotalTime(tabID: string) {
