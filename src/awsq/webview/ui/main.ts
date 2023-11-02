@@ -139,9 +139,11 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 type: 'cwc',
                 status: 'busy',
                 isSelected: true,
+                openInteractionType: 'contextMenu',
             })
 
             tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')
+            connector.onUpdateTabType(newTabID)
             tabsStorage.updateTabStatus(newTabID, 'busy')
 
             return newTabID
@@ -166,10 +168,13 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                     status: 'busy',
                     type: 'unknown',
                     isSelected: true,
+                    openInteractionType: 'click',
                 })
 
                 tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                connector.onUpdateTabType(tabID)
                 tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
+                connector.onUpdateTabType(newTabId)
 
                 // Let weaverbird know a wb tab has been opened
                 connector.onKnownTabOpen(newTabId)
@@ -182,6 +187,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                     body: 'Ok, please write your question below.',
                 })
                 tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                connector.onUpdateTabType(tabID)
                 return
             }
         },
@@ -319,6 +325,7 @@ ${message}`,
                     }
                     tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
                     connector.onKnownTabOpen(affectedTabId)
+                    connector.onUpdateTabType(affectedTabId)
 
                     mynahUI.updateStore(affectedTabId, { chatItems: [] })
                     mynahUI.updateStore(affectedTabId, {
@@ -379,6 +386,7 @@ ${message}`,
             }
 
             tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+            connector.onUpdateTabType(tabID)
             mynahUI.addChatItem(tabID, {
                 type: ChatItemType.PROMPT,
                 body: prompt.escapedPrompt,
@@ -420,7 +428,7 @@ ${message}`,
             // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
         },
         onResetStore: () => {},
-        onFollowUpClicked: (tabID, followUp) => {
+        onFollowUpClicked: (tabID, messageId, followUp) => {
             // we need to check if there is a prompt
             // which will cause an api call
             // then we can set the loading state to true
@@ -439,7 +447,7 @@ ${message}`,
                 })
                 tabsStorage.updateTabStatus(tabID, 'busy')
             }
-            connector.onFollowUpClicked(tabID, followUp)
+            connector.onFollowUpClicked(tabID, messageId, followUp)
         },
         onOpenDiff: connector.onOpenDiff,
         onStopChatResponse: (tabID: string) => {

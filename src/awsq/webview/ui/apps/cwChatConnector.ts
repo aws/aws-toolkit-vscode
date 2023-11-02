@@ -5,9 +5,9 @@
 
 import { ChatItem, ChatItemFollowUp, ChatItemType, Suggestion } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
-import { TabsStorage } from '../storages/tabsStorage'
 import { FeedbackPayload } from '@aws/mynah-ui-chat'
 import { CodeReference } from './awsqCommonsConnector'
+import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
 
 interface ChatPayload {
     chatMessage: string
@@ -41,31 +41,35 @@ export class Connector {
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
     }
 
-    followUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+    followUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
             tabID,
+            messageId,
             tabType: 'cwc',
         })
     }
 
-    onTabAdd = (tabID: string): void => {
+    onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'new-tab-was-created',
             tabType: 'cwc',
+            tabOpenInteractionType,
         })
     }
 
     onCodeInsertToCursorPosition = (
         tabID: string,
+        messageId: string,
         code?: string,
         type?: 'selection' | 'block',
         codeReference?: CodeReference[]
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
+            messageId,
             code,
             command: 'insert_code_at_cursor_position',
             tabType: 'cwc',
@@ -76,12 +80,14 @@ export class Connector {
 
     onCopyCodeToClipboard = (
         tabID: string,
+        messageId: string,
         code?: string,
         type?: 'selection' | 'block',
         codeReference?: CodeReference[]
     ): void => {
         this.sendMessageToExtension({
             tabID: tabID,
+            messageId,
             code,
             command: 'code_was_copied_to_clipboard',
             tabType: 'cwc',
@@ -94,6 +100,14 @@ export class Connector {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'tab-was-removed',
+            tabType: 'cwc',
+        })
+    }
+
+    onTabChange = (tabID: string) => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'tab-was-changed',
             tabType: 'cwc',
         })
     }

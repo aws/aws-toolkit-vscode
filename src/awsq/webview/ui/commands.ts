@@ -8,6 +8,7 @@ type MessageCommand =
     | 'trigger-message-processed'
     | 'new-tab-was-created'
     | 'tab-was-removed'
+    | 'tab-was-changed'
     | 'ui-is-ready'
     | 'follow-up-was-clicked'
     | 'open-diff'

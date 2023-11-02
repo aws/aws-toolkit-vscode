@@ -16,16 +16,19 @@ import {
     InsertCodeAtCursorPosition,
     PromptMessage,
     StopResponseMessage,
+    TabChangedMessage,
     TabClosedMessage,
+    TabCreatedMessage,
     TriggerTabIDReceived,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
-import { CwsprChatTriggerInteraction } from '../shared/telemetry/telemetry.gen'
 
 export function init(appContext: AwsQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
+        processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
         processTabClosedMessage: new EventEmitter<TabClosedMessage>(),
+        processTabChangedMessage: new EventEmitter<TabChangedMessage>(),
         processInsertCodeAtCursorPosition: new EventEmitter<InsertCodeAtCursorPosition>(),
         processCopyCodeToClipboard: new EventEmitter<CopyCodeToClipboard>(),
         processContextMenuCommand: new EventEmitter<EditorContextCommand>(),
@@ -33,15 +36,20 @@ export function init(appContext: AwsQAppInitContext) {
         processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
-        processTabCreatedMessage: new EventEmitter<CwsprChatTriggerInteraction>(),
     }
 
     const cwChatControllerMessageListeners = {
         processPromptChatMessage: new MessageListener<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
         ),
+        processTabCreatedMessage: new MessageListener<TabCreatedMessage>(
+            cwChatControllerEventEmitters.processTabCreatedMessage
+        ),
         processTabClosedMessage: new MessageListener<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+        processTabChangedMessage: new MessageListener<TabChangedMessage>(
+            cwChatControllerEventEmitters.processTabChangedMessage
         ),
         processInsertCodeAtCursorPosition: new MessageListener<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
@@ -64,17 +72,20 @@ export function init(appContext: AwsQAppInitContext) {
         processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
-        processTabCreatedMessage: new MessageListener<CwsprChatTriggerInteraction>(
-            cwChatControllerEventEmitters.processTabCreatedMessage
-        ),
     }
 
     const cwChatControllerMessagePublishers = {
         processPromptChatMessage: new MessagePublisher<PromptMessage>(
             cwChatControllerEventEmitters.processPromptChatMessage
         ),
+        processTabCreatedMessage: new MessagePublisher<TabCreatedMessage>(
+            cwChatControllerEventEmitters.processTabCreatedMessage
+        ),
         processTabClosedMessage: new MessagePublisher<TabClosedMessage>(
             cwChatControllerEventEmitters.processTabClosedMessage
+        ),
+        processTabChangedMessage: new MessagePublisher<TabChangedMessage>(
+            cwChatControllerEventEmitters.processTabChangedMessage
         ),
         processInsertCodeAtCursorPosition: new MessagePublisher<InsertCodeAtCursorPosition>(
             cwChatControllerEventEmitters.processInsertCodeAtCursorPosition
@@ -96,9 +107,6 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processChatItemFeedbackMessage: new MessagePublisher<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
-        ),
-        processTabCreatedMessage: new MessagePublisher<CwsprChatTriggerInteraction>(
-            cwChatControllerEventEmitters.processTabCreatedMessage
         ),
     }
 

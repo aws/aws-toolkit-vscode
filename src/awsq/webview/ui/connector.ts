@@ -108,6 +108,15 @@ export class Connector {
         })
     }
 
+    onUpdateTabType = (tabID: string) => {
+        const tab = this.tabsStorage.getTab(tabID)
+        switch (tab?.type) {
+            case 'cwc':
+                this.cwChatConnector.onTabAdd(tabID, tab.openInteractionType)
+                break
+        }
+    }
+
     onKnownTabOpen = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
@@ -118,17 +127,19 @@ export class Connector {
 
     onTabChange = (tabId: string): void => {
         this.tabsStorage.setSelectedTab(tabId)
+        this.cwChatConnector.onTabChange(tabId)
     }
 
     onCodeInsertToCursorPosition = (
         tabID: string,
+        messageId: string,
         code?: string,
         type?: 'selection' | 'block',
         codeReference?: CodeReference[]
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
+                this.cwChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference)
                 break
             case 'wb':
                 this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
@@ -138,13 +149,14 @@ export class Connector {
 
     onCopyCodeToClipboard = (
         tabID: string,
+        messageId: string,
         code?: string,
         type?: 'selection' | 'block',
         codeReference?: CodeReference[]
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
+                this.cwChatConnector.onCopyCodeToClipboard(tabID, messageId, code, type, codeReference)
                 break
             case 'wb':
                 this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
@@ -194,7 +206,7 @@ export class Connector {
         // })
     }
 
-    onFollowUpClicked = (tabID: string, followUp: ChatItemFollowUp): void => {
+    onFollowUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             // TODO: We cannot rely on the tabType here,
             // It can come up at a later point depending on the future UX designs,
@@ -206,7 +218,7 @@ export class Connector {
                 this.weaverbirdChatConnector.followUpClicked(tabID, followUp)
                 break
             default:
-                this.cwChatConnector.followUpClicked(tabID, followUp)
+                this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
                 break
         }
     }

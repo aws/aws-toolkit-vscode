@@ -23,10 +23,16 @@ import {
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
+import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
+
+const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
+    private responseStreamStartTime: Map<string, number> = new Map()
+    private responseStreamTotalTime: Map<string, number> = new Map()
+    private responseStreamTimeToFirstChunk: Map<string, number> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -48,20 +54,34 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public recordOpenChat(triggerInteractionType: CwsprChatTriggerInteraction) {
+    public recordOpenChat(triggerInteractionType: TabOpenType) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction: triggerInteractionType })
+        let cwsprChatTriggerInteraction: CwsprChatTriggerInteraction = 'click'
+        switch (triggerInteractionType) {
+            case 'click':
+                cwsprChatTriggerInteraction = 'click'
+                break
+            case 'contextMenu':
+                cwsprChatTriggerInteraction = 'contextMenu'
+                break
+            case 'hotkeys':
+                cwsprChatTriggerInteraction = 'hotkeys'
+                break
+        }
+
+        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
     }
 
-    public recordCloseChat() {
+    public recordCloseChat(tabID: string) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        telemetry.codewhispererchat_closeChat.emit()
+        const conversationId = this.getConversationId(tabID)
+        telemetry.codewhispererchat_closeChat.emit({ cwsprChatConversationId: conversationId ?? '' })
     }
 
     public recordEnterFocusChat() {
@@ -129,11 +149,11 @@ export class CWCTelemetryHelper {
 
         switch (message.command) {
             case 'insert_code_at_cursor_position':
-                //TODO: message id and has reference
+                //TODO: has reference
                 message = message as InsertCodeAtCursorPosition
                 telemetry.codewhispererchat_interactWithMessage.emit({
                     cwsprChatConversationId: conversationId ?? '',
-                    cwsprChatMessageId: '',
+                    cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
@@ -141,11 +161,11 @@ export class CWCTelemetryHelper {
                 })
                 break
             case 'code_was_copied_to_clipboard':
-                //TODO: message id and has reference
+                //TODO: has reference
                 message = message as CopyCodeToClipboard
                 telemetry.codewhispererchat_interactWithMessage.emit({
                     cwsprChatConversationId: conversationId ?? '',
-                    cwsprChatMessageId: '',
+                    cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
@@ -153,18 +173,16 @@ export class CWCTelemetryHelper {
                 })
                 break
             case 'follow-up-was-clicked':
-                //TODO: message id
                 message = message as PromptMessage
                 telemetry.codewhispererchat_interactWithMessage.emit({
                     cwsprChatConversationId: conversationId ?? '',
-                    cwsprChatMessageId: '',
+                    cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
                 })
                 break
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
                 telemetry.codewhispererchat_interactWithMessage.emit({
-                    // TODO: message id
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
@@ -203,22 +221,21 @@ export class CWCTelemetryHelper {
 
         const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
 
-        // TODO: add mesasge id, user intent, response code snippet count, response code, references count, time to first chunk, response latency
+        // TODO: user intent, response code snippet count, references count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
-            cwsprChatMessageId: '',
-            cwsprChatUserIntent: undefined,
+            cwsprChatMessageId: message.messageID,
             cwsprChatHasCodeSnippet: hasCodeSnippet,
             cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
             cwsprChatActiveEditorImportCount: triggerPayload?.matchPolicy?.must?.length ?? 0,
             cwsprChatResponseCodeSnippetCount: 0,
-            cwsprChatResponseCode: 0,
+            cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: 0,
             cwsprChatFollowUpCount: message.followUpCount,
-            cwsprChatTimeToFirstChunk: 0,
-            cwsprChatFullResponseLatency: 0,
+            cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk.get(message.tabID) ?? 0,
+            cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
         })
@@ -242,6 +259,21 @@ export class CWCTelemetryHelper {
         telemetry.codewhispererchat_exitFocusConversation.emit({
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
         })
+    }
+
+    public setResponseStreamStartTime(tabID: string) {
+        this.responseStreamStartTime.set(tabID, performance.now())
+    }
+
+    public setReponseStreamTimeToFirstChunk(tabID: string) {
+        this.responseStreamTimeToFirstChunk.set(
+            tabID,
+            performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+        )
+    }
+
+    public setResponseStreamTotalTime(tabID: string) {
+        this.responseStreamTotalTime.set(tabID, performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0))
     }
 
     private getConversationId(tabID: string): string | undefined {

@@ -40,6 +40,9 @@ export class UIMessageListener {
             case 'tab-was-removed':
                 this.processTabWasRemoved(msg)
                 break
+            case 'tab-was-changed':
+                this.processTabWasChanged(msg)
+                break
             case 'follow-up-was-clicked':
                 if (msg.followUp?.prompt !== undefined) {
                     this.processChatMessage({
@@ -83,6 +86,7 @@ export class UIMessageListener {
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
             tabID: msg.tabID,
+            messageId: msg.messageId,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
         })
@@ -92,6 +96,7 @@ export class UIMessageListener {
         this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
             command: msg.command,
             tabID: msg.tabID,
+            messageId: msg.messageId,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
         })
@@ -104,7 +109,16 @@ export class UIMessageListener {
     }
 
     private processNewTabWasCreated(msg: any) {
-        this.chatControllerMessagePublishers.processTabCreatedMessage.publish('click')
+        this.chatControllerMessagePublishers.processTabCreatedMessage.publish({
+            tabID: msg.tabID,
+            tabOpenInteractionType: msg.tabOpenInteractionType,
+        })
+    }
+
+    private processTabWasChanged(msg: any) {
+        this.chatControllerMessagePublishers.processTabChangedMessage.publish({
+            tabID: msg.tabID,
+        })
     }
 
     private processChatMessage(msg: any) {
@@ -112,6 +126,7 @@ export class UIMessageListener {
             message: msg.chatMessage,
             command: msg.command,
             tabID: msg.tabID,
+            messageId: msg.messageId,
             userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
         })
     }

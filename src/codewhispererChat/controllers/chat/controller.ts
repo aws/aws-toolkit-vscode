@@ -17,6 +17,8 @@ import {
     CopyCodeToClipboard,
     ChatItemVotedMessage,
     ChatItemFeedbackMessage,
+    TabCreatedMessage,
+    TabChangedMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -29,11 +31,12 @@ import { randomUUID } from 'crypto'
 import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
-import { CwsprChatTriggerInteraction } from '../../../shared/telemetry/telemetry.gen'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
+    readonly processTabCreatedMessage: MessagePublisher<TabCreatedMessage>
     readonly processTabClosedMessage: MessagePublisher<TabClosedMessage>
+    readonly processTabChangedMessage: MessagePublisher<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessagePublisher<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessagePublisher<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessagePublisher<EditorContextCommand>
@@ -41,12 +44,13 @@ export interface ChatControllerMessagePublishers {
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
-    readonly processTabCreatedMessage: MessagePublisher<CwsprChatTriggerInteraction>
 }
 
 export interface ChatControllerMessageListeners {
     readonly processPromptChatMessage: MessageListener<PromptMessage>
+    readonly processTabCreatedMessage: MessageListener<TabCreatedMessage>
     readonly processTabClosedMessage: MessageListener<TabClosedMessage>
+    readonly processTabChangedMessage: MessageListener<TabChangedMessage>
     readonly processInsertCodeAtCursorPosition: MessageListener<InsertCodeAtCursorPosition>
     readonly processCopyCodeToClipboard: MessageListener<CopyCodeToClipboard>
     readonly processContextMenuCommand: MessageListener<EditorContextCommand>
@@ -54,7 +58,6 @@ export interface ChatControllerMessageListeners {
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
-    readonly processTabCreatedMessage: MessageListener<CwsprChatTriggerInteraction>
 }
 
 export class ChatController {
@@ -87,8 +90,16 @@ export class ChatController {
             this.processPromptChatMessage(data)
         })
 
+        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
+            this.processTabCreateMessage(data)
+        })
+
         this.chatControllerMessageListeners.processTabClosedMessage.onMessage(data => {
             this.processTabCloseMessage(data)
+        })
+
+        this.chatControllerMessageListeners.processTabChangedMessage.onMessage(data => {
+            this.processTabChangedMessage(data)
         })
 
         this.chatControllerMessageListeners.processInsertCodeAtCursorPosition.onMessage(data => {
@@ -118,14 +129,6 @@ export class ChatController {
         this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage(data => {
             this.processChatItemFeedbackMessage(data)
         })
-
-        this.chatControllerMessageListeners.processTabCreatedMessage.onMessage(data => {
-            this.processTabCreatedMessage(data)
-        })
-    }
-
-    private async processTabCreatedMessage(triggerInteractionType: CwsprChatTriggerInteraction) {
-        this.telemetryHelper.recordOpenChat(triggerInteractionType)
     }
 
     private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {
@@ -154,9 +157,18 @@ export class ChatController {
         this.telemetryHelper.recordInteractWithMessage(message)
     }
 
+    private async processTabCreateMessage(message: TabCreatedMessage) {
+        this.telemetryHelper.recordOpenChat(message.tabOpenInteractionType)
+    }
+
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
+        this.telemetryHelper.recordCloseChat(message.tabID)
+    }
+
+    private async processTabChangedMessage(message: TabChangedMessage) {
+        this.telemetryHelper.recordEnterFocusConversation(message.tabID)
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
