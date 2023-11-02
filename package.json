@@ -276,55 +276,6 @@
                     "type": "object",
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
-                },
-                "aws.weaverbird.debateRounds": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 5,
-                    "default": 2,
-                    "description": "The max number of times for the LLMs to debate the code change before responding"
-                },
-                "aws.weaverbird.debateParticipantsCount": {
-                    "type": "number",
-                    "minimum": 1,
-                    "maximum": 5,
-                    "default": 3,
-                    "description": "The number of participants when debating"
-                },
-                "aws.weaverbird.generationFlow": {
-                    "type": "string",
-                    "enum": [
-                        "fargate",
-                        "lambda",
-                        "stepFunction"
-                    ],
-                    "default": "stepFunction",
-                    "description": "The flow used on the backend for generating code changes"
-                },
-                "aws.weaverbird.maxTokensToSample": {
-                    "type": "number",
-                    "minimum": 1000,
-                    "maximum": 50000,
-                    "default": 50000,
-                    "description": "The max number of tokens to generate before stopping"
-                },
-                "aws.weaverbird.model": {
-                    "type": "string",
-                    "enum": [
-                        "bedrock-claude-v2",
-                        "bedrock-claude-instant-v1",
-                        "anthropic-claude-v2",
-                        "anthropic-claude-instant-v1"
-                    ],
-                    "default": "bedrock-claude-v2",
-                    "description": "The large language model to use"
-                },
-                "aws.weaverbird.modelTemperature": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 1,
-                    "default": 0,
-                    "description": "The randomness of the LLM output"
                 }
             }
         },
