@@ -33,6 +33,7 @@ const maxTestDuration = 30_000
 // Expectation: Tests are not run concurrently
 let testLogger: TestLogger | undefined
 let openExternalStub: sinon.SinonStub<Parameters<(typeof vscode)['env']['openExternal']>, Thenable<boolean>>
+// let executeCommandSpy: sinon.SinonSpy | undefined
 
 export async function mochaGlobalSetup(this: Mocha.Runner) {
     // Clean up and set up test logs
@@ -102,6 +103,8 @@ export const mochaHooks = {
         r.dispose()
         globals.codelensRootRegistry.dispose()
         globalSandbox.restore()
+
+        // executeCommandSpy = undefined
     },
 }
 
@@ -163,3 +166,14 @@ export function assertLogsContain(text: string, exactMatch: boolean, severity: L
 export function getOpenExternalStub(): typeof openExternalStub {
     return openExternalStub
 }
+
+// /**
+//  * Returns a spy for `vscode.commands.executeCommand()`.
+//  *
+//  * Opt-in per test, because most tests should test application state instead of spies.
+//  * Global `afterEach` automatically calls `globalSandbox.restore()` after the test run.
+//  */
+// export function stubVscodeExecuteCommand() {
+//     executeCommandSpy = executeCommandSpy ?? globalSandbox.spy(vscode.commands, 'executeCommand')
+//     return executeCommandSpy
+// }

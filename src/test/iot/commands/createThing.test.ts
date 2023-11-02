@@ -4,11 +4,12 @@
  */
 
 import assert from 'assert'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 import { createThingCommand } from '../../../iot/commands/createThing'
 import { IotThingFolderNode } from '../../../iot/explorer/iotThingFolderNode'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -16,10 +17,19 @@ describe('createThingCommand', function () {
     const thingName = 'newIotThing'
     let iot: IotClient
     let node: IotThingFolderNode
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         node = new IotThingFolderNode(instance(iot), new IotNode(instance(iot)))
+    })
+
+    afterEach(function () {
+        sandbox.restore()
     })
 
     it('prompts for thing name, creates thing, shows success, and refreshes node', async function () {
@@ -32,20 +42,18 @@ describe('createThingCommand', function () {
             assert.strictEqual(input.placeholder, 'Thing Name')
             input.acceptValue(thingName)
         })
-        const commands = new FakeCommands()
-        await createThingCommand(node, commands)
+        await createThingCommand(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertInfo(/Created Thing newIotThing/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when prompt is cancelled', async function () {
         getTestWindow().onDidShowInputBox(input => input.hide())
-        await createThingCommand(node, new FakeCommands())
+        await createThingCommand(node)
 
         verify(iot.createThing(anything())).never()
     })
@@ -56,8 +64,7 @@ describe('createThingCommand', function () {
             assert.strictEqual(input.validationMessage, 'Thing name must be between 1 and 128 characters long')
             input.hide()
         })
-        const commands = new FakeCommands()
-        await createThingCommand(node, commands)
+        await createThingCommand(node)
     })
 
     it('warns when thing name has invalid characters', async function () {
@@ -69,22 +76,19 @@ describe('createThingCommand', function () {
             )
             input.hide()
         })
-        const commands = new FakeCommands()
-        await createThingCommand(node, commands)
+        await createThingCommand(node)
     })
 
     it('shows an error message and refreshes node when thing creation fails', async function () {
         when(iot.createThing(anything())).thenReject(new Error('Expected failure'))
 
         getTestWindow().onDidShowInputBox(input => input.acceptValue(thingName))
-        const commands = new FakeCommands()
-        await createThingCommand(node, commands)
+        await createThingCommand(node)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create Thing/)
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 })
