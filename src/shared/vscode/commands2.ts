@@ -10,6 +10,7 @@ import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
 import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
+import globals from '../extensionGlobals'
 
 type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
@@ -367,19 +368,16 @@ interface CommandInfo<T extends Callback> {
     readonly telemetryThrottleMs?: number | false
 }
 
-// This debouncing is a temporary safe-guard to mitigate the risk of instrumenting all
-// commands with telemetry at once. The alternative is to do a gradual rollout although
-// it's not much safer in terms of weeding out problematic commands.
-const telemetryInfo = new Map<string, { startTime: number; debounceCount: number }>()
+function getInstrumenter(id: { id: string; args: any[] }, threshold: number, telemetryName?: MetricName) {
+    const currentTime = globals.clock.Date.now()
+    const info = TelemetryDebounceInfo.instance.get(id)
 
-function getInstrumenter(id: string, threshold: number, telemetryName?: MetricName) {
-    const currentTime = Date.now()
-    const info = telemetryInfo.get(id)
-
+    // to reduce # of events actually emitted, we throttle the same* event for brief period of time
+    // and instead increment a counter for executions while throttled.
     if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
         info.debounceCount += 1
-        telemetryInfo.set(id, info)
-        getLogger().debug(`commands: skipped telemetry for "${id}"`)
+        TelemetryDebounceInfo.instance.set(id, info)
+        getLogger().debug(`commands: skipped telemetry for "${id.id}"`)
 
         return undefined
     }
@@ -387,22 +385,126 @@ function getInstrumenter(id: string, threshold: number, telemetryName?: MetricNa
     // Throttling occurs regardless of whether or not the instrumenter is invoked
     const span = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
     const debounceCount = info?.debounceCount !== 0 ? info?.debounceCount : undefined
-    telemetryInfo.set(id, { startTime: currentTime, debounceCount: 0 })
+    TelemetryDebounceInfo.instance.set(id, { startTime: currentTime, debounceCount: 0 })
 
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
         span.run(span => {
-            ;(span as Metric<VscodeExecuteCommand>).record({ command: id, debounceCount })
+            ;(span as Metric<VscodeExecuteCommand>).record({
+                command: id.id,
+                debounceCount,
+                source: BaseCommandSource.findSource(args),
+            })
 
             return fn(...args)
         })
 }
 
+/**
+ * Adding an instance of this to the execution args of your {@link RegisteredCommand}
+ * will set the "source" attribute in the automatically emitted `vscode_executeCommand` metric.
+ */
+export class BaseCommandSource {
+    constructor(readonly source: string) {}
+
+    /**
+     * Returns the `source` of a {@link BaseCommandSource} if found
+     * in the given args.
+     */
+    static findSource(args: any[]): string | undefined {
+        const source = args.find(arg => arg instanceof BaseCommandSource)
+        return source ? source.source : undefined
+    }
+
+    toString() {
+        return `{ source: "${this.source}" }`
+    }
+}
+
+/**
+ * A way to use less characters to create a {@link BaseCommandSource} instance
+ */
+export function source(source: string) {
+    return new BaseCommandSource(source)
+}
+
+/**
+ * Sets the "source" attribute for the metric `vscode_executeCommand`.
+ *
+ * - This must be run in the callback of a {@link RegisteredCommand}.
+ */
+export function setTelemetrySource(source: BaseCommandSource) {
+    /**
+     * HACK: In the current implementation, we already record
+     * the "source" attribute in {@link getInstrumenter}() before
+     * running the callback of a {@link RegisteredCommand} by
+     * checking the callback args for a {@link BaseCommandSource}.
+     * So this whole function is redundant.
+     *
+     * But the reason this is done is because it is not obvious
+     * to contributors that simply having a {@link BaseCommandSource}
+     * in the callback args is enough to set the "source" attribute.
+     * So anyone reading the code will not be confused.
+     */
+    if (!(source instanceof BaseCommandSource)) {
+        // case where vscode commands can be executed without the expected args
+        return
+    }
+    telemetry.vscode_executeCommand.record({ source: source.source })
+}
+
+/**
+ * Storage of telemetry events that is used for the purposes
+ * of maintaining the count of throttled event executions.
+ *
+ * - This ensures a {@link RegisteredCommand} that contains a {@link BaseCommandSource} in their
+ *   execution `args` is differentiated in telemetry.
+ */
+export class TelemetryDebounceInfo {
+    private telemetryInfo = new Map<string, { startTime: number; debounceCount: number }>()
+
+    static #instance: TelemetryDebounceInfo
+    static get instance() {
+        return (this.#instance ??= new TelemetryDebounceInfo())
+    }
+
+    /** @warning For testing purposes only */
+    protected constructor() {}
+
+    set(key: { id: string; args: any[] }, value: { startTime: number; debounceCount: number }) {
+        const actualKey = this.createKey(key.id, key.args)
+        this.telemetryInfo.set(actualKey, value)
+    }
+
+    get(key: { id: string; args: any[] }) {
+        const actualKey = this.createKey(key.id, key.args)
+        return this.telemetryInfo.get(actualKey)
+    }
+
+    /**
+     * The key impacts if an event will be throttled since
+     * it is used to resolve a value which determines if throttling
+     * is necessary for the given event.
+     *
+     * Implementation details:
+     * The current implementation uses a {@link BaseCommandSource}
+     * to differentiate between command events with the same `id`.
+     * If the {@link BaseCommandSource} is not found, only the `id`
+     * is used and there wont be differentiation between `id`s.
+     */
+    private createKey(id: string, args: any[]) {
+        const commandSource = BaseCommandSource.findSource(args)
+        return commandSource ? `${id}-${commandSource}` : id
+    }
+}
+
+export const defaultTelemetryThrottleMs = 300_000 // 5 minutes
+
 async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Promise<ReturnType<T> | void> {
-    const { args, label, logging } = { logging: true, ...info }
+    const { id, args, label, logging } = { logging: true, ...info }
     const logger = logging ? getLogger() : new NullLogger()
     const withArgs = args.length > 0 ? ` with arguments [${args.map(String).join(', ')}]` : ''
-    const threshold = info.telemetryThrottleMs ?? 300_000 // 5 minutes
-    const instrumenter = logging ? getInstrumenter(info.id, threshold || 0, info.telemetryName) : undefined
+    const threshold = info.telemetryThrottleMs ?? defaultTelemetryThrottleMs
+    const instrumenter = logging ? getInstrumenter({ id, args }, threshold || 0, info.telemetryName) : undefined
 
     logger.debug(`command: running ${label}${withArgs}`)
 
