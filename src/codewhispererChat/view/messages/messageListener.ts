@@ -71,7 +71,17 @@ export class UIMessageListener {
             case 'chat-item-feedback':
                 this.chatItemFeedback(msg)
                 break
+            case 'ui-focus':
+                this.processUIFocus(msg)
+                break
         }
+    }
+
+    private processUIFocus(msg: any) {
+        this.chatControllerMessagePublishers.processUIFocusMessage.publish({
+            command: msg.command,
+            type: msg.type,
+        })
     }
 
     private processTriggerTabIDReceived(msg: any) {

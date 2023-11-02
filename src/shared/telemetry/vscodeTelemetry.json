@@ -441,13 +441,7 @@
         },
         {
             "name": "codewhispererchat_closeChat",
-            "description": "When chat panel is closed",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId",
-                    "required": true
-                }
-            ]
+            "description": "When chat panel is closed"
         },
         {
             "name": "codewhispererchat_startConversation",

@@ -75,13 +75,12 @@ export class CWCTelemetryHelper {
         telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
     }
 
-    public recordCloseChat(tabID: string) {
+    public recordCloseChat() {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        const conversationId = this.getConversationId(tabID)
-        telemetry.codewhispererchat_closeChat.emit({ cwsprChatConversationId: conversationId ?? '' })
+        telemetry.codewhispererchat_closeChat.emit()
     }
 
     public recordEnterFocusChat() {

@@ -10,6 +10,7 @@ type MessageCommand =
     | 'tab-was-removed'
     | 'tab-was-changed'
     | 'ui-is-ready'
+    | 'ui-focus'
     | 'follow-up-was-clicked'
     | 'open-diff'
     | 'code_was_copied_to_clipboard'
