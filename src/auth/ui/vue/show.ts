@@ -717,7 +717,6 @@ export type AuthSource =
     | 'addConnectionQuickPick'
     | 'firstStartup'
     | 'codecatalystDeveloperTools'
-    | 'codewhispererDeveloperTools'
     | 'unknown'
     | typeof cwQuickPickSource
     | typeof cwTreeNodeSource

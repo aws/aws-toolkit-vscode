@@ -36,6 +36,7 @@ import {
     notifyNewCustomizationsCmd,
     connectWithCustomization,
     signoutCodeWhisperer,
+    showManageConnections,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -54,9 +55,7 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
-import { AuthCommandDeclarations } from '../auth/commands'
 import { showCodeWhispererQuickPick } from './commands/statusBarCommands'
-import { cwSource } from './commands/types'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -94,13 +93,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
     context.extensionContext.subscriptions.push(
         signoutCodeWhisperer.register(auth),
-        /** Opens the Add Connections webview with CW highlighted */
-        Commands.register('aws.codewhisperer.manageConnections', () => {
-            AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                cwSource('codewhispererTreeNode'),
-                'codewhisperer'
-            )
-        }),
+        showManageConnections.register(),
         /**
          * Configuration change
          */

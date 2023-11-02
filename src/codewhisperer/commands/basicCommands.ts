@@ -106,10 +106,13 @@ export const selectCustomizationPrompt = Commands.declare(
     }
 )
 
-export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async (source: CodeWhispererCommandSource) => {
-    setTelemetrySource(source)
-    await AuthUtil.instance.reauthenticate()
-})
+export const reconnect = Commands.declare(
+    'aws.codeWhisperer.reconnect',
+    () => async (source: CodeWhispererCommandSource) => {
+        setTelemetrySource(source)
+        await AuthUtil.instance.reauthenticate()
+    }
+)
 
 /** Opens the Add Connections webview with CW highlighted */
 export const showManageConnections = Commands.declare(
@@ -173,11 +176,14 @@ export const connectWithCustomization = Commands.declare(
     }
 )
 
-export const showLearnMore = Commands.declare('aws.codeWhisperer.learnMore', () => async (source: CodeWhispererCommandSource) => {
-    setTelemetrySource(source)
-    telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
-    openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
-})
+export const showLearnMore = Commands.declare(
+    'aws.codeWhisperer.learnMore',
+    () => async (source: CodeWhispererCommandSource) => {
+        setTelemetrySource(source)
+        telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
+        openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
+    }
+)
 
 // TODO: Use a different URI
 export const showFreeTierLimit = Commands.declare(
