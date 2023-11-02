@@ -53,6 +53,16 @@ export class AsyncEventProgressMessage extends UiMessage {
     }
 }
 
+export class UpdatePlaceholderMessage extends UiMessage {
+    readonly newPlaceholder: string
+    override type = 'updatePlaceholderMessage'
+
+    constructor(tabID: string, newPlaceholder: string) {
+        super(tabID)
+        this.newPlaceholder = newPlaceholder
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
@@ -93,6 +103,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendAsyncEventProgress(message: AsyncEventProgressMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendPlaceholder(message: UpdatePlaceholderMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

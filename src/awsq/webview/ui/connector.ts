@@ -29,6 +29,7 @@ export interface ConnectorProps {
     onCWCContextCommandMessage: (message: ChatItem, command?: string) => string
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     tabsStorage: TabsStorage
 }
 

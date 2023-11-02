@@ -159,7 +159,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 const newTabId = mynahUI.updateStore('', {
                     tabTitle: 'Q - Task',
                     quickActionCommands: [],
-                    promptInputPlaceholder: 'Assign a code task',
+                    promptInputPlaceholder: 'What problem do you want to fix?',
                     chatItems: [
                         {
                             type: ChatItemType.ANSWER,
@@ -312,6 +312,11 @@ ${message}`,
             }
             return
         },
+        onUpdatePlaceholder(tabID: string, newPlaceholder: string) {
+            mynahUI.updateStore(tabID, {
+                promptInputPlaceholder: newPlaceholder,
+            })
+        },
     })
 
     mynahUI = new MynahUI({
@@ -338,7 +343,7 @@ ${message}`,
                     mynahUI.updateStore(affectedTabId, {
                         tabTitle: 'Q - Task',
                         quickActionCommands: [],
-                        promptInputPlaceholder: 'Assign a code task',
+                        promptInputPlaceholder: 'What problem do you want to fix?',
                         chatItems: [
                             ...(realPromptText !== ''
                                 ? []

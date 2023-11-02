@@ -129,7 +129,9 @@ export class WeaverbirdController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        this.messenger.sendUpdatePlaceholder(tabID, 'Generating approach ...')
         const interactions = await session.send(message)
+        this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the approach')
 
         // Resolve the "..." with the content
         this.messenger.sendAnswer({
@@ -203,9 +205,11 @@ export class WeaverbirdController {
     private async writeCodeClicked(message: any) {
         let session
         try {
+            this.messenger.sendUpdatePlaceholder(message.tabID, 'Writing code ...')
             session = await this.sessionStorage.getSession(message.tabID)
             session.initCodegen()
             await this.onCodeGeneration(session, undefined, message.tabID)
+            this.messenger.sendUpdatePlaceholder(message.tabID, 'Select an option above to proceed')
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
                 `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
