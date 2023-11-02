@@ -15,13 +15,6 @@ import { getFileNameFromPath } from '../utils/getFileNameFromPath'
 import { readFile } from '../fileSystemAccess/readFile'
 
 export async function addFileWatchMessageHandler(request: AddFileWatchRequestMessage, context: WebviewContext) {
-    const addFileWatchResponseMessage: AddFileWatchResponseMessage = {
-        response: Response.ADD_FILE_WATCH,
-        eventId: request.eventId,
-        status: true,
-    }
-    context.panel.webview.postMessage(addFileWatchResponseMessage)
-
     const filePath = context.defaultTemplatePath
     const fileName = getFileNameFromPath(filePath)
     const fileWatch = vscode.workspace.createFileSystemWatcher(filePath)
@@ -37,4 +30,11 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
             context.fileWatchs[filePath] = { fileContents: fileContents }
         }
     })
+
+    const addFileWatchResponseMessage: AddFileWatchResponseMessage = {
+        response: Response.ADD_FILE_WATCH,
+        eventId: request.eventId,
+        isSuccess: true,
+    }
+    context.panel.webview.postMessage(addFileWatchResponseMessage)
 }

@@ -39,16 +39,17 @@ export interface LoadFileResponseMessage extends ResponseMessage {
     fileName: string
     filePath: string
     initFileContents: string
+    isSuccess: boolean
 }
 
 export interface SaveFileResponseMessage extends ResponseMessage {
     eventId: string
-    status: boolean
+    isSuccess: boolean
 }
 
 export interface AddFileWatchResponseMessage extends ResponseMessage {
     eventId: string
-    status: boolean
+    isSuccess: boolean
 }
 
 export interface FileChangedResponseMessage extends ResponseMessage {

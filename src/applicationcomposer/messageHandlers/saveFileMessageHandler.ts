@@ -11,7 +11,7 @@ export function saveFileMessageHandler(request: SaveFileRequestMessage, context:
         const saveFileSuccessMessage: SaveFileResponseMessage = {
             response: Response.SAVE_FILE,
             eventId: request.eventId,
-            status: true,
+            isSuccess: true,
         }
         context.panel.webview.postMessage(saveFileSuccessMessage)
     }
@@ -19,7 +19,7 @@ export function saveFileMessageHandler(request: SaveFileRequestMessage, context:
         const saveFileFailMessage: SaveFileResponseMessage = {
             response: Response.SAVE_FILE,
             eventId: request.eventId,
-            status: false,
+            isSuccess: false,
         }
         context.panel.webview.postMessage(saveFileFailMessage)
     }
