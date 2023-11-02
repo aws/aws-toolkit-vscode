@@ -3,15 +3,25 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { window } from 'vscode'
+import { Position, TextEditor, window } from 'vscode'
 
 export class EditorContentController {
-    public insertTextAtCursorPosition(text: string) {
+    public insertTextAtCursorPosition(
+        text: string,
+        trackCodeEdit: (editor: TextEditor, cursorStart: Position) => void
+    ) {
         const editor = window.activeTextEditor
         if (editor) {
-            editor.edit(editBuilder => {
-                editBuilder.insert(editor.selection.active, text)
-            })
+            const cursorStart = editor.selection.active
+            editor
+                .edit(editBuilder => {
+                    editBuilder.insert(cursorStart, text)
+                })
+                .then(appliedEdits => {
+                    if (appliedEdits) {
+                        trackCodeEdit(editor, cursorStart)
+                    }
+                })
         }
     }
 }

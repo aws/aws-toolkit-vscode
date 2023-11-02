@@ -276,7 +276,7 @@ export class CWCTelemetryHelper {
         this.responseStreamTotalTime.set(tabID, performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0))
     }
 
-    private getConversationId(tabID: string): string | undefined {
+    public getConversationId(tabID: string): string | undefined {
         return this.sessionStorage.getSession(tabID).sessionIdentifier
     }
 }
