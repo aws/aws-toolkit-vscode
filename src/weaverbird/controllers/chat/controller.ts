@@ -30,10 +30,6 @@ export class WeaverbirdController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
 
-    // Any events that have to be finished before we can actually serve requests e.g. code uploading
-    private preloader: () => Promise<void>
-    private preloaderFinished: boolean = false
-
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
@@ -41,9 +37,6 @@ export class WeaverbirdController {
     ) {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
-
-        // preloader is defined when a tab is opened
-        this.preloader = async () => {}
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data)
@@ -131,7 +124,7 @@ export class WeaverbirdController {
      * Handle a regular incoming message when a user is in the approach phase
      */
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
-        await this.preloader()
+        await session.preloader()
 
         const interactions = await session.send(message)
 
@@ -316,17 +309,6 @@ export class WeaverbirdController {
         try {
             telemetry.awsq_assignCommand.emit({ value: 1 })
             session = await this.sessionStorage.createSession(message.tabID)
-            this.preloader = async () => {
-                if (!this.preloaderFinished && session) {
-                    await session.setupConversation()
-                    this.preloaderFinished = true
-                    this.messenger.sendAsyncEventProgress(
-                        message.tabID,
-                        true,
-                        `You conversation has been started with ID: <pre><code>${session.conversationId}</code></pre>`
-                    )
-                }
-            }
         } catch (err: any) {
             this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
         }

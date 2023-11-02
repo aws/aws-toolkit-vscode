@@ -29,6 +29,7 @@ export class Session {
     private _uploadId?: string
     private approachRetries: number
     private codeGenRetries: number
+    private preloaderFinished = false
 
     constructor(public readonly config: SessionConfig, private messenger: Messenger, private readonly tabID: string) {
         this._state = new ConversationNotStartedState('', tabID)
@@ -39,11 +40,26 @@ export class Session {
     }
 
     /**
+     * Preload any events that have to run before a chat message can be sent
+     */
+    async preloader() {
+        if (!this.preloaderFinished) {
+            await this.setupConversation()
+            this.preloaderFinished = true
+            this.messenger.sendAsyncEventProgress(
+                this.tabID,
+                true,
+                `Your conversation has been started with ID: <pre><code>${this.conversationId}</code></pre>`
+            )
+        }
+    }
+
+    /**
      * setupConversation
      *
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
      */
-    public async setupConversation() {
+    private async setupConversation() {
         this._conversationId = await this.proxyClient.createConversation()
 
         const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
