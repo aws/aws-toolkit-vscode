@@ -6,12 +6,19 @@
 import * as vscode from 'vscode'
 import { DefaultLambdaClient, LambdaClient } from '../../shared/clients/lambdaClient'
 import { LLMConfig, LocalResolvedConfig } from '../types'
-import { SessionConfig } from './sessionConfig'
 import { defaultLlmConfig, weaverbirdScheme } from '../constants'
 import { getConfig } from '../config'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { WorkspaceFolderNotFoundError } from '../errors'
+
+export interface SessionConfig {
+    readonly client: LambdaClient
+    readonly llmConfig: LLMConfig
+    readonly workspaceRoot: string
+    readonly backendConfig: LocalResolvedConfig
+    readonly fs: VirtualFileSystem
+}
 
 /**
  * Factory method for creating session configurations
@@ -42,5 +49,11 @@ export async function createSessionConfig(params?: {
         new VirtualMemoryFile(new Uint8Array())
     )
 
-    return new SessionConfig(lambdaClient, llmConfig, workspace, backendConfig, fs)
+    return {
+        client: lambdaClient,
+        llmConfig,
+        workspaceRoot: workspace,
+        backendConfig,
+        fs,
+    }
 }

@@ -9,7 +9,6 @@ import * as path from 'path'
 import { collectFiles, getSourceCodePath, prepareRepoData } from '../util/files'
 import { CodeGenState, ConversationNotStartedState, RefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
-import { SessionConfig } from './sessionConfig'
 import { ConversationIdNotFoundError } from '../errors'
 import { weaverbirdScheme } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
@@ -17,6 +16,7 @@ import { Messenger } from '../controllers/chat/messenger/messenger'
 import { uploadCode } from '../util/upload'
 import { WeaverbirdClient } from '../client/weaverbird'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
+import { SessionConfig } from './sessionConfigFactory'
 
 const fs = FileSystemCommon.instance
 
