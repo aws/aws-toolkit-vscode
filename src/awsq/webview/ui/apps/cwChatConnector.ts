@@ -104,11 +104,12 @@ export class Connector {
         })
     }
 
-    onTabChange = (tabID: string) => {
+    onTabChange = (tabID: string, prevTabID?: string) => {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'tab-was-changed',
             tabType: 'cwc',
+            prevTabID,
         })
     }
 

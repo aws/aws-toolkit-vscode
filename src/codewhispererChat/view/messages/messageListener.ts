@@ -118,6 +118,7 @@ export class UIMessageListener {
     private processTabWasChanged(msg: any) {
         this.chatControllerMessagePublishers.processTabChangedMessage.publish({
             tabID: msg.tabID,
+            prevTabID: msg.prevTabID,
         })
     }
 

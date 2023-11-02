@@ -126,8 +126,8 @@ export class Connector {
     }
 
     onTabChange = (tabId: string): void => {
-        this.tabsStorage.setSelectedTab(tabId)
-        this.cwChatConnector.onTabChange(tabId)
+        const prevTabID = this.tabsStorage.setSelectedTab(tabId)
+        this.cwChatConnector.onTabChange(tabId, prevTabID)
     }
 
     onCodeInsertToCursorPosition = (

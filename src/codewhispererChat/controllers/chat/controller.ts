@@ -158,16 +158,19 @@ export class ChatController {
     }
 
     private async processTabCreateMessage(message: TabCreatedMessage) {
-        this.telemetryHelper.recordOpenChat(message.tabOpenInteractionType)
+        // this.telemetryHelper.recordOpenChat(message.tabOpenInteractionType)
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
-        this.telemetryHelper.recordCloseChat(message.tabID)
+        // this.telemetryHelper.recordCloseChat(message.tabID)
     }
 
     private async processTabChangedMessage(message: TabChangedMessage) {
+        if (message.prevTabID) {
+            this.telemetryHelper.recordExitFocusConversation(message.prevTabID)
+        }
         this.telemetryHelper.recordEnterFocusConversation(message.tabID)
     }
 

@@ -261,9 +261,12 @@ export class CWCTelemetryHelper {
             return
         }
 
-        telemetry.codewhispererchat_enterFocusConversation.emit({
-            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
-        })
+        const conversationId = this.getConversationId(tabID)
+        if (conversationId) {
+            telemetry.codewhispererchat_enterFocusConversation.emit({
+                cwsprChatConversationId: conversationId,
+            })
+        }
     }
 
     public recordExitFocusConversation(tabID: string) {
@@ -271,9 +274,12 @@ export class CWCTelemetryHelper {
             return
         }
 
-        telemetry.codewhispererchat_exitFocusConversation.emit({
-            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
-        })
+        const conversationId = this.getConversationId(tabID)
+        if (conversationId) {
+            telemetry.codewhispererchat_exitFocusConversation.emit({
+                cwsprChatConversationId: conversationId,
+            })
+        }
     }
 
     public setResponseStreamStartTime(tabID: string) {

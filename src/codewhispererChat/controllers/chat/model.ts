@@ -24,6 +24,7 @@ export interface TabClosedMessage {
 
 export interface TabChangedMessage {
     tabID: string
+    prevTabID?: string
 }
 
 export interface InsertCodeAtCursorPosition {
