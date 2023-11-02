@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-
+import fetch from 'node-fetch'
 import { ApplicationComposer } from './composerWebview'
 import { getLogger, Logger } from '../shared/logger'
 
