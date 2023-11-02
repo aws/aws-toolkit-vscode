@@ -106,6 +106,21 @@
                 { "shape": "AccessDeniedException" }
             ]
         },
+        "ListFeatureEvaluations": {
+            "name": "ListFeatureEvaluations",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListFeatureEvaluationsRequest" },
+            "output": { "shape": "ListFeatureEvaluationsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "SendTelemetryEvent": {
             "name": "SendTelemetryEvent",
             "http": {
@@ -166,6 +181,10 @@
             "max": 2048,
             "min": 1,
             "pattern": "(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
+        },
+        "Boolean": {
+            "type": "boolean",
+            "box": true
         },
         "CodeAnalysisFindingsSchema": {
             "type": "string",
@@ -278,11 +297,54 @@
         "Description": {
             "type": "string",
             "max": 256,
-            "min": 0
+            "min": 0,
+            "pattern": "[\\sa-zA-Z0-9_-]*"
         },
         "Double": {
             "type": "double",
             "box": true
+        },
+        "FeatureEvaluation": {
+            "type": "structure",
+            "required": ["feature", "variation", "value"],
+            "members": {
+                "feature": { "shape": "FeatureName" },
+                "variation": { "shape": "FeatureVariation" },
+                "value": { "shape": "FeatureValue" }
+            }
+        },
+        "FeatureEvaluationsList": {
+            "type": "list",
+            "member": { "shape": "FeatureEvaluation" },
+            "max": 50,
+            "min": 0
+        },
+        "FeatureName": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "FeatureValue": {
+            "type": "structure",
+            "members": {
+                "boolValue": { "shape": "Boolean" },
+                "doubleValue": { "shape": "Double" },
+                "longValue": { "shape": "Long" },
+                "stringValue": { "shape": "FeatureValueStringType" }
+            },
+            "union": true
+        },
+        "FeatureValueStringType": {
+            "type": "string",
+            "max": 512,
+            "min": 0
+        },
+        "FeatureVariation": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
         },
         "FileContext": {
             "type": "structure",
@@ -321,7 +383,9 @@
                 "nextToken": { "shape": "GenerateCompletionsRequestNextTokenString" },
                 "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
                 "supplementalContexts": { "shape": "SupplementalContextList" },
-                "customizationArn": { "shape": "ResourceArn" }
+                "customizationArn": { "shape": "ResourceArn" },
+                "optOutPreference": { "shape": "OptOutPreference" },
+                "userContext": { "shape": "UserContext" }
             }
         },
         "GenerateCompletionsRequestMaxResultsInteger": {
@@ -362,6 +426,12 @@
                 "status": { "shape": "CodeAnalysisStatus" },
                 "errorMessage": { "shape": "String" }
             }
+        },
+        "IdeCategory": {
+            "type": "string",
+            "enum": ["JETBRAINS", "VSCODE"],
+            "max": 64,
+            "min": 1
         },
         "IdempotencyToken": {
             "type": "string",
@@ -438,6 +508,30 @@
                 "nextToken": { "shape": "PaginationToken" },
                 "codeAnalysisFindings": { "shape": "String" }
             }
+        },
+        "ListFeatureEvaluationsRequest": {
+            "type": "structure",
+            "required": ["userContext"],
+            "members": {
+                "userContext": { "shape": "UserContext" }
+            }
+        },
+        "ListFeatureEvaluationsResponse": {
+            "type": "structure",
+            "required": ["featureEvaluations"],
+            "members": {
+                "featureEvaluations": { "shape": "FeatureEvaluationsList" }
+            }
+        },
+        "Long": {
+            "type": "long",
+            "box": true
+        },
+        "OperatingSystem": {
+            "type": "string",
+            "enum": ["MAC", "WINDOWS", "LINUX"],
+            "max": 64,
+            "min": 1
         },
         "OptOutPreference": {
             "type": "string",
@@ -531,7 +625,8 @@
                     "idempotencyToken": true
                 },
                 "telemetryEvent": { "shape": "TelemetryEvent" },
-                "optOutPreference": { "shape": "OptOutPreference" }
+                "optOutPreference": { "shape": "OptOutPreference" },
+                "userContext": { "shape": "UserContext" }
             }
         },
         "SendTelemetryEventResponse": {
@@ -655,6 +750,21 @@
             "type": "string",
             "max": 128,
             "min": 1
+        },
+        "UserContext": {
+            "type": "structure",
+            "required": ["ideCategory", "operatingSystem", "product"],
+            "members": {
+                "ideCategory": { "shape": "IdeCategory" },
+                "operatingSystem": { "shape": "OperatingSystem" },
+                "product": { "shape": "UserContextProductString" }
+            }
+        },
+        "UserContextProductString": {
+            "type": "string",
+            "max": 128,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
         },
         "UserModificationEvent": {
             "type": "structure",
