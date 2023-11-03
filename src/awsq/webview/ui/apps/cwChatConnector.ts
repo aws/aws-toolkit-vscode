@@ -20,7 +20,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
-    onCWCContextCommandMessage: (message: ChatItem) => string
+    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     tabsStorage: TabsStorage
@@ -168,11 +168,13 @@ export class Connector {
     }
 
     private processEditorContextCommandMessage = async (messageData: any): Promise<void> => {
-        const triggerTabID = this.onCWCContextCommandMessage({
-            body: messageData.message,
-            type: ChatItemType.PROMPT,
-        })
-
+        const triggerTabID = this.onCWCContextCommandMessage(
+            {
+                body: messageData.message,
+                type: ChatItemType.PROMPT,
+            },
+            messageData.command
+        )
         this.sendTriggerTabIDReceived(messageData.triggerID, triggerTabID)
     }
 

@@ -11,14 +11,14 @@ import { AwsQAppInitContext, DefaultAwsQAppInitContext } from './apps/initContex
 import { weaverbirdEnabled } from '../weaverbird/config'
 
 export async function activate(context: ExtensionContext) {
-    const appInitConext = new DefaultAwsQAppInitContext()
+    const appInitContext = new DefaultAwsQAppInitContext()
 
-    registerApps(appInitConext)
+    registerApps(appInitContext)
 
     const provider = new AwsQChatViewProvider(
         context,
-        appInitConext.getWebViewToAppsMessagePublishers(),
-        appInitConext.getAppsToWebViewMessageListener()
+        appInitContext.getWebViewToAppsMessagePublishers(),
+        appInitContext.getAppsToWebViewMessageListener()
     )
 
     context.subscriptions.push(

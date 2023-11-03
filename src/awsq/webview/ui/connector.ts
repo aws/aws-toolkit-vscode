@@ -26,7 +26,7 @@ export interface ConnectorProps {
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
-    onCWCContextCommandMessage: (message: ChatItem) => string
+    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     tabsStorage: TabsStorage
@@ -45,7 +45,7 @@ export class Connector {
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onMessageReceived = props.onMessageReceived
-        this.cwChatConnector = new CWChatConnector(props)
+        this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
         this.weaverbirdChatConnector = new WeaverbirdChatConnector(props)
         this.awsqCommonsConnector = new AwsQCommonsConnector({
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,

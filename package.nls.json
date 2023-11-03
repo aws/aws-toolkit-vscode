@@ -104,6 +104,7 @@
     "AWS.command.awsq.refactorCode": "Refactor",
     "AWS.command.awsq.fixCode": "Fix",
     "AWS.command.awsq.optimizeCode": "Optimize",
+    "AWS.command.awsq.sendToPrompt": "Send to prompt",
     "AWS.command.deploySamApplication": "Deploy SAM Application",
     "AWS.command.aboutToolkit": "About Toolkit",
     "AWS.command.downloadLambda": "Download...",

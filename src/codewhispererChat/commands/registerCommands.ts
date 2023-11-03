@@ -19,6 +19,9 @@ export function registerCommands(controllerPublishers: ChatControllerMessagePubl
     Commands.register('aws.awsq.optimizeCode', async () => {
         controllerPublishers.processContextMenuCommand.publish('aws.awsq.optimizeCode')
     })
+    Commands.register('aws.awsq.sendToPrompt', async () => {
+        controllerPublishers.processContextMenuCommand.publish('aws.awsq.sendToPrompt')
+    })
 }
 
 export type EditorContextCommand =
@@ -26,3 +29,4 @@ export type EditorContextCommand =
     | 'aws.awsq.refactorCode'
     | 'aws.awsq.fixCode'
     | 'aws.awsq.optimizeCode'
+    | 'aws.awsq.sendToPrompt'

@@ -213,9 +213,15 @@ export class ChatController {
                     message: prompt,
                     type: 'editor_context_command',
                     context,
+                    command,
                 })
 
-                this.messenger.sendEditorContextCommandMessage(prompt, triggerID)
+                this.messenger.sendEditorContextCommandMessage(prompt, triggerID, command)
+
+                if (command === 'aws.awsq.sendToPrompt') {
+                    // No need for response if send the code to prompt
+                    return
+                }
 
                 this.generateResponse(
                     {

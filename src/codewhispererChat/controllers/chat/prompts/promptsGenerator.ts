@@ -13,17 +13,23 @@ export class PromptsGenerator {
         ['aws.awsq.refactorCode', 'Refactor'],
         ['aws.awsq.fixCode', 'Fix'],
         ['aws.awsq.optimizeCode', 'Optimize'],
+        ['aws.awsq.sendToPrompt', 'Send to prompt'],
     ])
 
     public getPromptForContextMenuCommand(command: EditorContextCommand, selectedCode: string): string {
         // Remove newlines and spaces before and after the code
         const trimSelectedCode = selectedCode.trimStart().trimEnd()
 
+        if (command === 'aws.awsq.sendToPrompt') {
+            return ['\n```\n', trimSelectedCode, '\n```'].join('')
+        }
+
         return [
             this.editorContextMenuCommandVerbs.get(command),
             ' the following part of my code to me:',
             '\n```\n',
             trimSelectedCode,
+            '\n```',
         ].join('')
     }
 }

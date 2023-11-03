@@ -99,8 +99,14 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
     })
     const connector = new Connector({
         tabsStorage,
-        onCWCContextCommandMessage: (message: ChatItem): string => {
+        onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
             const selectedTab = tabsStorage.getSelectedTab()
+
+            if (selectedTab !== undefined && command === 'aws.awsq.sendToPrompt') {
+                mynahUI.addToUserPrompt(selectedTab.id, message.body as string)
+                return selectedTab.id
+            }
+
             if (selectedTab !== undefined && selectedTab.type === 'cwc' && selectedTab.status === 'free') {
                 mynahUI.updateStore(selectedTab.id, {
                     loadingChat: true,

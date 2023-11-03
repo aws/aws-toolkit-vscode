@@ -9,6 +9,7 @@ import {
     CodeReference,
     EditorContextCommandMessage,
 } from '../../../view/connector/connector'
+import { EditorContextCommand } from '../../../commands/registerCommands'
 import { ChatCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -183,8 +184,10 @@ export class Messenger {
         )
     }
 
-    public sendEditorContextCommandMessage(message: string, triggerID: string) {
-        this.dispatcher.sendEditorContextCommandMessage(new EditorContextCommandMessage({ message, triggerID }))
+    public sendEditorContextCommandMessage(message: string, triggerID: string, command: EditorContextCommand) {
+        this.dispatcher.sendEditorContextCommandMessage(
+            new EditorContextCommandMessage({ message, triggerID, command })
+        )
     }
 
     private showChatExceptionMessage(e: ChatException, tabID: string) {
