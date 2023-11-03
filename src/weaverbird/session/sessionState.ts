@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import sanitizeHtml from 'sanitize-html'
-import { collectFiles } from '../util/files'
+import { collectFiles, getSourceCodePath, prepareRepoData } from '../util/files'
 import { getLogger } from '../../shared/logger'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
@@ -23,10 +23,12 @@ import {
 import globals from '../../shared/extensionGlobals'
 import { ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { randomUUID } from 'crypto'
+import { uploadCode } from '../util/upload'
 
 const fs = FileSystemCommon.instance
 
-export class ConversationNotStartedState implements SessionState {
+export class ConversationNotStartedState implements Omit<SessionState, 'uploadId'> {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = 'Init'
 
@@ -40,14 +42,37 @@ export class ConversationNotStartedState implements SessionState {
     }
 }
 
+export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
+    public tokenSource: vscode.CancellationTokenSource
+    public readonly phase = 'Approach'
+    constructor(private config: Omit<SessionStateConfig, 'uploadId'>, public approach: string, public tabID: string) {
+        this.tokenSource = new vscode.CancellationTokenSource()
+    }
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
+
+        const { uploadUrl, uploadId } = await this.config.proxyClient.createUploadUrl(
+            this.config.conversationId,
+            zipFileChecksum
+        )
+
+        await uploadCode(uploadUrl, zipFileBuffer)
+        const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID)
+        return nextState.interact(action)
+    }
+}
+
 export class RefinementState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly conversationId: string
+    public readonly uploadId: string
     public readonly phase = 'Approach'
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
+        this.uploadId = config.uploadId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -91,10 +116,12 @@ export class RefinementIterationState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = 'Approach'
     public readonly conversationId: string
+    public readonly uploadId: string
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
+        this.uploadId = config.uploadId
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -123,12 +150,17 @@ export class RefinementIterationState implements SessionState {
     }
 }
 
-async function createFilePaths(fs: VirtualFileSystem, newFileContents: NewFileContents): Promise<string[]> {
+async function createFilePaths(
+    fs: VirtualFileSystem,
+    newFileContents: NewFileContents,
+    uploadId: string
+): Promise<string[]> {
     const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
         const encoder = new TextEncoder()
         const contents = encoder.encode(fileContent)
-        const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
+        const generationFilePath = path.join(uploadId, filePath)
+        const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: generationFilePath })
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         filePaths.push(filePath)
         telemetry.awsq_filesChanged.emit({ value: 1 })
@@ -143,10 +175,12 @@ abstract class CodeGenBase {
     readonly tokenSource: vscode.CancellationTokenSource
     public phase: SessionStatePhase = 'Codegen'
     public readonly conversationId: string
+    public readonly uploadId: string
 
     constructor(protected config: SessionStateConfig, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
+        this.uploadId = config.uploadId
     }
 
     async generateCode({ fs, codeGenerationId }: { fs: VirtualFileSystem; codeGenerationId: string }): Promise<{
@@ -165,7 +199,7 @@ abstract class CodeGenBase {
                 case 'Complete': {
                     // const newFiles = codegenResult.result?.newFileContents ?? []
                     const newFiles = await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFilePaths = await createFilePaths(fs, newFiles)
+                    const newFilePaths = await createFilePaths(fs, newFiles, this.uploadId)
                     return {
                         newFiles,
                         newFilePaths,
@@ -226,7 +260,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 })
                 this.filePaths = codeGeneration.newFilePaths
 
-                const nextState = new CodeGenIterationState(this.config, this.approach, this.filePaths, this.tabID)
+                const nextState = new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID)
                 span.record({ result: 'Succeeded' })
                 return {
                     nextState,
@@ -244,11 +278,13 @@ export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public filePaths: string[]
     public readonly conversationId: string
+    public readonly uploadId: string
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
         this.conversationId = config.conversationId
+        this.uploadId = randomUUID()
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -265,7 +301,7 @@ export class MockCodeGenState implements SessionState {
                     filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,
                 }))
-                this.filePaths = await createFilePaths(action.fs, newFileContents)
+                this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId)
             }
         } catch (e) {
             // TODO: handle this error properly, double check what would be expected behaviour if mock code does not work.
@@ -284,6 +320,35 @@ export class MockCodeGenState implements SessionState {
             ),
             interaction: {},
         }
+    }
+}
+
+export class PrepareIterationState implements SessionState {
+    public tokenSource: vscode.CancellationTokenSource
+    public readonly phase = 'Codegen'
+    public uploadId: string
+    constructor(
+        private config: SessionStateConfig,
+        public approach: string,
+        public filePaths: string[],
+        public tabID: string
+    ) {
+        this.tokenSource = new vscode.CancellationTokenSource()
+        this.uploadId = config.uploadId
+    }
+    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
+
+        const { uploadUrl, uploadId } = await this.config.proxyClient.createUploadUrl(
+            this.config.conversationId,
+            zipFileChecksum
+        )
+
+        this.uploadId = uploadId
+        await uploadCode(uploadUrl, zipFileBuffer)
+        const nextState = new CodeGenIterationState({ ...this.config, uploadId }, '', this.filePaths, this.tabID)
+        return nextState.interact(action)
     }
 }
 
@@ -308,7 +373,7 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
         this.filePaths = codeGeneration.newFilePaths
 
         return {
-            nextState: this,
+            nextState: new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID),
             interaction: {},
         }
     }

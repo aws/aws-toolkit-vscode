@@ -6,14 +6,13 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 
-import { collectFiles, getSourceCodePath, prepareRepoData } from '../util/files'
-import { CodeGenState, ConversationNotStartedState, RefinementState } from './sessionState'
+import { collectFiles } from '../util/files'
+import { CodeGenState, ConversationNotStartedState, PrepareRefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { weaverbirdScheme } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
-import { uploadCode } from '../util/upload'
 import { WeaverbirdClient } from '../client/weaverbird'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
@@ -21,12 +20,11 @@ import { SessionConfig } from './sessionConfigFactory'
 const fs = FileSystemCommon.instance
 
 export class Session {
-    private _state?: SessionState
+    private _state?: SessionState | Omit<SessionState, 'uploadId'>
     private task: string = ''
     private approach: string = ''
     private proxyClient: WeaverbirdClient
     private _conversationId?: string
-    private _uploadId?: string
     private approachRetries: number
     private codeGenRetries: number
     private preloaderFinished = false
@@ -62,14 +60,7 @@ export class Session {
     private async setupConversation() {
         this._conversationId = await this.proxyClient.createConversation()
 
-        const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
-
-        const { uploadUrl, uploadId } = await this.proxyClient.createUploadUrl(this._conversationId, zipFileChecksum)
-        this._uploadId = uploadId
-
-        await uploadCode(uploadUrl, zipFileBuffer)
-        this._state = new RefinementState(
+        this._state = new PrepareRefinementState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
@@ -79,14 +70,13 @@ export class Session {
         )
     }
 
-    private getSessionStateConfig(): SessionStateConfig {
+    private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
             llmConfig: this.config.llmConfig,
             workspaceRoot: this.config.workspaceRoot,
             backendConfig: this.config.backendConfig,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
-            uploadId: this.uploadId,
         }
     }
 
@@ -98,6 +88,7 @@ export class Session {
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
+                uploadId: this.uploadId,
             },
             this.approach,
             this.tabID
@@ -162,6 +153,13 @@ export class Session {
         return this._state
     }
 
+    get uploadId() {
+        if (!('uploadId' in this.state)) {
+            throw new Error("UploadId has to be initialized before it's read")
+        }
+        return this.state.uploadId
+    }
+
     get retries() {
         switch (this.state.phase) {
             case 'Approach':
@@ -188,12 +186,5 @@ export class Session {
             throw new ConversationIdNotFoundError()
         }
         return this._conversationId
-    }
-
-    get uploadId() {
-        if (!this._uploadId) {
-            throw new Error("UploadId should be initialized before it's read")
-        }
-        return this._uploadId
     }
 }

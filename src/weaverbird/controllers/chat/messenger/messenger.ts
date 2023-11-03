@@ -65,8 +65,8 @@ export class Messenger {
         })
     }
 
-    public sendFilePaths(filePaths: string[], tabID: string, sessionID: string) {
-        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID, sessionID))
+    public sendFilePaths(filePaths: string[], tabID: string, uploadId: string) {
+        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID, uploadId))
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
