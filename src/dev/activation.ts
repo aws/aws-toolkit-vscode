@@ -169,7 +169,12 @@ class VirtualObjectFile implements FileProvider {
             const value = (await this.storage.get(key)) ?? ''
             return JSON.stringify(JSON.parse(value), undefined, 4)
         } else {
-            return JSON.stringify(this.storage.get(key, {}), undefined, 4)
+            if (key !== '') {
+                return JSON.stringify(this.storage.get(key, {}), undefined, 4)
+            }
+            // lol hax
+            // as of November 2023, all of a memento's properties are stored as property `f` when minified
+            return JSON.stringify((this.storage as any).f, undefined, 4)
         }
     }
 
@@ -226,14 +231,24 @@ class ObjectEditor {
     }
 
     private async createTab(storage: vscode.Memento | vscode.SecretStorage, key: string): Promise<Tab> {
-        const uri = this.uriFromKey(key, storage)
-        const disposable = this.fs.registerProvider(uri, new VirtualObjectFile(storage, key))
-        const document = await vscode.workspace.openTextDocument(uri)
+        const virtualFile = new VirtualObjectFile(storage, key)
+        let disposable: vscode.Disposable
+        let document: vscode.TextDocument
+        if (key !== '') {
+            const uri = this.uriFromKey(key, storage)
+            disposable = this.fs.registerProvider(uri, virtualFile)
+            document = await vscode.workspace.openTextDocument(uri)
+        } else {
+            // don't tie it to a URI so you can't save this view
+            const stream = await virtualFile.read()
+            document = await vscode.workspace.openTextDocument({
+                content: new TextDecoder().decode(stream),
+            })
+        }
         const withLanguage = await vscode.languages.setTextDocumentLanguage(document, 'json')
-        const editor = await vscode.window.showTextDocument(withLanguage)
 
         return {
-            editor,
+            editor: await vscode.window.showTextDocument(withLanguage),
             dispose: () => disposable.dispose(),
         }
     }
@@ -247,7 +262,7 @@ class ObjectEditor {
     }
 }
 
-async function openStorageFromInput() {
+async function openStorageFromInput(ctx: ExtContext) {
     const wizard = new (class extends Wizard<{ target: 'globals' | 'secrets'; key: string }> {
         constructor() {
             super()
@@ -264,12 +279,33 @@ async function openStorageFromInput() {
                 )
             )
 
-            this.form.key.bindPrompter(({ target }) =>
-                createInputBox({
-                    title: 'Enter a key',
-                    placeholder: target === 'globals' ? 'region' : '',
-                })
-            )
+            this.form.key.bindPrompter(({ target }) => {
+                if (target === 'secrets') {
+                    return createInputBox({
+                        title: 'Enter a key',
+                    })
+                } else if (target === 'globals') {
+                    const items = ctx.extensionContext.globalState
+                        .keys()
+                        .map(key => {
+                            return {
+                                label: key,
+                                data: key,
+                            }
+                        })
+                        .sort((a, b) => {
+                            return a.data.localeCompare(b.data)
+                        })
+                    items.unshift({
+                        data: '',
+                        label: "SHOW ALL (edits here won't write to global state)",
+                    })
+
+                    return createQuickPick(items, { title: 'Pick a global state key' })
+                } else {
+                    throw new Error('invalid storage target')
+                }
+            })
         }
     })()
 
