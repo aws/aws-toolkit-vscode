@@ -16,35 +16,6 @@ export class FocusAreaContextExtractor {
             return undefined
         }
 
-        if (
-            ![
-                'vue',
-                'typescript',
-                'swift',
-                'sql',
-                'rust',
-                'ruby',
-                'r',
-                'python',
-                'php',
-                'javascript',
-                'java',
-                'html',
-                'go',
-                'css',
-                'c',
-                'coffeescript',
-                'clojure',
-                'cpp',
-                'csharp',
-                'cuda-cpp',
-                'javascriptreact',
-                'typescriptreact',
-            ].includes(editor.document.languageId)
-        ) {
-            return undefined
-        }
-
         let importantRange: Range = editor.selection
 
         // It means we don't really have a selection, but cursor position only
@@ -187,8 +158,7 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareFqns(names: any): [FullyQualifiedName[], boolean] {
-        // eslint-disable-next-line no-prototype-builtins
-        if (names == undefined || !names.hasOwnProperty('fullyQualified')) {
+        if (names == undefined || !names.fullyQualified) {
             return [[], false]
         }
         const dedupedUsedFullyQualifiedNames: Map<string, FullyQualifiedName> = new Map(
@@ -212,8 +182,7 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareSimpleNames(names: any): [string[], boolean] {
-        // eslint-disable-next-line no-prototype-builtins
-        if (names === undefined || !names.hasOwnProperty('simple')) {
+        if (names === undefined || !names.simple) {
             return [[], false]
         }
         let simpleNames: string[] = names.simple.usedSymbols

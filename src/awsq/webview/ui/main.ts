@@ -287,12 +287,13 @@ ${message}`,
             }
 
             if (tabID !== '') {
-                mynahUI.addChatItem(tabID, answer)
                 mynahUI.updateStore(tabID, {
                     loadingChat: false,
                     promptInputDisabledState: false,
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
+
+                mynahUI.addChatItem(tabID, answer)
             } else {
                 const newTabId = mynahUI.updateStore('', {
                     tabTitle: 'Error',

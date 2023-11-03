@@ -29,9 +29,17 @@ import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
-import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
+import {
+    ChatCommandOutput,
+    ChatRequest,
+    CursorState,
+    DocumentSymbol,
+    SymbolType,
+    TextDocument,
+} from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
+import { getLogger } from '../../../shared/logger/logger'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -192,6 +200,20 @@ export class ChatController {
         }
     }
 
+    private processException(e: any, tabID: string) {
+        let errorMessage = ''
+        if (typeof e === 'string') {
+            errorMessage = e.toUpperCase()
+        } else if (e instanceof Error) {
+            errorMessage = e.message
+        }
+
+        this.messenger.sendErrorMessage(errorMessage, tabID)
+        getLogger().error(`error: ${errorMessage} tabID: ${tabID}`)
+
+        this.sessionStorage.deleteSession(tabID)
+    }
+
     private async processContextMenuCommand(command: EditorContextCommand) {
         this.editorContextExtractor
             .extractContextForTrigger(TriggerType.ContextMenu)
@@ -240,11 +262,7 @@ export class ChatController {
                 )
             })
             .catch(e => {
-                if (typeof e === 'string') {
-                    this.messenger.sendErrorMessage(e.toUpperCase(), '')
-                } else if (e instanceof Error) {
-                    this.messenger.sendErrorMessage(e.message, '')
-                }
+                this.processException(e, '')
             })
     }
 
@@ -267,11 +285,7 @@ export class ChatController {
                     await this.processCommandMessage(message)
             }
         } catch (e) {
-            if (typeof e === 'string') {
-                this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)
-            } else if (e instanceof Error) {
-                this.messenger.sendErrorMessage(e.message, message.tabID)
-            }
+            this.processException(e, message.tabID)
         }
     }
 
@@ -316,17 +330,14 @@ export class ChatController {
                 triggerID
             )
         } catch (e) {
-            if (typeof e === 'string') {
-                this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)
-            } else if (e instanceof Error) {
-                this.messenger.sendErrorMessage(e.message, message.tabID)
-            }
+            this.processException(e, message.tabID)
         }
     }
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
-        try {
-            this.editorContextExtractor.extractContextForTrigger(TriggerType.ChatMessage).then(context => {
+        this.editorContextExtractor
+            .extractContextForTrigger(TriggerType.ChatMessage)
+            .then(context => {
                 const triggerID = randomUUID()
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -351,13 +362,9 @@ export class ChatController {
                     triggerID
                 )
             })
-        } catch (e) {
-            if (typeof e === 'string') {
-                this.messenger.sendErrorMessage(e.toUpperCase(), message.tabID)
-            } else if (e instanceof Error) {
-                this.messenger.sendErrorMessage(e.message, message.tabID)
-            }
-        }
+            .catch(e => {
+                this.processException(e, message.tabID)
+            })
     }
 
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
@@ -376,18 +383,23 @@ export class ChatController {
         const tabID = triggerEvent.tabID
         const request = this.triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
+        getLogger().info(
+            `request from tab: ${tabID} coversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
+        )
+        let response: ChatCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
-            const response = await session.chat(request)
+            response = await session.chat(request)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
+            getLogger().info(
+                `response to tab: ${tabID} coversationID: ${session.sessionIdentifier} metadata: ${JSON.stringify(
+                    response.$metadata
+                )}`
+            )
             this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e) {
-            if (typeof e === 'string') {
-                this.messenger.sendErrorMessage(e.toUpperCase(), tabID)
-            } else if (e instanceof Error) {
-                this.messenger.sendErrorMessage(e.message, tabID)
-            }
+            this.processException(e, tabID)
         }
     }
 
@@ -398,15 +410,39 @@ export class ChatController {
         if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
             const documentSymbolFqns: DocumentSymbol[] = []
             triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
-                documentSymbolFqns.push({
+                const elem = {
                     name: fqn.symbol?.join('.') ?? '',
                     type: SymbolType.USAGE,
                     source: fqn.source?.join('.'),
-                })
+                }
+
+                if (elem.name.length > 1 && elem.name.length < 256) {
+                    documentSymbolFqns.push(elem)
+                }
             })
 
             let programmingLanguage
-            if (triggerPayload.fileLanguage != undefined && triggerPayload.fileLanguage != '') {
+            if (
+                triggerPayload.fileLanguage != undefined &&
+                triggerPayload.fileLanguage != '' &&
+                [
+                    'python',
+                    'javascript',
+                    'java',
+                    'csharp',
+                    'typescript',
+                    'c',
+                    'cpp',
+                    'go',
+                    'kotlin',
+                    'php',
+                    'ruby',
+                    'rust',
+                    'scala',
+                    'shell',
+                    'sql',
+                ].includes(triggerPayload.fileLanguage)
+            ) {
                 programmingLanguage = { languageName: triggerPayload.fileLanguage }
             }
 
