@@ -15,6 +15,7 @@ import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { telemetry } from '../../../shared/telemetry/telemetry'
+import { createUserFacingErrorMessage } from '../../errors'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -115,7 +116,9 @@ export class WeaverbirdController {
                     break
             }
         } catch (err: any) {
-            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+            const errorMessage = createUserFacingErrorMessage(
+                `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+            )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
     }
@@ -204,7 +207,9 @@ export class WeaverbirdController {
             session.initCodegen()
             await this.onCodeGeneration(session, '', message.tabID)
         } catch (err: any) {
-            const errorMessage = `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+            const errorMessage = createUserFacingErrorMessage(
+                `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+            )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
     }
@@ -218,7 +223,7 @@ export class WeaverbirdController {
             await session.acceptChanges()
         } catch (err: any) {
             this.messenger.sendErrorMessage(
-                `Failed to accept code changes: ${err.message}`,
+                createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session)
             )
@@ -242,7 +247,7 @@ export class WeaverbirdController {
             })
         } catch (err: any) {
             this.messenger.sendErrorMessage(
-                `Failed to retry request: ${err.message}`,
+                createUserFacingErrorMessage(`Failed to retry request: ${err.message}`),
                 message.tabID,
                 this.retriesRemaining(session)
             )
@@ -310,7 +315,11 @@ export class WeaverbirdController {
             telemetry.awsq_assignCommand.emit({ value: 1 })
             session = await this.sessionStorage.createSession(message.tabID)
         } catch (err: any) {
-            this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+            this.messenger.sendErrorMessage(
+                createUserFacingErrorMessage(err.message),
+                message.tabID,
+                this.retriesRemaining(session)
+            )
         }
     }
 
