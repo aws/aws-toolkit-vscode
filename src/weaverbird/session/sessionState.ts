@@ -25,6 +25,7 @@ import { ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { randomUUID } from 'crypto'
 import { uploadCode } from '../util/upload'
+import { UserMessageNotFoundError } from '../errors'
 
 const fs = FileSystemCommon.instance
 
@@ -79,10 +80,15 @@ export class RefinementState implements SessionState {
         return telemetry.awsq_approachInvoke.run(async span => {
             try {
                 span.record({ result: 'Failed', reason: 'This is the start so Approach is not successful yet' })
+
+                if (!action.msg) {
+                    throw new UserMessageNotFoundError()
+                }
+
                 const approach = await this.config.proxyClient.generatePlan(
                     this.config.conversationId,
                     this.config.uploadId,
-                    action.msg!
+                    action.msg
                 )
 
                 this.approach = sanitizeHtml(
@@ -129,11 +135,15 @@ export class RefinementIterationState implements SessionState {
             return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
         }
 
+        if (!action.msg) {
+            throw new UserMessageNotFoundError()
+        }
+
         telemetry.awsq_approach.emit({ value: 1 })
         const approach = await this.config.proxyClient.generatePlan(
             this.config.conversationId,
             this.config.uploadId,
-            action.msg!
+            action.msg
         )
 
         this.approach = sanitizeHtml(
