@@ -757,16 +757,19 @@ export class Auth implements AuthService, ConnectionManager {
 
         function getMemento() {
             if (!vscode.env.remoteName) {
+                // local compute: no further partitioning
                 return globals.context.globalState
             }
 
             const devEnvId = getCodeCatalystDevEnvId()
 
             if (devEnvId !== undefined) {
+                // dev env: partition to dev env ID (compute backend might not always be the same)
                 return partition(globals.context.globalState, devEnvId)
             }
 
-            return globals.context.workspaceState
+            // remote env: keeps a shared "global state" for all workspaces that report the same machine ID
+            return partition(globals.context.globalState, globals.machineId)
         }
     }
 
