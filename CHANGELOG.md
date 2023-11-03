@@ -1,3 +1,7 @@
+## 1.97.0 2023-11-02
+
+- **Bug Fix** CodeWhisperer: fix and improve closing symbols handling (brackets, parenthesis, quotes etc)
+
 ## 1.96.0 2023-10-26
 
 - **Bug Fix** SAM debugging: "Invalid (or missing) template file" may occur even when a valid template.yaml is specified by `invokeTarget.templatePath` in the launch config. #2614

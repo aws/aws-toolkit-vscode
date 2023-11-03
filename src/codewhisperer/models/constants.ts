@@ -83,7 +83,7 @@ export const tsx = 'typescriptreact'
 export const plaintext = 'plaintext'
 
 // use vscode languageId here
-export const supportedLanguages = [
+export const platformLanguageIds = [
     'java',
     'python',
     'javascript',
@@ -103,9 +103,10 @@ export const supportedLanguages = [
     'shellscript',
     'sh', // Cloud9 reports bash files with this language-id
     'sql',
+    'golang', // Cloud9 reports Go files with this language-id
 ] as const
 
-export type SupportedLanguage = (typeof supportedLanguages)[number]
+export type PlatformLanguageId = (typeof platformLanguageIds)[number]
 
 /**
  * Prompt
