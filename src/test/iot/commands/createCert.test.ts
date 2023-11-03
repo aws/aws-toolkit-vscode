@@ -3,18 +3,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import assert from 'assert'
+import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { createCertificateCommand } from '../../../iot/commands/createCert'
 import { IotNode } from '../../../iot/explorer/iotNodes'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { anything, mock, instance, when, deepEqual, verify } from '../../utilities/mockito'
-import { FakeCommands } from '../../shared/vscode/fakeCommands'
 import { IotCertsFolderNode } from '../../../iot/explorer/iotCertFolderNode'
 import { Iot } from 'aws-sdk'
 import { getTestWindow } from '../../shared/vscode/window'
 
 describe('createCertificateCommand', function () {
+    let sandbox: sinon.SinonSandbox
+    let spyExecuteCommand: sinon.SinonSpy
+
     const certificateId = 'new-certificate'
     const certificateArn = 'arn'
     const certificatePem = 'certPem'
@@ -38,17 +40,23 @@ describe('createCertificateCommand', function () {
     }
 
     beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        spyExecuteCommand = sandbox.spy(vscode.commands, 'executeCommand')
+
         iot = mock()
         node = new IotCertsFolderNode(instance(iot), new IotNode(instance(iot)))
         saveLocation = vscode.Uri.file('/certificate')
         saveSuccess = true
     })
 
+    afterEach(function () {
+        sandbox.restore()
+    })
+
     it('prompts for save location, creates certificate, and saves to filesystem', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve(certificate)
 
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles)
 
         getTestWindow()
             .getFirstMessage()
@@ -56,51 +64,46 @@ describe('createCertificateCommand', function () {
 
         verify(iot.deleteCertificate(anything())).never()
 
-        assert.strictEqual(commands.command, 'aws.refreshAwsExplorerNode')
-        assert.deepStrictEqual(commands.args, [node])
+        sandbox.assert.calledWith(spyExecuteCommand, 'aws.refreshAwsExplorerNode', node)
     })
 
     it('does nothing when no save folder is selected', async function () {
         saveLocation = undefined
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles)
 
         verify(iot.createCertificateAndKeys(anything())).never()
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if creating certificate fails', async function () {
         when(iot.createCertificateAndKeys(anything())).thenReject(new Error('Expected failure'))
 
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create certificate/)
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('shows an error message if created certificate is invalid', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve({})
 
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles)
 
         getTestWindow()
             .getFirstMessage()
             .assertError(/Failed to create certificate/)
 
-        assert.strictEqual(commands.command, undefined)
+        sandbox.assert.notCalled(spyExecuteCommand)
     })
 
     it('deletes certificate if it cannot be saved', async function () {
         when(iot.createCertificateAndKeys(deepEqual({ setAsActive: false }))).thenResolve(certificate)
         saveSuccess = false
 
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles)
 
         getTestWindow()
             .getFirstMessage()
@@ -114,8 +117,7 @@ describe('createCertificateCommand', function () {
         when(iot.deleteCertificate(anything())).thenReject(new Error('Expected failure'))
         saveSuccess = false
 
-        const commands = new FakeCommands()
-        await createCertificateCommand(node, promptFolder, saveFiles, commands)
+        await createCertificateCommand(node, promptFolder, saveFiles)
 
         getTestWindow()
             .getFirstMessage()
