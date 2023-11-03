@@ -96,7 +96,7 @@ export interface TriggerPayload {
     readonly userIntent: UserIntent | undefined
 }
 
-export interface AcceptedSuggestion {
+export interface InsertedCode {
     readonly conversationID: string
     readonly messageID: string
     readonly time: Date

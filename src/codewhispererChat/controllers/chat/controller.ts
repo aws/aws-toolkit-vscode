@@ -31,7 +31,7 @@ import { randomUUID } from 'crypto'
 import { ChatRequest, CursorState, DocumentSymbol, SymbolType, TextDocument } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
-import { CWCCodeSuggestionTracker } from './codeSuggestionTracker'
+import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -151,7 +151,7 @@ export class ChatController {
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
         this.editorContentController.insertTextAtCursorPosition(message.code, (editor, cursorStart) => {
-            CWCCodeSuggestionTracker.getTracker().enqueue({
+            CodeWhispererTracker.getTracker().enqueue({
                 conversationID: this.telemetryHelper.getConversationId(message.tabID) ?? '',
                 messageID: message.messageId,
                 time: new Date(),
