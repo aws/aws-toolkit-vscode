@@ -1358,6 +1358,10 @@
                 {
                     "command": "aws.awsq.optimizeCode",
                     "group": "cw_chat@4"
+                },
+                {
+                    "command": "aws.awsq.sendToPrompt",
+                    "group": "cw_chat@5"
                 }
             ],
             "editor/context": [
@@ -2080,6 +2084,11 @@
             {
                 "command": "aws.awsq.optimizeCode",
                 "title": "%AWS.command.awsq.optimizeCode%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.awsq.sendToPrompt",
+                "title": "%AWS.command.awsq.sendToPrompt%",
                 "category": "%AWS.title%"
             },
             {
@@ -4006,7 +4015,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.13.3",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.13.5",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",

@@ -25,6 +25,12 @@ export interface TabClosedMessage {
 
 export interface TabChangedMessage {
     tabID: string
+    prevTabID?: string
+}
+
+export interface UIFocusMessage {
+    command: string
+    type: 'focus' | 'blur'
 }
 
 export interface InsertCodeAtCursorPosition {

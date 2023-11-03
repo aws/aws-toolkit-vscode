@@ -5,12 +5,13 @@
 
 import { CodeWhispererStreamingClient } from '../../../../shared/clients/codeWhispererChatStreamingClient'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
-import { ChatCommandOutput, ChatRequest } from '@amzn/codewhisperer-streaming'
+import { ChatCommandOutput, ChatRequest, CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 
 export class ChatSession {
     private sessionId?: string
+    private client: CodeWhispererStreaming | undefined
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
     }
@@ -27,16 +28,21 @@ export class ChatSession {
 
     async chat(chatRequest: ChatRequest): Promise<ChatCommandOutput> {
         if (AuthUtil.instance.isConnectionExpired()) {
-            await AuthUtil.instance.showReauthenticatePrompt()
+            AuthUtil.instance.showReauthenticatePrompt()
+            throw new ToolkitError(
+                'Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.'
+            )
         }
 
-        const client = await new CodeWhispererStreamingClient().createSdkClient()
+        if (this.client === undefined) {
+            this.client = await new CodeWhispererStreamingClient().createSdkClient()
+        }
 
         if (this.sessionId != undefined && chatRequest.conversationState != undefined) {
             chatRequest.conversationState.conversationId = this.sessionId
         }
 
-        const response = await client.chat(chatRequest)
+        const response = await this.client.chat(chatRequest)
         if (!response.chatResponse) {
             throw new ToolkitError(`Empty chat response. Session id: ${this.sessionId}`)
         }

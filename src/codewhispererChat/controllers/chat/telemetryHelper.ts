@@ -32,7 +32,7 @@ export class CWCTelemetryHelper {
     private triggerEventsStorage: TriggerEventsStorage
     private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
-    private responseStreamTimeToFirstChunk: Map<string, number> = new Map()
+    private responseStreamTimeToFirstChunk: Map<string, number | undefined> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -75,13 +75,12 @@ export class CWCTelemetryHelper {
         telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
     }
 
-    public recordCloseChat(tabID: string) {
+    public recordCloseChat() {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        const conversationId = this.getConversationId(tabID)
-        telemetry.codewhispererchat_closeChat.emit({ cwsprChatConversationId: conversationId ?? '' })
+        telemetry.codewhispererchat_closeChat.emit()
     }
 
     public recordEnterFocusChat() {
@@ -204,9 +203,23 @@ export class CWCTelemetryHelper {
         }
 
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
+        let triggerInteraction: CwsprChatTriggerInteraction
+        switch (triggerEvent.type) {
+            case 'chat_message':
+            case 'follow_up':
+                triggerInteraction = 'click'
+                break
+            case 'editor_context_command':
+                triggerInteraction = 'contextMenu'
+                break
+            default:
+                triggerInteraction = 'click'
+                break
+        }
 
         telemetry.codewhispererchat_startConversation.emit({
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
+            cwsprChatTriggerInteraction: triggerInteraction,
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
@@ -221,10 +234,11 @@ export class CWCTelemetryHelper {
 
         const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
 
-        // TODO: user intent, response code snippet count, references count
+        // TODO: response code snippet count, references count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
+            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload?.userIntent),
             cwsprChatHasCodeSnippet: hasCodeSnippet,
             cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
@@ -246,9 +260,12 @@ export class CWCTelemetryHelper {
             return
         }
 
-        telemetry.codewhispererchat_enterFocusConversation.emit({
-            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
-        })
+        const conversationId = this.getConversationId(tabID)
+        if (conversationId) {
+            telemetry.codewhispererchat_enterFocusConversation.emit({
+                cwsprChatConversationId: conversationId,
+            })
+        }
     }
 
     public recordExitFocusConversation(tabID: string) {
@@ -256,20 +273,26 @@ export class CWCTelemetryHelper {
             return
         }
 
-        telemetry.codewhispererchat_exitFocusConversation.emit({
-            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
-        })
+        const conversationId = this.getConversationId(tabID)
+        if (conversationId) {
+            telemetry.codewhispererchat_exitFocusConversation.emit({
+                cwsprChatConversationId: conversationId,
+            })
+        }
     }
 
     public setResponseStreamStartTime(tabID: string) {
         this.responseStreamStartTime.set(tabID, performance.now())
+        this.responseStreamTimeToFirstChunk.set(tabID, undefined)
     }
 
     public setReponseStreamTimeToFirstChunk(tabID: string) {
-        this.responseStreamTimeToFirstChunk.set(
-            tabID,
-            performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
-        )
+        if (this.responseStreamTimeToFirstChunk.get(tabID) == undefined) {
+            this.responseStreamTimeToFirstChunk.set(
+                tabID,
+                performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+            )
+        }
     }
 
     public setResponseStreamTotalTime(tabID: string) {

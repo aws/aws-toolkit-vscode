@@ -13,6 +13,7 @@ export interface TriggerEvent {
     readonly context: EditorContext | undefined
     readonly message: string | undefined
     readonly type: TriggerEventType
+    readonly command?: string
 }
 
 export class TriggerEventsStorage {

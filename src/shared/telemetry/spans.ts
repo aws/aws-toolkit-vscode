@@ -230,7 +230,7 @@ export class TelemetryTracer extends TelemetryBase {
      *
      * This is merged in with the current state present in each span, **overwriting**
      * any existing values for a given key. New spans are initialized with {@link attributes}
-     * but that may be overriden on subsequent writes.
+     * but that may be overridden on subsequent writes.
      *
      * Callers must already be within an execution context for this to have any effect.
      */

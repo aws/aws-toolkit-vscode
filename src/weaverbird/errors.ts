@@ -40,3 +40,12 @@ export class SessionNotFoundError extends ToolkitError {
         super(`Session was not found`, { code: 'SessionNotFound' })
     }
 }
+
+const denyListedErrors: string[] = ['Deserialization error']
+
+export function createUserFacingErrorMessage(message: string) {
+    if (denyListedErrors.some(err => message.includes(err))) {
+        return 'Weaverbird API request failed'
+    }
+    return message
+}

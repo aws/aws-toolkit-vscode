@@ -60,8 +60,9 @@ export class TabsStorage {
         this.lastCreatedTabByType.set(tabType, tabID)
     }
 
-    public setSelectedTab(tabID: string) {
+    public setSelectedTab(tabID: string): string | undefined {
         const prevSelectedTab = this.lastSelectedTab
+        const prevSelectedTabID = this.lastSelectedTab?.id
         if (prevSelectedTab !== undefined) {
             prevSelectedTab.isSelected = false
             this.tabs.set(prevSelectedTab.id, prevSelectedTab)
@@ -69,12 +70,13 @@ export class TabsStorage {
 
         const newSelectedTab = this.tabs.get(tabID)
         if (newSelectedTab === undefined) {
-            return
+            return prevSelectedTabID
         }
 
         newSelectedTab.isSelected = true
         this.tabs.set(newSelectedTab.id, newSelectedTab)
         this.lastSelectedTab = newSelectedTab
+        return prevSelectedTabID
     }
 
     public getSelectedTab(): Tab | undefined {
