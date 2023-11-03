@@ -50,7 +50,7 @@ export class Container {
     }
 
     public prepareCommandForTask(command: string, task: string) {
-        return prepareCommand(this.client, command, {
+        return prepareCommand(this.client, command, this.description.taskRoleArn, {
             task,
             container: this.description.name!,
             cluster: this.description.clusterArn,
