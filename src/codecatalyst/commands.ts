@@ -207,7 +207,7 @@ export class CodeCatalystCommands {
     public readonly withClient: ClientInjector
     public readonly bindClient = createCommandDecorator(this)
 
-    public constructor(authProvider: CodeCatalystAuthenticationProvider) {
+    public constructor(private authProvider: CodeCatalystAuthenticationProvider) {
         this.withClient = createClientInjector(authProvider)
     }
 
@@ -261,7 +261,11 @@ export class CodeCatalystCommands {
         await vscode.window.showTextDocument(uri)
     }
 
-    public async openDevEnv(id?: DevEnvironmentId, targetPath?: string): Promise<void> {
+    public async openDevEnv(
+        id?: DevEnvironmentId,
+        targetPath?: string,
+        connection?: { startUrl: string; region: string }
+    ): Promise<void> {
         if (vscode.env.remoteName === 'ssh-remote') {
             throw new ToolkitError('Cannot connect from a remote context. Try again from a local VS Code instance.', {
                 code: 'ConnectedToRemote',
@@ -279,7 +283,11 @@ export class CodeCatalystCommands {
             telemetry.record({ source: 'CommandPalette' })
         }
 
-        return this.withClient(openDevEnv, devenv, targetPath)
+        return this.withClient(openDevEnv, devenv, targetPath, async () => {
+            if (connection) {
+                await this.authProvider.connectToEnterpriseSso(connection.startUrl, connection.region)
+            }
+        })
     }
 
     public async openDevEnvSettings(): Promise<void> {
