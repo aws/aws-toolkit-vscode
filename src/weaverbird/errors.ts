@@ -41,6 +41,12 @@ export class SessionNotFoundError extends ToolkitError {
     }
 }
 
+export class UserMessageNotFoundError extends ToolkitError {
+    constructor() {
+        super(`Message was not found`, { code: 'MessageNotFound' })
+    }
+}
+
 const denyListedErrors: string[] = ['Deserialization error']
 
 export function createUserFacingErrorMessage(message: string) {

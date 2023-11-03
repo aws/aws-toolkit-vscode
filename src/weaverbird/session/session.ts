@@ -28,6 +28,7 @@ export class Session {
     private approachRetries: number
     private codeGenRetries: number
     private preloaderFinished = false
+    private _latestMessage: string = ''
 
     constructor(public readonly config: SessionConfig, private messenger: Messenger, private readonly tabID: string) {
         this._state = new ConversationNotStartedState('', tabID)
@@ -40,9 +41,9 @@ export class Session {
     /**
      * Preload any events that have to run before a chat message can be sent
      */
-    async preloader() {
+    async preloader(msg: string) {
         if (!this.preloaderFinished) {
-            await this.setupConversation()
+            await this.setupConversation(msg)
             this.preloaderFinished = true
             this.messenger.sendAsyncEventProgress(
                 this.tabID,
@@ -57,7 +58,10 @@ export class Session {
      *
      * Starts a conversation with the backend and uploads the repo for the LLMs to be able to use it.
      */
-    private async setupConversation() {
+    private async setupConversation(msg: string) {
+        // Store the initial message when setting up the conversation so that if it fails we can retry with this message
+        this._latestMessage = msg
+
         this._conversationId = await this.proxyClient.createConversation()
 
         this._state = new PrepareRefinementState(
@@ -93,12 +97,17 @@ export class Session {
             this.approach,
             this.tabID
         )
+        this._latestMessage = ''
     }
 
-    async send(msg: string): Promise<Interaction> {
+    async send(msg: string | undefined): Promise<Interaction> {
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
-        if (this.task === '') {
+        if (this.task === '' && msg) {
             this.task = msg
+        }
+
+        if (msg) {
+            this._latestMessage = msg
         }
 
         return this.nextInteraction(msg)
@@ -186,5 +195,9 @@ export class Session {
             throw new ConversationIdNotFoundError()
         }
         return this._conversationId
+    }
+
+    get latestMessage() {
+        return this._latestMessage
     }
 }
