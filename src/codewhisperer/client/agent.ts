@@ -4,6 +4,7 @@
  * Source code is from : https://github.com/sourcegraph/cody/pull/868/files
  * under Apache-2.0 license
  */
+import * as vscode from 'vscode'
 import http from 'http'
 import https from 'https'
 
@@ -36,7 +37,7 @@ export function initializeNetworkAgent(): void {
      *
      * To work around this, we patch the default proxy agent method and overwrite the
      * `originalAgent` value before invoking it for requests that want to keep their connection
-     * alive (as indicated by the `Connection: keep-alive` header).
+     * alive only when user is not using their own http proxy and the request contains keepAliveHeader
      *
      * c.f. https://github.com/microsoft/vscode/issues/173861
      */
@@ -49,9 +50,11 @@ export function initializeNetworkAgent(): void {
             PacProxyAgent.prototype.connect = function (req: http.ClientRequest, opts: { protocol: string }): any {
                 try {
                     const connectionHeader = req.getHeader('connection')
+                    const proxy = vscode.workspace.getConfiguration('http').get('proxy') || ''
                     if (
-                        connectionHeader === keepAliveHeader ||
-                        (Array.isArray(connectionHeader) && connectionHeader.includes(keepAliveHeader))
+                        (connectionHeader === keepAliveHeader ||
+                            (Array.isArray(connectionHeader) && connectionHeader.includes(keepAliveHeader))) &&
+                        proxy === ''
                     ) {
                         this.opts.originalAgent = customAgent(opts)
                         return originalConnect.call(this, req, opts)
