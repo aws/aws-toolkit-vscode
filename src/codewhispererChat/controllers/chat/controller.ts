@@ -390,6 +390,7 @@ export class ChatController {
         session.createNewTokenSource()
         try {
             response = await session.chat(request)
+            this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
