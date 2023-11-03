@@ -183,7 +183,7 @@ export class WeaverbirdController {
                 type: 'answer-part',
                 tabID: tabID,
             })
-            this.messenger.sendFilePaths(filePaths, tabID, session.conversationId)
+            this.messenger.sendFilePaths(filePaths, tabID, session.uploadId)
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'answer',
@@ -293,7 +293,7 @@ export class WeaverbirdController {
             left,
             vscode.Uri.from({
                 scheme: weaverbirdScheme,
-                path: message.rightPath,
+                path: path.join(session.uploadId, message.rightPath),
                 query: `tabID=${message.tabID}`,
             })
         )

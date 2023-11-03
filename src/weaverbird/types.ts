@@ -26,7 +26,7 @@ export type Interaction = {
 }
 
 export interface SessionStateInteraction {
-    nextState: SessionState | undefined
+    nextState: SessionState | Omit<SessionState, 'uploadId'> | undefined
     interaction: Interaction
 }
 
@@ -42,6 +42,7 @@ export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
 export interface SessionState {
     readonly filePaths?: string[]
     readonly phase?: SessionStatePhase
+    readonly uploadId: string
     approach: string
     readonly tokenSource: CancellationTokenSource
     readonly tabID: string

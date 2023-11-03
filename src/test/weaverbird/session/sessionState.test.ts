@@ -12,6 +12,7 @@ import {
     MockCodeGenState,
     CodeGenIterationState,
     CodeGenState,
+    PrepareIterationState,
 } from '../../../weaverbird/session/sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
@@ -150,7 +151,7 @@ describe('sessionState', () => {
     })
 
     describe('MockCodeGenState', () => {
-        it('transitions to generate RefinementState', async () => {
+        it('transitions to RefinementState', async () => {
             const testAction = mockSessionStateAction({})
             const state = new MockCodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
@@ -164,14 +165,14 @@ describe('sessionState', () => {
     })
 
     describe('CodeGenState', () => {
-        it('transitions to  generate CodeGenIterationState when codeGenerationStatus ready ', async () => {
+        it('transitions to PrepareIterationState when codeGenerationStatus ready ', async () => {
             mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
             mockExportResultArchive = sinon.stub().resolves([])
             const testAction = mockSessionStateAction({})
             const state = new CodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
-            const nextState = new CodeGenIterationState(testConfig, testApproach, [], tabId)
+            const nextState = new PrepareIterationState(testConfig, testApproach, [], tabId)
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -237,7 +238,7 @@ describe('sessionState', () => {
     })
 
     describe('CodeGenIterationState', () => {
-        it('transitions to generate CodeGenIterationState', async () => {
+        it('transitions to PrepareIterationState', async () => {
             mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
             mockExportResultArchive = sinon.stub().resolves([])
             const testAction = mockSessionStateAction({})
@@ -245,8 +246,10 @@ describe('sessionState', () => {
             const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], tabId)
             const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
 
+            const nextState = new PrepareIterationState(testConfig, testApproach, [], tabId)
+
             assert.deepStrictEqual(codeGenIterationStateResult, {
-                nextState: codeGenIterationState,
+                nextState: nextState,
                 interaction: {},
             })
         })
