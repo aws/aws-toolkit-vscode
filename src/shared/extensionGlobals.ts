@@ -81,7 +81,7 @@ export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
-export function initialize(context: ExtensionContext): ToolkitGlobals {
+export async function initialize(context: ExtensionContext): Promise<ToolkitGlobals> {
     Object.assign(globals, {
         context,
         clock: copyClock(),
@@ -115,6 +115,8 @@ interface ToolkitGlobals {
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
     uriHandler: UriHandler
+    /** An id to differentiate the current machine being run on. Can help distinguish a remote from a local machine.  */
+    machineId: string
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
