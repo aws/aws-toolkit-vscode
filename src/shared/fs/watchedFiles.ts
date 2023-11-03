@@ -284,7 +284,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Builds/rebuilds registry using current glob and exclusion patterns. ***Necessary to init registry***.
      *
-     * @param cancellationPromise Cancels additional registrations when rejected. Otherwise, this
+     * @param cancellationTimeout Optional timeout that can trigger canceling additional loading on completion (manual or timed)
      */
     public async rebuild(cancellationTimeout?: Timeout): Promise<void> {
         let skips = 0
