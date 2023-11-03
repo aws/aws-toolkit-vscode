@@ -19,6 +19,7 @@ import {
     ChatItemFeedbackMessage,
     TabCreatedMessage,
     TabChangedMessage,
+    UIFocusMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -44,6 +45,7 @@ export interface ChatControllerMessagePublishers {
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
+    readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -58,6 +60,7 @@ export interface ChatControllerMessageListeners {
     readonly processStopResponseMessage: MessageListener<StopResponseMessage>
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
+    readonly processUIFocusMessage: MessageListener<UIFocusMessage>
 }
 
 export class ChatController {
@@ -129,6 +132,10 @@ export class ChatController {
         this.chatControllerMessageListeners.processChatItemFeedbackMessage.onMessage(data => {
             this.processChatItemFeedbackMessage(data)
         })
+
+        this.chatControllerMessageListeners.processUIFocusMessage.onMessage(data => {
+            this.processUIFocusMessage(data)
+        })
     }
 
     private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {
@@ -158,17 +165,31 @@ export class ChatController {
     }
 
     private async processTabCreateMessage(message: TabCreatedMessage) {
-        this.telemetryHelper.recordOpenChat(message.tabOpenInteractionType)
+        // this.telemetryHelper.recordOpenChat(message.tabOpenInteractionType)
     }
 
     private async processTabCloseMessage(message: TabClosedMessage) {
         this.sessionStorage.deleteSession(message.tabID)
         this.triggerEventsStorage.removeTabEvents(message.tabID)
-        this.telemetryHelper.recordCloseChat(message.tabID)
+        // this.telemetryHelper.recordCloseChat(message.tabID)
     }
 
     private async processTabChangedMessage(message: TabChangedMessage) {
+        if (message.prevTabID) {
+            this.telemetryHelper.recordExitFocusConversation(message.prevTabID)
+        }
         this.telemetryHelper.recordEnterFocusConversation(message.tabID)
+    }
+
+    private async processUIFocusMessage(message: UIFocusMessage) {
+        switch (message.type) {
+            case 'focus':
+                this.telemetryHelper.recordEnterFocusChat()
+                break
+            case 'blur':
+                this.telemetryHelper.recordExitFocusChat()
+                break
+        }
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {

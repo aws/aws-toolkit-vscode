@@ -20,6 +20,7 @@ import {
     TabClosedMessage,
     TabCreatedMessage,
     TriggerTabIDReceived,
+    UIFocusMessage,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 
@@ -36,6 +37,7 @@ export function init(appContext: AwsQAppInitContext) {
         processStopResponseMessage: new EventEmitter<StopResponseMessage>(),
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
+        processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -72,6 +74,7 @@ export function init(appContext: AwsQAppInitContext) {
         processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
+        processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -107,6 +110,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processChatItemFeedbackMessage: new MessagePublisher<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
+        ),
+        processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
+            cwChatControllerEventEmitters.processUIFocusMessage
         ),
     }
 

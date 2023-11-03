@@ -126,8 +126,8 @@ export class Connector {
     }
 
     onTabChange = (tabId: string): void => {
-        this.tabsStorage.setSelectedTab(tabId)
-        this.cwChatConnector.onTabChange(tabId)
+        const prevTabID = this.tabsStorage.setSelectedTab(tabId)
+        this.cwChatConnector.onTabChange(tabId, prevTabID)
     }
 
     onCodeInsertToCursorPosition = (
@@ -182,9 +182,21 @@ export class Connector {
         this.sendMessageToExtension({
             command: 'ui-is-ready',
         })
+
         if (this.onMessageReceived !== undefined) {
             window.addEventListener('message', this.handleMessageReceive.bind(this))
         }
+
+        window.addEventListener('focus', this.handleApplicationFocus)
+        window.addEventListener('blur', this.handleApplicationFocus)
+    }
+
+    handleApplicationFocus = async (event: FocusEvent): Promise<void> => {
+        this.sendMessageToExtension({
+            command: 'ui-focus',
+            type: event.type,
+            tabType: 'cwc',
+        })
     }
 
     triggerSuggestionEngagement = (tabID: string, engagement: SuggestionEngagement): void => {
