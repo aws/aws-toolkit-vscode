@@ -23,7 +23,7 @@ export async function copyLambdaUrl(
 ): Promise<void> {
     const configs = await client.getFunctionUrlConfigs(node.name)
 
-    if (configs.length == 0) {
+    if (configs.length === 0) {
         vscode.window.showWarningMessage(noLambdaFuncMessage)
         vscode.window.setStatusBarMessage(addCodiconToString('circle-slash', 'No URL for Lambda function.'), 5000)
     } else {

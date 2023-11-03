@@ -61,7 +61,7 @@ export interface SamCliStartApiArguments {
  * Build and validate `sam local start-api` arguments
  */
 export async function buildSamCliStartApiArguments(args: SamCliStartApiArguments): Promise<string[]> {
-    args.skipPullImage = args.skipPullImage == true
+    args.skipPullImage = args.skipPullImage === true
 
     await validate(args.templatePath)
 

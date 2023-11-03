@@ -400,7 +400,7 @@ describe('SAM Integration Tests', async function () {
         let randomTestScenario: TestScenario
 
         before(async function () {
-            if (scenarios.length == 0) {
+            if (scenarios.length === 0) {
                 throw new Error('There are no scenarios available.')
             }
             randomTestScenario = scenarios[0]

@@ -375,7 +375,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
-                if (e.contentChanges.length == 0 || vsCodeState.isCodeWhispererEditing) {
+                if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
                     return
                 }
                 /**

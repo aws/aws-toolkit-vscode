@@ -51,9 +51,9 @@ export async function publishSSMDocument(awsContext: AwsContext, regionProvider:
 
     try {
         const response = await new PublishSSMDocumentWizard().run()
-        if (response?.action == 'Create') {
+        if (response?.action === 'Create') {
             await createDocument(response, textDocument)
-        } else if (response?.action == 'Update') {
+        } else if (response?.action === 'Update') {
             await updateDocument(response, textDocument)
         }
     } catch (err) {

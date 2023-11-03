@@ -43,8 +43,8 @@ export function getCompletionItem(
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
     const languageContext = runtimeLanguageContext.getLanguageContext(document.languageId)
-    let references = undefined
-    if (recommendationDetail.references != undefined && recommendationDetail.references.length > 0) {
+    let references: typeof recommendationDetail.references
+    if (recommendationDetail.references !== undefined && recommendationDetail.references.length > 0) {
         references = recommendationDetail.references
         const licenses = [
             ...new Set(references.map(r => `[${r.licenseName}](${LicenseUtil.getLicenseHtml(r.licenseName)})`)),

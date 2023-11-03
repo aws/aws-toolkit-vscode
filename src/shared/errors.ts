@@ -493,7 +493,7 @@ export class PermissionsError extends ToolkitError {
         super(`${uri.fsPath} has incorrect permissions. Expected ${resolvedExpected}, found ${actualText}.`, {
             code: 'InvalidPermissions',
             details: {
-                isOwner: stats.uid === -1 ? 'unknown' : userInfo.uid == stats.uid,
+                isOwner: stats.uid === -1 ? 'unknown' : userInfo.uid === stats.uid,
                 mode: `${mode}${stats.uid === -1 ? '' : ` ${owner}`}${stats.gid === -1 ? '' : ` ${stats.gid}`}`,
             },
         })
