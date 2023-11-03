@@ -1,8 +1,15 @@
 /*!
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
- * Source code is from : https://github.com/sourcegraph/cody/pull/868/files
- * under Apache-2.0 license
+ *
+ *  Copyright 2022 Sourcegraph, Inc.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
  */
 import * as vscode from 'vscode'
 import http from 'http'
@@ -40,6 +47,7 @@ export function initializeNetworkAgent(): void {
      * alive only when user is not using their own http proxy and the request contains keepAliveHeader
      *
      * c.f. https://github.com/microsoft/vscode/issues/173861
+     * code reference: https://github.com/sourcegraph/cody/pull/868/files
      */
     try {
         const PacProxyAgent = (globalThis as any)?.[nodeModules]?.[proxyAgentPath]?.[proxyAgent] ?? undefined
