@@ -28,6 +28,23 @@ export class SecurityIssueWebview extends VueWebview {
         vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', this.issue)
     }
 
+    public getRelativePath() {
+        if (this.issue) {
+            return vscode.workspace.asRelativePath(this.issue.filePath)
+        }
+        return ''
+    }
+
+    public navigateToFile() {
+        if (this.issue) {
+            const position = new vscode.Position(this.issue.startLine, 1)
+            const uri = vscode.Uri.file(this.issue.filePath)
+            vscode.commands.executeCommand('vscode.open', uri, {
+                selection: new vscode.Selection(position, position),
+            })
+        }
+    }
+
     public closeWebview(findingId: string) {
         if (this.issue?.findingId === findingId) {
             this.dispose()
