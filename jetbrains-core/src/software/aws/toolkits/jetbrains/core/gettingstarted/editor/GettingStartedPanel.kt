@@ -48,6 +48,8 @@ import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManagerListener
+import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_REGION
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
@@ -112,6 +114,16 @@ class GettingStartedPanel(
                 }
             }
         )
+
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            ConnectionPinningManagerListener.TOPIC,
+            object : ConnectionPinningManagerListener {
+                override fun pinnedConnectionChanged(feature: FeatureWithPinnedConnection, newConnection: ToolkitConnection?) {
+                    connectionUpdated()
+                }
+            }
+        )
+
         addToCenter(
             panel {
                 indent {
