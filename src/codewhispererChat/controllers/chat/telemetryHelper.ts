@@ -227,29 +227,31 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public recordAddMessage(triggerPayload: TriggerPayload | undefined, message: PromptAnswer) {
+    public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
+        const hasCodeSnippet = !triggerPayload.codeSelection?.isEmpty
 
-        // TODO: response code snippet count, references count
+        // TODO: response code snippet count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
-            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload?.userIntent),
+            cwsprChatTriggerInteraction: 'click',
+            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
             cwsprChatHasCodeSnippet: hasCodeSnippet,
-            cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
-            cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
-            cwsprChatActiveEditorImportCount: triggerPayload?.matchPolicy?.must?.length ?? 0,
+            cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
+            cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length ?? 0,
+            cwsprChatActiveEditorImportCount: triggerPayload.matchPolicy?.must?.length ?? 0,
             cwsprChatResponseCodeSnippetCount: 0,
             cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
-            cwsprChatReferencesCount: 0,
+            cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
             cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk.get(message.tabID) ?? 0,
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
+            cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
         })
