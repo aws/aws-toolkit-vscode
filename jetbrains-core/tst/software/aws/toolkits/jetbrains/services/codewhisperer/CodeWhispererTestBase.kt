@@ -129,6 +129,13 @@ open class CodeWhispererTestBase {
                 token = testValidAccessToken
             }
         )
+        stateManager.stub {
+            onGeneric {
+                checkActiveCodeWhispererConnectionType(any())
+            } doAnswer {
+                CodeWhispererLoginType.Sono
+            }
+        }
         settingsManager.loadState(
             CodeWhispererConfiguration().apply {
                 value[CodeWhispererConfigurationType.IsIncludeCodeWithReference] = true

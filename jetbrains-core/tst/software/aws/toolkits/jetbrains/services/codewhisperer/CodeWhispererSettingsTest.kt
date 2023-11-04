@@ -105,6 +105,7 @@ class CodeWhispererSettingsTest : CodeWhispererTestBase() {
 
     @Test
     fun `test CodeWhisperer components should have correct states on initialization with no persistent states`() {
+        mockCodeWhispererEnabledStatus(false)
         stateManager.loadState(CodeWhispererExploreActionState())
         CodeWhispererSettings.getInstance().loadState(CodeWhispererConfiguration())
 
