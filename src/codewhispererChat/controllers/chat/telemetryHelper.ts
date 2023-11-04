@@ -189,6 +189,17 @@ export class CWCTelemetryHelper {
         }
     }
 
+    public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
+        switch (triggerEvent?.type) {
+            case 'editor_context_command':
+                return 'contextMenu'
+            case 'follow_up':
+            case 'chat_message':
+            default:
+                return 'click'
+        }
+    }
+
     public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
         if (!globals.telemetry.telemetryEnabled) {
             return
@@ -203,23 +214,10 @@ export class CWCTelemetryHelper {
         }
 
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
-        let triggerInteraction: CwsprChatTriggerInteraction
-        switch (triggerEvent.type) {
-            case 'chat_message':
-            case 'follow_up':
-                triggerInteraction = 'click'
-                break
-            case 'editor_context_command':
-                triggerInteraction = 'contextMenu'
-                break
-            default:
-                triggerInteraction = 'click'
-                break
-        }
 
         telemetry.codewhispererchat_startConversation.emit({
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
-            cwsprChatTriggerInteraction: triggerInteraction,
+            cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
@@ -232,15 +230,15 @@ export class CWCTelemetryHelper {
             return
         }
 
-        const hasCodeSnippet = !triggerPayload.codeSelection?.isEmpty
+        const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
         // TODO: response code snippet count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
-            cwsprChatTriggerInteraction: 'click',
+            cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
-            cwsprChatHasCodeSnippet: hasCodeSnippet,
+            cwsprChatHasCodeSnippet: !triggerPayload.codeSelection?.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
