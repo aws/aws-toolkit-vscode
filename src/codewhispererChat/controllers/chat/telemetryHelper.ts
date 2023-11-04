@@ -255,6 +255,27 @@ export class CWCTelemetryHelper {
         })
     }
 
+    public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
+        const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
+
+        telemetry.codewhispererchat_messageResponseError.emit({
+            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
+            cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
+            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
+            cwsprChatHasCodeSnippet: !triggerPayload.codeSelection?.isEmpty,
+            cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
+            cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
+            cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
+            cwsprChatResponseCode: responseCode,
+            cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
+            cwsprChatConversationType: 'Chat',
+        })
+    }
+
     public recordEnterFocusConversation(tabID: string) {
         if (!globals.telemetry.telemetryEnabled) {
             return

@@ -541,6 +541,48 @@
             ]
         },
         {
+            "name": "codewhispererchat_messageResponseError",
+            "description": "When an error has occured in response to a prompt",
+            "metadata": [
+                {
+                    "type": "cwsprChatConversationId",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatTriggerInteraction"
+                },
+                {
+                    "type": "cwsprChatUserIntent",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatHasCodeSnippet",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatProgrammingLanguage",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatActiveEditorTotalCharacters",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatActiveEditorImportCount",
+                    "required": false
+                },
+                {
+                    "type": "cwsprChatResponseCode"
+                },
+                {
+                    "type": "cwsprChatRequestLength"
+                },
+                {
+                    "type": "cwsprChatConversationType"
+                }
+            ]
+        },
+        {
             "name": "codewhispererchat_interactWithMessage",
             "description": "When a user interacts with a message in the conversation",
             "metadata": [
