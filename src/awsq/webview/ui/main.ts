@@ -457,13 +457,13 @@ ${message}`,
             connector.onFollowUpClicked(tabID, messageId, followUp)
         },
         onOpenDiff: connector.onOpenDiff,
-        onStopChatResponse: (tabID: string) => {
-            mynahUI.updateStore(tabID, {
-                loadingChat: false,
-                promptInputDisabledState: false,
-            })
-            connector.onStopChatResponse(tabID)
-        },
+        // onStopChatResponse: (tabID: string) => {
+        //     mynahUI.updateStore(tabID, {
+        //         loadingChat: false,
+        //         promptInputDisabledState: false,
+        //     })
+        //     connector.onStopChatResponse(tabID)
+        // },
         tabs: {
             'tab-1': {
                 isSelected: true,
