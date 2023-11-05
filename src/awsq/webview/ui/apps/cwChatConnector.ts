@@ -241,6 +241,7 @@ export class Connector {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
+                messageId: messageData.messageID,
                 codeReference: messageData.codeReference,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0

@@ -63,6 +63,7 @@ export interface PromptAnswer {
     followUpCount: number
     messageID: string
     responseCode: number
+    codeReferenceCount: number
 }
 
 export interface StopResponseMessage {

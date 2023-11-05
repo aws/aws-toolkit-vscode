@@ -49,6 +49,7 @@ export class UIMessageListener {
                         chatMessage: msg.followUp.prompt,
                         tabID: msg.tabID,
                         command: msg.command,
+                        messageId: msg.messageId,
                         userIntent: msg.followUp.type,
                     })
                 }

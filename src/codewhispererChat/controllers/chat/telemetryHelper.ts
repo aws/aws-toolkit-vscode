@@ -189,6 +189,17 @@ export class CWCTelemetryHelper {
         }
     }
 
+    public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
+        switch (triggerEvent?.type) {
+            case 'editor_context_command':
+                return 'contextMenu'
+            case 'follow_up':
+            case 'chat_message':
+            default:
+                return 'click'
+        }
+    }
+
     public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
         if (!globals.telemetry.telemetryEnabled) {
             return
@@ -203,23 +214,10 @@ export class CWCTelemetryHelper {
         }
 
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
-        let triggerInteraction: CwsprChatTriggerInteraction
-        switch (triggerEvent.type) {
-            case 'chat_message':
-            case 'follow_up':
-                triggerInteraction = 'click'
-                break
-            case 'editor_context_command':
-                triggerInteraction = 'contextMenu'
-                break
-            default:
-                triggerInteraction = 'click'
-                break
-        }
 
         telemetry.codewhispererchat_startConversation.emit({
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
-            cwsprChatTriggerInteraction: triggerInteraction,
+            cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
             cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
@@ -227,30 +225,53 @@ export class CWCTelemetryHelper {
         })
     }
 
-    public recordAddMessage(triggerPayload: TriggerPayload | undefined, message: PromptAnswer) {
+    public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
 
-        const hasCodeSnippet = !triggerPayload?.codeSelection?.isEmpty
+        const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
-        // TODO: response code snippet count, references count
+        // TODO: response code snippet count
         telemetry.codewhispererchat_addMessage.emit({
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
-            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload?.userIntent),
-            cwsprChatHasCodeSnippet: hasCodeSnippet,
-            cwsprChatProgrammingLanguage: triggerPayload?.fileLanguage,
-            cwsprChatActiveEditorTotalCharacters: triggerPayload?.fileText?.length ?? 0,
-            cwsprChatActiveEditorImportCount: triggerPayload?.matchPolicy?.must?.length ?? 0,
+            cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
+            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
+            cwsprChatHasCodeSnippet: !triggerPayload.codeSelection?.isEmpty,
+            cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
+            cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
+            cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
             cwsprChatResponseCodeSnippetCount: 0,
             cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
-            cwsprChatReferencesCount: 0,
+            cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
             cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk.get(message.tabID) ?? 0,
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
+            cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
+            cwsprChatConversationType: 'Chat',
+        })
+    }
+
+    public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
+        if (!globals.telemetry.telemetryEnabled) {
+            return
+        }
+
+        const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
+
+        telemetry.codewhispererchat_messageResponseError.emit({
+            cwsprChatConversationId: this.getConversationId(tabID) ?? '',
+            cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
+            cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
+            cwsprChatHasCodeSnippet: !triggerPayload.codeSelection?.isEmpty,
+            cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
+            cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
+            cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
+            cwsprChatResponseCode: responseCode,
+            cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatConversationType: 'Chat',
         })
     }

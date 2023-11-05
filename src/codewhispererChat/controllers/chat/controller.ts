@@ -390,6 +390,7 @@ export class ChatController {
         session.createNewTokenSource()
         try {
             response = await session.chat(request)
+            this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
@@ -400,6 +401,11 @@ export class ChatController {
             this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e) {
             this.processException(e, tabID)
+            this.telemetryHelper.recordMessageResponseError(
+                triggerPayload,
+                tabID,
+                response?.$metadata?.httpStatusCode ?? 0
+            )
         }
     }
 

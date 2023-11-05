@@ -170,6 +170,7 @@ export class Messenger {
             messageLength: message.length,
             messageID,
             responseCode,
+            codeReferenceCount: codeReference.length,
         })
     }
 
