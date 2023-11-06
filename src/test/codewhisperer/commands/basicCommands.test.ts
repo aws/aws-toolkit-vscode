@@ -209,13 +209,13 @@ describe('CodeWhisperer-basicCommands', function () {
                     },
                 ],
             })
-            await targetCommand.execute(codeScanIssue, 'test.py', 'hover')
+            await targetCommand.execute(codeScanIssue, 'test.py', 'webview')
 
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Failed to apply suggested code fix.')
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
-                component: 'hover',
+                component: 'webview',
                 result: 'Failed',
                 reason: 'Error: Failed to get updated content from applying diff patch',
             })
@@ -240,7 +240,7 @@ describe('CodeWhisperer-basicCommands', function () {
                     },
                 ],
             })
-            await targetCommand.execute(codeScanIssue, fileName, 'hover')
+            await targetCommand.execute(codeScanIssue, fileName, 'quickfix')
 
             assert.ok(saveStub.calledOnce)
             assert.ok(loggerStub.calledOnce)
@@ -252,7 +252,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
-                component: 'hover',
+                component: 'quickfix',
                 result: 'Failed',
                 reason: 'Error: Failed to save editor text changes into the file.',
             })
