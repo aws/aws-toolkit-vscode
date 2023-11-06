@@ -302,7 +302,7 @@ describe('timeoutUtils', async function () {
 
         it('returns value after setting truthy parameter to true', async function () {
             let counter: number = 0
-            const result: boolean | undefined = await timeoutUtils.waitUntil(async () => counter++ == 5, {
+            const result: boolean | undefined = await timeoutUtils.waitUntil(async () => counter++ === 5, {
                 timeout: 1000,
                 interval: 5,
                 truthy: true,
@@ -312,7 +312,7 @@ describe('timeoutUtils', async function () {
 
         it('timeout after setting truthy parameter to true', async function () {
             let counter: number = 0
-            const result: boolean | undefined = await timeoutUtils.waitUntil(async () => counter++ == 5, {
+            const result: boolean | undefined = await timeoutUtils.waitUntil(async () => counter++ === 5, {
                 timeout: 15,
                 interval: 5,
                 truthy: true,

@@ -87,7 +87,7 @@ async function promptForSaveLocation(): Promise<vscode.Uri | undefined> {
         canSelectMany: false,
     })
 
-    if (!folderLocation || folderLocation.length == 0) {
+    if (!folderLocation || folderLocation.length === 0) {
         return undefined
     }
 

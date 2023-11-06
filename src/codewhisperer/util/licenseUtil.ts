@@ -463,7 +463,7 @@ export class LicenseUtil {
     }
 
     public static getLicenseHtml(licenseName: string | undefined): string {
-        if (licenseName != undefined && licenseName in this._licenseLookup) {
+        if (licenseName !== undefined && licenseName in this._licenseLookup) {
             return this._licenseLookup[licenseName]
         }
         return `https://spdx.org/licenses`

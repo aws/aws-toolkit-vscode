@@ -102,5 +102,5 @@ async function* getPolicyList(iot: IotClient) {
             return
         }
         yield filteredPolicies.map(policy => ({ label: policy.policyName!, data: policy }))
-    } while (marker != undefined)
+    } while (marker !== undefined)
 }
