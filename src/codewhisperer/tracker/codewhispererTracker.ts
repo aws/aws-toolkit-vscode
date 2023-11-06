@@ -128,7 +128,7 @@ export class CodeWhispererTracker {
      * @param acceptedString the accepted suggestion that was inserted into the editor
      */
     public checkDiff(currString?: string, acceptedString?: string): number {
-        if (!currString || !acceptedString || currString.length == 0 || acceptedString.length == 0) {
+        if (!currString || !acceptedString || currString.length === 0 || acceptedString.length === 0) {
             return 1.0
         }
 

@@ -79,7 +79,7 @@ describe('AuthUtil', async function () {
         await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: codewhispererScopes }))
         await authUtil.showReauthenticatePrompt()
 
-        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity == SeverityLevel.Information)
+        const warningMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Information)
         assert.strictEqual(warningMessage.length, 1)
         assert.strictEqual(
             warningMessage[0].message,

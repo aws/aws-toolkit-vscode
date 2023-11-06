@@ -45,11 +45,11 @@ export class Ec2InstanceNode extends AWSTreeNodeBase implements AWSResourceNode 
     }
 
     private getContext(): Ec2InstanceNodeContext {
-        if (this.instance.status == 'running') {
+        if (this.instance.status === 'running') {
             return Ec2InstanceRunningContext
         }
 
-        if (this.instance.status == 'stopped') {
+        if (this.instance.status === 'stopped') {
             return Ec2InstanceStoppedContext
         }
 

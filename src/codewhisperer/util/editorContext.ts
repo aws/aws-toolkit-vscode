@@ -174,12 +174,12 @@ export function validateRequest(
     req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
 ): boolean {
     const isLanguageNameValid = !(
-        req.fileContext.programmingLanguage.languageName == undefined ||
+        req.fileContext.programmingLanguage.languageName === undefined ||
         req.fileContext.programmingLanguage.languageName.length < 1 ||
         req.fileContext.programmingLanguage.languageName.length > 128 ||
         !runtimeLanguageContext.isLanguageSupported(req.fileContext.programmingLanguage.languageName)
     )
-    const isFileNameValid = !(req.fileContext.filename == undefined || req.fileContext.filename.length < 1)
+    const isFileNameValid = !(req.fileContext.filename === undefined || req.fileContext.filename.length < 1)
     const isFileContextValid = !(
         req.fileContext.leftFileContent.length > CodeWhispererConstants.charactersLimit ||
         req.fileContext.rightFileContent.length > CodeWhispererConstants.charactersLimit

@@ -206,7 +206,7 @@ export function getNonexistentFilename(dir: string, name: string, suffix: string
     }
     for (let i = 0; true; i++) {
         const filename =
-            i == 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
+            i === 0 ? `${name}${suffix}` : `${name}-${i < max ? i : crypto.randomBytes(4).toString('hex')}${suffix}`
         const fullpath = path.join(dir, filename)
         if (!fs.existsSync(fullpath) || i >= max + 99) {
             return filename

@@ -59,9 +59,9 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
         let text = ``
         for (const reference of references) {
             if (
-                reference.recommendationContentSpan == undefined ||
-                reference.recommendationContentSpan.start == undefined ||
-                reference.recommendationContentSpan.end == undefined
+                reference.recommendationContentSpan === undefined ||
+                reference.recommendationContentSpan.start === undefined ||
+                reference.recommendationContentSpan.end === undefined
             ) {
                 continue
             }
@@ -83,7 +83,7 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             } else {
                 lineInfo = `(lines from ${firstCharLineNumber} to ${lastCharLineNumber})`
             }
-            if (text != ``) {
+            if (text !== '') {
                 text += `And `
             }
 
