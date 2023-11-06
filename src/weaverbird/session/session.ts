@@ -143,10 +143,11 @@ export class Session {
     }
 
     public async acceptChanges() {
+        const uploadId = this.uploadId
         for (const filePath of this.state.filePaths ?? []) {
             const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
 
-            const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: filePath })
+            const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: path.join(uploadId, filePath) })
             const content = await this.config.fs.readFile(uri)
             const decodedContent = new TextDecoder().decode(content)
 
