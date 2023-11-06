@@ -114,7 +114,7 @@ export abstract class DependencyGraph {
         let dirPath = this.getBaseDirPath(uri)
         const paths: string[] = [dirPath]
         const projectPath = this.getProjectPath(uri)
-        while (dirPath != projectPath) {
+        while (dirPath !== projectPath) {
             dirPath = path.join(dirPath, '..')
             paths.push(dirPath)
         }
