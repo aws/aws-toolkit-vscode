@@ -1,0 +1,26 @@
+version: 0.2
+
+env:
+    variables:
+        NODE_OPTIONS: '--max-old-space-size=8192'
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 16
+
+    pre_build:
+        commands:
+            # Check for implicit env vars passed from the release pipeline.
+            - test -n "${TOOLKITS_GITHUB_REPO_OWNER}"
+
+    build:
+        commands:
+            - git clone https://github.com/${TOOLKITS_GITHUB_REPO_OWNER}/aws-toolkit-vscode.git aws-toolkit-vscode
+            # checkout master as we want to commit to it later
+            - cd aws-toolkit-vscode && git checkout master
+
+artifacts:
+    base-directory: aws-toolkit-vscode
+    files:
+        - '**/*'
