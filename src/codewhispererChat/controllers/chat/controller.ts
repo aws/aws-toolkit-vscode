@@ -39,6 +39,7 @@ import {
 } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
+import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
 
 export interface ChatControllerMessagePublishers {
@@ -164,7 +165,17 @@ export class ChatController {
     }
 
     private async processInsertCodeAtCursorPosition(message: InsertCodeAtCursorPosition) {
-        this.editorContentController.insertTextAtCursorPosition(message.code)
+        this.editorContentController.insertTextAtCursorPosition(message.code, (editor, cursorStart) => {
+            CodeWhispererTracker.getTracker().enqueue({
+                conversationID: this.telemetryHelper.getConversationId(message.tabID) ?? '',
+                messageID: message.messageId,
+                time: new Date(),
+                fileUrl: editor.document.uri,
+                startPosition: cursorStart,
+                endPosition: editor.selection.active,
+                originalString: message.code,
+            })
+        })
         this.telemetryHelper.recordInteractWithMessage(message)
     }
 

@@ -11,13 +11,14 @@ import { getLogger } from '../../shared/logger/logger'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
+import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
  * The current calculation method is (Levenshtein edit distance / acceptedSuggestion.length).
  */
 export class CodeWhispererTracker {
-    private _eventQueue: AcceptedSuggestionEntry[]
+    private _eventQueue: (AcceptedSuggestionEntry | InsertedCode)[]
     private _timer?: NodeJS.Timer
     private static instance: CodeWhispererTracker
 
@@ -39,7 +40,7 @@ export class CodeWhispererTracker {
         this._eventQueue = []
     }
 
-    public enqueue(suggestion: AcceptedSuggestionEntry) {
+    public enqueue(suggestion: AcceptedSuggestionEntry | InsertedCode) {
         if (!globals.telemetry.telemetryEnabled) {
             return
         }
@@ -62,7 +63,7 @@ export class CodeWhispererTracker {
         }
 
         const currentTime = new Date()
-        const newEventQueue: AcceptedSuggestionEntry[] = []
+        const newEventQueue: (AcceptedSuggestionEntry | InsertedCode)[] = []
         for (const suggestion of this._eventQueue) {
             if (
                 currentTime.getTime() - suggestion.time.getTime() >
@@ -80,7 +81,7 @@ export class CodeWhispererTracker {
         }
     }
 
-    public async emitTelemetryOnSuggestion(suggestion: AcceptedSuggestionEntry) {
+    public async emitTelemetryOnSuggestion(suggestion: AcceptedSuggestionEntry | InsertedCode) {
         let percentage = 1.0
         try {
             if (suggestion.fileUrl?.scheme !== '') {
@@ -95,20 +96,28 @@ export class CodeWhispererTracker {
         } catch (e) {
             getLogger().verbose(`Exception Thrown from CodeWhispererTracker: ${e}`)
         } finally {
-            telemetry.codewhisperer_userModification.emit({
-                codewhispererRequestId: suggestion.requestId ? suggestion.requestId : 'undefined',
-                codewhispererSessionId: suggestion.sessionId ? suggestion.sessionId : undefined,
-                codewhispererTriggerType: suggestion.triggerType,
-                codewhispererSuggestionIndex: suggestion.index ? suggestion.index : 0,
-                codewhispererModificationPercentage: percentage ? percentage : 0,
-                codewhispererCompletionType: suggestion.completionType,
-                codewhispererLanguage: suggestion.language,
-                credentialStartUrl: AuthUtil.instance.startUrl,
-                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
-            })
-            // TODO:
-            // Temperary comment out user modification event, need further discussion on how to calculate this metric
-            // TelemetryHelper.instance.sendUserModificationEvent(suggestion, percentage)
+            if ('conversationID' in suggestion) {
+                telemetry.codewhispererchat_modifyCode.emit({
+                    cwsprChatConversationId: suggestion.conversationID,
+                    cwsprChatMessageId: suggestion.messageID,
+                    cwsprChatModificationPercentage: percentage ? percentage : 0,
+                })
+            } else {
+                telemetry.codewhisperer_userModification.emit({
+                    codewhispererRequestId: suggestion.requestId ? suggestion.requestId : 'undefined',
+                    codewhispererSessionId: suggestion.sessionId ? suggestion.sessionId : undefined,
+                    codewhispererTriggerType: suggestion.triggerType,
+                    codewhispererSuggestionIndex: suggestion.index ? suggestion.index : 0,
+                    codewhispererModificationPercentage: percentage ? percentage : 0,
+                    codewhispererCompletionType: suggestion.completionType,
+                    codewhispererLanguage: suggestion.language,
+                    credentialStartUrl: AuthUtil.instance.startUrl,
+                    codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
+                })
+                // TODO:
+                // Temperary comment out user modification event, need further discussion on how to calculate this metric
+                // TelemetryHelper.instance.sendUserModificationEvent(suggestion, percentage)
+            }
         }
     }
 

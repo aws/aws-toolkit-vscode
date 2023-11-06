@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
@@ -100,4 +101,14 @@ export interface TriggerPayload {
     readonly matchPolicy: MatchPolicy | undefined
     readonly codeQuery: CodeQuery | undefined
     readonly userIntent: UserIntent | undefined
+}
+
+export interface InsertedCode {
+    readonly conversationID: string
+    readonly messageID: string
+    readonly time: Date
+    readonly fileUrl: vscode.Uri
+    readonly startPosition: vscode.Position
+    readonly endPosition: vscode.Position
+    readonly originalString: string
 }
