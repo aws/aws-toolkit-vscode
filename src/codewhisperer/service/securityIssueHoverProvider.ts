@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
 import { SecurityIssueProvider } from './securityIssueProvider'
-import { Component, telemetry } from '../../shared/telemetry/telemetry'
+import { ApplyFixSource, telemetry } from '../../shared/telemetry/telemetry'
 import path from 'path'
 
 export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
@@ -74,7 +74,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         )
 
         if (suggestedFix) {
-            const args: [CodeScanIssue, string, Component] = [issue, filePath, 'hover']
+            const args: [CodeScanIssue, string, ApplyFixSource] = [issue, filePath, 'hover']
             const applyFixCommand = vscode.Uri.parse(
                 `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(JSON.stringify(args))}`
             )

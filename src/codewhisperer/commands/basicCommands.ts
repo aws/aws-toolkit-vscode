@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
+import { ApplyFixSource, CodewhispererCodeScanIssueApplyFix, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
@@ -218,7 +218,7 @@ export const notifyNewCustomizationsCmd = Commands.declare(
 
 export const applySecurityFix = Commands.declare(
     'aws.codeWhisperer.applySecurityFix',
-    () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
+    () => async (issue: CodeScanIssue, filePath: string, source: ApplyFixSource) => {
         const [suggestedFix] = issue.suggestedFixes
         if (!suggestedFix || !filePath) {
             return
@@ -227,7 +227,7 @@ export const applySecurityFix = Commands.declare(
         const applyFixTelemetryEntry: Mutable<CodewhispererCodeScanIssueApplyFix> = {
             detectorId: issue.detectorId,
             findingId: issue.findingId,
-            component: source,
+            applyFixSource: source,
             result: 'Succeeded',
         }
 
