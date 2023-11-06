@@ -3624,30 +3624,30 @@
         "keybindings": [
             {
                 "command": "aws.awsq.explainCode",
-                "key": "ctrl+alt+e",
-                "mac": "ctrl+alt+e",
-                "linux": "ctrl+alt+e",
-                "when": "editorHasSelection"
-            },
-            {
-                "command": "aws.awsq.refactorCode",
-                "key": "ctrl+alt+t",
-                "mac": "ctrl+alt+t",
-                "linux": "ctrl+alt+t",
-                "when": "editorHasSelection"
-            },
-            {
-                "command": "aws.awsq.fixCode",
-                "key": "win+alt+e",
+                "win": "win+alt+e",
                 "mac": "cmd+alt+e",
                 "linux": "meta+alt+e",
                 "when": "editorHasSelection"
             },
             {
+                "command": "aws.awsq.refactorCode",
+                "win": "win+alt+u",
+                "mac": "cmd+alt+u",
+                "linux": "meta+alt+u",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.awsq.fixCode",
+                "win": "win+alt+y",
+                "mac": "cmd+alt+y",
+                "linux": "meta+alt+y",
+                "when": "editorHasSelection"
+            },
+            {
                 "command": "aws.awsq.optimizeCode",
-                "key": "ctrl+alt+o",
-                "mac": "ctrl+alt+o",
-                "linux": "ctrl+alt+o",
+                "win": "win+alt+a",
+                "mac": "cmd+alt+a",
+                "linux": "meta+alt+a",
                 "when": "editorHasSelection"
             },
             {
