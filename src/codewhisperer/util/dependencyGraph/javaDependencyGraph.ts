@@ -233,17 +233,17 @@ export class JavaDependencyGraph extends DependencyGraph {
         const oneBuildFilePaths: string[] = []
         this._outputDirs.forEach(dir => {
             const builFilePath = path.join(dir, buildFileRelativePath)
-            if (existsSync(builFilePath) && oneBuildFilePaths.length == 0) {
+            if (existsSync(builFilePath) && oneBuildFilePaths.length === 0) {
                 oneBuildFilePaths.push(builFilePath)
             }
         })
         this._outputNonStrictDirs.forEach(dir => {
             const builFilePath = path.join(dir, buildFileRelativePath)
-            if (existsSync(builFilePath) && oneBuildFilePaths.length == 0) {
+            if (existsSync(builFilePath) && oneBuildFilePaths.length === 0) {
                 oneBuildFilePaths.push(builFilePath)
             }
         })
-        if (oneBuildFilePaths.length == 0) {
+        if (oneBuildFilePaths.length === 0) {
             throw new Error(`${buildFileRelativePath} is not found.`)
         }
         return oneBuildFilePaths
@@ -375,7 +375,7 @@ export class JavaDependencyGraph extends DependencyGraph {
                 throw new Error(`Classpath auto-detection failed.`)
             }
             let buildFiles: string[] = this.generateBuildFilePaths()
-            if (buildFiles.length == 0) {
+            if (buildFiles.length === 0) {
                 getLogger().debug('Project level compile error:')
                 buildFiles = await this.getFileLevelBuildFilePaths(uri, projectPath)
             }
