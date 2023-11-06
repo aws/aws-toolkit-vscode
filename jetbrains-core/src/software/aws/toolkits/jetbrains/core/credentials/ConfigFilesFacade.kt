@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileFile
 import software.amazon.awssdk.profiles.ProfileFileLocation
@@ -15,6 +17,8 @@ import software.aws.toolkits.core.utils.touch
 import software.aws.toolkits.core.utils.tryDirOp
 import software.aws.toolkits.core.utils.tryFileOp
 import software.aws.toolkits.core.utils.writeText
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileWatcher
+import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants
 import software.aws.toolkits.jetbrains.core.credentials.profiles.ssoSessions
 import java.nio.file.Path
 
@@ -35,6 +39,8 @@ interface ConfigFilesFacade {
     fun appendProfileToCredentials(profile: Profile)
     fun appendSectionToConfig(sectionName: String, profile: Profile)
     fun updateSectionInConfig(sectionName: String, profile: Profile)
+
+    fun deleteSsoConnectionFromConfig(sessionName: String)
 }
 
 class DefaultConfigFilesFacade(
@@ -172,6 +178,86 @@ class DefaultConfigFilesFacade(
             }
         }
     }
+
+    override fun deleteSsoConnectionFromConfig(sessionName: String) {
+        val filePath = configPath
+        val lines = filePath.inputStreamIfExists()?.reader()?.readLines().orEmpty()
+        val ssoHeaderLine = lines.indexOfFirst { it.startsWith("[${SsoSessionConstants.SSO_SESSION_SECTION_NAME} $sessionName]") }
+        if (ssoHeaderLine == -1) return
+        val nextHeaderLine = lines.subList(ssoHeaderLine + 1, lines.size).indexOfFirst { it.startsWith("[") }
+        val endIndex = if (nextHeaderLine == -1) lines.size else ssoHeaderLine + nextHeaderLine + 1
+        val updatedArray = lines.subList(0, ssoHeaderLine) + lines.subList(endIndex, lines.size)
+        val profileHeaderLine = getCorrespondingSsoSessionProfilePosition(updatedArray, sessionName)
+        filePath.writeText(profileHeaderLine.joinToString("\n"))
+
+        val applicationManager = ApplicationManager.getApplication()
+        if (applicationManager != null && !applicationManager.isUnitTestMode) {
+            FileDocumentManager.getInstance().saveAllDocuments()
+            ProfileWatcher.getInstance().forceRefresh()
+        }
+    }
+
+    private fun getCorrespondingSsoSessionProfilePosition(updatedArray: List<String>, sessionName: String): List<String> {
+        var content = updatedArray
+        val finalContent = mutableListOf<String>()
+        while (content.size > 0) {
+            val sessionProfile = checkIfProfileIsPartOfSession(content, sessionName)
+            if (sessionProfile != null) { // There is atleast one profile with the prefix matching the session name
+                if (sessionProfile.shouldBeWrittenToConfig) {
+                    finalContent.addAll(content.subList(0, sessionProfile.endIndex))
+                } else {
+                    finalContent.addAll(content.subList(0, sessionProfile.startIndex))
+                }
+                content = content.subList(sessionProfile.endIndex, content.size)
+            } else {
+                finalContent.addAll(content)
+                break
+            }
+        }
+        return finalContent
+    }
+
+    private fun checkIfProfileIsPartOfSession(content: List<String>, sessionName: String): ProfileLimitsInConfig? {
+        val pos = content.indexOfFirst { it.startsWith("[profile") }
+        // if no matching profile section found
+        if (pos == -1) return null
+
+        // if matching profile section found which is an sso-profile
+        val contentAfterProfileHeader = content.subList(pos + 1, content.size)
+        val checkIfProfileIsValid = isProfileSso(contentAfterProfileHeader, sessionName)
+
+        return ProfileLimitsInConfig(pos, pos + checkIfProfileIsValid.endIndex + 1, shouldBeWrittenToConfig = !checkIfProfileIsValid.isProfileSso)
+    }
+
+    private fun isProfileSso(configContent: List<String>, sessionName: String): CurrentProfileLimitsInConfig {
+        val nextSectionHeaderIndex = configContent.indexOfFirst { it.startsWith("[") }
+        val endIndex = if (nextSectionHeaderIndex == -1) configContent.size else nextSectionHeaderIndex
+        val currentProfile = configContent.subList(0, endIndex)
+        currentProfile.forEach {
+            if (it.startsWith("sso_session")) {
+                return if (it.substringAfter("=").trim() == sessionName) {
+                    CurrentProfileLimitsInConfig(isProfileSso = true, endIndex)
+                } else {
+                    CurrentProfileLimitsInConfig(
+                        isProfileSso = false,
+                        endIndex
+                    )
+                }
+            }
+        }
+        return CurrentProfileLimitsInConfig(isProfileSso = false, endIndex)
+    }
+
+    data class ProfileLimitsInConfig(
+        val startIndex: Int,
+        val endIndex: Int,
+        val shouldBeWrittenToConfig: Boolean = true
+    )
+
+    data class CurrentProfileLimitsInConfig(
+        val isProfileSso: Boolean,
+        val endIndex: Int = 0
+    )
 
     private fun appendSection(path: Path, sectionName: String, profile: Profile) {
         val isConfigFile = path.fileName.toString() != "credentials"

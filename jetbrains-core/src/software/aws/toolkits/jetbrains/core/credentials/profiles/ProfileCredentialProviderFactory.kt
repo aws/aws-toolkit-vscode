@@ -86,7 +86,7 @@ private class ProfileCredentialsIdentifierLegacySso(
 
 class ProfileCredentialsIdentifierSso internal constructor(
     profileName: String,
-    private val ssoSessionName: String,
+    val ssoSessionName: String,
     defaultRegionId: String?,
     credentialType: CredentialType?
 ) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType), PostValidateInteractiveCredential, SsoSessionBackedCredentialIdentifier {

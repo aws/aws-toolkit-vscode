@@ -16,6 +16,7 @@ import com.intellij.openapi.fileEditor.OpenFileDescriptor
 import com.intellij.openapi.project.DefaultProjectFactory
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.ui.MessageDialogBuilder
 import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager
 import com.intellij.ui.GotItTooltip
@@ -40,14 +41,12 @@ import software.aws.toolkits.core.utils.tryOrNull
 import software.aws.toolkits.jetbrains.AwsToolkit
 import software.aws.toolkits.jetbrains.core.AwsResourceCache
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
-import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.logoutFromSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeCatalystConnection
-import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.FeatureWithPinnedConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.CODECATALYST_SCOPES
@@ -59,6 +58,8 @@ import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.DevToolsToolWin
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CawsServiceNode
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.CodeWhispererExplorerRootNode
 import software.aws.toolkits.jetbrains.core.gettingstarted.SourceOfEntry
+import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionCW
+import software.aws.toolkits.jetbrains.core.gettingstarted.deleteSsoConnectionExplorer
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.BULLET_PANEL_HEIGHT
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.GOT_IT_ID_PREFIX
 import software.aws.toolkits.jetbrains.core.gettingstarted.editor.GettingStartedPanel.PanelConstants.PANEL_HEIGHT
@@ -580,7 +581,7 @@ class GettingStartedPanel(
                             row {
                                 browserLink(message("aws.onboarding.getstarted.panel.signup_iam_text"), url = PanelConstants.RESOURCE_EXPLORER_SIGNUP_DOC)
                             }
-                        }.visible(CredentialManager.getInstance().getCredentialIdentifiers().isEmpty())
+                        }.visible(checkIamConnectionValidity(project) is ActiveConnection.NotConnected)
                         panelConnectionInProgress = panel {
                             row {
                                 button(message("general.open.in.progress")) {}.applyToComponent {
@@ -606,6 +607,22 @@ class GettingStartedPanel(
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM)
                             row {
                                 label(message("gettingstarted.auth.connected.idc")).applyToComponent { this.icon = PanelConstants.CHECKMARK_ICON }
+                            }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM_IDC)
+                            row {
+                                link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
+                                    val activeConnection = checkIamConnectionValidity(project)
+                                    val connection = activeConnection.activeConnectionIam
+                                    if (connection != null) {
+                                        val confirmDeletion = MessageDialogBuilder.okCancel(
+                                            message("gettingstarted.auth.idc.sign.out.confirmation.title"),
+                                            message("gettingstarted.auth.idc.sign.out.confirmation")
+                                        ).yesText(message("general.confirm")).ask(project)
+                                        if (confirmDeletion) {
+                                            deleteSsoConnectionExplorer(connection)
+                                            controlPanelVisibility(panelConnected, panelNotConnected)
+                                        }
+                                    }
+                                }
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM_IDC)
                             row {
                                 link(message("general.add.another")) {
@@ -657,6 +674,23 @@ class GettingStartedPanel(
                             }
                             row {
                                 label(message("gettingstarted.auth.idc.expired")).applyToComponent { icon = PanelConstants.X_ICON }
+                            }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM_IDC)
+
+                            row {
+                                link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
+                                    val activeConnection = checkIamConnectionValidity(project)
+                                    val connection = activeConnection.activeConnectionIam
+                                    if (connection != null) {
+                                        val confirmDeletion = MessageDialogBuilder.okCancel(
+                                            message("gettingstarted.auth.idc.sign.out.confirmation.title"),
+                                            message("gettingstarted.auth.idc.sign.out.confirmation")
+                                        ).yesText(message("general.confirm")).ask(project)
+                                        if (confirmDeletion) {
+                                            deleteSsoConnectionExplorer(connection)
+                                            controlPanelVisibility(panelConnected, panelNotConnected)
+                                        }
+                                    }
+                                }
                             }.visible(checkIamConnectionValidity(project).connectionType == ActiveConnectionType.IAM_IDC)
 
                             row {
@@ -798,14 +832,25 @@ class GettingStartedPanel(
                             )
                             row {
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
-                                    val connection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER).activeConnectionBearer
+                                    val validConnection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER)
+                                    val connection = validConnection.activeConnectionBearer
                                     if (connection != null) {
+                                        if (validConnection.connectionType == ActiveConnectionType.IAM_IDC) {
+                                            val confirmDeletion = MessageDialogBuilder.okCancel(
+                                                message("gettingstarted.auth.idc.sign.out.confirmation.title"),
+                                                message("gettingstarted.auth.idc.sign.out.confirmation")
+                                            ).yesText(message("general.confirm")).ask(project)
+                                            if (confirmDeletion) {
+                                                deleteSsoConnectionCW(connection)
+                                            }
+                                        }
                                         logoutFromSsoConnection(project, connection) {
                                             controlPanelVisibility(panelConnected, panelNotConnected)
                                         }
                                     }
                                 }
-
+                            }
+                            row {
                                 text(message("aws.onboarding.getstarted.panel.login_with_iam")) {
                                     handleCodeWhispererLogin(
                                         requestCredentialsForCodeWhisperer(
@@ -875,11 +920,21 @@ class GettingStartedPanel(
                             )
                             row {
                                 link(message("toolkit.login.aws_builder_id.already_connected.reconnect")) {
-                                    val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(
-                                        CodeWhispererConnection.getInstance()
-                                    ) as AwsBearerTokenConnection
-                                    logoutFromSsoConnection(project, connection) {
-                                        controlPanelVisibility(panelConnected, panelNotConnected)
+                                    val validConnection = checkBearerConnectionValidity(project, BearerTokenFeatureSet.CODEWHISPERER)
+                                    val connection = validConnection.activeConnectionBearer
+                                    if (connection != null) {
+                                        if (validConnection.connectionType == ActiveConnectionType.IAM_IDC) {
+                                            val confirmDeletion = MessageDialogBuilder.okCancel(
+                                                message("gettingstarted.auth.idc.sign.out.confirmation.title"),
+                                                message("gettingstarted.auth.idc.sign.out.confirmation")
+                                            ).yesText(message("general.confirm")).ask(project)
+                                            if (confirmDeletion) {
+                                                deleteSsoConnectionCW(connection)
+                                            }
+                                        }
+                                        logoutFromSsoConnection(project, connection) {
+                                            controlPanelVisibility(panelConnected, panelNotConnected)
+                                        }
                                     }
                                 }
                                 text(message("aws.onboarding.getstarted.panel.login_with_iam")) {

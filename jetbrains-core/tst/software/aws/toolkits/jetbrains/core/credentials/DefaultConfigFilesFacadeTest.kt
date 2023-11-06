@@ -310,6 +310,292 @@ class DefaultConfigFilesFacadeTest {
         )
     }
 
+    @Test
+    fun `delete session from config on sign out - only sso-session`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session2]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [sso-session session3]
+            """.trimIndent()
+        )
+        val creds = Paths.get(baseFolder.absolutePath, ".aws", "credentials")
+        val sut = DefaultConfigFilesFacade(configPath = config, credentialsPath = creds)
+        sut.deleteSsoConnectionFromConfig("session2")
+        assertThat(config).hasContent(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `delete session from config on sign out`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session2]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session2-123-admin]
+            sso_session=session2
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+        val creds = Paths.get(baseFolder.absolutePath, ".aws", "credentials")
+        val sut = DefaultConfigFilesFacade(configPath = config, credentialsPath = creds)
+        sut.deleteSsoConnectionFromConfig("session2")
+        assertThat(config).hasContent(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `delete session from config on sign out - profile name is different from session name`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session2]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile othername-with-same-session]
+            sso_session=session2
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+        val creds = Paths.get(baseFolder.absolutePath, ".aws", "credentials")
+        val sut = DefaultConfigFilesFacade(configPath = config, credentialsPath = creds)
+        sut.deleteSsoConnectionFromConfig("session2")
+        assertThat(config).hasContent(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `delete session from config on sign out - multiple profiles with same prefix`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session2]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session2-123-admin]
+            aws_access_key=abjcbd
+            aws_secret_access_key=123
+            [profile session2-123-admin]
+            sso_session=session2
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+        val creds = Paths.get(baseFolder.absolutePath, ".aws", "credentials")
+        val sut = DefaultConfigFilesFacade(configPath = config, credentialsPath = creds)
+        sut.deleteSsoConnectionFromConfig("session2")
+        assertThat(config).hasContent(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [profile session2-123-admin]
+            aws_access_key=abjcbd
+            aws_secret_access_key=123
+            [sso-session session3]
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `delete session from config on sign out - multiple profiles in the same session`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session2]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session2-123-admin]
+            aws_access_key=abjcbd
+            aws_secret_access_key=123
+            [profile session2-123-admin]
+            sso_session=session2
+            sso_account_id=123
+            sso_role_name= admin
+            [profile session2-345-admin]
+            sso_session=session2
+            sso_account_id=345
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+        val creds = Paths.get(baseFolder.absolutePath, ".aws", "credentials")
+        val sut = DefaultConfigFilesFacade(configPath = config, credentialsPath = creds)
+        sut.deleteSsoConnectionFromConfig("session2")
+        assertThat(config).hasContent(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [profile session2-123-admin]
+            aws_access_key=abjcbd
+            aws_secret_access_key=123
+            [sso-session session3]
+            """.trimIndent()
+        )
+    }
+
+    @Test
+    fun `delete session from config on sign out - multiple profiles in the same session with profile before sso-session`() {
+        val baseFolder = folderRule.newFolder()
+        val config = Paths.get(baseFolder.absolutePath, ".aws", "config")
+        config.createParentDirectories()
+        config.writeText(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [profile session2-345-admin]
+            sso_session=session2
+            sso_account_id=345
+            sso_role_name= admin
+            [sso-session session2]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session2-123-admin]
+            aws_access_key=abjcbd
+            aws_secret_access_key=123
+            [profile session2-123-admin]
+            sso_session=session2
+            sso_account_id=123
+            sso_role_name= admin
+            [sso-session session3]
+            """.trimIndent()
+        )
+        val creds = Paths.get(baseFolder.absolutePath, ".aws", "credentials")
+        val sut = DefaultConfigFilesFacade(configPath = config, credentialsPath = creds)
+        sut.deleteSsoConnectionFromConfig("session2")
+        assertThat(config).hasContent(
+            """
+            [sso-session session1]
+            sso_start_url=https://start
+            sso_region=us-west-2
+            sso_registration_scopes=scope1, scope2
+            [profile session1-123-admin]
+            sso_session=session1
+            sso_account_id=123
+            sso_role_name= admin
+            [profile session2-123-admin]
+            aws_access_key=abjcbd
+            aws_secret_access_key=123
+            [sso-session session3]
+            """.trimIndent()
+        )
+    }
+
     private fun IterableAssert<PosixFilePermission>.matches(permissionString: String) {
         containsOnly(*PosixFilePermissions.fromString(permissionString).toTypedArray())
     }
