@@ -211,7 +211,7 @@ export class S3FileViewerManager {
      */
     public async openInReadMode(file: S3File): Promise<void> {
         const contentType = mime.contentType(path.extname(file.name))
-        const isTextDocument = contentType && mime.charset(contentType) == 'UTF-8'
+        const isTextDocument = contentType && mime.charset(contentType) === 'UTF-8'
 
         const uri = this.fileToUri(file, TabMode.Read)
         if (await this.tryFocusTab(uri, uri.with({ scheme: this.schemes.edit }))) {

@@ -129,7 +129,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
 
         let installCommand: string
         let installArgs: string[]
-        if (os.platform() == 'win32') {
+        if (os.platform() === 'win32') {
             const windir = process.env['WINDIR']
             if (!windir) {
                 throw new Error('Environment variable `WINDIR` not defined')
@@ -187,7 +187,7 @@ async function _installDebugger({ debuggerPath }: InstallDebuggerArgs): Promise<
 async function downloadInstallScript(debuggerPath: string): Promise<string> {
     let installScriptUrl: string
     let installScriptPath: string
-    if (os.platform() == 'win32') {
+    if (os.platform() === 'win32') {
         installScriptUrl = 'https://aka.ms/getvsdbgps1'
         installScriptPath = path.join(debuggerPath, 'installVsdbgScript.ps1')
     } else {

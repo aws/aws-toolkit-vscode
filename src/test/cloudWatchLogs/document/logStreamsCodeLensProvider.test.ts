@@ -52,7 +52,7 @@ describe('LogStreamCodeLensProvider', async () => {
          * given string array.
          */
         function createCodeLensAtFirstOccurence(streamId: string, logStreamIdAtLine: string[]): CodeLens {
-            const firstOccurenceIndex = logStreamIdAtLine.findIndex(value => value == streamId)
+            const firstOccurenceIndex = logStreamIdAtLine.findIndex(value => value === streamId)
             return codeLensProvider.createLogStreamCodeLens(logGroupInfo, {
                 streamId: logStreamIdAtLine[firstOccurenceIndex],
                 lineNum: firstOccurenceIndex,

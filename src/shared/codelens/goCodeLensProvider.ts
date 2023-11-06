@@ -86,7 +86,7 @@ export function isValidFuncSignature(document: vscode.TextDocument, symbol: vsco
     // Documentation for valid lambda handler: https://docs.aws.amazon.com/lambda/latest/dg/golang-handler.html
     // The LSP doesn't expose any low-level type-checking functionality unfortunately. If we want to perform
     // type-checking on our lambdas, we need to write the code for that ourselves using 'executeTypeDefinitionProvider'.
-    if (symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character == 0) {
+    if (symbol.kind === vscode.SymbolKind.Function && symbol.range.start.character === 0) {
         // vscode details does not include the return type in the signature :(
         // otherwise we would just use symbol.details instead of parsing it ourselves
         const funcWithBody: string = document.getText(symbol.range)

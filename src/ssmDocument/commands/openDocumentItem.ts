@@ -27,7 +27,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
         const versions = await node.listSchemaVersion()
         if (versions.length > 1) {
             documentVersion = await promptUserforDocumentVersion(versions)
-            if (documentVersion == undefined) {
+            if (documentVersion === undefined) {
                 // user pressed escape and didn't select a version
                 return
             }
