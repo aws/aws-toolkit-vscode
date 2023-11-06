@@ -15,7 +15,7 @@ import { CodeSuggestionsState, ConfigurationEntry } from '../../../codewhisperer
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { showCodeWhispererQuickPickCommand } from '../../../codewhisperer/commands/statusBarCommands'
+import { listCodeWhispererCommandsId } from '../../../codewhisperer/commands/statusBarCommands'
 
 describe('inlineCompletionService', function () {
     beforeEach(function () {
@@ -214,7 +214,7 @@ describe('codewhisperer status bar', function () {
 
         const actualStatusBar = statusBar.getStatusBar()
         assert.strictEqual(actualStatusBar.text, '$(chrome-close) CodeWhisperer')
-        assert.strictEqual(actualStatusBar.command, showCodeWhispererQuickPickCommand)
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
     })
 
@@ -226,7 +226,7 @@ describe('codewhisperer status bar', function () {
 
         const actualStatusBar = statusBar.getStatusBar()
         assert.strictEqual(actualStatusBar.text, '$(debug-start) CodeWhisperer')
-        assert.strictEqual(actualStatusBar.command, showCodeWhispererQuickPickCommand)
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
     })
 
@@ -238,7 +238,7 @@ describe('codewhisperer status bar', function () {
 
         const actualStatusBar = statusBar.getStatusBar()
         assert.strictEqual(actualStatusBar.text, '$(debug-pause) CodeWhisperer')
-        assert.strictEqual(actualStatusBar.command, showCodeWhispererQuickPickCommand)
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
     })
 
@@ -250,7 +250,7 @@ describe('codewhisperer status bar', function () {
 
         const actualStatusBar = statusBar.getStatusBar()
         assert.strictEqual(actualStatusBar.text, '$(debug-disconnect) CodeWhisperer')
-        assert.strictEqual(actualStatusBar.command, showCodeWhispererQuickPickCommand)
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
         assert.deepStrictEqual(
             actualStatusBar.backgroundColor,
             new vscode.ThemeColor('statusBarItem.warningBackground')

@@ -19,7 +19,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
-import { showCodeWhispererQuickPickCommand } from '../commands/statusBarCommands'
+import { listCodeWhispererCommandsId } from '../commands/statusBarCommands'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -211,7 +211,7 @@ export class CodeWhispererStatusBar {
     async setState(status: keyof Pick<typeof states, 'ok'>, isSuggestionsEnabled: boolean): Promise<void>
     async setState(status: keyof typeof states, isSuggestionsEnabled?: boolean): Promise<void> {
         const statusBar = this.statusBar
-        statusBar.command = showCodeWhispererQuickPickCommand
+        statusBar.command = listCodeWhispererCommandsId
         statusBar.backgroundColor = undefined
 
         switch (status) {

@@ -32,8 +32,8 @@ import {
     createSignIn,
     createSignout,
 } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
-import { showCodeWhispererQuickPick } from '../../../codewhisperer/commands/statusBarCommands'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { listCodeWhispererCommands } from '../../../codewhisperer/commands/statusBarCommands'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource} from '../../../codewhisperer/commands/types'
 
@@ -287,7 +287,7 @@ describe('CodeWhisperer-basicCommands', function () {
         })
     })
 
-    describe('showCodeWhispererQuickPick', function () {
+    describe('listCodeWhispererCommands()', function () {
         it('shows expected items when not connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
@@ -297,7 +297,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
 
         it('shows expected items when connection is expired', async function () {
@@ -314,7 +314,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
 
         it('shows expected quick pick items when connected', async function () {
@@ -332,7 +332,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
 
         it('also shows customizations when connected to valid sso', async function () {
@@ -354,7 +354,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
     })
 })
