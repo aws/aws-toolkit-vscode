@@ -89,5 +89,5 @@ async function* getCertList(iot: IotClient) {
             return
         }
         yield filteredCerts.map(cert => ({ label: cert.certificateId!, data: cert }))
-    } while (marker != undefined)
+    } while (marker !== undefined)
 }
