@@ -81,7 +81,7 @@ export function checkDidReload(context: ExtensionContext): boolean {
     return !!context.globalState.get<string>('ACTIVATION_LAUNCH_PATH_KEY')
 }
 
-export async function initialize(context: ExtensionContext): Promise<ToolkitGlobals> {
+export function initialize(context: ExtensionContext): ToolkitGlobals {
     Object.assign(globals, {
         context,
         clock: copyClock(),
