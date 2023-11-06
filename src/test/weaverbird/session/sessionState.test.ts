@@ -57,26 +57,6 @@ const mockSessionStateConfig = ({
         generationFlow: 'lambda',
     },
     workspaceRoot: 'fake-root',
-    backendConfig: {
-        endpoint: 'fake-endpoint',
-        region: 'fake-region',
-        lambdaArns: {
-            setup: {
-                startConversation: 'fake-start-conversation',
-                createUploadUrl: 'fake-create-upload-url',
-            },
-            approach: {
-                generate: 'fake-generate-arn',
-                iterate: 'fake-iterate-arn',
-            },
-            codegen: {
-                generate: 'fake-generate-arn',
-                getResults: 'fake-getResults-arn',
-                iterate: 'fake-iterate',
-                getIterationResults: 'fake-getIterationResults-arn',
-            },
-        },
-    },
     conversationId,
     proxyClient: {
         createConversation: () => sinon.stub(),

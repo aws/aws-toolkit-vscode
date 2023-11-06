@@ -4,19 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { DefaultLambdaClient, LambdaClient } from '../../shared/clients/lambdaClient'
-import { LLMConfig, LocalResolvedConfig } from '../types'
+import { LLMConfig } from '../types'
 import { defaultLlmConfig, weaverbirdScheme } from '../constants'
-import { getConfig } from '../config'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { WorkspaceFolderNotFoundError } from '../errors'
 
 export interface SessionConfig {
-    readonly client: LambdaClient
     readonly llmConfig: LLMConfig
     readonly workspaceRoot: string
-    readonly backendConfig: LocalResolvedConfig
     readonly fs: VirtualFileSystem
 }
 
@@ -26,9 +22,7 @@ export interface SessionConfig {
  */
 export async function createSessionConfig(params?: {
     workspaceRoot?: string
-    client?: LambdaClient
     llmConfiguration?: LLMConfig
-    backendConfiguration?: LocalResolvedConfig
 }): Promise<SessionConfig> {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders === undefined || workspaceFolders.length === 0) {
@@ -38,8 +32,6 @@ export async function createSessionConfig(params?: {
     // TODO figure out how we want to handle multi root workspaces
     const workspace = params?.workspaceRoot ?? workspaceFolders[0].uri.fsPath
     const llmConfig = params?.llmConfiguration ?? defaultLlmConfig
-    const backendConfig = params?.backendConfiguration ?? getConfig()
-    const lambdaClient = params?.client ?? new DefaultLambdaClient(backendConfig.region)
 
     const fs = new VirtualFileSystem()
 
@@ -50,10 +42,8 @@ export async function createSessionConfig(params?: {
     )
 
     return {
-        client: lambdaClient,
         llmConfig,
         workspaceRoot: workspace,
-        backendConfig,
         fs,
     }
 }

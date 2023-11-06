@@ -83,7 +83,6 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
         return {
             llmConfig: this.config.llmConfig,
             workspaceRoot: this.config.workspaceRoot,
-            backendConfig: this.config.backendConfig,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
         }

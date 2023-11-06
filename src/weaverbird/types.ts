@@ -52,7 +52,6 @@ export interface SessionState {
 export interface SessionStateConfig {
     llmConfig: LLMConfig
     workspaceRoot: string
-    backendConfig: LocalResolvedConfig
     conversationId: string
     proxyClient: WeaverbirdClient
     uploadId: string
@@ -67,27 +66,6 @@ export interface SessionStateAction {
 }
 
 export type NewFileContents = { filePath: string; fileContent: string }[]
-
-export interface LocalResolvedConfig {
-    endpoint: string
-    region: string
-    lambdaArns: {
-        setup: {
-            startConversation: string
-            createUploadUrl: string
-        }
-        approach: {
-            generate: string
-            iterate: string
-        }
-        codegen: {
-            generate: string
-            getResults: string
-            iterate: string
-            getIterationResults: string
-        }
-    }
-}
 
 export interface SessionInfo {
     // TODO, if it had a summarized name that was better for the UI

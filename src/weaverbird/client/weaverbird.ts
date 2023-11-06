@@ -9,26 +9,36 @@ import { Auth } from '../../auth/auth'
 import { isSsoConnection } from '../../auth/connection'
 import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
-import { getConfig } from '../config'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import * as WeaverbirdProxyClient from './weaverbirdproxyclient'
 import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
+import * as vscode from 'vscode'
 
-// GAMMA-IAD endpoint
-const cwsprEndpoint = 'https://rts-732200995377.test.codewhisperer.ai.aws.dev/'
+type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
+const getCodeWhispererRegionAndEndpoint = () => {
+    const cwsprEndpointMap: Record<AvailableRegion, { cwsprEndpoint: string; region: string }> = {
+        'Alpha-PDX': { cwsprEndpoint: 'https://rts-641299012133.test.codewhisperer.ai.aws.dev', region: 'us-west-2' },
+        'Gamma-IAD': { cwsprEndpoint: 'https://rts-732200995377.test.codewhisperer.ai.aws.dev/', region: 'us-east-1' },
+        'Gamma-PDX': { cwsprEndpoint: 'https://rts-171763828851.test.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
+    }
+    const region: string | undefined = vscode.workspace.getConfiguration('aws.weaverBird').get('region') ?? ''
+    return region in cwsprEndpointMap
+        ? cwsprEndpointMap[region as keyof typeof cwsprEndpointMap]
+        : cwsprEndpointMap['Gamma-IAD']
+}
 export async function createWeaverbirdProxyClient(): Promise<WeaverbirdProxyClient> {
     const conn = Auth.instance.activeConnection
     if (!isSsoConnection(conn)) {
         throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
     }
-    const weaverbirdConfig = getConfig()
     const bearerToken = (await conn.getToken()).accessToken
+    const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
         {
             apiConfig: apiConfig,
-            region: weaverbirdConfig.region,
-            endpoint: cwsprEndpoint, //CodeWhispererConstants.endpoint,
+            region: region,
+            endpoint: cwsprEndpoint,
             token: new Token({ token: bearerToken }),
         } as ServiceOptions,
         undefined
@@ -48,15 +58,15 @@ export class WeaverbirdClient {
 
     private async getStreamingClient() {
         if (!this.streamingClient) {
-            const weaverbirdConfig = getConfig()
             const conn = Auth.instance.activeConnection
             if (!isSsoConnection(conn)) {
                 throw new ToolkitError('Connection is not an SSO Connection')
             }
             const bearerToken = await conn.getToken()
+            const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
             const streamingClient = new CodeWhispererStreaming({
                 endpoint: cwsprEndpoint,
-                region: weaverbirdConfig.region,
+                region: region,
                 token: { token: bearerToken.accessToken, expiration: bearerToken.expiresAt },
             })
             this.streamingClient = streamingClient
