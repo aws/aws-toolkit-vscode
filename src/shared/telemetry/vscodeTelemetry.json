@@ -47,6 +47,12 @@
             "name": "detectorId",
             "type": "string",
             "description": "The id of the detector which produced the code scan issue"
+        },
+        {
+            "name": "applyFixSource",
+            "type": "string",
+            "allowedValues": ["hover", "webview", "quickfix"],
+            "description": "The location which triggered the apply fix command for a code scan issue"
         }
     ],
     "metrics": [
@@ -266,6 +272,11 @@
             "name": "codewhisperer_codeScanIssueHover",
             "description": "Called when a code scan issue is hovered over",
             "metadata": [{ "type": "findingId" }, { "type": "detectorId" }]
+        },
+        {
+            "name": "codewhisperer_codeScanIssueApplyFix",
+            "description": "Called when a code scan issue suggested fix is applied",
+            "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "applyFixSource" }]
         }
     ]
 }
