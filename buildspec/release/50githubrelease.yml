@@ -1,0 +1,41 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 16
+
+        Commands:
+            # GitHub recently changed their GPG signing key for their CLI tool
+            # These are the updated installation instructions:
+            # https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian-ubuntu-linux-raspberry-pi-os-apt
+            - curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+            - chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+            - echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+            - apt update
+            - apt install gh -y
+
+    pre_build:
+        commands:
+            # Check for implicit env vars passed from the release pipeline.
+            - test -n "${TOOLKITS_GITHUB_REPO_OWNER}"
+            - REPO="${TOOLKITS_GITHUB_REPO_OWNER}/aws-toolkit-vscode"
+
+    build:
+        commands:
+            # pull in the build artifacts
+            - cp -r ${CODEBUILD_SRC_DIR_buildPipeline}/* .
+            - VERSION=$(node -e "console.log(require('./package.json').version);")
+            - UPLOAD_TARGET=$(ls aws-toolkit-vscode*.vsix)
+            - HASH_UPLOAD_TARGET=${UPLOAD_TARGET}.sha384
+            - 'HASH=$(sha384sum -b $UPLOAD_TARGET | cut -d" " -f1)'
+            - echo "Writing hash to $HASH_UPLOAD_TARGET"
+            - echo $HASH > $HASH_UPLOAD_TARGET
+            - echo "posting $VERSION with sha384 hash $HASH to GitHub"
+            - RELEASE_MESSAGE="AWS Toolkit for VS Code $VERSION"
+            - |
+                if [ $STAGE = "prod" ]; then
+                  gh release create --repo $REPO --title "$VERSION" --notes "$RELEASE_MESSAGE" -- "v$VERSION" "$UPLOAD_TARGET" "$HASH_UPLOAD_TARGET"
+                else
+                  echo "SKIPPED: 'gh release create --repo $REPO'"
+                fi
