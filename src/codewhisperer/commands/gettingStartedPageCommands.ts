@@ -13,13 +13,16 @@ import { CodeWhispererCommandSource } from './types'
  */
 export class CodeWhispererCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext) {}
-    public async showGettingStartedPage(source: CodeWhispererCommandSource) {
+    public async showGettingStartedPage(source: CodeWhispererCommandSource | undefined) {
         const prompts = PromptSettings.instance
         //To check the condition If the user has already seen the welcome message
         if (!(await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage'))) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_ButtonClick', passive: true })
         }
-        return showCodeWhispererWebview(this.extContext, source.source)
+        return showCodeWhispererWebview(
+            this.extContext,
+            source instanceof CodeWhispererCommandSource ? source.source : undefined
+        )
     }
 }
 /**

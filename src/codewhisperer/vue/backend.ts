@@ -135,7 +135,7 @@ let subscriptions: vscode.Disposable[] | undefined
 // This function is called when the extension is activated : Webview of CodeWhisperer
 export async function showCodeWhispererWebview(
     ctx: vscode.ExtensionContext,
-    source: CodeWhispererSource
+    source: CodeWhispererSource | undefined
 ): Promise<void> {
     activePanel ??= new Panel(ctx)
     activePanel.server.setSource(source)
