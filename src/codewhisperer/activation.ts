@@ -231,11 +231,11 @@ export async function activate(context: ExtContext): Promise<void> {
             ImportAdderProvider.instance
         ),
         vscode.languages.registerHoverProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.platformLanguageIds],
             SecurityIssueHoverProvider.instance
         ),
         vscode.languages.registerCodeActionsProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.platformLanguageIds],
             SecurityIssueCodeActionProvider.instance
         )
     )
