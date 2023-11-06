@@ -50,6 +50,8 @@ module.exports = {
                 // modifiers: ['requiresQuotes'],
             },
         ],
+        // Avoid accidental use of "==" instead of "===".
+        eqeqeq: 'error',
         // TODO reenable this rule (by removing this off)
         'no-async-promise-executor': 'off',
         // TODO reenable this rule (by removing this off)

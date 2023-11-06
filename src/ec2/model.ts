@@ -80,7 +80,7 @@ export class Ec2ConnectionManager {
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
         const instanceStatus = await this.ec2Client.getInstanceStatus(instanceId)
-        return instanceStatus == 'running'
+        return instanceStatus === 'running'
     }
 
     protected throwConnectionError(message: string, selection: Ec2Selection, errorInfo: ErrorInformation) {
@@ -119,7 +119,7 @@ export class Ec2ConnectionManager {
     }
 
     private async checkForInstanceSsmError(selection: Ec2Selection): Promise<void> {
-        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) == 'Online'
+        const isSsmAgentRunning = (await this.ssmClient.getInstanceAgentPingStatus(selection.instanceId)) === 'Online'
 
         if (!isSsmAgentRunning) {
             this.throwConnectionError('Is SSM Agent running on the target instance?', selection, {
