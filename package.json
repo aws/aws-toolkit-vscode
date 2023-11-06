@@ -1162,16 +1162,6 @@
                 {
                     "command": "aws.openInApplicationComposer",
                     "when": "false"
-                },
-                {
-                    "command": "aws.createWithApplicationComposer",
-                    "when": "false"
-                }
-            ],
-            "file/newFile": [
-                {
-                    "command": "aws.createWithApplicationComposer",
-                    "group": "Template"
                 }
             ],
             "editor/title": [
@@ -1222,7 +1212,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "editorLangId == json || editorLangId == yaml",
+                    "when": "editorLangId == json || editorLangId == yaml || resourceFilename =~ /^.*\\.(template)$/",
                     "group": "navigation"
                 }
             ],
@@ -1353,7 +1343,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.(json|yml|yaml)$/",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
                 }
             ],
@@ -3519,16 +3509,6 @@
                 "title": "Open Developer Menu",
                 "category": "AWS (Developer)",
                 "enablement": "aws.isDevMode"
-            },
-            {
-                "command": "aws.createWithApplicationComposer",
-                "title": "%AWS.command.applicationComposer.create%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
             },
             {
                 "command": "aws.openInApplicationComposerDialog",
