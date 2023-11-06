@@ -6,11 +6,11 @@
 import { createExitButton } from '../../shared/ui/buttons'
 import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { Commands } from '../../shared/vscode/commands2'
-import { codewhispererNode } from '../explorer/codewhispererNode'
+import { getCodewhispererNode } from '../explorer/codewhispererNode'
 
 export const showCodeWhispererQuickPickCommand = 'aws.codewhisperer.quickpick'
 export const showCodeWhispererQuickPick = Commands.declare({ id: showCodeWhispererQuickPickCommand }, () => () => {
-    return createQuickPick(codewhispererNode.getChildren('item'), {
+    return createQuickPick(getCodewhispererNode().getChildren('item'), {
         title: 'CodeWhisperer',
         buttons: [createExitButton()],
         ignoreFocusOut: false,
