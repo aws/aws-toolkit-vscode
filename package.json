@@ -3613,6 +3613,41 @@
         ],
         "keybindings": [
             {
+                "command": "aws.awsq.explainCode",
+                "key": "ctrl+alt+e",
+                "mac": "ctrl+alt+e",
+                "linux": "ctrl+alt+e",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.awsq.refactorCode",
+                "key": "ctrl+alt+t",
+                "mac": "ctrl+alt+t",
+                "linux": "ctrl+alt+t",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.awsq.fixCode",
+                "key": "win+alt+e",
+                "mac": "cmd+alt+e",
+                "linux": "meta+alt+e",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.awsq.optimizeCode",
+                "key": "ctrl+alt+o",
+                "mac": "ctrl+alt+o",
+                "linux": "ctrl+alt+o",
+                "when": "editorHasSelection"
+            },
+            {
+                "command": "aws.awsq.sendToPrompt",
+                "key": "win+alt+q",
+                "mac": "cmd+alt+q",
+                "linux": "meta+alt+q",
+                "when": "editorHasSelection"
+            },
+            {
                 "command": "aws.previewStateMachine",
                 "key": "ctrl+shift+v",
                 "mac": "cmd+shift+v",
@@ -4015,7 +4050,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.13.6",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.13.7",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
