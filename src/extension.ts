@@ -420,7 +420,7 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
 }
 
 async function getMachineId(): Promise<string> {
-    const proc = new ChildProcess('hostname', [], { collect: true, logging: false })
+    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 
