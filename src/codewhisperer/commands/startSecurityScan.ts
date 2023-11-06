@@ -246,7 +246,7 @@ function populateCodeScanLogStream(scannedFiles: Set<string>) {
     // Clear log
     securityScanOutputChannel.clear()
     const numScannedFiles = scannedFiles.size
-    if (numScannedFiles == 1) {
+    if (numScannedFiles === 1) {
         codeScanLogger.verbose(`${numScannedFiles} file was scanned during the last Security Scan.`)
     } else {
         codeScanLogger.verbose(`${numScannedFiles} files were scanned during the last Security Scan.`)
