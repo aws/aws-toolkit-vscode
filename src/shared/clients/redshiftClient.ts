@@ -84,7 +84,7 @@ export class DefaultRedshiftClient {
             Database: connectionParams.database,
             DbUser:
                 warehouseType === RedshiftWarehouseType.PROVISIONED &&
-                connectionParams.connectionType != ConnectionType.DatabaseUser
+                connectionParams.connectionType !== ConnectionType.DatabaseUser
                     ? connectionParams.username
                     : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
@@ -104,7 +104,7 @@ export class DefaultRedshiftClient {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             Database: connectionParams.database,
             DbUser:
-                connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                connectionParams.username && connectionParams.connectionType !== ConnectionType.DatabaseUser
                     ? connectionParams.username
                     : undefined,
             WorkgroupName: warehouseType === RedshiftWarehouseType.SERVERLESS ? warehouseIdentifier : undefined,
@@ -128,7 +128,7 @@ export class DefaultRedshiftClient {
         const input: RedshiftData.ListTablesRequest = {
             ClusterIdentifier: warehouseType === RedshiftWarehouseType.PROVISIONED ? warehouseIdentifier : undefined,
             DbUser:
-                connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                connectionParams.username && connectionParams.connectionType !== ConnectionType.DatabaseUser
                     ? connectionParams.username
                     : undefined,
             Database: connectionParams.database,
@@ -166,7 +166,7 @@ export class DefaultRedshiftClient {
                     Database: connectionParams.database,
                     Sql: queryToExecute,
                     DbUser:
-                        connectionParams.username && connectionParams.connectionType != ConnectionType.DatabaseUser
+                        connectionParams.username && connectionParams.connectionType !== ConnectionType.DatabaseUser
                             ? connectionParams.username
                             : undefined,
                     SecretArn:

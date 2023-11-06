@@ -215,7 +215,7 @@ export class SecurityPanelViewProvider implements vscode.WebviewViewProvider {
     }
 
     private getHtmlContent(): string {
-        if (this.persistLog.length == 0) {
+        if (this.persistLog.length === 0) {
             return 'No security issues have been detected in the workspace.'
         }
         return this.persistLog.join('') + this.dynamicLog.join('')

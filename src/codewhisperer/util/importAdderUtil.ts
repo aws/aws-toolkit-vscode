@@ -19,12 +19,12 @@ export function findLineOfFirstCode(editor: vscode.TextEditor, firstLineOfRecomm
     const lang = editor.document.languageId
     for (let i = 0; i <= firstLineOfRecommendation; i++) {
         const text = editor.document.lineAt(i).text
-        if (lang == 'python') {
+        if (lang === 'python') {
             // skip #, empty line
             if (!text.match(/^\s*#/) && !text.match(/^\s*$/)) {
                 return i
             }
-        } else if (lang == 'javascript' || lang == 'jsx') {
+        } else if (lang === 'javascript' || lang === 'jsx') {
             // skip //, /*, *, */, empty line
             if (
                 !text.match(/^\s*\/\//) &&
@@ -36,7 +36,7 @@ export function findLineOfFirstCode(editor: vscode.TextEditor, firstLineOfRecomm
             ) {
                 return i
             }
-        } else if (lang == 'java') {
+        } else if (lang === 'java') {
             // skip //, /*, *, */, package, empty line
             if (
                 !text.match(/^\s*\/\//) &&
@@ -57,15 +57,15 @@ export function findLineOfLastImportStatement(editor: vscode.TextEditor, firstLi
     const lang = editor.document.languageId
     for (let i = firstLineOfRecommendation; i >= 0; i--) {
         const text = editor.document.lineAt(i).text
-        if (lang == 'python') {
+        if (lang === 'python') {
             if (text.match(/^\s*import\s+\S+/) || text.match(/^\s*from\s+\S+/)) {
                 return i + 1
             }
-        } else if (lang == 'javascript' || lang == 'jsx') {
+        } else if (lang === 'javascript' || lang === 'jsx') {
             if (text.match(/^\s*import\s+\S+/) || text.match(/=\s*require\s*\(\s*\S+\s*\)\s*;/)) {
                 return i + 1
             }
-        } else if (lang == 'java') {
+        } else if (lang === 'java') {
             if (text.match(/^\s*import\s+\S+\s*;/)) {
                 return i + 1
             }

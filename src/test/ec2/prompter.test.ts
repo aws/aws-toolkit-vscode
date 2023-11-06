@@ -160,7 +160,7 @@ describe('Ec2Prompter', async function () {
         })
 
         it('applies filter when given', async function () {
-            prompter.setFilter(i => parseInt(i.InstanceId!) % 2 == 1)
+            prompter.setFilter(i => parseInt(i.InstanceId!) % 2 === 1)
 
             const expected = [
                 {
