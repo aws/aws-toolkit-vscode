@@ -6,12 +6,17 @@
 import vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
-import { codewhispererNode } from '../../../codewhisperer/explorer/codewhispererNode'
+import { CodeWhispererNode, getCodewhispererNode } from '../../../codewhisperer/explorer/codewhispererNode'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('codewhispererNode', function () {
     let isConnectionValid: sinon.SinonStub
     let isConnected: sinon.SinonStub
+    let codewhispererNode: CodeWhispererNode
+
+    before(function () {
+        codewhispererNode = getCodewhispererNode()
+    })
 
     beforeEach(function () {
         isConnectionValid = sinon.stub(AuthUtil.instance, 'isConnectionValid')
