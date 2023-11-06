@@ -82,7 +82,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    await initialize(context)
+    initialize(context)
     globals.machineId = await getMachineId()
     initializeManifestPaths(context)
 
@@ -420,7 +420,7 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
 }
 
 async function getMachineId(): Promise<string> {
-    const proc = new ChildProcess('hostname', [], { collect: true })
+    const proc = new ChildProcess('hostname', [], { collect: true, logging: false })
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 
