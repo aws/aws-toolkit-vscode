@@ -2,6 +2,8 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
+
+import * as vscode from 'vscode'
 import { Service, Token } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
@@ -12,7 +14,7 @@ import { getLogger } from '../../shared/logger'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import * as WeaverbirdProxyClient from './weaverbirdproxyclient'
 import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
-import * as vscode from 'vscode'
+import { omit } from 'lodash'
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
@@ -77,6 +79,7 @@ export class WeaverbirdClient {
     public async createConversation() {
         try {
             const client = await this.getClient()
+            getLogger().debug(`Executing createTaskAssistConversation with {}`)
             const { conversationId } = await client.createTaskAssistConversation().promise()
             return conversationId
         } catch (e) {
@@ -90,19 +93,19 @@ export class WeaverbirdClient {
     public async createUploadUrl(conversationId: string, contentChecksumSha256: string) {
         try {
             const client = await this.getClient()
-            const response = await client
-                .createUploadUrl({
-                    uploadContext: {
-                        taskAssistPlanningUploadContext: {
-                            conversationId,
-                        },
+            const params = {
+                uploadContext: {
+                    taskAssistPlanningUploadContext: {
+                        conversationId,
                     },
-                    contentChecksum: contentChecksumSha256,
-                    contentChecksumType: 'SHA_256',
-                    artifactType: 'SourceCode',
-                    uploadIntent: 'TASK_ASSIST_PLANNING',
-                })
-                .promise()
+                },
+                contentChecksum: contentChecksumSha256,
+                contentChecksumType: 'SHA_256',
+                artifactType: 'SourceCode',
+                uploadIntent: 'TASK_ASSIST_PLANNING',
+            }
+            getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
+            const response = await client.createUploadUrl(params).promise()
             return response
         } catch (e) {
             getLogger().error(`weaverbird: failed to generate presigned url: ${(e as Error).message}`)
@@ -112,7 +115,7 @@ export class WeaverbirdClient {
     public async generatePlan(conversationId: string, uploadId: string, userMessage: string) {
         try {
             const streamingClient = await this.getStreamingClient()
-            const response = await streamingClient.generateTaskAssistPlan({
+            const params = {
                 workspaceState: {
                     programmingLanguage: { languageName: 'javascript' },
                     uploadId,
@@ -122,7 +125,9 @@ export class WeaverbirdClient {
                     chatTriggerType: 'MANUAL',
                     conversationId,
                 },
-            })
+            }
+            getLogger().debug(`Executing generateTaskAssistPlan with %O`, params)
+            const response = await streamingClient.generateTaskAssistPlan(params)
             if (!response.planningResponseStream) {
                 return undefined
             }
@@ -143,19 +148,19 @@ export class WeaverbirdClient {
     public async startCodeGeneration(conversationId: string, uploadId: string, message?: string) {
         try {
             const client = await this.getClient()
-            const response = await client
-                .startTaskAssistCodeGeneration({
-                    conversationState: {
-                        conversationId,
-                        currentMessage: { ...(message ? { userInputMessage: { content: message } } : {}) },
-                        chatTriggerType: 'MANUAL',
-                    },
-                    workspaceState: {
-                        uploadId,
-                        programmingLanguage: { languageName: 'javascript' },
-                    },
-                })
-                .promise()
+            const params = {
+                conversationState: {
+                    conversationId,
+                    currentMessage: { ...(message ? { userInputMessage: { content: message } } : {}) },
+                    chatTriggerType: 'MANUAL',
+                },
+                workspaceState: {
+                    uploadId,
+                    programmingLanguage: { languageName: 'javascript' },
+                },
+            }
+            getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
+            const response = await client.startTaskAssistCodeGeneration(params).promise()
 
             return response
         } catch (e) {
@@ -171,12 +176,12 @@ export class WeaverbirdClient {
     public async getCodeGeneration(conversationId: string, codeGenerationId: string) {
         try {
             const client = await this.getClient()
-            const response = await client
-                .getTaskAssistCodeGeneration({
-                    codeGenerationId,
-                    conversationId,
-                })
-                .promise()
+            const params = {
+                codeGenerationId,
+                conversationId,
+            }
+            getLogger().debug(`Executing getTaskAssistCodeGeneration with %O`, params)
+            const response = await client.getTaskAssistCodeGeneration(params).promise()
 
             return response
         } catch (e) {
@@ -192,10 +197,12 @@ export class WeaverbirdClient {
     public async exportResultArchive(conversationId: string) {
         try {
             const streamingClient = await this.getStreamingClient()
-            const archiveResponse = await streamingClient.exportResultArchive({
+            const params = {
                 exportId: conversationId,
                 exportIntent: 'TASK_ASSIST',
-            })
+            }
+            getLogger().debug(`Executing exportResultArchive with %O`, params)
+            const archiveResponse = await streamingClient.exportResultArchive(params)
             const buffer: number[] = []
             for await (const chunk of archiveResponse.body) {
                 buffer.push(...(chunk.binaryPayloadEvent?.bytes ?? []))
