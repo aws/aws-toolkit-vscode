@@ -7,6 +7,7 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.util.Disposer
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.credentials.ToolkitBearerTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.ProfileSdkTokenProviderWrapper
@@ -16,6 +17,7 @@ class ManagedBearerSsoConnection(
     override val startUrl: String,
     override val region: String,
     override val scopes: List<String>,
+    cache: DiskCache = diskCache,
     id: String? = null,
     label: String? = null
 ) : BearerSsoConnection, Disposable {
@@ -28,7 +30,8 @@ class ManagedBearerSsoConnection(
                 startUrl,
                 region,
                 scopes,
-                id
+                id,
+                cache
             ),
             region
         )
