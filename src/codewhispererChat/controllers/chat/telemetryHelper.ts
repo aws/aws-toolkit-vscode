@@ -205,7 +205,7 @@ export class CWCTelemetryHelper {
             return
         }
 
-        if (triggerEvent.tabID == undefined) {
+        if (triggerEvent.tabID === undefined) {
             return
         }
 
@@ -220,7 +220,7 @@ export class CWCTelemetryHelper {
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
-            cwsprChatHasCodeSnippet: triggerPayload.codeSelection != undefined,
+            cwsprChatHasCodeSnippet: triggerPayload.codeSelection !== undefined,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
         })
     }
@@ -308,7 +308,7 @@ export class CWCTelemetryHelper {
     }
 
     public setReponseStreamTimeToFirstChunk(tabID: string) {
-        if (this.responseStreamTimeToFirstChunk.get(tabID) == undefined) {
+        if (this.responseStreamTimeToFirstChunk.get(tabID) === undefined) {
             this.responseStreamTimeToFirstChunk.set(
                 tabID,
                 performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)

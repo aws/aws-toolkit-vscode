@@ -278,7 +278,7 @@ export class ChatController {
     }
 
     private async processPromptChatMessage(message: PromptMessage) {
-        if (message.message == undefined) {
+        if (message.message === undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
             return
         }
@@ -301,7 +301,7 @@ export class ChatController {
     }
 
     private async processCommandMessage(message: PromptMessage) {
-        if (message.command == 'clear') {
+        if (message.command === 'clear') {
             this.sessionStorage.deleteSession(message.tabID)
             this.triggerEventsStorage.removeTabEvents(message.tabID)
             return
@@ -440,8 +440,8 @@ export class ChatController {
 
             let programmingLanguage
             if (
-                triggerPayload.fileLanguage != undefined &&
-                triggerPayload.fileLanguage != '' &&
+                triggerPayload.fileLanguage !== undefined &&
+                triggerPayload.fileLanguage !== '' &&
                 [
                     'python',
                     'javascript',

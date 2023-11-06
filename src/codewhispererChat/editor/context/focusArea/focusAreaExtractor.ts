@@ -158,7 +158,7 @@ export class FocusAreaContextExtractor {
     }
 
     private prepareFqns(names: any): [FullyQualifiedName[], boolean] {
-        if (names == undefined || !names.fullyQualified) {
+        if (names === undefined || !names.fullyQualified) {
             return [[], false]
         }
         const dedupedUsedFullyQualifiedNames: Map<string, FullyQualifiedName> = new Map(

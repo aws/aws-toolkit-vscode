@@ -38,7 +38,7 @@ export class ChatSession {
             this.client = await new CodeWhispererStreamingClient().createSdkClient()
         }
 
-        if (this.sessionId != undefined && chatRequest.conversationState != undefined) {
+        if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {
             chatRequest.conversationState.conversationId = this.sessionId
         }
 
@@ -50,7 +50,7 @@ export class ChatSession {
         // read the first event to get conversation id.
         // this assumes that the metadataEvent is the first event in the response stream.
         for await (const event of response.chatResponse) {
-            if (event.messageMetadataEvent != undefined) {
+            if (event.messageMetadataEvent !== undefined) {
                 this.sessionId = event.messageMetadataEvent!.conversationId
             }
             break

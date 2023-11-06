@@ -97,7 +97,7 @@ export class WeaverbirdController {
 
     // TODO add type
     private async processUserChatMessage(message: any) {
-        if (message.message == undefined) {
+        if (message.message === undefined) {
             this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
             return
         }
