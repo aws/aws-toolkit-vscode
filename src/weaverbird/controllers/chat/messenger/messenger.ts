@@ -9,6 +9,7 @@ import {
     AsyncEventProgressMessage,
     ErrorMessage,
     FilePathMessage,
+    UpdatePlaceholderMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
@@ -71,5 +72,9 @@ export class Messenger {
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
         this.dispatcher.sendAsyncEventProgress(new AsyncEventProgressMessage(tabID, inProgress, message))
+    }
+
+    public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
+        this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
     }
 }

@@ -22,6 +22,7 @@ export interface ConnectorProps {
     sendFeedback?: (tabId: string, feedbackPayload: FeedbackPayload) => void | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
+    onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     tabsStorage: TabsStorage
 }
 
@@ -31,6 +32,7 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onAsyncEventProgress
+    private readonly updatePlaceholder
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -38,6 +40,7 @@ export class Connector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onAsyncEventProgress = props.onAsyncEventProgress
+        this.updatePlaceholder = props.onUpdatePlaceholder
     }
 
     onCodeInsertToCursorPosition = (
@@ -157,6 +160,11 @@ export class Connector {
 
         if (messageData.type === 'asyncEventProgressMessage') {
             this.onAsyncEventProgress(messageData.tabID, messageData.inProgress, messageData.message ?? undefined)
+            return
+        }
+
+        if (messageData.type === 'updatePlaceholderMessage') {
+            this.updatePlaceholder(messageData.tabID, messageData.newPlaceholder)
             return
         }
     }
