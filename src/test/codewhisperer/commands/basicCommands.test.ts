@@ -21,8 +21,8 @@ import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
 import { get, set } from '../../../codewhisperer/util/commonUtil'
 import { createAutoSuggestions, createGettingStarted, createLearnMore, createOpenReferenceLog, createReconnect, createSecurityScan, createSelectCustomization, createSeparator, createSignIn, createSignout } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
-import { showCodeWhispererQuickPick } from '../../../codewhisperer/commands/statusBarCommands'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { listCodeWhispererCommands } from '../../../codewhisperer/commands/statusBarCommands'
 import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
 
 describe('CodeWhisperer-basicCommands', function () {
@@ -76,12 +76,12 @@ describe('CodeWhisperer-basicCommands', function () {
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
-        it ('has suggestions disabled by default', async function () {
+        it('has suggestions disabled by default', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
         })
 
-        it ('toggles states as expected', async function () {
+        it('toggles states as expected', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
             await targetCommand.execute()
@@ -200,7 +200,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
 
         it('shows expected items when connection is expired', async function () {
@@ -213,13 +213,13 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
 
         it('shows expected quick pick items when connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            getTestWindow().onDidShowQuickPick((e) => {
+            getTestWindow().onDidShowQuickPick(e => {
                 e.assertItems([
                     createAutoSuggestions('item', false),
                     createSecurityScan('item'),
@@ -231,7 +231,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
 
         it('also shows customizations when connected to valid sso', async function () {
@@ -253,7 +253,7 @@ describe('CodeWhisperer-basicCommands', function () {
                 e.dispose() // skip needing to select an item to continue
             })
 
-            await showCodeWhispererQuickPick.execute()
+            await listCodeWhispererCommands.execute()
         })
     })
 })

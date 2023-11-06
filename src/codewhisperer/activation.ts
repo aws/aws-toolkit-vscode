@@ -55,7 +55,7 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
-import { showCodeWhispererQuickPick } from './commands/statusBarCommands'
+import { listCodeWhispererCommands } from './commands/statusBarCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -184,7 +184,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // refresh codewhisperer status bar
         refreshStatusBar.register(),
         // quick pick with codewhisperer options
-        showCodeWhispererQuickPick.register(),
+        listCodeWhispererCommands.register(),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())

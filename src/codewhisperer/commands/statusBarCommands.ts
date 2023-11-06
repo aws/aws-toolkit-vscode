@@ -8,8 +8,8 @@ import { createQuickPick } from '../../shared/ui/pickerPrompter'
 import { Commands } from '../../shared/vscode/commands2'
 import { getCodewhispererNode } from '../explorer/codewhispererNode'
 
-export const showCodeWhispererQuickPickCommand = 'aws.codewhisperer.quickpick'
-export const showCodeWhispererQuickPick = Commands.declare({ id: showCodeWhispererQuickPickCommand }, () => () => {
+export const listCodeWhispererCommandsId = 'aws.codewhisperer.listCommands'
+export const listCodeWhispererCommands = Commands.declare({ id: listCodeWhispererCommandsId }, () => () => {
     return createQuickPick(getCodewhispererNode().getChildren('item'), {
         title: 'CodeWhisperer',
         buttons: [createExitButton()],

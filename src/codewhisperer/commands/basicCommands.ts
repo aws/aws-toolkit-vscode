@@ -25,12 +25,8 @@ import {
     selectCustomization,
     showCustomizationPrompt,
 } from '../util/customizationUtil'
-<<<<<<< HEAD
-=======
-import { CodeSuggestionsState } from '../service/inlineCompletionService'
 import { CodeWhispererCommandSource } from './types'
 import { AuthCommandDeclarations } from '../../auth/commands'
->>>>>>> 46bdf1d8b (telemetry: include "source" for certain CW commands)
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',

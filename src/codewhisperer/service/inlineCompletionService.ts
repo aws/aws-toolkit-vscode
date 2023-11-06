@@ -19,7 +19,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 import { Commands } from '../../shared/vscode/commands2'
-import { showCodeWhispererQuickPickCommand } from '../commands/statusBarCommands'
+import { listCodeWhispererCommandsId } from '../commands/statusBarCommands'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -187,8 +187,6 @@ export class InlineCompletionService {
     }
 }
 
-
-
 /** The states that the completion service can be in */
 const states = {
     loading: 'loading',
@@ -209,7 +207,7 @@ class CodeWhispererStatusBar {
     async setState(status: keyof Pick<typeof states, 'ok'>, isSuggestionsEnabled: boolean): Promise<void>
     async setState(status: keyof typeof states, isSuggestionsEnabled?: boolean): Promise<void> {
         const statusBar = this.statusBar
-        statusBar.command = showCodeWhispererQuickPickCommand
+        statusBar.command = listCodeWhispererCommandsId
         statusBar.backgroundColor = undefined
 
         switch (status) {
@@ -226,17 +224,17 @@ class CodeWhispererStatusBar {
                 statusBar.text = codicon`${icon} CodeWhisperer${
                     selectedCustomization.arn === '' ? '' : ` | ${selectedCustomization.name}`
                 }`
-                break;
+                break
             }
-                
+
             case 'expired': {
                 statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
                 statusBar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
-                break;
+                break
             }
             case 'notConnected':
                 statusBar.text = codicon` ${getIcon('vscode-chrome-close')} CodeWhisperer`
-                break;
+                break
         }
 
         statusBar.show()
