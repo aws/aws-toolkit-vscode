@@ -10,7 +10,7 @@ import com.intellij.openapi.startup.StartupActivity
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginDialog
+import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForCodeWhisperer
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.startup.CodeWhispererProjectStartupActivity
 import software.aws.toolkits.resources.message
@@ -26,6 +26,7 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
     override fun onDoubleClick(event: MouseEvent) {
         enableCodeWhisperer(project)
         UiTelemetry.click(project, "cw_signUp_Cta")
+        UiTelemetry.click(project, "auth_start_CodeWhisperer")
     }
 
     /**
@@ -40,7 +41,7 @@ class GetStartedNode(nodeProject: Project) : CodeWhispererActionNode(
         } ?: run {
             runInEdt {
                 // Start from scratch if no active connection
-                if (CodeWhispererLoginDialog(project).showAndGet()) {
+                if (requestCredentialsForCodeWhisperer(project)) {
                     project.refreshDevToolTree()
                 }
             }

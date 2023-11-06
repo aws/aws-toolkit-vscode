@@ -61,7 +61,7 @@ interface BearerTokenProvider : SdkTokenProvider, SdkAutoCloseable, ToolkitBeare
     }
 
     companion object {
-        private fun tokenExpired(accessToken: AccessToken) = Instant.now().isAfter(accessToken.expiresAt)
+        internal fun tokenExpired(accessToken: AccessToken) = Instant.now().isAfter(accessToken.expiresAt)
 
         internal fun state(accessToken: AccessToken?) = when {
             accessToken == null -> BearerTokenAuthState.NOT_AUTHENTICATED
@@ -82,9 +82,10 @@ class InteractiveBearerTokenProvider(
     startUrl: String,
     region: String,
     scopes: List<String>,
+    id: String? = null,
     cache: DiskCache = diskCache
 ) : BearerTokenProvider, BearerTokenLogoutSupport, Disposable {
-    override val id = ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
+    override val id = id ?: ToolkitBearerTokenProvider.ssoIdentifier(startUrl, region)
     override val displayName = ToolkitBearerTokenProvider.ssoDisplayName(startUrl)
 
     private val ssoOidcClient: SsoOidcClient = buildUnmanagedSsoOidcClient(region)

@@ -26,6 +26,7 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.utils.test.aString
 import software.aws.toolkits.jetbrains.core.MockClientManagerRule
+import software.aws.toolkits.jetbrains.core.credentials.profiles.ProfileSsoSessionIdentifier
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProviderListener
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
@@ -141,6 +142,59 @@ class DefaultToolkitAuthManagerTest {
                 assertThat(connection.scopes).isEqualTo(profile.scopes)
             }
         }
+    }
+
+    @Test
+    fun `updates connection list from connection bus`() {
+        assertThat(sut.listConnections()).isEmpty()
+
+        val scopes = listOf("scope1", "scope2")
+        val publisher = ApplicationManager.getApplication().messageBus.syncPublisher(CredentialManager.CREDENTIALS_CHANGED)
+
+        publisher.ssoSessionAdded(
+            ProfileSsoSessionIdentifier(
+                "add",
+                "startUrl",
+                "us-east-1",
+                scopes.toSet()
+            )
+        )
+
+        assertThat(sut.listConnections()).singleElement().satisfies {
+            assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.region).isEqualTo("us-east-1")
+                assertThat(connection.startUrl).isEqualTo("startUrl")
+                assertThat(connection.scopes).isEqualTo(scopes)
+            }
+        }
+
+        publisher.ssoSessionModified(
+            ProfileSsoSessionIdentifier(
+                "add",
+                "startUrl2",
+                "us-east-1",
+                scopes.toSet()
+            )
+        )
+
+        assertThat(sut.listConnections()).singleElement().satisfies {
+            assertThat(it).isInstanceOfSatisfying<ManagedBearerSsoConnection> { connection ->
+                assertThat(connection.region).isEqualTo("us-east-1")
+                assertThat(connection.startUrl).isEqualTo("startUrl2")
+                assertThat(connection.scopes).isEqualTo(scopes)
+            }
+        }
+
+        publisher.ssoSessionRemoved(
+            ProfileSsoSessionIdentifier(
+                "add",
+                "startUrl2",
+                "us-east-1",
+                scopes.toSet()
+            )
+        )
+
+        assertThat(sut.listConnections()).isEmpty()
     }
 
     @Test

@@ -19,8 +19,8 @@ fun IdeaFrame.awsExplorer(
     val locator = byXpath("//div[@accessiblename='AWS Toolkit Tool Window']")
 
     step("AWS toolkit tool window") {
-        val explorer = try {
-            find<AwsExplorer>(locator)
+        try {
+            find<ComponentFixture>(locator)
         } catch (e: Exception) {
             step("Open tool window") {
                 // Click the tool window stripe
@@ -28,7 +28,8 @@ fun IdeaFrame.awsExplorer(
                 find(locator, timeout)
             }
         }
-
+        find<ComponentFixture>(byXpath("//div[@class='TabContainer']//div[@text='Explorer']")).click()
+        val explorer = find<AwsExplorer>(byXpath("//div[@class='ExplorerToolWindow']"))
         explorer.apply(function)
     }
 }

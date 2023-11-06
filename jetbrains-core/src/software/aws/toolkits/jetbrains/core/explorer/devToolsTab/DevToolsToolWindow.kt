@@ -20,7 +20,10 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.SimpleToolWindowPanel
+import com.intellij.openapi.ui.asSequence
+import com.intellij.openapi.ui.popup.Balloon
 import com.intellij.ui.DoubleClickListener
+import com.intellij.ui.GotItTooltip
 import com.intellij.ui.PopupHandler
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.TreeUIHelper
@@ -36,9 +39,11 @@ import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.AbstractA
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.ActionGroupOnRightClick
 import software.aws.toolkits.jetbrains.core.explorer.devToolsTab.nodes.PinnedConnectionNode
 import java.awt.Component
+import java.awt.Point
 import java.awt.event.MouseEvent
 import javax.swing.JTree
 import javax.swing.tree.DefaultMutableTreeNode
+import javax.swing.tree.TreePath
 
 class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(true, true), DataProvider, Disposable {
     private val treeModel = StructureTreeModel(DevToolsTreeStructure(project), null, Invoker.forBackgroundPoolWithoutReadAction(this), this)
@@ -110,7 +115,6 @@ class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(t
 
         redrawContent()
 
-        // TODO: does this expansion need to be conditional?
         TreeUtil.expand(tree, 2)
     }
 
@@ -153,6 +157,19 @@ class DevToolsToolWindow(private val project: Project) : SimpleToolWindowPanel(t
         val state = TreeState.createOn(tree)
         treeModel.invalidate()
         state.applyTo(tree)
+    }
+
+    fun showGotIt(node: String?, tooltip: GotItTooltip) {
+        TreeUtil.promiseExpand(tree, 2).onSuccess {
+            node ?: return@onSuccess
+            treeModel.invoker.invoke {
+                val path = treeModel.asSequence().firstOrNull { (it.userObject as? AbstractTreeNode<*>)?.value == node }?.path ?: return@invoke
+                runInEdt {
+                    val pointToRight = tree.getPathBounds(TreePath(path))?.let { Point(it.x + it.width, it.y + it.height / 2) } ?: return@runInEdt
+                    tooltip.withPosition(Balloon.Position.atRight).show(tree) { _, _ -> pointToRight }
+                }
+            }
+        }
     }
 
     companion object {

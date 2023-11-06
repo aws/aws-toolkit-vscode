@@ -6,6 +6,7 @@ package software.aws.toolkits.jetbrains.core.credentials.profiles
 import com.intellij.util.text.nullize
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
+import software.aws.toolkits.jetbrains.core.credentials.sono.IDENTITY_CENTER_ROLE_ACCESS_SCOPE
 import software.aws.toolkits.resources.message
 
 fun Profile.traverseCredentialChain(profiles: Map<String, Profile>): Sequence<Profile> = sequence {
@@ -61,3 +62,8 @@ fun Profile.requiredProperty(propertyName: String): String = this.property(prope
             )
         )
     }
+
+fun Profile.ssoScopes() = property(SsoSessionConstants.SSO_REGISTRATION_SCOPES)
+    .map { it.trim().split(",") }
+    .orElse(listOf(IDENTITY_CENTER_ROLE_ACCESS_SCOPE))
+    .toSet()

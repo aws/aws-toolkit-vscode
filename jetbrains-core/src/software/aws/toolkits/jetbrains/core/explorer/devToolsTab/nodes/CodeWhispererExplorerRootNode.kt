@@ -10,5 +10,9 @@ import software.aws.toolkits.resources.message
 
 class CodeWhispererExplorerRootNode : DevToolsServiceNode {
     override val serviceId = CodeWhispererClient.SERVICE_NAME
-    override fun buildServiceRootNode(nodeProject: Project) = CodeWhispererServiceNode(nodeProject, message("explorer.node.codewhisperer"))
+    override fun buildServiceRootNode(nodeProject: Project) = CodeWhispererServiceNode(nodeProject, NODE_NAME)
+
+    companion object {
+        val NODE_NAME = message("explorer.node.codewhisperer")
+    }
 }

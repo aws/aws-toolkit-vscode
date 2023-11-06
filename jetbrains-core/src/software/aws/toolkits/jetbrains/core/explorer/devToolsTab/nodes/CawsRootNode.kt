@@ -20,7 +20,7 @@ import software.aws.toolkits.jetbrains.utils.isRunningOnRemoteBackend
 import software.aws.toolkits.resources.message
 import java.awt.event.MouseEvent
 
-class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(nodeProject, message("caws.devtoolPanel.title")), PinnedConnectionNode {
+class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(nodeProject, CawsServiceNode.NODE_NAME), PinnedConnectionNode {
     override fun getChildren(): Collection<AbstractTreeNode<*>> {
         val groupId = if (SonoCredentialManager.getInstance(nodeProject).hasPreviouslyConnected()) {
             "aws.caws.devtools.actions.loggedin"
@@ -65,4 +65,8 @@ class CawsRootNode(private val nodeProject: Project) : AbstractTreeNode<String>(
 class CawsServiceNode : DevToolsServiceNode {
     override val serviceId: String = "aws.toolkit.caws.service"
     override fun buildServiceRootNode(nodeProject: Project): AbstractTreeNode<*> = CawsRootNode(nodeProject)
+
+    companion object {
+        val NODE_NAME = message("caws.devtoolPanel.title")
+    }
 }

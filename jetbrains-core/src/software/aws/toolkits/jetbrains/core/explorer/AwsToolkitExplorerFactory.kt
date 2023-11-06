@@ -62,6 +62,7 @@ class AwsToolkitExplorerFactory : ToolWindowFactory, DumbAware {
         toolWindow.activate(null)
         contentManager.setSelectedContent(content)
     }
+
     override fun init(toolWindow: ToolWindow) {
         toolWindow.stripeTitle = message("aws.notification.title")
     }

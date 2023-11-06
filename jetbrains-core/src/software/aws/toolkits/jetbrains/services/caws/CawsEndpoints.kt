@@ -7,6 +7,7 @@ object CawsEndpoints {
     const val CAWS_DOCS = "https://docs.aws.amazon.com/codecatalyst/latest/userguide/welcome.html"
     const val CAWS_DEV_ENV_MARKETING = "https://codecatalyst.aws/explore/dev-environments"
     const val TOOLKIT_CAWS_DOCS = "https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/codecatalyst-service.html"
+    const val CAWS_SPACES_DOC = "https://docs.aws.amazon.com/codecatalyst/latest/userguide/spaces.html"
 
     const val CAWS_PROD_API = "https://public.codecatalyst.global.api.aws"
     private const val CAWS_PROD_CONSOLE_BASE = "https://codecatalyst.aws/"
