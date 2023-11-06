@@ -74,6 +74,7 @@ import { Logging } from './shared/logger/commands'
 import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/messages'
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
+import { ChildProcess } from './shared/utilities/childProcess'
 
 let localize: nls.LocalizeFunc
 
@@ -81,7 +82,9 @@ export async function activate(context: vscode.ExtensionContext) {
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
-    initialize(context)
+
+    await initialize(context)
+    globals.machineId = await getMachineId()
     initializeManifestPaths(context)
 
     const toolkitOutputChannel = vscode.window.createOutputChannel(
@@ -417,6 +420,11 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
         })
     }
     return ok
+}
+
+async function getMachineId(): Promise<string> {
+    const proc = new ChildProcess('hostname', [], { collect: true })
+    return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 
 // Unique extension entrypoint names, so that they can be obtained from the webpack bundle

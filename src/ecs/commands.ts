@@ -8,7 +8,6 @@ const localize = nls.loadMessageBundle()
 
 import moment from 'moment'
 import * as vscode from 'vscode'
-import { DefaultIamClient } from '../shared/clients/iamClient'
 import { INSIGHTS_TIMESTAMP_FORMAT } from '../shared/constants'
 import globals from '../shared/extensionGlobals'
 import { PromptSettings } from '../shared/settings'
@@ -17,7 +16,7 @@ import { showMessageWithCancel, showOutputMessage } from '../shared/utilities/me
 import { removeAnsi } from '../shared/utilities/textUtilities'
 import { CancellationError, Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
-import { checkPermissionsForSsm, EcsSettings } from './util'
+import { EcsSettings } from './util'
 import { CommandWizard, CommandWizardState } from './wizards/executeCommand'
 import { isUserCancelledError, ToolkitError } from '../shared/errors'
 import { getResourceFromTreeNode } from '../shared/treeview/utils'
@@ -42,10 +41,6 @@ async function runCommandWizard(
     if (response.confirmation === 'suppress') {
         await PromptSettings.instance.disablePrompt('ecsRunCommand')
     }
-
-    await checkPermissionsForSsm(new DefaultIamClient(globals.regionProvider.defaultRegionId), {
-        taskRoleArn: container.description.taskRoleArn!,
-    })
 
     return { container, ...response }
 }

@@ -60,7 +60,7 @@ export class TriggerEventsStorage {
     public updateTriggerEventTabIDFromUnknown(id: string, tabID: string) {
         const currentTriggerEvent = this.triggerEvents.get(id)
 
-        if (currentTriggerEvent == undefined || currentTriggerEvent.tabID !== undefined) {
+        if (currentTriggerEvent === undefined || currentTriggerEvent.tabID !== undefined) {
             return
         }
 

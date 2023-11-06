@@ -78,7 +78,7 @@ export class Messenger {
                     // }
 
                     if (
-                        chatEvent.assistantResponseEvent?.content != undefined &&
+                        chatEvent.assistantResponseEvent?.content !== undefined &&
                         chatEvent.assistantResponseEvent.content.length > 0
                     ) {
                         message += chatEvent.assistantResponseEvent.content
@@ -100,7 +100,7 @@ export class Messenger {
                         this.telemetryHelper.setReponseStreamTimeToFirstChunk(tabID)
                     }
 
-                    if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks != undefined) {
+                    if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks !== undefined) {
                         let suggestionIndex = 0
                         const newSuggestions: Suggestion[] =
                             chatEvent.supplementaryWebLinksEvent.supplementaryWebLinks.map(
@@ -116,7 +116,7 @@ export class Messenger {
                         relatedSuggestions.push(...newSuggestions)
                     }
 
-                    if (chatEvent.followupPromptEvent?.followupPrompt != undefined) {
+                    if (chatEvent.followupPromptEvent?.followupPrompt !== undefined) {
                         const followUp = chatEvent.followupPromptEvent.followupPrompt
                         followUps.push({
                             type: followUp.userIntent ?? '',
@@ -193,14 +193,14 @@ export class Messenger {
 
     private showChatExceptionMessage(e: ChatException, tabID: string) {
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
-        if (e.errorMessage != undefined) {
+        if (e.errorMessage !== undefined) {
             message += `\n\nDetails: ${e.errorMessage}`
         }
 
-        if (e.statusCode != undefined) {
+        if (e.statusCode !== undefined) {
             message += `\n\nStatus Code: ${e.statusCode}`
         }
-        if (e.sessionID != undefined) {
+        if (e.sessionID !== undefined) {
             message += `\n\nSession ID: ${e.sessionID}`
         }
         this.dispatcher.sendErrorMessage(

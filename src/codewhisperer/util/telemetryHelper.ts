@@ -211,7 +211,7 @@ export class TelemetryHelper {
 
         // TODO: use a ternary for this
         let acceptedRecommendationContent
-        if (acceptIndex != -1 && recommendations[acceptIndex] != undefined) {
+        if (acceptIndex !== -1 && recommendations[acceptIndex] !== undefined) {
             acceptedRecommendationContent = recommendations[acceptIndex].content
         } else {
             acceptedRecommendationContent = ''

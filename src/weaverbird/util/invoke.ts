@@ -18,7 +18,7 @@ export async function invoke<TInput, TOutput>(client: LambdaClient, arn: string,
         )
         const rawResult = response.Payload!.toString()
         const result = JSON.parse(rawResult)
-        if (result.statusCode != 200) {
+        if (result.statusCode !== 200) {
             throw new ToolkitError(`Server error(${result.statusCode}): ${result.body}`)
         }
         return JSON.parse(result.body) as TOutput

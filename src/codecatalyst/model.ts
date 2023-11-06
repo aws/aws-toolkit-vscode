@@ -256,7 +256,7 @@ export async function openDevEnv(
 ): Promise<void> {
     const env = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
     if (!targetPath) {
-        const repo = env.devenv.repositories.length == 1 ? env.devenv.repositories[0].repositoryName : undefined
+        const repo = env.devenv.repositories.length === 1 ? env.devenv.repositories[0].repositoryName : undefined
         targetPath = repo ? `/projects/${repo}` : '/projects'
     }
     await startVscodeRemote(env.SessionProcess, env.hostname, targetPath, env.vscPath)
