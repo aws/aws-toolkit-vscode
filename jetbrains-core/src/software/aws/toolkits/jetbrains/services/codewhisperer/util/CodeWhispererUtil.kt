@@ -21,7 +21,6 @@ import software.aws.toolkits.jetbrains.core.credentials.loginSso
 import software.aws.toolkits.jetbrains.core.credentials.maybeReauthProviderIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
-import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenProvider
 import software.aws.toolkits.jetbrains.core.explorer.refreshDevToolTree
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLoginLearnMoreAction
@@ -195,18 +194,6 @@ object CodeWhispererUtil {
         null,
         listOf(CodeWhispererSsoLearnMoreAction(), ConnectWithAwsToContinueActionError(), DoNotShowAgainActionError())
     )
-
-    fun isAccessTokenExpired(project: Project): Boolean {
-        val tokenProvider = tokenProvider(project) ?: return false
-        val state = tokenProvider.state()
-        return state == BearerTokenAuthState.NEEDS_REFRESH
-    }
-
-    fun isRefreshTokenExpired(project: Project): Boolean {
-        val tokenProvider = tokenProvider(project) ?: return false
-        val state = tokenProvider.state()
-        return state == BearerTokenAuthState.NOT_AUTHENTICATED
-    }
 
     // This will be called only when there's a CW connection, but it has expired(either accessToken or refreshToken)
     // 1. If connection is expired, try to refresh

@@ -3,9 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.codewhisperer
 
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
-import com.intellij.testFramework.ApplicationRule
 import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.replaceService
@@ -13,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.spy
@@ -23,16 +22,31 @@ import software.aws.toolkits.jetbrains.core.MockClientManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ManagedBearerSsoConnection
 import software.aws.toolkits.jetbrains.core.credentials.MockToolkitAuthManagerRule
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.credentials.pinning.ConnectionPinningManager
+import software.aws.toolkits.jetbrains.core.credentials.sono.CODEWHISPERER_SCOPES
 import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
+import software.aws.toolkits.jetbrains.core.credentials.sso.AccessToken
+import software.aws.toolkits.jetbrains.core.credentials.sso.AccessTokenCacheKey
+import software.aws.toolkits.jetbrains.core.credentials.sso.DiskCache
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.BearerTokenAuthState
+import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginType
-import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExploreActionState
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
+import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
 
 class CodeWhispererExplorerActionManagerTest {
     @JvmField
     @Rule
-    val applicationRule = ApplicationRule()
+    val tempFolder = TemporaryFolder()
 
     @JvmField
     @Rule
@@ -50,17 +64,24 @@ class CodeWhispererExplorerActionManagerTest {
     @Rule
     val mockClientManager = MockClientManagerRule()
 
+    private val now = Instant.now()
+    private val clock = Clock.fixed(now, ZoneOffset.UTC)
+
     private lateinit var mockManager: CodeWhispererExplorerActionManager
     private lateinit var project: Project
-    private lateinit var connectionManager: ToolkitConnectionManager
+    private lateinit var cacheRoot: Path
+    private lateinit var cacheLocation: Path
+    private lateinit var testDiskCache: DiskCache
 
     @Before
     fun setup() {
+        cacheRoot = tempFolder.root.toPath().toAbsolutePath()
+        cacheLocation = Paths.get(cacheRoot.toString(), "fakehome", ".aws", "sso", "cache")
+        Files.createDirectories(cacheLocation)
+        testDiskCache = DiskCache(cacheLocation, clock)
+
         mockClientManager.create<SsoOidcClient>()
         project = projectRule.project
-        connectionManager = mock()
-
-        project.replaceService(ToolkitConnectionManager::class.java, connectionManager, disposableRule.disposable)
     }
 
     /**
@@ -69,49 +90,14 @@ class CodeWhispererExplorerActionManagerTest {
     @Test
     fun `when there is no connection, should return logout`() {
         mockManager = spy()
-        whenever(connectionManager.activeConnectionForFeature(any())).thenReturn(null)
+        val mockConnectionManager = mock<ToolkitConnectionManager>()
+        whenever(mockConnectionManager.activeConnectionForFeature(any())).thenReturn(null)
+        project.replaceService(ToolkitConnectionManager::class.java, mockConnectionManager, disposableRule.disposable)
 
         val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
         assertThat(actual).isEqualTo(CodeWhispererLoginType.Logout)
-    }
-
-    @Test
-    fun `when ToS accepted and there is an accountless token, should return accountless`() {
-        mockManager = spy()
-        mockManager.loadState(
-            // set up accountless token
-            CodeWhispererExploreActionState().apply {
-                this.token = "foo"
-            }
-        )
-
-        val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
-        assertThat(actual).isEqualTo(CodeWhispererLoginType.Accountless)
-    }
-
-    @Test
-    fun `when ToS accepted, no accountless token and there is an AWS Builder ID connection, should return Sono`() {
-        assertLoginType(SONO_URL, CodeWhispererLoginType.Sono)
-    }
-
-    @Test
-    fun `when ToS accepted, no accountless token and there is an SSO connection, should return SSO`() {
-        assertLoginType(aString(), CodeWhispererLoginType.SSO)
-    }
-
-    @Test
-    fun `test nullifyAccountlessCredentialIfNeeded`() {
-        mockManager = CodeWhispererExplorerActionManager()
-        mockManager.loadState(CodeWhispererExploreActionState().apply { this.token = "foo" })
-
-        assertThat(mockManager.state.token)
-            .isNotNull
-            .isEqualTo("foo")
-
-        mockManager.nullifyAccountlessCredentialIfNeeded()
-
-        assertThat(mockManager.state.token)
-            .isNull()
+        assertThat(isCodeWhispererEnabled(project)).isFalse
+        assertThat(isCodeWhispererExpired(project)).isFalse
     }
 
     /**
@@ -120,31 +106,113 @@ class CodeWhispererExplorerActionManagerTest {
      * - should return true if loginType == Accountless || Sono || SSO
      */
     @Test
-    fun `test isCodeWhispererEnabled`() {
-        mockManager = mock()
-        ApplicationManager.getApplication().replaceService(CodeWhispererExplorerActionManager::class.java, mockManager, disposableRule.disposable)
+    fun `test connection state`() {
+        assertConnectionState(
+            startUrl = SONO_URL,
+            refreshToken = aString(),
+            expirationTime = now.plus(1, ChronoUnit.DAYS),
+            expectedState = BearerTokenAuthState.AUTHORIZED,
+            expectedLoginType = CodeWhispererLoginType.Sono,
+            expectedIsCwEnabled = true,
+            expectedIsCwExpired = false
+        )
+        assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
 
-        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Logout)
-        assertThat(isCodeWhispererEnabled(project)).isFalse
+        assertConnectionState(
+            startUrl = SONO_URL,
+            refreshToken = aString(),
+            expirationTime = now.minus(1, ChronoUnit.DAYS),
+            expectedState = BearerTokenAuthState.NEEDS_REFRESH,
+            expectedLoginType = CodeWhispererLoginType.Expired,
+            expectedIsCwEnabled = true,
+            expectedIsCwExpired = true
+        )
+        assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
 
-        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Accountless)
-        assertThat(isCodeWhispererEnabled(project)).isTrue
+        assertConnectionState(
+            startUrl = SONO_URL,
+            refreshToken = null,
+            expirationTime = now.minus(1, ChronoUnit.DAYS),
+            expectedState = BearerTokenAuthState.NOT_AUTHENTICATED,
+            expectedLoginType = CodeWhispererLoginType.Logout,
+            expectedIsCwEnabled = false,
+            expectedIsCwExpired = false
+        )
+        assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
 
-        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.Sono)
-        assertThat(isCodeWhispererEnabled(project)).isTrue
+        assertConnectionState(
+            startUrl = aString(),
+            refreshToken = aString(),
+            expirationTime = now.plus(1, ChronoUnit.DAYS),
+            expectedState = BearerTokenAuthState.AUTHORIZED,
+            expectedLoginType = CodeWhispererLoginType.SSO,
+            expectedIsCwEnabled = true,
+            expectedIsCwExpired = false
+        )
+        assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
 
-        whenever(mockManager.checkActiveCodeWhispererConnectionType(project)).thenReturn(CodeWhispererLoginType.SSO)
-        assertThat(isCodeWhispererEnabled(project)).isTrue
+        assertConnectionState(
+            startUrl = aString(),
+            refreshToken = aString(),
+            expirationTime = now.minus(1, ChronoUnit.DAYS),
+            expectedState = BearerTokenAuthState.NEEDS_REFRESH,
+            expectedLoginType = CodeWhispererLoginType.Expired,
+            expectedIsCwEnabled = true,
+            expectedIsCwExpired = true
+        )
+        assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
+
+        assertConnectionState(
+            startUrl = aString(),
+            refreshToken = null,
+            expirationTime = now.minus(1, ChronoUnit.DAYS),
+            expectedState = BearerTokenAuthState.NOT_AUTHENTICATED,
+            expectedLoginType = CodeWhispererLoginType.Logout,
+            expectedIsCwEnabled = false,
+            expectedIsCwExpired = false
+        )
+        assertThat(ConnectionPinningManager.getInstance().isFeaturePinned(CodeWhispererConnection.getInstance())).isFalse
     }
 
-    private fun assertLoginType(startUrl: String, expectedType: CodeWhispererLoginType) {
-        mockManager = spy()
-        val conn: ManagedBearerSsoConnection = mock()
-        whenever(connectionManager.activeConnectionForFeature(any())).thenReturn(conn)
-        whenever(conn.startUrl).thenReturn(startUrl)
-        whenever(conn.getConnectionSettings()).thenReturn(null)
+    private fun assertConnectionState(
+        startUrl: String,
+        refreshToken: String?,
+        expirationTime: Instant,
+        expectedState: BearerTokenAuthState,
+        expectedLoginType: CodeWhispererLoginType,
+        expectedIsCwEnabled: Boolean,
+        expectedIsCwExpired: Boolean
+    ) {
+        testDiskCache.saveAccessToken(
+            AccessTokenCacheKey(
+                connectionId = "us-east-1",
+                startUrl = startUrl,
+                scopes = CODEWHISPERER_SCOPES
+            ),
+            AccessToken(
+                startUrl = startUrl,
+                region = "us-east-1",
+                accessToken = aString(),
+                refreshToken = refreshToken,
+                expiresAt = expirationTime
+            )
+        )
 
-        val actual = mockManager.checkActiveCodeWhispererConnectionType(project)
-        assertThat(actual).isEqualTo(expectedType)
+        val myConnection = ManagedBearerSsoConnection(
+            startUrl,
+            "us-east-1",
+            CODEWHISPERER_SCOPES,
+            testDiskCache
+        )
+
+        ToolkitConnectionManager.getInstance(project).switchConnection(myConnection)
+        val activeCwConn = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
+        val myTokenProvider = myConnection.getConnectionSettings().tokenProvider.delegate as InteractiveBearerTokenProvider
+
+        assertThat(activeCwConn).isEqualTo(myConnection)
+        assertThat(myTokenProvider.state()).isEqualTo(expectedState)
+        assertThat(CodeWhispererExplorerActionManager.getInstance().checkActiveCodeWhispererConnectionType(project)).isEqualTo(expectedLoginType)
+        assertThat(isCodeWhispererEnabled(project)).isEqualTo(expectedIsCwEnabled)
+        assertThat(isCodeWhispererExpired(project)).isEqualTo(expectedIsCwExpired)
     }
 }
