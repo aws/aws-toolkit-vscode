@@ -29,10 +29,10 @@
 
             <div>
                 <b>Code fix available</b>
-                <p v-if="isFixAvailable" style="color: var(--vscode-charts-green)">
+                <p v-if="isFixAvailable" style="color: var(--vscode-testing-iconPassed)">
                     <span class="icon icon-sm icon-vscode-pass-filled"></span> Yes
                 </p>
-                <p v-else style="color: var(--vscode-charts-red)">
+                <p v-else style="color: var(--vscode-testing-iconErrored)">
                     <span class="icon icon-sm icon-vscode-circle-slash"></span> No
                 </p>
             </div>
