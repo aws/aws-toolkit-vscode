@@ -20,7 +20,7 @@ export async function uploadCode(url: string, buffer: Buffer, kmsKeyArn?: string
             headers: {
                 'Content-Type': 'application/zip',
                 ...(kmsKeyArn && {
-                    'x-amz-server-side-encryption-aws-kms-key-id:': kmsKeyArn,
+                    'x-amz-server-side-encryption-aws-kms-key-id': kmsKeyArn,
                     'x-amz-server-side-encryption': 'aws:kms',
                 }),
             },
