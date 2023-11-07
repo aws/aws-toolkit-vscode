@@ -31,17 +31,13 @@ import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
 import {
     CodeWhispererStreamingServiceException,
-    CursorState,
-    DocumentSymbol,
     GenerateAssistantResponseCommandOutput,
-    GenerateAssistantResponseRequest,
-    SymbolType,
-    TextDocument,
 } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
 import { CWCTelemetryHelper } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
+import { triggerPayloadToChatRequest } from './chatRequest/converter'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -215,8 +211,29 @@ export class ChatController {
     private processException(e: any, tabID: string) {
         let errorMessage = ''
         let requestID = undefined
+        const defaultMessage = 'Failed to get response'
         if (typeof e === 'string') {
             errorMessage = e.toUpperCase()
+        } else if (e instanceof SyntaxError) {
+            // Workaround to handle case when LB returns web-page with error and our client doesn't return proper exception
+            // eslint-disable-next-line no-prototype-builtins
+            if (e.hasOwnProperty('$response')) {
+                type exceptionKeyType = keyof typeof e
+                const responseKey = '$response' as exceptionKeyType
+                const response = e[responseKey]
+
+                let reason
+
+                if (response) {
+                    type responseKeyType = keyof typeof response
+                    const reasonKey = 'reason' as responseKeyType
+                    reason = response[reasonKey]
+                }
+
+                errorMessage = reason ? (reason as string) : defaultMessage
+            } else {
+                errorMessage = defaultMessage
+            }
         } else if (e instanceof CodeWhispererStreamingServiceException) {
             errorMessage = e.message
             requestID = e.$metadata.requestId
@@ -240,10 +257,18 @@ export class ChatController {
                     throw 'Sorry, we cannot help with the selected language code snippet'
                 }
 
-                const prompt = this.promptGenerator.getPromptForContextMenuCommand(
+                const prompt = this.promptGenerator.generateForContextMenuCommand(command)
+
+                this.messenger.sendEditorContextCommandMessage(
                     command,
-                    context?.focusAreaContext?.codeBlock ?? ''
+                    context?.focusAreaContext?.codeBlock ?? '',
+                    triggerID
                 )
+
+                if (command === 'aws.awsq.sendToPrompt') {
+                    // No need for response if send the code to prompt
+                    return
+                }
 
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -253,13 +278,6 @@ export class ChatController {
                     context,
                     command,
                 })
-
-                this.messenger.sendEditorContextCommandMessage(prompt, triggerID, command)
-
-                if (command === 'aws.awsq.sendToPrompt') {
-                    // No need for response if send the code to prompt
-                    return
-                }
 
                 this.generateResponse(
                     {
@@ -397,7 +415,7 @@ export class ChatController {
         }
 
         const tabID = triggerEvent.tabID
-        const request = this.triggerPayloadToChatRequest(triggerPayload)
+        const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(
             `request from tab: ${tabID} coversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
@@ -422,91 +440,6 @@ export class ChatController {
                 tabID,
                 response?.$metadata?.httpStatusCode ?? 0
             )
-        }
-    }
-
-    private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): GenerateAssistantResponseRequest {
-        let document: TextDocument | undefined = undefined
-        let cursorState: CursorState | undefined = undefined
-
-        if (triggerPayload.filePath !== undefined && triggerPayload.filePath !== '') {
-            const documentSymbolFqns: DocumentSymbol[] = []
-            triggerPayload.codeQuery?.fullyQualifiedNames?.used?.forEach(fqn => {
-                const elem = {
-                    name: fqn.symbol?.join('.') ?? '',
-                    type: SymbolType.USAGE,
-                    source: fqn.source?.join('.'),
-                }
-
-                if (elem.name.length > 1 && elem.name.length < 256) {
-                    documentSymbolFqns.push(elem)
-                }
-            })
-
-            let programmingLanguage
-            if (
-                triggerPayload.fileLanguage !== undefined &&
-                triggerPayload.fileLanguage !== '' &&
-                [
-                    'python',
-                    'javascript',
-                    'java',
-                    'csharp',
-                    'typescript',
-                    'c',
-                    'cpp',
-                    'go',
-                    'kotlin',
-                    'php',
-                    'ruby',
-                    'rust',
-                    'scala',
-                    'shell',
-                    'sql',
-                ].includes(triggerPayload.fileLanguage)
-            ) {
-                programmingLanguage = { languageName: triggerPayload.fileLanguage }
-            }
-
-            document = {
-                relativeFilePath: triggerPayload.filePath ?? '',
-                text: triggerPayload.fileText,
-                programmingLanguage,
-                documentSymbols: documentSymbolFqns,
-            }
-
-            if (triggerPayload.codeSelection?.start) {
-                cursorState = {
-                    range: {
-                        start: {
-                            line: triggerPayload.codeSelection.start.line,
-                            character: triggerPayload.codeSelection.start.character,
-                        },
-                        end: {
-                            line: triggerPayload.codeSelection.end.line,
-                            character: triggerPayload.codeSelection.end.character,
-                        },
-                    },
-                }
-            }
-        }
-
-        return {
-            conversationState: {
-                currentMessage: {
-                    userInputMessage: {
-                        content: triggerPayload.message ?? '',
-                        userInputMessageContext: {
-                            editorState: {
-                                document,
-                                cursorState,
-                            },
-                        },
-                        userIntent: triggerPayload.userIntent,
-                    },
-                },
-                chatTriggerType: 'MANUAL',
-            },
         }
     }
 }

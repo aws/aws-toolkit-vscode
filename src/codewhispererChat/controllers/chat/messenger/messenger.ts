@@ -192,7 +192,31 @@ export class Messenger {
         )
     }
 
-    public sendEditorContextCommandMessage(message: string, triggerID: string, command: EditorContextCommand) {
+    private editorContextMenuCommandVerbs: Map<EditorContextCommand, string> = new Map([
+        ['aws.awsq.explainCode', 'Explain'],
+        ['aws.awsq.refactorCode', 'Refactor'],
+        ['aws.awsq.fixCode', 'Fix'],
+        ['aws.awsq.optimizeCode', 'Optimize'],
+        ['aws.awsq.sendToPrompt', 'Send to prompt'],
+    ])
+
+    public sendEditorContextCommandMessage(command: EditorContextCommand, selectedCode: string, triggerID: string) {
+        // Remove newlines and spaces before and after the code
+        const trimmedCode = selectedCode.trimStart().trimEnd()
+
+        let message
+        if (command === 'aws.awsq.sendToPrompt') {
+            message = ['\n```\n', trimmedCode, '\n```'].join('')
+        } else {
+            message = [
+                this.editorContextMenuCommandVerbs.get(command),
+                ' the following part of my code to me:',
+                '\n```\n',
+                trimmedCode,
+                '\n```',
+            ].join('')
+        }
+
         this.dispatcher.sendEditorContextCommandMessage(
             new EditorContextCommandMessage({ message, triggerID, command })
         )
