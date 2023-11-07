@@ -26,7 +26,6 @@ phases:
 
     pre_build:
         commands:
-            # CodeBuild ignores env.variables.HOME, so do it manually here :(
             - export HOME=/home/codebuild-user
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
             # Should only affect tests run through IDEs team-hosted CodeBuild.
@@ -42,7 +41,6 @@ phases:
 
     build:
         commands:
-            # CodeBuild ignores env.variables.HOME, so do it manually here :(
             - export HOME=/home/codebuild-user
             # Generate CHANGELOG.md
             - npm run createRelease
