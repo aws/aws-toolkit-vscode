@@ -9,7 +9,7 @@ import {
     CodeReference,
     EditorContextCommandMessage,
 } from '../../../view/connector/connector'
-import { EditorContextCommand } from '../../../commands/registerCommands'
+import { EditorContextCommand, EditorContextCommandType } from '../../../commands/registerCommands'
 import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -192,7 +192,7 @@ export class Messenger {
         )
     }
 
-    private editorContextMenuCommandVerbs: Map<EditorContextCommand, string> = new Map([
+    private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
         ['aws.awsq.explainCode', 'Explain'],
         ['aws.awsq.refactorCode', 'Refactor'],
         ['aws.awsq.fixCode', 'Fix'],
@@ -205,11 +205,11 @@ export class Messenger {
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
         let message
-        if (command === 'aws.awsq.sendToPrompt') {
+        if (command.type === 'aws.awsq.sendToPrompt') {
             message = ['\n```\n', trimmedCode, '\n```'].join('')
         } else {
             message = [
-                this.editorContextMenuCommandVerbs.get(command),
+                this.editorContextMenuCommandVerbs.get(command.type),
                 ' the following part of my code:',
                 '\n```\n',
                 trimmedCode,
