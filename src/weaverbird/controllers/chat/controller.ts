@@ -323,7 +323,6 @@ export class WeaverbirdController {
         let session: Session | undefined
         try {
             session = await this.sessionStorage.createSession(message.tabID)
-            telemetry.awsq_assignCommand.emit({ awsqConversationId: session.conversationId, value: 1 })
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(err.message),
