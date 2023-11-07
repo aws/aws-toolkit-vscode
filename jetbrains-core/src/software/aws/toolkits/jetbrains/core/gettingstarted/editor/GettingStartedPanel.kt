@@ -1059,9 +1059,7 @@ class GettingStartedPanel(
         abstract val loginSuccessBody: String
 
         protected fun handleLogin(authResult: Boolean) {
-            if (!authResult) {
-                infoBanner.setConnectionFailedMessage()
-            } else {
+            if (authResult) {
                 infoBanner.setSuccessMessage(loginSuccessTitle, loginSuccessBody)
             }
         }
