@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.services.s3.editor
 
 import com.intellij.ide.DataManager
-import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.TestApplicationManager
 import com.intellij.testFramework.runInEdtAndWait
@@ -17,11 +16,12 @@ import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response
 import software.aws.toolkits.core.utils.test.aString
+import software.aws.toolkits.jetbrains.utils.rules.EdtDisposableRule
 
 class S3ViewerPanelTest {
     @Rule
     @JvmField
-    val disposableRule = DisposableRule()
+    val disposableRule = EdtDisposableRule()
 
     @Rule
     @JvmField

@@ -9,7 +9,7 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.util.ExceptionUtil
-import icons.TerminalIcons
+import org.jetbrains.plugins.terminal.TerminalIcons
 import org.jetbrains.plugins.terminal.TerminalTabState
 import org.jetbrains.plugins.terminal.TerminalView
 import software.amazon.awssdk.profiles.ProfileFileSystemSetting

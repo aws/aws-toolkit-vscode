@@ -55,7 +55,7 @@ class BannedImportsRule : Rule() {
                     CodeSmell(
                         issue,
                         Entity.from(element),
-                        message = "Use contexts from CoroutineUtils.kt instead of Dispatchers"
+                        message = "Use contexts from contexts.kt instead of Dispatchers"
                     )
                 )
             }

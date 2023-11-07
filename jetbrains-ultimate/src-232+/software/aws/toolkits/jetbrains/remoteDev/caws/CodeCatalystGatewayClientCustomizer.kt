@@ -1,7 +1,7 @@
-// Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.caws
+package software.aws.toolkits.jetbrains.remoteDev.caws
 
 import com.intellij.openapi.extensions.ExtensionNotApplicableException
 import com.jetbrains.rdserver.unattendedHost.customization.DefaultGatewayExitCustomizationProvider
@@ -10,6 +10,7 @@ import com.jetbrains.rdserver.unattendedHost.customization.GatewayExitCustomizat
 import com.jetbrains.rdserver.unattendedHost.customization.controlCenter.GatewayControlCenterProvider
 import com.jetbrains.rdserver.unattendedHost.customization.controlCenter.GatewayHostnameDisplayKind
 import icons.AwsIcons
+import software.aws.toolkits.jetbrains.services.caws.CawsConstants
 import software.aws.toolkits.resources.message
 
 class CodeCatalystGatewayClientCustomizer : GatewayClientCustomizationProvider {

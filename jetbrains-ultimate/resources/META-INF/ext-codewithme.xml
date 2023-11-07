@@ -5,20 +5,20 @@
     <depends optional="true" config-file="ext-codewithme-git.xml">Git4Idea</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <gateway.customization.metrics implementation="software.aws.toolkits.jetbrains.services.caws.RebuildDevfileRequiredNotification"/>
-        <gateway.customization.name implementation="software.aws.toolkits.jetbrains.services.caws.CodeCatalystGatewayClientCustomizer"/>
+        <gateway.customization.metrics implementation="software.aws.toolkits.jetbrains.remoteDev.caws.RebuildDevfileRequiredNotification"/>
+        <gateway.customization.name implementation="software.aws.toolkits.jetbrains.remoteDev.caws.CodeCatalystGatewayClientCustomizer"/>
 
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
-        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.services.caws.DevfileWatcher"/>
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.DevEnvStatusWatcher"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.remoteDev.caws.DevfileWatcher"/>
+        <applicationService serviceImplementation="software.aws.toolkits.jetbrains.remoteDev.caws.DevfileWatcher"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.remoteDev.caws.DevEnvStatusWatcher"/>
 
-        <dynamicActionConfigurationCustomizer implementation="software.aws.toolkits.jetbrains.services.caws.RebuildActionConfigurationCustomizer"/>
-        <gateway.customization.tab implementation="software.aws.toolkits.jetbrains.services.caws.UpdateWorkspaceSettingsTab"/>
+        <dynamicActionConfigurationCustomizer implementation="software.aws.toolkits.jetbrains.remoteDev.caws.RebuildActionConfigurationCustomizer"/>
+        <gateway.customization.tab implementation="software.aws.toolkits.jetbrains.remoteDev.caws.UpdateWorkspaceSettingsTab"/>
     </extensions>
 
     <actions>
-        <action class="software.aws.toolkits.jetbrains.services.caws.RebuildAction" id="aws.caws.rebuildAction" />
-        <action class="software.aws.toolkits.jetbrains.services.caws.UpdateDevfileAction" id="aws.caws.updateDevfile" />
+        <action class="software.aws.toolkits.jetbrains.remoteDev.caws.RebuildAction" id="aws.caws.rebuildAction" />
+        <action class="software.aws.toolkits.jetbrains.remoteDev.caws.UpdateDevfileAction" id="aws.caws.updateDevfile" />
     </actions>
 
 </idea-plugin>

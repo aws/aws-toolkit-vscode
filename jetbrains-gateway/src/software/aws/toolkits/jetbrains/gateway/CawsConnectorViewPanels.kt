@@ -8,13 +8,16 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.observable.properties.PropertyGraph
 import com.intellij.openapi.rd.createNestedDisposable
 import com.intellij.openapi.rd.util.launchOnUi
-import com.intellij.openapi.rd.util.startChildIOBackgroundAsync
-import com.intellij.openapi.rd.util.startUnderModalProgressAsync
+import com.intellij.openapi.rd.util.startChildSyncIOBackgroundAsync
+import com.intellij.openapi.rd.util.startWithModalProgressAsync
 import com.intellij.openapi.rd.util.withUiContext
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.Messages
 import com.intellij.openapi.ui.setEmptyState
 import com.intellij.openapi.util.Disposer
+import com.intellij.platform.ide.progress.ModalTaskOwner
+import com.intellij.platform.ide.progress.TaskCancellation
+import com.intellij.platform.util.progress.indeterminateStep
 import com.intellij.ui.CollectionComboBoxModel
 import com.intellij.ui.ScrollPaneFactory
 import com.intellij.ui.SimpleListCellRenderer
@@ -119,10 +122,10 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
             val productType = context.productType ?: throw RuntimeException("CAWS wizard finished but productType was not set")
             val connectionSettings = context.connectionSettings ?: throw RuntimeException("CAWS wizard finished but connectionSettings was not set")
 
-            lifetime.startUnderModalProgressAsync(
+            lifetime.startWithModalProgressAsync(
+                owner = ModalTaskOwner.guess(),
                 title = message("caws.creating_workspace"),
-                canBeCancelled = false,
-                isIndeterminate = true
+                cancellation = TaskCancellation.nonCancellable()
             ) {
                 val userId = lazilyGetUserId()
                 val start = System.currentTimeMillis()
@@ -137,7 +140,7 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                     }
 
                     if (context.branchCloneType == BranchCloneType.NEW_FROM_EXISTING) {
-                        withTextAboveProgressBar(message("caws.creating_branch")) {
+                        indeterminateStep(message("caws.creating_branch")) {
                             cawsClient.createSourceRepositoryBranch {
                                 val project = context.project ?: throw RuntimeException("project was null")
                                 val commitId = context.linkedRepoBranch?.headCommitId ?: throw RuntimeException("source commit id was not defined")
@@ -184,7 +187,7 @@ fun cawsWizard(lifetime: Lifetime, settings: CawsSettings = CawsSettings()) = Mu
                         codecatalystDevEnvironmentWorkflowStep = "createDevEnvironment"
                     )
                     CodecatalystTelemetry.createDevEnvironment(project = null, userId = userId, result = TelemetryResult.Failed)
-                    return@startUnderModalProgressAsync
+                    return@startWithModalProgressAsync
                 }
 
                 val parameters = mapOf(
@@ -482,7 +485,7 @@ class EnvironmentDetailsPanel(private val context: CawsSettings, lifetime: Lifet
                             projectProperty.afterChange {
                                 lifetime.launchOnUi {
                                     loadingPanel.startLoading()
-                                    val panel = startChildIOBackgroundAsync { content(it?.space) }.await()
+                                    val panel = startChildSyncIOBackgroundAsync { content(it?.space) }.await()
                                     wrapper.setContent(panel)
                                     loadingPanel.stopLoading()
                                 }

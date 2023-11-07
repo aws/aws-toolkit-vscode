@@ -25,6 +25,7 @@ import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.TestFactory
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -67,6 +68,7 @@ import kotlin.time.ExperimentalTime
 @ExtendWith(ApplicationExtension::class)
 @SsoLogin("codecatalyst-test-account")
 @DisabledIfEnvironmentVariable(named = "IS_PROD", matches = "false")
+@DisabledIfSystemProperty(named = "org.gradle.project.ideProfileName", matches = "2023.3", disabledReason = "Flakes on 233")
 class DevEnvConnectTest : AfterAllCallback {
     companion object {
         @JvmField

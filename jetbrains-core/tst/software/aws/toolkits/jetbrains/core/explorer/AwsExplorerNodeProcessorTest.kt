@@ -7,7 +7,6 @@ import com.intellij.ide.projectView.PresentationData
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.util.Ref
-import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.tree.AsyncTreeModel
@@ -26,6 +25,7 @@ import org.mockito.kotlin.verify
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.explorer.nodes.AwsExplorerNode
 import software.aws.toolkits.jetbrains.core.fillResourceCache
+import software.aws.toolkits.jetbrains.utils.rules.EdtDisposableRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -37,7 +37,7 @@ class AwsExplorerNodeProcessorTest {
 
     @Rule
     @JvmField
-    val disposableRule = DisposableRule()
+    val disposableRule = EdtDisposableRule()
 
     @JvmField
     @Rule
@@ -93,7 +93,7 @@ class AwsExplorerNodeProcessorTest {
             }
         }
 
-        countDownLatch.await(1, TimeUnit.SECONDS)
+        countDownLatch.await(10, TimeUnit.SECONDS)
 
         assertThat(ran.get()).isTrue()
         assertThat(ranOnCorrectThread.get()).isTrue()

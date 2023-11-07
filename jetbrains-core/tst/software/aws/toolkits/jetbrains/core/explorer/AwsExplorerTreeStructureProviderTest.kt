@@ -4,7 +4,6 @@
 package software.aws.toolkits.jetbrains.core.explorer
 
 import com.intellij.openapi.application.runInEdt
-import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ExtensionTestUtil
 import com.intellij.testFramework.ProjectRule
 import com.intellij.testFramework.runInEdtAndWait
@@ -22,6 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import software.aws.toolkits.jetbrains.core.MockResourceCacheRule
 import software.aws.toolkits.jetbrains.core.fillResourceCache
+import software.aws.toolkits.jetbrains.utils.rules.EdtDisposableRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -33,7 +33,7 @@ class AwsExplorerTreeStructureProviderTest {
 
     @Rule
     @JvmField
-    val disposableRule = DisposableRule()
+    val disposableRule = EdtDisposableRule()
 
     @JvmField
     @Rule
@@ -59,7 +59,7 @@ class AwsExplorerTreeStructureProviderTest {
             }
         }
 
-        countDownLatch.await(1, TimeUnit.SECONDS)
+        countDownLatch.await(10, TimeUnit.SECONDS)
 
         verify(mockExtension, atLeastOnce()).modify(any(), any(), any())
 

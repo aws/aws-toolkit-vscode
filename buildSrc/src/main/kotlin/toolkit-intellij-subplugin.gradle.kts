@@ -155,6 +155,7 @@ tasks.withType<Test>().all {
     // FIX_WHEN_MIN_IS_221: log4j 1.2 removed in 221
     systemProperty("log4j.configuration", jetbrainsCoreTestResources.resolve("log4j.xml"))
     systemProperty("idea.log.config.properties.file", jetbrainsCoreTestResources.resolve("toolkit-test-log.properties"))
+    systemProperty("org.gradle.project.ideProfileName", ideProfile.name)
 
     jvmArgs(openedPackages)
 

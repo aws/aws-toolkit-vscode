@@ -57,8 +57,8 @@ with what features/services are supported.
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>
-    <!-- 201.6668.113 is 2020.1 EAP 1 -->
-    <idea-version since-build="201.6668.113" until-build="202.*"/>
+    <!-- 223.7571.182 is 2022.3 Stable -->
+    <idea-version since-build="223.7571.182" until-build="224.*"/>
 
     <resource-bundle>software.aws.toolkits.resources.MessagesBundle</resource-bundle>
 
@@ -76,6 +76,10 @@ with what features/services are supported.
     </xi:include>
 
     <xi:include href="/META-INF/plugin-gateway.xml">
+        <xi:fallback/>
+    </xi:include>
+
+    <xi:include href="/META-INF/remoteDev.xml">
         <xi:fallback/>
     </xi:include>
 
