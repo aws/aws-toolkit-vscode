@@ -7,6 +7,8 @@ import { Commands } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
 
 const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
+    // data is undefined when commands triggered from keybinding or command palette. Currently no
+    // way to differentiate keybinding and command palette, so both interactions are recorded as keybinding
     return data === undefined ? 'keybinding' : 'contextMenu'
 }
 
