@@ -72,7 +72,7 @@ export async function collectFiles(rootPath: string, respectGitIgnore: boolean =
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
-export async function prepareRepoData(repoRootPath: string) {
+export async function prepareRepoData(repoRootPath: string, conversationId: string) {
     const zip = new AdmZip()
 
     const allFiles = await vscode.workspace.findFiles(
@@ -94,7 +94,7 @@ export async function prepareRepoData(repoRootPath: string) {
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
         zip.addLocalFile(file.fsPath, zipFolderPath)
     }
-    telemetry.awsq_repo.emit({ awsqRepositorySize: totalBytes })
+    telemetry.awsq_repo.emit({ awsqConversationId: conversationId, awsqRepositorySize: totalBytes })
     const zipFileBuffer = zip.toBuffer()
     return {
         zipFileBuffer,

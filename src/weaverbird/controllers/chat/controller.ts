@@ -80,16 +80,22 @@ export class WeaverbirdController {
         switch (session?.state.phase) {
             case 'Approach':
                 if (vote === 'upvote') {
-                    telemetry.awsq_approachThumbsUp.emit({ value: 1 })
+                    telemetry.awsq_approachThumbsUp.emit({ awsqConversationId: session?.conversationId, value: 1 })
                 } else if (vote === 'downvote') {
-                    telemetry.awsq_approachThumbsDown.emit({ value: 1 })
+                    telemetry.awsq_approachThumbsDown.emit({ awsqConversationId: session?.conversationId, value: 1 })
                 }
                 break
             case 'Codegen':
                 if (vote === 'upvote') {
-                    telemetry.awsq_codeGenerationThumbsUp.emit({ value: 1 })
+                    telemetry.awsq_codeGenerationThumbsUp.emit({
+                        awsqConversationId: session?.conversationId,
+                        value: 1,
+                    })
                 } else if (vote === 'downvote') {
-                    telemetry.awsq_codeGenerationThumbsDown.emit({ value: 1 })
+                    telemetry.awsq_codeGenerationThumbsDown.emit({
+                        awsqConversationId: session?.conversationId,
+                        value: 1,
+                    })
                 }
                 break
         }
@@ -153,7 +159,7 @@ export class WeaverbirdController {
      */
     private async onCodeGeneration(session: Session, message: string | undefined, tabID: string) {
         // lock the UI/show loading bubbles
-        telemetry.awsq_codeGenerateClick.emit({ value: 1 })
+        telemetry.awsq_codeGenerateClick.emit({ awsqConversationId: session.conversationId, value: 1 })
 
         this.messenger.sendAsyncEventProgress(tabID, true, 'Code generation started')
 
@@ -223,7 +229,7 @@ export class WeaverbirdController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
-            telemetry.awsq_isAcceptedCodeChanges.emit({ enabled: true })
+            telemetry.awsq_isAcceptedCodeChanges.emit({ awsqConversationId: session.conversationId, enabled: true })
             await session.acceptChanges()
         } catch (err: any) {
             this.messenger.sendErrorMessage(
@@ -286,8 +292,8 @@ export class WeaverbirdController {
     }
 
     private async openDiff(message: any) {
-        telemetry.awsq_filesReviewed.emit({ value: 1 })
         const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.awsq_filesReviewed.emit({ awsqConversationId: session.conversationId, value: 1 })
         const workspaceRoot = session.config.workspaceRoot ?? ''
         const originalPath = path.join(workspaceRoot, message.rightPath)
         let left
@@ -316,8 +322,8 @@ export class WeaverbirdController {
     private async tabOpened(message: any) {
         let session: Session | undefined
         try {
-            telemetry.awsq_assignCommand.emit({ value: 1 })
             session = await this.sessionStorage.createSession(message.tabID)
+            telemetry.awsq_assignCommand.emit({ awsqConversationId: session.conversationId, value: 1 })
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(err.message),

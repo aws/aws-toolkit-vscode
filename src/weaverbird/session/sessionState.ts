@@ -51,7 +51,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath, this.config.conversationId)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
@@ -79,7 +79,7 @@ export class RefinementState implements SessionState {
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.awsq_approachInvoke.run(async span => {
             try {
-                span.record({ result: 'Failed', reason: 'This is the start so Approach is not successful yet' })
+                span.record({ awsqConversationId: this.conversationId })
 
                 if (!action.msg) {
                     throw new UserMessageNotFoundError()
@@ -96,7 +96,6 @@ export class RefinementState implements SessionState {
                         'There has been a problem generating an approach. Please open a conversation in a new tab',
                     {}
                 )
-                span.record({ result: 'Succeeded' })
                 return {
                     nextState: new RefinementIterationState(
                         {
@@ -111,7 +110,6 @@ export class RefinementState implements SessionState {
                     },
                 }
             } catch (e) {
-                span.record({ result: 'Failed', reason: `Code Generation Failed with error: ${e}` })
                 throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
             }
         })
@@ -139,7 +137,7 @@ export class RefinementIterationState implements SessionState {
             throw new UserMessageNotFoundError()
         }
 
-        telemetry.awsq_approach.emit({ value: 1 })
+        telemetry.awsq_approach.emit({ awsqConversationId: this.conversationId, value: 1 })
         const approach = await this.config.proxyClient.generatePlan(
             this.config.conversationId,
             this.config.uploadId,
@@ -163,7 +161,8 @@ export class RefinementIterationState implements SessionState {
 async function createFilePaths(
     fs: VirtualFileSystem,
     newFileContents: NewFileContents,
-    uploadId: string
+    uploadId: string,
+    conversationId: string
 ): Promise<string[]> {
     const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
@@ -173,7 +172,7 @@ async function createFilePaths(
         const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: generationFilePath })
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         filePaths.push(filePath)
-        telemetry.awsq_filesChanged.emit({ value: 1 })
+        telemetry.awsq_filesChanged.emit({ awsqConversationId: conversationId, value: 1 })
     }
 
     return filePaths
@@ -209,7 +208,7 @@ abstract class CodeGenBase {
                 case 'Complete': {
                     // const newFiles = codegenResult.result?.newFileContents ?? []
                     const newFiles = await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFilePaths = await createFilePaths(fs, newFiles, this.uploadId)
+                    const newFilePaths = await createFilePaths(fs, newFiles, this.uploadId, this.conversationId)
                     return {
                         newFiles,
                         newFilePaths,
@@ -252,11 +251,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        telemetry.awsq_isApproachAccepted.emit({ enabled: true })
+        telemetry.awsq_isApproachAccepted.emit({ awsqConversationId: this.config.conversationId, enabled: true })
 
         return telemetry.awsq_codeGenerationInvoke.run(async span => {
             try {
-                span.record({ result: 'Failed', reason: 'This is the start so Code Generation is not successful yet' })
+                span.record({ awsqConversationId: this.config.conversationId })
 
                 // TODO: Upload code once more before starting code generation
                 const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
@@ -271,13 +270,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.filePaths = codeGeneration.newFilePaths
 
                 const nextState = new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID)
-                span.record({ result: 'Succeeded' })
+                span.record({ awsqConversationId: this.config.conversationId })
                 return {
                     nextState,
                     interaction: {},
                 }
             } catch (e) {
-                span.record({ result: 'Failed', reason: `Code Generation Failed with error: ${e}` })
+                span.record({ awsqConversationId: this.config.conversationId })
                 throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
             }
         })
@@ -311,7 +310,7 @@ export class MockCodeGenState implements SessionState {
                     filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,
                 }))
-                this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId)
+                this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId, this.conversationId)
             }
         } catch (e) {
             // TODO: handle this error properly, double check what would be expected behaviour if mock code does not work.
@@ -337,6 +336,7 @@ export class PrepareIterationState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = 'Codegen'
     public uploadId: string
+    public conversationId: string
     constructor(
         private config: SessionStateConfig,
         public approach: string,
@@ -345,10 +345,11 @@ export class PrepareIterationState implements SessionState {
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
+        this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath, this.conversationId)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
@@ -368,7 +369,7 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        telemetry.awsq_codeReGeneration.emit({ value: 1 })
+        telemetry.awsq_codeReGeneration.emit({ awsqConversationId: this.config.conversationId, value: 1 })
         const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
             this.config.conversationId,
             this.config.uploadId,

@@ -36,10 +36,11 @@ describe('file utils', () => {
             const fileAmount = 2
             const fileNamePrefix = 'file'
             const fileContent = 'test content'
+            const conversationId = 'fake-conversation-id'
 
             const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
-            const result = await prepareRepoData(workspace.uri.fsPath)
+            const result = await prepareRepoData(workspace.uri.fsPath, conversationId)
             assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 64)
