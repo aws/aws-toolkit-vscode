@@ -9,7 +9,7 @@ import {
     ExportResultArchiveResponse,
     ExportResultArchiveResponseFilterSensitiveLog,
 } from '../models/models_0'
-import { de_ExportResultArchiveCommand, se_ExportResultArchiveCommand } from '../protocols/Aws_json1_0'
+import { de_ExportResultArchiveCommand, se_ExportResultArchiveCommand } from '../protocols/Aws_restJson1'
 import { getSerdePlugin } from '@smithy/middleware-serde'
 import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
 import { Command as $Command } from '@smithy/smithy-client'
@@ -18,6 +18,7 @@ import {
     Handler,
     HandlerExecutionContext,
     MiddlewareStack,
+    SMITHY_CONTEXT_KEY,
     EventStreamSerdeContext as __EventStreamSerdeContext,
     HttpHandlerOptions as __HttpHandlerOptions,
     MetadataBearer as __MetadataBearer,
@@ -135,6 +136,10 @@ export class ExportResultArchiveCommand extends $Command<
             commandName,
             inputFilterSensitiveLog: (_: any) => _,
             outputFilterSensitiveLog: ExportResultArchiveResponseFilterSensitiveLog,
+            [SMITHY_CONTEXT_KEY]: {
+                service: 'AmazonCodeWhispererStreamingService',
+                operation: 'ExportResultArchive',
+            },
         }
         const { requestHandler } = configuration
         return stack.resolve(

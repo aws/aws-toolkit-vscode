@@ -1,8 +1,8 @@
 // smithy-typescript generated code
 import {
-  ServiceException as __ServiceException,
-  ServiceExceptionOptions as __ServiceExceptionOptions,
-} from "@smithy/smithy-client";
+    ServiceException as __ServiceException,
+    ServiceExceptionOptions as __ServiceExceptionOptions,
+} from '@smithy/smithy-client'
 
 export { __ServiceException, __ServiceExceptionOptions }
 
@@ -12,11 +12,11 @@ export { __ServiceException, __ServiceExceptionOptions }
  * Base exception class for all service exceptions from CodeWhispererStreaming service.
  */
 export class CodeWhispererStreamingServiceException extends __ServiceException {
-  /**
-   * @internal
-   */
-  constructor(options: __ServiceExceptionOptions) {
-    super(options);
-    Object.setPrototypeOf(this, CodeWhispererStreamingServiceException.prototype);
-  }
+    /**
+     * @internal
+     */
+    constructor(options: __ServiceExceptionOptions) {
+        super(options)
+        Object.setPrototypeOf(this, CodeWhispererStreamingServiceException.prototype)
+    }
 }

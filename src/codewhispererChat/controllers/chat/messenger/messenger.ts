@@ -10,12 +10,13 @@ import {
     EditorContextCommandMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommand } from '../../../commands/registerCommands'
-import { ChatCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
+import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { TriggerPayload } from '../model'
+import { ToolkitError } from '../../../../shared/errors'
 
 export class Messenger {
     public constructor(
@@ -24,7 +25,7 @@ export class Messenger {
     ) {}
 
     async sendAIResponse(
-        response: ChatCommandOutput,
+        response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
         tabID: string,
         triggerID: string,
@@ -35,6 +36,12 @@ export class Messenger {
         let codeReference: CodeReference[] = []
         const followUps: FollowUp[] = []
         const relatedSuggestions: Suggestion[] = []
+
+        if (response.generateAssistantResponseResponse === undefined) {
+            throw new ToolkitError(
+                `Empty response from CodeWhisperer Streaming service. Request ID: ${response.$metadata.requestId}`
+            )
+        }
 
         this.dispatcher.sendChatMessage(
             // TODO This one somehow doesn't return immediately to the client,
@@ -57,7 +64,7 @@ export class Messenger {
 
         await waitUntil(
             async () => {
-                for await (const chatEvent of response.chatResponse) {
+                for await (const chatEvent of response.generateAssistantResponseResponse!) {
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
@@ -173,14 +180,15 @@ export class Messenger {
         })
     }
 
-    public sendErrorMessage(errorMessage: string | undefined, tabID: string) {
+    public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
         this.showChatExceptionMessage(
             {
                 errorMessage: errorMessage,
                 sessionID: undefined,
                 statusCode: undefined,
             },
-            tabID
+            tabID,
+            requestID
         )
     }
 
@@ -190,7 +198,7 @@ export class Messenger {
         )
     }
 
-    private showChatExceptionMessage(e: ChatException, tabID: string) {
+    private showChatExceptionMessage(e: ChatException, tabID: string, requestID: string | undefined) {
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage !== undefined) {
             message += `\n\nDetails: ${e.errorMessage}`
@@ -201,6 +209,9 @@ export class Messenger {
         }
         if (e.sessionID !== undefined) {
             message += `\n\nSession ID: ${e.sessionID}`
+        }
+        if (requestID !== undefined) {
+            message += `\n\nRequest ID: ${requestID}`
         }
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)

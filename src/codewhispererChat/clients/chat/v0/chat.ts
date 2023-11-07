@@ -5,7 +5,11 @@
 
 import { CodeWhispererStreamingClient } from '../../../../shared/clients/codeWhispererChatStreamingClient'
 import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
-import { ChatCommandOutput, ChatRequest, CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
+import {
+    CodeWhispererStreaming,
+    GenerateAssistantResponseCommandOutput,
+    GenerateAssistantResponseRequest,
+} from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
 
@@ -26,7 +30,7 @@ export class ChatSession {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    async chat(chatRequest: ChatRequest): Promise<ChatCommandOutput> {
+    async chat(chatRequest: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
         if (AuthUtil.instance.isConnectionExpired()) {
             AuthUtil.instance.showReauthenticatePrompt()
             throw new ToolkitError(
@@ -42,14 +46,16 @@ export class ChatSession {
             chatRequest.conversationState.conversationId = this.sessionId
         }
 
-        const response = await this.client.chat(chatRequest)
-        if (!response.chatResponse) {
-            throw new ToolkitError(`Empty chat response. Session id: ${this.sessionId}`)
+        const response = await this.client.generateAssistantResponse(chatRequest)
+        if (!response.generateAssistantResponseResponse) {
+            throw new ToolkitError(
+                `Empty chat response. Session id: ${this.sessionId} Request ID: ${response.$metadata.requestId}`
+            )
         }
 
         // read the first event to get conversation id.
         // this assumes that the metadataEvent is the first event in the response stream.
-        for await (const event of response.chatResponse) {
+        for await (const event of response.generateAssistantResponseResponse) {
             if (event.messageMetadataEvent !== undefined) {
                 this.sessionId = event.messageMetadataEvent!.conversationId
             }

@@ -7,6 +7,11 @@ import {
     ExportResultArchiveCommandOutput,
 } from './commands/ExportResultArchiveCommand'
 import {
+    GenerateAssistantResponseCommand,
+    GenerateAssistantResponseCommandInput,
+    GenerateAssistantResponseCommandOutput,
+} from './commands/GenerateAssistantResponseCommand'
+import {
     GenerateTaskAssistPlanCommand,
     GenerateTaskAssistPlanCommandInput,
     GenerateTaskAssistPlanCommandOutput,
@@ -22,6 +27,7 @@ import { HttpHandlerOptions as __HttpHandlerOptions } from '@smithy/types'
 const commands = {
     ChatCommand,
     ExportResultArchiveCommand,
+    GenerateAssistantResponseCommand,
     GenerateTaskAssistPlanCommand,
     StartConversationCommand,
 }
@@ -49,6 +55,23 @@ export interface CodeWhispererStreaming {
         args: ExportResultArchiveCommandInput,
         options: __HttpHandlerOptions,
         cb: (err: any, data?: ExportResultArchiveCommandOutput) => void
+    ): void
+
+    /**
+     * @see {@link GenerateAssistantResponseCommand}
+     */
+    generateAssistantResponse(
+        args: GenerateAssistantResponseCommandInput,
+        options?: __HttpHandlerOptions
+    ): Promise<GenerateAssistantResponseCommandOutput>
+    generateAssistantResponse(
+        args: GenerateAssistantResponseCommandInput,
+        cb: (err: any, data?: GenerateAssistantResponseCommandOutput) => void
+    ): void
+    generateAssistantResponse(
+        args: GenerateAssistantResponseCommandInput,
+        options: __HttpHandlerOptions,
+        cb: (err: any, data?: GenerateAssistantResponseCommandOutput) => void
     ): void
 
     /**

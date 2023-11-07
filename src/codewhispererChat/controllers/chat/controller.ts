@@ -30,10 +30,11 @@ import { PromptsGenerator } from './prompts/promptsGenerator'
 import { TriggerEventsStorage } from '../../storages/triggerEvents'
 import { randomUUID } from 'crypto'
 import {
-    ChatCommandOutput,
-    ChatRequest,
+    CodeWhispererStreamingServiceException,
     CursorState,
     DocumentSymbol,
+    GenerateAssistantResponseCommandOutput,
+    GenerateAssistantResponseRequest,
     SymbolType,
     TextDocument,
 } from '@amzn/codewhisperer-streaming'
@@ -213,14 +214,18 @@ export class ChatController {
 
     private processException(e: any, tabID: string) {
         let errorMessage = ''
+        let requestID = undefined
         if (typeof e === 'string') {
             errorMessage = e.toUpperCase()
+        } else if (e instanceof CodeWhispererStreamingServiceException) {
+            errorMessage = e.message
+            requestID = e.$metadata.requestId
         } else if (e instanceof Error) {
             errorMessage = e.message
         }
 
-        this.messenger.sendErrorMessage(errorMessage, tabID)
-        getLogger().error(`error: ${errorMessage} tabID: ${tabID}`)
+        this.messenger.sendErrorMessage(errorMessage, tabID, requestID)
+        getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
         this.sessionStorage.deleteSession(tabID)
     }
@@ -279,7 +284,7 @@ export class ChatController {
 
     private async processPromptChatMessage(message: PromptMessage) {
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, undefined)
             return
         }
 
@@ -397,7 +402,7 @@ export class ChatController {
         getLogger().info(
             `request from tab: ${tabID} coversationID: ${session.sessionIdentifier} request: ${JSON.stringify(request)}`
         )
-        let response: ChatCommandOutput | undefined = undefined
+        let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
             response = await session.chat(request)
@@ -405,9 +410,9 @@ export class ChatController {
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
 
             getLogger().info(
-                `response to tab: ${tabID} coversationID: ${session.sessionIdentifier} metadata: ${JSON.stringify(
-                    response.$metadata
-                )}`
+                `response to tab: ${tabID} coversationID: ${session.sessionIdentifier} requestID: ${
+                    response.$metadata.requestId
+                } metadata: ${JSON.stringify(response.$metadata)}`
             )
             this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
         } catch (e) {
@@ -420,7 +425,7 @@ export class ChatController {
         }
     }
 
-    private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): ChatRequest {
+    private triggerPayloadToChatRequest(triggerPayload: TriggerPayload): GenerateAssistantResponseRequest {
         let document: TextDocument | undefined = undefined
         let cursorState: CursorState | undefined = undefined
 

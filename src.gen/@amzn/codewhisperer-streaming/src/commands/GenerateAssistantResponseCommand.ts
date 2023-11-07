@@ -5,12 +5,12 @@ import {
     ServiceOutputTypes,
 } from '../CodeWhispererStreamingClient'
 import {
-    ChatRequest,
-    ChatRequestFilterSensitiveLog,
-    ChatResponse,
-    ChatResponseFilterSensitiveLog,
+    GenerateAssistantResponseRequest,
+    GenerateAssistantResponseRequestFilterSensitiveLog,
+    GenerateAssistantResponseResponse,
+    GenerateAssistantResponseResponseFilterSensitiveLog,
 } from '../models/models_0'
-import { de_ChatCommand, se_ChatCommand } from '../protocols/Aws_restJson1'
+import { de_GenerateAssistantResponseCommand, se_GenerateAssistantResponseCommand } from '../protocols/Aws_restJson1'
 import { getSerdePlugin } from '@smithy/middleware-serde'
 import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
 import { Command as $Command } from '@smithy/smithy-client'
@@ -33,26 +33,26 @@ export { __MetadataBearer, $Command }
 /**
  * @public
  *
- * The input for {@link ChatCommand}.
+ * The input for {@link GenerateAssistantResponseCommand}.
  */
-export interface ChatCommandInput extends ChatRequest {}
+export interface GenerateAssistantResponseCommandInput extends GenerateAssistantResponseRequest {}
 /**
  * @public
  *
- * The output of {@link ChatCommand}.
+ * The output of {@link GenerateAssistantResponseCommand}.
  */
-export interface ChatCommandOutput extends ChatResponse, __MetadataBearer {}
+export interface GenerateAssistantResponseCommandOutput extends GenerateAssistantResponseResponse, __MetadataBearer {}
 
 /**
  * @public
- * API to start chat conversation.
+ * API to generate assistant response.
  * @example
  * Use a bare-bones client and the command you need to make an API call.
  * ```javascript
- * import { CodeWhispererStreamingClient, ChatCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
- * // const { CodeWhispererStreamingClient, ChatCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
+ * import { CodeWhispererStreamingClient, GenerateAssistantResponseCommand } from "@amzn/codewhisperer-streaming"; // ES Modules import
+ * // const { CodeWhispererStreamingClient, GenerateAssistantResponseCommand } = require("@amzn/codewhisperer-streaming"); // CommonJS import
  * const client = new CodeWhispererStreamingClient(config);
- * const input = { // ChatRequest
+ * const input = { // GenerateAssistantResponseRequest
  *   conversationState: { // ConversationState
  *     conversationId: "STRING_VALUE",
  *     history: [ // ChatHistory
@@ -223,10 +223,10 @@ export interface ChatCommandOutput extends ChatResponse, __MetadataBearer {}
  *     chatTriggerType: "MANUAL" || "DIAGNOSTIC", // required
  *   },
  * };
- * const command = new ChatCommand(input);
+ * const command = new GenerateAssistantResponseCommand(input);
  * const response = await client.send(command);
- * // { // ChatResponse
- * //   chatResponse: { // ChatResponseStream Union: only one key present
+ * // { // GenerateAssistantResponseResponse
+ * //   generateAssistantResponseResponse: { // ChatResponseStream Union: only one key present
  * //     messageMetadataEvent: { // MessageMetadataEvent
  * //       conversationId: "STRING_VALUE",
  * //     },
@@ -269,10 +269,10 @@ export interface ChatCommandOutput extends ChatResponse, __MetadataBearer {}
  *
  * ```
  *
- * @param ChatCommandInput - {@link ChatCommandInput}
- * @returns {@link ChatCommandOutput}
- * @see {@link ChatCommandInput} for command's `input` shape.
- * @see {@link ChatCommandOutput} for command's `response` shape.
+ * @param GenerateAssistantResponseCommandInput - {@link GenerateAssistantResponseCommandInput}
+ * @returns {@link GenerateAssistantResponseCommandOutput}
+ * @see {@link GenerateAssistantResponseCommandInput} for command's `input` shape.
+ * @see {@link GenerateAssistantResponseCommandOutput} for command's `response` shape.
  * @see {@link CodeWhispererStreamingClientResolvedConfig | config} for CodeWhispererStreamingClient's `config` shape.
  *
  * @throws {@link InternalServerException} (server fault)
@@ -291,9 +291,9 @@ export interface ChatCommandOutput extends ChatResponse, __MetadataBearer {}
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class ChatCommand extends $Command<
-    ChatCommandInput,
-    ChatCommandOutput,
+export class GenerateAssistantResponseCommand extends $Command<
+    GenerateAssistantResponseCommandInput,
+    GenerateAssistantResponseCommandOutput,
     CodeWhispererStreamingClientResolvedConfig
 > {
     // Start section: command_properties
@@ -302,7 +302,7 @@ export class ChatCommand extends $Command<
     /**
      * @public
      */
-    constructor(readonly input: ChatCommandInput) {
+    constructor(readonly input: GenerateAssistantResponseCommandInput) {
         // Start section: command_constructor
         super()
         // End section: command_constructor
@@ -315,23 +315,23 @@ export class ChatCommand extends $Command<
         clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
         configuration: CodeWhispererStreamingClientResolvedConfig,
         options?: __HttpHandlerOptions
-    ): Handler<ChatCommandInput, ChatCommandOutput> {
+    ): Handler<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput> {
         this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
 
         const stack = clientStack.concat(this.middlewareStack)
 
         const { logger } = configuration
         const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'ChatCommand'
+        const commandName = 'GenerateAssistantResponseCommand'
         const handlerExecutionContext: HandlerExecutionContext = {
             logger,
             clientName,
             commandName,
-            inputFilterSensitiveLog: ChatRequestFilterSensitiveLog,
-            outputFilterSensitiveLog: ChatResponseFilterSensitiveLog,
+            inputFilterSensitiveLog: GenerateAssistantResponseRequestFilterSensitiveLog,
+            outputFilterSensitiveLog: GenerateAssistantResponseResponseFilterSensitiveLog,
             [SMITHY_CONTEXT_KEY]: {
                 service: 'AmazonCodeWhispererStreamingService',
-                operation: 'Chat',
+                operation: 'GenerateAssistantResponse',
             },
         }
         const { requestHandler } = configuration
@@ -345,8 +345,8 @@ export class ChatCommand extends $Command<
     /**
      * @internal
      */
-    private serialize(input: ChatCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
-        return se_ChatCommand(input, context)
+    private serialize(input: GenerateAssistantResponseCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
+        return se_GenerateAssistantResponseCommand(input, context)
     }
 
     /**
@@ -355,8 +355,8 @@ export class ChatCommand extends $Command<
     private deserialize(
         output: __HttpResponse,
         context: __SerdeContext & __EventStreamSerdeContext
-    ): Promise<ChatCommandOutput> {
-        return de_ChatCommand(output, context)
+    ): Promise<GenerateAssistantResponseCommandOutput> {
+        return de_GenerateAssistantResponseCommand(output, context)
     }
 
     // Start section: command_body_extra

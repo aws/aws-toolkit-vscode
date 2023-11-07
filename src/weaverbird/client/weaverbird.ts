@@ -204,6 +204,9 @@ export class WeaverbirdClient {
             getLogger().debug(`Executing exportResultArchive with %O`, params)
             const archiveResponse = await streamingClient.exportResultArchive(params)
             const buffer: number[] = []
+            if (archiveResponse.body === undefined) {
+                throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
+            }
             for await (const chunk of archiveResponse.body) {
                 buffer.push(...(chunk.binaryPayloadEvent?.bytes ?? []))
             }
