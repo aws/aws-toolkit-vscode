@@ -60,11 +60,7 @@ phases:
             - chmod 666 /var/run/docker.sock
 
     pre_build:
-        env:
-            variables:
-                HOME: /home/codebuild-user
         commands:
-            # CodeBuild ignores the env.variables.HOME declaration above? :(
             - export HOME=/home/codebuild-user
             - bash buildspec/setup-github-token.sh
             # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
@@ -93,11 +89,7 @@ phases:
             # - go version
 
     build:
-        env:
-            variables:
-                HOME: /home/codebuild-user
         commands:
-            # CodeBuild ignores the env.variables.HOME declaration above? :(
             - export HOME=/home/codebuild-user
             - npm ci
             - xvfb-run npm run testInteg
