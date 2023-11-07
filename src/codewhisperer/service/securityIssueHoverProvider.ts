@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import { CodeScanIssue } from '../models/model'
 import globals from '../../shared/extensionGlobals'
 import { SecurityIssueProvider } from './securityIssueProvider'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { ApplyFixSource, telemetry } from '../../shared/telemetry/telemetry'
 import path from 'path'
 
 export class SecurityIssueHoverProvider extends SecurityIssueProvider implements vscode.HoverProvider {
@@ -64,10 +64,9 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
 
         markdownString.appendMarkdown(`${issue.description.markdown}\n\n`)
 
+        const args = [issue, filePath]
         const viewDetailsCommand = vscode.Uri.parse(
-            `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
-                JSON.stringify({ ...issue, filePath })
-            )}`
+            `command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(JSON.stringify(args))}`
         )
 
         markdownString.appendMarkdown(
@@ -75,10 +74,9 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         )
 
         if (suggestedFix) {
+            const args: [CodeScanIssue, string, ApplyFixSource] = [issue, filePath, 'hover']
             const applyFixCommand = vscode.Uri.parse(
-                `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
-                    JSON.stringify({ ...issue, filePath })
-                )}`
+                `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(JSON.stringify(args))}`
             )
             markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand} "Apply suggested fix")\n`)
             markdownString.appendMarkdown(
