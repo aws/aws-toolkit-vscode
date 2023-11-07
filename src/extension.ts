@@ -74,6 +74,7 @@ import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/mess
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
+import { buildApi } from './shared/api'
 
 let localize: nls.LocalizeFunc
 
@@ -270,6 +271,7 @@ export async function activate(context: vscode.ExtensionContext) {
         if (!isReleaseVersion()) {
             globals.telemetry.assertPassiveTelemetry(globals.didReload)
         }
+        return buildApi()
     } catch (error) {
         const stacktrace = (error as Error).stack?.split('\n')
         // truncate if the stacktrace is unusually long
