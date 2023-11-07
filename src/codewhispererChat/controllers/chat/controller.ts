@@ -265,7 +265,7 @@ export class ChatController {
                     triggerID
                 )
 
-                if (command === 'aws.awsq.sendToPrompt') {
+                if (command.type === 'aws.awsq.sendToPrompt') {
                     // No need for response if send the code to prompt
                     return
                 }

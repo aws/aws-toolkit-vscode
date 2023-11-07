@@ -9,7 +9,7 @@ import { PromptMessage } from '../model'
 
 export class UserIntentRecognizer {
     public getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
-        switch (command) {
+        switch (command.type) {
             case 'aws.awsq.explainCode':
                 return UserIntent.EXPLAIN_CODE_SELECTION
             case 'aws.awsq.refactorCode':

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { EditorContextCommand } from '../commands/registerCommands'
 import { EditorContext } from '../editor/context/model'
 
 export type TriggerEventType = 'chat_message' | 'editor_context_command' | 'follow_up'
@@ -13,7 +14,7 @@ export interface TriggerEvent {
     readonly context: EditorContext | undefined
     readonly message: string | undefined
     readonly type: TriggerEventType
-    readonly command?: string
+    readonly command?: EditorContextCommand
 }
 
 export class TriggerEventsStorage {
