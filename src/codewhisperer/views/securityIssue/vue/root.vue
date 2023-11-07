@@ -24,14 +24,15 @@
                         </a>
                     </template>
                 </p>
+                <p v-if="!relatedVulnerabilities || relatedVulnerabilities.length === 0">-</p>
             </div>
 
             <div>
                 <b>Code fix available</b>
-                <p v-if="isFixAvailable" style="color: var(--vscode-charts-green)">
+                <p v-if="isFixAvailable" style="color: var(--vscode-testing-iconPassed)">
                     <span class="icon icon-sm icon-vscode-pass-filled"></span> Yes
                 </p>
-                <p v-else style="color: var(--vscode-charts-red)">
+                <p v-else style="color: var(--vscode-testing-iconErrored)">
                     <span class="icon icon-sm icon-vscode-circle-slash"></span> No
                 </p>
             </div>
@@ -42,6 +43,13 @@
                     <a :href="detectorUrl">
                         {{ detectorName }} <span class="icon icon-sm icon-vscode-link-external"></span>
                     </a>
+                </p>
+            </div>
+
+            <div>
+                <b>File path</b>
+                <p>
+                    <a href="#" @click="navigateToFile"> {{ relativePath }} [Ln {{ startLine }}] </a>
                 </p>
             </div>
         </div>
@@ -103,6 +111,8 @@ export default defineComponent({
             suggestedFixDescription: '',
             isFixAvailable: false,
             relatedVulnerabilities: [] as string[],
+            startLine: 0,
+            relativePath: '',
         }
     },
     created() {
@@ -114,6 +124,7 @@ export default defineComponent({
     methods: {
         async getData() {
             const issue = await client.getIssue()
+            const relativePath = await client.getRelativePath()
             if (issue) {
                 const [suggestedFix] = issue.suggestedFixes
 
@@ -123,6 +134,9 @@ export default defineComponent({
                 this.relatedVulnerabilities = issue.relatedVulnerabilities
                 this.severity = issue.severity
                 this.recommendationText = issue.recommendation.text
+                this.startLine = issue.startLine
+                this.relativePath = relativePath
+                this.isFixAvailable = false
                 if (suggestedFix) {
                     this.isFixAvailable = true
                     this.suggestedFix = suggestedFix.code
@@ -136,6 +150,9 @@ export default defineComponent({
         },
         applyFix() {
             client.applyFix()
+        },
+        navigateToFile() {
+            client.navigateToFile()
         },
     },
     computed: {
