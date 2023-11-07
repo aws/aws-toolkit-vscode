@@ -38,24 +38,33 @@ interface CodeCatalystConfig {
     readonly gitHostname: string
 }
 
-export function getCodeCatalystConfig(): CodeCatalystConfig {
-    const stage = DevSettings.instance.get('cawsStage', 'prod')
+export function getCodeCatalystConfig(): Readonly<CodeCatalystConfig> {
+    return getCodeCatalystConfigFromSettings(DevSettings.instance)
+}
 
-    if (stage === 'gamma') {
-        return {
-            region: 'us-west-2',
-            endpoint: 'https://public.codecatalyst-gamma.global.api.aws',
-            hostname: 'integ.stage.REMOVED.codes',
-            gitHostname: 'git.gamma.source.caws.REMOVED',
-        }
-    } else {
-        return {
-            region: 'us-east-1',
-            endpoint: 'https://public.codecatalyst.global.api.aws',
-            hostname: 'codecatalyst.aws',
-            gitHostname: 'codecatalyst.aws',
-        }
+export function getCodeCatalystConfigFromSettings(settings: DevSettings): Readonly<CodeCatalystConfig> {
+    const defaultConfig = {
+        region: 'us-east-1',
+        endpoint: 'https://public.codecatalyst.global.api.aws',
+        hostname: 'codecatalyst.aws',
+        gitHostname: 'codecatalyst.aws',
     }
+    const devSetting = 'codecatalystService'
+    const devConfig = settings.get(devSetting, {})
+
+    if (Object.keys(devConfig).length === 0) {
+        return defaultConfig
+    }
+
+    try {
+        // The configuration in dev settings should explicitly override the entire default configuration.
+        assertHasProps(devConfig, ...Object.keys(defaultConfig))
+    } catch (err) {
+        throw ToolkitError.chain(err, `Dev setting '${devSetting}' has missing or invalid properties.`)
+    }
+
+    logger.getLogger().debug(`using CodeCatalyst configuration from dev setting '${devSetting}'`)
+    return devConfig as unknown as CodeCatalystConfig
 }
 
 export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {

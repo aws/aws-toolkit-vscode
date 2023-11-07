@@ -648,7 +648,7 @@ const devSettings = {
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
     endpoints: Record(String, String),
-    cawsStage: String,
+    codecatalystService: Record(String, String),
     ssoCacheDirectory: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
