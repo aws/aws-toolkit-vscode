@@ -210,7 +210,7 @@ export class Messenger {
         } else {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
-                ' the following part of my code to me:',
+                ' the following part of my code:',
                 '\n```\n',
                 trimmedCode,
                 '\n```',

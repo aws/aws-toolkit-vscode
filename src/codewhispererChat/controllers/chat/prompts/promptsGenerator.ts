@@ -17,6 +17,6 @@ export class PromptsGenerator {
     ])
 
     public generateForContextMenuCommand(command: EditorContextCommand): string {
-        return [this.editorContextMenuCommandVerbs.get(command), ' the selected codeblock to me'].join('')
+        return [this.editorContextMenuCommandVerbs.get(command), ' the selected codeblock'].join('')
     }
 }
