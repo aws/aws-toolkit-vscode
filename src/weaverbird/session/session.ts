@@ -17,6 +17,7 @@ import { WeaverbirdClient } from '../client/weaverbird'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const fs = FileSystemCommon.instance
 
@@ -46,6 +47,9 @@ export class Session {
         if (!this.preloaderFinished) {
             await this.setupConversation(msg)
             this.preloaderFinished = true
+
+            telemetry.awsq_assignCommand.emit({ awsqConversationId: this.conversationId, value: 1 })
+
             const extensionVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
             this.messenger.sendAsyncEventProgress(
                 this.tabID,
