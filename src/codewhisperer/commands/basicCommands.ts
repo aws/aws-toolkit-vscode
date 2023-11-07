@@ -4,14 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { ApplyFixSource, CodewhispererCodeScanIssueApplyFix, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
 import { Commands } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeScanIssueCommandArgs, codeScanState } from '../models/model'
+import { CodeScanIssue, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -33,6 +33,7 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
 import { applyPatch } from 'diff'
 import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
 import { FileSystemCommon } from '../../srcShared/fs'
+import { Mutable } from '../../shared/utilities/tsUtils'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -203,8 +204,8 @@ export const refreshStatusBar = Commands.declare(
 
 export const openSecurityIssuePanel = Commands.declare(
     'aws.codeWhisperer.openSecurityIssuePanel',
-    (context: ExtContext) => (issue: CodeScanIssueCommandArgs) => {
-        showSecurityIssueWebview(context.extensionContext, issue)
+    (context: ExtContext) => (issue: CodeScanIssue, filePath: string) => {
+        showSecurityIssueWebview(context.extensionContext, issue, filePath)
     }
 )
 
@@ -217,48 +218,54 @@ export const notifyNewCustomizationsCmd = Commands.declare(
 
 export const applySecurityFix = Commands.declare(
     'aws.codeWhisperer.applySecurityFix',
-    () =>
-        async ({ filePath, ...issue }: CodeScanIssueCommandArgs) => {
-            const [suggestedFix] = issue?.suggestedFixes ?? []
+    () => async (issue: CodeScanIssue, filePath: string, source: ApplyFixSource) => {
+        const [suggestedFix] = issue.suggestedFixes
+        if (!suggestedFix || !filePath) {
+            return
+        }
 
-            if (!suggestedFix || !filePath) {
-                return
-            }
+        const applyFixTelemetryEntry: Mutable<CodewhispererCodeScanIssueApplyFix> = {
+            detectorId: issue.detectorId,
+            findingId: issue.findingId,
+            applyFixSource: source,
+            result: 'Succeeded',
+        }
 
+        try {
             const patch = suggestedFix.code
             const document = await vscode.workspace.openTextDocument(filePath)
             const fileContent = document.getText()
 
             const updatedContent = applyPatch(fileContent, patch)
+            if (!updatedContent) {
+                vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
+                throw Error('Failed to get updated content from applying diff patch')
+            }
 
-            if (updatedContent) {
-                // saving the document text if not save
-                document.save().then(isSaved => {
-                    if (isSaved) {
-                        // writing the patch applied version of document into the file
-                        FileSystemCommon.instance
-                            .writeFile(filePath, updatedContent)
-                            .then(() => {
-                                vscode.window
-                                    .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
-                                        title: CodeWhispererConstants.runSecurityScanButtonTitle,
-                                    })
-                                    .then(res => {
-                                        if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
-                                            vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
-                                        }
-                                    })
-                                closeSecurityIssueWebview(issue.findingId)
-                            })
-                            .catch(err => {
-                                getLogger().error(`Unable to write updated text content into the file: ${err}`)
-                            })
-                    } else {
-                        getLogger().error('Failed to save editor text changes into the file.')
+            // saving the document text if not save
+            const isSaved = await document.save()
+            if (!isSaved) {
+                throw Error('Failed to save editor text changes into the file.')
+            }
+
+            // writing the patch applied version of document into the file
+            await FileSystemCommon.instance.writeFile(filePath, updatedContent)
+            vscode.window
+                .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
+                    title: CodeWhispererConstants.runSecurityScanButtonTitle,
+                })
+                .then(res => {
+                    if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
+                        vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
                     }
                 })
-            } else {
-                vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
-            }
+            closeSecurityIssueWebview(issue.findingId)
+        } catch (err) {
+            getLogger().error(`Apply fix command failed. ${err}`)
+            applyFixTelemetryEntry.result = 'Failed'
+            applyFixTelemetryEntry.reason = err as string
+        } finally {
+            telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
         }
+    }
 )

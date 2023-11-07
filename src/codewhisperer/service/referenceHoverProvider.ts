@@ -31,9 +31,9 @@ export class ReferenceHoverProvider implements vscode.HoverProvider {
                 let refLength = codeRef.code.length
                 let refCode = codeRef.code
                 if (
-                    reference.recommendationContentSpan != undefined &&
-                    reference.recommendationContentSpan.start != undefined &&
-                    reference.recommendationContentSpan.end != undefined
+                    reference.recommendationContentSpan !== undefined &&
+                    reference.recommendationContentSpan.start !== undefined &&
+                    reference.recommendationContentSpan.end !== undefined
                 ) {
                     refLength = reference.recommendationContentSpan.end - reference.recommendationContentSpan.start
                     refCode = codeRef.code.substring(
@@ -47,7 +47,7 @@ export class ReferenceHoverProvider implements vscode.HoverProvider {
                     new vscode.Range(document.positionAt(leftOffset), document.positionAt(rightOffset))
                 )
                 const index = subDocument.indexOf(refCode)
-                if (index != -1) {
+                if (index !== -1) {
                     return new vscode.Hover(
                         CodeWhispererConstants.hoverInlayText(reference.licenseName, reference.repository),
                         new vscode.Range(

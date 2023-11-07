@@ -38,7 +38,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                         fixIssue.command = {
                             title: 'Apply suggested fix',
                             command: 'aws.codeWhisperer.applySecurityFix',
-                            arguments: [{ ...issue, filePath: group.filePath }],
+                            arguments: [issue, group.filePath, 'quickfix'],
                         }
                         codeActions.push(fixIssue)
                     }
@@ -46,7 +46,7 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                     openIssue.command = {
                         title: 'Open "CodeWhisperer Security Issue"',
                         command: 'aws.codeWhisperer.openSecurityIssuePanel',
-                        arguments: [{ ...issue, filePath: group.filePath }],
+                        arguments: [issue, group.filePath],
                     }
                     codeActions.push(openIssue)
                 }

@@ -231,11 +231,11 @@ export async function activate(context: ExtContext): Promise<void> {
             ImportAdderProvider.instance
         ),
         vscode.languages.registerHoverProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.platformLanguageIds],
             SecurityIssueHoverProvider.instance
         ),
         vscode.languages.registerCodeActionsProvider(
-            [...CodeWhispererConstants.supportedLanguages],
+            [...CodeWhispererConstants.platformLanguageIds],
             SecurityIssueCodeActionProvider.instance
         )
     )
@@ -394,7 +394,7 @@ export async function activate(context: ExtContext): Promise<void> {
                 securityPanelViewProvider.disposeSecurityPanelItem(e, editor)
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
-                if (e.contentChanges.length == 0 || vsCodeState.isCodeWhispererEditing) {
+                if (e.contentChanges.length === 0 || vsCodeState.isCodeWhispererEditing) {
                     return
                 }
                 /**

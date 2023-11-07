@@ -55,7 +55,7 @@ export async function getPolicyDocument(): Promise<Buffer | undefined> {
         filters: { JSON: ['json'] },
     })
 
-    if (!fileLocation || fileLocation.length == 0) {
+    if (!fileLocation || fileLocation.length === 0) {
         getLogger().info('CreatePolicy canceled: No document selected')
         return undefined
     }

@@ -86,7 +86,7 @@ export class Ec2Client {
 
     public async isInstanceRunning(instanceId: string): Promise<boolean> {
         const status = await this.getInstanceStatus(instanceId)
-        return status == 'running'
+        return status === 'running'
     }
 
     public getInstancesFilter(instanceIds: string[]): EC2.Filter[] {
@@ -109,7 +109,7 @@ export class Ec2Client {
     }
 
     public async ensureInstanceNotInStatus(instanceId: string, targetStatus: string) {
-        const isAlreadyInStatus = (await this.getInstanceStatus(instanceId)) == targetStatus
+        const isAlreadyInStatus = (await this.getInstanceStatus(instanceId)) === targetStatus
         if (isAlreadyInStatus) {
             throw new ToolkitError(
                 `EC2: Instance is currently ${targetStatus}. Unable to update status of ${instanceId}.`
@@ -222,7 +222,7 @@ export function getNameOfInstance(instance: EC2.Instance): string | undefined {
 }
 
 export function instanceHasName(instance: EC2.Instance): boolean {
-    return instance.Tags !== undefined && instance.Tags.filter(tag => tag.Key === 'Name').length != 0
+    return instance.Tags !== undefined && instance.Tags.filter(tag => tag.Key === 'Name').length !== 0
 }
 
 function lookupTagKey(tags: EC2.Tag[], targetKey: string) {

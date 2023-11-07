@@ -156,7 +156,7 @@ export class DefaultS3Client {
                 // Passing us-east-1 for LocationConstraint breaks creating bucket. To make a bucket in us-east-1, you need to
                 // not pass a region, so check for this case.
                 CreateBucketConfiguration:
-                    this.regionCode == 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
+                    this.regionCode === 'us-east-1' ? undefined : { LocationConstraint: this.regionCode },
             })
             .promise()
 

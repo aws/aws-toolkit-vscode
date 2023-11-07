@@ -5,12 +5,13 @@
 
 import * as vscode from 'vscode'
 import { VueWebview } from '../../../webviews/main'
-import { CodeScanIssueCommandArgs } from '../../models/model'
+import { CodeScanIssue } from '../../models/model'
 
 export class SecurityIssueWebview extends VueWebview {
     public readonly id = 'aws.codeWhisperer.securityIssue'
     public readonly source = 'src/codewhisperer/views/securityIssue/vue/index.js'
-    private issue: CodeScanIssueCommandArgs | undefined
+    private issue: CodeScanIssue | undefined
+    private filePath: string | undefined
 
     public constructor() {
         super()
@@ -20,12 +21,16 @@ export class SecurityIssueWebview extends VueWebview {
         return this.issue
     }
 
-    public setIssue(issue: CodeScanIssueCommandArgs) {
+    public setIssue(issue: CodeScanIssue) {
         this.issue = issue
     }
 
+    public setFilePath(filePath: string) {
+        this.filePath = filePath
+    }
+
     public applyFix() {
-        vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', this.issue)
+        vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', this.issue, this.filePath, 'webview')
     }
 
     public getRelativePath() {
@@ -55,9 +60,10 @@ export class SecurityIssueWebview extends VueWebview {
 const Panel = VueWebview.compilePanel(SecurityIssueWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 
-export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, issue: CodeScanIssueCommandArgs) {
+export async function showSecurityIssueWebview(ctx: vscode.ExtensionContext, issue: CodeScanIssue, filePath: string) {
     activePanel ??= new Panel(ctx)
     activePanel.server.setIssue(issue)
+    activePanel.server.setFilePath(filePath)
 
     const webviewPanel = await activePanel.show({
         title: 'CodeWhisperer Security Issue',

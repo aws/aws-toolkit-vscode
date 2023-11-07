@@ -115,6 +115,8 @@ interface ToolkitGlobals {
     codelensRootRegistry: CodelensRootRegistry
     resourceManager: AwsResourceManager
     uriHandler: UriHandler
+    /** An id to differentiate the current machine being run on. Can help distinguish a remote from a local machine.  */
+    machineId: string
 
     /**
      * Whether the current session was (likely) a reload forced by VSCode during a workspace folder operation.
