@@ -53,12 +53,12 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
         const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
 
-        const { uploadUrl, uploadId } = await this.config.proxyClient.createUploadUrl(
+        const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
             zipFileChecksum
         )
 
-        await uploadCode(uploadUrl, zipFileBuffer)
+        await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
         const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID)
         return nextState.interact(action)
     }
@@ -350,13 +350,13 @@ export class PrepareIterationState implements SessionState {
         const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
         const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath)
 
-        const { uploadUrl, uploadId } = await this.config.proxyClient.createUploadUrl(
+        const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
             zipFileChecksum
         )
 
         this.uploadId = uploadId
-        await uploadCode(uploadUrl, zipFileBuffer)
+        await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
         const nextState = new CodeGenIterationState({ ...this.config, uploadId }, '', this.filePaths, this.tabID)
         return nextState.interact(action)
     }

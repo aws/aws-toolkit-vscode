@@ -12,13 +12,17 @@ import { getLogger } from '../../shared/logger/logger'
  *
  * uses a presigned url and files checksum to transfer data to s3 through http.
  */
-export async function uploadCode(url: string, buffer: Buffer) {
+export async function uploadCode(url: string, buffer: Buffer, kmsKeyArn?: string) {
     try {
         await got(url, {
             method: 'PUT',
             body: buffer,
             headers: {
                 'Content-Type': 'application/zip',
+                ...(kmsKeyArn && {
+                    'x-amz-server-side-encryption-aws-kms-key-id:': kmsKeyArn,
+                    'x-amz-server-side-encryption': 'aws:kms',
+                }),
             },
         })
     } catch (e) {
