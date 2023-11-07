@@ -4,37 +4,39 @@
  */
 
 import { LoadFileRequestMessage, LoadFileResponseMessage, Response, WebviewContext } from '../types'
-import { readFile } from '../fileSystemAccess/readFile'
-import { getFileNameFromPath } from '../utils/getFileNameFromPath'
+import vscode from 'vscode'
 
 export async function loadFileMessageHandler(request: LoadFileRequestMessage, context: WebviewContext) {
     let loadFileResponseMessage: LoadFileResponseMessage
     try {
         switch (request.fileName) {
-            case '': // initial load file request
+            case '': // load default template file when 'fileName' is empty
             {
-                const initFileContents = await readFile(context.defaultTemplatePath, context)
-                context.fileWatchs[context.defaultTemplatePath] = { fileContents: initFileContents ?? '' }
+                const initFileContents = (
+                    await vscode.workspace.fs.readFile(vscode.Uri.file(context.defaultTemplatePath))
+                ).toString()
+                if (initFileContents === undefined) {
+                    throw new Error(`Cannot read file contents from ${context.defaultTemplatePath}`)
+                }
+                context.fileWatches[context.defaultTemplatePath] = { fileContents: initFileContents }
                 loadFileResponseMessage = {
                     response: Response.LOAD_FILE,
                     eventId: request.eventId,
-                    fileName: getFileNameFromPath(context.defaultTemplatePath),
-                    filePath: context.defaultTemplatePath,
-                    initFileContents: initFileContents ?? '',
+                    fileName: context.defaultTemplateName,
+                    fileContents: initFileContents,
                     isSuccess: true,
                 }
                 break
             }
             default: {
                 const filePath = context.workSpacePath + '/' + request.fileName
-                const fileContents = await readFile(filePath, context)
+                const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
                 loadFileResponseMessage = {
                     response: Response.LOAD_FILE,
                     eventId: request.eventId,
                     fileName: request.fileName,
-                    filePath: filePath,
-                    initFileContents: fileContents ?? '',
-                    isSuccess: fileContents === undefined ? false : true,
+                    fileContents: fileContents,
+                    isSuccess: true,
                 }
                 break
             }
@@ -44,9 +46,9 @@ export async function loadFileMessageHandler(request: LoadFileRequestMessage, co
             response: Response.LOAD_FILE,
             eventId: request.eventId,
             fileName: request.fileName,
-            filePath: '',
-            initFileContents: '',
+            fileContents: '',
             isSuccess: false,
+            reason: (e as Error).message,
         }
     }
     context.panel.webview.postMessage(loadFileResponseMessage)
