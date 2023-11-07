@@ -429,9 +429,22 @@ ${message}`,
             connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
         },
         onVote: connector.onChatItemVoted,
-        onSendFeedback: connector.sendFeedback,
+        onSendFeedback: (tabId, feedbackPayload) => {
+            connector.sendFeedback(tabId, feedbackPayload)
+            mynahUI.notify({
+                type: NotificationType.INFO,
+                title: 'Your feedback is sent',
+                content: 'Thanks for your feedback.',
+            })
+        },
         onCodeInsertToCursorPosition: connector.onCodeInsertToCursorPosition,
-        onCopyCodeToClipboard: connector.onCopyCodeToClipboard,
+        onCopyCodeToClipboard: (tabId, messageId, code, type, referenceTrackerInfo) => {
+            connector.onCopyCodeToClipboard(tabId, messageId, code, type, referenceTrackerInfo)
+            mynahUI.notify({
+                type: NotificationType.SUCCESS,
+                content: 'Selected code is copied to clipboard',
+            })
+        },
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
         onSuggestionInteraction: (eventName, suggestion, mouseEvent) => {
             // mouseEvent?.preventDefault();
