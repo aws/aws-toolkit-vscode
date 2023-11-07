@@ -22,6 +22,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.stub
+import org.mockito.kotlin.whenever
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRequest
@@ -237,7 +238,7 @@ class SecretsManagerAuthTest {
             }
         }
         return mock<DatabaseConnectionInterceptor.ProtoConnection> {
-            val m = mutableMapOf<String, String>()
+            val m = mutableMapOf<String, String?>()
             var u = if (hasUrl) {
                 "jdbc:postgresql://${if (hasHost) dbHost else ""}${if (hasPort) ":$port" else ""}/dev"
             } else {
@@ -245,13 +246,15 @@ class SecretsManagerAuthTest {
             }
             on { connectionPoint } doReturn dbConnectionPoint
             on { connectionProperties } doReturn m
-            on { getUrl() } doAnswer {
+            on { url } doAnswer {
                 u
             }
-            on { setUrl(anyString()) } doAnswer {
+
+            // gross syntax for setter mock
+            doAnswer {
                 u = it.arguments[0] as String
                 Unit
-            }
+            }.whenever(it).url = anyString()
         }.also {
             mockkStatic("software.aws.toolkits.jetbrains.datagrip.auth.compatability.DatabaseAuthProviderCompatabilityAdapterKt")
             every {

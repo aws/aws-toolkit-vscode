@@ -207,7 +207,7 @@ class IamAuthTest {
             on { dataSource } doReturn mockConnection
         }
         return mock<ProtoConnection> {
-            val m = mutableMapOf<String, String>()
+            val m = mutableMapOf<String, String?>()
             on { connectionPoint } doReturn dbConnectionPoint
             on { connectionProperties } doReturn m
         }.also {

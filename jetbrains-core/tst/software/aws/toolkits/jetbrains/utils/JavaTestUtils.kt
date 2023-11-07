@@ -11,7 +11,7 @@ import com.intellij.openapi.externalSystem.model.project.ProjectData
 import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode
 import com.intellij.openapi.externalSystem.service.project.ExternalProjectRefreshCallback
 import com.intellij.openapi.externalSystem.service.project.ProjectDataManager
-import com.intellij.openapi.externalSystem.settings.ExternalSystemSettingsListenerAdapter
+import com.intellij.openapi.externalSystem.settings.ExternalSystemSettingsListener
 import com.intellij.openapi.externalSystem.util.ExternalSystemApiUtil
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil
 import com.intellij.openapi.projectRoots.JavaSdk
@@ -98,7 +98,7 @@ fun HeavyJavaCodeInsightTestFixtureRule.setUpGradleProject(compatibility: String
     ExternalSystemApiUtil.subscribe(
         project,
         GradleConstants.SYSTEM_ID,
-        object : ExternalSystemSettingsListenerAdapter<GradleProjectSettings>() {
+        object : ExternalSystemSettingsListener<GradleProjectSettings> {
             override fun onProjectsLinked(settings: Collection<GradleProjectSettings>) {
                 super.onProjectsLinked(settings)
                 settings.first().gradleJvm = jdkName

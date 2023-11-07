@@ -181,7 +181,7 @@ class IamAuthTest {
         val dbConnectionPoint = mock<DatabaseConnectionPoint> {
             on { url } doAnswer { if (hasBadHost) null else "jdbc:postgresql://$dbHost:$connectionPort/dev" }
             on { additionalProperties } doAnswer {
-                val m = mutableMapOf<String, String>()
+                val m = mutableMapOf<String, String?>()
                 if (hasCredentials) {
                     m[CREDENTIAL_ID_PROPERTY] = credentialId
                 }
@@ -204,7 +204,7 @@ class IamAuthTest {
             }
         }
         return mock<ProtoConnection> {
-            val m = mutableMapOf<String, String>()
+            val m = mutableMapOf<String, String?>()
             on { connectionPoint } doReturn dbConnectionPoint
             on { connectionProperties } doReturn m
         }.also {

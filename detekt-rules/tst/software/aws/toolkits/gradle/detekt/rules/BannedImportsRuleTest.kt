@@ -48,13 +48,13 @@ class BannedImportsRuleTest {
     fun `Importing Dispatchers fails`() {
         assertThat(rule.lint("import kotlinx.coroutines.Dispatchers"))
             .singleElement()
-            .matches { it.id == "BannedImports" && it.message == "Use contexts from CoroutineUtils.kt instead of Dispatchers" }
+            .matches { it.id == "BannedImports" && it.message == "Use contexts from contexts.kt instead of Dispatchers" }
     }
 
     @Test
     fun `Importing Dispatchers statically fails`() {
         assertThat(rule.lint("import kotlinx.coroutines.Dispatchers.IO"))
             .singleElement()
-            .matches { it.id == "BannedImports" && it.message == "Use contexts from CoroutineUtils.kt instead of Dispatchers" }
+            .matches { it.id == "BannedImports" && it.message == "Use contexts from contexts.kt instead of Dispatchers" }
     }
 }

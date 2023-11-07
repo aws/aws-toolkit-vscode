@@ -27,5 +27,6 @@ fun <T : EditorNotificationProvider, U : EditorNotificationPanel> getEditorNotif
     val editorNotifications = EditorNotifications.getInstance(project) as EditorNotificationsImpl
     editorNotifications.completeAsyncTasks()
 
-    return editorNotifications.getNotificationPanels(editor)[provider]
+    @Suppress("USELESS_CAST")
+    return editorNotifications.getNotificationPanels(editor)[provider as Class<*>]
 }

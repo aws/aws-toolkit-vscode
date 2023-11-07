@@ -5,7 +5,6 @@ package software.aws.toolkits.jetbrains.services.dynamic.explorer
 
 import com.intellij.ide.util.treeView.AbstractTreeNode
 import com.intellij.openapi.application.runInEdt
-import com.intellij.testFramework.DisposableRule
 import com.intellij.testFramework.ProjectRule
 import com.intellij.ui.tree.AsyncTreeModel
 import com.intellij.ui.tree.StructureTreeModel
@@ -21,6 +20,7 @@ import software.aws.toolkits.jetbrains.core.explorer.AwsExplorerTreeStructure
 import software.aws.toolkits.jetbrains.core.fillResourceCache
 import software.aws.toolkits.jetbrains.services.dynamic.DynamicResourceSupportedTypes
 import software.aws.toolkits.jetbrains.settings.DynamicResourcesSettings
+import software.aws.toolkits.jetbrains.utils.rules.EdtDisposableRule
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.swing.tree.TreeModel
@@ -33,7 +33,7 @@ class DynamicResourceTreeStructureProviderTest {
 
     @Rule
     @JvmField
-    val disposableRule = DisposableRule()
+    val disposableRule = EdtDisposableRule()
 
     @JvmField
     @Rule

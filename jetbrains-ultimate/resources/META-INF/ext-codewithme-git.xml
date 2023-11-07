@@ -3,6 +3,6 @@
 
 <idea-plugin>
     <extensions defaultExtensionNs="com.intellij">
-        <postStartupActivity implementation="software.aws.toolkits.jetbrains.services.caws.EnableGitCredHelper"/>
+        <postStartupActivity implementation="software.aws.toolkits.jetbrains.remoteDev.caws.EnableGitCredHelper"/>
     </extensions>
 </idea-plugin>

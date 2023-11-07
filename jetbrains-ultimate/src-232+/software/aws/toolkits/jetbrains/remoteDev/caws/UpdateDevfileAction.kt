@@ -1,7 +1,7 @@
-// Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.caws
+package software.aws.toolkits.jetbrains.remoteDev.caws
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
@@ -18,6 +18,7 @@ import com.intellij.openapi.vfs.VirtualFileManager
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
+import software.aws.toolkits.jetbrains.services.caws.CawsConstants
 import software.aws.toolkits.jetbrains.services.caws.envclient.CawsEnvironmentClient
 import software.aws.toolkits.jetbrains.services.caws.envclient.models.StartDevfileRequest
 import software.aws.toolkits.jetbrains.utils.notifyError

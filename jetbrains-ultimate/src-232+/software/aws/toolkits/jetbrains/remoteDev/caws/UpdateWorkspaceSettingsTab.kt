@@ -1,7 +1,7 @@
-// Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package software.aws.toolkits.jetbrains.services.caws
+package software.aws.toolkits.jetbrains.remoteDev.caws
 
 import com.intellij.openapi.extensions.ExtensionNotApplicableException
 import com.intellij.openapi.fileEditor.FileEditorManager
@@ -36,7 +36,12 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.sono.SonoCredentialManager
 import software.aws.toolkits.jetbrains.core.credentials.sono.lazilyGetUserId
+import software.aws.toolkits.jetbrains.services.caws.CawsConstants
+import software.aws.toolkits.jetbrains.services.caws.InactivityTimeout
 import software.aws.toolkits.jetbrains.services.caws.envclient.CawsEnvironmentClient
+import software.aws.toolkits.jetbrains.services.caws.isSubscriptionFreeTier
+import software.aws.toolkits.jetbrains.services.caws.isSupportedInFreeTier
+import software.aws.toolkits.jetbrains.services.caws.loadParameterDescriptions
 import software.aws.toolkits.jetbrains.utils.notifyError
 import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.CodecatalystTelemetry

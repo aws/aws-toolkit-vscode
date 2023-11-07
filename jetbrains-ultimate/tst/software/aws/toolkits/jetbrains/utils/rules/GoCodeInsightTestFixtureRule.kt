@@ -9,7 +9,6 @@ import com.goide.psi.GoFile
 import com.intellij.execution.configurations.GeneralCommandLine
 import com.intellij.execution.util.ExecUtil
 import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationInfo
 import com.intellij.openapi.projectRoots.Sdk
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.vfs.VirtualFile
@@ -98,13 +97,8 @@ fun runGoModTidy(goModFile: VirtualFile) {
     }
 }
 
-fun compatibleGoForIde(): String {
-    val baseline = ApplicationInfo.getInstance().build.baselineVersion
-    return when {
-        baseline < 221 -> "1.17.8" // TODO: FIX_WHEN_MIN_IS_221
-        else -> "1.18.0"
-    }
-}
+@Suppress("FunctionOnlyReturningConstant")
+fun compatibleGoForIde() = "1.19.12"
 
 fun CodeInsightTestFixture.ensureCorrectGoVersion(disposable: Disposable) {
     val versionCmd = GeneralCommandLine("goenv").withParameters("version")

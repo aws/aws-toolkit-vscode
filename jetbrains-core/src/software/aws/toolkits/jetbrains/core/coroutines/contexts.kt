@@ -1,24 +1,24 @@
 // Copyright 2020 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
+// kotlinx.coroutines.Dispatchers is banned
+@file:Suppress("BannedImports")
 
 package software.aws.toolkits.jetbrains.core.coroutines
 
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.EDT
 import com.intellij.openapi.application.ModalityState
 import com.intellij.util.concurrency.AppExecutorUtil
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlin.coroutines.AbstractCoroutineContextElement
 import kotlin.coroutines.CoroutineContext
-
-// https://github.com/JetBrains/intellij-community/blob/375a130e119e5550972f65fafea2335dfffa28e3/platform/core-api/src/com/intellij/openapi/application/coroutines.kt#L134-L151
-fun ModalityState.asContextElement(): CoroutineContext.Element = ModalityStateElement(this)
 
 private class ModalityStateElement(val modalityState: ModalityState) : AbstractCoroutineContextElement(ModalityStateElementKey)
 
 private object ModalityStateElementKey : CoroutineContext.Key<ModalityStateElement>
 
-fun getCoroutineUiContext(): CoroutineContext = EdtCoroutineDispatcher
 private object EdtCoroutineDispatcher : CoroutineDispatcher() {
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         val state = context[ModalityStateElementKey]?.modalityState ?: ModalityState.any()
@@ -26,4 +26,9 @@ private object EdtCoroutineDispatcher : CoroutineDispatcher() {
     }
 }
 
+@Deprecated("Always uses ModalityState.any() by default", ReplaceWith("EDT", "software.aws.toolkits.jetbrains.core.coroutines.EDT"))
+fun getCoroutineUiContext(): CoroutineContext = EdtCoroutineDispatcher
+
 fun getCoroutineBgContext(): CoroutineContext = AppExecutorUtil.getAppExecutorService().asCoroutineDispatcher()
+
+val EDT = Dispatchers.EDT

@@ -10,7 +10,7 @@ import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.progress.ProgressIndicator
 import com.intellij.openapi.rd.createNestedDisposable
-import com.intellij.openapi.rd.util.launchChildIOBackground
+import com.intellij.openapi.rd.util.launchChildSyncIOBackground
 import com.intellij.openapi.rd.util.launchIOBackground
 import com.intellij.openapi.rd.util.launchOnUiAnyModality
 import com.intellij.openapi.rd.util.startUnderBackgroundProgressAsync
@@ -214,12 +214,12 @@ class CawsConnectionProvider : GatewayConnectionProvider {
                                     codecatalystDevEnvironmentWorkflowError = "Timeout/Unknown error while connecting to Dev Env via SSM",
                                     duration = timeTakenToCheckInstallation.toDouble()
                                 )
-                                coroutineScope {
-                                    launchChildIOBackground {
-                                        environmentActions.stopEnvironment()
-                                        GatewayUI.getInstance().connect(parameters)
-                                    }
+
+                                launchChildSyncIOBackground {
+                                    environmentActions.stopEnvironment()
+                                    GatewayUI.getInstance().connect(parameters)
                                 }
+
                                 gatewayHandle.terminate()
                                 return@startUnderModalProgressAsync JLabel()
                             }
