@@ -34,16 +34,16 @@ export class SecurityIssueWebview extends VueWebview {
     }
 
     public getRelativePath() {
-        if (this.issue) {
-            return vscode.workspace.asRelativePath(this.issue.filePath)
+        if (this.filePath) {
+            return vscode.workspace.asRelativePath(this.filePath)
         }
         return ''
     }
 
     public navigateToFile() {
-        if (this.issue) {
+        if (this.issue && this.filePath) {
             const position = new vscode.Position(this.issue.startLine, 1)
-            const uri = vscode.Uri.file(this.issue.filePath)
+            const uri = vscode.Uri.file(this.filePath)
             vscode.commands.executeCommand('vscode.open', uri, {
                 selection: new vscode.Selection(position, position),
             })
