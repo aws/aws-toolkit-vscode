@@ -23,12 +23,6 @@ export class PanelLoadError extends ToolkitError {
     }
 }
 
-export class ProjectSizeTooLargeError extends ToolkitError {
-    constructor() {
-        super('Project size is too large', { code: 'ProjectSizeTooLarge' })
-    }
-}
-
 export class WorkspaceFolderNotFoundError extends ToolkitError {
     constructor() {
         super(`Workspace folder was not found`, { code: 'WorkspaceFolderNotFound' })

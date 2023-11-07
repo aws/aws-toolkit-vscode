@@ -14,8 +14,6 @@ import { GitIgnoreFilter } from './gitignore'
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { ProjectSizeTooLargeError } from '../errors'
-import { projectSizeLimit } from '../limits'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
@@ -85,10 +83,6 @@ export async function prepareRepoData(repoRootPath: string, conversationId: stri
     for (const file of files) {
         const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
         totalBytes += fileSize
-
-        if (totalBytes > projectSizeLimit) {
-            throw new ProjectSizeTooLargeError()
-        }
 
         const relativePath = getWorkspaceRelativePath(file.fsPath)
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
