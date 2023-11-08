@@ -1,0 +1,17 @@
+{
+  "date" : "2023-11-08",
+  "version" : "1.86",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "Added the 'Setup Authentication for AWS Toolkit' page"
+  }, {
+    "type" : "feature",
+    "description" : "Added 2023.3 support"
+  }, {
+    "type" : "feature",
+    "description" : "auth: support `sso_session` for profiles in AWS shared ini files"
+  }, {
+    "type" : "bugfix",
+    "description" : "CodeWhisperer: Fix an issue where an IndexOutOfBoundException could be thrown when using CodeWhisperer"
+  } ]
+}

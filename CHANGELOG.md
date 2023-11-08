@@ -1,3 +1,6 @@
+# _1.85_ (2023-10-27)
+- **(Feature)** CodeWhisperer: reduce auto-suggestions when there is immediate right context
+
 # _1.84_ (2023-10-17)
 - **(Feature)** Public preview for CodeWhisperer Enterprise: Enterprise customers can now customize CodeWhisperer to adopt and suggest code based on organization specific codebases.
 
