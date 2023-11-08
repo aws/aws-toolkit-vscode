@@ -6,6 +6,7 @@
 import * as vscode from 'vscode'
 import { VueWebview } from '../../../webviews/main'
 import { CodeScanIssue } from '../../models/model'
+import { Component } from '../../../shared/telemetry/telemetry'
 
 export class SecurityIssueWebview extends VueWebview {
     public readonly id = 'aws.codeWhisperer.securityIssue'
@@ -30,7 +31,8 @@ export class SecurityIssueWebview extends VueWebview {
     }
 
     public applyFix() {
-        vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', this.issue, this.filePath, 'webview')
+        const args: [CodeScanIssue | undefined, string | undefined, Component] = [this.issue, this.filePath, 'webview']
+        vscode.commands.executeCommand('aws.codeWhisperer.applySecurityFix', ...args)
     }
 
     public getRelativePath() {

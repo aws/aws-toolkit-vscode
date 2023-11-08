@@ -57,7 +57,7 @@
         <div v-if="isFixAvailable">
             <hr />
 
-            <h3>Suggested code fix</h3>
+            <h3>Suggested code fix preview</h3>
             <span v-html="suggestedFixHtml"></span>
 
             <h4>Why are we recommending this?</h4>

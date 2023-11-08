@@ -188,7 +188,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
-                applyFixSource: 'hover',
+                component: 'hover',
                 result: 'Succeeded',
             })
         })
@@ -215,7 +215,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
-                applyFixSource: 'webview',
+                component: 'webview',
                 result: 'Failed',
                 reason: 'Error: Failed to get updated content from applying diff patch',
             })
@@ -252,7 +252,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
-                applyFixSource: 'quickfix',
+                component: 'quickfix',
                 result: 'Failed',
                 reason: 'Error: Failed to save editor text changes into the file.',
             })
@@ -288,7 +288,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
-                applyFixSource: 'hover',
+                component: 'hover',
                 result: 'Failed',
                 reason: 'Error: Writing to file failed.',
             })

@@ -5,6 +5,8 @@
 
 import * as vscode from 'vscode'
 import { SecurityIssueProvider } from './securityIssueProvider'
+import { CodeScanIssue } from '../models/model'
+import { Component } from '../../shared/telemetry/telemetry'
 
 export class SecurityIssueCodeActionProvider extends SecurityIssueProvider implements vscode.CodeActionProvider {
     static #instance: SecurityIssueCodeActionProvider
@@ -35,18 +37,20 @@ export class SecurityIssueCodeActionProvider extends SecurityIssueProvider imple
                             `Apply fix for "${issue.title}"`,
                             vscode.CodeActionKind.QuickFix
                         )
+                        const args: [CodeScanIssue, string, Component] = [issue, group.filePath, 'quickfix']
                         fixIssue.command = {
                             title: 'Apply suggested fix',
                             command: 'aws.codeWhisperer.applySecurityFix',
-                            arguments: [issue, group.filePath, 'quickfix'],
+                            arguments: args,
                         }
                         codeActions.push(fixIssue)
                     }
                     const openIssue = new vscode.CodeAction(`View details for "${issue.title}"`)
+                    const args: [CodeScanIssue, string] = [issue, group.filePath]
                     openIssue.command = {
                         title: 'Open "CodeWhisperer Security Issue"',
                         command: 'aws.codeWhisperer.openSecurityIssuePanel',
-                        arguments: [issue, group.filePath],
+                        arguments: args,
                     }
                     codeActions.push(openIssue)
                 }
