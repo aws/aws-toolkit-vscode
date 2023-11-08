@@ -13,15 +13,18 @@ import com.intellij.openapi.ui.ValidationInfo
 import com.intellij.ui.CellRendererPanel
 import com.intellij.ui.ClickListener
 import com.intellij.ui.EditorTextField
+import com.intellij.ui.ExperimentalUI
 import com.intellij.ui.JBColor
 import com.intellij.ui.JreHiDpiUtil
 import com.intellij.ui.components.JBTextArea
+import com.intellij.ui.dsl.builder.Cell
 import com.intellij.ui.dsl.builder.MutableProperty
 import com.intellij.ui.paint.LinePainter2D
 import com.intellij.ui.speedSearch.SpeedSearchSupply
 import com.intellij.util.text.DateFormatUtil
 import com.intellij.util.text.SyncDateFormat
 import com.intellij.util.ui.GraphicsUtil
+import com.intellij.util.ui.JBInsets
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import software.aws.toolkits.jetbrains.ui.KeyValueTextField
@@ -36,16 +39,17 @@ import java.awt.event.MouseEvent
 import java.awt.geom.RoundRectangle2D
 import java.text.SimpleDateFormat
 import javax.swing.AbstractButton
+import javax.swing.BorderFactory
 import javax.swing.JComboBox
 import javax.swing.JComponent
 import javax.swing.JTable
 import javax.swing.JTextArea
 import javax.swing.JTextField
 import javax.swing.ListModel
+import javax.swing.border.Border
 import javax.swing.table.TableCellRenderer
 import javax.swing.text.Highlighter
 import javax.swing.text.JTextComponent
-import com.intellij.ui.dsl.builder.Cell as Cell2
 
 fun JTextField?.blankAsNull(): String? = if (this?.text?.isNotBlank() == true) {
     text
@@ -237,7 +241,7 @@ class ResizingTextColumnRenderer : ResizingColumnRenderer() {
  * @param applies An additional function that allows control based on visibility of other components or other factors
  */
 
-fun Cell2<DialogPanel>.installOnParent(applies: () -> Boolean = { true }): Cell2<DialogPanel> {
+fun Cell<DialogPanel>.installOnParent(applies: () -> Boolean = { true }): Cell<DialogPanel> {
     validationOnApply {
         validate(applies, it)
     }
@@ -259,9 +263,23 @@ private inline fun validate(applies: () -> Boolean, component: DialogPanel): Val
  * Add a contextual help icon component
  */
 
-fun com.intellij.ui.dsl.builder.Cell<KeyValueTextField>.withBinding(binding: MutableProperty<Map<String, String>>) =
+fun Cell<KeyValueTextField>.withBinding(binding: MutableProperty<Map<String, String>>) =
     this.bind(
         componentGet = { component -> component.envVars },
         componentSet = { component, value -> component.envVars = value },
         binding
     )
+
+fun editorNotificationCompoundBorder(outsideBorder: Border) = BorderFactory.createCompoundBorder(
+    // outside border
+    outsideBorder,
+    // inside border
+    // helper util not available in JBUI until 232
+    // https://github.com/JetBrains/intellij-community/blob/222/platform/platform-api/src/com/intellij/ui/EditorNotificationPanel.java#L135-L136
+    JBUI.Borders.empty(
+        JBUI.insets(
+            "Editor.Notification.borderInsets",
+            if (ExperimentalUI.isNewUI()) JBInsets.create(9, 16) else JBInsets.create(5, 10)
+        )
+    )
+)

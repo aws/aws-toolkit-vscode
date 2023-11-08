@@ -5,6 +5,8 @@ package software.aws.toolkits.jetbrains.core.credentials
 
 import com.intellij.openapi.components.service
 import com.intellij.testFramework.ApplicationRule
+import org.junit.jupiter.api.extension.AfterEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentials
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
@@ -91,7 +93,7 @@ class MockCredentialsManager : CredentialManager() {
 }
 
 @Suppress("DEPRECATION")
-class MockCredentialManagerRule : ApplicationRule() {
+open class MockCredentialManagerRule : ApplicationRule() {
     private val lazyCredentialManager = ClearableLazy {
         MockCredentialsManager.getInstance()
     }
@@ -137,6 +139,12 @@ class MockCredentialManagerRule : ApplicationRule() {
 
     fun reset() {
         credentialManager.reset()
+    }
+}
+
+class MockCredentialManagerExtension : MockCredentialManagerRule(), AfterEachCallback {
+    override fun afterEach(context: ExtensionContext) {
+        after()
     }
 }
 

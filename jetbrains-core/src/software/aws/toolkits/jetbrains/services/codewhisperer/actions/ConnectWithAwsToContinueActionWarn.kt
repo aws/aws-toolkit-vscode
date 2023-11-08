@@ -6,7 +6,7 @@ package software.aws.toolkits.jetbrains.services.codewhisperer.actions
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.project.DumbAwareAction
-import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererLoginDialog
+import software.aws.toolkits.jetbrains.core.gettingstarted.requestCredentialsForCodeWhisperer
 import software.aws.toolkits.resources.message
 
 /**
@@ -16,7 +16,7 @@ class ConnectWithAwsToContinueActionWarn : DumbAwareAction(message("codewhispere
     override fun actionPerformed(e: AnActionEvent) {
         e.project?.let {
             runInEdt {
-                CodeWhispererLoginDialog(it).showAndGet()
+                requestCredentialsForCodeWhisperer(it)
             }
         }
     }
@@ -25,7 +25,7 @@ class ConnectWithAwsToContinueActionError : DumbAwareAction(message("codewhisper
     override fun actionPerformed(e: AnActionEvent) {
         e.project?.let {
             runInEdt {
-                CodeWhispererLoginDialog(it).showAndGet()
+                requestCredentialsForCodeWhisperer(it)
             }
         }
     }

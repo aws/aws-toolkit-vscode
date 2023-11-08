@@ -4,8 +4,10 @@
 package software.aws.toolkits.jetbrains.core.credentials.profiles
 
 import com.intellij.openapi.actionSystem.ActionManager
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.DumbAware
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.util.messages.Topic
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials
@@ -19,6 +21,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider
 import software.amazon.awssdk.auth.credentials.SystemPropertyCredentialsProvider
 import software.amazon.awssdk.profiles.Profile
 import software.amazon.awssdk.profiles.ProfileProperty
+import software.amazon.awssdk.services.ssooidc.model.SsoOidcException
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.CredentialIdentifierBase
 import software.aws.toolkits.core.credentials.CredentialProviderFactory
@@ -26,15 +29,27 @@ import software.aws.toolkits.core.credentials.CredentialSourceId
 import software.aws.toolkits.core.credentials.CredentialType
 import software.aws.toolkits.core.credentials.CredentialsChangeEvent
 import software.aws.toolkits.core.credentials.CredentialsChangeListener
+import software.aws.toolkits.core.credentials.SsoSessionBackedCredentialIdentifier
+import software.aws.toolkits.core.credentials.SsoSessionIdentifier
 import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.ChangeConnectionSettingIfValid
+import software.aws.toolkits.jetbrains.core.credentials.ConnectionState
+import software.aws.toolkits.jetbrains.core.credentials.CredentialManager
+import software.aws.toolkits.jetbrains.core.credentials.InteractiveCredential
 import software.aws.toolkits.jetbrains.core.credentials.MfaRequiredInteractiveCredentials
+import software.aws.toolkits.jetbrains.core.credentials.PostValidateInteractiveCredential
+import software.aws.toolkits.jetbrains.core.credentials.RefreshConnectionAction
 import software.aws.toolkits.jetbrains.core.credentials.SsoRequiredInteractiveCredentials
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitCredentialProcessProvider
+import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
 import software.aws.toolkits.jetbrains.core.credentials.diskCache
 import software.aws.toolkits.jetbrains.core.credentials.profiles.Ec2MetadataConfigProvider.getEc2MedataEndpoint
+import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY
+import software.aws.toolkits.jetbrains.core.credentials.profiles.SsoSessionConstants.SSO_SESSION_SECTION_NAME
+import software.aws.toolkits.jetbrains.core.credentials.reauthProviderIfNeeded
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCache
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import software.aws.toolkits.jetbrains.settings.ProfilesNotification
@@ -60,7 +75,7 @@ open class ProfileCredentialsIdentifier internal constructor(val profileName: St
 private class ProfileCredentialsIdentifierMfa(profileName: String, defaultRegionId: String?, credentialType: CredentialType?) :
     ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType), MfaRequiredInteractiveCredentials
 
-private class ProfileCredentialsIdentifierSso(
+private class ProfileCredentialsIdentifierLegacySso(
     profileName: String,
     defaultRegionId: String?,
     override val ssoCache: SsoCache,
@@ -69,10 +84,75 @@ private class ProfileCredentialsIdentifierSso(
 ) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType),
     SsoRequiredInteractiveCredentials
 
+class ProfileCredentialsIdentifierSso internal constructor(
+    profileName: String,
+    val ssoSessionName: String,
+    defaultRegionId: String?,
+    credentialType: CredentialType?
+) : ProfileCredentialsIdentifier(profileName, defaultRegionId, credentialType), PostValidateInteractiveCredential, SsoSessionBackedCredentialIdentifier {
+    override val sessionIdentifier = "$SSO_SESSION_SECTION_NAME:$ssoSessionName"
+
+    override fun handleValidationException(e: Exception): ConnectionState.RequiresUserAction? {
+        // in the new SSO flow, we must attempt validation before knowing if user action is truly required
+        if (findUpException<SsoOidcException>(e) || findUpException<IllegalStateException>(e)) {
+            return ConnectionState.RequiresUserAction(
+                object : InteractiveCredential, CredentialIdentifier by this {
+                    override val userActionDisplayMessage = message("credentials.sso.display", displayName)
+                    override val userActionShortDisplayMessage = message("credentials.sso.display.short")
+                    override val userAction = object : AnAction(message("credentials.sso.login.session", ssoSessionName)), DumbAware {
+                        override fun actionPerformed(e: AnActionEvent) {
+                            val session = CredentialManager.getInstance()
+                                .getSsoSessionIdentifiers()
+                                .first { it.id == sessionIdentifier }
+                            val connection = ToolkitAuthManager.getInstance().getOrCreateSsoConnection(
+                                UserConfigSsoSessionProfile(
+                                    configSessionName = ssoSessionName,
+                                    ssoRegion = session.ssoRegion,
+                                    startUrl = session.startUrl,
+                                    scopes = session.scopes.toList()
+                                )
+                            )
+                            reauthProviderIfNeeded(e.project, connection)
+                            RefreshConnectionAction().actionPerformed(e)
+                        }
+                    }
+
+                    override fun userActionRequired() = true
+                }
+            )
+        }
+
+        return null
+    }
+
+    // true exception could be further up the chain
+    private inline fun<reified T : Throwable> findUpException(e: Throwable?): Boolean {
+        // inline fun can't use recursion
+        var throwable = e
+        while (throwable != null) {
+            if (throwable is T) {
+                return true
+            }
+            throwable = throwable.cause
+        }
+
+        return false
+    }
+}
+
 private class NeverShowAgain : DumbAwareAction(message("settings.never_show_again")) {
     override fun actionPerformed(e: AnActionEvent) {
         AwsSettings.getInstance().profilesNotification = ProfilesNotification.Never
     }
+}
+
+data class ProfileSsoSessionIdentifier(
+    val profileName: String,
+    override val startUrl: String,
+    override val ssoRegion: String,
+    override val scopes: Set<String>
+) : SsoSessionIdentifier {
+    override val id = "$SSO_SESSION_SECTION_NAME:$profileName"
 }
 
 class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCache) : CredentialProviderFactory {
@@ -93,9 +173,11 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
     private fun loadProfiles(credentialLoadCallback: CredentialsChangeListener, initialLoad: Boolean) {
         val profilesAdded = mutableListOf<ProfileCredentialsIdentifier>()
         val profilesModified = mutableListOf<ProfileCredentialsIdentifier>()
+        val ssoAdded = mutableListOf<ProfileSsoSessionIdentifier>()
+        val ssoModified = mutableListOf<ProfileSsoSessionIdentifier>()
 
-        val previousProfilesSnapshot = profileHolder.snapshot()
-        val existingProfiles = profileHolder.snapshot()
+        val previousConfig = profileHolder.snapshot()
+        val currentConfig = profileHolder.snapshot()
 
         val newProfiles = try {
             validateAndGetProfiles()
@@ -106,7 +188,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
 
         newProfiles.validProfiles.forEach {
-            val previousProfile = existingProfiles.remove(it.key)
+            val previousProfile = currentConfig.profiles.remove(it.key)
             if (previousProfile == null) {
                 // It was not in the snapshot, so it must be new
                 profilesAdded.add(it.value.asId(newProfiles.validProfiles))
@@ -114,6 +196,19 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
                 // If the profile was modified, notify listeners, else do nothing
                 if (previousProfile != it.value) {
                     profilesModified.add(it.value.asId(newProfiles.validProfiles))
+                }
+            }
+        }
+
+        newProfiles.validSsoSessions.forEach {
+            val previousProfile = currentConfig.ssoSessions.remove(it.key)
+            if (previousProfile == null) {
+                // It was not in the snapshot, so it must be new
+                ssoAdded.add(it.value.asSsoSessionId())
+            } else {
+                // If the profile was modified, notify listeners, else do nothing
+                if (previousProfile != it.value) {
+                    ssoModified.add(it.value.asSsoSessionId())
                 }
             }
         }
@@ -133,11 +228,29 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
             }
         }
 
-        // Any remaining profiles must have either become invalid or removed from the cred/config files
-        val profilesRemoved = existingProfiles.values.map { it.asId(previousProfilesSnapshot) }
+        // any profiles with a modified 'sso_session' need to be marked as well
+        newProfiles.validProfiles.forEach { (_, profile) ->
+            val profileId = profile.asId(newProfiles.validProfiles)
+            if (profileId in profilesModified) {
+                // already marked; skip
+                return@forEach
+            }
 
-        profileHolder.update(newProfiles.validProfiles)
-        credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved))
+            val sessionProperty = profile.property(SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY)
+            if (sessionProperty.isPresent) {
+                val session = sessionProperty.get()
+                if (ssoModified.any { it.profileName == session }) {
+                    profilesModified.add(profileId)
+                }
+            }
+        }
+
+        // Any remaining profiles must have either become invalid or removed from the cred/config files
+        val profilesRemoved = currentConfig.profiles.values.map { it.asId(previousConfig.profiles) }
+        val ssoRemoved = currentConfig.ssoSessions.values.map { it.asSsoSessionId() }
+
+        profileHolder.updateState(newProfiles.validProfiles, newProfiles.validSsoSessions)
+        credentialLoadCallback(CredentialsChangeEvent(profilesAdded, profilesModified, profilesRemoved, ssoAdded, ssoModified, ssoRemoved))
 
         notifyUserOfResult(newProfiles, initialLoad)
         if (profilesAdded.isNotEmpty() && newProfiles.validProfiles.size == 1) {
@@ -214,12 +327,12 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
         val profile = profileHolder.getProfile(profileProviderId.profileName)
             ?: throw IllegalStateException("Profile ${profileProviderId.profileName} looks to have been removed")
-
         return createAwsCredentialProvider(profile, region)
     }
 
     private fun createAwsCredentialProvider(profile: Profile, region: AwsRegion) = when {
-        profile.propertyExists(ProfileProperty.SSO_START_URL) -> createSsoProvider(profile)
+        profile.propertyExists(PROFILE_SSO_SESSION_PROPERTY) -> createSsoSessionProfileProvider(profile)
+        profile.propertyExists(ProfileProperty.SSO_START_URL) -> createLegacySsoProvider(profile)
         profile.propertyExists(ProfileProperty.ROLE_ARN) -> createAssumeRoleProvider(profile, region)
         profile.propertyExists(ProfileProperty.AWS_SESSION_TOKEN) -> createStaticSessionProvider(profile)
         profile.propertyExists(ProfileProperty.AWS_ACCESS_KEY_ID) -> createBasicProvider(profile)
@@ -229,7 +342,15 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
         }
     }
 
-    private fun createSsoProvider(profile: Profile): AwsCredentialsProvider = ProfileSsoProvider(profile)
+    private fun createLegacySsoProvider(profile: Profile): AwsCredentialsProvider = ProfileLegacySsoProvider(ssoCache, profile)
+
+    private fun createSsoSessionProfileProvider(profile: Profile): AwsCredentialsProvider {
+        val ssoSessionName = profile.requiredProperty(SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY)
+        val ssoSession = profileHolder.getSsoSession(ssoSessionName)
+            ?: error("Profile ${profile.name()} refers to sso-session $ssoSessionName which appears to have been removed")
+
+        return ProfileSsoSessionProvider(ssoSession, profile)
+    }
 
     private fun createAssumeRoleProvider(profile: Profile, region: AwsRegion): AwsCredentialsProvider {
         val sourceProfileName = profile.property(ProfileProperty.SOURCE_PROFILE)
@@ -293,22 +414,37 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
         return when {
             this.requiresMfa(profiles) -> ProfileCredentialsIdentifierMfa(name, defaultRegion, requestedProfileType)
-            this.requiresSso(profiles) -> ProfileCredentialsIdentifierSso(
+            this.requiresLegacySso(profiles) -> ProfileCredentialsIdentifierLegacySso(
                 name,
                 defaultRegion,
                 ssoCache,
                 this.traverseCredentialChain(profiles).map { it.property(ProfileProperty.SSO_START_URL) }.first { it.isPresent }.get(),
                 requestedProfileType
             )
+            this.requiresSso() -> ProfileCredentialsIdentifierSso(
+                name,
+                requiredProperty(SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY),
+                defaultRegion,
+                requestedProfileType
+            )
             else -> ProfileCredentialsIdentifier(name, defaultRegion, requestedProfileType)
         }
     }
 
+    private fun Profile.asSsoSessionId() = ProfileSsoSessionIdentifier(
+        name(),
+        requiredProperty(ProfileProperty.SSO_START_URL),
+        requiredProperty(ProfileProperty.SSO_REGION),
+        ssoScopes()
+    )
+
     private fun Profile.requiresMfa(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
         .any { it.propertyExists(ProfileProperty.MFA_SERIAL) }
 
-    private fun Profile.requiresSso(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
+    private fun Profile.requiresLegacySso(profiles: Map<String, Profile>) = this.traverseCredentialChain(profiles)
         .any { it.propertyExists(ProfileProperty.SSO_START_URL) }
+
+    private fun Profile.requiresSso() = propertyExists(SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY)
 
     companion object {
         private val LOG = getLogger<ProfileCredentialProviderFactory>()
@@ -322,6 +458,7 @@ class ProfileCredentialProviderFactory(private val ssoCache: SsoCache = diskCach
 
 private fun Profile.toCredentialType(): CredentialType? = when {
     this.propertyExists(ProfileProperty.SSO_START_URL) -> CredentialType.SsoProfile
+    this.propertyExists(SsoSessionConstants.PROFILE_SSO_SESSION_PROPERTY) -> CredentialType.SsoProfile
     this.propertyExists(ProfileProperty.ROLE_ARN) -> {
         if (this.propertyExists(ProfileProperty.MFA_SERIAL)) {
             CredentialType.AssumeMfaRoleProfile
@@ -335,15 +472,27 @@ private fun Profile.toCredentialType(): CredentialType? = when {
     else -> null
 }
 
-private class ProfileHolder {
-    private val profiles = mutableMapOf<String, Profile>()
+private data class ProfileHolder(
+    val profiles: MutableMap<String, Profile> = mutableMapOf(),
+    val ssoSessions: MutableMap<String, Profile> = mutableMapOf()
+) {
+    fun snapshot() = copy(
+        profiles = profiles.toMutableMap(),
+        ssoSessions = ssoSessions.toMutableMap()
+    )
 
-    fun snapshot() = profiles.toMutableMap()
-
-    fun update(validProfiles: Map<String, Profile>) {
+    /**
+     * Update the holder with the latest view of valid state
+     */
+    fun updateState(validProfiles: Map<String, Profile>, validSsoSessions: Map<String, Profile>) {
         profiles.clear()
         profiles.putAll(validProfiles)
+
+        ssoSessions.clear()
+        ssoSessions.putAll(validSsoSessions)
     }
 
     fun getProfile(profileName: String): Profile? = profiles[profileName]
+
+    fun getSsoSession(sessionName: String): Profile? = ssoSessions[sessionName]
 }

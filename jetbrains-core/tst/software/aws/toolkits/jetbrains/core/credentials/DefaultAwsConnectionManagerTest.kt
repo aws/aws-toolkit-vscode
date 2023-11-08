@@ -3,12 +3,14 @@
 
 package software.aws.toolkits.jetbrains.core.credentials
 
+import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.application.ApplicationManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.mockito.kotlin.mock
 import software.aws.toolkits.core.credentials.CredentialIdentifier
 import software.aws.toolkits.core.credentials.aCredentialsIdentifier
 import software.aws.toolkits.core.region.AwsRegion
@@ -456,6 +458,42 @@ class DefaultAwsConnectionManagerTest {
         manager.waitUntilConnectionStateIsStable()
 
         assertThat(manager.isValidConnectionSettings()).isFalse
+    }
+
+    @Test
+    fun `credential validation error can be handled`() {
+        val credentialsIdentifier = object : PostValidateInteractiveCredential, CredentialIdentifier by aCredentialsIdentifier() {
+            override fun handleValidationException(e: Exception) = ConnectionState.RequiresUserAction(
+                object : InteractiveCredential, CredentialIdentifier by this {
+                    override val userActionDisplayMessage = ""
+                    override val userAction: AnAction = mock()
+                    override fun userActionRequired() = true
+                }
+            )
+        }.also { mockCredentialManager.addCredentials(it.id) }
+
+        markConnectionSettingsAsInvalid(credentialsIdentifier, AwsRegionProvider.getInstance().defaultRegion())
+
+        changeRegion(AwsRegionProvider.getInstance().defaultRegion())
+        changeCredentialProvider(credentialsIdentifier)
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.connectionState).isInstanceOf(ConnectionState.RequiresUserAction::class.java)
+    }
+
+    @Test
+    fun `credential validation error returns invalid if not handled`() {
+        val credentialsIdentifier = object : PostValidateInteractiveCredential, CredentialIdentifier by aCredentialsIdentifier() {
+            override fun handleValidationException(e: Exception) = null
+        }.also { mockCredentialManager.addCredentials(it.id) }
+
+        markConnectionSettingsAsInvalid(credentialsIdentifier, AwsRegionProvider.getInstance().defaultRegion())
+
+        changeRegion(AwsRegionProvider.getInstance().defaultRegion())
+        changeCredentialProvider(credentialsIdentifier)
+        manager.waitUntilConnectionStateIsStable()
+
+        assertThat(manager.connectionState).isInstanceOf(ConnectionState.InvalidConnection::class.java)
     }
 
     private fun markConnectionSettingsAsValid(credentialsIdentifier: CredentialIdentifier, region: AwsRegion) {

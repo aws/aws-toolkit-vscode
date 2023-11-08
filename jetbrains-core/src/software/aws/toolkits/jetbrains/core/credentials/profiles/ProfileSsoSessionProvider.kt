@@ -1,4 +1,4 @@
-// Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Copyright 2023 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
 package software.aws.toolkits.jetbrains.core.credentials.profiles
@@ -13,32 +13,39 @@ import software.amazon.awssdk.services.sso.SsoClient
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.amazon.awssdk.utils.SdkAutoCloseable
 import software.aws.toolkits.jetbrains.core.AwsClientManager
-import software.aws.toolkits.jetbrains.core.credentials.diskCache
-import software.aws.toolkits.jetbrains.core.credentials.sso.SsoAccessTokenProvider
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
+import software.aws.toolkits.jetbrains.core.credentials.UserConfigSsoSessionProfile
 import software.aws.toolkits.jetbrains.core.credentials.sso.SsoCredentialProvider
 
-class ProfileSsoProvider(profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
+class ProfileSsoSessionProvider(ssoSession: Profile, profile: Profile) : AwsCredentialsProvider, SdkAutoCloseable {
     private val ssoClient: SsoClient
     private val ssoOidcClient: SsoOidcClient
     private val credentialsProvider: SsoCredentialProvider
-
     init {
-        val ssoRegion = profile.requiredProperty(ProfileProperty.SSO_REGION)
         val clientManager = AwsClientManager.getInstance()
+
+        val ssoRegion = ssoSession.requiredProperty(ProfileProperty.SSO_REGION)
+        val startUrl = ssoSession.requiredProperty(ProfileProperty.SSO_START_URL)
+        val scopes = ssoSession.ssoScopes()
+
+        val accountId = profile.requiredProperty(ProfileProperty.SSO_ACCOUNT_ID)
+        val roleName = profile.requiredProperty(ProfileProperty.SSO_ROLE_NAME)
 
         ssoClient = clientManager.createUnmanagedClient(AnonymousCredentialsProvider.create(), Region.of(ssoRegion))
         ssoOidcClient = clientManager.createUnmanagedClient(AnonymousCredentialsProvider.create(), Region.of(ssoRegion))
 
-        val ssoAccessTokenProvider = SsoAccessTokenProvider(
-            profile.requiredProperty(ProfileProperty.SSO_START_URL),
-            ssoRegion,
-            diskCache,
-            ssoOidcClient
+        val authProfile = UserConfigSsoSessionProfile(
+            configSessionName = ssoSession.name(),
+            ssoRegion = ssoRegion,
+            startUrl = startUrl,
+            scopes = scopes.toList()
         )
 
+        val ssoAccessTokenProvider = ToolkitAuthManager.getInstance().getOrCreateSsoConnection(authProfile).getConnectionSettings().tokenProvider
+
         credentialsProvider = SsoCredentialProvider(
-            profile.requiredProperty(ProfileProperty.SSO_ACCOUNT_ID),
-            profile.requiredProperty(ProfileProperty.SSO_ROLE_NAME),
+            accountId,
+            roleName,
             ssoClient,
             ssoAccessTokenProvider
         )

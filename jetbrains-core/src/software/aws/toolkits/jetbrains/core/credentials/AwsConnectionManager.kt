@@ -186,8 +186,21 @@ abstract class AwsConnectionManager(private val project: Project) : SimpleModifi
                 promise.setResult(ConnectionState.ValidConnection(credentialsProvider, region))
             } catch (e: Exception) {
                 LOGGER.warn(e) { message("credentials.profile.validation_error", credentialsIdentifier.displayName) }
-                success = false
-                promise.setResult(ConnectionState.InvalidConnection(e))
+                val result = if (credentialsIdentifier is PostValidateInteractiveCredential) {
+                    try {
+                        credentialsIdentifier.handleValidationException(e)
+                    } catch (nested: Exception) {
+                        LOGGER.warn(nested) { "$credentialsIdentifier threw while attempting to handle initial validation exception" }
+                        null
+                    }
+                } else {
+                    null
+                }
+
+                if (result == null) {
+                    success = false
+                }
+                promise.setResult(result ?: ConnectionState.InvalidConnection(e))
             } finally {
                 AwsTelemetry.validateCredentials(
                     project,
@@ -292,6 +305,7 @@ fun <T> Project.withAwsConnection(block: (ConnectionSettings) -> T): T {
  * state is temporary in the 'connection validation' workflow or if this is a terminal state.
  */
 sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean) {
+    protected val gettingStartedAction: AnAction = ActionManager.getInstance().getAction("aws.toolkit.toolwindow.newConnection")
     protected val editCredsAction: AnAction = ActionManager.getInstance().getAction("aws.settings.upsertCredentials")
 
     /**
@@ -322,14 +336,14 @@ sealed class ConnectionState(val displayMessage: String, val isTerminal: Boolean
         },
         isTerminal = true
     ) {
-        override val actions: List<AnAction> = listOf(editCredsAction)
+        override val actions: List<AnAction> = listOf(gettingStartedAction, editCredsAction)
     }
 
     class InvalidConnection(private val cause: Exception) :
         ConnectionState(message("settings.states.invalid", ExceptionUtil.getMessage(cause) ?: ExceptionUtil.getThrowableText(cause)), isTerminal = true) {
         override val shortMessage = message("settings.states.invalid.short")
 
-        override val actions: List<AnAction> = listOf(RefreshConnectionAction(message("settings.retry")), editCredsAction)
+        override val actions: List<AnAction> = listOf(RefreshConnectionAction(message("settings.retry")), gettingStartedAction, editCredsAction)
     }
 
     class RequiresUserAction(interactiveCredentials: InteractiveCredential) :

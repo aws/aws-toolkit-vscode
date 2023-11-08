@@ -57,6 +57,7 @@ fun Path.deleteIfExists() = Files.deleteIfExists(this)
 fun Path.lastModified(): FileTime = Files.getLastModifiedTime(this)
 fun Path.readText(charset: Charset = Charsets.UTF_8) = toFile().readText(charset)
 fun Path.writeText(text: String, charset: Charset = Charsets.UTF_8) = toFile().writeText(text, charset)
+fun Path.appendText(text: String, charset: Charset = Charsets.UTF_8) = toFile().appendText(text, charset)
 
 // Comes from PosixFileAttributeView#name()
 fun Path.hasPosixFilePermissions() = "posix" in this.fileSystem.supportedFileAttributeViews()

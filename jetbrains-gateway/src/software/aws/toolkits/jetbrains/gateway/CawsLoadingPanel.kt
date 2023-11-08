@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.gateway
 
-import com.intellij.ide.ui.laf.darcula.ui.DarculaButtonUI
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.application.ModalityState
 import com.intellij.openapi.application.runInEdt
@@ -13,15 +12,12 @@ import com.intellij.openapi.rd.createNestedDisposable
 import com.intellij.openapi.rd.util.launchIOBackground
 import com.intellij.openapi.rd.util.launchOnUi
 import com.intellij.openapi.rd.util.withUiAnyModalityContext
-import com.intellij.openapi.ui.VerticalFlowLayout
 import com.intellij.openapi.util.Disposer
 import com.intellij.openapi.wm.impl.welcomeScreen.WelcomeScreenUIManager
-import com.intellij.ui.components.ActionLink
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBLoadingPanel
 import com.intellij.ui.components.labels.LinkLabel
 import com.intellij.ui.components.labels.LinkListener
-import com.intellij.ui.components.panels.NonOpaquePanel
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
@@ -40,18 +36,15 @@ import software.aws.toolkits.jetbrains.gateway.welcomescreen.PANEL_TOP_INSET
 import software.aws.toolkits.jetbrains.gateway.welcomescreen.recursivelySetBackground
 import software.aws.toolkits.jetbrains.services.caws.CawsLetterBadge
 import software.aws.toolkits.jetbrains.services.caws.CawsResources
+import software.aws.toolkits.jetbrains.ui.CenteredInfoPanel
 import software.aws.toolkits.jetbrains.ui.connection.SonoLoginOverlay
 import software.aws.toolkits.resources.message
 import java.awt.BorderLayout
 import java.awt.Component
 import java.awt.Dimension
-import java.awt.FlowLayout
-import java.awt.event.ActionEvent
 import java.util.concurrent.atomic.AtomicReference
-import javax.swing.JButton
 import javax.swing.JComponent
 import javax.swing.JPanel
-import javax.swing.SwingConstants
 import javax.swing.border.EmptyBorder
 
 abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val setContentCallback: ((Component) -> Unit)? = null) : JPanel() {
@@ -131,7 +124,7 @@ abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val se
     }
 
     protected fun buildLoadError(e: Throwable) =
-        InfoPanel()
+        infoPanel()
             .addLine(message("caws.list_workspaces_failed"), isError = true)
             .addLine(e.message ?: message("general.unknown_error"), isError = true)
             .addAction(message("settings.retry")) { lifetime.launchOnUi { startLoading() } }
@@ -148,51 +141,15 @@ abstract class CawsLoadingPanel(protected val lifetime: Lifetime, private val se
         )
     }
 
-    protected class InfoPanel : NonOpaquePanel(VerticalFlowLayout(VerticalFlowLayout.MIDDLE)) {
-        init {
-            add(
-                JBLabel().apply {
-                    icon = AwsIcons.Logos.AWS_SMILE_LARGE
-                    horizontalAlignment = JBLabel.CENTER
-                }
-            )
-
-            border = EmptyBorder(BORDER_INSET)
-        }
-
-        fun addLine(message: String, isError: Boolean = false) = apply {
-            val line = JBLabel()
-            line.isOpaque = false
-            line.text = "<html><center>$message</center></html>"
-            line.horizontalAlignment = SwingConstants.CENTER
-
-            if (isError) {
-                line.foreground = UIUtil.getErrorForeground()
+    protected fun infoPanel() = CenteredInfoPanel().apply {
+        add(
+            JBLabel().apply {
+                icon = AwsIcons.Logos.AWS_SMILE_LARGE
+                horizontalAlignment = JBLabel.CENTER
             }
+        )
 
-            add(line)
-        }
-
-        fun addAction(message: String, handler: (ActionEvent) -> Unit) = apply {
-            val action = ActionLink(message, handler)
-            action.horizontalAlignment = SwingConstants.CENTER
-
-            add(action)
-        }
-
-        fun addDefaultActionButton(message: String, handler: (ActionEvent) -> Unit) = apply {
-            add(
-                NonOpaquePanel(FlowLayout()).apply {
-                    add(
-                        JButton(message).apply {
-                            isOpaque = false
-                            putClientProperty(DarculaButtonUI.DEFAULT_STYLE_KEY, true)
-                            addActionListener(handler)
-                        }
-                    )
-                }
-            )
-        }
+        border = EmptyBorder(BORDER_INSET)
     }
 
     private fun createTitleBar(title: String, connectionSettings: ClientConnectionSettings<*>): JComponent {

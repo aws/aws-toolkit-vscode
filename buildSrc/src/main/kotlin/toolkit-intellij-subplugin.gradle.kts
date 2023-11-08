@@ -170,6 +170,7 @@ tasks.runIde {
     systemProperty("aws.toolkit.developerMode", true)
     systemProperty("ide.plugins.snapshot.on.unload.fail", true)
     systemProperty("memory.snapshots.path", project.rootDir)
+    systemProperty("idea.auto.reload.plugins", false)
 
     val alternativeIde = providers.environmentVariable("ALTERNATIVE_IDE")
     if (alternativeIde.isPresent) {
