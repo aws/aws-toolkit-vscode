@@ -257,11 +257,23 @@ export class CodeGenState extends CodeGenBase implements SessionState {
             try {
                 span.record({ awsqConversationId: this.config.conversationId })
 
+                action.messenger.sendAnswer({
+                    message: 'Uploading code ...',
+                    type: 'answer-part',
+                    tabID: this.tabID,
+                })
+
                 // TODO: Upload code once more before starting code generation
                 const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
                     this.config.uploadId
                 )
+
+                action.messenger.sendAnswer({
+                    message: 'Generating code ...',
+                    type: 'answer-part',
+                    tabID: this.tabID,
+                })
 
                 const codeGeneration = await this.generateCode({
                     fs: action.fs,
@@ -370,11 +382,24 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         telemetry.awsq_codeReGeneration.emit({ awsqConversationId: this.config.conversationId, value: 1 })
+
+        action.messenger.sendAnswer({
+            message: 'Uploading code ...',
+            type: 'answer-part',
+            tabID: this.tabID,
+        })
+
         const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
             this.config.conversationId,
             this.config.uploadId,
             action.msg
         )
+
+        action.messenger.sendAnswer({
+            message: 'Generating code ...',
+            type: 'answer-part',
+            tabID: this.tabID,
+        })
 
         const codeGeneration = await this.generateCode({
             fs: action.fs,
