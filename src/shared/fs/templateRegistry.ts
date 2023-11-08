@@ -87,20 +87,21 @@ export class AsyncCloudFormationTemplateRegistry {
         }
 
         let perf: PerfLog
-        const cancelSetupPromise = new Timeout(30 * 60 * 1000) // 30 min
+        const cancelSetup = new Timeout(30 * 60 * 1000) // 30 min
         if (!this.setupPromise) {
             perf = new PerfLog('cfn: template registry setup')
-            this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetupPromise)
+            this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetup)
         }
         this.setupPromise.then(() => {
             if (perf) {
                 perf.done()
             }
             this.isSetup = true
-            cancelSetupPromise.dispose()
+            cancelSetup.dispose()
         })
         // Show user a message indicating setup is in progress
         if (this.setupProgressMessage === undefined) {
+            // TODO: use showMessageWithCancel() ?
             this.setupProgressMessage = vscode.window.withProgress(
                 {
                     location: vscode.ProgressLocation.Notification,
@@ -114,7 +115,7 @@ export class AsyncCloudFormationTemplateRegistry {
                     token.onCancellationRequested(() => {
                         // Allows for new message to be created if templateRegistry variable attempted to be used again
                         this.setupProgressMessage = undefined
-                        cancelSetupPromise.cancel()
+                        cancelSetup.cancel()
                     })
                     getLogger().debug('cfn: getInstance() requested, still initializing')
                     while (!this.isSetup) {
