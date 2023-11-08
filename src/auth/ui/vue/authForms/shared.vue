@@ -1,5 +1,5 @@
 <script lang="ts">
-import { CodeCatalystBuilderIdState } from './manageBuilderId.vue'
+import { CodeCatalystBuilderIdState, CodeWhispererBuilderIdState } from './manageBuilderId.vue'
 import { CredentialsState } from './manageCredentials.vue'
 import { CodeWhispererIdentityCenterState, ExplorerIdentityCenterState } from './manageIdentityCenter.vue'
 import { AuthFormId } from './types'
@@ -9,6 +9,7 @@ import { AuthFormId } from './types'
  */
 const authFormsState = {
     credentials: new CredentialsState() as CredentialsState,
+    builderIdCodeWhisperer: CodeWhispererBuilderIdState.instance,
     builderIdCodeCatalyst: CodeCatalystBuilderIdState.instance,
     identityCenterCodeWhisperer: new CodeWhispererIdentityCenterState(),
     identityCenterExplorer: new ExplorerIdentityCenterState(),

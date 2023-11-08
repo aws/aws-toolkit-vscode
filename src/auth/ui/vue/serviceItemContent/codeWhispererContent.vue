@@ -25,6 +25,11 @@
 
         <div class="service-item-content-form-section">
             <div class="codewhisperer-content-form-container">
+                <BuilderIdForm
+                    :state="builderIdState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                ></BuilderIdForm>
+
                 <div>
                     <div
                         v-on:click="toggleIdentityCenterShown"
@@ -60,7 +65,7 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import BuilderIdForm from '../authForms/manageBuilderId.vue'
+import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageBuilderId.vue'
 import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
@@ -79,12 +84,16 @@ export default defineComponent({
         return {
             isAllAuthsLoaded: false,
             isLoaded: {
+                builderIdCodeWhisperer: false,
                 identityCenterCodeWhisperer: false,
             } as Record<AuthFormId, boolean>,
             isIdentityCenterShown: false,
         }
     },
     computed: {
+        builderIdState(): CodeWhispererBuilderIdState {
+            return authFormsState.builderIdCodeWhisperer
+        },
         identityCenterState(): CodeWhispererIdentityCenterState {
             return authFormsState.identityCenterCodeWhisperer
         },
@@ -123,7 +132,7 @@ export default defineComponent({
 
 export class CodeWhispererContentState extends FeatureStatus {
     override getAuthForms(): AuthForm[] {
-        return [authFormsState.identityCenterCodeWhisperer]
+        return [authFormsState.builderIdCodeWhisperer, authFormsState.identityCenterCodeWhisperer]
     }
 }
 </script>
