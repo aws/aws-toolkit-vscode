@@ -304,7 +304,7 @@ export const getAvailableCustomizationsList = async () => {
     const requestIds: string[] = []
     response
         .map(listAvailableCustomizationsResponse => {
-            const resp = listAvailableCustomizationsResponse.$response
+            const resp = (listAvailableCustomizationsResponse as any).$response
             if (resp && resp.requestId) {
                 requestIds.push(resp.requestId)
             }
