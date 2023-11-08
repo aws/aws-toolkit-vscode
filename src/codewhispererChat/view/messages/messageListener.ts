@@ -31,6 +31,7 @@ export class UIMessageListener {
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
             case 'clear':
+            case 'onboarding-page-cwc-button-clicked':
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break

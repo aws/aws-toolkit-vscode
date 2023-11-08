@@ -312,6 +312,7 @@ export class ChatController {
                     await this.processFollowUp(message)
                     this.telemetryHelper.recordInteractWithMessage(message)
                     break
+                case 'onboarding-page-cwc-button-clicked':
                 case 'chat-prompt':
                     await this.processPromptMessageAsNewThread(message)
                     break

@@ -202,6 +202,7 @@
     "AWS.command.codewhisperer.introduction": "What is CodeWhisperer?",
     "AWS.command.codewhisperer.configure": "CodeWhisperer Settings",
     "AWS.command.codewhisperer.signout": "Sign out",
+    "AWS.command.q.welcome": "Show AWS Q Welcome Page",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
