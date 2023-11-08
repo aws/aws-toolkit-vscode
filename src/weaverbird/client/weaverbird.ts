@@ -3,18 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import { Service, Token } from 'aws-sdk'
-import globals from '../../shared/extensionGlobals'
-import { ServiceOptions } from '../../shared/awsClientBuilder'
-import { Auth } from '../../auth/auth'
-import { isSsoConnection } from '../../auth/connection'
-import { ToolkitError } from '../../shared/errors'
-import { getLogger } from '../../shared/logger'
-import apiConfig = require('./codewhispererruntime-2022-11-11.json')
-import * as WeaverbirdProxyClient from './weaverbirdproxyclient'
 import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
+import { Service, Token } from 'aws-sdk'
 import { omit } from 'lodash'
+import * as vscode from 'vscode'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { ServiceOptions } from '../../shared/awsClientBuilder'
+import { ToolkitError } from '../../shared/errors'
+import globals from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger'
+import * as WeaverbirdProxyClient from './weaverbirdproxyclient'
+import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
@@ -28,12 +27,9 @@ const getCodeWhispererRegionAndEndpoint = () => {
         ? cwsprEndpointMap[region as keyof typeof cwsprEndpointMap]
         : cwsprEndpointMap['Gamma-IAD']
 }
+
 export async function createWeaverbirdProxyClient(): Promise<WeaverbirdProxyClient> {
-    const conn = Auth.instance.activeConnection
-    if (!isSsoConnection(conn)) {
-        throw new ToolkitError('Connection is not an SSO connection', { code: 'BadConnectionType' })
-    }
-    const bearerToken = (await conn.getToken()).accessToken
+    const bearerToken = await AuthUtil.instance.getBearerToken()
     const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
@@ -47,33 +43,28 @@ export async function createWeaverbirdProxyClient(): Promise<WeaverbirdProxyClie
     )) as WeaverbirdProxyClient
 }
 
-export class WeaverbirdClient {
-    private client?: WeaverbirdProxyClient
-    private streamingClient?: CodeWhispererStreaming
+async function createWeaverbirdStreamingClient(): Promise<CodeWhispererStreaming> {
+    const bearerToken = await AuthUtil.instance.getBearerToken()
+    const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
+    const streamingClient = new CodeWhispererStreaming({
+        endpoint: cwsprEndpoint,
+        region: region,
+        token: { token: bearerToken },
+    })
+    return streamingClient
+}
 
+export class WeaverbirdClient {
     private async getClient() {
-        if (!this.client) {
-            this.client = await createWeaverbirdProxyClient()
-        }
-        return this.client
+        // Should not be stored for the whole session.
+        // Client has to be reinitialized for each request so we always have a fresh bearerToken
+        return await createWeaverbirdProxyClient()
     }
 
     private async getStreamingClient() {
-        if (!this.streamingClient) {
-            const conn = Auth.instance.activeConnection
-            if (!isSsoConnection(conn)) {
-                throw new ToolkitError('Connection is not an SSO Connection')
-            }
-            const bearerToken = await conn.getToken()
-            const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
-            const streamingClient = new CodeWhispererStreaming({
-                endpoint: cwsprEndpoint,
-                region: region,
-                token: { token: bearerToken.accessToken, expiration: bearerToken.expiresAt },
-            })
-            this.streamingClient = streamingClient
-        }
-        return this.streamingClient
+        // Should not be stored for the whole session.
+        // Client has to be reinitialized for each request so we always have a fresh bearerToken
+        return await createWeaverbirdStreamingClient()
     }
 
     public async createConversation() {
