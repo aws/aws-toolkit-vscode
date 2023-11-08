@@ -41,8 +41,13 @@ import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { debounce } from '../../../shared/utilities/functionUtils'
+<<<<<<< HEAD
 import { AuthError, ServiceItemId, isServiceItemId, userCancelled } from './types'
 import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
+=======
+import { AuthError, ServiceItemId, isServiceItemId, authFormTelemetryMapping, userCancelled } from './types'
+import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+>>>>>>> eaf5687ee (refactor: use mapping for auth_addedConnections call)
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
@@ -388,6 +393,7 @@ export class AuthWebview extends VueWebview {
     }
 
     // -------------------- Telemetry Stuff --------------------
+    // We will want to move this in to its own class once we make it possible with webviews
 
     /** The number of auth connections when the webview first starts. We will diff this to see if new connections were added. */
     #numConnectionsInitial: number | undefined
@@ -535,17 +541,22 @@ export class AuthWebview extends VueWebview {
           }
         | undefined
 
-    async failedAuthAttempt(args: {
-        authType: CredentialSourceId
-        featureType: FeatureId
-        reason: string
-        invalidInputFields?: string[]
-    }) {
+    async failedAuthAttempt(
+        id: AuthFormId,
+        args: {
+            reason: string
+            invalidInputFields?: string[]
+        }
+    ) {
+        const mapping = authFormTelemetryMapping[id]
+        const featureType = mapping.featureType
+        const authType = mapping.authType
+
         // Send metric about specific individual failure regardless
         telemetry.auth_addConnection.emit({
             source: this.#authSource ?? '',
-            credentialSourceId: args.authType,
-            featureId: args.featureType,
+            credentialSourceId: authType,
+            featureId: featureType,
             result: args.reason === userCancelled ? 'Cancelled' : 'Failed',
             reason: args.reason,
             invalidInputFields: args.invalidInputFields
@@ -556,8 +567,8 @@ export class AuthWebview extends VueWebview {
 
         if (
             this.#previousFailedAuth &&
-            this.#previousFailedAuth.authType === args.authType &&
-            this.#previousFailedAuth.featureType === args.featureType
+            this.#previousFailedAuth.authType === authType &&
+            this.#previousFailedAuth.featureType === featureType
         ) {
             // Another failed attempt on same auth + feature. Update with newest failure info.
             this.#previousFailedAuth = {
@@ -568,6 +579,8 @@ export class AuthWebview extends VueWebview {
         } else {
             // A new failed attempt on a new auth + feature
             this.#previousFailedAuth = {
+                authType,
+                featureType,
                 invalidInputFields: undefined, // args may not have this field, so we set the default
                 ...args,
                 attempts: 1,
@@ -587,12 +600,20 @@ export class AuthWebview extends VueWebview {
         return 0
     }
 
-    async successfulAuthAttempt(args: { authType: CredentialSourceId; featureType: FeatureId }) {
+    async successfulAuthAttempt(id: AuthFormId) {
+        if (id === 'aggregateExplorer') {
+            throw new ToolkitError('This should not be called for the aggregate explorer')
+        }
+
+        const mapping = authFormTelemetryMapping[id]
+        const featureType = mapping.featureType
+        const authType = mapping.authType
+
         // All previous failed attempts + 1 successful attempt
-        const authAttempts = this.getPreviousAuthAttempts(args.featureType, args.authType) + 1
+        const authAttempts = this.getPreviousAuthAttempts(featureType, authType) + 1
         this.emitAuthAttempt({
-            authType: args.authType,
-            featureType: args.featureType,
+            authType,
+            featureType,
             result: 'Succeeded',
             attempts: authAttempts,
         })

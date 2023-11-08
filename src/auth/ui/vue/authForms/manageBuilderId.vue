@@ -141,17 +141,12 @@ abstract class BaseBuilderIdState implements AuthForm {
 
         if (authError) {
             this.#error = authError.text
-            client.failedAuthAttempt({
-                authType: this.authType,
-                featureType: this.featureType,
+            client.failedAuthAttempt(this.id, {
                 reason: authError.id,
             })
         } else {
             this.#error = ''
-            client.successfulAuthAttempt({
-                featureType: this.featureType,
-                authType: this.authType,
-            })
+            client.successfulAuthAttempt(this.id)
         }
 
         return authError === undefined

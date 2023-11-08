@@ -256,9 +256,7 @@ export class CredentialsState implements AuthForm {
         const hasEmptyFields = this.#errors.updateErrorEmptyFields(this.data)
         const fieldsWithErrors = this.#errors.getFieldsWithErrors()
         if (fieldsWithErrors.length > 0) {
-            client.failedAuthAttempt({
-                featureType: this.featureType,
-                authType: this.authType,
+            client.failedAuthAttempt(this.id, {
                 reason: hasEmptyFields ? emptyFields : fieldHasError,
                 invalidInputFields: this.#errors.getFieldsWithErrors(),
             })
@@ -268,9 +266,7 @@ export class CredentialsState implements AuthForm {
         // 2. Pre-emptively verify the credentials actually work
         const error = await this.#errors.authenticateCredentials(this.data)
         if (error) {
-            client.failedAuthAttempt({
-                featureType: this.featureType,
-                authType: this.authType,
+            client.failedAuthAttempt(this.id, {
                 reason: error.key,
                 invalidInputFields: this.#errors.getFieldsWithErrors(),
             })
@@ -281,10 +277,7 @@ export class CredentialsState implements AuthForm {
         const wasSuccess = await client.trySubmitCredentials(this.data.profileName, this.data)
 
         if (wasSuccess) {
-            client.successfulAuthAttempt({
-                featureType: this.featureType,
-                authType: this.authType,
-            })
+            client.successfulAuthAttempt(this.id)
             this.reset()
         } else {
             this.#errors.setError('submit', 'Unexpected extension error. See logs.')

@@ -258,9 +258,7 @@ abstract class BaseIdentityCenterState implements AuthForm {
         // Do not consider errors under 'submit', otherwise it will block re-submission without updating the fields.
         const fieldsWithError = this.#errors.getFieldsWithErrors().filter(field => field !== 'submit')
         if (fieldsWithError.length > 0) {
-            client.failedAuthAttempt({
-                authType: this.authType,
-                featureType: this.featureType,
+            client.failedAuthAttempt(this.id, {
                 reason: hasEmptyFields ? emptyFields : fieldHasError,
                 invalidInputFields: fieldsWithError,
             })
@@ -275,17 +273,12 @@ abstract class BaseIdentityCenterState implements AuthForm {
         if (authError) {
             this.#errors.setError('submit', authError.text)
 
-            client.failedAuthAttempt({
-                authType: this.authType,
-                featureType: this.featureType,
+            client.failedAuthAttempt(this.id, {
                 reason: authError.id,
                 invalidInputFields: this.#errors.getFieldsWithErrors(),
             })
         } else {
-            client.successfulAuthAttempt({
-                featureType: this.featureType,
-                authType: this.authType,
-            })
+            client.successfulAuthAttempt(this.id)
             this.reset()
         }
 
@@ -395,8 +388,7 @@ export class CodeCatalystIdentityCenterState extends BaseIdentityCenterState {
     }
 
     protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
-        const data = await this.getSubmittableDataOrThrow()
-        return client.startCodeCatalystIdentityCenterSetup(data.startUrl, data.region)
+        return client.startCodeCatalystIdentityCenterSetup(this.data.startUrl, this.data.region)
     }
 
     override async isAuthConnected(): Promise<boolean> {
@@ -407,11 +399,11 @@ export class CodeCatalystIdentityCenterState extends BaseIdentityCenterState {
         return client.isCodeCatalystIdCExists()
     }
 
-    override async showView(): Promise<void> {
-        client.showCodeCatalystNode()
+    override _showView(): Promise<void> {
+        return client.showCodeCatalystNode()
     }
 
-    override signout(): Promise<void> {
+    override _signout(): Promise<void> {
         return client.signoutCodeCatalystIdentityCenter()
     }
 }
