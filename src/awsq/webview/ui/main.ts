@@ -197,6 +197,11 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 return
             }
         },
+        onChatInputEnabled: (tabID: string, enabled: boolean) => {
+            mynahUI.updateStore(tabID, {
+                promptInputDisabledState: !enabled,
+            })
+        },
         onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
             if (inProgress) {
                 mynahUI.updateStore(tabID, {

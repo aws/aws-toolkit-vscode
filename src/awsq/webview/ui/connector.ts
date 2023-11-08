@@ -30,6 +30,7 @@ export interface ConnectorProps {
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
+    onChatInputEnabled: (tabID: string, enabled: boolean) => void
     tabsStorage: TabsStorage
 }
 

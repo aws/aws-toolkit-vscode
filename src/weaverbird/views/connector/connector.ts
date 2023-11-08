@@ -63,6 +63,16 @@ export class UpdatePlaceholderMessage extends UiMessage {
     }
 }
 
+export class ChatInputEnabledMessage extends UiMessage {
+    readonly enabled: boolean
+    override type = 'chatInputEnabledMessage'
+
+    constructor(tabID: string, enabled: boolean) {
+        super(tabID)
+        this.enabled = enabled
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
@@ -107,6 +117,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendPlaceholder(message: UpdatePlaceholderMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendChatInputEnabled(message: ChatInputEnabledMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }
