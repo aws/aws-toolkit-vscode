@@ -27,7 +27,7 @@ export async function handleRequestMessage(request: unknown, context: WebviewCon
             await loadFileMessageHandler(request as LoadFileRequestMessage, context)
             break
         case Command.SAVE_FILE:
-            saveFileMessageHandler(request as SaveFileRequestMessage, context)
+            await saveFileMessageHandler(request as SaveFileRequestMessage, context)
             break
         case Command.ADD_FILE_WATCH:
             addFileWatchMessageHandler(request as AddFileWatchRequestMessage, context)

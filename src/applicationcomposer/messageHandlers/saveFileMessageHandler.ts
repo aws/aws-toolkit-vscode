@@ -5,38 +5,38 @@
 
 import vscode from 'vscode'
 import { SaveFileRequestMessage, SaveFileResponseMessage, WebviewContext, Response } from '../types'
+import path from 'path'
 
-export function saveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
-    const sendSuccessMessage = () => {
-        const saveFileSuccessMessage: SaveFileResponseMessage = {
-            response: Response.SAVE_FILE,
-            eventId: request.eventId,
-            isSuccess: true,
+export async function saveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
+    let saveFileResponseMessage: SaveFileResponseMessage
+    // If filePath is empty, save contents in default template file
+    const filePath =
+        request.filePath === '' ? context.defaultTemplatePath : context.workSpacePath + '/' + request.filePath
+    try {
+        if (!context.textDocument.isDirty) {
+            const contents = Buffer.from(request.fileContents, 'utf8')
+            context.fileWatches[filePath] = { fileContents: request.fileContents }
+            const uri = vscode.Uri.file(filePath)
+            await vscode.workspace.fs.writeFile(uri, contents)
+            saveFileResponseMessage = {
+                response: Response.SAVE_FILE,
+                eventId: request.eventId,
+                filePath: filePath,
+                isSuccess: true,
+            }
+        } else {
+            // TODO: If the template file is dirty, do we pop out a warning window?
+            throw new Error(`Cannot save latest contents in ${path.basename(request.filePath)}`)
         }
-        context.panel.webview.postMessage(saveFileSuccessMessage)
-    }
-    const sendFailMessage = () => {
-        const saveFileFailMessage: SaveFileResponseMessage = {
+    } catch (e) {
+        saveFileResponseMessage = {
             response: Response.SAVE_FILE,
             eventId: request.eventId,
+            filePath: filePath,
             isSuccess: false,
+            reason: (e as Error).message,
         }
-        context.panel.webview.postMessage(saveFileFailMessage)
     }
-    // TODO be smarter about how this check happens; check external files as needed
-    if (!context.textDocument.isDirty) {
-        const contents = Buffer.from(request.fileContents, 'utf8')
-        const filePath =
-            request.filePath === '' ? context.defaultTemplatePath : context.workSpacePath + '/' + request.filePath
-        context.fileWatchs[filePath] = { fileContents: request.fileContents }
-        const uri = vscode.Uri.file(filePath)
-        try {
-            vscode.workspace.fs.writeFile(uri, contents)
-            sendSuccessMessage()
-        } catch (exception) {
-            sendFailMessage()
-        }
-    } else {
-        // TODO
-    }
+
+    context.panel.webview.postMessage(saveFileResponseMessage)
 }
