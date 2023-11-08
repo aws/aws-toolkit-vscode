@@ -233,5 +233,7 @@
     "AWS.codewhisperer.customization.quickPick.placeholder": "You have access to the following customizations",
     "AWS.codewhisperer.customization.notification.new_customizations.select": "Select Customization",
     "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
-    "AWS.codewhisperer.submenu.title": "Manage CodeWhisperer"
+    "AWS.codewhisperer.submenu.title": "Manage CodeWhisperer",
+    "AWS.q.title": "AWS Q",
+    "AWS.q.chat": "Chat"
 }

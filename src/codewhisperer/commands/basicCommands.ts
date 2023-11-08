@@ -30,6 +30,9 @@ import { get, set } from '../util/commonUtil'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { getIcon } from '../../shared/icons'
 import { localize } from '../../shared/utilities/vsCodeUtils'
+import globals from '../../shared/extensionGlobals'
+
+const isAwsqAlreadyUsedKey = 'awsqAlreadyUsed'
 
 export const toggleCodeSuggestions = Commands.declare(
     'aws.codeWhisperer.toggleCodeSuggestion',
@@ -198,9 +201,47 @@ export const refreshStatusBar = Commands.declare(
     }
 )
 
+/**
+ * slightly different than `CODEWHISPERER_ENABLED` context:
+ * this will show the container if a connection has EVER been present, regardless of connection health
+ * We don't want the icon popping in and out as much as possible.
+ *
+ * `isAwsqAlreadyUsed` flag to be used for other only-once-ever cases (e.g. Q welcome page)
+ */
+export async function maybeShowAwsqView(): Promise<void> {
+    // formerly active, show without any forced UI refocuses
+    if (isAwsqAlreadyUsed()) {
+        await vscode.commands.executeCommand('setContext', 'awsq', true)
+    } else {
+        // is active for the first time ever: set permanent context and one-time-only refocus UI on Q
+        if (AuthUtil.instance.isConnectionValid() || AuthUtil.instance.isConnectionExpired()) {
+            await vscode.commands.executeCommand('setContext', 'awsq', true)
+            setAwsqHasBeenUsed()
+            await focusAwsqPanel()
+        }
+    }
+}
+
 export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
         notifyNewCustomizations().then()
     }
 )
+
+function isAwsqAlreadyUsed(state: vscode.Memento = globals.context.globalState): boolean {
+    return !!state.get(isAwsqAlreadyUsedKey)
+}
+
+function setAwsqHasBeenUsed(state: vscode.Memento = globals.context.globalState): void {
+    state.update(isAwsqAlreadyUsedKey, true)
+}
+
+/**
+ * Forces focus to AWS Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
+ * Used on first load, and any time we want to directly populate chat.
+ */
+export async function focusAwsqPanel(): Promise<void> {
+    // VS Code-owned command: "View: Show AWS Q"
+    await vscode.commands.executeCommand('workbench.view.extension.awsq')
+}

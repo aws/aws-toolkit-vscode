@@ -703,6 +703,11 @@
                             "icon": "resources/aws-cn-logo.svg"
                         }
                     }
+                },
+                {
+                    "id": "awsq",
+                    "title": "%AWS.q.title%",
+                    "icon": "resources/AWS-Q-Icon_White.png"
                 }
             ],
             "panel": [
@@ -714,12 +719,15 @@
             ]
         },
         "views": {
-            "aws-explorer": [
+            "awsq": [
                 {
                     "type": "webview",
                     "id": "aws.AWSQChatView",
-                    "name": "AWS Q"
-                },
+                    "name": "%AWS.q.chat%",
+                    "when": "awsq"
+                }
+            ],
+            "aws-explorer": [
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%",
