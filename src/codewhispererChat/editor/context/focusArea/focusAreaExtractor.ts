@@ -80,23 +80,35 @@ export class FocusAreaContextExtractor {
             (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount - 1)
         ) {
             if (addLineBefore && importantRange.start.line !== 0) {
-                importantRange = new Range(
+                const tmpRange = new Range(
                     importantRange.start.line - 1,
                     0,
                     importantRange.end.line,
                     importantRange.end.character
                 )
                 addLineBefore = false
+
+                if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
+                    break
+                }
+
+                importantRange = tmpRange
                 continue
             }
 
             if (importantRange.end.line !== document.lineCount - 1) {
-                importantRange = new Range(
+                const tmpRange = new Range(
                     importantRange.start.line,
                     importantRange.start.character,
                     importantRange.end.line + 1,
                     document.lineAt(importantRange.end.line + 1).range.end.character
                 )
+
+                if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
+                    break
+                }
+
+                importantRange = tmpRange
             }
 
             addLineBefore = true
