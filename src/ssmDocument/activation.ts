@@ -51,7 +51,7 @@ async function registerSsmDocumentCommands(
             await openDocumentItemYaml(node, awsContext)
         }),
         Commands.register('aws.ssmDocument.publishDocument', async () => {
-            await publishSSMDocument(awsContext, regionProvider)
+            await publishSSMDocument()
         }),
         Commands.register('aws.ssmDocument.updateDocumentVersion', async (node: DocumentItemNodeWriteable) => {
             await updateDocumentVersion(node, awsContext)
