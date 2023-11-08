@@ -8,7 +8,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { samImageLambdaRuntimes, samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
 import * as CloudFormation from '../../cloudformation/cloudformation'
-import { localize } from '../../utilities/vsCodeUtils'
+import { localize, replaceVscodeVars } from '../../utilities/vsCodeUtils'
 import {
     awsSamDebugRequestTypes,
     awsSamDebugTargetTypes,
@@ -20,7 +20,6 @@ import {
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
-import { replaceVscodeVars } from '../../debug/launchConfiguration'
 
 export interface ValidationResult {
     isValid: boolean

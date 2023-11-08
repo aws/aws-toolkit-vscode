@@ -32,7 +32,7 @@ import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import { CreateNewSamAppWizard, CreateNewSamAppWizardForm } from '../wizards/samInitWizard'
-import { LaunchConfiguration, replaceVscodeVars } from '../../shared/debug/launchConfiguration'
+import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { ExtContext } from '../../shared/extensions'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -48,7 +48,7 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
