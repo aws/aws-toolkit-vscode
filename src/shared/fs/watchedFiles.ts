@@ -10,6 +10,7 @@ import * as path from 'path'
 import { globDirs, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { Settings } from '../settings'
 import { once } from '../utilities/functionUtils'
+import { Timeout } from '../utilities/timeoutUtils'
 
 /**
  * Prevent `findFiles()` from recursing into these directories.
@@ -60,12 +61,18 @@ const getExcludePatternOnce = once(getExcludePattern)
  * for CFN templates among other things. WatchedFiles holds a list of pairs of
  * the absolute path to the file or "untitled:" URI along with a transform of it that is useful for
  * where it is used. For example, for templates, it parses the template and stores it.
+ *
+ * Initialize the registry by adding watch patterns and excluded patterns via
+ * `addWatchPatterns`, `watchUntitledFiles`, and `addExcludedPattern` and then
+ * calling the `rebuild` function to begin registering files.
  */
 export abstract class WatchedFiles<T> implements vscode.Disposable {
+    private isWatching: boolean = false
     private readonly disposables: vscode.Disposable[] = []
     private _isDisposed: boolean = false
     private readonly globs: vscode.GlobPattern[] = []
     private readonly excludedFilePatterns: RegExp[] = []
+    private watchingUntitledFiles: boolean = false
     private readonly registryData: Map<string, T> = new Map<string, T>()
 
     /**
@@ -93,7 +100,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      * Creates watchers for each glob across all opened workspace folders (or see below to
      * watch _outside_ the workspace).
      *
-     * Fails if the watcher is disposed, or if globs have already been set;
+     * Fails if the watcher is disposed, or if the watcher has been initialized through the `rebuild` function;
      * enforce setting once to reduce rebuilds looping through all existing globs
      *
      * (since vscode 1.64):
@@ -120,12 +127,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
      *
      * @param globs Patterns to match against (across all opened workspace folders)
      */
-    public async addWatchPatterns(globs: vscode.GlobPattern[]): Promise<void> {
+    public addWatchPatterns(globs: vscode.GlobPattern[]) {
         if (this._isDisposed) {
             throw new Error(`${this.name}: manager has already been disposed!`)
         }
-        if (this.globs.length > 0) {
-            throw new Error(`${this.name}: watch patterns have already been established`)
+        if (this.isWatching) {
+            throw new Error(`${this.name}: cannot add watch patterns after watcher has begun watching`)
         }
         for (const glob of globs) {
             if (typeof glob === 'string' && !vscode.workspace.workspaceFolders?.[0]) {
@@ -136,15 +143,14 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             const watcher = vscode.workspace.createFileSystemWatcher(glob)
             this.addWatcher(watcher)
         }
-
-        await this.rebuild()
     }
 
     /**
      * Create a special watcher that operates only on untitled files.
      * To "watch" the in-memory contents of an untitled:/ file we just subscribe to `onDidChangeTextDocument`
      */
-    public async watchUntitledFiles() {
+    public watchUntitledFiles() {
+        this.watchingUntitledFiles = true
         this.disposables.push(
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
                 if (isUntitledScheme(event.document.uri)) {
@@ -162,13 +168,14 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Adds a regex pattern to ignore paths containing the pattern
      */
-    public async addExcludedPattern(pattern: RegExp): Promise<void> {
+    public addExcludedPattern(pattern: RegExp) {
         if (this._isDisposed) {
             throw new Error(`${this.name}: manager has already been disposed!`)
         }
+        if (this.isWatching) {
+            throw new Error(`${this.name}: cannot add excluded patterns after watcher has begun watching`)
+        }
         this.excludedFilePatterns.push(pattern)
-
-        await this.rebuild()
     }
 
     /**
@@ -275,26 +282,37 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     }
 
     /**
-     * Rebuilds registry using current glob and exclusion patterns.
-     * All functionality is currently internal to class, but can be made public if we want a manual "refresh" button
+     * Builds/rebuilds registry using current glob and exclusion patterns. ***Necessary to init registry***.
+     *
+     * @param cancellationTimeout Optional timeout that can trigger canceling additional loading on completion (manual or timed)
      */
-    public async rebuild(): Promise<void> {
+    public async rebuild(cancellationTimeout?: Timeout): Promise<void> {
+        let skips = 0
+        this.isWatching = true
         this.reset()
 
         const exclude = getExcludePatternOnce()
-        for (const glob of this.globs) {
+        getLogger().info(`${this.name}: Building registry with the following criteria: ${this.outputPatterns()}`)
+        for (let i = 0; i < this.globs.length && !cancellationTimeout?.completed; i++) {
+            const glob = this.globs[i]
             try {
                 const found = await vscode.workspace.findFiles(glob, exclude)
-                for (const item of found) {
-                    await this.addItem(item, true)
+                for (let j = 0; j < found.length && !cancellationTimeout?.completed; j++) {
+                    await this.addItem(found[j], true)
                 }
             } catch (e) {
+                // file not processable
+                skips++
                 const err = e as Error
-                if (err.name !== 'Canceled') {
-                    getLogger().error('watchedFiles: findFiles("%s", "%s"): %s', glob, exclude, err.message)
-                }
+                getLogger().error(`${this.name}: watchedFiles: findFiles("%s", "%s"): %s`, glob, exclude, err.message)
             }
         }
+        getLogger().info(
+            `${this.name}: Registered %s items%s%s`,
+            this.registryData.size,
+            cancellationTimeout?.completed ? ' (cancelled)' : '',
+            skips > 0 ? `, skipped ${skips} entries` : ''
+        )
     }
 
     /**
@@ -339,6 +357,18 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         ) {
             throw new Error(`FileRegistry: path is relative when it should be absolute: ${pathAsString}`)
         }
+    }
+
+    private outputPatterns(): string {
+        const watch = this.globs.map(cur => cur.toString())
+        if (this.watchingUntitledFiles) {
+            watch.push('Untitled Files')
+        }
+        const exclude = this.excludedFilePatterns.map(cur => cur.toString())
+
+        return `${watch.length > 0 ? `Watching ${watch.join(', ')}` : ''}${
+            exclude.length > 0 ? `, Excluding ${exclude.join(', ')}` : ''
+        }`
     }
 }
 
