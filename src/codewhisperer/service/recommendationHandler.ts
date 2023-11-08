@@ -68,7 +68,6 @@ const lock = new AsyncLock({ maxPending: 1 })
 export class RecommendationHandler {
     public lastInvocationTime: number
     public requestId: string
-    public requestIdList: string[]
     private nextToken: string
     private cancellationToken: vscode.CancellationTokenSource
     public isGenerateRecommendationInProgress: boolean
@@ -84,7 +83,6 @@ export class RecommendationHandler {
 
     constructor() {
         this.requestId = ''
-        this.requestIdList = []
         this.nextToken = ''
         this.lastInvocationTime = performance.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
         this.cancellationToken = new vscode.CancellationTokenSource()
@@ -313,7 +311,7 @@ export class RecommendationHandler {
             ).trimStart()
             recommendations.forEach((item, index) => {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
-                this.requestIdList.push(requestId)
+                session.requestIdList.push(requestId)
             })
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
@@ -395,10 +393,10 @@ export class RecommendationHandler {
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
             if (session.recommendations.length === 0) {
-                this.requestIdList.push(requestId)
+                session.requestIdList.push(requestId)
                 // Received an empty list of recommendations
                 TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
-                    this.requestIdList,
+                    session.requestIdList,
                     sessionId,
                     page,
                     editor.document.languageId,
@@ -484,7 +482,7 @@ export class RecommendationHandler {
             return
         }
         TelemetryHelper.instance.recordUserDecisionTelemetry(
-            this.requestIdList,
+            session.requestIdList,
             session.sessionId,
             session.recommendations,
             acceptIndex,
