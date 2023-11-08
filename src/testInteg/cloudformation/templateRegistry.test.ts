@@ -9,7 +9,7 @@ import * as fs from 'fs-extra'
 import { CloudFormationTemplateRegistry } from '../../shared/fs/templateRegistry'
 import { makeSampleSamTemplateYaml, strToYamlFile } from '../../test/shared/cloudformation/cloudformationTestUtils'
 import { getTestWorkspaceFolder } from '../integrationTestsUtilities'
-import { sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
+import { Timeout, sleep, waitUntil } from '../../shared/utilities/timeoutUtils'
 import assert from 'assert'
 
 /**
@@ -44,13 +44,15 @@ describe('CloudFormation Template Registry', async function () {
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDir, 'test.yaml'))
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDirNested, 'test.yml'))
 
-        await registry.addWatchPatterns(['**/test.{yaml,yml}'])
+        registry.addWatchPatterns(['**/test.{yaml,yml}'])
+        await registry.rebuild()
 
         await registryHasTargetNumberOfFiles(registry, 2)
     })
 
     it.skip('adds dynamically-added template files with yaml and yml extensions at various nesting levels', async function () {
-        await registry.addWatchPatterns(['**/test.{yaml,yml}'])
+        registry.addWatchPatterns(['**/test.{yaml,yml}'])
+        await registry.rebuild()
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
@@ -59,8 +61,9 @@ describe('CloudFormation Template Registry', async function () {
     })
 
     it('Ignores templates matching excluded patterns', async function () {
-        await registry.addWatchPatterns(['**/test.{yaml,yml}'])
-        await registry.addExcludedPattern(/.*nested.*/)
+        registry.addWatchPatterns(['**/test.{yaml,yml}'])
+        registry.addExcludedPattern(/.*nested.*/)
+        await registry.rebuild()
 
         await strToYamlFile(makeSampleSamTemplateYaml(false), path.join(testDir, 'test.yml'))
         await strToYamlFile(makeSampleSamTemplateYaml(true), path.join(testDirNested, 'test.yaml'))
@@ -72,7 +75,8 @@ describe('CloudFormation Template Registry', async function () {
         const filepath = path.join(testDir, 'changeMe.yml')
         await strToYamlFile(makeSampleSamTemplateYaml(false), filepath)
 
-        await registry.addWatchPatterns(['**/changeMe.yml'])
+        registry.addWatchPatterns(['**/changeMe.yml'])
+        await registry.rebuild()
 
         await registryHasTargetNumberOfFiles(registry, 1)
 
@@ -84,7 +88,8 @@ describe('CloudFormation Template Registry', async function () {
     })
 
     it('can handle deleted files', async function () {
-        await registry.addWatchPatterns(['**/deleteMe.yml'])
+        registry.addWatchPatterns(['**/deleteMe.yml'])
+        await registry.rebuild()
 
         // Specifically creating the file after the watcher is added
         // Otherwise, it seems the file is deleted before the file watcher realizes the file exists
@@ -99,11 +104,23 @@ describe('CloudFormation Template Registry', async function () {
         await registryHasTargetNumberOfFiles(registry, 0)
     })
 
-    it('fails if you set watch patterns multiple times', async function () {
-        await registry.addWatchPatterns(['first/set'])
+    it('fails if you set watch patterns after init', async function () {
+        registry.addWatchPatterns(['first/set'])
+        await registry.rebuild()
         await assert.rejects(async () => {
-            await registry.addWatchPatterns(['second/set'])
-        }, new Error('CloudFormationTemplateRegistry: watch patterns have already been established'))
+            registry.addWatchPatterns(['second/set'])
+        }, new Error('CloudFormationTemplateRegistry: cannot add watch patterns after watcher has begun watching'))
+        await assert.rejects(async () => {
+            registry.addExcludedPattern(/exclude me/)
+        }, new Error('CloudFormationTemplateRegistry: cannot add excluded patterns after watcher has begun watching'))
+    })
+
+    it('cancels the rebuild if the cancellation timeout is completed', async function () {
+        registry.addWatchPatterns(['**/test.{yaml,yml}'])
+        const t = new Timeout(100)
+        t.cancel()
+        await registry.rebuild(t)
+        await registryHasTargetNumberOfFiles(registry, 0)
     })
 })
 
