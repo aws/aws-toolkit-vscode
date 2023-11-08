@@ -178,6 +178,7 @@ export class TelemetryHelper {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
             const event: CodewhispererUserDecision = {
+                // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
                 codewhispererRequestId: requestIdList[i],
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
