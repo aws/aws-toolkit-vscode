@@ -20,6 +20,7 @@ import {
 } from './awsSamDebugConfiguration'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
 import { CloudFormationTemplateRegistry } from '../../fs/templateRegistry'
+import { replaceVscodeVars } from '../../debug/launchConfiguration'
 
 export interface ValidationResult {
     isValid: boolean
@@ -69,8 +70,13 @@ export class DefaultAwsSamDebugConfigurationValidator implements AwsSamDebugConf
         ) {
             let cfnTemplate: CloudFormation.Template | undefined
             if (config.invokeTarget.templatePath) {
-                const fullpath = tryGetAbsolutePath(this.workspaceFolder, config.invokeTarget.templatePath)
+                // TODO: why wasn't ${workspaceFolder} resolved before now?
+                const resolvedPath = replaceVscodeVars(
+                    config.invokeTarget.templatePath,
+                    this.workspaceFolder?.uri.fsPath
+                )
                 // Normalize to absolute path for use in the runner.
+                const fullpath = tryGetAbsolutePath(this.workspaceFolder, resolvedPath)
                 config.invokeTarget.templatePath = fullpath
                 // Forcefully add to the registry in case the registry scan somehow missed the file. #2614
                 // If the user (launch config) gave an explicit path we should always "find" it.

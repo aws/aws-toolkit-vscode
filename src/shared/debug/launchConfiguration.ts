@@ -204,3 +204,13 @@ export async function getReferencedHandlerPaths(launchConfig: LaunchConfiguratio
         .thru(array => new Set(array))
         .value()
 }
+
+/**
+ * Replaces magic vscode variables in a launch config value.
+ */
+export function replaceVscodeVars(val: string, workspaceFolder?: string): string {
+    if (!workspaceFolder) {
+        return val
+    }
+    return val.replace('${workspaceFolder}', workspaceFolder)
+}

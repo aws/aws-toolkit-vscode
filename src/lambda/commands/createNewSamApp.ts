@@ -32,7 +32,7 @@ import { addFolderToWorkspace, tryGetAbsolutePath } from '../../shared/utilities
 import { goRuntimes } from '../models/samLambdaRuntime'
 import { eventBridgeStarterAppTemplate } from '../models/samTemplates'
 import { CreateNewSamAppWizard, CreateNewSamAppWizardForm } from '../wizards/samInitWizard'
-import { LaunchConfiguration } from '../../shared/debug/launchConfiguration'
+import { LaunchConfiguration, replaceVscodeVars } from '../../shared/debug/launchConfiguration'
 import { SamDebugConfigProvider } from '../../shared/sam/debugger/awsSamDebugger'
 import { ExtContext } from '../../shared/extensions'
 import { isTemplateTargetProperties } from '../../shared/sam/debugger/awsSamDebugConfiguration'
@@ -395,8 +395,7 @@ export async function addInitialLaunchConfiguration(
         const targetDir: string = path.dirname(targetUri.fsPath)
         const filtered = configurations.filter(config => {
             let templatePath: string = (config.invokeTarget as TemplateTargetProperties).templatePath
-            // TODO: write utility function that does this for other variables too
-            templatePath = templatePath.replace('${workspaceFolder}', folder.uri.fsPath)
+            templatePath = replaceVscodeVars(templatePath, folder.uri.fsPath)
 
             return (
                 isTemplateTargetProperties(config.invokeTarget) &&
