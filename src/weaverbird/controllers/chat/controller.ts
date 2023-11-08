@@ -161,9 +161,18 @@ export class WeaverbirdController {
         // lock the UI/show loading bubbles
         telemetry.awsq_codeGenerateClick.emit({ awsqConversationId: session.conversationId, value: 1 })
 
-        this.messenger.sendAsyncEventProgress(tabID, true, 'Code generation started')
+        this.messenger.sendAsyncEventProgress(
+            tabID,
+            true,
+            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this /dev`
+        )
 
         try {
+            this.messenger.sendAnswer({
+                message: 'Requesting changes ...',
+                type: 'answer-stream',
+                tabID,
+            })
             await session.send(message)
             const filePaths = session.state.filePaths
             if (!filePaths || filePaths.length === 0) {
@@ -189,11 +198,6 @@ export class WeaverbirdController {
                 return
             }
 
-            this.messenger.sendAnswer({
-                message: 'Changes to files done. Please review:',
-                type: 'answer-part',
-                tabID: tabID,
-            })
             this.messenger.sendFilePaths(filePaths, tabID, session.uploadId)
             this.messenger.sendAnswer({
                 message: undefined,
