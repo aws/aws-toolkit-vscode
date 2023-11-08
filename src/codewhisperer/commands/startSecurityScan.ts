@@ -32,6 +32,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { isAwsError } from '../../shared/errors'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { AuthUtil } from '../util/authUtil'
+import { DependencyGraphConstants } from '../util/dependencyGraph/dependencyGraph'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 const securityScanOutputChannel = vscode.window.createOutputChannel('CodeWhisperer Security Scan Logs')
@@ -89,7 +90,7 @@ export async function startSecurityScan(
          * Step 1: Generate context truncations
          */
         throwIfCancelled()
-        const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
+        const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor)
         if (dependencyGraph === undefined) {
             throw new Error(`"${editor.document.languageId}" is not supported for security scan.`)
         }
@@ -109,6 +110,13 @@ export async function startSecurityScan(
             uri,
             CodeWhispererConstants.contextTruncationTimeoutSeconds
         )
+        // Check for file extension to send the telemetry language, Reason:- VSCode treats hcl and tf as "plaintext" instead of "tf"
+        if (
+            editor.document.fileName.endsWith(DependencyGraphConstants.hclExt) ||
+            editor.document.fileName.endsWith(DependencyGraphConstants.tfExt)
+        ) {
+            codeScanTelemetryEntry.codewhispererLanguage = 'tf' satisfies CodeWhispererConstants.PlatformLanguageId
+        }
         codeScanTelemetryEntry.contextTruncationDuration = performance.now() - contextTruncationStartTime
         getLogger().verbose(`Complete project context processing.`)
         codeScanTelemetryEntry.codewhispererCodeScanSrcPayloadBytes = truncation.srcPayloadSizeInBytes

@@ -75,6 +75,11 @@ export class RuntimeLanguageContext {
             typescript: 'typescript',
             typescriptreact: 'tsx',
             golang: 'go',
+            json: 'json',
+            yaml: 'yaml',
+            yml: 'yml',
+            hcl: 'hcl',
+            tf: 'tf',
         })
         this.supportedLanguageExtensionMap = createConstantMap<CodewhispererLanguage, string>({
             c: 'c',
@@ -95,6 +100,11 @@ export class RuntimeLanguageContext {
             sql: 'sql',
             tsx: 'tsx',
             typescript: 'ts',
+            json: 'json',
+            yaml: 'yaml',
+            yml: 'yml',
+            hcl: 'hcl',
+            tf: 'tf',
         })
     }
 
