@@ -36,7 +36,6 @@ import {
     selectCustomizationPrompt,
     notifyNewCustomizationsCmd,
     connectWithCustomization,
-    maybeShowAwsqView,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -413,8 +412,6 @@ export async function activate(context: ExtContext): Promise<void> {
             })
         )
     }
-    // toggle Q View if it should be shown
-    await maybeShowAwsqView()
 }
 
 export async function shutdown() {

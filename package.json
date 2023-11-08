@@ -707,7 +707,7 @@
                 {
                     "id": "awsq",
                     "title": "%AWS.q.title%",
-                    "icon": "resources/AWS-Q-Icon_White.png"
+                    "icon": "resources/awsq-logo.svg"
                 }
             ],
             "panel": [
@@ -723,8 +723,7 @@
                 {
                     "type": "webview",
                     "id": "aws.AWSQChatView",
-                    "name": "%AWS.q.chat%",
-                    "when": "awsq"
+                    "name": "%AWS.q.chat%"
                 }
             ],
             "aws-explorer": [

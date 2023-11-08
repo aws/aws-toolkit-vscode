@@ -16,7 +16,7 @@ import {
     createReconnectNode,
     createSelectCustomizationNode,
 } from './codewhispererChildrenNodes'
-import { createGettingStartedNode, maybeShowAwsqView } from '../commands/basicCommands'
+import { createGettingStartedNode } from '../commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { hasVendedIamCredentials } from '../../auth/auth'
@@ -131,7 +131,6 @@ export const refreshCodeWhisperer = Commands.register(
     (showFreeTierLimitNode = false) => {
         codewhispererNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
         codewhispererNode.refresh()
-        maybeShowAwsqView()
     }
 )
 
