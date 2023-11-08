@@ -25,7 +25,9 @@ export class PanelLoadError extends ToolkitError {
 
 export class WorkspaceFolderNotFoundError extends ToolkitError {
     constructor() {
-        super(`Workspace folder was not found`, { code: 'WorkspaceFolderNotFound' })
+        super(`Workspace folder was not found. Open a workspace to continue using Weaverbird`, {
+            code: 'WorkspaceFolderNotFound',
+        })
     }
 }
 
