@@ -29,6 +29,7 @@ const tasks: CopyTask[] = [
     { target: path.join('src', 'templates') },
     { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
     { target: path.join('src', 'testFixtures') },
+    { target: path.join('src', 'codewhisperer', 'images') },
 
     // SSM
     {
