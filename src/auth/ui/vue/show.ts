@@ -46,10 +46,11 @@ import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhi
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
-import { AuthFormId, isBuilderIdAuth } from './authForms/types'
+import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
 import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
+import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -388,27 +389,30 @@ export class AuthWebview extends VueWebview {
 
     // -------------------- Telemetry Stuff --------------------
 
-    async getConnectionCount(): Promise<number> {
-        return (await Auth.instance.listConnections()).length
-    }
-
     /** The number of auth connections when the webview first starts. We will diff this to see if new connections were added. */
-    private initialNumConnections: number | undefined
-
-    async setInitialNumConnections() {
-        this.initialNumConnections = await this.getConnectionCount()
+    #numConnectionsInitial: number | undefined
+    async setNumConnectionsInitial() {
+        this.#numConnectionsInitial = (await Auth.instance.listConnections()).length
+    }
+    getNumConnectionsInitial() {
+        return this.#numConnectionsInitial ?? 0
+    }
+    #numConnectionsAdded: number = 0
+    incrementNumConnectionsAdded() {
+        this.#numConnectionsAdded++
+    }
+    getNumConnectionsAdded() {
+        return this.#numConnectionsAdded
     }
 
-    /** This represents the cause for the webview to open, wether a certain button was clicked or it opened automatically */
+    /** This represents the cause for the webview to open, whether a certain button was clicked or it opened automatically */
     #authSource?: AuthSource
-
-    setSource(source: AuthSource | undefined) {
+    setSource(source: AuthSource) {
         if (this.#authSource) {
             return
         }
         this.#authSource = source
     }
-
     getSource(): AuthSource | undefined {
         return this.#authSource
     }
@@ -416,23 +420,27 @@ export class AuthWebview extends VueWebview {
     /**
      * All auths that existed prior to the webview being opened.
      */
-    private initialExistingAuths: Set<AuthFormId> = new Set()
-    setInitialExistingAuths(auths: AuthFormId[]) {
-        this.initialExistingAuths = new Set(auths)
+    #authsInitial: Set<AuthFormId> = new Set()
+    setAuthsInitial(auths: AuthFormId[]) {
+        this.#authsInitial = new Set(auths)
     }
-
+    getAuthsInitial() {
+        return new Set(this.#authsInitial)
+    }
     /** All auths that currently exist */
-    private allExistingAuths: Set<AuthFormId> | undefined
+    #authsAdded: Set<AuthFormId> = new Set()
+    addSuccessfulAuth(id: AuthFormId) {
+        this.#authsAdded.add(id)
+    }
+    getAuthsAdded(): Set<AuthFormId> {
+        return new Set(this.#authsAdded) // make a copy
+    }
     /** Called when a new auth form is successfully completed. */
     authFormSuccess(id: AuthFormId | undefined) {
         if (!id) {
             return
         }
-        this.allExistingAuths ??= new Set(this.initialExistingAuths)
-        this.allExistingAuths.add(id)
-    }
-    getAllExistingAuths(): Set<AuthFormId> {
-        return (this.allExistingAuths ??= new Set())
+        this.addSuccessfulAuth(id)
     }
 
     /**
@@ -452,7 +460,13 @@ export class AuthWebview extends VueWebview {
      * Eg: Builder ID for CodeWhisperer, Credentials for AWS Explorer
      */
     private previousAuthType: CredentialSourceId | undefined
+    getPreviousAuthType(): CredentialSourceId | undefined {
+        return this.previousAuthType
+    }
     private previousFeatureType: FeatureId | undefined
+    getPreviousFeatureType(): FeatureId | undefined {
+        return this.previousFeatureType
+    }
 
     /**
      * This function is called whenever some sort of user interaction with an auth form happens in
@@ -482,7 +496,7 @@ export class AuthWebview extends VueWebview {
      * The metric for when an auth form that was unsuccessfully interacted with is
      * done being interacted with
      */
-    private async stopAuthFormInteraction(featureType: FeatureId, authType: CredentialSourceId) {
+    async stopAuthFormInteraction(featureType: FeatureId, authType: CredentialSourceId) {
         if (
             this.#previousFailedAuth &&
             this.#previousFailedAuth.featureType === featureType &&
@@ -582,9 +596,13 @@ export class AuthWebview extends VueWebview {
             result: 'Succeeded',
             attempts: authAttempts,
         })
+        this.incrementNumConnectionsAdded()
     }
 
     #totalAuthAttempts: number = 0
+    getTotalAuthAttempts() {
+        return this.#totalAuthAttempts
+    }
 
     /**
      * This metric is emitted on an attempt to signin/connect/submit auth regardless
@@ -618,97 +636,6 @@ export class AuthWebview extends VueWebview {
             this.previousFeatureType = undefined
             this.#previousFailedAuth = undefined
         }
-    }
-
-    /**
-     * The metric emitted when the webview is closed by the user.
-     */
-    async emitWebviewClosed() {
-        if (this.previousFeatureType && this.previousAuthType) {
-            // We are closing the webview, and have an auth form if they were
-            // interacting but did not complete it.
-            await this.stopAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
-        }
-
-        const allAuths = this.getAllExistingAuths()
-        const newAuths = new Set([...allAuths].filter(value => !this.initialExistingAuths.has(value)))
-        const uncountedBuilderIds = this.getUncountedBuilderIds(allAuths, newAuths)
-
-        let numAuthConnections = (await this.getConnectionCount()) + uncountedBuilderIds
-        let numNewAuthConnections = numAuthConnections - this.initialNumConnections! + uncountedBuilderIds
-
-        if (numNewAuthConnections < 0) {
-            // Edge Case:
-            // numAuthConnections gets the latest number of connections, and it is
-            // possible that the user signed out or removed connections they initially had.
-            // If this is the case, we will set the total connections to what it initially was
-            // since we don't consider removing connections as not having existed.
-            numAuthConnections = this.initialNumConnections!
-            numNewAuthConnections = newAuths.size // best effort guess but can be wrong
-        }
-
-        let result: Result
-
-        if (numNewAuthConnections > 0) {
-            result = 'Succeeded'
-        } else if (this.#totalAuthAttempts > 0) {
-            // There were no new auth connections added, but attempts were made
-            result = 'Failed'
-        } else {
-            // No new auth connections added, but no attempts were made
-            result = 'Cancelled'
-        }
-
-        if (this.getSource() === 'firstStartup' && numNewAuthConnections === 0) {
-            if (this.initialNumConnections! > 0) {
-                // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
-                // system which we discovered. We consider this a success even though they added no new connections.
-                result = 'Succeeded'
-            } else {
-                // A brand new user with no new auth connections did not add any
-                // connections
-                result = 'Failed'
-            }
-        }
-
-        telemetry.auth_addedConnections.emit({
-            source: this.getSource() ?? '',
-            result,
-            attempts: this.#totalAuthAttempts,
-            reason: 'closedWebview',
-            authConnectionsCount: numAuthConnections,
-            newAuthConnectionsCount: numNewAuthConnections,
-            enabledAuthConnections: builderCommaDelimitedString(allAuths),
-            newEnabledAuthConnections: builderCommaDelimitedString(newAuths),
-        })
-    }
-
-    /**
-     * Additional Builder IDs don't count toward the total connection count,
-     * since they are seen as 1 connection.
-     *
-     * This does some work to find the missing ones that were not considered.
-     */
-    private getUncountedBuilderIds(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
-        const newBuilderIds = [...newAuths].filter(isBuilderIdAuth).length
-
-        if (newBuilderIds === 0) {
-            return 0
-        }
-
-        if (this.hadBuilderIdBefore(allAuths, newAuths)) {
-            // Had a builder id so all new builder ids didn't get added.
-            return newBuilderIds
-        } else {
-            // Didn't have builder id before, so only the first was added, but not the rest (hence -1)
-            return newBuilderIds - 1
-        }
-    }
-
-    private hadBuilderIdBefore(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
-        const initialAuths = [...allAuths].filter(auth => !newAuths.has(auth))
-        const initialBuilderIds = initialAuths.filter(isBuilderIdAuth)
-        return initialBuilderIds.length > 0
     }
 
     /**
@@ -814,7 +741,7 @@ export async function showAuthWebview(
     activePanel ??= new Panel(ctx, CodeCatalystAuthenticationProvider.fromContext(ctx))
 
     if (!wasWebviewAlreadyOpen) {
-        await activePanel.server.setInitialNumConnections()
+        await activePanel.server.setNumConnectionsInitial()
     }
 
     if (!wasInitialServiceSet && serviceToShow) {
@@ -835,11 +762,78 @@ export async function showAuthWebview(
     if (!subscriptions) {
         subscriptions = [
             webview.onDidDispose(() => {
-                activePanel?.server.emitWebviewClosed()
+                if (activePanel) {
+                    emitWebviewClosed(activePanel.server)
+                }
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
                 subscriptions = undefined
             }),
         ]
+    }
+}
+
+/**
+ * The metric emitted when the webview is closed by the user.
+ */
+export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWebview>) {
+    const [prevFeatureType, prevAuthType] = [authWebview.getPreviousFeatureType(), authWebview.getPreviousAuthType()]
+    if (prevFeatureType && prevAuthType) {
+        // We are closing the webview, and have an auth form if they were
+        // interacting but did not complete it.
+        await authWebview.stopAuthFormInteraction(prevFeatureType, prevAuthType)
+    }
+
+    const authsInitial = authWebview.getAuthsInitial()
+    const authsAdded = authWebview.getAuthsAdded()
+    const authsFinal = new Set([...authsInitial, ...authsAdded])
+    
+    const numConnectionsInitial = authWebview.getNumConnectionsInitial()
+    const numConnectionsAdded = authWebview.getNumConnectionsAdded()
+
+    const source = authWebview.getSource()
+    const result: Result = determineResult(source, numConnectionsInitial, numConnectionsAdded)
+
+    telemetry.auth_addedConnections.emit({
+        source: source ?? '',
+        result,
+        attempts: authWebview.getTotalAuthAttempts(),
+        reason: 'closedWebview',
+        authConnectionsCount: numConnectionsInitial + numConnectionsAdded,
+        newAuthConnectionsCount: numConnectionsAdded,
+        enabledAuthConnections: builderCommaDelimitedString(authsFinal),
+        newEnabledAuthConnections: builderCommaDelimitedString(authsAdded),
+    })
+
+    function determineResult(
+        source: AuthSource | undefined,
+        numConnectionsInitial: number,
+        numConnectionsAdded: number
+    ): Result {
+        let result: Result
+
+        if (numConnectionsAdded > 0) {
+            result = 'Succeeded'
+        } else if (authWebview.getTotalAuthAttempts() > 0) {
+            // There were no new auth connections added, but attempts were made
+            result = 'Failed'
+        } else {
+            // No new auth connections added, but no attempts were made
+            result = 'Cancelled'
+        }
+
+        if (source === 'firstStartup' && numConnectionsAdded === 0) {
+            if (numConnectionsInitial > 0) {
+                // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
+                // system which we discovered. We consider this a success even though they added no new connections.
+                result = 'Succeeded'
+            } else {
+                // A brand new user with no new auth connections did not add any
+                // connections
+                result = 'Failed'
+            }
+        }
+
+        return result
     }
 }

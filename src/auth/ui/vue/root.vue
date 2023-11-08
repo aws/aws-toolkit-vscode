@@ -194,7 +194,7 @@ export default defineComponent({
         }
     },
     async created() {
-        await this.getAllExistingAuths().then(existingAuths => client.setInitialExistingAuths(existingAuths))
+        await this.getAllExistingAuths().then(existingAuths => client.setAuthsInitial(existingAuths))
         this.updateFoundCredentialButNotConnected()
 
         await this.selectInitialService()
