@@ -48,7 +48,7 @@ import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { LambdaArchitecture, Result, Runtime } from '../../shared/telemetry/telemetry'
 import { getTelemetryReason, getTelemetryResult } from '../../shared/errors'
-import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { openUrl, replaceVscodeVars } from '../../shared/utilities/vsCodeUtils'
 
 export const samInitTemplateFiles: string[] = ['template.yaml', 'template.yml']
 export const samInitReadmeFile: string = 'README.TOOLKIT.md'
@@ -395,8 +395,7 @@ export async function addInitialLaunchConfiguration(
         const targetDir: string = path.dirname(targetUri.fsPath)
         const filtered = configurations.filter(config => {
             let templatePath: string = (config.invokeTarget as TemplateTargetProperties).templatePath
-            // TODO: write utility function that does this for other variables too
-            templatePath = templatePath.replace('${workspaceFolder}', folder.uri.fsPath)
+            templatePath = replaceVscodeVars(templatePath, folder.uri.fsPath)
 
             return (
                 isTemplateTargetProperties(config.invokeTarget) &&
