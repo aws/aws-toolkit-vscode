@@ -48,14 +48,6 @@ const mockSessionStateConfig = ({
     conversationId: string
     uploadId: string
 }): SessionStateConfig => ({
-    llmConfig: {
-        model: 'test-model',
-        maxTokensToSample: 1,
-        temperature: 1,
-        debateRounds: 1,
-        debateParticipantsCount: 3,
-        generationFlow: 'lambda',
-    },
     workspaceRoot: 'fake-root',
     conversationId,
     proxyClient: {
