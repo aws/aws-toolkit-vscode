@@ -5,6 +5,7 @@
 
 import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
 import { Service, Token } from 'aws-sdk'
+import { ConfiguredRetryStrategy } from '@aws-sdk/util-retry'
 import { omit } from 'lodash'
 import * as vscode from 'vscode'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
@@ -28,6 +29,7 @@ const getCodeWhispererRegionAndEndpoint = () => {
         : cwsprEndpointMap['Gamma-IAD']
 }
 
+// Create a client for weaverbird proxy client based off of aws sdk v2
 export async function createWeaverbirdProxyClient(): Promise<WeaverbirdProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
@@ -38,11 +40,18 @@ export async function createWeaverbirdProxyClient(): Promise<WeaverbirdProxyClie
             region: region,
             endpoint: cwsprEndpoint,
             token: new Token({ token: bearerToken }),
+            // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
+            maxRetries: 0,
+            retryDelayOptions: {
+                // The default number of milliseconds to use in the exponential backoff
+                base: 500,
+            },
         } as ServiceOptions,
         undefined
     )) as WeaverbirdProxyClient
 }
 
+// Create a client for weaverbird streaming based off of aws sdk v3
 async function createWeaverbirdStreamingClient(): Promise<CodeWhispererStreaming> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
     const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
@@ -50,6 +59,9 @@ async function createWeaverbirdStreamingClient(): Promise<CodeWhispererStreaming
         endpoint: cwsprEndpoint,
         region: region,
         token: { token: bearerToken },
+        // SETTING max attempts to 0 FOR BETA. RE-ENABLE FOR RE-INVENT
+        // Implement exponential back off starting with a base of 500ms (500 + attempt^10)
+        retryStrategy: new ConfiguredRetryStrategy(0, (attempt: number) => 500 + attempt ** 10),
     })
     return streamingClient
 }
