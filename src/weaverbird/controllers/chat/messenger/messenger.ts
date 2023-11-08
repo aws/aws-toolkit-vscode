@@ -11,6 +11,7 @@ import {
     FilePathMessage,
     UpdatePlaceholderMessage,
     ChatInputEnabledMessage,
+    AuthenticationUpdateMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
@@ -81,5 +82,9 @@ export class Messenger {
 
     public sendChatInputEnabled(tabID: string, enabled: boolean) {
         this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
+    }
+
+    public sendAuthenticationUpdate(weaverbirdEnabled: boolean) {
+        this.dispatcher.sendAuthenticationUpdate(new AuthenticationUpdateMessage(weaverbirdEnabled))
     }
 }

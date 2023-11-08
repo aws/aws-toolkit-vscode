@@ -73,6 +73,17 @@ export class ChatInputEnabledMessage extends UiMessage {
     }
 }
 
+export class AuthenticationUpdateMessage {
+    readonly time: number = Date.now()
+    readonly sender: string = weaverbirdChat
+    readonly weaverbirdEnabled: boolean
+    readonly type = 'authenticationUpdateMessage'
+
+    constructor(weaverbirdEnabled: boolean) {
+        this.weaverbirdEnabled = weaverbirdEnabled
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
@@ -121,6 +132,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendChatInputEnabled(message: ChatInputEnabledMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAuthenticationUpdate(message: AuthenticationUpdateMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }
