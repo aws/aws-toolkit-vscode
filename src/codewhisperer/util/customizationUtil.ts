@@ -301,12 +301,25 @@ export const selectCustomization = async (customization: Customization) => {
 export const getAvailableCustomizationsList = async () => {
     const items: Customization[] = []
     const response = await codeWhispererClient.listAvailableCustomizations()
+    const requestIds: string[] = []
     response
-        .map(listAvailableCustomizationsResponse => listAvailableCustomizationsResponse.customizations)
+        .map(listAvailableCustomizationsResponse => {
+            const resp = listAvailableCustomizationsResponse.$response
+            if (resp && resp.requestId) {
+                requestIds.push(resp.requestId)
+            }
+
+            return listAvailableCustomizationsResponse.customizations
+        })
         .forEach(customizations => {
             items.push(...customizations)
         })
 
+    getLogger().debug(
+        `codewhisperer:listAvailableCustomizations: requestIds: ${requestIds}, customizations: ${items.map(
+            custom => custom.name
+        )}`
+    )
     return items
 }
 
