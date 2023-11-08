@@ -260,7 +260,7 @@ export class ChatController {
                 const prompt = this.promptGenerator.generateForContextMenuCommand(command)
 
                 this.messenger.sendEditorContextCommandMessage(
-                    command,
+                    command.type,
                     context?.focusAreaContext?.codeBlock ?? '',
                     triggerID
                 )

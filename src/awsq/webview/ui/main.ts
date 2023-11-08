@@ -390,6 +390,18 @@ ${message}`,
                         chatItems: [],
                     })
                     connector.clearChat(tabID)
+                    mynahUI.updateStore(tabID, {
+                        chatItems: [
+                            {
+                                type: ChatItemType.ANSWER,
+                                body: WelcomeMessage,
+                            },
+                            {
+                                type: ChatItemType.ANSWER,
+                                followUp: WelcomeFollowUps(weaverbirdEnabled),
+                            },
+                        ],
+                    })
                     return
                 } else {
                     // TODO we should send all commands to the extension

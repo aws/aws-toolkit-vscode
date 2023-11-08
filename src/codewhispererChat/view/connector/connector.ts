@@ -5,7 +5,7 @@
 
 import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
-import { EditorContextCommand } from '../../commands/registerCommands'
+import { EditorContextCommandType } from '../../commands/registerCommands'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -148,13 +148,13 @@ export interface FollowUp {
 export interface EditorContextCommandMessageProps {
     readonly message: string
     readonly triggerID: string
-    readonly command?: EditorContextCommand
+    readonly command?: EditorContextCommandType
 }
 
 export class EditorContextCommandMessage extends UiMessage {
     readonly message: string
     readonly triggerID: string
-    readonly command?: EditorContextCommand
+    readonly command?: EditorContextCommandType
     override type = 'editorContextCommandMessage'
 
     constructor(props: EditorContextCommandMessageProps) {
