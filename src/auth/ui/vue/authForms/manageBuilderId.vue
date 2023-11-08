@@ -1,5 +1,9 @@
 <template>
-    <div class="auth-form container-background border-common" id="builder-id-form">
+    <div
+        v-bind:class="[disabled ? 'disabled-form' : '']"
+        class="auth-form container-background border-common"
+        id="builder-id-form"
+    >
         <div>
             <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
 
@@ -59,6 +63,10 @@ export default defineComponent({
         state: {
             type: Object as PropType<BaseBuilderIdState>,
             required: true,
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {

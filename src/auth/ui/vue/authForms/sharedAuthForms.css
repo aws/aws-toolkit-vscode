@@ -7,6 +7,12 @@
     padding: 10px;
 }
 
+.disabled-form {
+    pointer-events: none;
+    filter: grayscale(100%);
+    opacity: 0.6;
+}
+
 /* A grouping of related elements in an auth form */
 .auth-form .form-section {
     margin-top: 15px;
