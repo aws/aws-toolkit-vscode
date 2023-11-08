@@ -111,6 +111,7 @@ export function registerDevfileWatcher(devenvClient: DevEnvClient): vscode.Dispo
     const registry = new DevfileRegistry()
     const codelensProvider = new DevfileCodeLensProvider(registry, devenvClient)
     registry.addWatchPatterns([devfileGlobPattern])
+    registry.rebuild()
 
     const codelensDisposable = vscode.languages.registerCodeLensProvider(
         {
