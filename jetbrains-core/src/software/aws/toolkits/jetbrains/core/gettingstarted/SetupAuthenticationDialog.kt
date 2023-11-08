@@ -146,6 +146,7 @@ class SetupAuthenticationDialog(
     private val iamTab = iamTab()
     private val wrappers = SetupAuthenticationTabs.values().associateWith { BorderLayoutPanel() }
     var attempts = 0
+    var authType = CredentialSourceId.IamIdentityCenter
 
     init {
         title = message("gettingstarted.setup.title")
@@ -264,6 +265,7 @@ class SetupAuthenticationDialog(
 
         when (selectedTab()) {
             SetupAuthenticationTabs.IDENTITY_CENTER -> {
+                authType = CredentialSourceId.IamIdentityCenter
                 val profileName = state.idcTabState.profileName
                 if (configFilesFacade.readSsoSessions().containsKey(profileName)) {
                     Messages.showErrorDialog(project, message("gettingstarted.setup.iam.session.exists", profileName), title)
@@ -326,10 +328,12 @@ class SetupAuthenticationDialog(
             }
 
             SetupAuthenticationTabs.BUILDER_ID -> {
+                authType = CredentialSourceId.AwsId
                 loginSso(project, SONO_URL, SONO_REGION, scopes)
             }
 
             SetupAuthenticationTabs.IAM_LONG_LIVED -> {
+                authType = CredentialSourceId.SharedCredentials
                 val profileName = state.iamTabState.profileName
                 if (configFilesFacade.readAllProfiles().containsKey(profileName)) {
                     Messages.showErrorDialog(project, message("gettingstarted.setup.iam.profile.exists", profileName), title)
@@ -337,7 +341,7 @@ class SetupAuthenticationDialog(
                         project,
                         source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
                         featureId = featureId,
-                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                        credentialSourceId = CredentialSourceId.SharedCredentials,
                         isAggregated = false,
                         attempts = attempts + 1,
                         result = Result.Failed,
@@ -364,7 +368,7 @@ class SetupAuthenticationDialog(
                         project,
                         source = getSourceOfEntry(sourceOfEntry, isFirstInstance, connectionInitiatedFromExplorer),
                         featureId = featureId,
-                        credentialSourceId = CredentialSourceId.IamIdentityCenter,
+                        credentialSourceId = CredentialSourceId.SharedCredentials,
                         isAggregated = false,
                         attempts = attempts + 1,
                         result = Result.Failed,
