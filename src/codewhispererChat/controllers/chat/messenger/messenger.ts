@@ -9,7 +9,7 @@ import {
     CodeReference,
     EditorContextCommandMessage,
 } from '../../../view/connector/connector'
-import { EditorContextCommand, EditorContextCommandType } from '../../../commands/registerCommands'
+import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -200,16 +200,16 @@ export class Messenger {
         ['aws.awsq.sendToPrompt', 'Send to prompt'],
     ])
 
-    public sendEditorContextCommandMessage(command: EditorContextCommand, selectedCode: string, triggerID: string) {
+    public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
         // Remove newlines and spaces before and after the code
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
         let message
-        if (command.type === 'aws.awsq.sendToPrompt') {
+        if (command === 'aws.awsq.sendToPrompt') {
             message = ['\n```\n', trimmedCode, '\n```'].join('')
         } else {
             message = [
-                this.editorContextMenuCommandVerbs.get(command.type),
+                this.editorContextMenuCommandVerbs.get(command),
                 ' the following part of my code:',
                 '\n```\n',
                 trimmedCode,
