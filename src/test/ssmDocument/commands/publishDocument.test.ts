@@ -39,15 +39,6 @@ describe('publishDocument', async function () {
         Name: 'test',
     }
 
-    before(async function () {
-        textDocument = await vscode.workspace.openTextDocument({ content: 'foo', language: 'ssm-json' })
-        await vscode.window.showTextDocument(textDocument)
-    })
-
-    after(async function () {
-        await closeAllEditors()
-    })
-
     beforeEach(async function () {
         wizardResponse = {
             action: PublishSSMDocumentAction.QuickUpdate,
@@ -60,10 +51,12 @@ describe('publishDocument', async function () {
                 Name: 'testName',
             },
         }
+        textDocument = await vscode.workspace.openTextDocument({ content: 'foo', language: 'ssm-json' })
     })
 
-    afterEach(function () {
+    afterEach(async function () {
         sinon.restore()
+        await closeAllEditors()
     })
 
     describe('createDocument', async function () {
@@ -81,7 +74,7 @@ describe('publishDocument', async function () {
             await publish.createDocument(wizardResponse, textDocument, client)
 
             assert(client.createDocument.calledOnce)
-            assert(client.createDocument.calledWith(fakeCreateRequest))
+            assert.deepStrictEqual(client.createDocument.args, [[fakeCreateRequest]])
         })
 
         it('createDocument API failed', async function () {
@@ -104,7 +97,7 @@ describe('publishDocument', async function () {
             await publish.updateDocument(wizardResponse, textDocument, client)
 
             assert(client.updateDocument.calledOnce)
-            assert(client.updateDocument.calledWith(fakeUpdateRequest))
+            assert.deepStrictEqual(client.updateDocument.args, [[fakeUpdateRequest]])
         })
 
         it('updateDocument API failed', async function () {
