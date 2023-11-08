@@ -8,9 +8,10 @@ import { weaverbirdScheme } from '../constants'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { WorkspaceFolderNotFoundError } from '../errors'
+import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
-    readonly workspaceRoot: string
+    workspaceRoot: string
     readonly fs: VirtualFileSystem
 }
 
@@ -24,8 +25,7 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    // TODO figure out how we want to handle multi root workspaces
-    const workspace = workspaceFolders[0].uri.fsPath
+    const defaultWorkspaceRoot = await getSourceCodePath(workspaceFolders[0].uri.fsPath, '/src')
 
     const fs = new VirtualFileSystem()
 
@@ -36,7 +36,7 @@ export async function createSessionConfig(): Promise<SessionConfig> {
     )
 
     return {
-        workspaceRoot: workspace,
+        workspaceRoot: defaultWorkspaceRoot,
         fs,
     }
 }

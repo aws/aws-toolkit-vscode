@@ -24,6 +24,7 @@ export enum FollowUpTypes {
     ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     RejectCode = 'RejectCode',
     Retry = 'Retry',
+    ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
 }
 
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
