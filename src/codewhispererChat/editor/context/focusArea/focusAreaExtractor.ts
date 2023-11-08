@@ -39,7 +39,7 @@ export class FocusAreaContextExtractor {
             extendedCodeBlock: this.getRangeText(editor.document, extendedCodeBlockRange),
             codeBlock: codeBlock,
             selectionInsideExtendedCodeBlock: this.getSelectionInsideExtendedCodeBlock(
-                editor.selection,
+                importantRange as Selection,
                 extendedCodeBlockRange
             ),
             names:
