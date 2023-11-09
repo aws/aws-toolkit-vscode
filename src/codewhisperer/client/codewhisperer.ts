@@ -201,7 +201,7 @@ export class DefaultCodeWhispererClient {
         return pageableToCollection(requester, {}, 'nextToken')
             .promise()
             .then(resps => {
-                let logStr = 'codewhisperer: listAvailableCustomizations API request:'
+                let logStr = 'CodeWhisperer: listAvailableCustomizations API request:'
                 resps.forEach(resp => {
                     const requestId = resp.$response.requestId
                     logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
