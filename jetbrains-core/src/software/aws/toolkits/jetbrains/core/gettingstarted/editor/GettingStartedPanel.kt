@@ -314,7 +314,7 @@ class GettingStartedPanel(
                                 }
                         }
 
-                        image(AwsToolkit.pluginPath().resolve("assets").resolve("codecatalyst.png").toString())
+                        image("/gettingstarted/codecatalyst.png")
 
                         row {
                             text(message("caws.getstarted.panel.description"))
@@ -533,7 +533,7 @@ class GettingStartedPanel(
                                 }
                         }
 
-                        image(AwsToolkit.pluginPath().resolve("assets").resolve("explorer.png").toString())
+                        image("/gettingstarted/explorer.png")
 
                         row {
                             text(message("aws.getstarted.resource.panel_description"))
@@ -741,7 +741,7 @@ class GettingStartedPanel(
                                 }
                         }
 
-                        image(AwsToolkit.pluginPath().resolve("assets").resolve("codewhisperer.png").toString())
+                        image("/gettingstarted/codewhisperer.png")
 
                         row {
                             text(message("codewhisperer.gettingstarted.panel.comment"))
@@ -1050,7 +1050,8 @@ class GettingStartedPanel(
 
         protected fun Panel.image(path: String) {
             row {
-                val image = ImageIcon(path).image
+                // `this` is a [Row], so class needs to be specified or we get the wrong classloader
+                val image = ImageIcon(GettingStartedPanel::class.java.getResource(path)).image
                     // need to account for margin introduced by indent
                     // Image.SCALE_DEFAULT is the only valid parameter for gifs
                     .getScaledInstance(PANEL_WIDTH - (indentSize * 2), -1, if (path.endsWith("gif")) Image.SCALE_DEFAULT else Image.SCALE_SMOOTH)
