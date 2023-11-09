@@ -64,6 +64,10 @@ export function keys<T extends Record<string, any>>(obj: T): [keyof T & string] 
     return Object.keys(obj) as [keyof T & string]
 }
 
+export function keysAsInt<T extends Record<number, any>>(obj: T): number[] {
+    return Object.keys(obj).map(k => parseInt(k))
+}
+
 /**
  * Stricter form of {@link Object.entries} that gives slightly better types for object literals.
  */
