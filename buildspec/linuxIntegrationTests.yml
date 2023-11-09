@@ -22,8 +22,7 @@ phases:
             java: latest
 
         commands:
-            # Disable engine-strict in CI.
-            - sed -i -e 's/engine.strict.true/engine-strict=false/' .npmrc
+            - bash buildspec/shared/linux-install.sh
             - '>/dev/null add-apt-repository universe'
             - '>/dev/null apt-get -qq install -y apt-transport-https'
             - '>/dev/null apt-get -qq update'
@@ -35,8 +34,6 @@ phases:
             # Fail early if any of these not found.
             - 'python3.7 --version'
             - 'python3.8 --version'
-            # Dependencies for running vscode.
-            - '>/dev/null apt-get -yqq install libatk1.0-0 libgtk-3-dev libxss1 xvfb libasound2 libasound2-plugins'
             # login to DockerHub so we don't get throttled
             # - docker login --username $(echo $DOCKER_HUB_TOKEN | jq -r '.username') --password $(echo $DOCKER_HUB_TOKEN | jq -r '.password') || true
             # increase file watcher count so CodeLens tests do not fail unexpectedly (ENOSPC error)
@@ -44,15 +41,6 @@ phases:
             # start Docker
             # - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay&
             - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
-            #
-            # Prepare env for unprivileged user.
-            #
-            - |
-                # adduser --gecos GECOS --disabled-password toolkit-user
-                mkdir -p ~codebuild-user
-                chown -R codebuild-user:codebuild-user /tmp ~codebuild-user .
-                chmod +x ~codebuild-user
-                ls -ld ~codebuild-user
             # Add user to "docker" group.
             # - usermod -aG docker codebuild-user
             # Ensure that "docker" group has permissions to the socket.
@@ -62,17 +50,8 @@ phases:
     pre_build:
         commands:
             - export HOME=/home/codebuild-user
-            - bash buildspec/setup-github-token.sh
-            # If present, log into CodeArtifact. Provides a nice safety net in case NPM is down.
-            # Should only affect tests run through IDEs team-hosted CodeBuild.
-            - |
-                if [ "$TOOLKITS_CODEARTIFACT_DOMAIN" ] && [ "$TOOLKITS_CODEARTIFACT_REPO" ] && [ "TOOLKITS_$ACCOUNT_ID" ]; then
-                    if aws codeartifact login --tool npm --domain "$TOOLKITS_CODEARTIFACT_DOMAIN" --domain-owner "$TOOLKITS_ACCOUNT_ID" --repository "$TOOLKITS_CODEARTIFACT_REPO" > /dev/null 2>&1; then
-                        echo "Connected to CodeArtifact"
-                    else
-                        echo "CodeArtifact connection failed. Falling back to npm"
-                    fi
-                fi
+            - bash buildspec/shared/setup-github-token.sh
+            - bash buildspec/shared/linux-pre_build.sh
             # Where non-root "pip3 install" puts things:
             - 'export PATH="$HOME/.local/bin:$PATH"'
             # Explicit older version since we assume the newer version is causing our CI to fail (python 3.10 sam tests specifically)
@@ -91,7 +70,6 @@ phases:
     build:
         commands:
             - export HOME=/home/codebuild-user
-            - npm ci
             - xvfb-run npm run testInteg
             - VCS_COMMIT_ID="${CODEBUILD_RESOLVED_SOURCE_VERSION}"
             - CI_BUILD_URL=$(echo $CODEBUILD_BUILD_URL | sed 's/#/%23/g')
