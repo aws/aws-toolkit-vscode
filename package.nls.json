@@ -207,7 +207,7 @@
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
-    "AWS.submenu.awsqEditorContextSubmenu.title": "Send to CW Chat",
+    "AWS.submenu.awsqEditorContextSubmenu.title": "Send to AWS Q",
     "AWS.submenu.auth.title": "Authentication",
     "AWS.generic.create": "Create...",
     "AWS.generic.save": "Save",
