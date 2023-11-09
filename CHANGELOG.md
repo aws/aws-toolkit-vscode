@@ -1,3 +1,9 @@
+## 1.98.0 2023-11-09
+
+- **Bug Fix** CodeWhisperer, CodeCatalyst may require login again after Switching VSCode workspaces
+- **Bug Fix** "Scanning CloudFormation templates..." message `Cancel` button does not fully stop the scan
+- **Bug Fix** ECS: `SimulatePrincipalPolicy` permission is no longer required for users to run `exec command`
+
 ## 1.97.0 2023-11-02
 
 - **Bug Fix** CodeWhisperer: fix and improve closing symbols handling (brackets, parenthesis, quotes etc)

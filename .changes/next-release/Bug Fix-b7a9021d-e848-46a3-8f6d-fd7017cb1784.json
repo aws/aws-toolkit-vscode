@@ -1,4 +1,0 @@
-{
-	"type": "Bug Fix",
-	"description": "\"Scanning CloudFormation templates...\" message `Cancel` button does not fully stop the scan"
-}
