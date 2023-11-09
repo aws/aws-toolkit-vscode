@@ -311,9 +311,9 @@ export class RecommendationHandler {
             ).trimStart()
             recommendations.forEach((item, index) => {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
+                session.requestIdList.push(requestId)
             })
             getLogger().debug(msg)
-
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
             } else {
@@ -393,9 +393,10 @@ export class RecommendationHandler {
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
             if (session.recommendations.length === 0) {
+                session.requestIdList.push(requestId)
                 // Received an empty list of recommendations
                 TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
-                    requestId,
+                    session.requestIdList,
                     sessionId,
                     page,
                     editor.document.languageId,
@@ -481,7 +482,7 @@ export class RecommendationHandler {
             return
         }
         TelemetryHelper.instance.recordUserDecisionTelemetry(
-            this.requestId,
+            session.requestIdList,
             session.sessionId,
             session.recommendations,
             acceptIndex,
