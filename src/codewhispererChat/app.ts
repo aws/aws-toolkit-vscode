@@ -12,6 +12,7 @@ import { MessagePublisher } from '../awsq/messages/messagePublisher'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
+    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
@@ -38,6 +39,7 @@ export function init(appContext: AwsQAppInitContext) {
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
         processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
+        processLinkClicked: new EventEmitter<ClickLink>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -75,6 +77,7 @@ export function init(appContext: AwsQAppInitContext) {
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
         processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
+        processLinkClicked: new MessageListener<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -114,6 +117,7 @@ export function init(appContext: AwsQAppInitContext) {
         processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
             cwChatControllerEventEmitters.processUIFocusMessage
         ),
+        processLinkClicked: new MessagePublisher<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
     }
 
     new CwChatController(cwChatControllerMessageListeners, appContext.getAppsToWebViewMessagePublisher())

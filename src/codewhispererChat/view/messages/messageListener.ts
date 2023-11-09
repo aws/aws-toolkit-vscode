@@ -75,7 +75,19 @@ export class UIMessageListener {
             case 'ui-focus':
                 this.processUIFocus(msg)
                 break
+            case 'link-was-clicked':
+                this.linkClicked(msg)
+                break
         }
+    }
+
+    private linkClicked(msg: any) {
+        this.chatControllerMessagePublishers.processLinkClicked.publish({
+            command: msg.command,
+            tabID: msg.tabID,
+            messageId: msg.messageId,
+            url: msg.suggestion.url ?? '',
+        })
     }
 
     private processUIFocus(msg: any) {

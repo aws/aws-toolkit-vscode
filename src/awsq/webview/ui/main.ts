@@ -3,7 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import { ChatPayload, Connector } from './connector'
-import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
+import {
+    ChatItem,
+    ChatItemType,
+    MynahUI,
+    MynahUIDataModel,
+    NotificationType,
+    SuggestionEventName,
+} from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage } from './storages/tabsStorage'
@@ -446,7 +453,15 @@ ${message}`,
             })
         },
         onSuggestionEngagement: connector.triggerSuggestionEngagement,
-        onSuggestionInteraction: (eventName, suggestion, mouseEvent) => {
+        onSuggestionInteraction: (tabId, eventName, suggestion, mouseEvent) => {
+            console.log('In onSuggestionInteraction for event: ' + eventName)
+            if (eventName == SuggestionEventName.OPEN) {
+                // TODO : pass in message ID - need to update Mynah UI
+                connector.onLinkClicked(tabId, '', suggestion)
+            }
+            /*if (eventName == SuggestionEventName.OPEN) {
+                //connector.onLinkClicked(tabId, suggestion)
+            }*/
             // mouseEvent?.preventDefault();
             // mouseEvent?.stopPropagation();
             // mouseEvent?.stopImmediatePropagation();

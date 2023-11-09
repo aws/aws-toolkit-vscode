@@ -51,6 +51,16 @@ export class Connector {
         })
     }
 
+    onLinkClicked = (tabID: string, messageId: string, suggestion: Suggestion): void => {
+        this.sendMessageToExtension({
+            command: 'link-was-clicked',
+            suggestion,
+            tabID,
+            messageId,
+            tabType: 'cwc',
+        })
+    }
+
     onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
         this.sendMessageToExtension({
             tabID: tabID,

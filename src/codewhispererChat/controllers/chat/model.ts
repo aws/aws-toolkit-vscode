@@ -49,6 +49,13 @@ export interface CopyCodeToClipboard {
     insertionTargetType: string | undefined
 }
 
+export interface ClickLink {
+    command: string | undefined
+    tabID: string
+    messageId: string
+    url: string
+}
+
 export interface PromptMessage {
     message: string | undefined
     messageId: string

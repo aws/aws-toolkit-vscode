@@ -201,6 +201,7 @@ export class Connector {
     }
 
     triggerSuggestionEngagement = (tabID: string, engagement: SuggestionEngagement): void => {
+        console.log('In triggerSuggestionEngagement')
         // let command: string = 'hoverSuggestion'
         // if (
         //     engagement.engagementType === EngagementType.INTERACTION &&
@@ -232,6 +233,14 @@ export class Connector {
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
+                break
+        }
+    }
+
+    onLinkClicked = (tabID: string, messageId: string, suggestion: Suggestion): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onLinkClicked(tabID, messageId, suggestion)
                 break
         }
     }

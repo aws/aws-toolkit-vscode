@@ -20,6 +20,7 @@ import {
     TabCreatedMessage,
     TabChangedMessage,
     UIFocusMessage,
+    ClickLink,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
@@ -52,6 +53,7 @@ export interface ChatControllerMessagePublishers {
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
+    readonly processLinkClicked: MessagePublisher<ClickLink>
 }
 
 export interface ChatControllerMessageListeners {
@@ -67,6 +69,7 @@ export interface ChatControllerMessageListeners {
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
+    readonly processLinkClicked: MessageListener<ClickLink>
 }
 
 export class ChatController {
@@ -142,6 +145,16 @@ export class ChatController {
         this.chatControllerMessageListeners.processUIFocusMessage.onMessage(data => {
             this.processUIFocusMessage(data)
         })
+
+        this.chatControllerMessageListeners.processLinkClicked.onMessage(data => {
+            this.processLinkClicked(data)
+        })
+    }
+
+    private async processLinkClicked(message: ClickLink) {
+        console.log('About to send telemetry event for link click')
+        console.log('ClickLink message: ' + JSON.stringify(message))
+        this.telemetryHelper.recordInteractWithMessage(message)
     }
 
     private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {

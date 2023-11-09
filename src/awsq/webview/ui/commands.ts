@@ -20,5 +20,6 @@ type MessageCommand =
     | 'clear'
     | 'chat-item-voted'
     | 'chat-item-feedback'
+    | 'link-was-clicked'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }
