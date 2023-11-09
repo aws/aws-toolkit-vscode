@@ -18,7 +18,7 @@ import * as vscode from 'vscode'
  * is valid for each codelense
  */
 export class CodelensRootRegistry extends WatchedFiles<string> {
-    protected name: string = 'CodelensRootRegistry'
+    public name: string = 'CodelensRootRegistry'
     protected async process(p: vscode.Uri): Promise<string> {
         const normalizedPath = pathutils.normalize(p.fsPath)
         return path.basename(normalizedPath)
