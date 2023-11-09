@@ -48,21 +48,12 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
         markdownString.isTrusted = true
         markdownString.supportHtml = true
         markdownString.supportThemeIcons = true
-        markdownString.baseUri = vscode.Uri.file(
-            path.join(globals.context.extensionPath, 'dist/src/codewhisperer/images/')
-        )
+        markdownString.baseUri = vscode.Uri.file(path.join(globals.context.extensionPath, 'resources/images/'))
 
         const [suggestedFix] = issue.suggestedFixes
 
-        if (suggestedFix) {
-            markdownString.appendMarkdown(
-                `## Suggested Fix for ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`
-            )
-        } else {
-            markdownString.appendMarkdown(`## ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`)
-        }
-
-        markdownString.appendMarkdown(`${issue.description.markdown}\n\n`)
+        markdownString.appendMarkdown(`## ${issue.title} ${this._makeSeverityBadge(issue.severity)}\n`)
+        markdownString.appendMarkdown(`${suggestedFix ? suggestedFix.description : issue.recommendation.text}\n\n`)
 
         const args = [issue, filePath]
         const viewDetailsCommand = vscode.Uri.parse(
@@ -79,6 +70,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                 `command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(JSON.stringify(args))}`
             )
             markdownString.appendMarkdown(` | [$(wrench) Apply Fix](${applyFixCommand} "Apply suggested fix")\n`)
+            markdownString.appendMarkdown('### Suggested Fix Preview\n')
             markdownString.appendMarkdown(
                 `${this._makeCodeBlock(suggestedFix.code, issue.detectorId.split('/').shift())}\n`
             )

@@ -57,12 +57,7 @@ const vueConfig = {
             },
             {
                 test: /\.(png|jpg|gif|svg)$/,
-                use: {
-                    loader: 'file-loader',
-                    options: {
-                        name: '[path][name].[ext]',
-                    },
-                },
+                use: 'file-loader',
             }
         ),
     },

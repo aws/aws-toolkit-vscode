@@ -42,14 +42,15 @@ describe('securityIssueHoverProvider', () => {
         assert.strictEqual(actual.contents.length, 2)
         assert.strictEqual(
             (actual.contents[0] as vscode.MarkdownString).value,
-            '## Suggested Fix for title ![High](severity-high.svg)\n' +
-                'description\n\n' +
+            '## title ![High](severity-high.svg)\n' +
+                'fix\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName])
                 )} 'Open "CodeWhisperer Security Issue"')\n` +
                 ` | [$(wrench) Apply Fix](command:aws.codeWhisperer.applySecurityFix?${encodeURIComponent(
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
-                )} "Apply suggested fix")\n\n` +
+                )} "Apply suggested fix")\n` +
+                '### Suggested Fix Preview\n\n' +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
                 '```language\n' +
                 'first line    \n' +
@@ -77,7 +78,7 @@ describe('securityIssueHoverProvider', () => {
         assert.strictEqual(
             (actual.contents[1] as vscode.MarkdownString).value,
             '## title ![High](severity-high.svg)\n' +
-                'description\n\n' +
+                'recommendationText\n\n' +
                 `[$(eye) View Details](command:aws.codeWhisperer.openSecurityIssuePanel?${encodeURIComponent(
                     JSON.stringify([issues[1], mockDocument.fileName])
                 )} 'Open "CodeWhisperer Security Issue"')\n`
