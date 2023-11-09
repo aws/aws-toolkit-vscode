@@ -10,6 +10,7 @@ import {
     ErrorMessage,
     FilePathMessage,
     UpdatePlaceholderMessage,
+    ChatInputEnabledMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
@@ -25,7 +26,7 @@ export class Messenger {
 
     public sendAnswer(params: {
         message?: string
-        type: 'answer' | 'answer-part' | 'answer-stream'
+        type: 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
         followUps?: ChatItemFollowUp[]
         tabID: string
     }) {
@@ -76,5 +77,9 @@ export class Messenger {
 
     public sendUpdatePlaceholder(tabID: string, newPlaceholder: string) {
         this.dispatcher.sendPlaceholder(new UpdatePlaceholderMessage(tabID, newPlaceholder))
+    }
+
+    public sendChatInputEnabled(tabID: string, enabled: boolean) {
+        this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
     }
 }

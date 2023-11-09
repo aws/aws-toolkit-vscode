@@ -21,6 +21,7 @@ export interface SessionStateInteraction {
 export enum FollowUpTypes {
     WriteCode = 'WriteCode',
     AcceptCode = 'AcceptCode',
+    ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     RejectCode = 'RejectCode',
     Retry = 'Retry',
 }
