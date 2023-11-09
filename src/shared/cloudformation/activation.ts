@@ -60,7 +60,7 @@ function setTemplateRegistryInGlobals(registry: CloudFormationTemplateRegistry) 
     const registrySetupFunc = async (
         registry: CloudFormationTemplateRegistry,
         cancel: Timeout,
-        onItem?: (item: number) => void
+        onItem?: (total: number, i: number, cancelled: boolean) => void
     ) => {
         registry.addExcludedPattern(CloudFormation.devfileExcludePattern)
         registry.addExcludedPattern(CloudFormation.templateFileExcludePattern)
