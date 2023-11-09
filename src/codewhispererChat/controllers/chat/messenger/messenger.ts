@@ -73,14 +73,17 @@ export class Messenger {
                         chatEvent.codeReferenceEvent?.references !== undefined &&
                         chatEvent.codeReferenceEvent.references.length > 0
                     ) {
-                        codeReference = chatEvent.codeReferenceEvent.references.map(reference => ({
-                            ...reference,
-                            recommendationContentSpan: {
-                                start: reference.recommendationContentSpan?.start ?? 0,
-                                end: reference.recommendationContentSpan?.end ?? 0,
-                            },
-                            information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
-                        }))
+                        codeReference = [
+                            ...codeReference,
+                            ...chatEvent.codeReferenceEvent.references.map(reference => ({
+                                ...reference,
+                                recommendationContentSpan: {
+                                    start: reference.recommendationContentSpan?.start ?? 0,
+                                    end: reference.recommendationContentSpan?.end ?? 0,
+                                },
+                                information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
+                            })),
+                        ]
                     }
 
                     if (
@@ -134,7 +137,7 @@ export class Messenger {
                 return true
             },
             { timeout: 60000, truthy: true }
-        ).finally( () => {
+        ).finally(() => {
             if (relatedSuggestions.length !== 0) {
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
@@ -150,7 +153,7 @@ export class Messenger {
                     )
                 )
             }
-    
+
             this.dispatcher.sendChatMessage(
                 new ChatMessage(
                     {
@@ -164,9 +167,9 @@ export class Messenger {
                     tabID
                 )
             )
-    
+
             this.telemetryHelper.setResponseStreamTotalTime(tabID)
-    
+
             const responseCode = response?.$metadata.httpStatusCode ?? 0
             this.telemetryHelper.recordAddMessage(triggerPayload, {
                 followUpCount: followUps.length,
@@ -178,8 +181,6 @@ export class Messenger {
                 codeReferenceCount: codeReference.length,
             })
         })
-
-       
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
