@@ -55,6 +55,7 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { updateUserProxyUrl } from './client/agent'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -151,6 +152,10 @@ export async function activate(context: ExtContext): Promise<void> {
                             vscode.commands.executeCommand('workbench.action.reloadWindow')
                         }
                     })
+            }
+
+            if (configurationChangeEvent.affectsConfiguration('http.proxy')) {
+                updateUserProxyUrl()
             }
         }),
         /**
