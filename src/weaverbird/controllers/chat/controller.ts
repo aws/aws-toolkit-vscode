@@ -16,6 +16,7 @@ import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createUserFacingErrorMessage } from '../../errors'
+import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -61,6 +62,10 @@ export class WeaverbirdController {
                     break
                 case FollowUpTypes.Retry:
                     this.retryRequest(data)
+                    break
+                case FollowUpTypes.ModifyDefaultSourceFolder:
+                    this.modifyDefaultSourceFolder(data)
+                    break
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
@@ -327,6 +332,25 @@ export class WeaverbirdController {
                 ]
             default:
                 return []
+        }
+    }
+
+    private async modifyDefaultSourceFolder(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabID)
+
+        const uri = await createSingleFileDialog({
+            defaultUri: vscode.Uri.file(session.config.workspaceRoot),
+            canSelectFolders: true,
+            canSelectFiles: false,
+        }).prompt()
+
+        if (uri && uri instanceof vscode.Uri) {
+            session.config.workspaceRoot = uri.fsPath
+            this.messenger.sendAnswer({
+                message: `Changed workspace root to: ${session.config.workspaceRoot}`,
+                type: 'answer',
+                tabID: message.tabID,
+            })
         }
     }
 

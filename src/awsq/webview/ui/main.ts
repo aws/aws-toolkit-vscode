@@ -12,11 +12,12 @@ import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 const WelcomeMessage = `Hi, I am AWS Q. I can answer your software development questions. 
 Ask me to explain, debug, or optimize your code. 
 You can enter \`/\` to see a list of quick actions.`
-const WeaverBirdWelcomeMessage = `### How \`/assign\` works:
-1. Describe your job to be done
-2. Agree on an approach
-3. Q generate code
-4. Review code suggestions, provide feedback if needed`
+const WeaverBirdWelcomeMessage = `Welcome to /dev. 
+
+Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
+
+Before I begin generating code, let's agree on an implementation plan. What problem are you looking to solve?
+`
 
 const WelcomeFollowUps = (weaverbirdEnabled: boolean) => ({
     text: 'Or you can select one of these',
@@ -36,6 +37,16 @@ const WelcomeFollowUps = (weaverbirdEnabled: boolean) => ({
     ],
 })
 
+const WeaverbirdFollowUps = {
+    text: 'Would you like to follow up with',
+    options: [
+        {
+            pillText: 'Modify source folder',
+            type: 'ModifyDefaultSourceFolder',
+        },
+    ],
+}
+
 const QuickActionCommands = (weaverbirdEnabled: boolean) => [
     ...(weaverbirdEnabled
         ? [
@@ -43,9 +54,9 @@ const QuickActionCommands = (weaverbirdEnabled: boolean) => [
                   groupName: 'Start a workflow',
                   commands: [
                       {
-                          command: '/assign',
-                          placeholder: 'Please specify the coding task in details',
-                          description: 'Give Q a coding task',
+                          command: '/dev',
+                          placeholder: 'Enter the coding task in details',
+                          description: 'Assign Q a coding task',
                       },
                   ],
               },
@@ -200,6 +211,10 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
                         {
                             type: ChatItemType.ANSWER,
                             body: WeaverBirdWelcomeMessage,
+                        },
+                        {
+                            type: ChatItemType.ANSWER,
+                            followUp: WeaverbirdFollowUps,
                         },
                     ],
                 })
@@ -371,7 +386,7 @@ ${message}`,
                 return
             }
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-                if (isWeaverbirdEnabled && prompt.command === '/assign') {
+                if (isWeaverbirdEnabled && prompt.command === '/dev') {
                     let affectedTabId = tabID
                     const realPromptText = prompt.escapedPrompt?.trim() ?? ''
                     if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
@@ -397,7 +412,12 @@ ${message}`,
                                   ]),
                         ],
                     })
-
+                    if (realPromptText === '') {
+                        mynahUI.addChatItem(affectedTabId, {
+                            type: ChatItemType.ANSWER,
+                            followUp: WeaverbirdFollowUps,
+                        })
+                    }
                     if (realPromptText !== '') {
                         mynahUI.addChatItem(affectedTabId, {
                             type: ChatItemType.PROMPT,
