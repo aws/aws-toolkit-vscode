@@ -57,14 +57,21 @@ export function getExcludePattern() {
 const getExcludePatternOnce = once(getExcludePattern)
 
 /**
- * WatchedFiles lets us index files in the current registry. It is used
+ * WatchedFiles lets us watch files on the filesystem. It is used
  * for CFN templates among other things. WatchedFiles holds a list of pairs of
  * the absolute path to the file or "untitled:" URI along with a transform of it that is useful for
  * where it is used. For example, for templates, it parses the template and stores it.
  *
- * Initialize the registry by adding watch patterns and excluded patterns via
- * `addWatchPatterns`, `watchUntitledFiles`, and `addExcludedPattern` and then
- * calling the `rebuild` function to begin registering files.
+ * Initialize the registry by adding patterns, followed by a required call to `rebuild`.
+
+ * Example:
+ * ```
+ *     registry.addExcludedPattern(/.*[/\\]\.aws-sam([/\\].*|$)/)
+ *     registry.addExcludedPattern('**\/*.{yaml,yml}')
+ *     registry.addWatchPatterns([/.*devfile\.(yaml|yml)/i])
+ *     registry.watchUntitledFiles()
+ *     await registry.rebuild(cancellationTimeout)
+ * ```
  */
 export abstract class WatchedFiles<T> implements vscode.Disposable {
     private isWatching: boolean = false
@@ -284,34 +291,40 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Builds/rebuilds registry using current glob and exclusion patterns. ***Necessary to init registry***.
      *
-     * @param cancellationTimeout Optional timeout that can trigger canceling additional loading on completion (manual or timed)
+     * @param cancel Optional timeout that can trigger canceling additional loading on completion (manual or timed)
      */
-    public async rebuild(cancellationTimeout?: Timeout): Promise<void> {
+    public async rebuild(cancel?: Timeout): Promise<void> {
         let skips = 0
+        let todo = 0
         this.isWatching = true
         this.reset()
 
         const exclude = getExcludePatternOnce()
-        getLogger().info(`${this.name}: Building registry with the following criteria: ${this.outputPatterns()}`)
-        for (let i = 0; i < this.globs.length && !cancellationTimeout?.completed; i++) {
+        getLogger().info(`${this.name}: building with: ${this.outputPatterns()}`)
+        for (let i = 0; i < this.globs.length && !cancel?.completed; i++) {
             const glob = this.globs[i]
             try {
                 const found = await vscode.workspace.findFiles(glob, exclude)
-                for (let j = 0; j < found.length && !cancellationTimeout?.completed; j++) {
-                    await this.addItem(found[j], true)
+                todo = found.length
+                for (let j = 0; j < found.length && !cancel?.completed; j++, todo--) {
+                    const r = await this.addItem(found[j], true)
+                    if (!r) {
+                        skips++
+                    }
                 }
             } catch (e) {
-                // file not processable
-                skips++
                 const err = e as Error
-                getLogger().error(`${this.name}: watchedFiles: findFiles("%s", "%s"): %s`, glob, exclude, err.message)
+                if (err.name !== 'Canceled') {
+                    // vscode may throw nonsense "Canceled" errors when stopping the debugger.
+                    getLogger().error(`%s: findFiles("%s", "%s"): %s`, this.name, glob, exclude, err.message)
+                }
             }
         }
         getLogger().info(
-            `${this.name}: Registered %s items%s%s`,
+            `${this.name}: processed %s items%s%s`,
             this.registryData.size,
-            cancellationTimeout?.completed ? ' (cancelled)' : '',
-            skips > 0 ? `, skipped ${skips} entries` : ''
+            cancel?.completed ? ` (cancelled, ${todo} left)` : '',
+            skips > 0 ? `, skipped ${skips}` : ''
         )
     }
 

@@ -231,3 +231,13 @@ export async function openUrl(url: vscode.Uri): Promise<boolean> {
 export function isToolkitActive(): boolean {
     return isExtensionActive(VSCODE_EXTENSION_ID.awstoolkit)
 }
+
+/**
+ * Replaces magic vscode variables in a (launch config) user value.
+ */
+export function replaceVscodeVars(val: string, workspaceFolder?: string): string {
+    if (!workspaceFolder) {
+        return val
+    }
+    return val.replace('${workspaceFolder}', workspaceFolder)
+}
