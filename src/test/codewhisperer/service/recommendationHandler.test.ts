@@ -185,6 +185,7 @@ describe('recommendationHandler', function () {
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(performance, 'now').returns(0.0)
             session.startPos = new vscode.Position(1, 0)
+            session.requestIdList = ['test_request_empty']
             TelemetryHelper.instance.cursorOffset = 2
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
