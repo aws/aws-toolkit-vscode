@@ -403,13 +403,6 @@ export class AuthWebview extends VueWebview {
     getNumConnectionsInitial() {
         return this.#numConnectionsInitial ?? 0
     }
-    #numConnectionsAdded: number = 0
-    incrementNumConnectionsAdded() {
-        this.#numConnectionsAdded++
-    }
-    getNumConnectionsAdded() {
-        return this.#numConnectionsAdded
-    }
 
     /** This represents the cause for the webview to open, whether a certain button was clicked or it opened automatically */
     #authSource?: AuthSource
@@ -434,12 +427,12 @@ export class AuthWebview extends VueWebview {
         return new Set(this.#authsInitial)
     }
     /** All auths that currently exist */
-    #authsAdded: Set<AuthFormId> = new Set()
+    #authsAdded: AuthFormId[] = []
     addSuccessfulAuth(id: AuthFormId) {
-        this.#authsAdded.add(id)
+        this.#authsAdded.push(id)
     }
-    getAuthsAdded(): Set<AuthFormId> {
-        return new Set(this.#authsAdded) // make a copy
+    getAuthsAdded(): AuthFormId[] {
+        return [...this.#authsAdded] // make a copy
     }
     /** Called when a new auth form is successfully completed. */
     authFormSuccess(id: AuthFormId | undefined) {
@@ -560,7 +553,7 @@ export class AuthWebview extends VueWebview {
             result: args.reason === userCancelled ? 'Cancelled' : 'Failed',
             reason: args.reason,
             invalidInputFields: args.invalidInputFields
-                ? builderCommaDelimitedString(args.invalidInputFields)
+                ? buildCommaDelimitedString(args.invalidInputFields)
                 : undefined,
             isAggregated: false,
         })
@@ -617,7 +610,7 @@ export class AuthWebview extends VueWebview {
             result: 'Succeeded',
             attempts: authAttempts,
         })
-        this.incrementNumConnectionsAdded()
+        this.addSuccessfulAuth(id)
     }
 
     #totalAuthAttempts: number = 0
@@ -643,7 +636,7 @@ export class AuthWebview extends VueWebview {
             featureId: args.featureType,
             result: args.result,
             reason: args.reason,
-            invalidInputFields: args.invalidFields ? builderCommaDelimitedString(args.invalidFields) : undefined,
+            invalidInputFields: args.invalidFields ? buildCommaDelimitedString(args.invalidFields) : undefined,
             attempts: args.attempts,
             isAggregated: true,
         })
@@ -694,7 +687,7 @@ export type AuthUiClick =
 
 // type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-export function builderCommaDelimitedString(strings: Iterable<string>): string {
+export function buildCommaDelimitedString(strings: Iterable<string>): string {
     const sorted = Array.from(new Set(strings)).sort((a, b) => a.localeCompare(b))
     return sorted.join(',')
 }
@@ -807,10 +800,9 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
 
     const authsInitial = authWebview.getAuthsInitial()
     const authsAdded = authWebview.getAuthsAdded()
-    const authsFinal = new Set([...authsInitial, ...authsAdded])
-    
+
     const numConnectionsInitial = authWebview.getNumConnectionsInitial()
-    const numConnectionsAdded = authWebview.getNumConnectionsAdded()
+    const numConnectionsAdded = authsAdded.length
 
     const source = authWebview.getSource()
     const result: Result = determineResult(source, numConnectionsInitial, numConnectionsAdded)
@@ -822,8 +814,8 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
         reason: 'closedWebview',
         authConnectionsCount: numConnectionsInitial + numConnectionsAdded,
         newAuthConnectionsCount: numConnectionsAdded,
-        enabledAuthConnections: builderCommaDelimitedString(authsFinal),
-        newEnabledAuthConnections: builderCommaDelimitedString(authsAdded),
+        enabledAuthConnections: buildCommaDelimitedString(new Set([...authsInitial, ...authsAdded])),
+        newEnabledAuthConnections: buildCommaDelimitedString(authsAdded),
     })
 
     function determineResult(
