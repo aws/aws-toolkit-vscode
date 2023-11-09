@@ -10,7 +10,8 @@ export type WebviewContext = {
     disposables?: vscode.Disposable[]
     workSpacePath: string
     defaultTemplatePath: string
-    fileWatchs: Record<string, FileWatchInfo>
+    defaultTemplateName: string
+    fileWatches: Record<string, FileWatchInfo>
 }
 
 export type FileWatchInfo = {
@@ -37,19 +38,22 @@ export interface InitResponseMessage extends ResponseMessage {
 export interface LoadFileResponseMessage extends ResponseMessage {
     eventId: string
     fileName: string
-    filePath: string
-    initFileContents: string
+    fileContents: string
     isSuccess: boolean
+    reason?: string
 }
 
 export interface SaveFileResponseMessage extends ResponseMessage {
     eventId: string
+    filePath: string
     isSuccess: boolean
+    reason?: string
 }
 
 export interface AddFileWatchResponseMessage extends ResponseMessage {
     eventId: string
     isSuccess: boolean
+    reason?: string
 }
 
 export interface FileChangedResponseMessage extends ResponseMessage {
@@ -76,12 +80,10 @@ export interface InitRequestMessage extends RequestMessage {
 export interface LoadFileRequestMessage extends RequestMessage {
     eventId: string
     fileName: string
-    filePath: string
 }
 
 export interface SaveFileRequestMessage extends RequestMessage {
     eventId: string
-    fileName: string
     filePath: string
     fileContents: string
 }
@@ -89,5 +91,4 @@ export interface SaveFileRequestMessage extends RequestMessage {
 export interface AddFileWatchRequestMessage extends RequestMessage {
     eventId: string
     fileName: string
-    filePath: string
 }

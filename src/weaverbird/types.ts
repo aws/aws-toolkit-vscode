@@ -8,18 +8,6 @@ import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { WeaverbirdClient } from './client/weaverbird'
 
-const GenerationFlowOptions = ['fargate', 'lambda', 'stepFunction'] as const
-type GenerationFlowOption = (typeof GenerationFlowOptions)[number]
-
-export function isGenerationFlowOption(value: string): value is GenerationFlowOption {
-    return GenerationFlowOptions.includes(value as GenerationFlowOption)
-}
-
-// TODO: Reintroduce WeaverbirdConfigs and remove any
-export interface LLMConfig extends Required<any> {
-    generationFlow: GenerationFlowOption
-}
-
 export type Interaction = {
     // content to be sent back to the chat UI
     content?: string
@@ -33,8 +21,10 @@ export interface SessionStateInteraction {
 export enum FollowUpTypes {
     WriteCode = 'WriteCode',
     AcceptCode = 'AcceptCode',
+    ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     RejectCode = 'RejectCode',
     Retry = 'Retry',
+    ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
 }
 
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
@@ -50,7 +40,6 @@ export interface SessionState {
 }
 
 export interface SessionStateConfig {
-    llmConfig: LLMConfig
     workspaceRoot: string
     conversationId: string
     proxyClient: WeaverbirdClient

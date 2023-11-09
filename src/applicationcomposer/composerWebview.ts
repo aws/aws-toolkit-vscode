@@ -10,7 +10,6 @@ import * as path from 'path'
 import * as vscode from 'vscode'
 import { handleRequestMessage } from './handleRequestMessage'
 import { FileWatchInfo } from './types'
-import { removeFileNamefromPath } from './utils/removeFileNamefromPath'
 
 export class ApplicationComposer {
     public readonly documentUri: vscode.Uri
@@ -20,7 +19,9 @@ export class ApplicationComposer {
     private readonly onVisualizationDisposeEmitter = new vscode.EventEmitter<void>()
     public workSpacePath: string
     public defaultTemplatePath: string
-    public fileWatchs: Record<string, FileWatchInfo>
+    public defaultTemplateName: string
+    // fileWatches is used to monitor template file changes and achieve bi-direction sync
+    public fileWatches: Record<string, FileWatchInfo>
     private getWebviewContent: () => string
 
     public constructor(
@@ -31,9 +32,10 @@ export class ApplicationComposer {
         this.getWebviewContent = getWebviewContent
         this.documentUri = textDocument.uri
         this.webviewPanel = this.setupWebviewPanel(textDocument, context)
-        this.workSpacePath = removeFileNamefromPath(textDocument.uri.fsPath)
+        this.workSpacePath = path.dirname(textDocument.uri.fsPath)
         this.defaultTemplatePath = textDocument.uri.fsPath
-        this.fileWatchs = {}
+        this.defaultTemplateName = path.basename(this.defaultTemplatePath)
+        this.fileWatches = {}
     }
 
     public get onVisualizationDisposeEvent(): vscode.Event<void> {
@@ -82,7 +84,8 @@ export class ApplicationComposer {
                     textDocument: textDocument,
                     workSpacePath: this.workSpacePath,
                     defaultTemplatePath: this.defaultTemplatePath,
-                    fileWatchs: this.fileWatchs,
+                    defaultTemplateName: this.defaultTemplateName,
+                    fileWatches: this.fileWatches,
                 })
             )
         )

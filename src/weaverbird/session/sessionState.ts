@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import sanitizeHtml from 'sanitize-html'
-import { collectFiles, getSourceCodePath, prepareRepoData } from '../util/files'
+import { collectFiles, prepareRepoData } from '../util/files'
 import { getLogger } from '../../shared/logger'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
@@ -50,8 +50,10 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath, this.config.conversationId)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
+            this.config.workspaceRoot,
+            this.config.conversationId
+        )
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
@@ -360,8 +362,7 @@ export class PrepareIterationState implements SessionState {
         this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const repoRootPath = await getSourceCodePath(this.config.workspaceRoot, 'src')
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(repoRootPath, this.conversationId)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.workspaceRoot, this.conversationId)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,

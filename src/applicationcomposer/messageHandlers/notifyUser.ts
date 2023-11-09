@@ -9,5 +9,5 @@ export type NotifyUserRequest = {
     notificationType: 'INFO' | 'WARNING' | 'ERROR'
 }
 export function notifyUser(request: NotifyUserRequest) {
-    console.log(request.notification)
+    // TODO
 }

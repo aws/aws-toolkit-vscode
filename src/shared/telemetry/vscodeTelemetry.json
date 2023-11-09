@@ -189,13 +189,7 @@
                     "required": false
                 },
                 {
-                    "type": "duration"
-                },
-                {
-                    "type": "result"
-                },
-                {
-                    "type": "reason",
+                    "type": "source",
                     "required": false
                 }
             ]

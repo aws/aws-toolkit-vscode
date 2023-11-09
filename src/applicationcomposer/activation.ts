@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { ApplicationComposerManager } from '../applicationcomposer/webviewManager'
+import { ApplicationComposerManager } from './webviewManager'
 import { Commands } from '../shared/vscode/commands2'
 import { ToolkitError } from '../shared/errors'
 
@@ -27,20 +27,13 @@ export const openTemplateInComposerCommand = Commands.declare(
         }
 )
 
-export const createTemplateWithComposerCommand = Commands.declare(
-    'aws.createWithApplicationComposer',
-    (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
-        return await manager.createTemplate()
-    }
-)
-
 export const openInComposerDialogCommand = Commands.declare(
     'aws.openInApplicationComposerDialog',
     (globalState: vscode.Memento, manager: ApplicationComposerManager) =>
         async (arg?: vscode.TextEditor | vscode.Uri) => {
             const fileUri = await vscode.window.showOpenDialog({
                 filters: {
-                    Templates: ['yml', 'yaml', 'json'],
+                    Templates: ['yml', 'yaml', 'json', 'template'],
                 },
                 canSelectFiles: true,
                 canSelectFolders: false,
@@ -57,7 +50,6 @@ export async function activate(extensionContext: vscode.ExtensionContext): Promi
 
     extensionContext.subscriptions.push(
         openTemplateInComposerCommand.register(extensionContext.globalState, visualizationManager),
-        createTemplateWithComposerCommand.register(visualizationManager),
         openInComposerDialogCommand.register(extensionContext.globalState, visualizationManager)
     )
 }

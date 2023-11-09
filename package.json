@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.98.0-SNAPSHOT",
+    "version": "1.99.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -1188,16 +1188,6 @@
                 {
                     "command": "aws.openInApplicationComposer",
                     "when": "false"
-                },
-                {
-                    "command": "aws.createWithApplicationComposer",
-                    "when": "false"
-                }
-            ],
-            "file/newFile": [
-                {
-                    "command": "aws.createWithApplicationComposer",
-                    "group": "Template"
                 }
             ],
             "editor/title": [
@@ -1248,7 +1238,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "editorLangId == json || editorLangId == yaml",
+                    "when": "editorLangId == json || editorLangId == yaml || resourceFilename =~ /^.*\\.(template)$/",
                     "group": "navigation"
                 }
             ],
@@ -1379,7 +1369,7 @@
                 },
                 {
                     "command": "aws.openInApplicationComposer",
-                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.(json|yml|yaml)$/",
+                    "when": "isFileSystemResource && resourceFilename =~ /^.*\\.(json|yml|yaml|template)$/",
                     "group": "z_aws@1"
                 }
             ],
@@ -3606,16 +3596,6 @@
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.createWithApplicationComposer",
-                "title": "%AWS.command.applicationComposer.create%",
-                "category": "%AWS.title%",
-                "cloud9": {
-                    "cn": {
-                        "category": "%AWS.title.cn%"
-                    }
-                }
-            },
-            {
                 "command": "aws.openInApplicationComposerDialog",
                 "title": "%AWS.command.applicationComposer.openDialog%",
                 "category": "%AWS.title%",
@@ -4141,7 +4121,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.14.1",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@2.0.0-beta.15.0",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",

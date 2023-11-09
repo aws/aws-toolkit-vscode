@@ -11,30 +11,45 @@ import {
     WebviewContext,
 } from '../types'
 import vscode from 'vscode'
-import { getFileNameFromPath } from '../utils/getFileNameFromPath'
-import { readFile } from '../fileSystemAccess/readFile'
 
 export async function addFileWatchMessageHandler(request: AddFileWatchRequestMessage, context: WebviewContext) {
-    const filePath = context.defaultTemplatePath
-    const fileName = getFileNameFromPath(filePath)
-    const fileWatch = vscode.workspace.createFileSystemWatcher(filePath)
-    fileWatch.onDidChange(async () => {
-        const fileContents = (await readFile(filePath, context)) ?? ''
-        if (fileContents !== context.fileWatchs[filePath].fileContents) {
-            const fileChangedResponseMessage: FileChangedResponseMessage = {
-                response: Response.FILE_CHANGED,
-                fileName: fileName,
-                fileContents: fileContents,
-            }
-            context.panel.webview.postMessage(fileChangedResponseMessage)
-            context.fileWatchs[filePath] = { fileContents: fileContents }
+    let addFileWatchResponseMessage: AddFileWatchResponseMessage
+    try {
+        // we only file watch on default template file now
+        if (context.defaultTemplateName !== request.fileName) {
+            throw new Error('file watching is only allowed on default template file')
         }
-    })
+        const filePath = context.defaultTemplatePath
+        const fileName = context.defaultTemplateName
+        const fileWatch = vscode.workspace.createFileSystemWatcher(filePath)
 
-    const addFileWatchResponseMessage: AddFileWatchResponseMessage = {
-        response: Response.ADD_FILE_WATCH,
-        eventId: request.eventId,
-        isSuccess: true,
+        fileWatch.onDidChange(async () => {
+            const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
+            if (fileContents !== context.fileWatches[filePath].fileContents) {
+                const fileChangedResponseMessage: FileChangedResponseMessage = {
+                    response: Response.FILE_CHANGED,
+                    fileName: fileName,
+                    fileContents: fileContents,
+                }
+
+                context.panel.webview.postMessage(fileChangedResponseMessage)
+                context.fileWatches[filePath] = { fileContents: fileContents }
+            }
+        })
+
+        addFileWatchResponseMessage = {
+            response: Response.ADD_FILE_WATCH,
+            eventId: request.eventId,
+            isSuccess: true,
+        }
+    } catch (e) {
+        addFileWatchResponseMessage = {
+            response: Response.ADD_FILE_WATCH,
+            eventId: request.eventId,
+            isSuccess: false,
+            reason: (e as Error).message,
+        }
     }
+
     context.panel.webview.postMessage(addFileWatchResponseMessage)
 }

@@ -33,7 +33,7 @@ export async function activate(context: ExtensionContext) {
     )
 
     context.subscriptions.push(
-        commands.registerCommand('aws.q.welcome', () => {
+        commands.registerCommand('aws.awsq.welcome', () => {
             welcome(context, p)
         })
     )
