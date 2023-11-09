@@ -14,7 +14,7 @@ import globals from '../extensionGlobals'
 export const devfileGlobPattern = '**/devfile.{yaml,yml}'
 
 export class DevfileRegistry extends WatchedFiles<Devfile> {
-    protected name = 'DevfileRegistry'
+    public name = 'DevfileRegistry'
 
     protected async process(uri: vscode.Uri, contents?: string): Promise<Devfile | undefined> {
         if (!(await SystemUtilities.fileExists(uri))) {
