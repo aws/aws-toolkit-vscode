@@ -292,7 +292,6 @@ export default defineComponent({
             }
             if (args.isConnected && args.cause === 'signIn') {
                 this.successfulAuthConnection = args.id
-                client.authFormSuccess(args.id)
                 // On a successful sign in the state of the current content window
                 // can change. This forces a rerendering of it to have it load the latest state.
                 this.rerenderSelectedContentWindow()
@@ -310,7 +309,6 @@ export default defineComponent({
                 const id: ServiceItemId = key as keyof typeof this.serviceItemsAuthStatus
 
                 return this.serviceItemsAuthStatus[id].getConnectedAuth().then(connectedAuth => {
-                    client.authFormSuccess(connectedAuth)
                     this.updateServiceLock(id, !!connectedAuth)
                 })
             })

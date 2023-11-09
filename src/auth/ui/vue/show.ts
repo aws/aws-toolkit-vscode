@@ -434,13 +434,6 @@ export class AuthWebview extends VueWebview {
     getAuthsAdded(): AuthFormId[] {
         return [...this.#authsAdded] // make a copy
     }
-    /** Called when a new auth form is successfully completed. */
-    authFormSuccess(id: AuthFormId | undefined) {
-        if (!id) {
-            return
-        }
-        this.addSuccessfulAuth(id)
-    }
 
     /**
      * This keeps track of the current auth form fields that have invalid values.
