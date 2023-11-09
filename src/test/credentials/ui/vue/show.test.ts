@@ -19,7 +19,6 @@ describe('emitWebviewClosed()', function () {
         // stub with defaults
         authWebview.getPreviousFeatureType.returns(undefined)
         authWebview.getPreviousAuthType.returns(undefined)
-        authWebview.getNumConnectionsInitial.returns(0)
         authWebview.getAuthsAdded.returns([])
         authWebview.getAuthsInitial.returns(new Set())
         authWebview.getTotalAuthAttempts.returns(0)
@@ -42,7 +41,6 @@ describe('emitWebviewClosed()', function () {
 
     it('existing connections, no user attempts', async function () {
         const auths: AuthFormId[] = ['credentials']
-        authWebview.getNumConnectionsInitial.returns(1)
         authWebview.getAuthsInitial.returns(new Set<AuthFormId>(auths))
 
         await emitWebviewClosed(authWebview)
@@ -58,9 +56,8 @@ describe('emitWebviewClosed()', function () {
     })
 
     it('user interacted, no connection successfully added', async function () {
-        const initialAuths: AuthFormId[] = ['credentials']
-        authWebview.getNumConnectionsInitial.returns(initialAuths.length)
-        authWebview.getAuthsInitial.returns(new Set<AuthFormId>(initialAuths))
+        const authsInitial: AuthFormId[] = ['credentials']
+        authWebview.getAuthsInitial.returns(new Set<AuthFormId>(authsInitial))
         authWebview.getAuthsAdded.returns([])
         authWebview.getTotalAuthAttempts.returns(20)
 
@@ -72,17 +69,14 @@ describe('emitWebviewClosed()', function () {
             authConnectionsCount: 1,
             newAuthConnectionsCount: 0,
             newEnabledAuthConnections: undefined,
-            enabledAuthConnections: buildCommaDelimitedString(initialAuths),
+            enabledAuthConnections: buildCommaDelimitedString(authsInitial),
         })
     })
 
     it('user interacted, connection successfully added', async function () {
-        const initialNumConnections = 10
-
-        const authsInitial: AuthFormId[] = ['builderIdCodeWhisperer']
+        const authsInitial: Set<AuthFormId> = new Set(['builderIdCodeWhisperer'])
         const authsAdded: AuthFormId[] = ['credentials', 'credentials']
         const authsAll = [...authsInitial, ...authsAdded]
-        authWebview.getNumConnectionsInitial.returns(initialNumConnections)
         authWebview.getAuthsInitial.returns(new Set<AuthFormId>(authsInitial))
         authWebview.getAuthsAdded.returns(authsAdded)
 
@@ -90,7 +84,7 @@ describe('emitWebviewClosed()', function () {
 
         assertTelemetry('auth_addedConnections', {
             result: 'Succeeded',
-            authConnectionsCount: initialNumConnections + authsAdded.length,
+            authConnectionsCount: authsInitial.size + authsAdded.length,
             newAuthConnectionsCount: authsAdded.length,
             newEnabledAuthConnections: buildCommaDelimitedString(authsAdded),
             enabledAuthConnections: buildCommaDelimitedString(authsAll),
@@ -142,21 +136,20 @@ describe('emitWebviewClosed()', function () {
         })
 
         it('connections exist, no user attempts', async function () {
-            authWebview.getNumConnectionsInitial.returns(1)
-            authWebview.getAuthsInitial.returns(new Set<AuthFormId>(['credentials']))
+            const authsInitial: AuthFormId[] = ['credentials']
+            authWebview.getAuthsInitial.returns(new Set<AuthFormId>(authsInitial))
 
             await emitWebviewClosed(authWebview)
 
             assertTelemetry('auth_addedConnections', {
                 result: 'Succeeded',
                 source: 'firstStartup',
-                enabledAuthConnections: buildCommaDelimitedString(['credentials']),
+                enabledAuthConnections: buildCommaDelimitedString(authsInitial),
                 newEnabledAuthConnections: undefined,
             })
         })
 
         it('no connections exist, only failed attempts', async function () {
-            authWebview.getNumConnectionsInitial.returns(0)
             authWebview.getAuthsInitial.returns(new Set())
             authWebview.getAuthsAdded.returns([])
 

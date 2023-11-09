@@ -395,15 +395,6 @@ export class AuthWebview extends VueWebview {
     // -------------------- Telemetry Stuff --------------------
     // We will want to move this in to its own class once we make it possible with webviews
 
-    /** The number of auth connections when the webview first starts. We will diff this to see if new connections were added. */
-    #numConnectionsInitial: number | undefined
-    async setNumConnectionsInitial() {
-        this.#numConnectionsInitial = (await Auth.instance.listConnections()).length
-    }
-    getNumConnectionsInitial() {
-        return this.#numConnectionsInitial ?? 0
-    }
-
     /** This represents the cause for the webview to open, whether a certain button was clicked or it opened automatically */
     #authSource?: AuthSource
     setSource(source: AuthSource) {
@@ -743,13 +734,7 @@ export async function showAuthWebview(
         wasInitialServiceSet = true
     }
 
-    const wasWebviewAlreadyOpen = !!activePanel
-
     activePanel ??= new Panel(ctx, CodeCatalystAuthenticationProvider.fromContext(ctx))
-
-    if (!wasWebviewAlreadyOpen) {
-        await activePanel.server.setNumConnectionsInitial()
-    }
 
     if (!wasInitialServiceSet && serviceToShow) {
         // Webview does not exist yet, preemptively set
@@ -794,7 +779,7 @@ export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWe
     const authsInitial = authWebview.getAuthsInitial()
     const authsAdded = authWebview.getAuthsAdded()
 
-    const numConnectionsInitial = authWebview.getNumConnectionsInitial()
+    const numConnectionsInitial = authsInitial.size
     const numConnectionsAdded = authsAdded.length
 
     const source = authWebview.getSource()
