@@ -93,7 +93,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Name for logs
      */
-    protected abstract name: string
+    public abstract readonly name: string
 
     public constructor() {
         this.disposables.push(
@@ -291,13 +291,15 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Builds/rebuilds registry using current glob and exclusion patterns. ***Necessary to init registry***.
      *
-     * @param cancel Optional timeout that can trigger canceling additional loading on completion (manual or timed)
+     * @param cancel Cancels all processing.
+     * @param onItem Called when an item is processed.
      */
-    public async rebuild(cancel?: Timeout): Promise<void> {
-        let skips = 0
-        let todo = 0
+    public async rebuild(cancel?: Timeout, onItem?: (item: number, cancelled: boolean) => void): Promise<void> {
         this.isWatching = true
         this.reset()
+        let skips = 0
+        let todo = 0
+        let item = 0
 
         const exclude = getExcludePatternOnce()
         getLogger().info(`${this.name}: building with: ${this.outputPatterns()}`)
@@ -307,10 +309,12 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
                 const found = await vscode.workspace.findFiles(glob, exclude)
                 todo = found.length
                 for (let j = 0; j < found.length && !cancel?.completed; j++, todo--) {
+                    item += 1
                     const r = await this.addItem(found[j], true)
                     if (!r) {
                         skips++
                     }
+                    onItem?.(item, !!cancel?.completed)
                 }
             } catch (e) {
                 const err = e as Error
@@ -386,8 +390,8 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 }
 
 export class NoopWatcher extends WatchedFiles<any> {
+    public name: string = 'NoOp'
     protected async process(uri: vscode.Uri): Promise<any> {
         throw new Error(`Attempted to add a file to the NoopWatcher: ${uri.fsPath}`)
     }
-    protected name: string = 'NoOp'
 }
