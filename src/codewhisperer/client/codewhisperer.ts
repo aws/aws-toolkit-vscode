@@ -19,6 +19,7 @@ import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
+import { indent } from '../../shared/utilities/textUtilities'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -197,7 +198,20 @@ export class DefaultCodeWhispererClient {
         const client = await this.createUserSdkClient()
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
-        return pageableToCollection(requester, {}, 'nextToken').promise()
+        return pageableToCollection(requester, {}, 'nextToken')
+            .promise()
+            .then(resps => {
+                let logStr = 'codewhisperer: listAvailableCustomizations API request:'
+                resps.forEach(resp => {
+                    const requestId = resp.$response.requestId
+                    logStr += `\n${indent('RequestID: ')}${requestId},\n${indent('Customizations:')}`
+                    resp.customizations.forEach((c, index) => {
+                        logStr += `\n       ${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
+                    })
+                })
+                getLogger().debug(logStr)
+                return resps
+            })
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
