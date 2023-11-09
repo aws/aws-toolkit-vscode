@@ -65,6 +65,10 @@
                 {
                     "type": "debounceCount",
                     "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
                 }
             ]
         },
