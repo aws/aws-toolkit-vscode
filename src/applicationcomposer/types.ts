@@ -24,6 +24,7 @@ export enum Response {
     SAVE_FILE = 'SAVE_FILE',
     ADD_FILE_WATCH = 'ADD_FILE_WATCH',
     FILE_CHANGED = 'FILE_CHANGED',
+    GENERATE_RESOURCE = 'GENERATE_RESOURCE',
 }
 
 export interface ResponseMessage {
@@ -67,6 +68,7 @@ export enum Command {
     SAVE_FILE = 'SAVE_FILE',
     ADD_FILE_WATCH = 'ADD_FILE_WATCH',
     DEPLOY = 'DEPLOY',
+    GENERATE_RESOURCE = 'GENERATE_RESOURCE',
 }
 
 export interface RequestMessage {
@@ -91,4 +93,20 @@ export interface SaveFileRequestMessage extends RequestMessage {
 export interface AddFileWatchRequestMessage extends RequestMessage {
     eventId: string
     fileName: string
+}
+
+export interface ReferenceDetails {
+    title: string | undefined
+    url: string | undefined
+    snippet?: string
+}
+
+export interface GenerateResourceMessage extends RequestMessage {
+    prompt: string
+}
+
+export interface GenerateResourceResponseMessage {
+    chatResponse: string
+    references: ReferenceDetails[]
+    metadata: object
 }
