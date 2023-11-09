@@ -24,6 +24,7 @@ import { TestLogger } from './testLogger'
 import * as testUtil from './testUtil'
 import { getTestWindow, resetTestWindow } from './shared/vscode/window'
 import { mapTestErrors, normalizeError, setRunnableTimeout } from './setupUtil'
+import { TelemetryDebounceInfo } from '../shared/vscode/commands2'
 
 const testReportDir = join(__dirname, '../../../.test-reports')
 const testLogOutput = join(testReportDir, 'testLog.log')
@@ -82,6 +83,7 @@ export const mochaHooks = {
         globals.telemetry.telemetryEnabled = true
         globals.telemetry.clearRecords()
         globals.telemetry.logger.clear()
+        TelemetryDebounceInfo.instance.clear()
         ;(globals.context as FakeExtensionContext).globalState = new FakeMemento()
 
         await testUtil.closeAllEditors()
