@@ -85,7 +85,7 @@ const QuickActionCommands = (weaverbirdEnabled: boolean) => [
     },
 ]
 
-export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUIDataModel) => {
+export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     const ideApi = acquireVsCodeApi()
@@ -97,8 +97,44 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
         type: 'unknown',
         isSelected: true,
     })
+
+    // used to keep track of whether or not weaverbird is enabled and has an active idC
+    let isWeaverbirdEnabled = weaverbirdInitEnabled
+
     const connector = new Connector({
         tabsStorage,
+        onUpdateAuthentication: (weaverbirdEnabled: boolean): void => {
+            const selectedTab = tabsStorage.getSelectedTab()
+
+            isWeaverbirdEnabled = weaverbirdEnabled
+
+            if (!selectedTab) {
+                return
+            }
+
+            /**
+             * If someone switches authentication when they're on the main page then reset the chat items and the quick actions
+             * and that triggers a change in weaverbird availability
+             */
+            if (selectedTab?.type === 'unknown') {
+                mynahUI.updateStore(selectedTab.id, {
+                    chatItems: [],
+                })
+                mynahUI.updateStore(selectedTab.id, {
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: WelcomeMessage,
+                        },
+                    ],
+                    quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
+                })
+                mynahUI.addChatItem(selectedTab.id, {
+                    type: ChatItemType.ANSWER,
+                    followUp: WelcomeFollowUps(isWeaverbirdEnabled),
+                })
+            }
+        },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
             const selectedTab = tabsStorage.getSelectedTab()
 
@@ -126,7 +162,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 tabTitle: 'Chat',
                 chatItems: [message],
                 showChatAvatars: false,
-                quickActionCommands: QuickActionCommands(weaverbirdEnabled),
+                quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             })
             mynahUI.addChatItem(newTabID, {
@@ -335,7 +371,7 @@ ${message}`,
                 return
             }
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-                if (weaverbirdEnabled && prompt.command === '/assign') {
+                if (isWeaverbirdEnabled && prompt.command === '/assign') {
                     let affectedTabId = tabID
                     const realPromptText = prompt.escapedPrompt?.trim() ?? ''
                     if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
@@ -507,11 +543,11 @@ ${message}`,
                         },
                         {
                             type: ChatItemType.ANSWER,
-                            followUp: WelcomeFollowUps(weaverbirdEnabled),
+                            followUp: WelcomeFollowUps(isWeaverbirdEnabled),
                         },
                     ],
                     showChatAvatars: false,
-                    quickActionCommands: QuickActionCommands(weaverbirdEnabled),
+                    quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                     promptInputPlaceholder: 'Ask a question or "/" for capabilities',
                     ...initialData,
                 },
@@ -527,11 +563,11 @@ ${message}`,
                     },
                     {
                         type: ChatItemType.ANSWER,
-                        followUp: WelcomeFollowUps(weaverbirdEnabled),
+                        followUp: WelcomeFollowUps(isWeaverbirdEnabled),
                     },
                 ],
                 showChatAvatars: false,
-                quickActionCommands: QuickActionCommands(weaverbirdEnabled),
+                quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             },
         },

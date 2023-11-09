@@ -17,6 +17,8 @@ import { Messenger } from './controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from './views/connector/connector'
 import globals from '../shared/extensionGlobals'
 import { ChatSessionStorage } from './storages/chatSession'
+import { AuthUtil } from '../codewhisperer/util/authUtil'
+import { debounce } from 'lodash'
 
 export function init(appContext: AwsQAppInitContext) {
     const weaverbirdChatControllerEventEmitters = {
@@ -66,4 +68,22 @@ export function init(appContext: AwsQAppInitContext) {
     })
 
     appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(weaverbirdChatUIInputEventEmitter), 'wb')
+
+    const events = [
+        AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection,
+        AuthUtil.instance.auth.onDidChangeActiveConnection,
+        AuthUtil.instance.auth.onDidChangeConnectionState,
+        AuthUtil.instance.auth.onDidUpdateConnection,
+    ]
+
+    const debouncedEvent = debounce(
+        () => messenger.sendAuthenticationUpdate(AuthUtil.instance.isEnterpriseSsoInUse()),
+        500
+    )
+
+    events.forEach(event =>
+        event(() => {
+            debouncedEvent()
+        })
+    )
 }

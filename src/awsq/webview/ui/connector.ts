@@ -29,6 +29,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
+    onUpdateAuthentication: (weaverbirdEnabled: boolean) => void
     tabsStorage: TabsStorage
 }
 

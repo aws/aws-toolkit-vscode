@@ -22,6 +22,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
+    onUpdateAuthentication: (weaverbirdEnabled: boolean) => void
     tabsStorage: TabsStorage
 }
 
@@ -33,6 +34,7 @@ export class Connector {
     private readonly onAsyncEventProgress
     private readonly updatePlaceholder
     private readonly chatInputEnabled
+    private readonly onUpdateAuthentication
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -42,6 +44,7 @@ export class Connector {
         this.onAsyncEventProgress = props.onAsyncEventProgress
         this.updatePlaceholder = props.onUpdatePlaceholder
         this.chatInputEnabled = props.onChatInputEnabled
+        this.onUpdateAuthentication = props.onUpdateAuthentication
     }
 
     onCodeInsertToCursorPosition = (
@@ -174,6 +177,11 @@ export class Connector {
 
         if (messageData.type === 'chatInputEnabledMessage') {
             this.chatInputEnabled(messageData.tabID, messageData.enabled)
+            return
+        }
+
+        if (messageData.type === 'authenticationUpdateMessage') {
+            this.onUpdateAuthentication(messageData.weaverbirdEnabled)
             return
         }
     }
