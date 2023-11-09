@@ -52,6 +52,7 @@ import { activate as activateEcs } from './ecs/activation'
 import { activate as activateAppRunner } from './apprunner/activation'
 import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
+import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
 import { activate as activateCWChat } from './awsq/activation'
@@ -260,6 +261,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         await activateCWChat(extContext.extensionContext)
+
+        await activateApplicationComposer(context)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
