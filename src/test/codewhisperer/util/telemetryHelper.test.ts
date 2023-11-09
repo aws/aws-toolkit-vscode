@@ -123,7 +123,7 @@ describe('telemetryHelper', function () {
 
         it('should return Line and Accept', function () {
             sut.recordUserDecisionTelemetry(
-                'aFakeRequestId',
+                ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2'],
                 'aFakeSessionId',
                 [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
                 0,
@@ -157,7 +157,7 @@ describe('telemetryHelper', function () {
 
         it('should return Line and Accept 2', function () {
             sut.recordUserDecisionTelemetry(
-                'aFakeRequestId',
+                ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2'],
                 'aFakeSessionId',
                 [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
                 3,
@@ -191,7 +191,7 @@ describe('telemetryHelper', function () {
 
         it('should return Line and Reject', function () {
             sut.recordUserDecisionTelemetry(
-                'aFakeRequestId',
+                ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2'],
                 'aFakeSessionId',
                 [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
                 -1,
@@ -283,14 +283,14 @@ describe('telemetryHelper', function () {
 
             const telemetryHelper = new TelemetryHelper()
             const response = [{ content: "print('Hello')" }]
-            const requestId = 'test_x'
+            const requestIdList = ['test_x', 'test_x', 'test_y']
             const sessionId = 'test_x'
             telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const suggestionState = new Map<number, string>([[0, 'Showed']])
             const completionTypes = new Map<number, CodewhispererCompletionType>([[0, 'Line']])
             telemetryHelper.recordUserDecisionTelemetry(
-                requestId,
+                requestIdList,
                 sessionId,
                 response,
                 0,
