@@ -231,6 +231,7 @@ export function createSelectCustomization(type: 'tree' | 'item'): any {
             return {
                 data: 'selectCustomization',
                 label: codicon`${icon} ${label}`,
+                description: `Using ${selectedCustomization.name}`,
                 onClick: () => selectCustomizationPrompt.execute(cwQuickPickSource),
             } as DataQuickPickItem<'selectCustomization'>
     }
@@ -258,8 +259,8 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
                 label: codicon`${icon} ${label}`,
                 onClick: () =>
                     CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage.execute(
-                        cwQuickPickSource)
-                    ,
+                        cwQuickPickSource
+                    ),
             } as DataQuickPickItem<'gettingStarted'>
     }
 }
