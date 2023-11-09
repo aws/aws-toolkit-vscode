@@ -72,7 +72,7 @@ export class AsyncCloudFormationTemplateRegistry {
         private readonly asyncSetupFunc: (
             instance: CloudFormationTemplateRegistry,
             cancelSetup: Timeout,
-            onItem?: (item: number) => void
+            onItem?: (total: number, i: number, cancelled: boolean) => void
         ) => Promise<CloudFormationTemplateRegistry>
     ) {}
 
@@ -93,17 +93,19 @@ export class AsyncCloudFormationTemplateRegistry {
         const cancelSetup = new Timeout(30 * 60 * 1000) // 30 min
         const msg = localize(
             'AWS.codelens.waitingForTemplateRegistry',
-            'Scanning CloudFormation templates (except [search.exclude](command:workbench.action.openSettings?"@id:search.exclude") paths)'
+            'Scanning CloudFormation templates (except [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
         )
         const progress = await showMessageWithCancel(msg, cancelSetup)
 
         const perf = new PerfLog(`${this.instance.name}: template registry setup`)
-        this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetup, item => {
+        this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetup, (total: number, i: number) => {
             if (cancelSetup.completed) {
                 getLogger().debug('%s: getInstance() cancelled', this.instance.name)
                 return
             }
-            progress.report({ message: item.toString() })
+            if (total !== 0) {
+                progress.report({ increment: 100 * (1 / total), message: i.toString() })
+            }
         })
 
         this.setupPromise.then(() => {
