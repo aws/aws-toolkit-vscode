@@ -62,7 +62,7 @@ export class Messenger {
         )
         this.telemetryHelper.setResponseStreamStartTime(tabID)
 
-        await waitUntil(
+        waitUntil(
             async () => {
                 for await (const chatEvent of response.generateAssistantResponseResponse!) {
                     if (session.tokenSource.token.isCancellationRequested) {
@@ -134,50 +134,52 @@ export class Messenger {
                 return true
             },
             { timeout: 60000, truthy: true }
-        )
-
-        if (relatedSuggestions.length !== 0) {
+        ).finally( () => {
+            if (relatedSuggestions.length !== 0) {
+                this.dispatcher.sendChatMessage(
+                    new ChatMessage(
+                        {
+                            message: undefined,
+                            messageType: 'answer-part',
+                            followUps: undefined,
+                            relatedSuggestions,
+                            triggerID,
+                            messageID,
+                        },
+                        tabID
+                    )
+                )
+            }
+    
             this.dispatcher.sendChatMessage(
                 new ChatMessage(
                     {
                         message: undefined,
-                        messageType: 'answer-part',
-                        followUps: undefined,
-                        relatedSuggestions,
+                        messageType: 'answer',
+                        followUps: followUps,
+                        relatedSuggestions: undefined,
                         triggerID,
                         messageID,
                     },
                     tabID
                 )
             )
-        }
-
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message: undefined,
-                    messageType: 'answer',
-                    followUps: followUps,
-                    relatedSuggestions: undefined,
-                    triggerID,
-                    messageID,
-                },
-                tabID
-            )
-        )
-
-        this.telemetryHelper.setResponseStreamTotalTime(tabID)
-
-        const responseCode = response?.$metadata.httpStatusCode ?? 0
-        this.telemetryHelper.recordAddMessage(triggerPayload, {
-            followUpCount: followUps.length,
-            suggestionCount: relatedSuggestions.length,
-            tabID: tabID,
-            messageLength: message.length,
-            messageID,
-            responseCode,
-            codeReferenceCount: codeReference.length,
+    
+            this.telemetryHelper.setResponseStreamTotalTime(tabID)
+    
+            const responseCode = response?.$metadata.httpStatusCode ?? 0
+            this.telemetryHelper.recordAddMessage(triggerPayload, {
+                followUpCount: followUps.length,
+                suggestionCount: relatedSuggestions.length,
+                tabID: tabID,
+                messageLength: message.length,
+                messageID,
+                responseCode,
+                codeReferenceCount: codeReference.length,
+            })
         })
+
+       
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
