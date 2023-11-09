@@ -38,7 +38,7 @@ class GettingStartedOnStartup : StartupActivity {
                 GettingStartedPanel.openPanel(project, firstInstance = true, connectionInitiatedFromExplorer = false)
                 AuthTelemetry.addConnection(
                     project,
-                    source = SourceOfEntry.FIRST_STARTUP.name,
+                    source = SourceOfEntry.FIRST_STARTUP.toString(),
                     featureId = FeatureId.Unknown,
                     credentialSourceId = CredentialSourceId.Unknown,
                     isAggregated = true,
@@ -46,7 +46,7 @@ class GettingStartedOnStartup : StartupActivity {
                 )
                 AuthTelemetry.addedConnections(
                     project,
-                    source = SourceOfEntry.FIRST_STARTUP.name,
+                    source = SourceOfEntry.FIRST_STARTUP.toString(),
                     authConnectionsCount = getConnectionCount(),
                     newAuthConnectionsCount = 0,
                     enabledAuthConnections = getEnabledConnections(project),
@@ -60,7 +60,7 @@ class GettingStartedOnStartup : StartupActivity {
             LOG.error(e) { "Error opening getting started panel" }
             AuthTelemetry.addConnection(
                 project,
-                source = SourceOfEntry.FIRST_STARTUP.name,
+                source = SourceOfEntry.FIRST_STARTUP.toString(),
                 featureId = FeatureId.Unknown,
                 credentialSourceId = CredentialSourceId.Unknown,
                 isAggregated = false,
@@ -69,7 +69,7 @@ class GettingStartedOnStartup : StartupActivity {
             )
             AuthTelemetry.addedConnections(
                 project,
-                source = SourceOfEntry.FIRST_STARTUP.name,
+                source = SourceOfEntry.FIRST_STARTUP.toString(),
                 authConnectionsCount = getConnectionCount(),
                 newAuthConnectionsCount = 0,
                 enabledAuthConnections = getEnabledConnections(project),
