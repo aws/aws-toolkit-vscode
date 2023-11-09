@@ -12,10 +12,12 @@ import {
     WebviewContext,
     SaveFileRequestMessage,
     AddFileWatchRequestMessage,
+    GenerateResourceMessage,
 } from './types'
 import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler'
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { deployMessageHandler } from './messageHandlers/deployMessageHandler'
+import { generateResourceHandler } from './messageHandlers/generateResourceHandler'
 
 export async function handleRequestMessage(request: unknown, context: WebviewContext) {
     const requestMessage = request as RequestMessage
@@ -34,6 +36,9 @@ export async function handleRequestMessage(request: unknown, context: WebviewCon
             break
         case Command.DEPLOY:
             deployMessageHandler(context)
+            break
+        case Command.GENERATE_RESOURCE:
+            generateResourceHandler(request as GenerateResourceMessage, context)
             break
     }
 }
