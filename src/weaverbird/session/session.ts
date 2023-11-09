@@ -85,7 +85,6 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
-            llmConfig: this.config.llmConfig,
             workspaceRoot: this.config.workspaceRoot,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,

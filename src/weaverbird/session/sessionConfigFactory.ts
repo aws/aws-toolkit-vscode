@@ -4,15 +4,14 @@
  */
 
 import * as vscode from 'vscode'
-import { LLMConfig } from '../types'
-import { defaultLlmConfig, weaverbirdScheme } from '../constants'
+import { weaverbirdScheme } from '../constants'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { WorkspaceFolderNotFoundError } from '../errors'
+import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
-    readonly llmConfig: LLMConfig
-    readonly workspaceRoot: string
+    workspaceRoot: string
     readonly fs: VirtualFileSystem
 }
 
@@ -20,18 +19,13 @@ export interface SessionConfig {
  * Factory method for creating session configurations
  * @returns An instantiated SessionConfig, using either the arguments provided or the defaults
  */
-export async function createSessionConfig(params?: {
-    workspaceRoot?: string
-    llmConfiguration?: LLMConfig
-}): Promise<SessionConfig> {
+export async function createSessionConfig(): Promise<SessionConfig> {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders === undefined || workspaceFolders.length === 0) {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    // TODO figure out how we want to handle multi root workspaces
-    const workspace = params?.workspaceRoot ?? workspaceFolders[0].uri.fsPath
-    const llmConfig = params?.llmConfiguration ?? defaultLlmConfig
+    const defaultWorkspaceRoot = await getSourceCodePath(workspaceFolders[0].uri.fsPath, '/src')
 
     const fs = new VirtualFileSystem()
 
@@ -42,8 +36,7 @@ export async function createSessionConfig(params?: {
     )
 
     return {
-        llmConfig,
-        workspaceRoot: workspace,
+        workspaceRoot: defaultWorkspaceRoot,
         fs,
     }
 }

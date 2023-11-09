@@ -10,12 +10,13 @@ import { EventEmitter } from 'vscode'
 import { Messenger } from './messenger/messenger'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
-import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui-chat'
 import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createUserFacingErrorMessage } from '../../errors'
+import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -53,11 +54,18 @@ export class WeaverbirdController {
                 case FollowUpTypes.AcceptCode:
                     this.acceptCode(data)
                     break
+                case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
+                    this.provideFeedbackAndRegenerateCode(data)
+                    break
                 case FollowUpTypes.RejectCode:
                     // TODO figure out what we want to do here
                     break
                 case FollowUpTypes.Retry:
                     this.retryRequest(data)
+                    break
+                case FollowUpTypes.ModifyDefaultSourceFolder:
+                    this.modifyDefaultSourceFolder(data)
+                    break
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
@@ -126,6 +134,9 @@ export class WeaverbirdController {
                 `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
+
+            // Lock the chat input until they explicitly click one of the follow ups
+            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -186,10 +197,13 @@ export class WeaverbirdController {
                                   {
                                       pillText: 'Retry',
                                       type: FollowUpTypes.Retry,
+                                      status: 'warning',
                                   },
                               ]
                             : [],
                 })
+                // Lock the chat input until they explicitly click retry
+                this.messenger.sendChatInputEnabled(tabID, false)
                 return
             }
 
@@ -201,13 +215,16 @@ export class WeaverbirdController {
             this.messenger.sendFilePaths(filePaths, tabID, session.uploadId)
             this.messenger.sendAnswer({
                 message: undefined,
-                type: 'answer',
+                type: 'system-prompt',
                 followUps: this.getFollowUpOptions(session?.state.phase),
                 tabID: tabID,
             })
         } finally {
-            // Unlock the UI
+            // Finish processing the event
             this.messenger.sendAsyncEventProgress(tabID, false, undefined)
+
+            // Lock the chat input until they explicitly click one of the follow ups
+            this.messenger.sendChatInputEnabled(tabID, false)
         }
     }
 
@@ -235,6 +252,9 @@ export class WeaverbirdController {
             session = await this.sessionStorage.getSession(message.tabID)
             telemetry.awsq_isAcceptedCodeChanges.emit({ awsqConversationId: session.conversationId, enabled: true })
             await session.acceptChanges()
+
+            // Unlock the chat input if the changes were accepted
+            this.messenger.sendChatInputEnabled(message.tabID, true)
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
@@ -242,6 +262,11 @@ export class WeaverbirdController {
                 this.retriesRemaining(session)
             )
         }
+    }
+
+    private async provideFeedbackAndRegenerateCode(message: any) {
+        // Unblock the message button
+        this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
     }
 
     private async retryRequest(message: any) {
@@ -266,7 +291,11 @@ export class WeaverbirdController {
                 this.retriesRemaining(session)
             )
         } finally {
+            // Finish processing the event
             this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
+
+            // Lock the chat input until they explicitly click one of the follow ups
+            this.messenger.sendChatInputEnabled(message.tabID, false)
         }
     }
 
@@ -277,6 +306,7 @@ export class WeaverbirdController {
                     {
                         pillText: 'Write Code',
                         type: FollowUpTypes.WriteCode,
+                        status: 'info',
                     },
                 ]
             case 'Codegen':
@@ -284,14 +314,43 @@ export class WeaverbirdController {
                     {
                         pillText: 'Accept changes',
                         type: FollowUpTypes.AcceptCode,
+                        icon: 'ok' as MynahIcons,
+                        status: 'success',
+                    },
+                    {
+                        pillText: 'Provide feedback & regenerate',
+                        type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
+                        icon: 'refresh' as MynahIcons,
+                        status: 'info',
                     },
                     {
                         pillText: 'Reject and discuss',
                         type: FollowUpTypes.RejectCode,
+                        icon: 'revert' as MynahIcons,
+                        status: 'error',
                     },
                 ]
             default:
                 return []
+        }
+    }
+
+    private async modifyDefaultSourceFolder(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabID)
+
+        const uri = await createSingleFileDialog({
+            defaultUri: vscode.Uri.file(session.config.workspaceRoot),
+            canSelectFolders: true,
+            canSelectFiles: false,
+        }).prompt()
+
+        if (uri && uri instanceof vscode.Uri) {
+            session.config.workspaceRoot = uri.fsPath
+            this.messenger.sendAnswer({
+                message: `Changed workspace root to: ${session.config.workspaceRoot}`,
+                type: 'answer',
+                tabID: message.tabID,
+            })
         }
     }
 

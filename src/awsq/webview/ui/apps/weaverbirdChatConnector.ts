@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from './awsqCommonsConnector'
 
 interface ChatPayload {
     chatMessage: string
-    attachedAPIDocsSuggestion?: Suggestion
-    attachedVanillaSuggestion?: Suggestion
 }
 
 export interface ConnectorProps {
@@ -23,6 +21,8 @@ export interface ConnectorProps {
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
+    onChatInputEnabled: (tabID: string, enabled: boolean) => void
+    onUpdateAuthentication: (weaverbirdEnabled: boolean) => void
     tabsStorage: TabsStorage
 }
 
@@ -33,6 +33,8 @@ export class Connector {
     private readonly onChatAnswerReceived
     private readonly onAsyncEventProgress
     private readonly updatePlaceholder
+    private readonly chatInputEnabled
+    private readonly onUpdateAuthentication
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -41,6 +43,8 @@ export class Connector {
         this.onError = props.onError
         this.onAsyncEventProgress = props.onAsyncEventProgress
         this.updatePlaceholder = props.onUpdatePlaceholder
+        this.chatInputEnabled = props.onChatInputEnabled
+        this.onUpdateAuthentication = props.onUpdateAuthentication
     }
 
     onCodeInsertToCursorPosition = (
@@ -113,7 +117,10 @@ export class Connector {
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
-                              text: 'Would you like to follow up with one of these?',
+                              text:
+                                  messageData.messageType === ChatItemType.SYSTEM_PROMPT
+                                      ? ''
+                                      : 'Please follow up with one of these',
                               options: messageData.followUps,
                           }
                         : undefined,
@@ -165,6 +172,16 @@ export class Connector {
 
         if (messageData.type === 'updatePlaceholderMessage') {
             this.updatePlaceholder(messageData.tabID, messageData.newPlaceholder)
+            return
+        }
+
+        if (messageData.type === 'chatInputEnabledMessage') {
+            this.chatInputEnabled(messageData.tabID, messageData.enabled)
+            return
+        }
+
+        if (messageData.type === 'authenticationUpdateMessage') {
+            this.onUpdateAuthentication(messageData.weaverbirdEnabled)
             return
         }
     }

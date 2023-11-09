@@ -6,6 +6,7 @@
 import path from 'path'
 import { Uri, Webview } from 'vscode'
 import { weaverbirdEnabled } from '../../../weaverbird/config'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
     public generate(extensionURI: Uri, webView: Webview): string {
@@ -36,7 +37,7 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(${weaverbirdEnabled});
+                createMynahUI(${weaverbirdEnabled && AuthUtil.instance.isEnterpriseSsoInUse()});
             }
     </script>
         `

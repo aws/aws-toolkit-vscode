@@ -12,11 +12,12 @@ import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 const WelcomeMessage = `Hi, I am AWS Q. I can answer your software development questions. 
 Ask me to explain, debug, or optimize your code. 
 You can enter \`/\` to see a list of quick actions.`
-const WeaverBirdWelcomeMessage = `### How \`/assign\` works:
-1. Describe your job to be done
-2. Agree on an approach
-3. Q generate code
-4. Review code suggestions, provide feedback if needed`
+const WeaverBirdWelcomeMessage = `Welcome to /dev. 
+
+Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
+
+Before I begin generating code, let's agree on an implementation plan. What problem are you looking to solve?
+`
 
 const WelcomeFollowUps = (weaverbirdEnabled: boolean) => ({
     text: 'Or you can select one of these',
@@ -36,6 +37,16 @@ const WelcomeFollowUps = (weaverbirdEnabled: boolean) => ({
     ],
 })
 
+const WeaverbirdFollowUps = {
+    text: 'Would you like to follow up with',
+    options: [
+        {
+            pillText: 'Modify source folder',
+            type: 'ModifyDefaultSourceFolder',
+        },
+    ],
+}
+
 const QuickActionCommands = (weaverbirdEnabled: boolean) => [
     ...(weaverbirdEnabled
         ? [
@@ -43,9 +54,9 @@ const QuickActionCommands = (weaverbirdEnabled: boolean) => [
                   groupName: 'Start a workflow',
                   commands: [
                       {
-                          command: '/assign',
-                          placeholder: 'Please specify the coding task in details',
-                          description: 'Give Q a coding task',
+                          command: '/dev',
+                          placeholder: 'Enter the coding task in details',
+                          description: 'Assign Q a coding task',
                       },
                   ],
               },
@@ -85,7 +96,7 @@ const QuickActionCommands = (weaverbirdEnabled: boolean) => [
     },
 ]
 
-export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUIDataModel) => {
+export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     const ideApi = acquireVsCodeApi()
@@ -97,8 +108,44 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
         type: 'unknown',
         isSelected: true,
     })
+
+    // used to keep track of whether or not weaverbird is enabled and has an active idC
+    let isWeaverbirdEnabled = weaverbirdInitEnabled
+
     const connector = new Connector({
         tabsStorage,
+        onUpdateAuthentication: (weaverbirdEnabled: boolean): void => {
+            const selectedTab = tabsStorage.getSelectedTab()
+
+            isWeaverbirdEnabled = weaverbirdEnabled
+
+            if (!selectedTab) {
+                return
+            }
+
+            /**
+             * If someone switches authentication when they're on the main page then reset the chat items and the quick actions
+             * and that triggers a change in weaverbird availability
+             */
+            if (selectedTab?.type === 'unknown') {
+                mynahUI.updateStore(selectedTab.id, {
+                    chatItems: [],
+                })
+                mynahUI.updateStore(selectedTab.id, {
+                    chatItems: [
+                        {
+                            type: ChatItemType.ANSWER,
+                            body: WelcomeMessage,
+                        },
+                    ],
+                    quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
+                })
+                mynahUI.addChatItem(selectedTab.id, {
+                    type: ChatItemType.ANSWER,
+                    followUp: WelcomeFollowUps(isWeaverbirdEnabled),
+                })
+            }
+        },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
             const selectedTab = tabsStorage.getSelectedTab()
 
@@ -126,7 +173,7 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 tabTitle: 'Chat',
                 chatItems: [message],
                 showChatAvatars: false,
-                quickActionCommands: QuickActionCommands(weaverbirdEnabled),
+                quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             })
             mynahUI.addChatItem(newTabID, {
@@ -165,6 +212,10 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                             type: ChatItemType.ANSWER,
                             body: WeaverBirdWelcomeMessage,
                         },
+                        {
+                            type: ChatItemType.ANSWER,
+                            followUp: WeaverbirdFollowUps,
+                        },
                     ],
                 })
                 // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
@@ -196,6 +247,11 @@ export const createMynahUI = (weaverbirdEnabled: boolean, initialData?: MynahUID
                 connector.onUpdateTabType(tabID)
                 return
             }
+        },
+        onChatInputEnabled: (tabID: string, enabled: boolean) => {
+            mynahUI.updateStore(tabID, {
+                promptInputDisabledState: !enabled,
+            })
         },
         onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
             if (inProgress) {
@@ -330,7 +386,7 @@ ${message}`,
                 return
             }
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-                if (weaverbirdEnabled && prompt.command === '/assign') {
+                if (isWeaverbirdEnabled && prompt.command === '/dev') {
                     let affectedTabId = tabID
                     const realPromptText = prompt.escapedPrompt?.trim() ?? ''
                     if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
@@ -356,7 +412,12 @@ ${message}`,
                                   ]),
                         ],
                     })
-
+                    if (realPromptText === '') {
+                        mynahUI.addChatItem(affectedTabId, {
+                            type: ChatItemType.ANSWER,
+                            followUp: WeaverbirdFollowUps,
+                        })
+                    }
                     if (realPromptText !== '') {
                         mynahUI.addChatItem(affectedTabId, {
                             type: ChatItemType.PROMPT,
@@ -447,8 +508,14 @@ ${message}`,
                 content: 'Selected code is copied to clipboard',
             })
         },
-        onSuggestionEngagement: connector.triggerSuggestionEngagement,
-        onSuggestionInteraction: (eventName, suggestion, mouseEvent) => {
+        onChatItemEngagement: connector.triggerSuggestionEngagement,
+        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
+            // mouseEvent?.preventDefault();
+            // mouseEvent?.stopPropagation();
+            // mouseEvent?.stopImmediatePropagation();
+            // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
+        },
+        onLinkClick: (tabId, messageId, link, mouseEvent) => {
             // mouseEvent?.preventDefault();
             // mouseEvent?.stopPropagation();
             // mouseEvent?.stopImmediatePropagation();
@@ -496,11 +563,11 @@ ${message}`,
                         },
                         {
                             type: ChatItemType.ANSWER,
-                            followUp: WelcomeFollowUps(weaverbirdEnabled),
+                            followUp: WelcomeFollowUps(isWeaverbirdEnabled),
                         },
                     ],
                     showChatAvatars: false,
-                    quickActionCommands: QuickActionCommands(weaverbirdEnabled),
+                    quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                     promptInputPlaceholder: 'Ask a question or "/" for capabilities',
                     ...initialData,
                 },
@@ -516,11 +583,11 @@ ${message}`,
                     },
                     {
                         type: ChatItemType.ANSWER,
-                        followUp: WelcomeFollowUps(weaverbirdEnabled),
+                        followUp: WelcomeFollowUps(isWeaverbirdEnabled),
                     },
                 ],
                 showChatAvatars: false,
-                quickActionCommands: QuickActionCommands(weaverbirdEnabled),
+                quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
             },
         },
