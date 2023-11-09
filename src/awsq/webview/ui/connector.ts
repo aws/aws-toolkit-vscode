@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, Engagement, FeedbackPayload, SourceLink } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
 import { Connector as AwsQCommonsConnector } from './apps/awsqCommonsConnector'
