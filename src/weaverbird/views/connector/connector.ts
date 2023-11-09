@@ -6,7 +6,7 @@
 import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
 import { weaverbirdChat } from '../../constants'
 import { ChatItemType } from '../../models'
-import { ChatItemFollowUp, Suggestion } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui-chat'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -77,14 +77,14 @@ export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
-    readonly relatedSuggestions: Suggestion[] | undefined
+    readonly relatedSuggestions: SourceLink[] | undefined
 }
 
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
     readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
-    readonly relatedSuggestions: Suggestion[] | undefined
+    readonly relatedSuggestions: SourceLink[] | undefined
     readonly requestID!: string
     override type = 'chatMessage'
 

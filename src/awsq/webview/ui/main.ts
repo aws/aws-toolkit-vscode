@@ -452,8 +452,14 @@ ${message}`,
                 content: 'Selected code is copied to clipboard',
             })
         },
-        onSuggestionEngagement: connector.triggerSuggestionEngagement,
-        onSuggestionInteraction: (eventName, suggestion, mouseEvent) => {
+        onChatItemEngagement: connector.triggerSuggestionEngagement,
+        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
+            // mouseEvent?.preventDefault();
+            // mouseEvent?.stopPropagation();
+            // mouseEvent?.stopImmediatePropagation();
+            // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
+        },
+        onLinkClick: (tabId, messageId, link, mouseEvent) => {
             // mouseEvent?.preventDefault();
             // mouseEvent?.stopPropagation();
             // mouseEvent?.stopImmediatePropagation();

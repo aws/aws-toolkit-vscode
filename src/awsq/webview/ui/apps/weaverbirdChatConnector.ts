@@ -3,15 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload, Suggestion } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from './awsqCommonsConnector'
 
 interface ChatPayload {
     chatMessage: string
-    attachedAPIDocsSuggestion?: Suggestion
-    attachedVanillaSuggestion?: Suggestion
 }
 
 export interface ConnectorProps {

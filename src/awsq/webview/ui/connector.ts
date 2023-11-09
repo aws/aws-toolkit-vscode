@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemFollowUp, FeedbackPayload, Suggestion, SuggestionEngagement } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
 import { Connector as AwsQCommonsConnector } from './apps/awsqCommonsConnector'
@@ -16,8 +16,6 @@ import { CodeReference } from '../../../codewhispererChat/view/connector/connect
 export interface ChatPayload {
     chatMessage: string
     chatCommand?: string
-    attachedAPIDocsSuggestion?: Suggestion
-    attachedVanillaSuggestion?: Suggestion
 }
 
 export interface ConnectorProps {
@@ -201,7 +199,7 @@ export class Connector {
         })
     }
 
-    triggerSuggestionEngagement = (tabID: string, engagement: SuggestionEngagement): void => {
+    triggerSuggestionEngagement = (tabId: string, messageId: string, engagement: Engagement): void => {
         // let command: string = 'hoverSuggestion'
         // if (
         //     engagement.engagementType === EngagementType.INTERACTION &&
