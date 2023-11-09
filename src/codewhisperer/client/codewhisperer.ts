@@ -204,9 +204,10 @@ export class DefaultCodeWhispererClient {
                 let logStr = 'codewhisperer: listAvailableCustomizations API request:'
                 resps.forEach(resp => {
                     const requestId = resp.$response.requestId
-                    logStr += `\n${indent('RequestID: ')}${requestId},\n${indent('Customizations:')}`
+                    logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
                     resp.customizations.forEach((c, index) => {
-                        logStr += `\n       ${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
+                        const entry = `${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
+                        logStr += `\n${indent(entry, 8)}`
                     })
                 })
                 getLogger().debug(logStr)
