@@ -102,11 +102,9 @@ export async function fetchSupplementalContextForSrc(
     for (const chunk of bestChunks) {
         throwIfCancelled(cancellationToken)
 
-        supplementalContexts.push({
-            filePath: chunk.fileName,
-            content: chunk.nextContent,
-            score: chunk.score,
-        })
+        supplementalContexts.push(
+            new CodeWhispererSupplementalContextItem(chunk.fileName, chunk.nextContent, chunk.score)
+        )
     }
 
     // DO NOT send code chunk with empty content

@@ -11,6 +11,8 @@ import * as vscode from 'vscode'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
+import CodeWhispererClient from '../../client/codewhispererclient'
+import CodeWhispererUserClient from '../../client/codewhispereruserclient'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -25,10 +27,15 @@ export interface CodeWhispererSupplementalContext {
     strategy: SupplementalContextStrategy
 }
 
-export interface CodeWhispererSupplementalContextItem {
-    content: string
-    filePath: string
-    score?: number
+export class CodeWhispererSupplementalContextItem {
+    constructor(readonly filePath: string, readonly content: string, readonly score: number | undefined) {}
+
+    toSdkType(): CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext {
+        return {
+            content: this.content,
+            filePath: this.filePath,
+        }
+    }
 }
 
 export async function fetchSupplementalContext(

@@ -125,10 +125,11 @@ function generateSupplementalContextFromFocalFile(
     }
 
     return [
-        {
-            filePath: filePath,
-            content: 'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
-        },
+        new CodeWhispererSupplementalContextItem(
+            filePath,
+            'UTG\n' + fileContent.slice(0, Math.min(fileContent.length, utgConfig.maxSegmentSize)),
+            undefined
+        ),
     ]
 }
 

@@ -13,15 +13,11 @@ import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import {
     CodeWhispererSupplementalContext,
-    CodeWhispererSupplementalContextItem,
     fetchSupplementalContext,
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
-import { selectFrom } from '../../shared/utilities/tsUtils'
 import { CWFileContext } from '../models/model'
-import CodeWhispererClient from '../client/codewhispererclient'
-import CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -95,7 +91,7 @@ export async function buildListRecommendationRequest(
 
     const selectedCustomization = getSelectedCustomization()
     const sdkSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
-        ? supplementalContexts.supplementalContextItems.map(v => toSdkSupplementalContext(v))
+        ? supplementalContexts.supplementalContextItems.map(v => v.toSdkType())
         : []
 
     if (allowCodeWithReference === undefined) {
@@ -142,7 +138,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
     logSupplementalContext(supplementalContexts)
 
     const sdkSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
-        ? supplementalContexts.supplementalContextItems.map(v => toSdkSupplementalContext(v))
+        ? supplementalContexts.supplementalContextItems.map(v => v.toSdkType())
         : []
 
     return {
@@ -225,10 +221,4 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
     })
 
     getLogger().debug(logString)
-}
-
-function toSdkSupplementalContext(
-    supplementalContextItem: CodeWhispererSupplementalContextItem
-): CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext {
-    return selectFrom(supplementalContextItem, 'content', 'filePath')
 }
