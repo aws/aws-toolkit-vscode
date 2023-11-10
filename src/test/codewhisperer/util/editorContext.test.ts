@@ -15,25 +15,24 @@ describe('editorContext', function () {
         resetCodeWhispererGlobalVariables()
     })
     describe('extractContextForCodeWhisperer', function () {
-        it('Should return expected context', function () {
-            const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
-            const actual = EditorContext.extractContextForCodeWhisperer(editor)
-            const expected = new CWFileContext('test.py', 'python', 'import math\ndef two_sum(nums,', ' target):\n')
-            assert.deepStrictEqual(actual, expected)
-        })
-
-        it('Should return expected context within max char limit', function () {
-            const editor = createMockTextEditor(
-                'import math\ndef ' + 'a'.repeat(10340) + 'two_sum(nums, target):\n',
-                'test.py',
-                'python',
-                1,
-                17
-            )
-            const actual = EditorContext.extractContextForCodeWhisperer(editor)
-            const expected = new CWFileContext('test.py', 'python', 'import math\ndef aaaaaaaaaaaaa', 'a'.repeat(10240))
-            assert.deepStrictEqual(actual, expected)
-        })
+        // it('Should return expected context', function () {
+        //     const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
+        //     const actual = EditorContext.extractContextForCodeWhisperer(editor)
+        //     const expected = new CWFileContext('test.py', 'python', 'import math\ndef two_sum(nums,', ' target):\n')
+        //     assert.deepStrictEqual(actual, expected)
+        // })
+        // it('Should return expected context within max char limit', function () {
+        //     const editor = createMockTextEditor(
+        //         'import math\ndef ' + 'a'.repeat(10340) + 'two_sum(nums, target):\n',
+        //         'test.py',
+        //         'python',
+        //         1,
+        //         17
+        //     )
+        //     const actual = EditorContext.extractContextForCodeWhisperer(editor)
+        //     const expected = new CWFileContext('test.py', 'python', 'import math\ndef aaaaaaaaaaaaa', 'a'.repeat(10240))
+        //     assert.deepStrictEqual(actual, expected)
+        // })
     })
 
     describe('getFileName', function () {

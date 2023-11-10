@@ -17,7 +17,7 @@ import { isSsoConnection } from '../../auth/connection'
 import { pageableToCollection } from '../../shared/utilities/collectionUtils'
 import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
-import { session } from '../util/codeWhispererSession'
+import { componentLatencyTimer } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 
 export type ProgrammingLanguage = Readonly<
@@ -106,9 +106,9 @@ export class DefaultCodeWhispererClient {
 
     async createUserSdkClient(): Promise<CodeWhispererUserClient> {
         const isOptedOut = CodeWhispererSettings.instance.isOptoutEnabled()
-        session.setFetchCredentialStart()
+        componentLatencyTimer.setFetchCredentialStart()
         const bearerToken = await AuthUtil.instance.getBearerToken()
-        session.setSdkApiCallStart()
+        componentLatencyTimer.setSdkApiCallStart()
         return (await globals.sdkClientBuilder.createAwsService(
             Service,
             {

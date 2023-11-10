@@ -15,7 +15,7 @@ import { AuthUtil } from '../util/authUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
-import { session } from '../util/codeWhispererSession'
+import { CWSessionManager } from '../service/sessionManager'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -49,13 +49,15 @@ export async function invokeRecommendation(
     /**
      * When using intelliSense, if invocation position changed, reject previous active recommendations
      */
-    if (vsCodeState.isIntelliSenseActive && editor.selection.active !== session.startPos) {
-        resetIntelliSenseState(
-            config.isManualTriggerEnabled,
-            config.isAutomatedTriggerEnabled,
-            RecommendationHandler.instance.isValidResponse()
-        )
-    }
+    // TODO:?????? use previous session?
+    // const session = CWSessionManager.currentSession()
+    // if (vsCodeState.isIntelliSenseActive && editor.selection.active !== session.startPos) {
+    //     resetIntelliSenseState(
+    //         config.isManualTriggerEnabled,
+    //         config.isAutomatedTriggerEnabled,
+    //         RecommendationHandler.instance.isValidResponse()
+    //     )
+    // }
 
     if (isCloud9('any')) {
         if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
@@ -71,6 +73,7 @@ export async function invokeRecommendation(
             }
             if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                 response = await RecommendationHandler.instance.getRecommendations(
+                    await CWSessionManager.startSession(editor, false, config.isSuggestionsWithCodeReferencesEnabled),
                     client,
                     editor,
                     'OnDemand',
@@ -83,6 +86,7 @@ export async function invokeRecommendation(
                     await AuthUtil.instance.showReauthenticatePrompt()
                 }
                 response = await RecommendationHandler.instance.getRecommendations(
+                    await CWSessionManager.startSession(editor, true, config.isSuggestionsWithCodeReferencesEnabled),
                     client,
                     editor,
                     'OnDemand',

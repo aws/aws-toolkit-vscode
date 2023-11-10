@@ -16,8 +16,8 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ClassifierTrigger } from './classifierTrigger'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
-import { session } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
+import { CWSessionManager } from './sessionManager'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -112,6 +112,7 @@ export class InlineCompletionService {
             let page = 0
             while (page < this.maxPage) {
                 response = await RecommendationHandler.instance.getRecommendations(
+                    await CWSessionManager.startSession(editor, true, config.isSuggestionsWithCodeReferencesEnabled),
                     client,
                     editor,
                     triggerType,
@@ -136,7 +137,8 @@ export class InlineCompletionService {
             getLogger().error(`Error ${error} in getPaginatedRecommendation`)
         }
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
-        if (triggerType === 'OnDemand' && session.recommendations.length === 0) {
+
+        if (triggerType === 'OnDemand') {
             showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
         TelemetryHelper.instance.tryRecordClientComponentLatency()

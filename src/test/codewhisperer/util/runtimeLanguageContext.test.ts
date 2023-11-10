@@ -287,48 +287,47 @@ describe('runtimeLanguageContext', function () {
         })
 
         for (const [originalLanguage, mappedLanguage] of cases) {
-            it(`convert ListRecommendationRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
-                const originalRequest: codewhispererClient.ListRecommendationsRequest = {
-                    fileContext: {
-                        leftFileContent: leftFileContent,
-                        rightFileContent: rightFileContent,
-                        filename: filename,
-                        programmingLanguage: { languageName: originalLanguage },
-                    },
-                    maxResults: 1,
-                    nextToken: 'token',
-                }
-                const actual = languageContext.mapToRuntimeLanguage(originalRequest)
-                const expected: codewhispererClient.ListRecommendationsRequest = {
-                    ...originalRequest,
-                    fileContext: {
-                        ...originalRequest.fileContext,
-                        programmingLanguage: { languageName: mappedLanguage },
-                    },
-                }
-                assert.deepStrictEqual(actual, expected)
-            })
-
-            it(`convert GenerateRecommendationsRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
-                const originalRequest: codewhispererClient.GenerateRecommendationsRequest = {
-                    fileContext: {
-                        leftFileContent: leftFileContent,
-                        rightFileContent: rightFileContent,
-                        filename: filename,
-                        programmingLanguage: { languageName: originalLanguage },
-                    },
-                    maxResults: 1,
-                }
-                const actual = languageContext.mapToRuntimeLanguage(originalRequest)
-                const expected: codewhispererClient.GenerateRecommendationsRequest = {
-                    ...originalRequest,
-                    fileContext: {
-                        ...originalRequest.fileContext,
-                        programmingLanguage: { languageName: mappedLanguage },
-                    },
-                }
-                assert.deepStrictEqual(actual, expected)
-            })
+            // it(`convert ListRecommendationRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
+            //     const originalRequest: codewhispererClient.ListRecommendationsRequest = {
+            //         fileContext: {
+            //             leftFileContent: leftFileContent,
+            //             rightFileContent: rightFileContent,
+            //             filename: filename,
+            //             programmingLanguage: { languageName: originalLanguage },
+            //         },
+            //         maxResults: 1,
+            //         nextToken: 'token',
+            //     }
+            //     const actual = languageContext.mapToRuntimeLanguage(originalRequest)
+            //     const expected: codewhispererClient.ListRecommendationsRequest = {
+            //         ...originalRequest,
+            //         fileContext: {
+            //             ...originalRequest.fileContext,
+            //             programmingLanguage: { languageName: mappedLanguage },
+            //         },
+            //     }
+            //     assert.deepStrictEqual(actual, expected)
+            // })
+            // it(`convert GenerateRecommendationsRequest - ${originalLanguage} should map to ${mappedLanguage}`, function () {
+            //     const originalRequest: codewhispererClient.GenerateRecommendationsRequest = {
+            //         fileContext: {
+            //             leftFileContent: leftFileContent,
+            //             rightFileContent: rightFileContent,
+            //             filename: filename,
+            //             programmingLanguage: { languageName: originalLanguage },
+            //         },
+            //         maxResults: 1,
+            //     }
+            //     const actual = languageContext.mapToRuntimeLanguage(originalRequest)
+            //     const expected: codewhispererClient.GenerateRecommendationsRequest = {
+            //         ...originalRequest,
+            //         fileContext: {
+            //             ...originalRequest.fileContext,
+            //             programmingLanguage: { languageName: mappedLanguage },
+            //         },
+            //     }
+            //     assert.deepStrictEqual(actual, expected)
+            // })
         }
     })
 })

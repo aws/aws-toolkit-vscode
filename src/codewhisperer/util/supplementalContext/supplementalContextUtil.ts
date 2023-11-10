@@ -16,28 +16,6 @@ import CodeWhispererUserClient from '../../client/codewhispereruserclient'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
-
-export interface CodeWhispererSupplementalContext {
-    isUtg: boolean
-    isProcessTimeout: boolean
-    supplementalContextItems: CodeWhispererSupplementalContextItem[]
-    contentsLength: number
-    latency: number
-    strategy: SupplementalContextStrategy
-}
-
-export class CodeWhispererSupplementalContextItem {
-    constructor(readonly filePath: string, readonly content: string, readonly score: number | undefined) {}
-
-    toSdkType(): CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext {
-        return {
-            content: this.content,
-            filePath: this.filePath,
-        }
-    }
-}
-
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
     cancellationToken: vscode.CancellationToken

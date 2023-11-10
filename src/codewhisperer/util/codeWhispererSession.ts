@@ -3,36 +3,30 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererGettingStartedTask,
 } from '../../shared/telemetry/telemetry.gen'
-import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
+import { GenerateRecommendationsRequest, ListRecommendationsRequest } from '../client/codewhisperer'
 import { Position } from 'vscode'
-import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
-import { CWFileContext } from '../models/model'
+import {
+    CodeWhispererSupplementalContext,
+    fetchSupplementalContext,
+} from './supplementalContext/supplementalContextUtil'
+import { CWFileContext, CWRecommendationEntry } from '../models/model'
+import {
+    buildGenerateRecommendationRequest,
+    buildListRecommendationRequest,
+    extractContextForCodeWhisperer,
+} from './editorContext'
+import { supplementalContextTimeoutInMs } from '../models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 class CodeWhispererSession {
     static #instance: CodeWhispererSession
-
-    // Per-session states
-    sessionId = ''
-    startPos = new Position(0, 0)
-    leftContextOfCurrentLine = ''
-    requestContext: {
-        request: ListRecommendationsRequest | GenerateRecommendationsRequest
-        fileContext: CWFileContext
-        supplementalContexts: CodeWhispererSupplementalContext | undefined
-    } = { request: {} as any, fileContext: {} as any, supplementalContexts: {} as any }
-    language: CodewhispererLanguage = 'java'
-    taskType: CodewhispererGettingStartedTask | undefined
-    // Various states of recommendations
-    recommendations: Recommendation[] = []
-    suggestionStates = new Map<number, string>()
-    completionTypes = new Map<number, CodewhispererCompletionType>()
 
     // Some other variables for client component latency
     fetchCredentialStartTime = 0
@@ -54,24 +48,7 @@ class CodeWhispererSession {
             this.sdkApiCallStartTime = performance.now()
         }
     }
-
-    setSuggestionState(index: number, value: string) {
-        this.suggestionStates.set(index, value)
-    }
-
-    getSuggestionState(index: number): string | undefined {
-        return this.suggestionStates.get(index)
-    }
-
-    setCompletionType(index: number, recommendation: Recommendation) {
-        const nonBlankLines = recommendation.content.split('\n').filter(line => line.trim() !== '').length
-        this.completionTypes.set(index, nonBlankLines > 1 ? 'Block' : 'Line')
-    }
-
-    getCompletionType(index: number): CodewhispererCompletionType {
-        return this.completionTypes.get(index) || 'Line'
-    }
 }
 
 // TODO: convert this to a function call
-export const session = CodeWhispererSession.instance
+export const componentLatencyTimer = CodeWhispererSession.instance

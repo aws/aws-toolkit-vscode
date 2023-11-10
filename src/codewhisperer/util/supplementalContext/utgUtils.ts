@@ -18,16 +18,14 @@ import {
 import { ToolkitError } from '../../../shared/errors'
 import { supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { utgConfig } from '../../models/constants'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { UserGroup } from '../../models/constants'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
+import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem, UtgStrategy } from '../../models/model'
 
 type UtgSupportedLanguage = keyof typeof utgLanguageConfigs
-
-export type UtgStrategy = 'ByName' | 'ByContent'
 
 function isUtgSupportedLanguage(languageId: vscode.TextDocument['languageId']): languageId is UtgSupportedLanguage {
     return languageId in utgLanguageConfigs

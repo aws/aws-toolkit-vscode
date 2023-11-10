@@ -18,8 +18,8 @@ import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
-import { session } from '../util/codeWhispererSession'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
+import { CWSessionManager } from './sessionManager'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -106,8 +106,9 @@ export class KeyStrokeHandler {
             }
 
             // Skip Cloud9 IntelliSense acceptance event
+            const session = CWSessionManager.currentSession()
             if (isCloud9() && event.contentChanges.length > 0 && session.recommendations.length > 0) {
-                if (event.contentChanges[0].text === session.recommendations[0].content) {
+                if (event.contentChanges[0].text === session.recommendations[0].recommendation.content) {
                     return
                 }
             }
@@ -181,6 +182,11 @@ export class KeyStrokeHandler {
                 }
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
+                        await CWSessionManager.startSession(
+                            editor,
+                            false,
+                            config.isSuggestionsWithCodeReferencesEnabled
+                        ),
                         client,
                         editor,
                         'AutoTrigger',
@@ -193,6 +199,11 @@ export class KeyStrokeHandler {
                         await AuthUtil.instance.showReauthenticatePrompt()
                     }
                     response = await RecommendationHandler.instance.getRecommendations(
+                        await CWSessionManager.startSession(
+                            editor,
+                            true,
+                            config.isSuggestionsWithCodeReferencesEnabled
+                        ),
                         client,
                         editor,
                         'AutoTrigger',

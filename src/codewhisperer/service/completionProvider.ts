@@ -6,19 +6,20 @@
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
-import { session } from '../util/codeWhispererSession'
+import { CWRecommendationEntry } from '../models/model'
+import { CWSessionManager } from './sessionManager'
 /**
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
+    const session = CWSessionManager.currentSession()
     session.recommendations.forEach((recommendation, index) => {
         completionItems.push(getCompletionItem(document, position, recommendation, index))
-        session.setSuggestionState(index, 'Showed')
+        recommendation.suggestionState = 'Showed'
     })
     return completionItems
 }
@@ -26,12 +27,13 @@ export function getCompletionItems(document: vscode.TextDocument, position: vsco
 export function getCompletionItem(
     document: vscode.TextDocument,
     position: vscode.Position,
-    recommendationDetail: Recommendation,
+    recommendationDetail: CWRecommendationEntry,
     recommendationIndex: number
 ) {
+    const session = CWSessionManager.currentSession()
     const start = session.startPos
     const range = new vscode.Range(start, start)
-    const recommendation = recommendationDetail.content
+    const recommendation = recommendationDetail.recommendation.content
     const completionItem = new vscode.CompletionItem(recommendation)
     completionItem.insertText = new vscode.SnippetString(recommendation)
     completionItem.documentation = new vscode.MarkdownString().appendCodeblock(recommendation, document.languageId)
@@ -43,9 +45,12 @@ export function getCompletionItem(
     completionItem.sortText = String(recommendationIndex + 1).padStart(10, '0')
     completionItem.range = new vscode.Range(start, position)
     const languageContext = runtimeLanguageContext.getLanguageContext(document.languageId)
-    let references: typeof recommendationDetail.references
-    if (recommendationDetail.references !== undefined && recommendationDetail.references.length > 0) {
-        references = recommendationDetail.references
+    let references: typeof recommendationDetail.recommendation.references
+    if (
+        recommendationDetail.recommendation.references !== undefined &&
+        recommendationDetail.recommendation.references.length > 0
+    ) {
+        references = recommendationDetail.recommendation.references
         const licenses = [
             ...new Set(references.map(r => `[${r.licenseName}](${LicenseUtil.getLicenseHtml(r.licenseName)})`)),
         ].join(', ')
@@ -61,7 +66,7 @@ export function getCompletionItem(
             RecommendationHandler.instance.requestId,
             session.sessionId,
             TelemetryHelper.instance.triggerType,
-            session.getCompletionType(recommendationIndex),
+            recommendationDetail.completionType,
             languageContext.language,
             references,
         ],

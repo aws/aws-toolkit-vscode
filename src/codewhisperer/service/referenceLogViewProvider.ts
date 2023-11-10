@@ -10,8 +10,8 @@ import * as CodeWhispererConstants from '../models/constants'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import globals from '../../shared/extensionGlobals'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
+import { CWSessionManager } from './sessionManager'
 
 export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'aws.codeWhisperer.referenceLog'
@@ -71,11 +71,14 @@ export class ReferenceLogViewProvider implements vscode.WebviewViewProvider {
             )
             const firstCharLineNumber =
                 editor.document.positionAt(
-                    TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.start
+                    CWSessionManager.currentSession().fileContext.startOffset +
+                        reference.recommendationContentSpan.start
                 ).line + 1
             const lastCharLineNumber =
                 editor.document.positionAt(
-                    TelemetryHelper.instance.cursorOffset + reference.recommendationContentSpan.end - 1
+                    CWSessionManager.currentSession().fileContext.startOffset +
+                        reference.recommendationContentSpan.end -
+                        1
                 ).line + 1
             let lineInfo = ``
             if (firstCharLineNumber === lastCharLineNumber) {

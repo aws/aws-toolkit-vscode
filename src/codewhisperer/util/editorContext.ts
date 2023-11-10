@@ -8,16 +8,10 @@ import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
-import {
-    CodeWhispererSupplementalContext,
-    fetchSupplementalContext,
-} from './supplementalContext/supplementalContextUtil'
-import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
-import { CWFileContext } from '../models/model'
+import { CWFileContext, CodeWhispererSupplementalContext } from '../models/model'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -25,7 +19,6 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): CWFil
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
-    TelemetryHelper.instance.cursorOffset = offset
 
     const caretLeftFileContext = editor.document.getText(
         new vscode.Range(
@@ -45,7 +38,10 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): CWFil
         getFileNameForRequest(editor),
         runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? 'plaintext',
         caretLeftFileContext,
-        caretRightFileContext
+        caretRightFileContext,
+        getLeftContext(editor, editor.selection.active.line),
+        curPos,
+        offset
     )
 }
 
@@ -70,23 +66,10 @@ export function getFileNameForRequest(editor: vscode.TextEditor): string {
 }
 
 export async function buildListRecommendationRequest(
-    editor: vscode.TextEditor,
-    nextToken: string,
+    fileContext: CWFileContext,
+    supplementalContexts: CodeWhispererSupplementalContext | undefined,
     allowCodeWithReference: boolean | undefined = undefined
-): Promise<{
-    request: codewhispererClient.ListRecommendationsRequest
-    fileContext: CWFileContext
-    supplementalContexts: CodeWhispererSupplementalContext | undefined
-}> {
-    const fileContext = extractContextForCodeWhisperer(editor)
-
-    const tokenSource = new vscode.CancellationTokenSource()
-    setTimeout(() => {
-        tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
-
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-
+): Promise<codewhispererClient.ListRecommendationsRequest> {
     logSupplementalContext(supplementalContexts)
 
     const selectedCustomization = getSelectedCustomization()
@@ -96,45 +79,28 @@ export async function buildListRecommendationRequest(
 
     if (allowCodeWithReference === undefined) {
         return {
-            request: {
-                fileContext: fileContext.toSdkType(),
-                nextToken: nextToken,
-                supplementalContexts: sdkSupplementalContext,
-                customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
-            },
-            fileContext: fileContext,
-            supplementalContexts: supplementalContexts,
+            fileContext: fileContext.toSdkType(),
+            nextToken: '',
+            supplementalContexts: sdkSupplementalContext,
+            customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         }
     }
 
     return {
-        request: {
-            fileContext: fileContext.toSdkType(),
-            nextToken: nextToken,
-            referenceTrackerConfiguration: {
-                recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
-            },
-            supplementalContexts: sdkSupplementalContext,
-            customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
+        fileContext: fileContext.toSdkType(),
+        nextToken: '',
+        referenceTrackerConfiguration: {
+            recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
         },
-        fileContext: fileContext,
-        supplementalContexts: supplementalContexts,
+        supplementalContexts: sdkSupplementalContext,
+        customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
     }
 }
 
-export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
-    request: codewhispererClient.GenerateRecommendationsRequest
-    fileContext: CWFileContext
+export async function buildGenerateRecommendationRequest(
+    fileContext: CWFileContext,
     supplementalContexts: CodeWhispererSupplementalContext | undefined
-}> {
-    const fileContext = extractContextForCodeWhisperer(editor)
-
-    const tokenSource = new vscode.CancellationTokenSource()
-    setTimeout(() => {
-        tokenSource.cancel()
-    }, supplementalContextTimeoutInMs)
-    const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-
+): Promise<codewhispererClient.GenerateRecommendationsRequest> {
     logSupplementalContext(supplementalContexts)
 
     const sdkSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
@@ -142,13 +108,9 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         : []
 
     return {
-        request: {
-            fileContext: fileContext.toSdkType(),
-            maxResults: CodeWhispererConstants.maxRecommendations,
-            supplementalContexts: sdkSupplementalContext,
-        },
-        fileContext: fileContext,
-        supplementalContexts: supplementalContexts,
+        fileContext: fileContext.toSdkType(),
+        maxResults: CodeWhispererConstants.maxRecommendations,
+        supplementalContexts: sdkSupplementalContext,
     }
 }
 

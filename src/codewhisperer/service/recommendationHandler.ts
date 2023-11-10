@@ -8,7 +8,7 @@ import { extensionVersion } from '../../shared/vscode/env'
 import { RecommendationsList, DefaultCodeWhispererClient, CognitoCredentialsError } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
-import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
+import { CWRecommendationEntry, ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
@@ -24,7 +24,6 @@ import {
 import { showTimedMessage } from '../../shared/utilities/messages'
 import {
     CodewhispererAutomatedTriggerType,
-    CodewhispererCompletionType,
     CodewhispererGettingStartedTask,
     CodewhispererTriggerType,
     telemetry,
@@ -32,7 +31,6 @@ import {
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { invalidCustomizationMessage } from '../models/constants'
 import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
-import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
 import { noSuggestions, updateInlineLockKey } from '../models/constants'
@@ -43,6 +41,7 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { CWSession, CWSessionManager } from './sessionManager'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -99,10 +98,10 @@ export class RecommendationHandler {
     }
 
     isValidResponse(): boolean {
+        const session = CWSessionManager.currentSession()
         return (
-            session.recommendations !== undefined &&
             session.recommendations.length > 0 &&
-            session.recommendations.filter(option => option.content.length > 0).length > 0
+            session.recommendations.filter(option => option.recommendation.content.length > 0).length > 0
         )
     }
 
@@ -151,6 +150,7 @@ export class RecommendationHandler {
     }
 
     async getRecommendations(
+        session: CWSession,
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
@@ -179,37 +179,20 @@ export class RecommendationHandler {
         let latency = 0
         let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
-        session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
-            if (page === 0) {
-                session.requestContext = await EditorContext.buildListRecommendationRequest(
-                    editor as vscode.TextEditor,
-                    this.nextToken,
-                    config.isSuggestionsWithCodeReferencesEnabled
-                )
-            } else {
-                session.requestContext = {
-                    request: {
-                        fileContext: session.requestContext.request.fileContext,
-                        nextToken: this.nextToken,
-                        supplementalContexts: session.requestContext.request.supplementalContexts,
-                    },
-                    fileContext: session.requestContext.fileContext,
-                    supplementalContexts: session.requestContext.supplementalContexts,
+            if (page !== 0) {
+                session.request = {
+                    ...session.request,
+                    nextToken: this.nextToken,
                 }
             }
-        } else if (!pagination) {
-            session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
-        const request = session.requestContext.request
+
+        const request = session.request
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
-            session.startPos = editor.selection.active
-            session.leftContextOfCurrentLine = EditorContext.getLeftContext(editor, session.startPos.line)
-
             /**
              * Validate request
              */
@@ -302,9 +285,9 @@ export class RecommendationHandler {
                 vscode version: '${vscode.version}',
                 extension version: '${extensionVersion}',
                 filename: '${EditorContext.getFileName(editor)}',
-                left context of line:  '${session.leftContextOfCurrentLine}',
-                line number: ${session.startPos.line},
-                character location: ${session.startPos.character},
+                left context of line:  '${session.fileContext.leftContextOfCurrentLine}',
+                line number: ${session.fileContext.startPosision.line},
+                character location: ${session.fileContext.startPosision.character},
                 latency: ${latency} ms.
                 Recommendations:`,
                 4,
@@ -327,6 +310,7 @@ export class RecommendationHandler {
                     Failed request id: ${requestId}`)
                     await switchToBaseCustomizationAndNotify()
                     await this.getRecommendations(
+                        session,
                         client,
                         editor,
                         triggerType,
@@ -348,11 +332,11 @@ export class RecommendationHandler {
                     autoTriggerType,
                     invocationResult,
                     latency,
-                    session.startPos.line,
+                    session.fileContext.startPosision.line,
                     session.language,
                     session.taskType,
                     reason,
-                    session.requestContext.supplementalContexts
+                    session.supplementalContext
                 )
             }
         }
@@ -365,7 +349,7 @@ export class RecommendationHandler {
         }
 
         const typedPrefix = editor.document
-            .getText(new vscode.Range(session.startPos, editor.selection.active))
+            .getText(new vscode.Range(session.fileContext.startPosision, editor.selection.active))
             .replace('\r\n', '\n')
         if (recommendations.length > 0) {
             TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
@@ -373,15 +357,13 @@ export class RecommendationHandler {
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
             recommendations.forEach((r, i) => {
                 const recommendationIndex = i + session.recommendations.length
-                if (
-                    !r.content.startsWith(typedPrefix) &&
-                    session.getSuggestionState(recommendationIndex) === undefined
-                ) {
-                    session.setSuggestionState(recommendationIndex, 'Discard')
+                if (!r.content.startsWith(typedPrefix) && session.recommendations[recommendationIndex] === undefined) {
+                    session.recommendations[recommendationIndex].suggestionState = 'Discard'
                 }
-                session.setCompletionType(recommendationIndex, r)
             })
-            session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
+
+            const newRecos = recommendations.map(reco => new CWRecommendationEntry(reco))
+            session.recommendations = pagination ? session.recommendations.concat(newRecos) : newRecos
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
             }
@@ -395,13 +377,7 @@ export class RecommendationHandler {
         if (invocationResult === 'Succeeded' && nextToken === '') {
             if (session.recommendations.length === 0) {
                 // Received an empty list of recommendations
-                TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
-                    requestId,
-                    sessionId,
-                    page,
-                    editor.document.languageId,
-                    session.requestContext.supplementalContexts
-                )
+                TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(requestId, page, session)
             }
             if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this.reportUserDecisions(-1)
@@ -414,7 +390,10 @@ export class RecommendationHandler {
     }
 
     hasAtLeastOneValidSuggestion(typedPrefix: string): boolean {
-        return session.recommendations.some(r => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
+        const session = CWSessionManager.currentSession()
+        return session.recommendations.some(
+            r => r.recommendation.content.trim() !== '' && r.recommendation.content.startsWith(typedPrefix)
+        )
     }
 
     cancelPaginatedRequest() {
@@ -439,13 +418,8 @@ export class RecommendationHandler {
      * Clear recommendation state
      */
     clearRecommendations() {
-        session.recommendations = []
-        session.suggestionStates = new Map<number, string>()
-        session.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.requestId = ''
-        session.sessionId = ''
         this.nextToken = ''
-        session.requestContext.supplementalContexts = undefined
     }
 
     async clearInlineCompletionStates() {
@@ -468,8 +442,9 @@ export class RecommendationHandler {
     }
 
     reportDiscardedUserDecisions() {
+        const session = CWSessionManager.currentSession()
         session.recommendations.forEach((r, i) => {
-            session.setSuggestionState(i, 'Discard')
+            r.suggestionState = 'Discard'
         })
         this.reportUserDecisions(-1)
     }
@@ -478,19 +453,11 @@ export class RecommendationHandler {
      * Emits telemetry reflecting user decision for current recommendation.
      */
     reportUserDecisions(acceptIndex: number) {
+        const session = CWSessionManager.currentSession()
         if (session.sessionId === '' || this.requestId === '') {
             return
         }
-        TelemetryHelper.instance.recordUserDecisionTelemetry(
-            this.requestId,
-            session.sessionId,
-            session.recommendations,
-            acceptIndex,
-            session.recommendations.length,
-            session.completionTypes,
-            session.suggestionStates,
-            session.requestContext.supplementalContexts
-        )
+        TelemetryHelper.instance.recordUserDecisionTelemetry(this.requestId, acceptIndex, session)
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
@@ -517,11 +484,13 @@ export class RecommendationHandler {
             reject()
             return false
         }
+        const session = CWSessionManager.currentSession()
+
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
         if (editor.selection.active.isBefore(session.startPos)) {
             session.recommendations.forEach((r, i) => {
-                session.setSuggestionState(i, 'Discard')
+                session.recommendations[i].suggestionState = 'Discard'
             })
             reject()
             return false
@@ -537,9 +506,9 @@ export class RecommendationHandler {
                 editor.selection.active.character
             )
         )
-        if (!session.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
+        if (!session.recommendations[0].recommendation.content.startsWith(typedPrefix.trimStart())) {
             session.recommendations.forEach((r, i) => {
-                session.setSuggestionState(i, 'Discard')
+                session.recommendations[i].suggestionState = 'Discard'
             })
             reject()
             return false
@@ -593,6 +562,8 @@ export class RecommendationHandler {
                 this.reportDiscardedUserDecisions()
                 return
             }
+            const session = CWSessionManager.currentSession()
+
             const inlineCompletionProvider = new CWInlineCompletionItemProvider(
                 this.inlineCompletionProvider?.getActiveItemIndex,
                 indexShift,
@@ -658,12 +629,15 @@ export class RecommendationHandler {
             await this.showRecommendation(0, false)
             return
         }
+
+        const session = CWSessionManager.currentSession()
+
         if (
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
             session.recommendations.forEach((r, i) => {
-                session.setSuggestionState(i, 'Discard')
+                session.recommendations[i].suggestionState = 'Discard'
             })
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
@@ -681,6 +655,8 @@ export class RecommendationHandler {
     }
 
     private sendPerceivedLatencyTelemetry() {
+        const session = CWSessionManager.currentSession()
+
         if (vscode.window.activeTextEditor) {
             const languageContext = runtimeLanguageContext.getLanguageContext(
                 vscode.window.activeTextEditor.document.languageId
@@ -689,7 +665,7 @@ export class RecommendationHandler {
                 codewhispererRequestId: this.requestId,
                 codewhispererSessionId: session.sessionId,
                 codewhispererTriggerType: TelemetryHelper.instance.triggerType,
-                codewhispererCompletionType: session.getCompletionType(0),
+                codewhispererCompletionType: session.recommendations[0].completionType,
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,
                 passive: true,

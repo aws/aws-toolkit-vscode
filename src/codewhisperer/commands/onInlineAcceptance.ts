@@ -26,7 +26,7 @@ import {
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 import { ImportAdderProvider } from '../service/importAdderProvider'
-import { session } from '../util/codeWhispererSession'
+import { CWSessionManager } from '../service/sessionManager'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -82,13 +82,17 @@ export async function onInlineAcceptance(
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
         try {
+            const session = CWSessionManager.currentSession()
             // Do not handle extra bracket if there is a right context merge
-            if (acceptanceEntry.recommendation === session.recommendations[acceptanceEntry.acceptIndex].content) {
+            if (
+                acceptanceEntry.recommendation ===
+                session.recommendations[acceptanceEntry.acceptIndex].recommendation.content
+            ) {
                 await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end, start)
             }
             await ImportAdderProvider.instance.onAcceptRecommendation(
                 acceptanceEntry.editor,
-                session.recommendations[acceptanceEntry.acceptIndex],
+                session.recommendations[acceptanceEntry.acceptIndex].recommendation,
                 start.line
             )
         } catch (error) {

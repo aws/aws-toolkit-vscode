@@ -8,12 +8,14 @@ import { getIcon } from '../../shared/icons'
 import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
+    CodewhispererSuggestionState,
     CodewhispererTriggerType,
     Result,
 } from '../../shared/telemetry/telemetry'
-import { References } from '../client/codewhisperer'
-import { FileContext } from '../client/codewhispererclient'
+import { Recommendation, References } from '../client/codewhisperer'
+import CodeWhispererClient, { FileContext } from '../client/codewhispererclient'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
+import CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -43,7 +45,10 @@ export class CWFileContext {
         readonly fileName: string,
         readonly programmingLanguage: CodewhispererLanguage,
         readonly leftFileContent: string,
-        readonly rightFileContent: string
+        readonly rightFileContent: string,
+        readonly leftContextOfCurrentLine: string,
+        readonly startPosision: vscode.Position,
+        readonly startOffset: number
     ) {}
 
     toSdkType(): FileContext {
@@ -55,6 +60,42 @@ export class CWFileContext {
             leftFileContent: this.leftFileContent,
             rightFileContent: this.rightFileContent,
         }
+    }
+}
+
+export type UtgStrategy = 'ByName' | 'ByContent'
+
+export type CrossFileStrategy = 'OpenTabs_BM25'
+
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+
+export interface CodeWhispererSupplementalContext {
+    isUtg: boolean
+    isProcessTimeout: boolean
+    supplementalContextItems: CodeWhispererSupplementalContextItem[]
+    contentsLength: number
+    latency: number
+    strategy: SupplementalContextStrategy
+}
+
+export class CodeWhispererSupplementalContextItem {
+    constructor(readonly filePath: string, readonly content: string, readonly score: number | undefined) {}
+
+    toSdkType(): CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext {
+        return {
+            content: this.content,
+            filePath: this.filePath,
+        }
+    }
+}
+
+export class CWRecommendationEntry {
+    suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
+    readonly completionType: CodewhispererCompletionType
+
+    constructor(readonly recommendation: Recommendation) {
+        const nonBlankLines = recommendation.content.split('\n').filter(line => line.trim() !== '').length
+        this.completionType = nonBlankLines > 1 ? 'Block' : 'Line'
     }
 }
 

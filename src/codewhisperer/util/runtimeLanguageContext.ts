@@ -6,7 +6,6 @@
 import { getLogger } from '../../shared/logger/logger'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
-import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 
 type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
