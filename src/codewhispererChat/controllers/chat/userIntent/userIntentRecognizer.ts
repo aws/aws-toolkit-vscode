@@ -10,13 +10,13 @@ import { PromptMessage } from '../model'
 export class UserIntentRecognizer {
     public getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
         switch (command.type) {
-            case 'aws.awsq.explainCode':
+            case 'aws.amazonq.explainCode':
                 return UserIntent.EXPLAIN_CODE_SELECTION
-            case 'aws.awsq.refactorCode':
+            case 'aws.amazonq.refactorCode':
                 return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
-            case 'aws.awsq.fixCode':
+            case 'aws.amazonq.fixCode':
                 return UserIntent.APPLY_COMMON_BEST_PRACTICES
-            case 'aws.awsq.optimizeCode':
+            case 'aws.amazonq.optimizeCode':
                 return UserIntent.IMPROVE_CODE
             default:
                 return undefined

@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import { UIMessageListener } from './views/actions/uiMessageListener'
 import { WeaverbirdController } from './controllers/chat/controller'
-import { AwsQAppInitContext } from '../awsq/apps/initContext'
-import { MessagePublisher } from '../awsq/messages/messagePublisher'
-import { MessageListener } from '../awsq/messages/messageListener'
+import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
+import { MessagePublisher } from '../amazonq/messages/messagePublisher'
+import { MessageListener } from '../amazonq/messages/messageListener'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
 import { getLogger } from '../shared/logger'
 import { TabIdNotFoundError } from './errors'
@@ -20,7 +20,7 @@ import { ChatSessionStorage } from './storages/chatSession'
 import { AuthUtil } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
-export function init(appContext: AwsQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext) {
     const weaverbirdChatControllerEventEmitters = {
         processHumanChatMessage: new vscode.EventEmitter<any>(),
         followUpClicked: new vscode.EventEmitter<any>(),

@@ -196,11 +196,11 @@ export class Messenger {
     }
 
     private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
-        ['aws.awsq.explainCode', 'Explain'],
-        ['aws.awsq.refactorCode', 'Refactor'],
-        ['aws.awsq.fixCode', 'Fix'],
-        ['aws.awsq.optimizeCode', 'Optimize'],
-        ['aws.awsq.sendToPrompt', 'Send to prompt'],
+        ['aws.amazonq.explainCode', 'Explain'],
+        ['aws.amazonq.refactorCode', 'Refactor'],
+        ['aws.amazonq.fixCode', 'Fix'],
+        ['aws.amazonq.optimizeCode', 'Optimize'],
+        ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
 
     public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
@@ -208,7 +208,7 @@ export class Messenger {
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
         let message
-        if (command === 'aws.awsq.sendToPrompt') {
+        if (command === 'aws.amazonq.sendToPrompt') {
             message = ['\n```\n', trimmedCode, '\n```'].join('')
         } else {
             message = [

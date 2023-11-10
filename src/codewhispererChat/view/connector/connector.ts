@@ -4,7 +4,7 @@
  */
 
 import { Timestamp } from 'aws-sdk/clients/apigateway'
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 
 class UiMessage {

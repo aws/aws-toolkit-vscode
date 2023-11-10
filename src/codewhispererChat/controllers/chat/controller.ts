@@ -22,8 +22,8 @@ import {
     UIFocusMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
-import { MessageListener } from '../../../awsq/messages/messageListener'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
+import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { EditorContentController } from '../../editor/context/contentController'
 import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
@@ -265,7 +265,7 @@ export class ChatController {
                     triggerID
                 )
 
-                if (command.type === 'aws.awsq.sendToPrompt') {
+                if (command.type === 'aws.amazonq.sendToPrompt') {
                     // No need for response if send the code to prompt
                     return
                 }

@@ -19,8 +19,8 @@ import { MessageListener } from '../messages/messageListener'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
 
-export class AwsQChatViewProvider implements WebviewViewProvider {
-    public static readonly viewType = 'aws.AWSQChatView'
+export class AmazonQChatViewProvider implements WebviewViewProvider {
+    public static readonly viewType = 'aws.AmazonQChatView'
 
     webViewContentGenerator: WebViewContentGenerator
     webView: Webview | undefined

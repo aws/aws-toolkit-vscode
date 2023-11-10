@@ -13,46 +13,46 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
 }
 
 export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
-    Commands.register('aws.awsq.explainCode', async data => {
+    Commands.register('aws.amazonq.explainCode', async data => {
         controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.explainCode',
+            type: 'aws.amazonq.explainCode',
             triggerType: getCommandTriggerType(data),
         })
     })
-    Commands.register('aws.awsq.refactorCode', async data => {
+    Commands.register('aws.amazonq.refactorCode', async data => {
         controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.refactorCode',
+            type: 'aws.amazonq.refactorCode',
             triggerType: getCommandTriggerType(data),
         })
     })
-    Commands.register('aws.awsq.fixCode', async data => {
+    Commands.register('aws.amazonq.fixCode', async data => {
         controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.fixCode',
+            type: 'aws.amazonq.fixCode',
             triggerType: getCommandTriggerType(data),
         })
     })
-    Commands.register('aws.awsq.optimizeCode', async data => {
+    Commands.register('aws.amazonq.optimizeCode', async data => {
         controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.optimizeCode',
+            type: 'aws.amazonq.optimizeCode',
             triggerType: getCommandTriggerType(data),
         })
     })
-    Commands.register('aws.awsq.sendToPrompt', async data => {
+    Commands.register('aws.amazonq.sendToPrompt', async data => {
         controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.sendToPrompt',
+            type: 'aws.amazonq.sendToPrompt',
             triggerType: getCommandTriggerType(data),
         })
     })
 }
 
 export type EditorContextCommandType =
-    | 'aws.awsq.explainCode'
-    | 'aws.awsq.refactorCode'
-    | 'aws.awsq.fixCode'
-    | 'aws.awsq.optimizeCode'
-    | 'aws.awsq.sendToPrompt'
+    | 'aws.amazonq.explainCode'
+    | 'aws.amazonq.refactorCode'
+    | 'aws.amazonq.fixCode'
+    | 'aws.amazonq.optimizeCode'
+    | 'aws.amazonq.sendToPrompt'
 
-export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette'
+export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
 
 export interface EditorContextCommand {
     type: EditorContextCommandType
