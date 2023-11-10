@@ -14,12 +14,13 @@ import { getLambdaDetails } from '../../lambda/utils'
 import { WatchedFiles, WatchedItem } from './watchedFiles'
 import { getLogger } from '../logger'
 import globals from '../extensionGlobals'
-import { Timeout, sleep } from '../utilities/timeoutUtils'
+import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { PerfLog } from '../logger/logger'
+import { showMessageWithCancel } from '../utilities/messages'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
-    protected name: string = 'CloudFormationTemplateRegistry'
+    public name: string = 'CloudFormationTemplateRegistry'
 
     protected async process(uri: vscode.Uri, contents?: string): Promise<CloudFormation.Template | undefined> {
         // P0: Assume all template.yaml/yml files are CFN templates and assign correct JSON schema.
@@ -61,8 +62,6 @@ export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.
 export class AsyncCloudFormationTemplateRegistry {
     /** Setup of the registry can take a while, this property indicates it is done */
     private isSetup = false
-    /** The message that is shown to the user to indicate the registry is being set up */
-    private setupProgressMessage: Thenable<void> | undefined = undefined
     private setupPromise: Thenable<CloudFormationTemplateRegistry> | undefined
 
     /**
@@ -72,26 +71,43 @@ export class AsyncCloudFormationTemplateRegistry {
         private readonly instance: CloudFormationTemplateRegistry,
         private readonly asyncSetupFunc: (
             instance: CloudFormationTemplateRegistry,
-            cancelSetup: Timeout
+            cancelSetup: Timeout,
+            onItem?: (total: number, i: number, cancelled: boolean) => void
         ) => Promise<CloudFormationTemplateRegistry>
     ) {}
 
     /**
-     * Returns the initial registry instance if setup has completed, otherwise
-     * returning a temporary instance and showing a progress message to the user
-     * to indicate setup is in progress.
+     * Returns the initial registry instance if setup has completed, otherwise returns a temporary
+     * instance and shows a progress message ("Scanning...") until setup is done.
      */
     async getInstance(): Promise<CloudFormationTemplateRegistry> {
         if (this.isSetup) {
             return this.instance
         }
-
-        let perf: PerfLog
-        const cancelSetup = new Timeout(30 * 60 * 1000) // 30 min
-        if (!this.setupPromise) {
-            perf = new PerfLog('cfn: template registry setup')
-            this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetup)
+        if (this.setupPromise) {
+            getLogger().debug('%s: getInstance() requested, still initializing', this.instance.name)
+            return this.setupPromise
         }
+
+        // Show a "Scanning..." progress message until setup is done.
+        const cancelSetup = new Timeout(30 * 60 * 1000) // 30 min
+        const msg = localize(
+            'AWS.codelens.waitingForTemplateRegistry',
+            'Scanning CloudFormation templates (except [search.exclude](command:workbench.action.openSettings?"@id:search.exclude"))'
+        )
+        const progress = await showMessageWithCancel(msg, cancelSetup)
+
+        const perf = new PerfLog(`${this.instance.name}: template registry setup`)
+        this.setupPromise = this.asyncSetupFunc(this.instance, cancelSetup, (total: number, i: number) => {
+            if (cancelSetup.completed) {
+                getLogger().debug('%s: getInstance() cancelled', this.instance.name)
+                return
+            }
+            if (total !== 0) {
+                progress.report({ increment: 100 * (1 / total), message: i.toString() })
+            }
+        })
+
         this.setupPromise.then(() => {
             if (perf) {
                 perf.done()
@@ -99,32 +115,6 @@ export class AsyncCloudFormationTemplateRegistry {
             this.isSetup = true
             cancelSetup.dispose()
         })
-        // Show user a message indicating setup is in progress
-        if (this.setupProgressMessage === undefined) {
-            // TODO: use showMessageWithCancel() ?
-            this.setupProgressMessage = vscode.window.withProgress(
-                {
-                    location: vscode.ProgressLocation.Notification,
-                    title: localize(
-                        'AWS.codelens.waitingForTemplateRegistry',
-                        'Scanning CloudFormation templates (except [search.exclude](command:workbench.action.openSettings?"@id:search.exclude") paths)...'
-                    ),
-                    cancellable: true,
-                },
-                async (progress, token) => {
-                    token.onCancellationRequested(() => {
-                        // Allows for new message to be created if templateRegistry variable attempted to be used again
-                        this.setupProgressMessage = undefined
-                        cancelSetup.cancel()
-                    })
-                    getLogger().debug('cfn: getInstance() requested, still initializing')
-                    while (!this.isSetup) {
-                        await sleep(2000)
-                    }
-                    getLogger().debug('cfn: getInstance() ready')
-                }
-            )
-        }
 
         return this.setupPromise
     }

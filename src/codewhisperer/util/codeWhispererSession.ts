@@ -19,6 +19,7 @@ class CodeWhispererSession {
 
     // Per-session states
     sessionId = ''
+    requestIdList: string[] = []
     startPos = new Position(0, 0)
     leftContextOfCurrentLine = ''
     requestContext: {
