@@ -110,9 +110,14 @@ export class InlineCompletionService {
         }
         try {
             let page = 0
+            const session = await CWSessionManager.startSession(
+                editor,
+                true,
+                config.isSuggestionsWithCodeReferencesEnabled
+            )
             while (page < this.maxPage) {
                 response = await RecommendationHandler.instance.getRecommendations(
-                    await CWSessionManager.startSession(editor, true, config.isSuggestionsWithCodeReferencesEnabled),
+                    session,
                     client,
                     editor,
                     triggerType,

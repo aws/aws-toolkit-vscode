@@ -336,6 +336,7 @@ export class RecommendationHandler {
                     session.language,
                     session.taskType,
                     reason,
+                    session.fileContext.startOffset,
                     session.supplementalContext
                 )
             }

@@ -22,13 +22,52 @@ import {
 } from '../util/editorContext'
 import { fetchSupplementalContext } from '../util/supplementalContext/supplementalContextUtil'
 
+export class CWSession {
+    sessionId: string = ''
+
+    startPos = new Position(0, 0)
+    leftContextOfCurrentLine = ''
+
+    requestIds: string[] = []
+
+    // Various states of recommendations
+    recommendations: CWRecommendationEntry[] = []
+    suggestionStates = new Map<number, string>()
+    completionTypes = new Map<number, CodewhispererCompletionType>()
+
+    // Some other variables for client component latency
+    fetchCredentialStartTime = 0
+    sdkApiCallStartTime = 0
+    invokeSuggestionStartTime = 0
+
+    constructor(
+        readonly language: CodewhispererLanguage,
+        public fileContext: CWFileContext,
+        public supplementalContext: CodeWhispererSupplementalContext | undefined,
+        public taskType: CodewhispererGettingStartedTask | undefined,
+        public request: ListRecommendationsRequest | GenerateRecommendationsRequest
+    ) {}
+}
+
+const ON_START_SESSION = new CWSession(
+    'plaintext',
+    new CWFileContext('', 'plaintext', '', '', '', new vscode.Position(0, 0), 0),
+    undefined,
+    undefined,
+    {
+        fileContext: new CWFileContext('', 'plaintext', '', '', '', new vscode.Position(0, 0), 0).toSdkType(),
+        nextToken: '',
+        supplementalContexts: undefined,
+    }
+)
+
 class CWSessionQueue {
     static #instance: CWSessionQueue
 
     // TODO: maybe add a isActiveWork method?
 
     // TODO: set size, we only want to cache 5 sessions for example
-    private queue: CWSession[] = [CWSession.ON_START]
+    private queue: CWSession[] = [ON_START_SESSION]
 
     currentSession(): CWSession {
         if (this.queue.length === 0) {
@@ -92,42 +131,3 @@ class CWSessionQueue {
 }
 
 export const CWSessionManager = CWSessionQueue.instance
-
-export class CWSession {
-    sessionId: string = ''
-
-    startPos = new Position(0, 0)
-    leftContextOfCurrentLine = ''
-
-    requestIds: string[] = []
-
-    // Various states of recommendations
-    recommendations: CWRecommendationEntry[] = []
-    suggestionStates = new Map<number, string>()
-    completionTypes = new Map<number, CodewhispererCompletionType>()
-
-    // Some other variables for client component latency
-    fetchCredentialStartTime = 0
-    sdkApiCallStartTime = 0
-    invokeSuggestionStartTime = 0
-
-    constructor(
-        readonly language: CodewhispererLanguage,
-        public fileContext: CWFileContext,
-        public supplementalContext: CodeWhispererSupplementalContext | undefined,
-        public taskType: CodewhispererGettingStartedTask | undefined,
-        public request: ListRecommendationsRequest | GenerateRecommendationsRequest
-    ) {}
-
-    static ON_START = new CWSession(
-        'plaintext',
-        new CWFileContext('', 'plaintext', '', '', '', new vscode.Position(0, 0), 0),
-        undefined,
-        undefined,
-        {
-            fileContext: new CWFileContext('', 'plaintext', '', '', '', new vscode.Position(0, 0), 0).toSdkType(),
-            nextToken: '',
-            supplementalContexts: undefined,
-        }
-    )
-}
