@@ -34,7 +34,12 @@ export function init(appContext: AmazonQAppInitContext) {
     const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
     const sessionStorage = new ChatSessionStorage(messenger)
 
-    new WeaverbirdController(weaverbirdChatControllerEventEmitters, messenger, sessionStorage)
+    new WeaverbirdController(
+        weaverbirdChatControllerEventEmitters,
+        messenger,
+        sessionStorage,
+        appContext.onDidChangeAmazonQVisibility.event
+    )
 
     const weaverbirdProvider = new (class implements vscode.TextDocumentContentProvider {
         async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {

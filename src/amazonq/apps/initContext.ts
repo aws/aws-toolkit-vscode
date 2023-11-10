@@ -11,6 +11,7 @@ import { TabType } from '../webview/ui/storages/tabsStorage'
 export interface AmazonQAppInitContext {
     registerWebViewToAppMessagePublisher(eventEmitter: MessagePublisher<any>, tabType: TabType): void
     getAppsToWebViewMessagePublisher(): MessagePublisher<any>
+    onDidChangeAmazonQVisibility: EventEmitter<boolean>
 }
 
 export class DefaultAmazonQAppInitContext implements AmazonQAppInitContext {
@@ -18,6 +19,7 @@ export class DefaultAmazonQAppInitContext implements AmazonQAppInitContext {
     private readonly appsToWebViewMessageListener = new MessageListener<any>(this.appsToWebViewEventEmitter)
     private readonly appsToWebViewMessagePublisher = new MessagePublisher<any>(this.appsToWebViewEventEmitter)
     private readonly webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>> = new Map()
+    public readonly onDidChangeAmazonQVisibility = new EventEmitter<boolean>()
 
     constructor() {}
 

@@ -19,7 +19,8 @@ export async function activate(context: ExtensionContext) {
     const provider = new AmazonQChatViewProvider(
         context,
         appInitContext.getWebViewToAppsMessagePublishers(),
-        appInitContext.getAppsToWebViewMessageListener()
+        appInitContext.getAppsToWebViewMessageListener(),
+        appInitContext.onDidChangeAmazonQVisibility
     )
 
     const p = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!

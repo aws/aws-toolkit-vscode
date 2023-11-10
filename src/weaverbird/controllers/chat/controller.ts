@@ -31,14 +31,26 @@ export interface ChatControllerEventEmitters {
 export class WeaverbirdController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
+    private isAmazonQVisible: boolean
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage
+        sessionStorage: ChatSessionStorage,
+        onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
+
+        /**
+         * defaulted to true because onDidChangeAmazonQVisibility doesn't get fire'd until after
+         * the view is opened
+         */
+        this.isAmazonQVisible = true
+
+        onDidChangeAmazonQVisibility(visible => {
+            this.isAmazonQVisible = visible
+        })
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data)
@@ -225,6 +237,18 @@ export class WeaverbirdController {
 
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(tabID, false)
+
+            if (!this.isAmazonQVisible) {
+                const open = 'Open chat'
+                const resp = await vscode.window.showInformationMessage(
+                    'Your code suggestions from Amazon Q are ready to review',
+                    open
+                )
+                if (resp === open) {
+                    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+                    // TODO add focusing on the specific tab once that's implemented
+                }
+            }
         }
     }
 
