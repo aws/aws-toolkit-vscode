@@ -44,10 +44,13 @@ export class SecurityIssueWebview extends VueWebview {
 
     public navigateToFile() {
         if (this.issue && this.filePath) {
-            const position = new vscode.Position(this.issue.startLine, 1)
-            const uri = vscode.Uri.file(this.filePath)
-            vscode.commands.executeCommand('vscode.open', uri, {
-                selection: new vscode.Selection(position, position),
+            const range = new vscode.Range(this.issue.startLine, 0, this.issue.endLine, 0)
+            vscode.workspace.openTextDocument(this.filePath).then(doc => {
+                vscode.window.showTextDocument(doc, {
+                    selection: range,
+                    viewColumn: vscode.ViewColumn.One,
+                    preview: true,
+                })
             })
         }
     }
