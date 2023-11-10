@@ -16,69 +16,22 @@
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
     />
 
-    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 5px">
+    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 5px; width: 800px">
         <!-- Status Bars -->
         <div
-            v-if="successfulAuthConnection || foundCredentialButNotConnected"
+            v-if="notifications.model.showSuccessfulConnection || notifications.model.showFoundCredentials"
             style="display: flex; flex-direction: column; gap: 20px"
         >
-            <div
-                v-if="successfulAuthConnection"
-                class="border-common"
-                style="
-                    width: fit-content;
-                    white-space: nowrap;
-                    display: flex;
-                    flex-direction: row;
-                    background-color: #28632b;
-                    padding: 10px;
-                "
+            <!-- 
+                TODO figure out a better mechanism to dynamically create notifications instead
+                of fixed messages and just toggling them on/off.
+             -->
+            <ConnectedNotification
+                v-if="notifications.model.showSuccessfulConnection"
+                :args="{ authName: notifications.model.authName }"
             >
-                <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
-                &nbsp; &nbsp;
-                <div style="display: flex; flex-direction: row; color: #ffffff">
-                    Connected to&nbsp;<span style="font-weight: bold; color: #ffffff">{{ authFormDisplayName() }}</span
-                    >! See connections in the&nbsp;<a
-                        v-on:click="showConnectionQuickPick()"
-                        style="cursor: pointer; color: rgb(147, 196, 255)"
-                        >Toolkit panel</a
-                    >.
-                </div>
-                &nbsp;&nbsp;
-                <div
-                    v-on:click="closeStatusBar"
-                    style="cursor: pointer; color: #ffffff"
-                    class="icon icon-lg icon-vscode-chrome-close"
-                ></div>
-            </div>
-            <div
-                v-if="foundCredentialButNotConnected"
-                class="border-common"
-                style="
-                    width: fit-content;
-                    white-space: nowrap;
-                    display: flex;
-                    flex-direction: row;
-                    background-color: #28632b;
-                    padding: 10px;
-                "
-            >
-                <div class="icon icon-lg icon-vscode-check" style="color: #ffffff"></div>
-                &nbsp; &nbsp;
-                <div style="display: flex; flex-direction: row; color: #ffffff">
-                    IAM Credentials detected, select one in the&nbsp;<a
-                        v-on:click="showConnectionQuickPick()"
-                        style="cursor: pointer; color: rgb(147, 196, 255)"
-                        >Toolkit panel</a
-                    >&nbsp;to enable the AWS Explorer.
-                </div>
-                &nbsp;&nbsp;
-                <div
-                    v-on:click="closeFoundCredentialStatusBar()"
-                    style="cursor: pointer; color: #ffffff"
-                    class="icon icon-lg icon-vscode-chrome-close"
-                ></div>
-            </div>
+            </ConnectedNotification>
+            <CredentialsNotification v-if="notifications.model.showFoundCredentials"></CredentialsNotification>
         </div>
         <div style="display: flex; flex-direction: row; gap: 10px; margin-top: 10px">
             <div id="left-side" :style="{ display: 'flex', flexDirection: 'column', gap: '10px' }">
@@ -169,14 +122,18 @@ import serviceItemsContent, { serviceItemsAuthStatus } from './serviceItemConten
 import { AuthWebview } from './show'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { ServiceItemId } from './types'
-import { AuthFormDisplayName, AuthFormId } from './authForms/types'
+import { AuthFormId } from './authForms/types'
 import { ConnectionUpdateArgs } from './authForms/baseAuth.vue'
+import { DefinedComponent } from '../../../webviews/types'
+import ConnectedNotification from './notifications/connectedNotification.vue'
+import CredentialsNotification, { showFoundExistingCredentials } from './notifications/credentialsNotification.vue'
+import { Notifications } from './notifications/notifications.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 const serviceItemsState = new ServiceItemsState()
 
 export default defineComponent({
-    components: { ServiceItem },
+    components: { ServiceItem, ConnectedNotification, CredentialsNotification },
     name: 'AuthRoot',
     data() {
         return {
@@ -188,14 +145,12 @@ export default defineComponent({
 
             rerenderContentWindowKey: 0,
 
-            successfulAuthConnection: undefined as AuthFormId | undefined,
-
-            foundCredentialButNotConnected: false,
+            notifications: Notifications.instance,
         }
     },
     async created() {
         await this.getAllExistingAuths().then(existingAuths => client.setAuthsInitial(existingAuths))
-        this.updateFoundCredentialButNotConnected()
+        await showFoundExistingCredentials(this.notifications)
 
         await this.selectInitialService()
         await this.updateFeatureConnectionStatus()
@@ -274,7 +229,7 @@ export default defineComponent({
         updateWindowWidth() {
             this.currWindowWidth = window.innerWidth
         },
-        getServiceItemContent(id: ServiceItemId) {
+        getServiceItemContent(id: ServiceItemId): DefinedComponent {
             return serviceItemsContent[id]
         },
         updateServiceLock(id: ServiceItemId, isAuthConnected: boolean) {
@@ -291,7 +246,6 @@ export default defineComponent({
                 return
             }
             if (args.isConnected && args.cause === 'signIn') {
-                this.successfulAuthConnection = args.id
                 // On a successful sign in the state of the current content window
                 // can change. This forces a rerendering of it to have it load the latest state.
                 this.rerenderSelectedContentWindow()
@@ -349,34 +303,6 @@ export default defineComponent({
         showConnectionQuickPick() {
             client.showConnectionQuickPick()
             client.emitUiClick('auth_openConnectionSelector')
-        },
-        closeStatusBar() {
-            this.successfulAuthConnection = undefined
-        },
-        closeFoundCredentialStatusBar() {
-            this.foundCredentialButNotConnected = false
-        },
-        /**
-         * Updates the state of if we detected credentials but the user
-         * has not actively selected one.
-         */
-        async updateFoundCredentialButNotConnected() {
-            const isFirstUse = await client.isExtensionFirstUse()
-            // Order these are called matters since isCredentialExists() pulls in local credentials
-            const isCredentialConnected = await client.isCredentialConnected()
-            const isCredentialExists = await client.isCredentialExists()
-
-            if (isFirstUse && (isCredentialConnected || isCredentialExists)) {
-                this.foundCredentialButNotConnected = true
-            } else {
-                this.foundCredentialButNotConnected = false
-            }
-        },
-        authFormDisplayName() {
-            if (this.successfulAuthConnection === undefined) {
-                return ''
-            }
-            return AuthFormDisplayName[this.successfulAuthConnection]
         },
     },
 })
