@@ -92,9 +92,11 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         index: number,
         prefix: string
     ): vscode.InlineCompletionItem | undefined {
+        console.log('1')
         if (!r.recommendation.content.startsWith(prefix)) {
             return undefined
         }
+        console.log('2')
         const truncatedSuggestion = this.truncateOverlapWithRightContext(document, r.recommendation.content, end)
         const session = CWSessionManager.currentSession()
         if (truncatedSuggestion.length === 0) {
@@ -103,6 +105,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             }
             return undefined
         }
+        console.log('3')
         return {
             insertText: truncatedSuggestion,
             range: new vscode.Range(start, end),

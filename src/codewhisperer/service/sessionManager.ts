@@ -25,20 +25,10 @@ import { fetchSupplementalContext } from '../util/supplementalContext/supplement
 export class CWSession {
     sessionId: string = ''
 
-    startPos = new Position(0, 0)
-    leftContextOfCurrentLine = ''
-
     requestIds: string[] = []
 
     // Various states of recommendations
     recommendations: CWRecommendationEntry[] = []
-    suggestionStates = new Map<number, string>()
-    completionTypes = new Map<number, CodewhispererCompletionType>()
-
-    // Some other variables for client component latency
-    fetchCredentialStartTime = 0
-    sdkApiCallStartTime = 0
-    invokeSuggestionStartTime = 0
 
     constructor(
         readonly language: CodewhispererLanguage,

@@ -279,6 +279,7 @@ export class RecommendationHandler {
 
             let msg = indent(
                 `codewhisperer: request-id: ${requestId},
+                session-id: ${sessionId},
                 timestamp(epoch): ${Date.now()},
                 timezone: ${timezone},
                 datetime: ${new Date().toLocaleString([], { timeZone: timezone })},
@@ -297,6 +298,8 @@ export class RecommendationHandler {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
             })
             getLogger().debug(msg)
+            console.log(msg)
+            console.log(`sessionId: ${sessionId}`)
 
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
@@ -480,6 +483,7 @@ export class RecommendationHandler {
         }
         if (!this.isValidResponse()) {
             if (showPrompt) {
+                console.log('reco handler')
                 showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 3000)
             }
             reject()
@@ -489,7 +493,7 @@ export class RecommendationHandler {
 
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
-        if (editor.selection.active.isBefore(session.startPos)) {
+        if (editor.selection.active.isBefore(session.fileContext.startPosision)) {
             session.recommendations.forEach((r, i) => {
                 session.recommendations[i].suggestionState = 'Discard'
             })
@@ -501,8 +505,8 @@ export class RecommendationHandler {
         // also mark as Discard
         const typedPrefix = editor.document.getText(
             new vscode.Range(
-                session.startPos.line,
-                session.startPos.character,
+                session.fileContext.startPosision.line,
+                session.fileContext.startPosision.character,
                 editor.selection.active.line,
                 editor.selection.active.character
             )
@@ -570,7 +574,7 @@ export class RecommendationHandler {
                 indexShift,
                 session.recommendations,
                 this.requestId,
-                session.startPos,
+                session.fileContext.startPosision,
                 this.nextToken
             )
             this.inlineCompletionProviderDisposable?.dispose()
@@ -634,7 +638,7 @@ export class RecommendationHandler {
         const session = CWSessionManager.currentSession()
 
         if (
-            editor.selection.active.isBefore(session.startPos) ||
+            editor.selection.active.isBefore(session.fileContext.startPosision) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
             session.recommendations.forEach((r, i) => {

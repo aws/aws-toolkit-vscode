@@ -31,7 +31,7 @@ export function getCompletionItem(
     recommendationIndex: number
 ) {
     const session = CWSessionManager.currentSession()
-    const start = session.startPos
+    const start = session.fileContext.startPosision
     const range = new vscode.Range(start, start)
     const recommendation = recommendationDetail.recommendation.content
     const completionItem = new vscode.CompletionItem(recommendation)

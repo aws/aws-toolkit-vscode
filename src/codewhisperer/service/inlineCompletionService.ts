@@ -144,6 +144,7 @@ export class InlineCompletionService {
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
 
         if (triggerType === 'OnDemand') {
+            console.log('inlineCompletionService')
             showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
         TelemetryHelper.instance.tryRecordClientComponentLatency()
