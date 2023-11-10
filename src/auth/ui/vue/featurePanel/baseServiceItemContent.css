@@ -4,7 +4,7 @@
     justify-content: start;
     gap: 1.2rem;
 
-    border-color: #0097fb;
+    border-color: var(--vscode-descriptionForeground);
     box-sizing: border-box;
     width: 33%;
 
@@ -13,7 +13,7 @@
 
 .feature-panel-container-title {
     display: inline;
-    font-size: 2vw;
+    font-size: 1.7vw;
     font-weight: bold;
 }
 
@@ -46,9 +46,11 @@
     display: flex;
     flex-direction: row;
     gap: 1%;
+    user-select: none;
 }
 
 .collapsible-description {
     font-weight: bold;
     font-size: 0.8vw;
+    user-select: none;
 }

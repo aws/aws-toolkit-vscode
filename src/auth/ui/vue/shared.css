@@ -20,10 +20,6 @@ button,
     justify-content: center;
 }
 
-#logo {
-    fill: var(--vscode-foreground);
-}
-
 .main-text-color {
     color: var(--vscode-foreground);
 }

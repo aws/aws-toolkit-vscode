@@ -9,7 +9,8 @@
             'flex-direction': 'row',
             'justify-content': 'space-between',
             'background-color': backgroundColor,
-            padding: '10px',
+            'align-items': 'center',
+            padding: '1%',
         }"
     >
         <div>
@@ -95,5 +96,6 @@ export default defineComponent({
 
 .notification-container {
     border: var(--vscode-foreground);
+    box-sizing: border-box;
 }
 </style>

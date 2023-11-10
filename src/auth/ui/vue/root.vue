@@ -16,11 +16,11 @@
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
     />
 
-    <div :style="{ display: 'flex', flexDirection: 'column', gap: '10px' }">
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '2vw', 'max-width': 'min(100vw, 1400px)' }">
         <!-- Logo + Title -->
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 10px">
-                <div id="logo">
+                <div id="logo" style="font-size: 3vw">
                     <svg
                         id="Layer_1"
                         data-name="Layer 1"
@@ -43,30 +43,29 @@
                     </svg>
                 </div>
                 <div>
-                    <h3 style="margin-bottom: 0">AWS Toolkit for VS Code</h3>
-                    <h1 style="margin-top: 0">Add Connection to AWS</h1>
+                    <div style="font-size: 1.8vw; font-weight: bold">AWS Toolkit for VS Code</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Status Bars -->
-        <div
-            v-if="notifications.model.showSuccessfulConnection || notifications.model.showFoundCredentials"
-            style="display: flex; flex-direction: column; gap: 20px"
-        >
-            <!-- 
-                TODO figure out a better mechanism to dynamically create notifications instead
-                of fixed messages and just toggling them on/off.
-            -->
-            <ConnectedNotification
-                v-if="notifications.model.showSuccessfulConnection"
-                :args="{ authName: notifications.model.authName }"
+            <!-- Status Bars -->
+            <div
+                v-if="notifications.model.showSuccessfulConnection || notifications.model.showFoundCredentials"
+                style="display: flex; flex-direction: column; gap: 20px"
             >
-            </ConnectedNotification>
-            <CredentialsNotification v-if="notifications.model.showFoundCredentials"></CredentialsNotification>
+                <!-- 
+                    TODO figure out a better mechanism to dynamically create notifications instead
+                    of fixed messages and just toggling them on/off.
+                -->
+                <ConnectedNotification
+                    v-if="notifications.model.showSuccessfulConnection"
+                    :args="{ authName: notifications.model.authName }"
+                >
+                </ConnectedNotification>
+                <CredentialsNotification v-if="notifications.model.showFoundCredentials"></CredentialsNotification>
+            </div>
         </div>
-
-        <div style="display: flex; flex-direction: row; justify-content: space-between">
+        <!-- padding: 0 4vw 0 4vw; -->
+        <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 2vw">
             <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
             <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
             <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
@@ -189,33 +188,8 @@ export default defineComponent({
 </script>
 
 <style>
-/** By default  */
-.flex-container {
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-}
-
-#left-column {
-    width: 550px;
-    box-sizing: border-box;
-    margin-top: 10px;
-}
-
-.service-item-list {
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-}
-
-.service-item-list li {
-    /* Creates an even separation between all list items*/
-    margin-top: 10px;
-}
-
-#left-side h1,
-#left-side h2,
-#left-side h3 {
-    margin: 0 0 0 0;
+#logo {
+    fill: var(--vscode-foreground);
+    padding-top: 10px;
 }
 </style>
