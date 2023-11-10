@@ -18,8 +18,6 @@ import { showMessageWithCancel } from '../utilities/messages'
 import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
-import { once, onceChanged } from '../utilities/functionUtils'
-import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { TokenProvider } from '../../auth/sso/sdkV2Compat'
@@ -31,46 +29,24 @@ import {
 } from 'aws-sdk/clients/codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
+import { DevSettings } from '../settings'
 
-interface CodeCatalystConfig {
+export interface CodeCatalystConfig {
     readonly region: string
     readonly endpoint: string
     readonly hostname: string
     readonly gitHostname: string
 }
 
-export function getCodeCatalystConfig(): Readonly<CodeCatalystConfig> {
-    return getCodeCatalystConfigFromSettings(DevSettings.instance)
+export const defaultServiceConfig: CodeCatalystConfig = {
+    region: 'us-east-1',
+    endpoint: 'https://public.codecatalyst.global.api.aws',
+    hostname: 'codecatalyst.aws',
+    gitHostname: 'codecatalyst.aws',
 }
 
-const logConfigOnce = onceChanged(val => {
-    logger.getLogger().debug(`using CodeCatalyst service configuration: ${val}`)
-})
-
-export function getCodeCatalystConfigFromSettings(settings: DevSettings): Readonly<CodeCatalystConfig> {
-    const defaultConfig = {
-        region: 'us-east-1',
-        endpoint: 'https://public.codecatalyst.global.api.aws',
-        hostname: 'codecatalyst.aws',
-        gitHostname: 'codecatalyst.aws',
-    }
-    const devSetting = 'codecatalystService'
-    const devConfig = settings.get(devSetting, {})
-
-    if (Object.keys(devConfig).length === 0) {
-        logConfigOnce('default')
-        return defaultConfig
-    }
-
-    try {
-        // The configuration in dev settings should explicitly override the entire default configuration.
-        assertHasProps(devConfig, ...Object.keys(defaultConfig))
-    } catch (err) {
-        throw ToolkitError.chain(err, `Dev setting '${devSetting}' has missing or invalid properties.`)
-    }
-
-    logConfigOnce(JSON.stringify(devConfig, undefined, 4))
-    return devConfig as unknown as CodeCatalystConfig
+export function getCodeCatalystConfig(): CodeCatalystConfig {
+    return DevSettings.instance.getCodeCatalystConfig(defaultServiceConfig)
 }
 
 export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
