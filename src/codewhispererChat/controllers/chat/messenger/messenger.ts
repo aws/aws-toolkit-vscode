@@ -17,6 +17,8 @@ import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
+import { keys } from '../../../../shared/utilities/tsUtils'
+import { getLogger } from '../../../../shared/logger/logger'
 
 export class Messenger {
     public constructor(
@@ -62,9 +64,16 @@ export class Messenger {
         )
         this.telemetryHelper.setResponseStreamStartTime(tabID)
 
+        const eventCounts = new Map<string, number>()
         waitUntil(
             async () => {
                 for await (const chatEvent of response.generateAssistantResponseResponse!) {
+                    for (const key of keys(chatEvent)) {
+                        if ((chatEvent[key] as any) !== undefined) {
+                            eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)
+                        }
+                    }
+
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
@@ -166,6 +175,12 @@ export class Messenger {
                     },
                     tabID
                 )
+            )
+
+            getLogger().info(
+                `All events received. requestId=%s counts=%s`,
+                response.$metadata.requestId,
+                Object.fromEntries(eventCounts)
             )
 
             this.telemetryHelper.setResponseStreamTotalTime(tabID)
