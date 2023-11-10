@@ -202,12 +202,12 @@
     "AWS.command.codewhisperer.introduction": "What is CodeWhisperer?",
     "AWS.command.codewhisperer.configure": "CodeWhisperer Settings",
     "AWS.command.codewhisperer.signout": "Sign out",
-    "AWS.command.q.welcome": "Show AWS Q Welcome Page",
+    "AWS.command.q.welcome": "Show Amazon Q Welcome Page",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
-    "AWS.submenu.awsqEditorContextSubmenu.title": "Send to AWS Q",
+    "AWS.submenu.awsqEditorContextSubmenu.title": "Send to Amazon Q",
     "AWS.submenu.auth.title": "Authentication",
     "AWS.generic.create": "Create...",
     "AWS.generic.save": "Save",
@@ -235,6 +235,6 @@
     "AWS.codewhisperer.customization.notification.new_customizations.select": "Select Customization",
     "AWS.codewhisperer.customization.notification.new_customizations.learn_more": "Learn More",
     "AWS.codewhisperer.submenu.title": "Manage CodeWhisperer",
-    "AWS.q.title": "AWS Q",
+    "AWS.q.title": "Amazon Q",
     "AWS.q.chat": "Chat"
 }

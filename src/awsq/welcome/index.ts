@@ -10,7 +10,7 @@ import { MessagePublisher } from '../messages/messagePublisher'
 import { focusAwsqPanel } from '../../codewhisperer/commands/basicCommands'
 
 export function welcome(context: vscode.ExtensionContext, publisher: MessagePublisher<any>): void {
-    const panel = vscode.window.createWebviewPanel('awsQWelcome', 'Meet AWS Q', vscode.ViewColumn.Active, {
+    const panel = vscode.window.createWebviewPanel('awsQWelcome', 'Meet Amazon Q', vscode.ViewColumn.Active, {
         enableScripts: true,
     })
 
@@ -159,7 +159,7 @@ function getWebviewContent(webview: vscode.Webview): string {
             <img id="bg">
             <div id="content">
                 <img id="qLogo" src="${logo}"/>
-                <h1 id="header">AWS Q is a generative AI-powered conversational assistant.</h1>
+                <h1 id="header">Amazon Q is a generative AI-powered conversational assistant.</h1>
                 <div id="buttonContainer">
                     <button id="sendToQButton">"What can Q help me with?"</button>
                 </div>

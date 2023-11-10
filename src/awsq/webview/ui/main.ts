@@ -9,7 +9,7 @@ import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
 
-const WelcomeMessage = `Hi, I am AWS Q. I can answer your software development questions. 
+const WelcomeMessage = `Hi, I am Amazon Q. I can answer your software development questions. 
 Ask me to explain, debug, or optimize your code. 
 You can enter \`/\` to see a list of quick actions.`
 const WeaverBirdWelcomeMessage = `Welcome to /dev. 
@@ -589,6 +589,57 @@ ${message}`,
                 showChatAvatars: false,
                 quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
                 promptInputPlaceholder: 'Ask a question or "/" for capabilities',
+            },
+        },
+        config: {
+            feedbackOptions: [
+                {
+                    value: 'inaccurate-response',
+                    label: 'Inaccurate response',
+                },
+                {
+                    value: 'harmful-content',
+                    label: 'Harmful content',
+                },
+                {
+                    value: 'overlap',
+                    label: 'Overlaps with existing content',
+                },
+                {
+                    value: 'incorrect-syntax',
+                    label: 'Incorrect syntax',
+                },
+                {
+                    value: 'buggy-code',
+                    label: 'Buggy code',
+                },
+                {
+                    value: 'low-quality',
+                    label: 'Low quality',
+                },
+                {
+                    value: 'other',
+                    label: 'Other',
+                },
+            ],
+            texts: {
+                mainTitle: 'Amazon Q',
+                copy: 'Copy',
+                insertAtCursorLabel: 'Insert at cursor',
+                feedbackFormTitle: 'Report an issue',
+                feedbackFormOptionsLabel: 'What type of issue would you like to report?',
+                feedbackFormCommentLabel: 'Description of issue (optional):',
+                feedbackThanks: 'Thanks!',
+                feedbackReportButtonLabel: 'Report an issue',
+                codeSuggestions: 'Code Suggestions',
+                files: 'file(s)',
+                clickFileToViewDiff: 'Click on a file to view diff.',
+                showMore: 'Show more',
+                save: 'Save',
+                cancel: 'Cancel',
+                submit: 'Submit',
+                stopGenerating: 'Stop generating',
+                copyToClipboard: 'Copied to clipboard',
             },
         },
     })
