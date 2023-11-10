@@ -112,7 +112,7 @@ export const selectCustomizationPrompt = Commands.declare('aws.codeWhisperer.sel
     showCustomizationPrompt().then()
 })
 
-export const reconnect = Commands.declare('aws.codeWhisperer.reconnect', () => async () => {
+export const reconnect = Commands.declare('aws.codewhisperer.reconnect', () => async () => {
     await AuthUtil.instance.reauthenticate()
 })
 
