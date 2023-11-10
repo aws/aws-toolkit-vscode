@@ -197,6 +197,10 @@
                 {
                     "type": "reason",
                     "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
                 }
             ]
         },

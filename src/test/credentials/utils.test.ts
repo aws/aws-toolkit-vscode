@@ -128,11 +128,13 @@ describe('connection exists funcs', function () {
         })
 
         const ccBuilderIdCases: BuilderIdTestCase[] = [
-            {connections: [ccBuilderIdConnection], expected: true},
-            {connections: allConnections, expected: true},
-            {connections: [], expected: false},
-            {connections: allConnections.filter(c => c !== ccBuilderIdConnection), expected: false},
-        ].map(c => { return {...c, kind: 'codecatalyst'}})
+            { connections: [ccBuilderIdConnection], expected: true },
+            { connections: allConnections, expected: true },
+            { connections: [], expected: false },
+            { connections: allConnections.filter(c => c !== ccBuilderIdConnection), expected: false },
+        ].map(c => {
+            return { ...c, kind: 'codecatalyst' }
+        })
 
         const allCases = [...cwBuilderIdCases, ...ccBuilderIdCases]
 
@@ -159,7 +161,7 @@ describe('connection exists funcs', function () {
                 .join(', ')}]`, async function () {
                 const connections = args[0]
                 const expected = args[1]
-    
+
                 assert.strictEqual(await hasIamCredentials(async () => connections), expected)
             })
         })

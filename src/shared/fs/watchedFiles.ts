@@ -99,7 +99,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Name for logs
      */
-    protected abstract name: string
+    public abstract readonly name: string
 
     public constructor() {
         this.disposables.push(
@@ -297,27 +297,28 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
     /**
      * Builds/rebuilds registry using current glob and exclusion patterns. ***Necessary to init registry***.
      *
-     * @param cancel Optional timeout that can trigger canceling additional loading on completion (manual or timed)
+     * @param cancel Cancels all processing.
+     * @param onItem Called when an item is processed.
      */
-    public async rebuild(cancel?: Timeout): Promise<void> {
-        let skips = 0
-        let todo = 0
+    public async rebuild(
+        cancel?: Timeout,
+        onItem?: (total: number, i: number, cancelled: boolean) => void
+    ): Promise<void> {
         this.isWatching = true
         this.reset()
+        let skips = 0
+        const found: vscode.Uri[] = []
 
         const exclude = getExcludePatternOnce()
         getLogger().info(`${this.name}: building with: ${this.outputPatterns()}`)
+
         for (let i = 0; i < this.globs.length && !cancel?.completed; i++) {
             const glob = this.globs[i]
             try {
-                const found = await vscode.workspace.findFiles(glob, exclude)
-                todo = found.length
-                for (let j = 0; j < found.length && !cancel?.completed; j++, todo--) {
-                    const r = await this.addItem(found[j], true)
-                    if (!r) {
-                        skips++
-                    }
+                for (const f of await vscode.workspace.findFiles(glob, exclude)) {
+                    found.push(f)
                 }
+                onItem?.(0, 0, !!cancel?.completed) // Pass 0 to indicate "collection" phase.
             } catch (e) {
                 const err = e as Error
                 if (err.name !== 'Canceled') {
@@ -326,10 +327,19 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
                 }
             }
         }
+
+        let item = 0
+        for (; item < found.length && !cancel?.completed; item++) {
+            if (!(await this.addItem(found[item], true))) {
+                skips++
+            }
+            onItem?.(found.length, item, !!cancel?.completed)
+        }
+
         getLogger().info(
             `${this.name}: processed %s items%s%s`,
             this.registryData.size,
-            cancel?.completed ? ` (cancelled, ${todo} left)` : '',
+            cancel?.completed ? ` (cancelled, ${found.length - item} left)` : '',
             skips > 0 ? `, skipped ${skips}` : ''
         )
     }
@@ -392,8 +402,8 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 }
 
 export class NoopWatcher extends WatchedFiles<any> {
+    public name: string = 'NoOp'
     protected async process(uri: vscode.Uri): Promise<any> {
         throw new Error(`Attempted to add a file to the NoopWatcher: ${uri.fsPath}`)
     }
-    protected name: string = 'NoOp'
 }
