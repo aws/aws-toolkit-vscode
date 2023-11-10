@@ -119,11 +119,7 @@ class DefaultCodeWhispererModelConfigurator : CodeWhispererModelConfigurator, Pe
         calculateIfIamIdentityCenterConnection(project) {
             // 1. invoke API and get result
             val listAvailableCustomizationsResult = try {
-                val result = CodeWhispererClientAdaptor.getInstance(project).listAvailableCustomizations().customizations().map { custom ->
-                    CodeWhispererCustomization(arn = custom.arn(), name = custom.name(), description = custom.description())
-                }
-                LOG.debug { "ListAvailableCustomizations: connection ${it.id} result: $result" }
-                result
+                CodeWhispererClientAdaptor.getInstance(project).listAvailableCustomizations()
             } catch (e: Exception) {
                 val requestId = (e as? CodeWhispererRuntimeException)?.requestId()
                 val logMessage = if (CodeWhispererConstants.Customization.noAccessToCustomizationExceptionPredicate(e)) {

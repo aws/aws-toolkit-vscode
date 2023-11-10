@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableC
 import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
 import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.SuggestionState
-import software.amazon.awssdk.services.codewhispererruntime.paginators.ListAvailableCustomizationsIterable
+import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.AwsClientManager
@@ -36,6 +36,7 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
@@ -79,7 +80,7 @@ interface CodeWhispererClientAdaptor : Disposable {
         isSigv4: Boolean = shouldUseSigv4Client(project)
     ): ListCodeScanFindingsResponse
 
-    fun listAvailableCustomizations(): ListAvailableCustomizationsIterable
+    fun listAvailableCustomizations(): List<CodeWhispererCustomization>
 
     fun sendUserTriggerDecisionTelemetry(
         requestContext: RequestContext,
@@ -190,8 +191,24 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
         }
 
     // DO NOT directly use this method to fetch customizations, use wrapper [CodeWhispererModelConfigurator.listCustomization()] instead
-    override fun listAvailableCustomizations(): ListAvailableCustomizationsIterable =
+    override fun listAvailableCustomizations(): List<CodeWhispererCustomization> =
         bearerClient().listAvailableCustomizationsPaginator(ListAvailableCustomizationsRequest.builder().build())
+            .stream()
+            .toList()
+            .flatMap { resp ->
+                LOG.debug {
+                    "listAvailableCustomizations: requestId: ${resp.responseMetadata().requestId()}, customizations: ${
+                        resp.customizations().map { it.name() }
+                    }"
+                }
+                resp.customizations().map {
+                    CodeWhispererCustomization(
+                        arn = it.arn(),
+                        name = it.name(),
+                        description = it.description()
+                    )
+                }
+            }
 
     override fun sendUserTriggerDecisionTelemetry(
         requestContext: RequestContext,

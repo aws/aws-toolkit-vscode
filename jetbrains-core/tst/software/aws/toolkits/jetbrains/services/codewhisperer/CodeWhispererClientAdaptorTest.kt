@@ -40,9 +40,12 @@ import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntime
 import software.amazon.awssdk.services.codewhispererruntime.model.CodeAnalysisStatus
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.CreateUploadUrlResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.Customization
 import software.amazon.awssdk.services.codewhispererruntime.model.GenerateCompletionsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.GetCodeAnalysisResponse
+import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableCustomizationsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableCustomizationsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.ListCodeAnalysisFindingsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.OptOutPreference
@@ -51,6 +54,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryE
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeAnalysisResponse
 import software.amazon.awssdk.services.codewhispererruntime.paginators.GenerateCompletionsIterable
+import software.amazon.awssdk.services.codewhispererruntime.paginators.ListAvailableCustomizationsIterable
 import software.amazon.awssdk.services.ssooidc.SsoOidcClient
 import software.aws.toolkits.core.TokenConnectionSettings
 import software.aws.toolkits.core.utils.test.aString
@@ -68,6 +72,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestU
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.sdkHttpResponse
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 
 class CodeWhispererClientAdaptorTest {
@@ -136,6 +141,48 @@ class CodeWhispererClientAdaptorTest {
     @Test
     fun `Sono region is us-east-1`() {
         assertThat("us-east-1").isEqualTo(SONO_REGION)
+    }
+
+    @Test
+    fun `listCustomizations`() {
+        val sdkIterable = ListAvailableCustomizationsIterable(bearerClient, ListAvailableCustomizationsRequest.builder().build())
+        val mockResponse1 = ListAvailableCustomizationsResponse.builder()
+            .customizations(
+                listOf(
+                    Customization.builder().name("custom-1").arn("arn-1").build(),
+                    Customization.builder().name("custom-2").arn("arn-2").build()
+                )
+            )
+            .nextToken("token-1")
+            .responseMetadata(metadata)
+            .sdkHttpResponse(sdkHttpResponse)
+            .build() as ListAvailableCustomizationsResponse
+
+        val mockResponse2 = ListAvailableCustomizationsResponse.builder()
+            .customizations(
+                listOf(
+                    Customization.builder().name("custom-3").arn("arn-3").build(),
+                )
+            )
+            .nextToken("")
+            .responseMetadata(metadata)
+            .sdkHttpResponse(sdkHttpResponse)
+            .build() as ListAvailableCustomizationsResponse
+
+        bearerClient.stub { client ->
+            on { client.listAvailableCustomizations(any<ListAvailableCustomizationsRequest>()) } doReturnConsecutively listOf(mockResponse1, mockResponse2)
+            on { client.listAvailableCustomizationsPaginator(any<ListAvailableCustomizationsRequest>()) } doReturn sdkIterable
+        }
+
+        val actual = sut.listAvailableCustomizations()
+        assertThat(actual).hasSize(3)
+        assertThat(actual).isEqualTo(
+            listOf(
+                CodeWhispererCustomization(name = "custom-1", arn = "arn-1"),
+                CodeWhispererCustomization(name = "custom-2", arn = "arn-2"),
+                CodeWhispererCustomization(name = "custom-3", arn = "arn-3")
+            )
+        )
     }
 
     @Test
