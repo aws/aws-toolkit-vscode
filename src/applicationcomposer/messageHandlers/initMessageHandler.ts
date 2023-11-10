@@ -4,12 +4,13 @@
  */
 
 import path from 'path'
-import { InitResponseMessage, Response, WebviewContext } from '../types'
+import { InitResponseMessage, MessageType, WebviewContext, Command } from '../types'
 
 export function initMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
     const responseMessage: InitResponseMessage = {
-        response: Response.INIT,
+        messageType: MessageType.RESPONSE,
+        command: Command.INIT,
         templateFileName: path.basename(filePath),
         templateFilePath: filePath,
     }

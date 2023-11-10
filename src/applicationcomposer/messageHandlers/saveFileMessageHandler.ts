@@ -4,14 +4,14 @@
  */
 
 import vscode from 'vscode'
-import { SaveFileRequestMessage, SaveFileResponseMessage, WebviewContext, Response } from '../types'
+import { SaveFileRequestMessage, SaveFileResponseMessage, WebviewContext, Command, MessageType } from '../types'
 import path from 'path'
 
 export async function saveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
     let saveFileResponseMessage: SaveFileResponseMessage
     // If filePath is empty, save contents in default template file
     const filePath =
-        request.filePath === '' ? context.defaultTemplatePath : context.workSpacePath + '/' + request.filePath
+        request.filePath === '' ? context.defaultTemplatePath : path.join(context.workSpacePath, request.filePath)
     try {
         if (!context.textDocument.isDirty) {
             const contents = Buffer.from(request.fileContents, 'utf8')
@@ -19,7 +19,8 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
             const uri = vscode.Uri.file(filePath)
             await vscode.workspace.fs.writeFile(uri, contents)
             saveFileResponseMessage = {
-                response: Response.SAVE_FILE,
+                messageType: MessageType.RESPONSE,
+                command: Command.SAVE_FILE,
                 eventId: request.eventId,
                 filePath: filePath,
                 isSuccess: true,
@@ -30,11 +31,12 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
         }
     } catch (e) {
         saveFileResponseMessage = {
-            response: Response.SAVE_FILE,
+            messageType: MessageType.RESPONSE,
+            command: Command.SAVE_FILE,
             eventId: request.eventId,
             filePath: filePath,
             isSuccess: false,
-            reason: (e as Error).message,
+            failureReason: (e as Error).message,
         }
     }
 
