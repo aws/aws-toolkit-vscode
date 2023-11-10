@@ -56,7 +56,7 @@ const QuickActionCommands = (weaverbirdEnabled: boolean) => [
                       {
                           command: '/dev',
                           placeholder: 'Enter the coding task in details',
-                          description: 'Assign Q a coding task',
+                          description: 'Describe a task and let Q make the changes to your application',
                       },
                   ],
               },
@@ -204,7 +204,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
             if (welcomeFollowUpType === 'assign-code-task') {
                 const newTabId = mynahUI.updateStore('', {
-                    tabTitle: 'Q - Task',
+                    tabTitle: '/dev',
                     quickActionCommands: [],
                     promptInputPlaceholder: 'What problem do you want to fix?',
                     chatItems: [
@@ -398,7 +398,7 @@ ${message}`,
 
                     mynahUI.updateStore(affectedTabId, { chatItems: [] })
                     mynahUI.updateStore(affectedTabId, {
-                        tabTitle: 'Q - Task',
+                        tabTitle: '/dev',
                         quickActionCommands: [],
                         promptInputPlaceholder: 'What problem do you want to fix?',
                         chatItems: [
