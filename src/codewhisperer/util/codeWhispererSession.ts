@@ -3,26 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import {
-    CodewhispererCompletionType,
-    CodewhispererLanguage,
-    CodewhispererGettingStartedTask,
-} from '../../shared/telemetry/telemetry.gen'
-import { GenerateRecommendationsRequest, ListRecommendationsRequest } from '../client/codewhisperer'
-import { Position } from 'vscode'
-import {
-    CodeWhispererSupplementalContext,
-    fetchSupplementalContext,
-} from './supplementalContext/supplementalContextUtil'
-import { CWFileContext, CWRecommendationEntry } from '../models/model'
-import {
-    buildGenerateRecommendationRequest,
-    buildListRecommendationRequest,
-    extractContextForCodeWhisperer,
-} from './editorContext'
-import { supplementalContextTimeoutInMs } from '../models/constants'
-
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 class CodeWhispererSession {
