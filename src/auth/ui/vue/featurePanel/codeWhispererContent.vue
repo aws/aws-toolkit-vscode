@@ -1,6 +1,6 @@
 <template>
-    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">Amazon CodeWhisperer</div>
+    <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
+        <div class="feature-panel-container-title">Amazon CodeWhisperer</div>
 
         <div class="centered-items">
             <img
@@ -10,20 +10,16 @@
             />
         </div>
 
-        <div>
-            Amazon CodeWhisperer is an AI coding companion that generates whole line and full function code suggestions
-            in your IDE in real-time, to help you quickly write secure code.
-        </div>
-
-        <div>
+        <div class="feature-panel-container-description">
+            An AI coding companion that generates code suggestions as you type.
             <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
-                >Learn more about CodeWhisperer.</a
+                >Learn more.</a
             >
         </div>
 
         <hr />
 
-        <div class="service-item-content-form-section">
+        <div class="feature-panel-form-section">
             <div class="codewhisperer-content-form-container">
                 <BuilderIdForm
                     :state="builderIdState"
@@ -31,23 +27,18 @@
                 ></BuilderIdForm>
 
                 <div>
-                    <div
-                        v-on:click="toggleIdentityCenterShown"
-                        style="cursor: pointer; display: flex; flex-direction: row"
-                    >
-                        <div style="font-weight: bold; font-size: medium" :class="collapsibleClass"></div>
+                    <div v-on:click="toggleIdentityCenterShown" class="collapsible-title">
+                        <div :class="collapsibleClass"></div>
                         <div>
-                            <div style="font-weight: bold; font-size: 14px">
-                                Have a Professional Tier subscription? Sign in with IAM Identity Center.
+                            <div>Have a Professional Tier subscription?</div>
+                            <div class="collapsible-description">
+                                Sign in with IAM Identity Center (SSO)
+                                <a
+                                    class="icon icon-lg icon-vscode-question"
+                                    href="https://aws.amazon.com/codewhisperer/pricing/"
+                                    v-on:click="uiClick('auth_learnMoreProfessionalTierCodeWhisperer')"
+                                ></a>
                             </div>
-                            <div>
-                                Professional Tier offers administrative capabilities for organizations of developers.
-                            </div>
-                            <a
-                                href="https://aws.amazon.com/codewhisperer/pricing/"
-                                v-on:click="uiClick('auth_learnMoreProfessionalTierCodeWhisperer')"
-                                >Learn more.</a
-                            >
                         </div>
                     </div>
                 </div>

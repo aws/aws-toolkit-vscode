@@ -1,50 +1,54 @@
-.service-item-content-container {
+.feature-panel-container {
     display: flex;
     flex-direction: column;
-    align-items: left;
     justify-content: start;
-    gap: 10px;
+    gap: 1.2rem;
 
     border-color: #0097fb;
+    box-sizing: border-box;
+    width: 33%;
 
-    width: 520px;
-
-    padding: 30px;
+    padding: 2%;
 }
 
-.service-item-content-container-title {
+.feature-panel-container-title {
     display: inline;
-    font-size: large;
+    font-size: 2vw;
     font-weight: bold;
 }
 
-.service-item-content-image {
-    height: 280px;
+.feature-panel-container-description {
+    font-size: 1vw;
 }
 
-.service-item-content-container hr {
+.service-item-content-image {
+    height: 100%;
+}
+
+.feature-panel-container hr {
     border: none;
     height: 1px;
     background-color: var(--vscode-descriptionForeground);
     width: 100%;
 }
 
-.service-item-content-form-section {
+.feature-panel-form-section {
     display: flex;
     flex-direction: column;
     align-items: left;
-    gap: 20px;
+    gap: 1.2vw;
 }
 
-.form-section-title {
-    display: inline;
-    font-size: 14px;
+.collapsible-title {
     font-weight: bold;
-}
-
-.service-item-content-form-container {
+    font-size: 1vw;
+    cursor: pointer;
     display: flex;
     flex-direction: row;
-    gap: 20px;
-    justify-content: left;
+    gap: 1%;
+}
+
+.collapsible-description {
+    font-weight: bold;
+    font-size: 0.8vw;
 }

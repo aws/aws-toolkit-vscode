@@ -1,5 +1,5 @@
 <template>
-    <div class="auth-form container-background border-common" id="identity-center-form">
+    <div class="auth-form container-background border-common">
         <div v-if="checkIfConnected">
             <FormTitle :isConnected="isConnected"
                 >IAM Identity Center&nbsp;<a
@@ -25,26 +25,30 @@
         <div v-if="stage === 'START'">
             <div class="form-section">
                 <label class="input-title">Start URL</label>
-                <label class="small-description">URL for your organization, provided by an admin or help desk.</label>
+                <label class="form-description-color input-description-small"
+                    >URL for your organization, provided by an admin or help desk.</label
+                >
                 <input v-model="data.startUrl" type="text" :data-invalid="!!errors.startUrl" />
-                <div class="small-description error-text">{{ errors.startUrl }}</div>
+                <div class="form-description-color input-description-small error-text">{{ errors.startUrl }}</div>
             </div>
 
             <div class="form-section">
                 <label class="input-title">Region</label>
-                <label class="small-description">AWS Region that hosts Identity directory</label>
-                <div v-on:click="selectRegion()" style="display: flex; flex-direction: row; gap: 10px; cursor: pointer">
+                <label class="form-description-color input-description-small"
+                    >AWS Region that hosts Identity directory</label
+                >
+                <div v-on:click="selectRegion()" style="display: flex; flex-direction: row; gap: 2%; cursor: pointer">
                     <div class="icon icon-lg icon-vscode-edit edit-icon"></div>
                     <div class="text-link-color" style="width: 100%">
                         {{ data.region ? data.region : 'Select a region...' }}
                     </div>
                 </div>
-                <div class="small-description error-text">{{ errors.region }}</div>
+                <div class="form-description-color input-description-small error-text">{{ errors.region }}</div>
             </div>
 
             <div class="form-section">
                 <button v-on:click="signin()">Sign in</button>
-                <div class="small-description error-text">{{ errors.submit }}</div>
+                <div class="form-description-color input-description-small error-text">{{ errors.submit }}</div>
             </div>
         </div>
 
@@ -527,9 +531,4 @@ class IdentityCenterErrors {
 <style>
 @import './sharedAuthForms.css';
 @import '../shared.css';
-
-#identity-center-form {
-    width: 300px;
-    height: fit-content;
-}
 </style>

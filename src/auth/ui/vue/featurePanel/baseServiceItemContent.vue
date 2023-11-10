@@ -1,5 +1,5 @@
 <template>
-    <div class="service-item-content-container border-common">Must Be Implemented</div>
+    <div class="feature-panel-container border-common">Must Be Implemented</div>
 </template>
 
 <script lang="ts">

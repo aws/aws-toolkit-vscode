@@ -1,5 +1,5 @@
 <template>
-    <div class="auth-form container-background border-common" id="credentials-form">
+    <div class="auth-form container-background border-common">
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
@@ -14,7 +14,7 @@
 
             <div v-if="isFormShown">
                 <div class="form-section">
-                    <label class="small-description"
+                    <label class="form-description-color input-description-small"
                         >Credentials will be added to the appropriate `~/.aws/` files.</label
                     >
                     <div v-on:click="editCredentialsFile()" class="sub-text-color" style="cursor: pointer">
@@ -25,15 +25,21 @@
 
                 <div class="form-section">
                     <label class="input-title">Profile Name</label>
-                    <label class="small-description">The identifier for these credentials</label>
+                    <label class="form-description-color input-description-small"
+                        >The identifier for these credentials</label
+                    >
                     <input v-model="data.profileName" type="text" :data-invalid="!!errors.profileName" />
-                    <div class="small-description error-text">{{ errors.profileName }}</div>
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.profileName }}
+                    </div>
                 </div>
 
                 <div class="form-section">
                     <label class="input-title">Access Key</label>
                     <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
-                    <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.aws_access_key_id }}
+                    </div>
                 </div>
 
                 <div class="form-section">
@@ -43,12 +49,14 @@
                         type="password"
                         :data-invalid="!!errors.aws_secret_access_key"
                     />
-                    <div class="small-description error-text">{{ errors.aws_secret_access_key }}</div>
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.aws_secret_access_key }}
+                    </div>
                 </div>
 
                 <div class="form-section">
                     <button v-on:click="submitData()" :disabled="!canSubmit">Add Profile</button>
-                    <div class="small-description error-text">{{ errors.submit }}</div>
+                    <div class="form-description-color input-description-small error-text">{{ errors.submit }}</div>
                 </div>
             </div>
         </div>
@@ -408,10 +416,6 @@ class CredentialsErrors {
 <style>
 @import './sharedAuthForms.css';
 @import '../shared.css';
-
-#credentials-form {
-    width: 300px;
-}
 
 #collapsible {
     display: flex;

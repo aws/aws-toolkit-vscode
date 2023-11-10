@@ -1,6 +1,6 @@
 <template>
-    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">Amazon CodeCatalyst</div>
+    <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
+        <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
 
         <div class="centered-items">
             <img
@@ -10,44 +10,38 @@
             />
         </div>
 
-        <div>
-            Amazon CodeCatalyst, is a cloud-based collaboration space for software development teams. You can create a
-            project that will generate resources that you can manage, including Dev Environments and workflows. Through
-            the AWS Toolkit for Visual Studio Code, you can view and manage your CodeCatalyst resources directly from VS
-            Code.
-        </div>
-
-        <div>
+        <div class="feature-panel-container-description">
+            Spend more time coding and less time managing development environments.
             <a href="https://aws.amazon.com/codecatalyst/" v-on:click="emitUiClick('auth_learnMoreCodeCatalyst')"
-                >Learn more about CodeCatalyst.</a
+                >Learn more.</a
             >
         </div>
 
         <hr />
 
-        <div class="service-item-content-form-section">
-            <div class="service-item-content-form-container">
-                <BuilderIdForm
-                    :state="builderIdState"
-                    @auth-connection-updated="onAuthConnectionUpdated"
-                ></BuilderIdForm>
-            </div>
+        <div class="feature-panel-form-section">
+                <div>
+                    <BuilderIdForm
+                        :state="builderIdState"
+                        @auth-connection-updated="onAuthConnectionUpdated"
+                    ></BuilderIdForm>
+                </div>
 
-            <div>
-                <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
-                    <div style="font-weight: bold; font-size: medium" :class="identityCenterCollapsibleClass"></div>
-                    <div>
-                        <div style="font-weight: bold; font-size: 14px">Sign in with IAM Identity Center.</div>
+                <div>
+                    <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
+                        <div style="font-weight: bold; font-size: medium" :class="identityCenterCollapsibleClass"></div>
+                        <div>
+                            <div style="font-weight: bold; font-size: 14px">Sign in with IAM Identity Center.</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <IdentityCenterForm
-                :state="identityCenterState"
-                :allow-existing-start-url="true"
-                @auth-connection-updated="onAuthConnectionUpdated"
-                v-show="isIdentityCenterShown"
-            ></IdentityCenterForm>
+                <IdentityCenterForm
+                    :state="identityCenterState"
+                    :allow-existing-start-url="true"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                    v-show="isIdentityCenterShown"
+                ></IdentityCenterForm>
         </div>
     </div>
 </template>

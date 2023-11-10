@@ -1,11 +1,11 @@
 <template>
-    <div class="auth-form container-background border-common" id="builder-id-form">
+    <div class="auth-form container-background border-common">
         <div>
             <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
 
             <div v-if="stage === 'START'">
                 <div class="form-section">
-                    <div class="sub-text-color">
+                    <div class="auth-form-description form-description-color">
                         {{ description }}
                         <a :href="signUpUrl" v-on:click="emitUiClick('auth_learnMoreBuilderId')">Learn more.</a>
                     </div>
@@ -13,7 +13,7 @@
 
                 <div class="form-section">
                     <button v-on:click="startSignIn()">{{ submitButtonText }}</button>
-                    <div class="small-description error-text">{{ error }}</div>
+                    <div class="form-description-color input-description-small error-text">{{ error }}</div>
                 </div>
             </div>
 
@@ -321,9 +321,4 @@ export class CodeCatalystBuilderIdState extends BaseBuilderIdState {
 <style>
 @import './sharedAuthForms.css';
 @import '../shared.css';
-
-#builder-id-form {
-    width: 300px;
-    height: fit-content;
-}
 </style>

@@ -66,7 +66,7 @@
             <CredentialsNotification v-if="notifications.model.showFoundCredentials"></CredentialsNotification>
         </div>
 
-        <div style="display: flex; flex-direction: row">
+        <div style="display: flex; flex-direction: row; justify-content: space-between">
             <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
             <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
             <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>

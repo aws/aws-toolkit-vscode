@@ -4,7 +4,7 @@
     text-align: left;
     color: var(--vscode-foreground);
 
-    padding: 10px;
+    padding: 3%;
 }
 
 /* A grouping of related elements in an auth form */
@@ -26,17 +26,24 @@
 }
 
 .auth-form-title {
-    font-size: 14px;
+    font-size: 1.4vw;
     font-weight: bold;
 }
 
-.input-title {
-    font-size: 12px;
+.auth-form-description {
+    font-size: 0.9vw;
 }
 
-.small-description {
-    font-size: 10px;
+.input-title {
+    font-size: 1vw;
+}
+
+.form-description-color {
     color: var(--vscode-descriptionForeground);
+}
+
+.input-description-small {
+    font-size: 0.8vw;
 }
 
 .edit-icon {
@@ -45,7 +52,7 @@
 
 .error-text {
     color: #f14c4c;
-    font-size: 12px;
+    font-size: 0.8vw;
 }
 
 input[data-invalid='true'] {
@@ -59,6 +66,10 @@ input[data-invalid='true'] {
 input[data-invalid='true']:focus {
     /* Ensures the border stays red even when selected */
     outline: none !important;
+}
+
+input {
+    font-size: 1vw;
 }
 
 /* Remove underline from anchor elements */

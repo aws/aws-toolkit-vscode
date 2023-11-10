@@ -1,6 +1,6 @@
 <template>
-    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">AWS Explorer</div>
+    <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
+        <div class="feature-panel-container-title">AWS Explorer</div>
 
         <div class="centered-items">
             <img
@@ -10,35 +10,28 @@
             />
         </div>
 
-        <div>
-            Add multiple IAM Roles to work across AWS Accounts. Manage and edit S3 files, view CloudWatch Logs, Debug
-            Lambda Functions, and more!
-        </div>
-
-        <div>
+        <div class="feature-panel-container-description">
+            Work with S3, CloudWatch, and more.
             <a
                 href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
                 v-on:click="emitUiClick('auth_learnMoreAWSResources')"
-                >Learn more about the AWS Explorer.</a
+                >Learn more.</a
             >
         </div>
 
         <hr />
 
-        <div v-if="isAuthConnected" class="service-item-content-form-section">
+        <div v-if="isAuthConnected" class="feature-panel-form-section">
             <ExplorerAggregateForm
                 :identityCenterState="identityCenterFormState"
                 :credentialsState="credentialsFormState"
                 @auth-connection-updated="onAuthConnectionUpdated"
             ></ExplorerAggregateForm>
 
-            <div v-on:click="toggleShowIdentityCenter" style="cursor: pointer; display: flex; flex-direction: row">
-                <div
-                    style="font-weight: bold; font-size: medium"
-                    :class="collapsibleClass(isIdentityCenterShown)"
-                ></div>
+            <div v-on:click="toggleShowIdentityCenter" class="collapsible-title">
+                <div :class="collapsibleClass(isIdentityCenterShown)"></div>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px">Add another IAM Identity Center Profile</div>
+                    <div>Add another IAM Identity Center Profile</div>
                 </div>
             </div>
 
@@ -49,10 +42,10 @@
                 v-show="isIdentityCenterShown"
             ></IdentityCenterForm>
 
-            <div v-on:click="toggleShowCredentials" style="cursor: pointer; display: flex; flex-direction: row">
-                <div style="font-weight: bold; font-size: medium" :class="collapsibleClass(isCredentialsShown)"></div>
+            <div v-on:click="toggleShowCredentials" class="collapsible-title">
+                <div :class="collapsibleClass(isCredentialsShown)"></div>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px">Add another IAM User Credential</div>
+                    <div>Add another IAM User Credential</div>
                 </div>
             </div>
 
@@ -70,7 +63,7 @@
                 >
             </div>
         </div>
-        <div v-else class="service-item-content-form-section">
+        <div v-else class="feature-panel-form-section">
             <IdentityCenterForm
                 :state="identityCenterFormState"
                 @auth-connection-updated="onAuthConnectionUpdated"
