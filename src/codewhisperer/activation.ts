@@ -220,7 +220,7 @@ export async function activate(context: ExtContext): Promise<void> {
     await timed('auth.restore()', auth.restore)
 
     if (auth.isConnectionExpired()) {
-        await timed('auth.showReauthenticatePrompt()', auth.showReauthenticatePrompt)
+        await timed('auth.showReauthenticatePrompt()', () => auth.showReauthenticatePrompt())
     }
     if (auth.isValidEnterpriseSsoInUse()) {
         await timed('notifyNewCustomizations', notifyNewCustomizations)
