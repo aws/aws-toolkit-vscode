@@ -1,3 +1,9 @@
+# _1.86_ (2023-11-08)
+- **(Feature)** Added the 'Setup Authentication for AWS Toolkit' page
+- **(Feature)** Added 2023.3 support
+- **(Feature)** auth: support `sso_session` for profiles in AWS shared ini files
+- **(Bug Fix)** CodeWhisperer: Fix an issue where an IndexOutOfBoundException could be thrown when using CodeWhisperer
+
 # _1.85_ (2023-10-27)
 - **(Feature)** CodeWhisperer: reduce auto-suggestions when there is immediate right context
 

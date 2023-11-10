@@ -1,0 +1,11 @@
+{
+  "date" : "2023-11-10",
+  "version" : "1.87",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix issue where images in 'Authenticate' panel do not show up"
+  }, {
+    "type" : "deprecation",
+    "description" : "An upcoming release will remove support for JetBrains Gateway version 2023.2 and for for IDEs based on the 2022.3 platform"
+  } ]
+}
