@@ -5,10 +5,9 @@
 
 import * as os from 'os'
 import * as vscode from 'vscode'
-import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
+import { CodewhispererAutomatedTriggerType, CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { ProgrammingLanguage } from '../client/codewhispereruserclient'
 
 interface normalizedCoefficients {
     readonly lineNum: number
@@ -44,7 +43,7 @@ export class ClassifierTrigger {
         Enter: 0.2853,
     }
 
-    private languageCoefficientMap: Readonly<Record<string, number>> = {
+    private languageCoefficientMap: Readonly<Record<CodewhispererLanguage, number>> = {
         java: -0.4622,
         javascript: -0.4688,
         python: -0.3052,
@@ -61,6 +60,8 @@ export class ClassifierTrigger {
         go: -0.3504,
         scala: -0.534,
         cpp: -0.1734,
+        c: 0,
+        plaintext: 0,
     }
 
     // other metadata coefficient
@@ -500,7 +501,7 @@ export class ClassifierTrigger {
         triggerType: string | undefined,
         char: string,
         lineNum: number,
-        language: ProgrammingLanguage
+        language: CodewhispererLanguage
     ): number {
         const leftContextLines = leftContext.split(/\r?\n/)
         const leftContextAtCurrentLine = leftContextLines[leftContextLines.length - 1]
@@ -521,7 +522,7 @@ export class ClassifierTrigger {
         const ideCoefficient = this.ideVscode
 
         const previousDecision = TelemetryHelper.instance.getLastTriggerDecisionForClassifier()
-        const languageCoefficient = this.languageCoefficientMap[language.languageName] ?? 0
+        const languageCoefficient = this.languageCoefficientMap[language] ?? 0
 
         let previousDecisionCoefficient = 0
         if (previousDecision === 'Accept') {

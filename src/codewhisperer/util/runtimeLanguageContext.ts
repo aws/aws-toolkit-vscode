@@ -148,31 +148,6 @@ export class RuntimeLanguageContext {
     }
 
     /**
-     * Mapping the field ProgrammingLanguage of codewhisperer generateRecommendationRequest | listRecommendationRequest to
-     * its Codewhisperer runtime language e.g. jsx -> typescript, typescript -> typescript
-     * @param request : cwspr generateRecommendationRequest | ListRecommendationRequest
-     * @returns request with source language name mapped to cwspr runtime language
-     */
-    public mapToRuntimeLanguage<
-        T extends codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
-    >(request: T): T {
-        const fileContext = request.fileContext
-        const runtimeLanguage: codewhispererClient.ProgrammingLanguage = {
-            languageName: this.toRuntimeLanguage(
-                request.fileContext.programmingLanguage.languageName as CodewhispererLanguage
-            ),
-        }
-
-        return {
-            ...request,
-            fileContext: {
-                ...fileContext,
-                programmingLanguage: runtimeLanguage,
-            },
-        }
-    }
-
-    /**
      *
      * @param languageId: either vscodeLanguageId or CodewhispererLanguage
      * @returns ture if the language is supported by CodeWhisperer otherwise false

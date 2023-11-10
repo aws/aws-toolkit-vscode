@@ -13,15 +13,19 @@ import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import {
     CodeWhispererSupplementalContext,
+    CodeWhispererSupplementalContextItem,
     fetchSupplementalContext,
 } from './supplementalContext/supplementalContextUtil'
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import { CWFileContext } from '../models/model'
+import CodeWhispererClient from '../client/codewhispererclient'
+import CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 let tabSize: number = getTabSizeSetting()
 
-export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
+export function extractContextForCodeWhisperer(editor: vscode.TextEditor): CWFileContext {
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
@@ -41,15 +45,12 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         )
     )
 
-    return {
-        filename: getFileNameForRequest(editor),
-        programmingLanguage: {
-            languageName:
-                runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId,
-        },
-        leftFileContent: caretLeftFileContext,
-        rightFileContent: caretRightFileContext,
-    } as codewhispererClient.FileContext
+    return new CWFileContext(
+        getFileNameForRequest(editor),
+        runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? 'plaintext',
+        caretLeftFileContext,
+        caretRightFileContext
+    )
 }
 
 export function getFileName(editor: vscode.TextEditor): string {
@@ -78,7 +79,8 @@ export async function buildListRecommendationRequest(
     allowCodeWithReference: boolean | undefined = undefined
 ): Promise<{
     request: codewhispererClient.ListRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+    fileContext: CWFileContext
+    supplementalContexts: CodeWhispererSupplementalContext | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -89,55 +91,45 @@ export async function buildListRecommendationRequest(
 
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
 
-    const supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined =
-        supplementalContexts
-            ? {
-                  isUtg: supplementalContexts.isUtg,
-                  isProcessTimeout: supplementalContexts.isProcessTimeout,
-                  contentsLength: supplementalContexts.contentsLength,
-                  latency: supplementalContexts.latency,
-                  strategy: supplementalContexts.strategy,
-              }
-            : undefined
-
     logSupplementalContext(supplementalContexts)
 
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
-        ? supplementalContexts.supplementalContextItems.map(v => {
-              return selectFrom(v, 'content', 'filePath')
-          })
+    const sdkSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+        ? supplementalContexts.supplementalContextItems.map(v => toSdkSupplementalContext(v))
         : []
 
     if (allowCodeWithReference === undefined) {
         return {
             request: {
-                fileContext: fileContext,
+                fileContext: fileContext.toSdkType(),
                 nextToken: nextToken,
-                supplementalContexts: supplementalContext,
+                supplementalContexts: sdkSupplementalContext,
                 customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
             },
-            supplementalMetadata: supplementalMetadata,
+            fileContext: fileContext,
+            supplementalContexts: supplementalContexts,
         }
     }
 
     return {
         request: {
-            fileContext: fileContext,
+            fileContext: fileContext.toSdkType(),
             nextToken: nextToken,
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
             },
-            supplementalContexts: supplementalContext,
+            supplementalContexts: sdkSupplementalContext,
             customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
         },
-        supplementalMetadata: supplementalMetadata,
+        fileContext: fileContext,
+        supplementalContexts: supplementalContexts,
     }
 }
 
 export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
     request: codewhispererClient.GenerateRecommendationsRequest
-    supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
+    fileContext: CWFileContext
+    supplementalContexts: CodeWhispererSupplementalContext | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
 
@@ -146,27 +138,21 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
         tokenSource.cancel()
     }, supplementalContextTimeoutInMs)
     const supplementalContexts = await fetchSupplementalContext(editor, tokenSource.token)
-    let supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-
-    if (supplementalContexts) {
-        supplementalMetadata = {
-            isUtg: supplementalContexts.isUtg,
-            isProcessTimeout: supplementalContexts.isProcessTimeout,
-            contentsLength: supplementalContexts.contentsLength,
-            latency: supplementalContexts.latency,
-            strategy: supplementalContexts.strategy,
-        }
-    }
 
     logSupplementalContext(supplementalContexts)
 
+    const sdkSupplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+        ? supplementalContexts.supplementalContextItems.map(v => toSdkSupplementalContext(v))
+        : []
+
     return {
         request: {
-            fileContext: fileContext,
+            fileContext: fileContext.toSdkType(),
             maxResults: CodeWhispererConstants.maxRecommendations,
-            supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
+            supplementalContexts: sdkSupplementalContext,
         },
-        supplementalMetadata: supplementalMetadata,
+        fileContext: fileContext,
+        supplementalContexts: supplementalContexts,
     }
 }
 
@@ -239,4 +225,10 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
     })
 
     getLogger().debug(logString)
+}
+
+function toSdkSupplementalContext(
+    supplementalContextItem: CodeWhispererSupplementalContextItem
+): CodeWhispererClient.SupplementalContext | CodeWhispererUserClient.SupplementalContext {
+    return selectFrom(supplementalContextItem, 'content', 'filePath')
 }

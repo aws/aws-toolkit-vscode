@@ -5,10 +5,15 @@
 
 import * as vscode from 'vscode'
 import { extensionVersion } from '../../shared/vscode/env'
-import { RecommendationsList, DefaultCodeWhispererClient, CognitoCredentialsError } from '../client/codewhisperer'
+import {
+    RecommendationsList,
+    DefaultCodeWhispererClient,
+    CognitoCredentialsError,
+    GenerateRecommendationsRequest,
+} from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
-import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
+import { CWFileContext, ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
@@ -30,7 +35,7 @@ import {
     telemetry,
 } from '../../shared/telemetry/telemetry'
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
-import { invalidCustomizationMessage } from '../models/constants'
+import { invalidCustomizationMessage, supplementalContextTimeoutInMs } from '../models/constants'
 import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
 import { session } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
@@ -43,6 +48,12 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { extractContextForCodeWhisperer } from '../util/editorContext'
+import {
+    CodeWhispererSupplementalContext,
+    fetchSupplementalContext,
+} from '../util/supplementalContext/supplementalContextUtil'
+import CodeWhispererClient from '../client/codewhispererclient'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -196,7 +207,7 @@ export class RecommendationHandler {
                         nextToken: this.nextToken,
                         supplementalContexts: session.requestContext.request.supplementalContexts,
                     },
-                    supplementalMetadata: session.requestContext.supplementalMetadata,
+                    supplementalContexts: session.requestContext.supplementalContexts,
                 }
             }
         } else if (!pagination) {
@@ -231,9 +242,9 @@ export class RecommendationHandler {
         try {
             startTime = performance.now()
             this.lastInvocationTime = startTime
-            const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
+
             const codewhispererPromise =
-                pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
+                pagination && !isSM ? client.listRecommendations(request) : client.generateRecommendations(request)
             const resp = await this.getServerResponse(
                 triggerType,
                 config.isManualTriggerEnabled,
@@ -351,7 +362,7 @@ export class RecommendationHandler {
                     session.language,
                     session.taskType,
                     reason,
-                    session.requestContext.supplementalMetadata
+                    session.requestContext.supplementalContexts
                 )
             }
         }
@@ -399,7 +410,7 @@ export class RecommendationHandler {
                     sessionId,
                     page,
                     editor.document.languageId,
-                    session.requestContext.supplementalMetadata
+                    session.requestContext.supplementalContexts
                 )
             }
             if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
@@ -444,7 +455,7 @@ export class RecommendationHandler {
         this.requestId = ''
         session.sessionId = ''
         this.nextToken = ''
-        session.requestContext.supplementalMetadata = undefined
+        session.requestContext.supplementalContexts = undefined
     }
 
     async clearInlineCompletionStates() {
@@ -488,7 +499,7 @@ export class RecommendationHandler {
             session.recommendations.length,
             session.completionTypes,
             session.suggestionStates,
-            session.requestContext.supplementalMetadata
+            session.requestContext.supplementalContexts
         )
         if (isCloud9('any')) {
             this.clearRecommendations()

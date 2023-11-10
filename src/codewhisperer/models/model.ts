@@ -12,6 +12,8 @@ import {
     Result,
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
+import { FileContext } from '../client/codewhispererclient'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -34,6 +36,26 @@ export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
     lastUserModificationTime: 0,
+}
+
+export class CWFileContext {
+    constructor(
+        readonly fileName: string,
+        readonly programmingLanguage: CodewhispererLanguage,
+        readonly leftFileContent: string,
+        readonly rightFileContent: string
+    ) {}
+
+    toSdkType(): FileContext {
+        return {
+            filename: this.fileName,
+            programmingLanguage: {
+                languageName: runtimeLanguageContext.toRuntimeLanguage(this.programmingLanguage),
+            },
+            leftFileContent: this.leftFileContent,
+            rightFileContent: this.rightFileContent,
+        }
+    }
 }
 
 // This response struct can contain more info as needed

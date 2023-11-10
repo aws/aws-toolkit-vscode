@@ -11,6 +11,7 @@ import {
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
 import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
+import { CWFileContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -23,8 +24,9 @@ class CodeWhispererSession {
     leftContextOfCurrentLine = ''
     requestContext: {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
-        supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
-    } = { request: {} as any, supplementalMetadata: {} as any }
+        fileContext: CWFileContext
+        supplementalContexts: CodeWhispererSupplementalContext | undefined
+    } = { request: {} as any, fileContext: {} as any, supplementalContexts: {} as any }
     language: CodewhispererLanguage = 'java'
     taskType: CodewhispererGettingStartedTask | undefined
     // Various states of recommendations

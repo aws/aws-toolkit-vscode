@@ -4,9 +4,11 @@
  */
 
 import assert from 'assert'
-import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
+import { CWFileContext } from '../../../codewhisperer/models/model'
+import CodeWhispererClient from '../../../codewhisperer/client/codewhispererclient'
+import CodeWhispererUserClient from '../../../codewhisperer/client/codewhispereruserclient'
 
 describe('editorContext', function () {
     beforeEach(function () {
@@ -16,14 +18,7 @@ describe('editorContext', function () {
         it('Should return expected context', function () {
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
-            const expected: codewhispererClient.FileContext = {
-                filename: 'test.py',
-                programmingLanguage: {
-                    languageName: 'python',
-                },
-                leftFileContent: 'import math\ndef two_sum(nums,',
-                rightFileContent: ' target):\n',
-            }
+            const expected = new CWFileContext('test.py', 'python', 'import math\ndef two_sum(nums,', ' target):\n')
             assert.deepStrictEqual(actual, expected)
         })
 
@@ -36,14 +31,7 @@ describe('editorContext', function () {
                 17
             )
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
-            const expected: codewhispererClient.FileContext = {
-                filename: 'test.py',
-                programmingLanguage: {
-                    languageName: 'python',
-                },
-                leftFileContent: 'import math\ndef aaaaaaaaaaaaa',
-                rightFileContent: 'a'.repeat(10240),
-            }
+            const expected = new CWFileContext('test.py', 'python', 'import math\ndef aaaaaaaaaaaaa', 'a'.repeat(10240))
             assert.deepStrictEqual(actual, expected)
         })
     })
