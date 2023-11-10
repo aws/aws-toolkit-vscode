@@ -22,7 +22,7 @@ export class WebViewContentGenerator {
     }
 
     private generateJS(extensionURI: Uri, webView: Webview): string {
-        const source = path.join('src', 'awsq', 'webview', 'ui', 'awsq-ui.js')
+        const source = path.join('src', 'amazonq', 'webview', 'ui', 'amazonq-ui.js')
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
 

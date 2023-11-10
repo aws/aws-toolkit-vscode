@@ -9,11 +9,11 @@ import { EditorContextCommand, EditorContextCommandType } from '../../../command
 
 export class PromptsGenerator {
     private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
-        ['aws.awsq.explainCode', 'Explain'],
-        ['aws.awsq.refactorCode', 'Refactor'],
-        ['aws.awsq.fixCode', 'Fix'],
-        ['aws.awsq.optimizeCode', 'Optimize'],
-        ['aws.awsq.sendToPrompt', 'Send to prompt'],
+        ['aws.amazonq.explainCode', 'Explain'],
+        ['aws.amazonq.refactorCode', 'Refactor'],
+        ['aws.amazonq.fixCode', 'Fix'],
+        ['aws.amazonq.optimizeCode', 'Optimize'],
+        ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
 
     public generateForContextMenuCommand(command: EditorContextCommand): string {

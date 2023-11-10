@@ -7,16 +7,16 @@ import * as vscode from 'vscode'
 import globals from '../../shared/extensionGlobals'
 import path from 'path'
 import { MessagePublisher } from '../messages/messagePublisher'
-import { focusAwsqPanel } from '../../codewhisperer/commands/basicCommands'
+import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
 
 export function welcome(context: vscode.ExtensionContext, publisher: MessagePublisher<any>): void {
-    const panel = vscode.window.createWebviewPanel('awsQWelcome', 'Meet Amazon Q', vscode.ViewColumn.Active, {
+    const panel = vscode.window.createWebviewPanel('amazonQWelcome', 'Meet Amazon Q', vscode.ViewColumn.Active, {
         enableScripts: true,
     })
 
     // TODO: get svg gradient icon and use `getIcon` (currently only works with svg)
     panel.iconPath = vscode.Uri.file(
-        globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'awsq', 'q-gradient.png'))
+        globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-gradient.png'))
     )
 
     panel.webview.html = getWebviewContent(panel.webview)
@@ -26,7 +26,7 @@ export function welcome(context: vscode.ExtensionContext, publisher: MessagePubl
         message => {
             switch (message.command) {
                 case 'sendToQ':
-                    focusAwsqPanel().then(() => {
+                    focusAmazonQPanel().then(() => {
                         publisher.publish({
                             chatMessage: 'What can Q help me with?',
                             tabID: 'tab-1',
@@ -49,16 +49,16 @@ export function welcome(context: vscode.ExtensionContext, publisher: MessagePubl
 function getWebviewContent(webview: vscode.Webview): string {
     const logo = webview.asWebviewUri(
         vscode.Uri.file(
-            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'awsq', 'q-gradient.png'))
+            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-gradient.png'))
         )
     )
     const bgLogoLight = webview.asWebviewUri(
         vscode.Uri.file(
-            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'awsq', 'q-squid-ink.png'))
+            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-squid-ink.png'))
         )
     )
     const bgLogoDark = webview.asWebviewUri(
-        vscode.Uri.file(globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'awsq', 'q-white.png')))
+        vscode.Uri.file(globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-white.png')))
     )
     const cwLogoLight = webview.asWebviewUri(
         vscode.Uri.file(

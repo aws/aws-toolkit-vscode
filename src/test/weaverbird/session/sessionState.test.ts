@@ -18,7 +18,7 @@ import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
 import { Messenger } from '../../../weaverbird/controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from '../../../weaverbird/views/connector/connector'
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { WeaverbirdClient } from '../../../weaverbird/client/weaverbird'
 import { ToolkitError } from '../../../shared/errors'
 

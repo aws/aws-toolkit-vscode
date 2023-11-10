@@ -7,7 +7,7 @@ import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } f
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage } from './storages/tabsStorage'
-import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
+import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 
 const WelcomeMessage = `Hi, I am Amazon Q. I can answer your software development questions. 
 Ask me to explain, debug, or optimize your code. 
@@ -149,7 +149,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
             const selectedTab = tabsStorage.getSelectedTab()
 
-            if (selectedTab !== undefined && command === 'aws.awsq.sendToPrompt') {
+            if (selectedTab !== undefined && command === 'aws.amazonq.sendToPrompt') {
                 mynahUI.addToUserPrompt(selectedTab.id, message.body as string)
                 return selectedTab.id
             }

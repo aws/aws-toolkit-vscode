@@ -6,11 +6,11 @@
 import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
-import { Connector as AwsQCommonsConnector } from './apps/awsqCommonsConnector'
+import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
 import { ExtensionMessage } from './commands'
 import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
-import { WelcomeFollowupType } from './apps/awsqCommonsConnector'
+import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 
 export interface ChatPayload {
@@ -39,7 +39,7 @@ export class Connector {
     private readonly cwChatConnector
     private readonly weaverbirdChatConnector
     private readonly tabsStorage
-    private readonly awsqCommonsConnector: AwsQCommonsConnector
+    private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
     private isUIReady = false
 
@@ -48,7 +48,7 @@ export class Connector {
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
         this.weaverbirdChatConnector = new WeaverbirdChatConnector(props)
-        this.awsqCommonsConnector = new AwsQCommonsConnector({
+        this.amazonqCommonsConnector = new AmazonQCommonsConnector({
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
         })
         this.tabsStorage = props.tabsStorage
@@ -225,7 +225,7 @@ export class Connector {
             // It can come up at a later point depending on the future UX designs,
             // We should decide it depending on the followUp.type
             case 'unknown':
-                this.awsqCommonsConnector.followUpClicked(tabID, followUp)
+                this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
             case 'wb':
                 this.weaverbirdChatConnector.followUpClicked(tabID, followUp)

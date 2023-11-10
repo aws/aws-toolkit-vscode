@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageListener } from '../../../awsq/messages/messageListener'
-import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
+import { MessageListener } from '../../../amazonq/messages/messageListener'
+import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 

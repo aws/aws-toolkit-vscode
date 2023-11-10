@@ -4,19 +4,19 @@
  */
 
 import { ExtensionContext, commands, window } from 'vscode'
-import { AwsQChatViewProvider } from './webview/webView'
+import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as weaverbirdChatAppInit } from '../weaverbird/app'
-import { AwsQAppInitContext, DefaultAwsQAppInitContext } from './apps/initContext'
+import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
 import { weaverbirdEnabled } from '../weaverbird/config'
 import { welcome } from './welcome'
 
 export async function activate(context: ExtensionContext) {
-    const appInitContext = new DefaultAwsQAppInitContext()
+    const appInitContext = new DefaultAmazonQAppInitContext()
 
     registerApps(appInitContext)
 
-    const provider = new AwsQChatViewProvider(
+    const provider = new AmazonQChatViewProvider(
         context,
         appInitContext.getWebViewToAppsMessagePublishers(),
         appInitContext.getAppsToWebViewMessageListener()
@@ -25,7 +25,7 @@ export async function activate(context: ExtensionContext) {
     const p = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 
     context.subscriptions.push(
-        window.registerWebviewViewProvider(AwsQChatViewProvider.viewType, provider, {
+        window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
@@ -33,13 +33,13 @@ export async function activate(context: ExtensionContext) {
     )
 
     context.subscriptions.push(
-        commands.registerCommand('aws.awsq.welcome', () => {
+        commands.registerCommand('aws.amazonq.welcome', () => {
             welcome(context, p)
         })
     )
 }
 
-function registerApps(appInitContext: AwsQAppInitContext) {
+function registerApps(appInitContext: AmazonQAppInitContext) {
     cwChatAppInit(appInitContext)
     if (weaverbirdEnabled) {
         weaverbirdChatAppInit(appInitContext)

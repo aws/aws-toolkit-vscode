@@ -8,12 +8,12 @@ import { MessagePublisher } from '../messages/messagePublisher'
 import { MessageListener } from '../messages/messageListener'
 import { TabType } from '../webview/ui/storages/tabsStorage'
 
-export interface AwsQAppInitContext {
+export interface AmazonQAppInitContext {
     registerWebViewToAppMessagePublisher(eventEmitter: MessagePublisher<any>, tabType: TabType): void
     getAppsToWebViewMessagePublisher(): MessagePublisher<any>
 }
 
-export class DefaultAwsQAppInitContext implements AwsQAppInitContext {
+export class DefaultAmazonQAppInitContext implements AmazonQAppInitContext {
     private readonly appsToWebViewEventEmitter = new EventEmitter<any>()
     private readonly appsToWebViewMessageListener = new MessageListener<any>(this.appsToWebViewEventEmitter)
     private readonly appsToWebViewMessagePublisher = new MessagePublisher<any>(this.appsToWebViewEventEmitter)

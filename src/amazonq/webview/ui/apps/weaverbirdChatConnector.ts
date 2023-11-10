@@ -6,7 +6,7 @@
 import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
-import { CodeReference } from './awsqCommonsConnector'
+import { CodeReference } from './amazonqCommonsConnector'
 
 interface ChatPayload {
     chatMessage: string
