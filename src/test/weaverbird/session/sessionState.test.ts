@@ -13,6 +13,7 @@ import {
     CodeGenIterationState,
     CodeGenState,
     PrepareIterationState,
+    PrepareRefinementState,
 } from '../../../weaverbird/session/sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
 import { SessionStateConfig, SessionStateAction } from '../../../weaverbird/types'
@@ -21,6 +22,7 @@ import { AppToWebViewMessageDispatcher } from '../../../weaverbird/views/connect
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { WeaverbirdClient } from '../../../weaverbird/client/weaverbird'
 import { ToolkitError } from '../../../shared/errors'
+import { PrepareRepoFailedError } from '../../../weaverbird/errors'
 
 interface MockSessionStateActionInput {
     msg?: 'MOCK CODE' | 'OTHER'
@@ -41,6 +43,7 @@ const mockSessionStateAction = ({ msg }: MockSessionStateActionInput): SessionSt
 let mockGeneratePlan: sinon.SinonStub
 let mockGetCodeGeneration: sinon.SinonStub
 let mockExportResultArchive: sinon.SinonStub
+let mockCreateUploadUrl: sinon.SinonStub
 const mockSessionStateConfig = ({
     conversationId,
     uploadId,
@@ -53,7 +56,7 @@ const mockSessionStateConfig = ({
     conversationId,
     proxyClient: {
         createConversation: () => sinon.stub(),
-        createUploadUrl: () => sinon.stub(),
+        createUploadUrl: () => mockCreateUploadUrl(),
         generatePlan: () => mockGeneratePlan(),
         startCodeGeneration: () => sinon.stub(),
         getCodeGeneration: () => mockGetCodeGeneration(),
@@ -225,6 +228,30 @@ describe('sessionState', () => {
                 nextState: nextState,
                 interaction: {},
             })
+        })
+    })
+
+    describe('PrepareRefinementState', () => {
+        it('error when failing to prepare repo information', async () => {
+            sinon.stub(vscode.workspace, 'findFiles').throws()
+            mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
+            const testAction = mockSessionStateAction({})
+
+            assert.rejects(() => {
+                return new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)
+            }, PrepareRepoFailedError)
+        })
+    })
+
+    describe('PrepareIterationState', () => {
+        it('error when failing to prepare repo information', async () => {
+            sinon.stub(vscode.workspace, 'findFiles').throws()
+            mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
+            const testAction = mockSessionStateAction({})
+
+            assert.rejects(() => {
+                return new PrepareIterationState(testConfig, testApproach, [], tabId).interact(testAction)
+            }, PrepareIterationState)
         })
     })
 })
