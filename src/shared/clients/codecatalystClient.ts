@@ -18,6 +18,7 @@ import { showMessageWithCancel } from '../utilities/messages'
 import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
+import { once, onceChanged } from '../utilities/functionUtils'
 import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
@@ -42,6 +43,10 @@ export function getCodeCatalystConfig(): Readonly<CodeCatalystConfig> {
     return getCodeCatalystConfigFromSettings(DevSettings.instance)
 }
 
+const logConfigOnce = onceChanged(val => {
+    logger.getLogger().debug(`using CodeCatalyst service configuration: ${val}`)
+})
+
 export function getCodeCatalystConfigFromSettings(settings: DevSettings): Readonly<CodeCatalystConfig> {
     const defaultConfig = {
         region: 'us-east-1',
@@ -53,6 +58,7 @@ export function getCodeCatalystConfigFromSettings(settings: DevSettings): Readon
     const devConfig = settings.get(devSetting, {})
 
     if (Object.keys(devConfig).length === 0) {
+        logConfigOnce('default')
         return defaultConfig
     }
 
@@ -63,7 +69,7 @@ export function getCodeCatalystConfigFromSettings(settings: DevSettings): Readon
         throw ToolkitError.chain(err, `Dev setting '${devSetting}' has missing or invalid properties.`)
     }
 
-    logger.getLogger().debug(`using CodeCatalyst configuration from dev setting '${devSetting}'`)
+    logConfigOnce(JSON.stringify(devConfig, undefined, 4))
     return devConfig as unknown as CodeCatalystConfig
 }
 

@@ -305,7 +305,7 @@ Example:
 
 ```json
 "aws.dev.codecatalystService": {
-    "region": "us-east-1",
+    "region": "us-west-2",
     "endpoint": "https://public.codecatalyst-gamma.global.api.aws",
     "hostname": "integ.stage.REMOVE.codes",
     "gitHostname": "git.gamma.source.caws.REMOVE",
