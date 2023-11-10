@@ -51,16 +51,17 @@ import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCov
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { showMessageWithUrl } from '../shared/utilities/messages'
+import { timed } from '../shared/profiling'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
-    const codewhispererSettings = CodeWhispererSettings.instance
+    const codewhispererSettings = timed('CodeWhispererSettings.instance', () => CodeWhispererSettings.instance)
     // initialize AuthUtil earlier to make sure it can listen to connection change events.
-    const auth = AuthUtil.instance
+    const auth = timed('AuthUtil.instance', () => AuthUtil.instance)
     /**
      * Enable essential intellisense default settings for AWS C9 IDE
      */
@@ -78,13 +79,19 @@ export async function activate(context: ExtContext): Promise<void> {
     /**
      * CodeWhisperer security panel
      */
-    const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
-    activateSecurityScan()
+    const securityPanelViewProvider = timed(
+        'new SecurityPanelViewProvider()',
+        () => new SecurityPanelViewProvider(context.extensionContext)
+    )
+    timed('activateSecurityScan', activateSecurityScan)
 
     /**
      * Service control
      */
-    const client = new codewhispererClient.DefaultCodeWhispererClient()
+    const client = timed(
+        'new codewhispererClient.DefaultCodeWhispererClient()',
+        () => new codewhispererClient.DefaultCodeWhispererClient()
+    )
 
     // Service initialization
     ReferenceInlineProvider.instance
@@ -105,42 +112,28 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
                 EditorContext.updateTabSize(getTabSizeSetting())
-            }
-
-            if (
+            } else if (
                 configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.includeSuggestionsWithCodeReferences')
             ) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
-                    await vscode.window
-                        .showInformationMessage(
-                            CodeWhispererConstants.ssoConfigAlertMessage,
-                            CodeWhispererConstants.settingsLearnMore
-                        )
-                        .then(async resp => {
-                            if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                            }
-                        })
+                    showMessageWithUrl(
+                        CodeWhispererConstants.learnMoreUri,
+                        CodeWhispererConstants.ssoConfigAlertMessage,
+                        CodeWhispererConstants.settingsLearnMore
+                    )
                 }
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')) {
+            } else if (
+                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')
+            ) {
                 if (auth.isEnterpriseSsoInUse()) {
-                    await vscode.window
-                        .showInformationMessage(
-                            CodeWhispererConstants.ssoConfigAlertMessageShareData,
-                            CodeWhispererConstants.settingsLearnMore
-                        )
-                        .then(async resp => {
-                            if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                            }
-                        })
+                    showMessageWithUrl(
+                        CodeWhispererConstants.learnMoreUri,
+                        CodeWhispererConstants.ssoConfigAlertMessageShareData,
+                        CodeWhispererConstants.settingsLearnMore
+                    )
                 }
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
+            } else if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
                 await vscode.window
                     .showInformationMessage(
                         CodeWhispererConstants.reloadWindowPrompt,
@@ -224,13 +217,13 @@ export async function activate(context: ExtContext): Promise<void> {
         )
     )
 
-    await auth.restore()
+    await timed('auth.restore()', auth.restore)
 
     if (auth.isConnectionExpired()) {
-        auth.showReauthenticatePrompt()
+        await timed('auth.showReauthenticatePrompt()', () => auth.showReauthenticatePrompt())
     }
     if (auth.isValidEnterpriseSsoInUse()) {
-        await notifyNewCustomizations()
+        await timed('notifyNewCustomizations', notifyNewCustomizations)
     }
 
     function activateSecurityScan() {
@@ -270,9 +263,9 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     if (isCloud9()) {
-        setSubscriptionsforCloud9()
+        timed('setSubscriptionsforCloud9', setSubscriptionsforCloud9)
     } else if (isInlineCompletionEnabled()) {
-        await setSubscriptionsforInlineCompletion()
+        await timed('setSubscriptionsforInlineCompletion', setSubscriptionsforInlineCompletion)
         await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', AuthUtil.instance.isConnected())
     }
 

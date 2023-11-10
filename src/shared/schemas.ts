@@ -81,7 +81,7 @@ export class SchemaService {
     }
 
     public async start(): Promise<void> {
-        getDefaultSchemas().then(schemas => (this.schemas = schemas))
+        await getDefaultSchemas().then(schemas => (this.schemas = schemas))
         await this.startTimer()
     }
 
