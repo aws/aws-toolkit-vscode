@@ -226,6 +226,10 @@
                         "codeWhispererConnectionExpired": {
                             "type": "boolean",
                             "default": false
+                        },
+                        "amazonQWelcomePage": {
+                            "type": "boolean",
+                            "default": false
                         }
                     },
                     "additionalProperties": false

@@ -14,9 +14,8 @@ export function welcome(context: vscode.ExtensionContext, publisher: MessagePubl
         enableScripts: true,
     })
 
-    // TODO: get svg gradient icon and use `getIcon` (currently only works with svg)
     panel.iconPath = vscode.Uri.file(
-        globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-gradient.png'))
+        globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-gradient.svg'))
     )
 
     panel.webview.html = getWebviewContent(panel.webview)
@@ -49,16 +48,18 @@ export function welcome(context: vscode.ExtensionContext, publisher: MessagePubl
 function getWebviewContent(webview: vscode.Webview): string {
     const logo = webview.asWebviewUri(
         vscode.Uri.file(
-            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-gradient.png'))
+            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-gradient.svg'))
         )
     )
     const bgLogoLight = webview.asWebviewUri(
         vscode.Uri.file(
-            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-squid-ink.png'))
+            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-squid-ink.svg'))
         )
     )
     const bgLogoDark = webview.asWebviewUri(
-        vscode.Uri.file(globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-white.png')))
+        vscode.Uri.file(
+            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-white.svg'))
+        )
     )
     const cwLogoLight = webview.asWebviewUri(
         vscode.Uri.file(
@@ -125,13 +126,13 @@ function getWebviewContent(webview: vscode.Webview): string {
                     margin: auto;
                     width: 50%;
                     text-align: center;
-                    min-width: 800px;
+                    width: 800px;
                     transform: translateY(30vh);
                 }
                 #codewhisperer {
-                    padding-left: 20%;
+                    padding-left: 15%;
                     text-align: left;
-                    padding-right: 20%;
+                    padding-right: 15%;
                     margin-top: 50px;
                 }
                 #codewhisperer div{
@@ -141,6 +142,7 @@ function getWebviewContent(webview: vscode.Webview): string {
                 }
                 #codewhisperer div p {
                     margin: 0px;
+                    font-size: 12pt;
                 }
                 #qLogo {
                     width: 10%
@@ -152,6 +154,9 @@ function getWebviewContent(webview: vscode.Webview): string {
                 #header {
                     width: 60%; 
                     margin: 50px auto;
+                }
+                a {
+                    cursor: pointer;
                 }
             </style>
         </head>

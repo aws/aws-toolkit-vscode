@@ -210,6 +210,6 @@ export const notifyNewCustomizationsCmd = Commands.declare(
  * Used on first load, and any time we want to directly populate chat.
  */
 export async function focusAmazonQPanel(): Promise<void> {
-    // VS Code-owned command: "View: Show AWS Q"
+    // VS Code-owned command: "View: Show Amazon Q"
     await vscode.commands.executeCommand('workbench.view.extension.amazonq')
 }
