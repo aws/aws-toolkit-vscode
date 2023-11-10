@@ -63,7 +63,7 @@ export async function showMessageWithUrl(
     message: string,
     url: string | vscode.Uri,
     urlItem: string = localizedText.viewDocs,
-    kind: 'info' | 'warn' | 'error' = 'error',
+    kind: 'info' | 'warn' | 'error' = 'info',
     extraItems: string[] = []
 ): Promise<string | undefined> {
     const uri = typeof url === 'string' ? vscode.Uri.parse(url) : url

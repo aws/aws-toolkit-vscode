@@ -51,10 +51,10 @@ import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCov
 import { AuthUtil } from './util/authUtil'
 import { ImportAdderProvider } from './service/importAdderProvider'
 import { TelemetryHelper } from './util/telemetryHelper'
-import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { showMessageWithUrl } from '../shared/utilities/messages'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -105,42 +105,28 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.workspace.onDidChangeConfiguration(async configurationChangeEvent => {
             if (configurationChangeEvent.affectsConfiguration('editor.tabSize')) {
                 EditorContext.updateTabSize(getTabSizeSetting())
-            }
-
-            if (
+            } else if (
                 configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.includeSuggestionsWithCodeReferences')
             ) {
                 ReferenceLogViewProvider.instance.update()
                 if (auth.isEnterpriseSsoInUse()) {
-                    await vscode.window
-                        .showInformationMessage(
-                            CodeWhispererConstants.ssoConfigAlertMessage,
-                            CodeWhispererConstants.settingsLearnMore
-                        )
-                        .then(async resp => {
-                            if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                            }
-                        })
+                    showMessageWithUrl(
+                        CodeWhispererConstants.learnMoreUri,
+                        CodeWhispererConstants.ssoConfigAlertMessage,
+                        CodeWhispererConstants.settingsLearnMore
+                    )
                 }
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')) {
+            } else if (
+                configurationChangeEvent.affectsConfiguration('aws.codeWhisperer.shareCodeWhispererContentWithAWS')
+            ) {
                 if (auth.isEnterpriseSsoInUse()) {
-                    await vscode.window
-                        .showInformationMessage(
-                            CodeWhispererConstants.ssoConfigAlertMessageShareData,
-                            CodeWhispererConstants.settingsLearnMore
-                        )
-                        .then(async resp => {
-                            if (resp === CodeWhispererConstants.settingsLearnMore) {
-                                openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
-                            }
-                        })
+                    showMessageWithUrl(
+                        CodeWhispererConstants.learnMoreUri,
+                        CodeWhispererConstants.ssoConfigAlertMessageShareData,
+                        CodeWhispererConstants.settingsLearnMore
+                    )
                 }
-            }
-
-            if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
+            } else if (configurationChangeEvent.affectsConfiguration('editor.inlineSuggest.enabled')) {
                 await vscode.window
                     .showInformationMessage(
                         CodeWhispererConstants.reloadWindowPrompt,
