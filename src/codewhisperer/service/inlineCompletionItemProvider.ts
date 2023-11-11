@@ -4,13 +4,13 @@
  */
 import vscode, { Position } from 'vscode'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
-import { Recommendation } from '../client/codewhisperer'
 import { session } from '../util/codeWhispererSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
+import { Recommendation } from '../models/model'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined

@@ -37,8 +37,6 @@ export type ListRecommendationsResponse =
     | CodeWhispererClient.ListRecommendationsResponse
     | CodeWhispererUserClient.GenerateCompletionsResponse
 export type GenerateRecommendationsResponse = CodeWhispererClient.GenerateRecommendationsResponse
-export type Recommendation = CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion
-export type Completion = CodeWhispererUserClient.Completion
 export type Reference = CodeWhispererClient.Reference | CodeWhispererUserClient.Reference
 export type References = CodeWhispererClient.References | CodeWhispererUserClient.References
 export type CreateUploadUrlRequest = Readonly<
