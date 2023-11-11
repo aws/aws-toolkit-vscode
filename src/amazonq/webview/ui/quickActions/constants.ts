@@ -7,12 +7,22 @@ export const QuickActionCommands = (weaverbirdEnabled: boolean) => [
     ...(weaverbirdEnabled
         ? [
               {
-                  groupName: 'Start a workflow',
+                  groupName: 'Project-level Application Development by Q',
                   commands: [
                       {
+                          command: '/tests',
+                          placeholder: 'Let Q write tests for your project',
+                          description: 'Let Q write tests for your project',
+                      },
+                      {
                           command: '/dev',
-                          placeholder: 'Enter the coding task in details',
-                          description: 'Assign Q a coding task',
+                          placeholder: 'Describe a new feature or improvement',
+                          description: 'Describe a new feature or improvement',
+                      },
+                      {
+                          command: '/fix',
+                          placeholder: 'Fix an issue across your project',
+                          description: 'Fix an issue across your project',
                       },
                   ],
               },

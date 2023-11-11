@@ -53,7 +53,10 @@ export class FollowUpInteractionHandler {
 
     public onWelcomeFollowUpClicked(tabID: string, welcomeFollowUpType: WelcomeFollowupType) {
         if (welcomeFollowUpType === 'assign-code-task') {
-            const newTabId = this.mynahUI.updateStore('', this.tabDataGenerator.getTabData('wb', true))
+            const newTabId = this.mynahUI.updateStore(
+                '',
+                this.tabDataGenerator.getTabData('wb', true, 'Q - Dev', '/dev')
+            )
             // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
             // It means that it cannot trigger after the updateStore function returns.
             this.tabsStorage.addTab({

@@ -36,7 +36,7 @@ export class FollowUpGenerator {
                         ...(this.isWeaverbirdEnabled
                             ? [
                                   {
-                                      pillText: 'I want to assign a code task',
+                                      pillText: 'I want Q to implement a task for me',
                                       type: 'assign-code-task',
                                   },
                               ]

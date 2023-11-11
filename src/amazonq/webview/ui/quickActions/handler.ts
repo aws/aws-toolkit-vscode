@@ -33,7 +33,13 @@ export class QuickActionHandler {
     public handle(chatPrompt: ChatPrompt, tabID: string) {
         switch (chatPrompt.command) {
             case '/dev':
-                this.handleDevCommand(chatPrompt, tabID)
+                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
+                break
+            case '/tests':
+                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Tests', '/tests')
+                break
+            case '/fix':
+                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
                 break
             case '/clear':
                 this.handleClearCommand(tabID)
@@ -48,7 +54,7 @@ export class QuickActionHandler {
         this.connector.clearChat(tabID)
     }
 
-    private handleDevCommand(chatPrompt: ChatPrompt, tabID: string) {
+    private handleWeaverbirdCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {
         if (!this.isWeaverbirdEnabled) {
             return
         }
@@ -63,7 +69,10 @@ export class QuickActionHandler {
         this.connector.onUpdateTabType(affectedTabId)
 
         this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
-        this.mynahUI.updateStore(affectedTabId, this.tabDataGenerator.getTabData('wb', realPromptText === ''))
+        this.mynahUI.updateStore(
+            affectedTabId,
+            this.tabDataGenerator.getTabData('wb', realPromptText === '', taskName, commandName)
+        )
 
         if (realPromptText !== '') {
             this.mynahUI.addChatItem(affectedTabId, {
