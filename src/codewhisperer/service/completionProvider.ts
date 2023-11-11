@@ -61,7 +61,7 @@ export function getCompletionItem(
             RecommendationHandler.instance.requestId,
             session.sessionId,
             TelemetryHelper.instance.triggerType,
-            session.getCompletionType(recommendationIndex),
+            recommendationDetail.completionType,
             languageContext.language,
             references,
         ],
