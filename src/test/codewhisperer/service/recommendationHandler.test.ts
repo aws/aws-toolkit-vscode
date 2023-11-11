@@ -81,7 +81,10 @@ describe('recommendationHandler', function () {
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             const actual = session.recommendations
-            const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
+            const expected: Recommendation[] = [
+                new Recommendation({ content: "print('Hello World!')" }),
+                new Recommendation({ content: '' }),
+            ]
             assert.deepStrictEqual(actual, expected)
             assert.strictEqual(
                 CodeWhispererCodeCoverageTracker.getTracker(mockEditor.document.languageId, fakeMemeto)

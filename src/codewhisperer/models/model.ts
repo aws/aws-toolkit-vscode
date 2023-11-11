@@ -89,17 +89,23 @@ export class Recommendation implements CodeWhispererUserClient.Completion {
     readonly content: string
     readonly references?: CodeWhispererUserClient.References | CodeWhispererClient.References | undefined
     readonly mostRelevantMissingImports?: CodeWhispererClient.Imports | CodeWhispererUserClient.Imports | undefined
-
-    suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
     readonly completionType: CodewhispererCompletionType
 
-    constructor(readonly cwRecommendation: CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion) {
+    constructor(
+        readonly cwRecommendation: CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion,
+        public suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
+    ) {
         this.content = cwRecommendation.content
         this.references = cwRecommendation.references
         this.mostRelevantMissingImports = cwRecommendation.mostRelevantMissingImports
 
         const nonBlankLines = cwRecommendation.content.split('\n').filter(line => line.trim() !== '').length
         this.completionType = nonBlankLines > 1 ? 'Block' : 'Line'
+        this.suggestionState = suggestionState
+
+        if (this.content.length === 0) {
+            this.suggestionState = 'Empty'
+        }
     }
 }
 

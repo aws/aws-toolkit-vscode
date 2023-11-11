@@ -15,7 +15,7 @@ import {
     CodewhispererSuggestionState,
     CodewhispererUserDecision,
 } from '../../../shared/telemetry/telemetry.gen'
-import { Completion } from '../../../codewhisperer/client/codewhispereruserclient'
+import { Recommendation } from '../../../codewhisperer/models/model'
 
 // TODO: improve and move the following test utils to codewhisperer/testUtils.ts
 function aUserDecision(
@@ -48,10 +48,16 @@ function aServiceInvocation(): CodewhispererServiceInvocation {
     }
 }
 
-function aCompletion(): Completion {
-    return {
-        content: 'aFakeContent',
-    }
+function aCompletion(
+    content: string = 'aFakeContent',
+    suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
+): Recommendation {
+    return new Recommendation(
+        {
+            content: content,
+        },
+        suggestionState
+    )
 }
 
 describe('telemetryHelper', function () {
@@ -125,18 +131,17 @@ describe('telemetryHelper', function () {
             sut.recordUserDecisionTelemetry(
                 ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2'],
                 'aFakeSessionId',
-                [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
+                [
+                    aCompletion('oneline1', 'Showed'),
+                    aCompletion('oneline2', 'Showed'),
+                    aCompletion('two\nline1', 'Showed'),
+                    aCompletion('two\nline2', 'Showed'),
+                ],
                 0,
-                0,
-                new Map([
-                    [0, 'Line'],
-                    [1, 'Line'],
-                    [2, 'Block'],
-                    [3, 'Block'],
-                ])
+                0
             )
 
-            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content, 0)
+            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', 'oneline1', 0)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -151,7 +156,7 @@ describe('telemetryHelper', function () {
                 codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
-                codewhispererCharactersAccepted: aCompletion().content.length,
+                codewhispererCharactersAccepted: 'oneline1'.length,
             })
         })
 
@@ -159,18 +164,17 @@ describe('telemetryHelper', function () {
             sut.recordUserDecisionTelemetry(
                 ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2'],
                 'aFakeSessionId',
-                [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
+                [
+                    aCompletion('oneline1', 'Showed'),
+                    aCompletion('', 'Empty'),
+                    aCompletion('two\nline', 'Showed'),
+                    aCompletion('oneline2', 'Showed'),
+                ],
                 3,
-                0,
-                new Map([
-                    [0, 'Line'],
-                    [1, 'Line'],
-                    [2, 'Line'],
-                    [3, 'Line'],
-                ])
+                0
             )
 
-            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content, 0)
+            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', 'oneline2', 0)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -185,7 +189,7 @@ describe('telemetryHelper', function () {
                 codewhispererUserGroup: 'Control',
                 codewhispererCompletionType: 'Line',
                 codewhispererTypeaheadLength: 0,
-                codewhispererCharactersAccepted: aCompletion().content.length,
+                codewhispererCharactersAccepted: 'oneline2'.length,
             })
         })
 
@@ -193,15 +197,9 @@ describe('telemetryHelper', function () {
             sut.recordUserDecisionTelemetry(
                 ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2'],
                 'aFakeSessionId',
-                [aCompletion(), aCompletion(), aCompletion(), aCompletion()],
+                [aCompletion('foo', 'Showed'), aCompletion('', 'Empty'), aCompletion('bar', 'Discard'), aCompletion()],
                 -1,
-                0,
-                new Map([
-                    [0, 'Line'],
-                    [1, 'Line'],
-                    [2, 'Line'],
-                    [3, 'Line'],
-                ])
+                0
             )
 
             sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', '', 0)
@@ -232,39 +230,48 @@ describe('telemetryHelper', function () {
         })
 
         it('user event is discard when recommendation state is Discarded with accept index = -1', function () {
-            const actual = telemetryHelper.getSuggestionState(0, -1, new Map([[0, 'Discard']]))
+            const recommendation = aCompletion('foo', 'Discard')
+            const actual = telemetryHelper.getSuggestionState(0, -1, recommendation)
             assert.strictEqual(actual, 'Discard')
         })
 
         it('user event is reject when recommendation state is Showed with accept index = -1', function () {
-            const actual = telemetryHelper.getSuggestionState(0, -1, new Map([[0, 'Showed']]))
+            const recommendation = aCompletion('foo', 'Showed')
+            const actual = telemetryHelper.getSuggestionState(0, -1, recommendation)
             assert.strictEqual(actual, 'Reject')
         })
 
         it('user event is Accept when recommendation state is Showed with accept index matches', function () {
-            const actual = telemetryHelper.getSuggestionState(0, 0, new Map([[0, 'Showed']]))
+            const recommendation = aCompletion('foo', 'Showed')
+            const actual = telemetryHelper.getSuggestionState(0, 0, recommendation)
             assert.strictEqual(actual, 'Accept')
         })
 
         it('user event is Ignore when recommendation state is Showed with accept index does not match', function () {
-            const actual = telemetryHelper.getSuggestionState(0, 1, new Map([[0, 'Showed']]))
+            const recommendation = aCompletion('foo', 'Showed')
+            const actual = telemetryHelper.getSuggestionState(0, 1, recommendation)
             assert.strictEqual(actual, 'Ignore')
         })
 
         it('user event is Unseen when recommendation state is not Showed, is not Unseen when recommendation is showed', function () {
-            const actual0 = telemetryHelper.getSuggestionState(0, 1, new Map([[1, 'Showed']]))
+            const recommendation0 = aCompletion('foo')
+            const actual0 = telemetryHelper.getSuggestionState(0, 1, recommendation0)
             assert.strictEqual(actual0, 'Unseen')
-            const actual1 = telemetryHelper.getSuggestionState(1, 1, new Map([[1, 'Showed']]))
+
+            const recommendation1 = aCompletion('foo', 'Showed')
+            const actual1 = telemetryHelper.getSuggestionState(1, 1, recommendation1)
             assert.strictEqual(actual1, 'Accept')
         })
 
         it('user event is Filter when recommendation state is Filter', function () {
-            const actual = telemetryHelper.getSuggestionState(0, 1, new Map([[0, 'Filter']]))
+            const recommendation = aCompletion('foo', 'Filter')
+            const actual = telemetryHelper.getSuggestionState(0, 1, recommendation)
             assert.strictEqual(actual, 'Filter')
         })
 
         it('user event is Empty when recommendation state is Empty', function () {
-            const actual = telemetryHelper.getSuggestionState(0, 1, new Map([[0, 'Empty']]))
+            const recommendation = aCompletion('', 'Empty')
+            const actual = telemetryHelper.getSuggestionState(0, 1, recommendation)
             assert.strictEqual(actual, 'Empty')
         })
     })
@@ -282,22 +289,12 @@ describe('telemetryHelper', function () {
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Classifier
 
             const telemetryHelper = new TelemetryHelper()
-            const response = [{ content: "print('Hello')" }]
+            const response = [new Recommendation({ content: "print('Hello')" }, 'Showed')]
             const requestIdList = ['test_x', 'test_x', 'test_y']
             const sessionId = 'test_x'
             telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
-            const suggestionState = new Map<number, string>([[0, 'Showed']])
-            const completionTypes = new Map<number, CodewhispererCompletionType>([[0, 'Line']])
-            telemetryHelper.recordUserDecisionTelemetry(
-                requestIdList,
-                sessionId,
-                response,
-                0,
-                0,
-                completionTypes,
-                suggestionState
-            )
+            telemetryHelper.recordUserDecisionTelemetry(requestIdList, sessionId, response, 0, 0)
             assertTelemetry({
                 codewhispererRequestId: 'test_x',
                 codewhispererSessionId: 'test_x',
