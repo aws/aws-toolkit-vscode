@@ -4,19 +4,62 @@
  */
 
 import assert from 'assert'
+import { FileContext } from '../../../codewhisperer/client/codewhisperer'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
+import { PlatformLanguageId } from '../../../codewhisperer/models/constants'
+import { CodewhispererLanguage } from '../../../shared/telemetry/telemetry.gen'
 
 describe('editorContext', function () {
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
     })
     describe('extractContextForCodeWhisperer', function () {
+        function assertFileContextCorrect(
+            editorLanguageId: PlatformLanguageId,
+            expectedFileContextLanguage: CodewhispererLanguage,
+            filename: string
+        ) {
+            const editor = createMockTextEditor('foo\nbar\nbaz', filename, editorLanguageId, 1, 3)
+            const actual = EditorContext.extractContextForCodeWhisperer(editor)
+            const expected: FileContext = {
+                filename: filename,
+                language: expectedFileContextLanguage,
+                leftFileContent: 'foo\nbar',
+                rightFileContent: '\nbaz',
+            }
+
+            assert.deepStrictEqual(actual, expected)
+        }
+
+        const testCases: {
+            editorLanguageId: PlatformLanguageId
+            expectedFileContextLanguage: CodewhispererLanguage
+            filename: string
+        }[] = [
+            { editorLanguageId: 'java', expectedFileContextLanguage: 'java', filename: 'test.java' },
+            { editorLanguageId: 'python', expectedFileContextLanguage: 'python', filename: 'test.py' },
+            { editorLanguageId: 'typescriptreact', expectedFileContextLanguage: 'tsx', filename: 'test.tsx' },
+            { editorLanguageId: 'typescript', expectedFileContextLanguage: 'typescript', filename: 'test.ts' },
+            { editorLanguageId: 'javascriptreact', expectedFileContextLanguage: 'jsx', filename: 'test.jsx' },
+            { editorLanguageId: 'shellscript', expectedFileContextLanguage: 'shell', filename: 'test.sh' },
+        ]
+
+        it('shoudl return correct filecontext and language should be normalized', function () {
+            testCases.forEach(testCase => {
+                assertFileContextCorrect(
+                    testCase.editorLanguageId,
+                    testCase.expectedFileContextLanguage,
+                    testCase.filename
+                )
+            })
+        })
+
         it('Should return expected context', function () {
-            const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
+            const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test', 'python', 1, 2)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected = {
-                filename: 'test.py',
+                filename: 'test',
                 language: 'python',
                 leftFileContent: 'import math\ndef two_sum(nums,',
                 rightFileContent: ' target):\n',
