@@ -59,7 +59,7 @@ describe('editorContext', function () {
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
             const expected = {
-                filename: 'test',
+                filename: 'test.py',
                 language: 'python',
                 leftFileContent: 'import math\ndef two_sum(nums,',
                 rightFileContent: ' target):\n',
