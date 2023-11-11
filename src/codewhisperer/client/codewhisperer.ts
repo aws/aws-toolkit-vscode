@@ -20,11 +20,14 @@ import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
+import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
 >
-export type FileContext = Readonly<CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext>
+export type FileContext = Omit<CodeWhispererUserClient.FileContext, 'programmingLanguage'> & {
+    language: CodewhispererLanguage
+}
 export type ListRecommendationsRequest = Readonly<
     CodeWhispererClient.ListRecommendationsRequest | CodeWhispererUserClient.GenerateCompletionsRequest
 >

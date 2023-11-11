@@ -4,7 +4,6 @@
  */
 
 import assert from 'assert'
-import * as codewhispererClient from '../../../codewhisperer/client/codewhisperer'
 import * as EditorContext from '../../../codewhisperer/util/editorContext'
 import { createMockTextEditor, createMockClientRequest, resetCodeWhispererGlobalVariables } from '../testUtil'
 
@@ -16,11 +15,9 @@ describe('editorContext', function () {
         it('Should return expected context', function () {
             const editor = createMockTextEditor('import math\ndef two_sum(nums, target):\n', 'test.py', 'python', 1, 17)
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
-            const expected: codewhispererClient.FileContext = {
+            const expected = {
                 filename: 'test.py',
-                programmingLanguage: {
-                    languageName: 'python',
-                },
+                language: 'python',
                 leftFileContent: 'import math\ndef two_sum(nums,',
                 rightFileContent: ' target):\n',
             }
@@ -36,11 +33,9 @@ describe('editorContext', function () {
                 17
             )
             const actual = EditorContext.extractContextForCodeWhisperer(editor)
-            const expected: codewhispererClient.FileContext = {
+            const expected = {
                 filename: 'test.py',
-                programmingLanguage: {
-                    languageName: 'python',
-                },
+                language: 'python',
                 leftFileContent: 'import math\ndef aaaaaaaaaaaaa',
                 rightFileContent: 'a'.repeat(10240),
             }

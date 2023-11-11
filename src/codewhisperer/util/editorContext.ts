@@ -4,7 +4,9 @@
  */
 
 import * as vscode from 'vscode'
-import * as codewhispererClient from '../client/codewhisperer'
+import * as codewhisperer from '../client/codewhisperer'
+import * as CodeWhispererClient from '../client/codewhispererclient'
+import * as CodeWhispererUserClient from '../client/codewhispereruserclient'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
@@ -18,10 +20,11 @@ import {
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
+import { CodewhispererLanguage } from '../../shared/telemetry/telemetry'
 
 let tabSize: number = getTabSizeSetting()
 
-export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhispererClient.FileContext {
+export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codewhisperer.FileContext {
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
@@ -43,13 +46,10 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
 
     return {
         filename: getFileNameForRequest(editor),
-        programmingLanguage: {
-            languageName:
-                runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? editor.document.languageId,
-        },
+        language: runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? 'plaintext',
         leftFileContent: caretLeftFileContext,
         rightFileContent: caretRightFileContext,
-    } as codewhispererClient.FileContext
+    }
 }
 
 export function getFileName(editor: vscode.TextEditor): string {
@@ -77,7 +77,7 @@ export async function buildListRecommendationRequest(
     nextToken: string,
     allowCodeWithReference: boolean | undefined = undefined
 ): Promise<{
-    request: codewhispererClient.ListRecommendationsRequest
+    request: codewhisperer.ListRecommendationsRequest
     supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
@@ -103,7 +103,7 @@ export async function buildListRecommendationRequest(
     logSupplementalContext(supplementalContexts)
 
     const selectedCustomization = getSelectedCustomization()
-    const supplementalContext: codewhispererClient.SupplementalContext[] = supplementalContexts
+    const supplementalContext: codewhisperer.SupplementalContext[] = supplementalContexts
         ? supplementalContexts.supplementalContextItems.map(v => {
               return selectFrom(v, 'content', 'filePath')
           })
@@ -112,7 +112,14 @@ export async function buildListRecommendationRequest(
     if (allowCodeWithReference === undefined) {
         return {
             request: {
-                fileContext: fileContext,
+                fileContext: {
+                    filename: fileContext.filename,
+                    programmingLanguage: {
+                        languageName: fileContext.language,
+                    },
+                    leftFileContent: fileContext.leftFileContent,
+                    rightFileContent: fileContext.rightFileContent,
+                },
                 nextToken: nextToken,
                 supplementalContexts: supplementalContext,
                 customizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
@@ -123,7 +130,7 @@ export async function buildListRecommendationRequest(
 
     return {
         request: {
-            fileContext: fileContext,
+            fileContext: toFileContext(fileContext),
             nextToken: nextToken,
             referenceTrackerConfiguration: {
                 recommendationsWithReferences: allowCodeWithReference ? 'ALLOW' : 'BLOCK',
@@ -136,7 +143,7 @@ export async function buildListRecommendationRequest(
 }
 
 export async function buildGenerateRecommendationRequest(editor: vscode.TextEditor): Promise<{
-    request: codewhispererClient.GenerateRecommendationsRequest
+    request: codewhisperer.GenerateRecommendationsRequest
     supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
 }> {
     const fileContext = extractContextForCodeWhisperer(editor)
@@ -162,7 +169,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
 
     return {
         request: {
-            fileContext: fileContext,
+            fileContext: toFileContext(fileContext),
             maxResults: CodeWhispererConstants.maxRecommendations,
             supplementalContexts: supplementalContexts?.supplementalContextItems ?? [],
         },
@@ -171,7 +178,7 @@ export async function buildGenerateRecommendationRequest(editor: vscode.TextEdit
 }
 
 export function validateRequest(
-    req: codewhispererClient.ListRecommendationsRequest | codewhispererClient.GenerateRecommendationsRequest
+    req: codewhisperer.ListRecommendationsRequest | codewhisperer.GenerateRecommendationsRequest
 ): boolean {
     const isLanguageNameValid = !(
         req.fileContext.programmingLanguage.languageName === undefined ||
@@ -239,4 +246,23 @@ function logSupplementalContext(supplementalContext: CodeWhispererSupplementalCo
     })
 
     getLogger().debug(logString)
+}
+
+function toProgrammingLanguage(
+    cwLanguage: CodewhispererLanguage
+): CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage {
+    return {
+        languageName: cwLanguage,
+    }
+}
+
+function toFileContext(
+    cwFileContext: codewhisperer.FileContext
+): CodeWhispererClient.FileContext | CodeWhispererUserClient.FileContext {
+    return {
+        filename: cwFileContext.filename,
+        programmingLanguage: toProgrammingLanguage(cwFileContext.language),
+        leftFileContent: cwFileContext.leftFileContent,
+        rightFileContent: cwFileContext.rightFileContent,
+    }
 }
