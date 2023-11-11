@@ -8,10 +8,14 @@ import { getIcon } from '../../shared/icons'
 import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
+    CodewhispererSuggestionState,
     CodewhispererTriggerType,
     Result,
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
+
+import * as CodeWhispererClient from '../client/codewhispererclient'
+import * as CodeWhispererUserClient from '../client/codewhispereruserclient'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -79,6 +83,24 @@ export interface ConfigurationEntry {
 export interface InlineCompletionItem {
     content: string
     index: number
+}
+
+export class Recommendation implements CodeWhispererUserClient.Completion {
+    readonly content: string
+    readonly references?: CodeWhispererUserClient.References | CodeWhispererClient.References | undefined
+    readonly mostRelevantMissingImports?: CodeWhispererClient.Imports | CodeWhispererUserClient.Imports | undefined
+
+    suggestionState: CodewhispererSuggestionState | 'Showned' | undefined = undefined
+    readonly completionType: CodewhispererCompletionType
+
+    constructor(readonly cwRecommendation: CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion) {
+        this.content = cwRecommendation.content
+        this.references = cwRecommendation.references
+        this.mostRelevantMissingImports = cwRecommendation.mostRelevantMissingImports
+
+        const nonBlankLines = cwRecommendation.content.split('\n').filter(line => line.trim() !== '').length
+        this.completionType = nonBlankLines > 1 ? 'Block' : 'Line'
+    }
 }
 
 /**

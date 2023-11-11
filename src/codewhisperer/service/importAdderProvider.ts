@@ -5,10 +5,10 @@
 
 import * as vscode from 'vscode'
 import { isCloud9 } from '../../shared/extensionUtilities'
-import { Recommendation } from '../client/codewhisperer'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { findLineToInsertImportStatement } from '../util/importAdderUtil'
 import { application } from '../util/codeWhispererApplication'
+import { Recommendation } from '../models/model'
 
 /**
  * ImportAdderProvider

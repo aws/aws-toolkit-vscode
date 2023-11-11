@@ -6,11 +6,11 @@
 import * as vscode from 'vscode'
 import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
 import { session } from '../util/codeWhispererSession'
+import { Recommendation } from '../models/model'
 /**
  * completion provider for intelliSense popup
  */

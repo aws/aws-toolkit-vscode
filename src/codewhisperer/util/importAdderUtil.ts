@@ -4,8 +4,8 @@
  */
 
 import * as vscode from 'vscode'
-import { Recommendation } from '../client/codewhisperer'
 import { CodeWhispererSettings } from './codewhispererSettings'
+import { Recommendation } from '../models/model'
 
 export function findLineToInsertImportStatement(editor: vscode.TextEditor, firstLineOfRecommendation: number): number {
     let line = findLineOfLastImportStatement(editor, firstLineOfRecommendation)
