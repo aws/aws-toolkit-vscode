@@ -11,7 +11,7 @@ import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocu
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
-import { ConfigurationEntry } from '../../../codewhisperer/models/model'
+import { ConfigurationEntry, Recommendation } from '../../../codewhisperer/models/model'
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
@@ -49,7 +49,10 @@ describe('inlineCompletionService', function () {
                 RecommendationHandler.instance,
                 'checkAndResetCancellationTokens'
             )
-            session.recommendations = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
+            session.recommendations = [
+                new Recommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
+                new Recommendation({ content: '' }),
+            ]
             await InlineCompletionService.instance.getPaginatedRecommendation(
                 mockClient,
                 mockEditor,
@@ -75,7 +78,10 @@ describe('inlineCompletionService', function () {
                 },
             ]
             ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
-            session.recommendations = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
+            session.recommendations = [
+                new Recommendation({ content: "\n\t\tconsole.log('Hello world!');\n\t}" }),
+                new Recommendation({ content: '' }),
+            ]
             session.language = 'python'
 
             assert.ok(session.recommendations.length > 0)

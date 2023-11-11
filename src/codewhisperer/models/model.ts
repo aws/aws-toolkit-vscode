@@ -90,7 +90,7 @@ export class Recommendation implements CodeWhispererUserClient.Completion {
     readonly references?: CodeWhispererUserClient.References | CodeWhispererClient.References | undefined
     readonly mostRelevantMissingImports?: CodeWhispererClient.Imports | CodeWhispererUserClient.Imports | undefined
 
-    suggestionState: CodewhispererSuggestionState | 'Showned' | undefined = undefined
+    suggestionState: CodewhispererSuggestionState | 'Showed' | undefined = undefined
     readonly completionType: CodewhispererCompletionType
 
     constructor(readonly cwRecommendation: CodeWhispererClient.Recommendation | CodeWhispererUserClient.Completion) {

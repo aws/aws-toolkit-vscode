@@ -5,7 +5,7 @@
 import globals from '../../shared/extensionGlobals'
 
 import { runtimeLanguageContext } from './runtimeLanguageContext'
-import { codeWhispererClient as client, RecommendationsList } from '../client/codewhisperer'
+import { codeWhispererClient as client } from '../client/codewhisperer'
 import { LicenseUtil } from './licenseUtil'
 import {
     CodewhispererGettingStartedTask,
@@ -31,6 +31,7 @@ import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
+import { Recommendation } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -159,11 +160,9 @@ export class TelemetryHelper {
     public recordUserDecisionTelemetry(
         requestIdList: string[],
         sessionId: string,
-        recommendations: RecommendationsList,
+        recommendations: Recommendation[],
         acceptIndex: number,
         paginationIndex: number,
-        completionTypes: Map<number, CodewhispererCompletionType>,
-        recommendationSuggestionState?: Map<number, string>,
         supplementalContextMetadata?: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     ) {
         const events: CodewhispererUserDecision[] = []
@@ -175,7 +174,7 @@ export class TelemetryHelper {
                 uniqueSuggestionReferences = JSON.stringify(Array.from(uniqueLicenseSet))
             }
             if (_elem.content.length === 0) {
-                recommendationSuggestionState?.set(i, 'Empty')
+                _elem.suggestionState = 'Empty'
             }
             const event: CodewhispererUserDecision = {
                 // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
@@ -184,11 +183,11 @@ export class TelemetryHelper {
                 codewhispererPaginationProgress: paginationIndex,
                 codewhispererTriggerType: this.triggerType,
                 codewhispererSuggestionIndex: i,
-                codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, recommendationSuggestionState),
+                codewhispererSuggestionState: this.getSuggestionState(i, acceptIndex, _elem),
                 codewhispererSuggestionReferences: uniqueSuggestionReferences,
                 codewhispererSuggestionReferenceCount: _elem.references ? _elem.references.length : 0,
                 codewhispererSuggestionImportCount: getImportCount(_elem),
-                codewhispererCompletionType: this.getCompletionType(i, completionTypes),
+                codewhispererCompletionType: _elem.completionType,
                 codewhispererLanguage: session.language,
                 codewhispererGettingStartedTask: session.taskType,
                 credentialStartUrl: AuthUtil.instance.startUrl,
@@ -491,22 +490,18 @@ export class TelemetryHelper {
     public getSuggestionState(
         i: number,
         acceptIndex: number,
-        recommendationSuggestionState?: Map<number, string>
+        recommendation: Recommendation
     ): CodewhispererSuggestionState {
-        const state = recommendationSuggestionState?.get(i)
+        const state = recommendation.suggestionState
         if (state && ['Empty', 'Filter', 'Discard'].includes(state)) {
             return state as CodewhispererSuggestionState
-        } else if (recommendationSuggestionState !== undefined && recommendationSuggestionState.get(i) !== 'Showed') {
+        } else if (state !== 'Showed') {
             return 'Unseen'
         }
         if (acceptIndex === -1) {
             return 'Reject'
         }
         return i === acceptIndex ? 'Accept' : 'Ignore'
-    }
-
-    public getCompletionType(i: number, completionTypes: Map<number, CodewhispererCompletionType>) {
-        return completionTypes.get(i) || 'Line'
     }
 
     public isTelemetryEnabled(): boolean {

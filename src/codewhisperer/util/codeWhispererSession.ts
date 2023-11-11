@@ -7,6 +7,7 @@ import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererGettingStartedTask,
+    CodewhispererSuggestionState,
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest } from '../client/codewhisperer'
 import { Position } from 'vscode'
@@ -31,8 +32,6 @@ class CodeWhispererSession {
     taskType: CodewhispererGettingStartedTask | undefined
     // Various states of recommendations
     recommendations: Recommendation[] = []
-    suggestionStates = new Map<number, string>()
-    completionTypes = new Map<number, CodewhispererCompletionType>()
 
     // Some other variables for client component latency
     fetchCredentialStartTime = 0
@@ -55,21 +54,16 @@ class CodeWhispererSession {
         }
     }
 
-    setSuggestionState(index: number, value: string) {
-        this.suggestionStates.set(index, value)
+    setSuggestionState(index: number, value: CodewhispererSuggestionState | 'Showed') {
+        this.recommendations[index].suggestionState = value
     }
 
     getSuggestionState(index: number): string | undefined {
-        return this.suggestionStates.get(index)
-    }
-
-    setCompletionType(index: number, recommendation: Recommendation) {
-        const nonBlankLines = recommendation.content.split('\n').filter(line => line.trim() !== '').length
-        this.completionTypes.set(index, nonBlankLines > 1 ? 'Block' : 'Line')
+        return this.recommendations[index].suggestionState
     }
 
     getCompletionType(index: number): CodewhispererCompletionType {
-        return this.completionTypes.get(index) || 'Line'
+        return this.recommendations[index].completionType
     }
 }
 

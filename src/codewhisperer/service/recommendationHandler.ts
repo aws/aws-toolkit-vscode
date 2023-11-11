@@ -8,7 +8,7 @@ import { extensionVersion } from '../../shared/vscode/env'
 import { RecommendationsList, DefaultCodeWhispererClient, CognitoCredentialsError } from '../client/codewhisperer'
 import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
-import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
+import { ConfigurationEntry, GetRecommendationsResponse, Recommendation, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
@@ -24,7 +24,6 @@ import {
 import { showTimedMessage } from '../../shared/utilities/messages'
 import {
     CodewhispererAutomatedTriggerType,
-    CodewhispererCompletionType,
     CodewhispererGettingStartedTask,
     CodewhispererTriggerType,
     telemetry,
@@ -378,9 +377,11 @@ export class RecommendationHandler {
                 ) {
                     session.setSuggestionState(recommendationIndex, 'Discard')
                 }
-                session.setCompletionType(recommendationIndex, r)
             })
-            session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
+            const recommendationDetails = recommendations.map(r => new Recommendation(r))
+            session.recommendations = pagination
+                ? session.recommendations.concat(recommendationDetails)
+                : recommendationDetails
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
             }
@@ -440,8 +441,6 @@ export class RecommendationHandler {
      */
     clearRecommendations() {
         session.recommendations = []
-        session.suggestionStates = new Map<number, string>()
-        session.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.requestId = ''
         session.sessionId = ''
         this.nextToken = ''
@@ -487,8 +486,6 @@ export class RecommendationHandler {
             session.recommendations,
             acceptIndex,
             session.recommendations.length,
-            session.completionTypes,
-            session.suggestionStates,
             session.requestContext.supplementalMetadata
         )
         if (isCloud9('any')) {

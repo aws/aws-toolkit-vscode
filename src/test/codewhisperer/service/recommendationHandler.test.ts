@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import { DefaultCodeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import { assertTelemetryCurried } from '../../testUtil'
 import { RecommendationsList } from '../../../codewhisperer/client/codewhisperer'
-import { ConfigurationEntry } from '../../../codewhisperer/models/model'
+import { ConfigurationEntry, Recommendation } from '../../../codewhisperer/models/model'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { TelemetryHelper } from '../../../codewhisperer/util/telemetryHelper'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
@@ -212,11 +212,11 @@ describe('recommendationHandler', function () {
         it('should return true if any response is not empty', function () {
             const handler = new RecommendationHandler()
             session.recommendations = [
-                {
+                new Recommendation({
                     content:
                         '\n    // Use the console to output debug info…n of the command with the "command" variable',
-                },
-                { content: '' },
+                }),
+                new Recommendation({ content: '' }),
             ]
             assert.ok(handler.isValidResponse())
         })
@@ -229,47 +229,8 @@ describe('recommendationHandler', function () {
 
         it('should return false if all response has no string length', function () {
             const handler = new RecommendationHandler()
-            session.recommendations = [{ content: '' }, { content: '' }]
+            session.recommendations = [new Recommendation({ content: '' }), new Recommendation({ content: '' })]
             assert.ok(!handler.isValidResponse())
-        })
-    })
-
-    describe('setCompletionType/getCompletionType', function () {
-        beforeEach(function () {
-            sinon.restore()
-        })
-
-        it('should set the completion type to block given a multi-line suggestion', function () {
-            session.setCompletionType(0, { content: 'test\n\n   \t\r\nanother test' })
-            assert.strictEqual(session.getCompletionType(0), 'Block')
-
-            session.setCompletionType(0, { content: 'test\ntest\n' })
-            assert.strictEqual(session.getCompletionType(0), 'Block')
-
-            session.setCompletionType(0, { content: '\n   \t\r\ntest\ntest' })
-            assert.strictEqual(session.getCompletionType(0), 'Block')
-        })
-
-        it('should set the completion type to line given a single-line suggestion', function () {
-            session.setCompletionType(0, { content: 'test' })
-            assert.strictEqual(session.getCompletionType(0), 'Line')
-
-            session.setCompletionType(0, { content: 'test\r\t   ' })
-            assert.strictEqual(session.getCompletionType(0), 'Line')
-        })
-
-        it('should set the completion type to line given a multi-line completion but only one-lien of non-blank sequence', function () {
-            session.setCompletionType(0, { content: 'test\n\t' })
-            assert.strictEqual(session.getCompletionType(0), 'Line')
-
-            session.setCompletionType(0, { content: 'test\n    ' })
-            assert.strictEqual(session.getCompletionType(0), 'Line')
-
-            session.setCompletionType(0, { content: 'test\n\r' })
-            assert.strictEqual(session.getCompletionType(0), 'Line')
-
-            session.setCompletionType(0, { content: '\n\n\n\ntest' })
-            assert.strictEqual(session.getCompletionType(0), 'Line')
         })
     })
 
