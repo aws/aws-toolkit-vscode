@@ -69,9 +69,6 @@ export class WeaverbirdController {
                 case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
                     this.provideFeedbackAndRegenerateCode(data)
                     break
-                case FollowUpTypes.RejectCode:
-                    // TODO figure out what we want to do here
-                    break
                 case FollowUpTypes.Retry:
                     this.retryRequest(data)
                     break
@@ -346,12 +343,6 @@ export class WeaverbirdController {
                         type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
                         icon: 'refresh' as MynahIcons,
                         status: 'info',
-                    },
-                    {
-                        pillText: 'Reject and discuss',
-                        type: FollowUpTypes.RejectCode,
-                        icon: 'revert' as MynahIcons,
-                        status: 'error',
                     },
                 ]
             default:
