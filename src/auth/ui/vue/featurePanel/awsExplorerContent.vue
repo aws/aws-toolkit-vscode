@@ -65,12 +65,12 @@
                 ></IdentityCenterForm>
 
                 <div v-on:click="toggleShowCredentials" style="cursor: pointer; display: flex; flex-direction: row">
-                    <div
-                        style="font-weight: bold; font-size: medium"
-                        :class="collapsibleClass(isCredentialsShown)"
-                    ></div>
-                    <div>
-                        <div style="font-weight: bold; font-size: 14px">Or add IAM User Credentials</div>
+                    <div class="collapsible-title">
+                        <div
+                            style="font-weight: bold; font-size: medium"
+                            :class="collapsibleClass(isCredentialsShown)"
+                        ></div>
+                        Or add IAM User Credentials
                     </div>
                 </div>
 

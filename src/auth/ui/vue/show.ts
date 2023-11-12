@@ -60,7 +60,7 @@ import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
-    public readonly onDidConnectionUpdate = new vscode.EventEmitter<undefined>()
+    public readonly onDidConnectionUpdate = new vscode.EventEmitter<ServiceItemId>()
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
@@ -346,23 +346,16 @@ export class AuthWebview extends VueWebview {
      * that happen outside of the webview (eg: status bar > quickpick).
      */
     setupConnectionChangeEmitter() {
-        const events = [
-            this.codeCatalystAuth.onDidChangeActiveConnection,
-            CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection,
-            Auth.instance.onDidChangeActiveConnection,
-            Auth.instance.onDidChangeConnectionState,
-            Auth.instance.onDidUpdateConnection,
-        ]
+        const codeWhispererConnectionChanged = debounce(() => this.onDidConnectionUpdate.fire('codewhisperer'), 500)
+        CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
 
-        // The event handler in the frontend refreshes all connection statuses
-        // when triggered, and multiple events can fire at the same time so we debounce.
-        const debouncedFire = debounce(() => this.onDidConnectionUpdate.fire(undefined), 500)
+        const codeCatalystConnectionChanged = debounce(() => this.onDidConnectionUpdate.fire('codecatalyst'), 500)
+        this.codeCatalystAuth.onDidChangeActiveConnection(codeCatalystConnectionChanged)
 
-        events.forEach(event =>
-            event(() => {
-                debouncedFire()
-            })
-        )
+        const awsExplorerConnectionChanged = debounce(() => this.onDidConnectionUpdate.fire('awsExplorer'), 500)
+        Auth.instance.onDidChangeActiveConnection(awsExplorerConnectionChanged)
+        Auth.instance.onDidChangeConnectionState(awsExplorerConnectionChanged)
+        Auth.instance.onDidUpdateConnection(awsExplorerConnectionChanged)
     }
 
     #initialService?: ServiceItemId

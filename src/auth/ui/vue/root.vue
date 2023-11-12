@@ -75,9 +75,18 @@
             <div style="font-size: 1.6rem; font-weight: bold">Sign in to Get Started</div>
             <hr style="margin: 1em 0 1em 0; border-color: var(--vscode-textBlockQuote-border)" />
             <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
-                <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
-                <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
-                <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
+                <CodeWhispererContent
+                    :state="serviceItemsAuthStatus['codewhisperer']"
+                    :key="featurePanelKeys['codewhisperer']"
+                ></CodeWhispererContent>
+                <AwsExplorerContent
+                    :state="serviceItemsAuthStatus['awsExplorer']"
+                    :key="featurePanelKeys['awsExplorer']"
+                ></AwsExplorerContent>
+                <CodeCatalystContent
+                    :state="serviceItemsAuthStatus['codecatalyst']"
+                    :key="featurePanelKeys['codecatalyst']"
+                ></CodeCatalystContent>
             </div>
         </div>
     </div>
@@ -100,6 +109,12 @@ import CodeWhispererContent from './featurePanel/codeWhispererContent.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
+const featurePanelKeys: { [k in ServiceItemId]: number } = {
+    awsExplorer: 0,
+    codewhisperer: 0,
+    codecatalyst: 0,
+} as const
+
 export default defineComponent({
     components: {
         ConnectedNotification,
@@ -114,6 +129,7 @@ export default defineComponent({
             serviceItemsAuthStatus: serviceItemsAuthStatus,
             notifications: Notifications.instance,
             maxWidth: undefined as typeof undefined | number,
+            featurePanelKeys: featurePanelKeys,
         }
     },
     async created() {
@@ -128,13 +144,8 @@ export default defineComponent({
         await showFoundExistingCredentials(this.notifications)
 
         // This handles auth changes triggered outside of this webview.
-        client.onDidConnectionUpdate(() => {
-            // TODO: We will now need to refresh all windows or if we can get more granular, then the one that changed
-            // This handles the edge case where we have selected a service item
-            // and its content window is being shown. If there is an external
-            // event that changes the state of this service (eg: disconnected)
-            // this forced rerender will display the new state
-            // this.rerenderSelectedContentWindow()
+        client.onDidConnectionUpdate((featureId: ServiceItemId) => {
+            this.refreshFeaturePanel(featureId)
         })
     },
     mounted() {
@@ -152,6 +163,9 @@ export default defineComponent({
                 // On a successful sign in the state of the current content window
                 // can change. This forces a rerendering of it to have it load the latest state.
             }
+        },
+        refreshFeaturePanel(featureId: ServiceItemId) {
+            this.featurePanelKeys[featureId]++
         },
         /** Returns all the Auths that currently exist */
         async getAllExistingAuths(): Promise<AuthFormId[]> {
