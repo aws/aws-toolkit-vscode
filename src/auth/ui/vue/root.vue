@@ -16,17 +16,17 @@
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
     />
 
-    <div :style="{ display: 'flex', flexDirection: 'column', gap: '2vw', 'max-width': 'min(100vw, 1400px)' }">
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '2em', maxWidth: `${maxWidth}px` }">
         <!-- Logo + Title -->
         <div>
-            <div style="display: flex; justify-content: left; align-items: center; gap: 10px">
-                <div id="logo" style="font-size: 3vw">
+            <div style="display: flex; justify-content: left; align-items: center; gap: 0.5vw">
+                <div id="logo" style="font-size: 3rem">
                     <svg
                         id="Layer_1"
                         data-name="Layer 1"
                         xmlns="http://www.w3.org/2000/svg"
-                        width="52pt"
-                        height="32pt"
+                        width="6rem"
+                        :height="`${6 * 0.61}rem`"
                         viewBox="0 0 50 30"
                     >
                         <path
@@ -43,14 +43,15 @@
                     </svg>
                 </div>
                 <div>
-                    <div style="font-size: 1.8vw; font-weight: bold">AWS Toolkit for VS Code</div>
+                    <div style="font-size: 1.8rem; font-weight: bold">AWS Toolkit for VS Code</div>
+                    <div style="font-size: 1.4rem; font-weight: bold">Add Connections</div>
                 </div>
             </div>
 
             <!-- Status Bars -->
             <div
                 v-if="notifications.model.showSuccessfulConnection || notifications.model.showFoundCredentials"
-                style="display: flex; flex-direction: column; gap: 20px"
+                style="display: flex; flex-direction: column; gap: 1vw"
             >
                 <!-- 
                     TODO figure out a better mechanism to dynamically create notifications instead
@@ -64,11 +65,11 @@
                 <CredentialsNotification v-if="notifications.model.showFoundCredentials"></CredentialsNotification>
             </div>
         </div>
-        <!-- padding: 0 4vw 0 4vw; -->
-        <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 2vw">
+
+        <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
+            <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
             <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
             <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
-            <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
         </div>
     </div>
 </template>
@@ -101,18 +102,14 @@ export default defineComponent({
     name: 'AuthRoot',
     data() {
         return {
-            unlockedItemIds: [] as ServiceItemId[],
-            lockedItemIds: [] as ServiceItemId[],
-            currWindowWidth: window.innerWidth,
-
             serviceItemsAuthStatus: serviceItemsAuthStatus,
-
-            rerenderContentWindowKey: 0,
-
             notifications: Notifications.instance,
+            maxWidth: undefined as typeof undefined | number,
         }
     },
     async created() {
+        this.scalePage()
+
         // TODO: Due to design constraints, we determine the existing Auths in the frontend code
         //       since we have all the classes that figure this out in vue. If eventually we are able
         //       to we should look to move those in to the backend, have the frontend contact the code there
@@ -132,19 +129,10 @@ export default defineComponent({
         })
     },
     mounted() {
-        window.addEventListener('resize', this.updateWindowWidth)
-    },
-    unmounted() {
-        window.removeEventListener('resize', this.updateWindowWidth)
+        window.addEventListener('resize', this.scalePage)
     },
     computed: {},
     methods: {
-        isLandscape() {
-            return this.currWindowWidth > 1170
-        },
-        updateWindowWidth() {
-            this.currWindowWidth = window.innerWidth
-        },
         onAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
             if (args.cause === 'created') {
                 // When the auth update is caused by a creation of the auth form
@@ -154,7 +142,6 @@ export default defineComponent({
             if (args.isConnected && args.cause === 'signIn') {
                 // On a successful sign in the state of the current content window
                 // can change. This forces a rerendering of it to have it load the latest state.
-                this.rerenderSelectedContentWindow()
             }
         },
         /** Returns all the Auths that currently exist */
@@ -177,11 +164,46 @@ export default defineComponent({
             return existingAuths
         },
         /**
-         * This will trigger a re-rendering of the currently shown content window.
+         * A mediocre attempt at scaling the content when the webview
+         * stretches or the user zooms in/out. The goal is to keep
+         * all the content in frame withtout having to scroll.
          */
-        rerenderSelectedContentWindow() {
-            // Arbitrarily toggles value between 0 and 1
-            this.rerenderContentWindowKey = this.rerenderContentWindowKey === 0 ? 1 : 0
+        scalePage() {
+            this.adjustAspectRatio()
+
+            /**
+             * The font size we want is 14px. But when the user zooms in/out
+             * the font size does not change respective to the zoom.
+             * {@link window.devicePixelRatio} helps us scale the font size
+             * relative to the zoom.
+             */
+            document.documentElement.style.fontSize = `${14 / window.devicePixelRatio}px`
+        },
+        /**
+         * If the aspect ratio of the webview becomes too wide the
+         * content becomes stretched and ugly. This adjusts the width
+         * of the content container to keep the aspect ratio below the
+         * {@link maxAspectRatio}
+         */
+        adjustAspectRatio() {
+            /**
+             * **Are you trying to modify this?**
+             *
+             * At the moment of writing this there are 3 panels,
+             * so the current aspect ratio looks nice.
+             * If this changes we will want to adjust the aspect ratio
+             * to fit whatever the new content is.
+             */
+            const maxAspectRatio = 5 / 4
+
+            const currentAspectRatio = window.innerWidth / window.innerHeight
+            if (currentAspectRatio > maxAspectRatio) {
+                // Dervived from: AspectRatio = Width / Height
+                let newMaxWidth = window.innerHeight * maxAspectRatio
+                this.maxWidth = newMaxWidth
+            } else {
+                this.maxWidth = window.innerWidth
+            }
         },
     },
 })

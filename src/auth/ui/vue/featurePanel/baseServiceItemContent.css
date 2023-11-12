@@ -2,32 +2,30 @@
     display: flex;
     flex-direction: column;
     justify-content: start;
-    gap: 1.2rem;
-
     border-color: var(--vscode-descriptionForeground);
     box-sizing: border-box;
+    height: fit-content;
+    gap: 1.2em;
     width: 33%;
-
-    padding: 2%;
+    padding: 1.5em;
 }
 
 .feature-panel-container-title {
     display: inline;
-    font-size: 1.7vw;
+    font-size: 1.7rem;
     font-weight: bold;
 }
 
 .feature-panel-container-description {
-    font-size: 1vw;
+    font-size: 1rem;
 }
 
 .service-item-content-image {
     height: 100%;
+    border-radius: 1rem;
 }
 
 .feature-panel-container hr {
-    border: none;
-    height: 1px;
     background-color: var(--vscode-descriptionForeground);
     width: 100%;
 }
@@ -36,21 +34,21 @@
     display: flex;
     flex-direction: column;
     align-items: left;
-    gap: 1.2vw;
+    gap: 1.2rem;
 }
 
 .collapsible-title {
     font-weight: bold;
-    font-size: 1vw;
+    font-size: 1rem;
     cursor: pointer;
     display: flex;
     flex-direction: row;
-    gap: 1%;
+    justify-content: left;
     user-select: none;
 }
 
 .collapsible-description {
     font-weight: bold;
-    font-size: 0.8vw;
+    font-size: 0.8rem;
     user-select: none;
 }

@@ -70,7 +70,6 @@ export default defineComponent({
     },
     methods: {
         emitCloseNotification(id: NotificationId) {
-            console.log(`NIKOLAS: container "${id}"`)
             this.$emit('close-notification', id)
         },
     },

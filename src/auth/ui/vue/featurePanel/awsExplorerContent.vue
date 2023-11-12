@@ -29,9 +29,9 @@
             ></ExplorerAggregateForm>
 
             <div v-on:click="toggleShowIdentityCenter" class="collapsible-title">
-                <div :class="collapsibleClass(isIdentityCenterShown)"></div>
                 <div>
-                    <div>Add another IAM Identity Center Profile</div>
+                    <div :class="collapsibleClass(isIdentityCenterShown)"></div>
+                    Add another IAM Identity Center Profile
                 </div>
             </div>
 
@@ -43,9 +43,9 @@
             ></IdentityCenterForm>
 
             <div v-on:click="toggleShowCredentials" class="collapsible-title">
-                <div :class="collapsibleClass(isCredentialsShown)"></div>
                 <div>
-                    <div>Add another IAM User Credential</div>
+                    <div :class="collapsibleClass(isCredentialsShown)"></div>
+                    Add another IAM User Credential
                 </div>
             </div>
 

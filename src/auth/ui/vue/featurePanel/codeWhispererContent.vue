@@ -28,10 +28,12 @@
 
                 <div>
                     <div v-on:click="toggleIdentityCenterShown" class="collapsible-title">
-                        <div :class="collapsibleClass"></div>
                         <div>
-                            <div>Have a Professional Tier subscription?</div>
-                            <div class="collapsible-description">
+                            <div>
+                                <div :class="collapsibleClass" style="height: 0"></div>
+                                Have a Professional Tier subscription?
+                            </div>
+                            <div class="collapsible-description" style="margin-left: 1.3rem">
                                 Sign in with IAM Identity Center (SSO)
                                 <a
                                     class="icon icon-lg icon-vscode-question"
@@ -135,7 +137,7 @@ export class CodeWhispererContentState extends FeatureStatus {
 .codewhisperer-content-form-container {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 1em;
     justify-content: center;
     align-items: left;
 }
