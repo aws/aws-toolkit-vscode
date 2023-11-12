@@ -1,25 +1,28 @@
 <template>
     <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
-        <div class="feature-panel-container-title">AWS Explorer</div>
+        <div class="feature-panel-container-upper">
+            <div class="feature-panel-container-title">AWS Explorer</div>
 
-        <div class="centered-items">
-            <img
-                class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/awsExplorer.gif"
-                alt="AWS Explorer example GIF"
-            />
-        </div>
+            <div class="centered-items">
+                <img
+                    class="service-item-content-image"
+                    src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/awsExplorer.gif"
+                    alt="AWS Explorer example GIF"
+                />
+            </div>
 
-        <div class="feature-panel-container-description">
-            Work with S3, CloudWatch, and more.
-            <a
-                href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
-                v-on:click="emitUiClick('auth_learnMoreAWSResources')"
-                >Learn more.</a
-            >
+            <div class="feature-panel-container-description">
+                Work with S3, CloudWatch, and more.
+                <a
+                    href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/toolkit-navigation.html"
+                    v-on:click="emitUiClick('auth_learnMoreAWSResources')"
+                    >Learn more.</a
+                >
+            </div>
         </div>
 
         <hr />
+
         <div class="feature-panel-form-container">
             <div v-if="isAuthConnected" class="feature-panel-form-section">
                 <ExplorerAggregateForm

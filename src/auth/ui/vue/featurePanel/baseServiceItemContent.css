@@ -15,6 +15,12 @@
     padding: 1.5em;
 }
 
+.feature-panel-container-upper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2em;
+}
+
 .feature-panel-container-title {
     display: inline;
     font-size: 1.7rem;
@@ -27,7 +33,8 @@
 
 .service-item-content-image {
     height: 100%;
-    border-radius: 1rem;
+    border-radius: 1em;
+    max-height: 22em;
 }
 
 .feature-panel-container hr {
@@ -40,6 +47,8 @@
     flex-direction: column;
     gap: 1em;
     justify-content: center;
+    margin-top: auto;
+    margin-bottom: auto;
 }
 
 .feature-panel-form-section {

@@ -1,25 +1,27 @@
 <template>
     <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
-        <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
+        <div class="feature-panel-container-upper">
+            <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
 
-        <div class="centered-items">
-            <img
-                class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
-                alt="CodeCatalyst example GIF"
-            />
-        </div>
+            <div class="centered-items">
+                <img
+                    class="service-item-content-image"
+                    src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
+                    alt="CodeCatalyst example GIF"
+                />
+            </div>
 
-        <div class="feature-panel-container-description">
-            Spend more time coding and less time managing development environments.
-            <a href="https://aws.amazon.com/codecatalyst/" v-on:click="emitUiClick('auth_learnMoreCodeCatalyst')"
-                >Learn more.</a
-            >
+            <div class="feature-panel-container-description">
+                Spend more time coding and less time managing development environments.
+                <a href="https://aws.amazon.com/codecatalyst/" v-on:click="emitUiClick('auth_learnMoreCodeCatalyst')"
+                    >Learn more.</a
+                >
+            </div>
         </div>
 
         <hr />
 
-        <div class="feature-panel-form-container" style="margin-top: auto; margin-bottom: auto">
+        <div class="feature-panel-form-container">
             <div class="feature-panel-form-section">
                 <BuilderIdForm
                     :state="builderIdState"

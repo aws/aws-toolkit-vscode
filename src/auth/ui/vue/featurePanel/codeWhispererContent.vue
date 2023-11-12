@@ -1,26 +1,28 @@
 <template>
     <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
-        <div class="feature-panel-container-title">Amazon CodeWhisperer</div>
+        <div class="feature-panel-container-upper">
+            <div class="feature-panel-container-title">Amazon CodeWhisperer</div>
 
-        <div class="centered-items">
-            <img
-                class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
-                alt="CodeWhisperer example GIF"
-            />
-        </div>
+            <div class="centered-items">
+                <img
+                    class="service-item-content-image"
+                    src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
+                    alt="CodeWhisperer example GIF"
+                />
+            </div>
 
-        <div class="feature-panel-container-description">
-            An AI coding companion that generates code suggestions as you type.
-            <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
-                >Learn more.</a
-            >
+            <div class="feature-panel-container-description">
+                An AI coding companion that generates code suggestions as you type.
+                <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
+                    >Learn more.</a
+                >
+            </div>
         </div>
 
         <hr />
 
-        <div class="feature-panel-form-section">
-            <div class="feature-panel-form-container">
+        <div class="feature-panel-form-container">
+            <div class="feature-panel-form-section">
                 <BuilderIdForm
                     :state="builderIdState"
                     @auth-connection-updated="onAuthConnectionUpdated"
