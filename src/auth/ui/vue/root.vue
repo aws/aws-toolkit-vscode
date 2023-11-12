@@ -16,7 +16,7 @@
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
     />
 
-    <div :style="{ display: 'flex', flexDirection: 'column', gap: '2em', maxWidth: `${maxWidth}px` }">
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', maxWidth: `${maxWidth}px` }">
         <!-- Logo + Title -->
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 0.5vw">
@@ -44,7 +44,13 @@
                 </div>
                 <div>
                     <div style="font-size: 1.8rem; font-weight: bold">AWS Toolkit for VS Code</div>
-                    <div style="font-size: 1.4rem; font-weight: bold">Add Connections</div>
+                    <div style="font-size: 1rem; font-weight: bold">
+                        <a href="https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html"
+                            >Documentation</a
+                        >
+                        | <a href="https://github.com/aws/aws-toolkit-vscode">Join us on Github</a> |
+                        <a>TODO: Share Feedback</a>
+                    </div>
                 </div>
             </div>
 
@@ -65,11 +71,14 @@
                 <CredentialsNotification v-if="notifications.model.showFoundCredentials"></CredentialsNotification>
             </div>
         </div>
-
-        <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
-            <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
-            <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
-            <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: bold">Sign in to Get Started</div>
+            <hr style="margin: 1em 0 1em 0; border-color: var(--vscode-textBlockQuote-border)" />
+            <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
+                <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
+                <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
+                <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
+            </div>
         </div>
     </div>
 </template>

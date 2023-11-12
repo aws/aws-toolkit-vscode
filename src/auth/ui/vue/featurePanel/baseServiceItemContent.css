@@ -5,6 +5,11 @@
     border-color: var(--vscode-descriptionForeground);
     box-sizing: border-box;
     height: fit-content;
+    /* 
+     * This must be the height of the tallest feature panel.
+     * This ensures all the borders of the feature panels are the same height.
+     */
+    min-height: 57em;
     gap: 1.2em;
     width: 33%;
     padding: 1.5em;
@@ -28,6 +33,13 @@
 .feature-panel-container hr {
     background-color: var(--vscode-descriptionForeground);
     width: 100%;
+}
+
+.feature-panel-form-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+    justify-content: center;
 }
 
 .feature-panel-form-section {

@@ -20,74 +20,74 @@
         </div>
 
         <hr />
+        <div class="feature-panel-form-container">
+            <div v-if="isAuthConnected" class="feature-panel-form-section">
+                <ExplorerAggregateForm
+                    :identityCenterState="identityCenterFormState"
+                    :credentialsState="credentialsFormState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                >
+                </ExplorerAggregateForm>
 
-        <div v-if="isAuthConnected" class="feature-panel-form-section">
-            <ExplorerAggregateForm
-                :identityCenterState="identityCenterFormState"
-                :credentialsState="credentialsFormState"
-                @auth-connection-updated="onAuthConnectionUpdated"
-            ></ExplorerAggregateForm>
-
-            <div v-on:click="toggleShowIdentityCenter" class="collapsible-title">
-                <div>
-                    <div :class="collapsibleClass(isIdentityCenterShown)"></div>
-                    Add another IAM Identity Center Profile
+                <div v-on:click="toggleShowIdentityCenter" class="collapsible-title">
+                    <div>
+                        <div :class="collapsibleClass(isIdentityCenterShown)"></div>
+                        Add another IAM Identity Center Profile
+                    </div>
                 </div>
-            </div>
 
-            <IdentityCenterForm
-                :state="identityCenterFormState"
-                @auth-connection-updated="onAuthConnectionUpdated"
-                :checkIfConnected="false"
-                v-show="isIdentityCenterShown"
-            ></IdentityCenterForm>
+                <IdentityCenterForm
+                    :state="identityCenterFormState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                    :checkIfConnected="false"
+                    v-show="isIdentityCenterShown"
+                ></IdentityCenterForm>
 
-            <div v-on:click="toggleShowCredentials" class="collapsible-title">
-                <div>
-                    <div :class="collapsibleClass(isCredentialsShown)"></div>
-                    Add another IAM User Credential
+                <div v-on:click="toggleShowCredentials" class="collapsible-title">
+                    <div>
+                        <div :class="collapsibleClass(isCredentialsShown)"></div>
+                        Add another IAM User Credential
+                    </div>
                 </div>
-            </div>
 
-            <CredentialsForm
-                :state="credentialsFormState"
-                :check-if-connected="false"
-                @auth-connection-updated="onAuthConnectionUpdated"
-                v-show="isCredentialsShown"
-            ></CredentialsForm>
+                <CredentialsForm
+                    :state="credentialsFormState"
+                    :check-if-connected="false"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                    v-show="isCredentialsShown"
+                ></CredentialsForm>
+            </div>
+            <div v-else class="feature-panel-form-section">
+                <IdentityCenterForm
+                    :state="identityCenterFormState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                    :checkIfConnected="false"
+                ></IdentityCenterForm>
+
+                <div v-on:click="toggleShowCredentials" style="cursor: pointer; display: flex; flex-direction: row">
+                    <div
+                        style="font-weight: bold; font-size: medium"
+                        :class="collapsibleClass(isCredentialsShown)"
+                    ></div>
+                    <div>
+                        <div style="font-weight: bold; font-size: 14px">Or add IAM User Credentials</div>
+                    </div>
+                </div>
+
+                <CredentialsForm
+                    :state="credentialsFormState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                    v-show="isCredentialsShown"
+                ></CredentialsForm>
+            </div>
 
             <div>
-                Don't have an AWS account?
-                <a href="https://aws.amazon.com/free/" v-on:click="emitUiClick('auth_signUpForFree')"
-                    >Sign up for free.</a
-                >
-            </div>
-        </div>
-        <div v-else class="feature-panel-form-section">
-            <IdentityCenterForm
-                :state="identityCenterFormState"
-                @auth-connection-updated="onAuthConnectionUpdated"
-                :checkIfConnected="false"
-            ></IdentityCenterForm>
-
-            <div v-on:click="toggleShowCredentials" style="cursor: pointer; display: flex; flex-direction: row">
-                <div style="font-weight: bold; font-size: medium" :class="collapsibleClass(isCredentialsShown)"></div>
                 <div>
-                    <div style="font-weight: bold; font-size: 14px">Or add IAM User Credentials</div>
+                    Don't have an AWS account?
+                    <a href="https://aws.amazon.com/free/" v-on:click="emitUiClick('auth_signUpForFree')"
+                        >Sign up for free.</a
+                    >
                 </div>
-            </div>
-
-            <CredentialsForm
-                :state="credentialsFormState"
-                @auth-connection-updated="onAuthConnectionUpdated"
-                v-show="isCredentialsShown"
-            ></CredentialsForm>
-
-            <div>
-                Don't have an AWS account?
-                <a href="https://aws.amazon.com/free/" v-on:click="emitUiClick('auth_signUpForFree')"
-                    >Sign up for free.</a
-                >
             </div>
         </div>
     </div>

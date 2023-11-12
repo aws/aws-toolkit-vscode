@@ -20,7 +20,7 @@
         <hr />
 
         <div class="feature-panel-form-section">
-            <div class="codewhisperer-content-form-container">
+            <div class="feature-panel-form-container">
                 <BuilderIdForm
                     :state="builderIdState"
                     @auth-connection-updated="onAuthConnectionUpdated"
@@ -133,12 +133,4 @@ export class CodeWhispererContentState extends FeatureStatus {
 <style>
 @import './baseServiceItemContent.css';
 @import '../shared.css';
-
-.codewhisperer-content-form-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1em;
-    justify-content: center;
-    align-items: left;
-}
 </style>

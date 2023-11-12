@@ -19,29 +19,29 @@
 
         <hr />
 
-        <div class="feature-panel-form-section">
-                <div>
-                    <BuilderIdForm
-                        :state="builderIdState"
-                        @auth-connection-updated="onAuthConnectionUpdated"
-                    ></BuilderIdForm>
-                </div>
+        <div class="feature-panel-form-container" style="margin-top: auto; margin-bottom: auto">
+            <div class="feature-panel-form-section">
+                <BuilderIdForm
+                    :state="builderIdState"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                ></BuilderIdForm>
+            </div>
 
-                <div>
-                    <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
+            <div class="feature-panel-form-section">
+                <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
                         <div style="font-weight: bold; font-size: medium" :class="identityCenterCollapsibleClass"></div>
                         <div>
                             <div style="font-weight: bold; font-size: 14px">Sign in with IAM Identity Center.</div>
                         </div>
-                    </div>
                 </div>
-
+            
                 <IdentityCenterForm
                     :state="identityCenterState"
                     :allow-existing-start-url="true"
                     @auth-connection-updated="onAuthConnectionUpdated"
                     v-show="isIdentityCenterShown"
                 ></IdentityCenterForm>
+            </div>
         </div>
     </div>
 </template>
