@@ -9,7 +9,7 @@ import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as weaverbirdChatAppInit } from '../weaverbird/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
 import { weaverbirdEnabled } from '../weaverbird/config'
-import { welcome } from './welcome'
+import { welcome } from './onboardingPage'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = new DefaultAmazonQAppInitContext()
@@ -23,7 +23,7 @@ export async function activate(context: ExtensionContext) {
         appInitContext.onDidChangeAmazonQVisibility
     )
 
-    const p = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
+    const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 
     context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
@@ -35,7 +35,7 @@ export async function activate(context: ExtensionContext) {
 
     context.subscriptions.push(
         commands.registerCommand('aws.amazonq.welcome', () => {
-            welcome(context, p)
+            welcome(context, cwcWebViewToAppsPublisher)
         })
     )
 }

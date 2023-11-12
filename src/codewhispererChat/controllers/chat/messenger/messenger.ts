@@ -8,6 +8,7 @@ import {
     AppToWebViewMessageDispatcher,
     CodeReference,
     EditorContextCommandMessage,
+    OnboardingPageInteractionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
@@ -19,6 +20,7 @@ import { TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
+import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 
 export class Messenger {
     public constructor(
@@ -217,6 +219,21 @@ export class Messenger {
         ['aws.amazonq.optimizeCode', 'Optimize'],
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
+
+    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string){
+        let message 
+        switch(interaction.type){
+            case 'onboarding-page-cwc-button-clicked':
+                message = 'What can Amazon Q help me with?'
+                break
+        }
+
+        this.dispatcher.sendOnboardingPageInteractionMessage(new OnboardingPageInteractionMessage({
+            message,
+            interactionType: interaction.type,
+            triggerID
+        }))
+    }
 
     public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
         // Remove newlines and spaces before and after the code

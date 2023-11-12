@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
 
@@ -12,35 +13,45 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
     return data === undefined ? 'keybinding' : 'contextMenu'
 }
 
-export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
+export function registerCommands (controllerPublishers: ChatControllerMessagePublishers) {
     Commands.register('aws.amazonq.explainCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.amazonq.explainCode',
-            triggerType: getCommandTriggerType(data),
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.explainCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
     Commands.register('aws.amazonq.refactorCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.amazonq.refactorCode',
-            triggerType: getCommandTriggerType(data),
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.refactorCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
     Commands.register('aws.amazonq.fixCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.amazonq.fixCode',
-            triggerType: getCommandTriggerType(data),
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.fixCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
     Commands.register('aws.amazonq.optimizeCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.amazonq.optimizeCode',
-            triggerType: getCommandTriggerType(data),
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.optimizeCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
     Commands.register('aws.amazonq.sendToPrompt', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.amazonq.sendToPrompt',
-            triggerType: getCommandTriggerType(data),
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.sendToPrompt',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
 }

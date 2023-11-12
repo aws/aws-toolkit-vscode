@@ -2,103 +2,26 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { ChatPayload, Connector } from './connector'
+import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
 import { TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
+import { TabDataGenerator } from './tabs/generator'
+import { feedbackOptions } from './feedback/constants'
+import { uiComponentsTexts } from './texts/constants'
+import { FollowUpInteractionHandler } from './followUps/handler'
+import { QuickActionHandler } from './quickActions/handler'
+import { TextMessageHandler } from './messages/handler'
+import { MessageController } from './messages/controller'
 
-const WelcomeMessage = `Hi, I am Amazon Q. I can answer your software development questions. 
-Ask me to explain, debug, or optimize your code. 
-You can enter \`/\` to see a list of quick actions.`
-const WeaverBirdWelcomeMessage = `Welcome to /dev. 
-
-Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
-
-Before I begin generating code, let's agree on an implementation plan. What problem are you looking to solve?
-`
-
-const WelcomeFollowUps = (weaverbirdEnabled: boolean) => ({
-    text: 'Or you can select one of these',
-    options: [
-        ...(weaverbirdEnabled
-            ? [
-                  {
-                      pillText: 'I want to assign a code task',
-                      type: 'assign-code-task',
-                  },
-              ]
-            : []),
-        {
-            pillText: 'I have a software development question',
-            type: 'continue-to-chat',
-        },
-    ],
-})
-
-const WeaverbirdFollowUps = {
-    text: 'Would you like to follow up with',
-    options: [
-        {
-            pillText: 'Modify source folder',
-            type: 'ModifyDefaultSourceFolder',
-        },
-    ],
-}
-
-const QuickActionCommands = (weaverbirdEnabled: boolean) => [
-    ...(weaverbirdEnabled
-        ? [
-              {
-                  groupName: 'Start a workflow',
-                  commands: [
-                      {
-                          command: '/dev',
-                          placeholder: 'Enter the coding task in details',
-                          description: 'Describe a task and let Q make the changes to your application',
-                      },
-                  ],
-              },
-          ]
-        : []),
-    // TODO after implementing the command handlers on the extension side
-    // those items should be enabled one by one
-    /* {
-    groupName: 'Quick Actions',
-    commands: [
-    {
-        command: '/explain',
-        description: 'Explain the selected code or active file',
-    },
-    {
-        command: '/fix',
-        placeholder: 'Please specify what to fix, ie: selected code or the active file',
-        description: 'Fix the selected code or active file',
-    },
-    {
-        command: '/refactor',
-        description: 'Explain the selected code or active file',
-    },
-    {
-        command: '/optimize',
-        description: 'Explain the selected code or active file',
-    },
-    ],
-}, */
-    {
-        commands: [
-            {
-                command: '/clear',
-                description: 'Clear this session',
-            },
-        ],
-    },
-]
 
 export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
+    // eslint-disable-next-line prefer-const
+    let connector: Connector
     const ideApi = acquireVsCodeApi()
     const tabsStorage = new TabsStorage()
     // Adding the first tab as CWC tab
@@ -112,7 +35,22 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
     // used to keep track of whether or not weaverbird is enabled and has an active idC
     let isWeaverbirdEnabled = weaverbirdInitEnabled
 
-    const connector = new Connector({
+    const tabDataGenerator = new TabDataGenerator({
+        isWeaverbirdEnabled
+    })
+
+    // eslint-disable-next-line prefer-const
+    let followUpsInteractionHandler: FollowUpInteractionHandler
+    // eslint-disable-next-line prefer-const
+    let quickActionHandler: QuickActionHandler
+    // eslint-disable-next-line prefer-const
+    let textMessageHandler: TextMessageHandler
+    // eslint-disable-next-line prefer-const
+    let messageControler: MessageController
+
+
+    // eslint-disable-next-line prefer-const
+    connector = new Connector({
         tabsStorage,
         onUpdateAuthentication: (weaverbirdEnabled: boolean): void => {
             const selectedTab = tabsStorage.getSelectedTab()
@@ -131,20 +69,12 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
                 mynahUI.updateStore(selectedTab.id, {
                     chatItems: [],
                 })
-                mynahUI.updateStore(selectedTab.id, {
-                    chatItems: [
-                        {
-                            type: ChatItemType.ANSWER,
-                            body: WelcomeMessage,
-                        },
-                    ],
-                    quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
-                })
-                mynahUI.addChatItem(selectedTab.id, {
-                    type: ChatItemType.ANSWER,
-                    followUp: WelcomeFollowUps(isWeaverbirdEnabled),
-                })
+                mynahUI.updateStore(selectedTab.id, tabDataGenerator.getTabData('unknown', true))                
             }
+        },
+        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string => {
+            return messageControler.sendMessageToTab(message, 'cwc')
+
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
             const selectedTab = tabsStorage.getSelectedTab()
@@ -154,99 +84,10 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
                 return selectedTab.id
             }
 
-            if (selectedTab !== undefined && selectedTab.type === 'cwc' && selectedTab.status === 'free') {
-                mynahUI.updateStore(selectedTab.id, {
-                    loadingChat: true,
-                    promptInputDisabledState: true,
-                })
-                mynahUI.addChatItem(selectedTab.id, message)
-                mynahUI.addChatItem(selectedTab.id, {
-                    type: ChatItemType.ANSWER_STREAM,
-                    body: '',
-                })
-                tabsStorage.updateTabStatus(selectedTab.id, 'busy')
-
-                return selectedTab.id
-            }
-
-            const newTabID = mynahUI.updateStore('', {
-                tabTitle: 'Chat',
-                chatItems: [message],
-                showChatAvatars: false,
-                quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
-                promptInputPlaceholder: 'Ask a question or "/" for capabilities',
-            })
-            mynahUI.addChatItem(newTabID, {
-                type: ChatItemType.ANSWER_STREAM,
-                body: '',
-            })
-
-            mynahUI.updateStore(newTabID, {
-                loadingChat: true,
-                promptInputDisabledState: true,
-            })
-
-            // We have race condition here with onTabAdd Ui event. This way we need to update store twice to be sure
-            tabsStorage.addTab({
-                id: newTabID,
-                type: 'cwc',
-                status: 'busy',
-                isSelected: true,
-                openInteractionType: 'contextMenu',
-            })
-
-            tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')
-            connector.onUpdateTabType(newTabID)
-            tabsStorage.updateTabStatus(newTabID, 'busy')
-
-            return newTabID
+            return messageControler.sendMessageToTab(message, 'cwc')
         },
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
-            if (welcomeFollowUpType === 'assign-code-task') {
-                const newTabId = mynahUI.updateStore('', {
-                    tabTitle: '/dev',
-                    quickActionCommands: [],
-                    promptInputPlaceholder: 'What problem do you want to fix?',
-                    chatItems: [
-                        {
-                            type: ChatItemType.ANSWER,
-                            body: WeaverBirdWelcomeMessage,
-                        },
-                        {
-                            type: ChatItemType.ANSWER,
-                            followUp: WeaverbirdFollowUps,
-                        },
-                    ],
-                })
-                // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
-                // It means that it cannot trigger after the updateStore function returns.
-                tabsStorage.addTab({
-                    id: newTabId,
-                    status: 'busy',
-                    type: 'unknown',
-                    isSelected: true,
-                    openInteractionType: 'click',
-                })
-
-                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-                connector.onUpdateTabType(tabID)
-                tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
-                connector.onUpdateTabType(newTabId)
-
-                // Let weaverbird know a wb tab has been opened
-                connector.onKnownTabOpen(newTabId)
-                return
-            }
-
-            if (welcomeFollowUpType === 'continue-to-chat') {
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.ANSWER,
-                    body: 'Ok, please write your question below.',
-                })
-                tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-                connector.onUpdateTabType(tabID)
-                return
-            }
+            followUpsInteractionHandler.onWelcomeFollowUpClicked(tabID, welcomeFollowUpType)
         },
         onChatInputEnabled: (tabID: string, enabled: boolean) => {
             mynahUI.updateStore(tabID, {
@@ -385,111 +226,13 @@ ${message}`,
             if ((prompt.prompt ?? '') === '' && (prompt.command ?? '') === '') {
                 return
             }
+
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-                if (isWeaverbirdEnabled && prompt.command === '/dev') {
-                    let affectedTabId = tabID
-                    const realPromptText = prompt.escapedPrompt?.trim() ?? ''
-                    if (tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
-                        affectedTabId = mynahUI.updateStore('', {})
-                    }
-                    tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
-                    connector.onKnownTabOpen(affectedTabId)
-                    connector.onUpdateTabType(affectedTabId)
-
-                    mynahUI.updateStore(affectedTabId, { chatItems: [] })
-                    mynahUI.updateStore(affectedTabId, {
-                        tabTitle: '/dev',
-                        quickActionCommands: [],
-                        promptInputPlaceholder: 'What problem do you want to fix?',
-                        chatItems: [
-                            ...(realPromptText !== ''
-                                ? []
-                                : [
-                                      {
-                                          type: ChatItemType.ANSWER,
-                                          body: WeaverBirdWelcomeMessage,
-                                      },
-                                  ]),
-                        ],
-                    })
-                    if (realPromptText === '') {
-                        mynahUI.addChatItem(affectedTabId, {
-                            type: ChatItemType.ANSWER,
-                            followUp: WeaverbirdFollowUps,
-                        })
-                    }
-                    if (realPromptText !== '') {
-                        mynahUI.addChatItem(affectedTabId, {
-                            type: ChatItemType.PROMPT,
-                            body: realPromptText,
-                            ...(prompt.attachment !== undefined
-                                ? {
-                                      relatedContent: {
-                                          content: [prompt.attachment],
-                                      },
-                                  }
-                                : {}),
-                        })
-
-                        mynahUI.addChatItem(affectedTabId, {
-                            type: ChatItemType.ANSWER_STREAM,
-                            body: '',
-                        })
-
-                        mynahUI.updateStore(affectedTabId, {
-                            loadingChat: true,
-                            promptInputDisabledState: true,
-                        })
-
-                        connector.requestGenerativeAIAnswer(affectedTabId, {
-                            chatMessage: realPromptText,
-                        })
-                    }
-
-                    return
-                } else if (prompt.command === '/clear') {
-                    mynahUI.updateStore(tabID, {
-                        chatItems: [],
-                    })
-                    connector.clearChat(tabID)
-
-                    return
-                } else {
-                    // TODO we should send all commands to the extension
-                    // which is implemented but the extension should handle them
-                }
+               quickActionHandler.handle(prompt, tabID)
+               return
             }
 
-            tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-            connector.onUpdateTabType(tabID)
-            mynahUI.addChatItem(tabID, {
-                type: ChatItemType.PROMPT,
-                body: prompt.escapedPrompt,
-                ...(prompt.attachment !== undefined
-                    ? {
-                          relatedContent: {
-                              content: [prompt.attachment],
-                          },
-                      }
-                    : {}),
-            })
-            mynahUI.addChatItem(tabID, {
-                type: ChatItemType.ANSWER_STREAM,
-                body: '',
-            })
-
-            mynahUI.updateStore(tabID, {
-                loadingChat: true,
-                promptInputDisabledState: true,
-            })
-
-            tabsStorage.updateTabStatus(tabID, 'busy')
-            const chatPayload: ChatPayload = {
-                chatMessage: prompt.prompt ?? '',
-                chatCommand: prompt.command,
-            }
-
-            connector.requestGenerativeAIAnswer(tabID, chatPayload).then(i => {})
+            textMessageHandler.handle(prompt, tabID)            
         },
         onVote: connector.onChatItemVoted,
         onSendFeedback: (tabId, feedbackPayload) => {
@@ -509,138 +252,49 @@ ${message}`,
             })
         },
         onChatItemEngagement: connector.triggerSuggestionEngagement,
-        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
-            // mouseEvent?.preventDefault();
-            // mouseEvent?.stopPropagation();
-            // mouseEvent?.stopImmediatePropagation();
-            // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
-        },
-        onLinkClick: (tabId, messageId, link, mouseEvent) => {
-            // mouseEvent?.preventDefault();
-            // mouseEvent?.stopPropagation();
-            // mouseEvent?.stopImmediatePropagation();
-            // connector.triggerSuggestionEvent(eventName, suggestion, mynahUI.getSearchPayload().selectedTab);
-        },
+        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {},
+        onLinkClick: (tabId, messageId, link, mouseEvent) => {},
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {
-            // we need to check if there is a prompt
-            // which will cause an api call
-            // then we can set the loading state to true
-            if (followUp.prompt !== undefined) {
-                mynahUI.updateStore(tabID, {
-                    loadingChat: true,
-                    promptInputDisabledState: true,
-                })
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.PROMPT,
-                    body: followUp.prompt,
-                })
-                mynahUI.addChatItem(tabID, {
-                    type: ChatItemType.ANSWER_STREAM,
-                    body: '',
-                })
-                tabsStorage.updateTabStatus(tabID, 'busy')
-            }
-            connector.onFollowUpClicked(tabID, messageId, followUp)
+            followUpsInteractionHandler.onFollowUpClicked(tabID,messageId, followUp)            
         },
         onOpenDiff: connector.onOpenDiff,
-        // onStopChatResponse: (tabID: string) => {
-        //     mynahUI.updateStore(tabID, {
-        //         loadingChat: false,
-        //         promptInputDisabledState: false,
-        //     })
-        //     connector.onStopChatResponse(tabID)
-        // },
         tabs: {
             'tab-1': {
                 isSelected: true,
-                store: {
-                    tabTitle: 'Chat',
-                    chatItems: [
-                        {
-                            type: ChatItemType.ANSWER,
-                            body: WelcomeMessage,
-                        },
-                        {
-                            type: ChatItemType.ANSWER,
-                            followUp: WelcomeFollowUps(isWeaverbirdEnabled),
-                        },
-                    ],
-                    showChatAvatars: false,
-                    quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
-                    promptInputPlaceholder: 'Ask a question or "/" for capabilities',
-                    ...initialData,
-                },
+                store: tabDataGenerator.getTabData('unknown', true),
             },
         },
         defaults: {
-            store: {
-                tabTitle: 'Chat',
-                chatItems: [
-                    {
-                        type: ChatItemType.ANSWER,
-                        body: WelcomeMessage,
-                    },
-                    {
-                        type: ChatItemType.ANSWER,
-                        followUp: WelcomeFollowUps(isWeaverbirdEnabled),
-                    },
-                ],
-                showChatAvatars: false,
-                quickActionCommands: QuickActionCommands(isWeaverbirdEnabled),
-                promptInputPlaceholder: 'Ask a question or "/" for capabilities',
-            },
+            store: tabDataGenerator.getTabData('unknown', true),
         },
         config: {
-            feedbackOptions: [
-                {
-                    value: 'inaccurate-response',
-                    label: 'Inaccurate response',
-                },
-                {
-                    value: 'harmful-content',
-                    label: 'Harmful content',
-                },
-                {
-                    value: 'overlap',
-                    label: 'Overlaps with existing content',
-                },
-                {
-                    value: 'incorrect-syntax',
-                    label: 'Incorrect syntax',
-                },
-                {
-                    value: 'buggy-code',
-                    label: 'Buggy code',
-                },
-                {
-                    value: 'low-quality',
-                    label: 'Low quality',
-                },
-                {
-                    value: 'other',
-                    label: 'Other',
-                },
-            ],
-            texts: {
-                mainTitle: 'Amazon Q',
-                copy: 'Copy',
-                insertAtCursorLabel: 'Insert at cursor',
-                feedbackFormTitle: 'Report an issue',
-                feedbackFormOptionsLabel: 'What type of issue would you like to report?',
-                feedbackFormCommentLabel: 'Description of issue (optional):',
-                feedbackThanks: 'Thanks!',
-                feedbackReportButtonLabel: 'Report an issue',
-                codeSuggestions: 'Code Suggestions',
-                files: 'file(s)',
-                clickFileToViewDiff: 'Click on a file to view diff.',
-                showMore: 'Show more',
-                save: 'Save',
-                cancel: 'Cancel',
-                submit: 'Submit',
-                stopGenerating: 'Stop generating',
-                copyToClipboard: 'Copied to clipboard',
-            },
+            feedbackOptions: feedbackOptions,
+            texts: uiComponentsTexts
         },
+    })
+
+    followUpsInteractionHandler = new FollowUpInteractionHandler({
+        mynahUI,
+        connector,
+        tabsStorage,
+        isWeaverbirdEnabled
+    })
+    quickActionHandler = new QuickActionHandler({
+        mynahUI,
+        connector,
+        tabsStorage,
+        isWeaverbirdEnabled
+    })
+    textMessageHandler = new TextMessageHandler({
+        mynahUI,
+        connector,
+        tabsStorage
+    })
+    messageControler = new MessageController({
+        mynahUI,
+        connector,
+        tabsStorage,
+        isWeaverbirdEnabled
     })
 }

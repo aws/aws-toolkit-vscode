@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EditorContextExtractor, TriggerType } from '../../editor/context/extractor'
+import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger } from './messenger/messenger'
 import {
@@ -38,6 +38,7 @@ import { CWCTelemetryHelper } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
+import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -52,6 +53,7 @@ export interface ChatControllerMessagePublishers {
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
+    readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
 }
 
 export interface ChatControllerMessageListeners {
@@ -67,6 +69,7 @@ export interface ChatControllerMessageListeners {
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
+    readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
 }
 
 export class ChatController {
@@ -142,6 +145,53 @@ export class ChatController {
         this.chatControllerMessageListeners.processUIFocusMessage.onMessage(data => {
             this.processUIFocusMessage(data)
         })
+
+        this.chatControllerMessageListeners.processOnboardingPageInteraction.onMessage(data => {
+            this.processOnboardingPageInteraction(data)
+        })
+    }
+
+    private processOnboardingPageInteraction(interaction: OnboardingPageInteraction){
+        this.editorContextExtractor
+            .extractContextForTrigger('OnboardingPageInteraction')
+            .then(context => {
+                const triggerID = randomUUID()
+
+                const prompt = this.promptGenerator.generateForOnboardingPageInteraction(interaction)
+
+                this.messenger.sendOnboardingPageInteractionMessage(
+                    interaction,                    
+                    triggerID
+                )
+
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: undefined,
+                    message: prompt,
+                    type: 'onboarding_page_interaction',
+                    context,
+                    onboardingPageInteraction: interaction                    
+                })
+
+                this.generateResponse(
+                    {
+                        message: prompt,
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: this.userIntentRecognizer.getFromOnboardingPageInteraction(interaction),
+                    },
+                    triggerID
+                )
+            })
+            .catch(e => {
+                this.processException(e, '')
+            })
     }
 
     private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {
@@ -249,7 +299,7 @@ export class ChatController {
 
     private async processContextMenuCommand(command: EditorContextCommand) {
         this.editorContextExtractor
-            .extractContextForTrigger(TriggerType.ContextMenu)
+            .extractContextForTrigger('ContextMenu')
             .then(context => {
                 const triggerID = randomUUID()
 
@@ -290,7 +340,7 @@ export class ChatController {
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getUserIntentFromContextMenuCommand(command),
+                        userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                     },
                     triggerID
                 )
@@ -371,7 +421,7 @@ export class ChatController {
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         this.editorContextExtractor
-            .extractContextForTrigger(TriggerType.ChatMessage)
+            .extractContextForTrigger('ChatMessage')
             .then(context => {
                 const triggerID = randomUUID()
                 this.triggerEventsStorage.addTriggerEvent({
@@ -392,7 +442,7 @@ export class ChatController {
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getUserIntentFromPromptChatMessage(message),
+                        userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                     },
                     triggerID
                 )
