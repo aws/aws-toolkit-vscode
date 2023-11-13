@@ -151,7 +151,7 @@ export class ChatController {
         })
     }
 
-    private processOnboardingPageInteraction(interaction: OnboardingPageInteraction){
+    private processOnboardingPageInteraction(interaction: OnboardingPageInteraction) {
         this.editorContextExtractor
             .extractContextForTrigger('OnboardingPageInteraction')
             .then(context => {
@@ -159,10 +159,7 @@ export class ChatController {
 
                 const prompt = this.promptGenerator.generateForOnboardingPageInteraction(interaction)
 
-                this.messenger.sendOnboardingPageInteractionMessage(
-                    interaction,                    
-                    triggerID
-                )
+                this.messenger.sendOnboardingPageInteractionMessage(interaction, triggerID)
 
                 this.triggerEventsStorage.addTriggerEvent({
                     id: triggerID,
@@ -170,7 +167,7 @@ export class ChatController {
                     message: prompt,
                     type: 'onboarding_page_interaction',
                     context,
-                    onboardingPageInteraction: interaction                    
+                    onboardingPageInteraction: interaction,
                 })
 
                 this.generateResponse(
@@ -298,6 +295,11 @@ export class ChatController {
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
+        // Just open the chat panel in this case
+        if (!this.editorContextExtractor.isCodeBlockSelected() && command.type === 'aws.amazonq.sendToPrompt') {
+            return
+        }
+
         this.editorContextExtractor
             .extractContextForTrigger('ContextMenu')
             .then(context => {

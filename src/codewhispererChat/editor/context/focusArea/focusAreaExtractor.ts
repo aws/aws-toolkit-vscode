@@ -11,6 +11,22 @@ import { FocusAreaContext, FullyQualifiedName } from './model'
 const focusAreaCharLimit = 9_000
 
 export class FocusAreaContextExtractor {
+    public isCodeBlockSelected(editor: TextEditor): boolean {
+        if (editor.document === undefined) {
+            return false
+        }
+
+        // It means we don't really have a selection, but cursor position only
+        if (
+            editor.selection.start.line === editor.selection.end.line &&
+            editor.selection.start.character === editor.selection.end.character
+        ) {
+            return false
+        }
+
+        return true
+    }
+
     public async extract(editor: TextEditor): Promise<FocusAreaContext | undefined> {
         if (editor.document === undefined) {
             return undefined
@@ -19,10 +35,7 @@ export class FocusAreaContextExtractor {
         let importantRange: Range = editor.selection
 
         // It means we don't really have a selection, but cursor position only
-        if (
-            editor.selection.start.line === editor.selection.end.line &&
-            editor.selection.start.character === editor.selection.end.character
-        ) {
+        if (!this.isCodeBlockSelected(editor)) {
             importantRange = editor.visibleRanges[0]
         }
 
