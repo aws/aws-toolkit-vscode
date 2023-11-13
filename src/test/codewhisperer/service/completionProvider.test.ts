@@ -9,7 +9,6 @@ import * as sinon from 'sinon'
 import { getCompletionItems, getCompletionItem, getLabel } from '../../../codewhisperer/service/completionProvider'
 import { createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { Recommendation } from '../../../codewhisperer/client/codewhisperer'
-import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 import { RecommendationService } from '../../../codewhisperer/service/recommendationService'
 
@@ -17,7 +16,7 @@ describe('completionProviderService', function () {
     let session: CodeWhispererSession
 
     beforeEach(function () {
-        session = new CodeWhispererSession()
+        session = new CodeWhispererSession('typescript', 'OnDemand')
         resetCodeWhispererGlobalVariables()
     })
 
@@ -40,7 +39,7 @@ describe('completionProviderService', function () {
     describe('getCompletionItem', function () {
         it('should return targetCompletionItem given input', function () {
             session.startPos = new vscode.Position(0, 0)
-            RecommendationHandler.instance.requestId = 'mock_requestId_getCompletionItem'
+            session.requestIdList.push('mock_requestId_getCompletionItem')
             session.sessionId = 'mock_sessionId_getCompletionItem'
             const mockPosition = new vscode.Position(0, 1)
             const mockRecommendationDetail: Recommendation = {

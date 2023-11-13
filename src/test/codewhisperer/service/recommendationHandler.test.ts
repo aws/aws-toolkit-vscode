@@ -39,7 +39,7 @@ describe('recommendationHandler', function () {
     let session: CodeWhispererSession
 
     beforeEach(function () {
-        session = RecommendationService.instance.startSession()
+        session = RecommendationService.instance.startSession('python', 'AutoTrigger')
         sinon.stub(RecommendationService.instance, 'session').returns(session)
         resetCodeWhispererGlobalVariables()
     })
@@ -116,9 +116,8 @@ describe('recommendationHandler', function () {
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(handler, 'isCancellationRequested').returns(false)
             await handler.getRecommendations(session, mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
-            assert.strictEqual(handler.requestId, 'test_request')
             assert.strictEqual(session.sessionId, 'test_request')
-            assert.strictEqual(TelemetryHelper.instance.triggerType, 'AutoTrigger')
+            assert.strictEqual(session.triggerType, 'AutoTrigger')
         })
 
         it('should call telemetry function that records a CodeWhisperer service invocation', async function () {
@@ -300,18 +299,17 @@ describe('recommendationHandler', function () {
             ]
             ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
             session.sessionId = ''
-            RecommendationHandler.instance.requestId = ''
         })
 
         it('should remove inline reference onEditorChange', async function () {
             session.sessionId = 'aSessionId'
-            RecommendationHandler.instance.requestId = 'aRequestId'
+            session.requestIdList.push('aRequestId')
             await RecommendationHandler.instance.onEditorChange()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })
         it('should remove inline reference onFocusChange', async function () {
             session.sessionId = 'aSessionId'
-            RecommendationHandler.instance.requestId = 'aRequestId'
+            session.requestIdList.push('aRequestId')
             sinon.stub(RecommendationService.instance, 'session').get(() => session)
             await RecommendationHandler.instance.onFocusChange()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)

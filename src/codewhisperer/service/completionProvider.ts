@@ -8,8 +8,6 @@ import * as CodeWhispererConstants from '../models/constants'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
-import { RecommendationHandler } from './recommendationHandler'
 import { CodeWhispererSession } from '../util/codeWhispererSession'
 import { RecommendationService } from './recommendationService'
 /**
@@ -61,9 +59,9 @@ export function getCompletionItem(
             range,
             recommendationIndex,
             recommendation,
-            RecommendationHandler.instance.requestId,
+            session.requestIdList[0],
             session.sessionId,
-            TelemetryHelper.instance.triggerType,
+            session.triggerType,
             session.getCompletionType(recommendationIndex),
             languageContext.language,
             references,

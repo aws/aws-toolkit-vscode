@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import vscode, { Position } from 'vscode'
+import * as vscode from 'vscode'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import { Recommendation } from '../client/codewhisperer'
 import { TelemetryHelper } from '../util/telemetryHelper'
@@ -10,34 +10,18 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
-import { RecommendationService } from './recommendationService'
 import { CodeWhispererSession } from '../util/codeWhispererSession'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
     private nextMove: number
-    private recommendations: Recommendation[]
-    private requestId: string
-    private startPos: Position
-    private nextToken: string
 
     private _onDidShow: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
     public readonly onDidShow: vscode.Event<void> = this._onDidShow.event
 
-    public constructor(
-        itemIndex: number | undefined,
-        firstMove: number,
-        recommendations: Recommendation[],
-        requestId: string,
-        startPos: Position,
-        nextToken: string
-    ) {
+    public constructor(itemIndex: number | undefined, firstMove: number, readonly session: CodeWhispererSession) {
         this.activeItemIndex = itemIndex
         this.nextMove = firstMove
-        this.recommendations = recommendations
-        this.requestId = requestId
-        this.startPos = startPos
-        this.nextToken = nextToken
     }
 
     get getActiveItemIndex() {
@@ -50,7 +34,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
 
     // iterate suggestions and stop at index 0 or index len - 1
     private getIteratingIndexes() {
-        const len = this.recommendations.length
+        const len = this.session.recommendations.length
         const startIndex = this.activeItemIndex ? this.activeItemIndex : 0
         const index = []
         if (this.nextMove === 0) {
@@ -114,9 +98,9 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     new vscode.Range(start, end),
                     index,
                     truncatedSuggestion,
-                    this.requestId,
+                    session.requestIdList[0], // TODO: which requestId should we use?
                     session.sessionId,
-                    TelemetryHelper.instance.triggerType,
+                    session.triggerType,
                     session.getCompletionType(index),
                     runtimeLanguageContext.getLanguageContext(document.languageId).language,
                     r.references,
@@ -135,12 +119,11 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         _context: vscode.InlineCompletionContext,
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.InlineCompletionItem[] | vscode.InlineCompletionList> {
-        if (position.line < 0 || position.isBefore(this.startPos)) {
+        if (position.line < 0 || position.isBefore(this.session.startPos)) {
             application()._clearCodeWhispererUIListener.fire()
             this.activeItemIndex = undefined
             return
         }
-        const session = RecommendationService.instance.session
 
         // There's a chance that the startPos is no longer valid in the current document (e.g.
         // when CodeWhisperer got triggered by 'Enter', the original startPos is with indentation
@@ -148,28 +131,28 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         // before the code reaches here). In such case, we need to update the startPos to be a
         // valid one. Otherwise, inline completion which utilizes this position will function
         // improperly.
-        const start = document.validatePosition(this.startPos)
+        const start = document.validatePosition(this.session.startPos)
         const end = position
         const iteratingIndexes = this.getIteratingIndexes()
         const prefix = document.getText(new vscode.Range(start, end)).replace(/\r\n/g, '\n')
-        const matchedCount = session.recommendations.filter(
+        const matchedCount = this.session.recommendations.filter(
             r => r.content.length > 0 && r.content.startsWith(prefix) && r.content !== prefix
         ).length
         for (const i of iteratingIndexes) {
-            const r = session.recommendations[i]
-            const item = this.getInlineCompletionItem(session, document, r, start, end, i, prefix)
+            const r = this.session.recommendations[i]
+            const item = this.getInlineCompletionItem(this.session, document, r, start, end, i, prefix)
             if (item === undefined) {
                 continue
             }
             this.activeItemIndex = i
-            session.setSuggestionState(i, 'Showed')
-            ReferenceInlineProvider.instance.setInlineReference(this.startPos.line, r.content, r.references)
-            ImportAdderProvider.instance.onShowRecommendation(document, this.startPos.line, r)
+            this.session.setSuggestionState(i, 'Showed')
+            ReferenceInlineProvider.instance.setInlineReference(this.session.startPos.line, r.content, r.references)
+            ImportAdderProvider.instance.onShowRecommendation(document, this.session.startPos.line, r)
             this.nextMove = 0
             TelemetryHelper.instance.setFirstSuggestionShowTime()
             // TelemetryHelper.instance.tryRecordClientComponentLatency() // ???????????? we already have one in inlineCompletionService, shoudl we remove it????
             this._onDidShow.fire()
-            if (matchedCount >= 2 || this.nextToken !== '') {
+            if (matchedCount >= 2 || this.session.nextToken !== '') {
                 const result = [item]
                 for (let j = 0; j < matchedCount - 1; j++) {
                     result.push({ insertText: `${item.insertText}${j}`, range: item.range })

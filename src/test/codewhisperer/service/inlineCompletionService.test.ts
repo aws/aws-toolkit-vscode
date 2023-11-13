@@ -14,13 +14,14 @@ import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisp
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
+import { RecommendationService } from '../../../codewhisperer/service/recommendationService'
 
 describe('inlineCompletionService', function () {
     let session: CodeWhispererSession
 
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
-        session = new CodeWhispererSession()
+        session = new CodeWhispererSession('python', 'OnDemand')
     })
 
     describe('getPaginatedRecommendation', function () {
@@ -61,7 +62,7 @@ describe('inlineCompletionService', function () {
                 config
             )
             assert.ok(checkAndResetCancellationTokensStub.called)
-            assert.strictEqual(RecommendationHandler.instance.hasNextToken(), false)
+            assert.strictEqual(session.hasNextToken(), false)
         })
     })
 
@@ -80,7 +81,6 @@ describe('inlineCompletionService', function () {
             ]
             ReferenceInlineProvider.instance.setInlineReference(1, 'test', fakeReferences)
             session.recommendations = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
-            session.language = 'python'
 
             assert.ok(session.recommendations.length > 0)
             await RecommendationHandler.instance.clearInlineCompletionStates()
@@ -93,7 +93,7 @@ describe('inlineCompletionService', function () {
         const language = 'python'
         const rightContext = 'return target\n'
         const doc = `import math\ndef two_sum(nums, target):\n`
-        const provider = new CWInlineCompletionItemProvider(0, 0, [], '', new vscode.Position(0, 0), '')
+        const provider = new CWInlineCompletionItemProvider(0, 0, session)
 
         it('removes overlap with right context from suggestion', async function () {
             const mockSuggestion = 'return target\n'
@@ -155,8 +155,11 @@ describe('inlineCompletionService', function () {
 })
 
 describe('CWInlineCompletionProvider', function () {
+    let session: CodeWhispererSession
+
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
+        session = RecommendationService.instance.startSession('python', 'OnDemand')
     })
 
     describe('provideInlineCompletionItems', function () {
@@ -169,11 +172,13 @@ describe('CWInlineCompletionProvider', function () {
         })
 
         it('should return undefined if position is before RecommendationHandler start pos', async function () {
+            session.startPos = new vscode.Position(1, 1)
+
             const position = new vscode.Position(0, 0)
             const document = createMockDocument()
             const fakeContext = { triggerKind: 0, selectedCompletionInfo: undefined }
             const token = new vscode.CancellationTokenSource().token
-            const provider = new CWInlineCompletionItemProvider(0, 0, [], '', new vscode.Position(1, 1), '')
+            const provider = new CWInlineCompletionItemProvider(0, 0, session)
             const result = await provider.provideInlineCompletionItems(document, position, fakeContext, token)
 
             assert.ok(result === undefined)

@@ -7,6 +7,8 @@ import {
     CodewhispererCompletionType,
     CodewhispererLanguage,
     CodewhispererGettingStartedTask,
+    CodewhispererTriggerType,
+    CodewhispererAutomatedTriggerType,
 } from '../../shared/telemetry/telemetry.gen'
 import { GenerateRecommendationsRequest, ListRecommendationsRequest, Recommendation } from '../client/codewhisperer'
 import { Position } from 'vscode'
@@ -18,6 +20,7 @@ export class CodeWhispererSession {
     acceptedIndex: number = -1
 
     isJobDone: boolean = false
+    nextToken: string = ''
 
     // Per-session states
     sessionId = ''
@@ -28,7 +31,7 @@ export class CodeWhispererSession {
         request: ListRecommendationsRequest | GenerateRecommendationsRequest
         supplementalMetadata: Omit<CodeWhispererSupplementalContext, 'supplementalContextItems'> | undefined
     } = { request: {} as any, supplementalMetadata: {} as any }
-    language: CodewhispererLanguage = 'java'
+
     taskType: CodewhispererGettingStartedTask | undefined
     // Various states of recommendations
     recommendations: Recommendation[] = []
@@ -39,6 +42,12 @@ export class CodeWhispererSession {
     fetchCredentialStartTime = 0
     sdkApiCallStartTime = 0
     invokeSuggestionStartTime = 0
+
+    constructor(
+        readonly language: CodewhispererLanguage,
+        readonly triggerType: CodewhispererTriggerType,
+        readonly autoTriggerType?: CodewhispererAutomatedTriggerType
+    ) {}
 
     setFetchCredentialStart() {
         if (this.fetchCredentialStartTime === 0 && this.invokeSuggestionStartTime !== 0) {
@@ -67,5 +76,9 @@ export class CodeWhispererSession {
 
     getCompletionType(index: number): CodewhispererCompletionType {
         return this.completionTypes.get(index) || 'Line'
+    }
+
+    hasNextToken(): boolean {
+        return this.nextToken !== ''
     }
 }

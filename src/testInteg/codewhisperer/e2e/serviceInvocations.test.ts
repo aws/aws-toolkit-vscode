@@ -37,7 +37,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     beforeEach(function () {
-        session = new CodeWhispererSession()
+        session = new CodeWhispererSession('python', 'OnDemand')
         resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
         //valid connection required to run tests
@@ -46,7 +46,7 @@ describe('CodeWhisperer service invocation', async function () {
 
     it('manual trigger returns valid recommendation response', async function () {
         //check that handler is empty before invocation
-        const requestIdBefore = RecommendationHandler.instance.requestId
+        const requestIdBefore = session.requestIdList
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
@@ -57,7 +57,7 @@ describe('CodeWhisperer service invocation', async function () {
         const mockEditor = createMockTextEditor()
         await invokeRecommendation(mockEditor, client, config)
 
-        const requestId = RecommendationHandler.instance.requestId
+        const requestId = session.requestIdList
         const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 
@@ -68,7 +68,7 @@ describe('CodeWhisperer service invocation', async function () {
 
     it('auto trigger returns valid recommendation response', async function () {
         //check that handler is empty before invocation
-        const requestIdBefore = RecommendationHandler.instance.requestId
+        const requestIdBefore = session.requestIdList
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
@@ -88,7 +88,7 @@ describe('CodeWhisperer service invocation', async function () {
         //wait for 5 seconds to allow time for response to be generated
         await sleep(5000)
 
-        const requestId = RecommendationHandler.instance.requestId
+        const requestId = session.requestIdList
         const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 
@@ -103,7 +103,7 @@ describe('CodeWhisperer service invocation', async function () {
         const appCodePath = path.join(appRoot, 'hello-world', 'main.go')
 
         //check that handler is empty before invocation
-        const requestIdBefore = RecommendationHandler.instance.requestId
+        const requestIdBefore = session.requestIdList
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
@@ -115,7 +115,7 @@ describe('CodeWhisperer service invocation', async function () {
         const editor = await vscode.window.showTextDocument(doc)
         await invokeRecommendation(editor, client, config)
 
-        const requestId = RecommendationHandler.instance.requestId
+        const requestId = session.requestIdList
         const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 

@@ -67,8 +67,7 @@ const lock = new AsyncLock({ maxPending: 1 })
 
 export class RecommendationHandler {
     public lastInvocationTime: number
-    public requestId: string
-    private nextToken: string
+
     private cancellationToken: vscode.CancellationTokenSource
     public isGenerateRecommendationInProgress: boolean
     private _onDidReceiveRecommendation: vscode.EventEmitter<CodeWhispererSession> =
@@ -84,8 +83,6 @@ export class RecommendationHandler {
     documentUri: vscode.Uri | undefined = undefined
 
     constructor() {
-        this.requestId = ''
-        this.nextToken = ''
         this.lastInvocationTime = performance.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
         this.cancellationToken = new vscode.CancellationTokenSource()
         this.isGenerateRecommendationInProgress = false
@@ -183,21 +180,21 @@ export class RecommendationHandler {
         let latency = 0
         let nextToken = ''
         let shouldRecordServiceInvocation = true
-        session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
+
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
         if (pagination) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
-                    this.nextToken,
+                    session.nextToken,
                     config.isSuggestionsWithCodeReferencesEnabled
                 )
             } else {
                 session.requestContext = {
                     request: {
                         fileContext: session.requestContext.request.fileContext,
-                        nextToken: this.nextToken,
+                        nextToken: session.nextToken,
                         supplementalContexts: session.requestContext.request.supplementalContexts,
                     },
                     supplementalMetadata: session.requestContext.supplementalMetadata,
@@ -252,10 +249,15 @@ export class RecommendationHandler {
                 recommendations = (resp && resp.completions) || []
             }
             invocationResult = 'Succeeded'
-            TelemetryHelper.instance.triggerType = triggerType
+
             requestId = resp?.$response && resp?.$response?.requestId
             nextToken = resp?.nextToken ? resp?.nextToken : ''
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
+
+            session.requestIdList.push(requestId)
+            session.sessionId = sessionId
+            session.nextToken = nextToken
+
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
                 TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
@@ -391,10 +393,6 @@ export class RecommendationHandler {
             }
         }
 
-        this.requestId = requestId
-        session.sessionId = sessionId
-        this.nextToken = nextToken
-
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
             if (session.recommendations.length === 0) {
@@ -417,7 +415,6 @@ export class RecommendationHandler {
     }
 
     cancelPaginatedRequest() {
-        this.nextToken = ''
         this.cancellationToken.cancel()
     }
 
@@ -429,7 +426,6 @@ export class RecommendationHandler {
         if (this.isCancellationRequested()) {
             this.cancellationToken.dispose()
             this.cancellationToken = new vscode.CancellationTokenSource()
-            this.nextToken = ''
             return true
         }
         return false
@@ -437,10 +433,7 @@ export class RecommendationHandler {
     /**
      * Clear recommendation state
      */
-    clearRecommendations() {
-        this.requestId = ''
-        this.nextToken = ''
-    }
+    clearRecommendations() {}
 
     async clearInlineCompletionStates() {
         try {
@@ -472,22 +465,17 @@ export class RecommendationHandler {
      * Emits telemetry reflecting user decision for current recommendation.
      */
     reportUserDecisions(session: CodeWhispererSession) {
-        if (session.sessionId === '' || this.requestId === '') {
+        session.isJobDone = true
+        if (session.sessionId === '' || session.requestIdList.length === 0) {
             return
         }
         TelemetryHelper.instance.recordUserDecisionTelemetry(session)
-
-        session.isJobDone = true
 
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
             this.clearInlineCompletionStates()
         }
-    }
-
-    hasNextToken(): boolean {
-        return this.nextToken !== ''
     }
 
     canShowRecommendationInIntelliSense(
@@ -587,10 +575,7 @@ export class RecommendationHandler {
             const inlineCompletionProvider = new CWInlineCompletionItemProvider(
                 this.inlineCompletionProvider?.getActiveItemIndex,
                 indexShift,
-                session.recommendations,
-                this.requestId,
-                session.startPos,
-                this.nextToken
+                session
             )
             this.inlineCompletionProviderDisposable?.dispose()
             // when suggestion is active, registering a new provider will let VS Code invoke inline API automatically
@@ -677,9 +662,9 @@ export class RecommendationHandler {
                 vscode.window.activeTextEditor.document.languageId
             )
             telemetry.codewhisperer_perceivedLatency.emit({
-                codewhispererRequestId: this.requestId,
+                codewhispererRequestId: session.requestIdList[0], // TODO: which requestId should we use?
                 codewhispererSessionId: session.sessionId,
-                codewhispererTriggerType: TelemetryHelper.instance.triggerType,
+                codewhispererTriggerType: session.triggerType,
                 codewhispererCompletionType: session.getCompletionType(0),
                 codewhispererLanguage: languageContext.language,
                 duration: performance.now() - this.lastInvocationTime,

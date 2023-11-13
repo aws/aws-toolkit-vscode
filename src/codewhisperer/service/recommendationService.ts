@@ -7,7 +7,11 @@ import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
-import { CodewhispererAutomatedTriggerType, CodewhispererTriggerType } from '../../shared/telemetry/telemetry'
+import {
+    CodewhispererAutomatedTriggerType,
+    CodewhispererLanguage,
+    CodewhispererTriggerType,
+} from '../../shared/telemetry/telemetry'
 import { AuthUtil } from '../util/authUtil'
 import { isIamConnection } from '../../auth/connection'
 import { RecommendationHandler } from '../service/recommendationHandler'
@@ -15,11 +19,13 @@ import { InlineCompletionService } from '../service/inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { CodeWhispererSession } from '../util/codeWhispererSession'
+import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 
 export class RecommendationService {
     static #instance: RecommendationService
 
-    private activeSession: CodeWhispererSession = new CodeWhispererSession()
+    private activeSession: CodeWhispererSession = new CodeWhispererSession('java', 'OnDemand')
+
     private sessionQueue: CodeWhispererSession[] = []
 
     public static get instance() {
@@ -30,8 +36,12 @@ export class RecommendationService {
         return this.activeSession
     }
 
-    startSession(): CodeWhispererSession {
-        const session = new CodeWhispererSession()
+    startSession(
+        language: CodewhispererLanguage,
+        triggerType: CodewhispererTriggerType,
+        autoTriggerType?: CodewhispererAutomatedTriggerType
+    ): CodeWhispererSession {
+        const session = new CodeWhispererSession(language, triggerType, autoTriggerType)
         this.sessionQueue.push(session)
         return session
     }
@@ -60,6 +70,11 @@ export class RecommendationService {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
     ) {
+        const language = runtimeLanguageContext.normalizeLanguage(editor.document.languageId) ?? 'plaintext'
+        if (!language) {
+            // TODO: move show language not supported error message here early instead downstream callers
+        }
+
         if (isCloud9('any')) {
             if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
                 return
@@ -75,7 +90,7 @@ export class RecommendationService {
                     errorMessage: undefined,
                 }
 
-                const session = this.startSession()
+                const session = this.startSession(language, triggerType, autoTriggerType)
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
                     response = await RecommendationHandler.instance.getRecommendations(
                         session,
@@ -111,7 +126,7 @@ export class RecommendationService {
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            const session = this.startSession()
+            const session = this.startSession(language, triggerType, autoTriggerType)
             this.setInvokeSuggestionStartTime(session)
             if (triggerType === 'OnDemand') {
                 ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)

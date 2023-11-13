@@ -55,7 +55,7 @@ describe('CodeWhisperer service invocation', async function () {
 
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
-        session = new CodeWhispererSession()
+        session = new CodeWhispererSession('javascript', 'OnDemand')
         RecommendationHandler.instance.clearRecommendations()
         //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
         this.skip()
@@ -65,7 +65,7 @@ describe('CodeWhisperer service invocation', async function () {
 
     it('trigger known to return recs with references returns rec with reference', async function () {
         //check that handler is empty before invocation
-        const requestIdBefore = RecommendationHandler.instance.requestId
+        const requestIdBefore = session.requestIdList
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
@@ -82,7 +82,7 @@ describe('CodeWhisperer service invocation', async function () {
 
         await invokeRecommendation(mockEditor, client, configWithRefs)
 
-        const requestId = RecommendationHandler.instance.requestId
+        const requestId = session.requestIdList
         const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
         const references = session.recommendations[0].references
@@ -98,7 +98,7 @@ describe('CodeWhisperer service invocation', async function () {
     //This test will fail if user is logged in with IAM identity center
     it('trigger known to return rec with references does not return rec with references when reference tracker setting is off', async function () {
         //check that handler is empty before invocation
-        const requestIdBefore = RecommendationHandler.instance.requestId
+        const requestIdBefore = session.requestIdList
         const sessionIdBefore = session.sessionId
         const validRecsBefore = RecommendationHandler.instance.isValidResponse()
 
@@ -115,7 +115,7 @@ describe('CodeWhisperer service invocation', async function () {
 
         await invokeRecommendation(mockEditor, client, configWithNoRefs)
 
-        const requestId = RecommendationHandler.instance.requestId
+        const requestId = session.requestIdList
         const sessionId = session.sessionId
         const validRecs = RecommendationHandler.instance.isValidResponse()
 

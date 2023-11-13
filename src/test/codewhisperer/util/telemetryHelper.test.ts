@@ -142,12 +142,11 @@ describe('telemetryHelper', function () {
         })
 
         it('should return Line and Accept', function () {
-            session = new CodeWhispererSession()
+            session = new CodeWhispererSession('python', 'OnDemand')
             session.requestIdList = ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2']
             session.sessionId = 'aFakeSessionId'
             session.recommendations = [aCompletion(), aCompletion(), aCompletion(), aCompletion()]
             session.acceptedIndex = 0
-            session.language = 'python'
             session.completionTypes = new Map([
                 [0, 'Line'],
                 [1, 'Line'],
@@ -183,12 +182,12 @@ describe('telemetryHelper', function () {
         })
 
         it('should return Line and Accept 2', function () {
-            session = new CodeWhispererSession()
+            session = new CodeWhispererSession('python', 'OnDemand')
             session.requestIdList = ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2']
             session.sessionId = 'aFakeSessionId'
             session.recommendations = [aCompletion(), aCompletion(), aCompletion(), aCompletion()]
             session.acceptedIndex = 0
-            session.language = 'python'
+
             session.completionTypes = new Map([
                 [0, 'Line'],
                 [1, 'Line'],
@@ -224,11 +223,11 @@ describe('telemetryHelper', function () {
         })
 
         it('should return Line and Reject', function () {
-            session = new CodeWhispererSession()
+            session = new CodeWhispererSession('python', 'OnDemand')
             session.requestIdList = ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2']
             session.sessionId = 'aFakeSessionId'
             session.recommendations = [aCompletion(), aCompletion(), aCompletion(), aCompletion()]
-            session.language = 'python'
+
             session.completionTypes = new Map([
                 [0, 'Line'],
                 [1, 'Line'],
@@ -323,18 +322,16 @@ describe('telemetryHelper', function () {
 
         it('Should call telemetry record for each recommendations with proper arguments', async function () {
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Classifier
-            session = new CodeWhispererSession()
+            session = new CodeWhispererSession('python', 'AutoTrigger')
             session.requestIdList = ['test_x', 'test_x', 'test_y']
             session.sessionId = 'test_x'
             session.recommendations = [{ content: "print('Hello')" }]
             session.acceptedIndex = 0
-            session.language = 'python'
             session.suggestionStates = new Map<number, string>([[0, 'Showed']])
             session.completionTypes = new Map<number, CodewhispererCompletionType>([[0, 'Line']])
 
             const telemetryHelper = new TelemetryHelper()
 
-            telemetryHelper.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             telemetryHelper.recordUserDecisionTelemetry(session)
             assertTelemetry({

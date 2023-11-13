@@ -86,6 +86,7 @@ export class InlineCompletionService {
         }
 
         // Call report user decisions once to report recommendations leftover from last invocation.
+        // TODO: fix this, active one shouldn't be sent
         RecommendationHandler.instance.reportUserDecisions(session)
 
         ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
@@ -112,6 +113,8 @@ export class InlineCompletionService {
         try {
             let page = 0
             while (page < this.maxPage) {
+                console.log('getRecommendations')
+
                 response = await RecommendationHandler.instance.getRecommendations(
                     session,
                     client,
@@ -128,7 +131,7 @@ export class InlineCompletionService {
                     TelemetryHelper.instance.setIsRequestCancelled(true)
                     return
                 }
-                if (!RecommendationHandler.instance.hasNextToken()) {
+                if (!session.hasNextToken()) {
                     break
                 }
                 page++

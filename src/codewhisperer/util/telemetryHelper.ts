@@ -35,11 +35,7 @@ import { CodeWhispererSession } from './codeWhispererSession'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export class TelemetryHelper {
-    /**
-     * Trigger type for getting CodeWhisperer recommendation
-     */
-    public triggerType: CodewhispererTriggerType
-
+    // TODO: remove it
     /**
      * the cursor offset location at invocation time
      */
@@ -68,7 +64,6 @@ export class TelemetryHelper {
     private classifierThreshold?: number = undefined
 
     constructor() {
-        this.triggerType = 'OnDemand'
         this.cursorOffset = 0
     }
 
@@ -123,7 +118,7 @@ export class TelemetryHelper {
             codewhispererRequestId: session.requestIdList[0],
             codewhispererSessionId: session.sessionId,
             codewhispererPaginationProgress: paginationIndex,
-            codewhispererTriggerType: this.triggerType,
+            codewhispererTriggerType: session.triggerType,
             codewhispererSuggestionIndex: -1,
             codewhispererSuggestionState: 'Empty',
             codewhispererSuggestionReferences: undefined,
@@ -166,7 +161,7 @@ export class TelemetryHelper {
                 codewhispererRequestId: session.requestIdList[i],
                 codewhispererSessionId: session.sessionId,
                 codewhispererPaginationProgress: session.recommendations.length,
-                codewhispererTriggerType: this.triggerType,
+                codewhispererTriggerType: session.triggerType,
                 codewhispererSuggestionIndex: i,
                 codewhispererSuggestionState: this.getSuggestionState(
                     i,
@@ -544,7 +539,7 @@ export class TelemetryHelper {
             codewhispererCredentialFetchingLatency: session.sdkApiCallStartTime - session.fetchCredentialStartTime,
             codewhispererPreprocessingLatency: session.fetchCredentialStartTime - session.invokeSuggestionStartTime,
             codewhispererCompletionType: 'Line',
-            codewhispererTriggerType: this.triggerType,
+            codewhispererTriggerType: session.triggerType,
             codewhispererLanguage: session.language,
             credentialStartUrl: AuthUtil.instance.startUrl,
             codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
