@@ -36,7 +36,7 @@ export class EditorContextExtractor {
             case 'OnboardingPageInteraction':
                 return {
                     activeFileContext: undefined,
-                    focusAreaContext: undefined
+                    focusAreaContext: undefined,
                 }
         }
         return undefined
@@ -49,6 +49,15 @@ export class EditorContextExtractor {
         }
 
         return this.focusAreaContextExtractor.extract(editor)
+    }
+
+    public isCodeBlockSelected(): boolean {
+        const editor = window.activeTextEditor
+        if (editor === undefined) {
+            return false
+        }
+
+        return this.focusAreaContextExtractor.isCodeBlockSelected(editor)
     }
 
     private async extractActiveFileContext(): Promise<FileContext | undefined> {

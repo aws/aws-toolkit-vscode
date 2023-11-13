@@ -3703,8 +3703,7 @@
                 "command": "aws.amazonq.sendToPrompt",
                 "key": "win+alt+q",
                 "mac": "cmd+alt+q",
-                "linux": "meta+alt+q",
-                "when": "editorHasSelection"
+                "linux": "meta+alt+q"
             },
             {
                 "command": "aws.previewStateMachine",
