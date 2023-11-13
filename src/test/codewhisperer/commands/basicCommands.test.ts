@@ -13,6 +13,10 @@ import {
     toggleCodeSuggestions,
     showSecurityScan,
     applySecurityFix,
+    showReferenceLog,
+    selectCustomizationPrompt,
+    reconnect,
+    signoutCodeWhisperer,
 } from '../../../codewhisperer/commands/basicCommands'
 import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
@@ -27,6 +31,22 @@ import { get, set } from '../../../codewhisperer/util/commonUtil'
 import { MockDocument } from '../../fake/fakeDocument'
 import { FileSystemCommon } from '../../../srcShared/fs'
 import { getLogger } from '../../../shared/logger/logger'
+import {
+    createAutoSuggestions,
+    createGettingStarted,
+    createLearnMore,
+    createOpenReferenceLog,
+    createReconnect,
+    createSecurityScan,
+    createSelectCustomization,
+    createSeparator,
+    createSignIn,
+    createSignout,
+} from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { listCodeWhispererCommands } from '../../../codewhisperer/commands/statusBarCommands'
+import { CodeSuggestionsState } from '../../../codewhisperer/models/model'
+import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -66,37 +86,94 @@ describe('CodeWhisperer-basicCommands', function () {
     })
 
     describe('toggleCodeSuggestion', function () {
+        class TestCodeSuggestionsState extends CodeSuggestionsState {
+            public constructor(initialState?: boolean) {
+                super(new FakeMemento(), initialState)
+            }
+        }
+
+        let codeSuggestionsState: CodeSuggestionsState
+
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
+            codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
-        it('should emit aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
-            const fakeMemeto = new FakeMemento()
-            targetCommand = testCommand(toggleCodeSuggestions, fakeMemeto)
-            fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
-            assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), true)
+        it('has suggestions disabled by default', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+        })
 
-            await targetCommand.execute()
-            const res = fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey)
-            assert.strictEqual(res, false)
+        it('toggles states as expected', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            await targetCommand.execute(cwQuickPickSource)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+            await targetCommand.execute(cwQuickPickSource)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            await targetCommand.execute(cwQuickPickSource)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+        })
+
+        it('setSuggestionsEnabled() works as expected', async function () {
+            // initially false
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+
+            await codeSuggestionsState.setSuggestionsEnabled(true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+
+            // set new state to current state
+            await codeSuggestionsState.setSuggestionsEnabled(true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+
+            // set to opposite state
+            await codeSuggestionsState.setSuggestionsEnabled(false)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+        })
+
+        it('triggers event listener when toggled', async function () {
+            const eventListener = sinon.stub()
+            codeSuggestionsState.onDidChangeState(() => {
+                eventListener()
+            })
+            assert.strictEqual(eventListener.callCount, 0)
+
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(cwQuickPickSource)
+
+            await waitUntil(async () => eventListener.callCount === 1, { timeout: 1000, interval: 1 })
+            assert.strictEqual(eventListener.callCount, 1)
+        })
+
+        it('emits aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
+            codeSuggestionsState = new TestCodeSuggestionsState(true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
+
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(cwQuickPickSource)
+
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
         })
 
-        it('should emit aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
-            const fakeMemeto = new FakeMemento()
-            targetCommand = testCommand(toggleCodeSuggestions, fakeMemeto)
+        it('emits aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(cwQuickPickSource)
 
-            assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), undefined)
-            await targetCommand.execute()
-            const res = fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey)
-            assert.strictEqual(res, true)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.activated,
             })
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
         })
     })
 
@@ -125,7 +202,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
 
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.ok(spy.called)
         })
 
@@ -135,8 +212,155 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
 
             assert.ok(vscode.window.activeTextEditor === undefined)
-            await targetCommand.execute()
+            await targetCommand.execute(cwQuickPickSource)
             assert.strictEqual(getTestWindow().shownMessages[0].message, 'Open a valid file to scan.')
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('showReferenceLog', function () {
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(showReferenceLog)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('selectCustomizationPrompt', function () {
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(selectCustomizationPrompt)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('reconnect', function () {
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            sinon.stub(AuthUtil.instance, 'reauthenticate')
+            targetCommand = testCommand(reconnect)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('signoutCodeWhisperer', function () {
+        beforeEach(async function () {
+            resetCodeWhispererGlobalVariables()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            sinon.stub(AuthUtil.instance.secondaryAuth, 'deleteConnection')
+            targetCommand = testCommand(signoutCodeWhisperer, AuthUtil.instance)
+            await targetCommand.execute(cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('listCodeWhispererCommands()', function () {
+        it('shows expected items when not connected', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(false)
+
+            getTestWindow().onDidShowQuickPick(e => {
+                e.assertItems([createSignIn('item'), createLearnMore('item')])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('shows expected items when connection is expired', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+
+            getTestWindow().onDidShowQuickPick(e => {
+                e.assertItems([
+                    createReconnect('item'),
+                    createLearnMore('item'),
+                    createSeparator(),
+                    createSignout('item'),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('shows expected quick pick items when connected', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            getTestWindow().onDidShowQuickPick(e => {
+                e.assertItems([
+                    createAutoSuggestions('item', false),
+                    createSecurityScan('item'),
+                    createOpenReferenceLog('item'),
+                    createGettingStarted('item'),
+                    createSeparator(),
+                    createSignout('item'),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('also shows customizations when connected to valid sso', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
+            sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
+
+            getTestWindow().onDidShowQuickPick(e => {
+                e.assertItems([
+                    createAutoSuggestions('item', false),
+                    createSecurityScan('item'),
+                    createSelectCustomization('item'),
+                    createOpenReferenceLog('item'),
+                    createGettingStarted('item'),
+                    createSeparator(),
+                    createSignout('item'),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+
+            await listCodeWhispererCommands.execute()
         })
     })
 

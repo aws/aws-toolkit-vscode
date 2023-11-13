@@ -6,14 +6,16 @@
 import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
-import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
+import { CodeWhispererStatusBar, InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables, createMockDocument } from '../testUtil'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
-import { ConfigurationEntry } from '../../../codewhisperer/models/model'
+import { CodeSuggestionsState, ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
 import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { listCodeWhispererCommandsId } from '../../../codewhisperer/commands/statusBarCommands'
 
 describe('inlineCompletionService', function () {
     beforeEach(function () {
@@ -175,5 +177,83 @@ describe('CWInlineCompletionProvider', function () {
 
             assert.ok(result === undefined)
         })
+    })
+})
+
+describe('codewhisperer status bar', function () {
+    let sandbox: sinon.SinonSandbox
+    let statusBar: TestStatusBar
+    let service: InlineCompletionService
+
+    class TestStatusBar extends CodeWhispererStatusBar {
+        constructor() {
+            super()
+        }
+
+        getStatusBar() {
+            return this.statusBar
+        }
+    }
+
+    beforeEach(function () {
+        resetCodeWhispererGlobalVariables()
+        sandbox = sinon.createSandbox()
+        statusBar = new TestStatusBar()
+        service = new InlineCompletionService(statusBar)
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('shows correct status bar when auth is not connected', async function () {
+        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
+        sandbox.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+
+        await service.refreshStatusBar()
+
+        const actualStatusBar = statusBar.getStatusBar()
+        assert.strictEqual(actualStatusBar.text, '$(chrome-close) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
+        assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
+    })
+
+    it('shows correct status bar when auth is connected', async function () {
+        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
+        sandbox.stub(CodeSuggestionsState.instance, 'isSuggestionsEnabled').returns(true)
+
+        await service.refreshStatusBar()
+
+        const actualStatusBar = statusBar.getStatusBar()
+        assert.strictEqual(actualStatusBar.text, '$(debug-start) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
+        assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
+    })
+
+    it('shows correct status bar when auth is connected but paused', async function () {
+        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
+        sandbox.stub(CodeSuggestionsState.instance, 'isSuggestionsEnabled').returns(false)
+
+        await service.refreshStatusBar()
+
+        const actualStatusBar = statusBar.getStatusBar()
+        assert.strictEqual(actualStatusBar.text, '$(debug-pause) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
+        assert.deepStrictEqual(actualStatusBar.backgroundColor, undefined)
+    })
+
+    it('shows correct status bar when auth is expired', async function () {
+        sandbox.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
+        sandbox.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+
+        await service.refreshStatusBar()
+
+        const actualStatusBar = statusBar.getStatusBar()
+        assert.strictEqual(actualStatusBar.text, '$(debug-disconnect) CodeWhisperer')
+        assert.strictEqual(actualStatusBar.command, listCodeWhispererCommandsId)
+        assert.deepStrictEqual(
+            actualStatusBar.backgroundColor,
+            new vscode.ThemeColor('statusBarItem.warningBackground')
+        )
     })
 })
