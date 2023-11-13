@@ -85,6 +85,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
+            sourceRoot: this.config.sourceRoot,
             workspaceRoot: this.config.workspaceRoot,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
@@ -121,7 +122,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
     }
 
     private async nextInteraction(msg: string | undefined) {
-        const files = await collectFiles(this.config.workspaceRoot)
+        const files = await collectFiles(this.config.sourceRoot)
 
         const resp = await this.state.interact({
             files,

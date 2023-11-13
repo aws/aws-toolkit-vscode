@@ -9,13 +9,12 @@ import { existsSync } from 'fs'
 import { EventEmitter } from 'vscode'
 import { Messenger } from './messenger/messenger'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { FollowUpTypes, SessionStatePhase } from '../../types'
+import { FollowUpTypes, SessionStatePhase, createUri } from '../../types'
 import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui-chat'
-import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { createUserFacingErrorMessage } from '../../errors'
+import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 
 export interface ChatControllerEventEmitters {
@@ -368,10 +367,25 @@ export class WeaverbirdController {
             canSelectFiles: false,
         }).prompt()
 
-        if (uri && uri instanceof vscode.Uri) {
-            session.config.workspaceRoot = uri.fsPath
+        if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
             this.messenger.sendAnswer({
-                message: `Changed workspace root to: ${session.config.workspaceRoot}`,
+                tabID: message.tabID,
+                type: 'answer',
+                followUps: [
+                    {
+                        pillText: 'Modify source folder',
+                        type: 'ModifyDefaultSourceFolder',
+                    },
+                ],
+                message: new SelectedFolderNotInWorkspaceFolderError().message,
+            })
+            return
+        }
+
+        if (uri && uri instanceof vscode.Uri) {
+            session.config.sourceRoot = uri.fsPath
+            this.messenger.sendAnswer({
+                message: `Changed source root to: ${session.config.sourceRoot}`,
                 type: 'answer',
                 tabID: message.tabID,
             })
@@ -381,23 +395,18 @@ export class WeaverbirdController {
     private async openDiff(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
         telemetry.awsq_filesReviewed.emit({ awsqConversationId: session.conversationId, value: 1 })
-        const workspaceRoot = session.config.workspaceRoot ?? ''
-        const originalPath = path.join(workspaceRoot, message.rightPath)
+        const originalPath = path.join(session.config.workspaceRoot, message.rightPath)
         let left
         if (existsSync(originalPath)) {
             left = vscode.Uri.file(originalPath)
         } else {
-            left = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty', query: `tabID=${message.tabID}` })
+            left = createUri('empty', message.tabID)
         }
 
         vscode.commands.executeCommand(
             'vscode.diff',
             left,
-            vscode.Uri.from({
-                scheme: weaverbirdScheme,
-                path: path.join(session.uploadId, message.rightPath),
-                query: `tabID=${message.tabID}`,
-            })
+            createUri(path.join(session.uploadId, message.rightPath), message.tabID)
         )
     }
 

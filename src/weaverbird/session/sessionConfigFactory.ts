@@ -7,11 +7,12 @@ import * as vscode from 'vscode'
 import { weaverbirdScheme } from '../constants'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { WorkspaceFolderNotFoundError } from '../errors'
+import { WorkspaceFolderNotFoundError, WorkspaceRootNotFoundError } from '../errors'
 import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
-    workspaceRoot: string
+    readonly workspaceRoot: string
+    sourceRoot: string
     readonly fs: VirtualFileSystem
 }
 
@@ -25,7 +26,8 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    const defaultWorkspaceRoot = await getSourceCodePath(workspaceFolders[0].uri.fsPath, '/src')
+    let workspaceRoot = workspaceFolders[0].uri.fsPath
+    let sourceRoot = await getSourceCodePath(workspaceRoot, 'src')
 
     const fs = new VirtualFileSystem()
 
@@ -35,8 +37,22 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         new VirtualMemoryFile(new Uint8Array())
     )
 
-    return {
-        workspaceRoot: defaultWorkspaceRoot,
+    return Promise.resolve({
+        set sourceRoot(newSourceRoot: string) {
+            sourceRoot = newSourceRoot
+
+            const possibleWorkspaceRoot = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(sourceRoot))
+            if (!possibleWorkspaceRoot) {
+                throw new WorkspaceRootNotFoundError()
+            }
+            workspaceRoot = possibleWorkspaceRoot.uri.fsPath
+        },
+        get sourceRoot(): string {
+            return sourceRoot
+        },
+        get workspaceRoot(): string {
+            return workspaceRoot
+        },
         fs,
-    }
+    })
 }
