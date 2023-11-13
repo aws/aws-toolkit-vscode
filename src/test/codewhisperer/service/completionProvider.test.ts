@@ -73,6 +73,7 @@ describe('completionProviderService', function () {
                         'Line',
                         'typescript',
                         undefined,
+                        session,
                     ],
                 },
             }
@@ -96,7 +97,7 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItems', function () {
         it('should return completion items for each non-empty recommendation', async function () {
-            sinon.stub(RecommendationService.instance, 'session').returns(session)
+            sinon.stub(RecommendationService.instance, 'session').get(() => session)
             session.recommendations = [
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
                 { content: '\nvar a = 10' },
