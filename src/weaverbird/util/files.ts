@@ -27,6 +27,12 @@ export function getExcludePattern(additionalPatterns: string[] = []) {
         '**/*.jpg',
         '**/*.svg',
         '**/*.pyc',
+        '**/license.txt',
+        '**/License.txt',
+        '**/LICENSE.txt',
+        '**/license.md',
+        '**/License.md',
+        '**/LICENSE.md',
     ]
     const allPatterns = [...globAlwaysExcludedDirs, ...extraPatterns, ...additionalPatterns]
     return `{${allPatterns.join(',')}}`
