@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
 import * as codewhispererClient from '../../codewhisperer/client/codewhisperer'
-import { vsCodeState, AcceptedSuggestionEntry } from '../../codewhisperer/models/model'
+import { vsCodeState, AcceptedSuggestionEntry, CodeSuggestionsState } from '../../codewhisperer/models/model'
 import { MockDocument } from '../fake/fakeDocument'
 import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
@@ -19,6 +19,7 @@ export function resetCodeWhispererGlobalVariables() {
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
     session.language = 'python'
+    CodeSuggestionsState.instance.setSuggestionsEnabled(false)
 }
 
 export function createMockDocument(

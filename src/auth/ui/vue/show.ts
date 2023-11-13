@@ -44,6 +44,7 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
+import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -711,12 +712,20 @@ const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
-export type AuthSource =
-    | 'addConnectionQuickPick'
-    | 'firstStartup'
-    | 'codecatalystDeveloperTools'
-    | 'codewhispererDeveloperTools'
-    | 'unknown'
+export const AuthSources = {
+    addConnectionQuickPick: 'addConnectionQuickPick',
+    firstStartup: 'firstStartup',
+    codecatalystDeveloperTools: 'codecatalystDeveloperTools',
+    unknown: 'unknown',
+    cwQuickPick: cwQuickPickSource,
+    cwTreeNode: cwTreeNodeSource
+} as const
+
+export type AuthSource = typeof AuthSources[keyof typeof AuthSources]
+
+export function isAuthSource(obj: any): obj is AuthSource {
+    return Object.values(AuthSources).includes(obj)
+} 
 
 export async function showAuthWebview(
     ctx: vscode.ExtensionContext,
