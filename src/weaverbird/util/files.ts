@@ -14,7 +14,7 @@ import { GitIgnoreFilter } from './gitignore'
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from './telemetryHelper'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -88,7 +88,7 @@ export async function prepareRepoData(repoRootPath: string, conversationId: stri
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
         zip.addLocalFile(file.fsPath, zipFolderPath)
     }
-    telemetry.awsq_repo.emit({ awsqConversationId: conversationId, awsqRepositorySize: totalBytes })
+    TelemetryHelper.instance.setRepositorySize(totalBytes)
     const zipFileBuffer = zip.toBuffer()
     return {
         zipFileBuffer,

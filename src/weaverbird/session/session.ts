@@ -48,7 +48,7 @@ export class Session {
             await this.setupConversation(msg)
             this.preloaderFinished = true
 
-            telemetry.awsq_assignCommand.emit({ awsqConversationId: this.conversationId, value: 1 })
+            telemetry.amazonq_startChat.emit({ amazonqConversationId: this.conversationId, value: 1 })
 
             const extensionVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
             this.messenger.sendAsyncEventProgress(

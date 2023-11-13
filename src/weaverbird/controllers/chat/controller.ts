@@ -96,20 +96,26 @@ export class WeaverbirdController {
         switch (session?.state.phase) {
             case 'Approach':
                 if (vote === 'upvote') {
-                    telemetry.awsq_approachThumbsUp.emit({ awsqConversationId: session?.conversationId, value: 1 })
+                    telemetry.amazonq_approachThumbsUp.emit({
+                        amazonqConversationId: session?.conversationId,
+                        value: 1,
+                    })
                 } else if (vote === 'downvote') {
-                    telemetry.awsq_approachThumbsDown.emit({ awsqConversationId: session?.conversationId, value: 1 })
+                    telemetry.amazonq_approachThumbsDown.emit({
+                        amazonqConversationId: session?.conversationId,
+                        value: 1,
+                    })
                 }
                 break
             case 'Codegen':
                 if (vote === 'upvote') {
-                    telemetry.awsq_codeGenerationThumbsUp.emit({
-                        awsqConversationId: session?.conversationId,
+                    telemetry.amazonq_codeGenerationThumbsUp.emit({
+                        amazonqConversationId: session?.conversationId,
                         value: 1,
                     })
                 } else if (vote === 'downvote') {
-                    telemetry.awsq_codeGenerationThumbsDown.emit({
-                        awsqConversationId: session?.conversationId,
+                    telemetry.amazonq_codeGenerationThumbsDown.emit({
+                        amazonqConversationId: session?.conversationId,
                         value: 1,
                     })
                 }
@@ -178,7 +184,6 @@ export class WeaverbirdController {
      */
     private async onCodeGeneration(session: Session, message: string | undefined, tabID: string) {
         // lock the UI/show loading bubbles
-        telemetry.awsq_codeGenerateClick.emit({ awsqConversationId: session.conversationId, value: 1 })
 
         this.messenger.sendAsyncEventProgress(
             tabID,
@@ -270,7 +275,10 @@ export class WeaverbirdController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
-            telemetry.awsq_isAcceptedCodeChanges.emit({ awsqConversationId: session.conversationId, enabled: true })
+            telemetry.amazonq_isAcceptedCodeChanges.emit({
+                amazonqConversationId: session.conversationId,
+                enabled: true,
+            })
             await session.acceptChanges()
 
             // Unlock the chat input if the changes were accepted
@@ -385,7 +393,7 @@ export class WeaverbirdController {
 
     private async openDiff(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.awsq_filesReviewed.emit({ awsqConversationId: session.conversationId, value: 1 })
+        telemetry.amazonq_isReviewedChanges.emit({ amazonqConversationId: session.conversationId, enabled: true })
         const originalPath = path.join(session.config.workspaceRoot, message.rightPath)
         let left
         if (existsSync(originalPath)) {
