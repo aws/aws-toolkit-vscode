@@ -23,7 +23,7 @@
 
         <hr />
 
-        <div class="feature-panel-form-container">
+        <div class="feature-panel-form-container" :key="authFormContainerKey">
             <div v-if="isAuthConnected" class="feature-panel-form-section">
                 <ExplorerAggregateForm
                     :identityCenterState="identityCenterFormState"
@@ -107,6 +107,7 @@ import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import ExplorerAggregateForm from '../authForms/manageExplorer.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
+import { ServiceItemId } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -139,6 +140,13 @@ export default defineComponent({
         // race condition with @auth-connection-updated triggering updateIsAllAuthsLoaded().
         // So we must do a final update here to ensure the latest values.
         this.updateIsAllAuthsLoaded()
+
+        client.onDidConnectionUpdate((id: ServiceItemId) => {
+            if (id !== 'awsExplorer') {
+                return
+            }
+            this.refreshAuthFormContainer()
+        })
     },
     computed: {
         credentialsFormState(): CredentialsState {

@@ -21,7 +21,7 @@
 
         <hr />
 
-        <div class="feature-panel-form-container">
+        <div class="feature-panel-form-container" :key="authFormContainerKey">
             <div class="feature-panel-form-section">
                 <BuilderIdForm
                     :state="builderIdState"
@@ -58,6 +58,7 @@ import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
+import { ServiceItemId } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -73,6 +74,14 @@ export default defineComponent({
             isAllAuthsLoaded: false,
             isIdentityCenterShown: false,
         }
+    },
+    created() {
+        client.onDidConnectionUpdate((id: ServiceItemId) => {
+            if (id !== 'codecatalyst') {
+                return
+            }
+            this.refreshAuthFormContainer()
+        })
     },
     computed: {
         builderIdState(): CodeCatalystBuilderIdState {

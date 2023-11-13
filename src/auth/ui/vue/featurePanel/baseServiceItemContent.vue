@@ -19,9 +19,17 @@ export default defineComponent({
             required: true,
         },
     },
+    data() {
+        return {
+            authFormContainerKey: 0,
+        }
+    },
     methods: {
         emitAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
             this.$emit('auth-connection-updated', id, args)
+        },
+        refreshAuthFormContainer() {
+            this.authFormContainerKey++
         },
     },
 })

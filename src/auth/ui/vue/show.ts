@@ -40,14 +40,8 @@ import {
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
-import { debounce } from '../../../shared/utilities/functionUtils'
-<<<<<<< HEAD
-import { AuthError, ServiceItemId, isServiceItemId, userCancelled } from './types'
 import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
-=======
 import { AuthError, ServiceItemId, isServiceItemId, authFormTelemetryMapping, userCancelled } from './types'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
->>>>>>> eaf5687ee (refactor: use mapping for auth_addedConnections call)
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
@@ -57,6 +51,7 @@ import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/comm
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { submitFeedback } from '../../../awsexplorer/activation'
+import { throttle } from 'lodash'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -347,16 +342,24 @@ export class AuthWebview extends VueWebview {
      * that happen outside of the webview (eg: status bar > quickpick).
      */
     setupConnectionChangeEmitter() {
-        const codeWhispererConnectionChanged = debounce(() => this.onDidConnectionUpdate.fire('codewhisperer'), 500)
+        const codeWhispererConnectionChanged = createThrottle(() => this.onDidConnectionUpdate.fire('codewhisperer'))
         CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
 
-        const codeCatalystConnectionChanged = debounce(() => this.onDidConnectionUpdate.fire('codecatalyst'), 500)
+        const codeCatalystConnectionChanged = createThrottle(() => this.onDidConnectionUpdate.fire('codecatalyst'))
         this.codeCatalystAuth.onDidChangeActiveConnection(codeCatalystConnectionChanged)
 
-        const awsExplorerConnectionChanged = debounce(() => this.onDidConnectionUpdate.fire('awsExplorer'), 500)
+        const awsExplorerConnectionChanged = createThrottle(() => this.onDidConnectionUpdate.fire('awsExplorer'))
         Auth.instance.onDidChangeActiveConnection(awsExplorerConnectionChanged)
         Auth.instance.onDidChangeConnectionState(awsExplorerConnectionChanged)
         Auth.instance.onDidUpdateConnection(awsExplorerConnectionChanged)
+
+        /**
+         * Multiple events can be received in rapid succession
+         * so we throttle all subsequent events after the first.
+         */
+        function createThrottle(callback: () => void) {
+            return throttle(callback, 500, { leading: true })
+        }
     }
 
     #initialService?: ServiceItemId
