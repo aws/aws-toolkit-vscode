@@ -5,12 +5,13 @@
 import vscode, { Position } from 'vscode'
 import { getPrefixSuffixOverlap } from '../util/commonUtil'
 import { Recommendation } from '../client/codewhisperer'
-import { session } from '../util/codeWhispererSession'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 import { ReferenceInlineProvider } from './referenceInlineProvider'
 import { ImportAdderProvider } from './importAdderProvider'
 import { application } from '../util/codeWhispererApplication'
+import { RecommendationService } from './recommendationService'
+import { CodeWhispererSession } from '../util/codeWhispererSession'
 
 export class CWInlineCompletionItemProvider implements vscode.InlineCompletionItemProvider {
     private activeItemIndex: number | undefined
@@ -85,6 +86,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
     }
 
     getInlineCompletionItem(
+        session: CodeWhispererSession,
         document: vscode.TextDocument,
         r: Recommendation,
         start: vscode.Position,
@@ -138,6 +140,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
             this.activeItemIndex = undefined
             return
         }
+        const session = RecommendationService.instance.session
 
         // There's a chance that the startPos is no longer valid in the current document (e.g.
         // when CodeWhisperer got triggered by 'Enter', the original startPos is with indentation
@@ -154,7 +157,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
         ).length
         for (const i of iteratingIndexes) {
             const r = session.recommendations[i]
-            const item = this.getInlineCompletionItem(document, r, start, end, i, prefix)
+            const item = this.getInlineCompletionItem(session, document, r, start, end, i, prefix)
             if (item === undefined) {
                 continue
             }

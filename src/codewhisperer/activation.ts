@@ -55,6 +55,7 @@ import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
 import { AuthCommandDeclarations } from '../auth/commands'
+import { RecommendationService } from './service/recommendationService'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -205,7 +206,7 @@ export async function activate(context: ExtContext): Promise<void> {
             if (isInlineCompletionEnabled() && e.uri.fsPath !== InlineCompletionService.instance.filePath()) {
                 return
             }
-            RecommendationHandler.instance.reportUserDecisions(-1)
+            RecommendationService.instance.flushUserDecisions()
         }),
 
         vscode.languages.registerHoverProvider(
@@ -415,7 +416,7 @@ export async function activate(context: ExtContext): Promise<void> {
 }
 
 export async function shutdown() {
-    RecommendationHandler.instance.reportUserDecisions(-1)
+    RecommendationService.instance.flushUserDecisions()
     CodeWhispererTracker.getTracker().shutdown()
 }
 

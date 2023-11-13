@@ -26,7 +26,7 @@ import {
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
 import { ImportAdderProvider } from '../service/importAdderProvider'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSession } from '../util/codeWhispererSession'
 
 export const acceptSuggestion = Commands.declare(
     'aws.codeWhisperer.accept',
@@ -40,10 +40,12 @@ export const acceptSuggestion = Commands.declare(
             triggerType: CodewhispererTriggerType,
             completionType: CodewhispererCompletionType,
             language: CodewhispererLanguage,
-            references: codewhispererClient.References
+            references: codewhispererClient.References,
+            session: CodeWhispererSession
         ) => {
             const editor = vscode.window.activeTextEditor
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
+            session.acceptedIndex = acceptIndex
             await onAcceptanceFunc(
                 {
                     editor,
@@ -56,6 +58,7 @@ export const acceptSuggestion = Commands.declare(
                     completionType,
                     language,
                     references,
+                    session,
                 },
                 context.extensionContext.globalState
             )
@@ -70,6 +73,8 @@ export async function onInlineAcceptance(
 ) {
     RecommendationHandler.instance.cancelPaginatedRequest()
     RecommendationHandler.instance.disposeInlineCompletion()
+
+    const session = acceptanceEntry.session
 
     if (acceptanceEntry.editor) {
         await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)
@@ -129,6 +134,6 @@ export async function onInlineAcceptance(
             )
         }
 
-        RecommendationHandler.instance.reportUserDecisions(acceptanceEntry.acceptIndex)
+        RecommendationHandler.instance.reportUserDecisions(session)
     }
 }

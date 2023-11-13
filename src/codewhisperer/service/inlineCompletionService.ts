@@ -16,7 +16,7 @@ import { shared } from '../../shared/utilities/functionUtils'
 import { ClassifierTrigger } from './classifierTrigger'
 import { getSelectedCustomization } from '../util/customizationUtil'
 import { codicon, getIcon } from '../../shared/icons'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSession } from '../util/codeWhispererSession'
 import { noSuggestions } from '../models/constants'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -28,8 +28,8 @@ export class InlineCompletionService {
     private _isPaginationRunning = false
 
     constructor() {
-        RecommendationHandler.instance.onDidReceiveRecommendation(e => {
-            this.startShowRecommendationTimer()
+        RecommendationHandler.instance.onDidReceiveRecommendation(session => {
+            this.startShowRecommendationTimer(session)
         })
     }
 
@@ -47,7 +47,7 @@ export class InlineCompletionService {
         RecommendationHandler.instance.tryShowRecommendation.bind(RecommendationHandler.instance)
     )
 
-    private startShowRecommendationTimer() {
+    private startShowRecommendationTimer(sesison: CodeWhispererSession) {
         if (this._showRecommendationTimer) {
             clearInterval(this._showRecommendationTimer)
             this._showRecommendationTimer = undefined
@@ -58,7 +58,7 @@ export class InlineCompletionService {
                 return
             }
             try {
-                this.sharedTryShowRecommendation()
+                this.sharedTryShowRecommendation(sesison)
             } finally {
                 if (this._showRecommendationTimer) {
                     clearInterval(this._showRecommendationTimer)
@@ -69,6 +69,7 @@ export class InlineCompletionService {
     }
 
     async getPaginatedRecommendation(
+        session: CodeWhispererSession,
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
@@ -85,7 +86,7 @@ export class InlineCompletionService {
         }
 
         // Call report user decisions once to report recommendations leftover from last invocation.
-        RecommendationHandler.instance.reportUserDecisions(-1)
+        RecommendationHandler.instance.reportUserDecisions(session)
 
         ClassifierTrigger.instance.recordClassifierResultForAutoTrigger(editor, autoTriggerType, event)
 
@@ -112,6 +113,7 @@ export class InlineCompletionService {
             let page = 0
             while (page < this.maxPage) {
                 response = await RecommendationHandler.instance.getRecommendations(
+                    session,
                     client,
                     editor,
                     triggerType,
@@ -121,7 +123,7 @@ export class InlineCompletionService {
                     page
                 )
                 if (RecommendationHandler.instance.checkAndResetCancellationTokens()) {
-                    RecommendationHandler.instance.reportUserDecisions(-1)
+                    RecommendationHandler.instance.reportUserDecisions(session)
                     vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
                     TelemetryHelper.instance.setIsRequestCancelled(true)
                     return

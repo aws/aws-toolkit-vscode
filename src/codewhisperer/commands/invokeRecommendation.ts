@@ -10,7 +10,6 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
 import { RecommendationService } from '../service/recommendationService'
-import { session } from '../util/codeWhispererSession'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -44,7 +43,11 @@ export async function invokeRecommendation(
     /**
      * When using intelliSense, if invocation position changed, reject previous active recommendations
      */
-    if (vsCodeState.isIntelliSenseActive && editor.selection.active !== session.startPos) {
+    // TODO: why is this?????????????
+    if (
+        vsCodeState.isIntelliSenseActive &&
+        editor.selection.active !== RecommendationService.instance.session.startPos
+    ) {
         resetIntelliSenseState(
             config.isManualTriggerEnabled,
             config.isAutomatedTriggerEnabled,

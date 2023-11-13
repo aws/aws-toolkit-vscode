@@ -24,7 +24,6 @@ import {
 import { showTimedMessage } from '../../shared/utilities/messages'
 import {
     CodewhispererAutomatedTriggerType,
-    CodewhispererCompletionType,
     CodewhispererGettingStartedTask,
     CodewhispererTriggerType,
     telemetry,
@@ -32,7 +31,7 @@ import {
 import { CodeWhispererCodeCoverageTracker } from '../tracker/codewhispererCodeCoverageTracker'
 import { invalidCustomizationMessage } from '../models/constants'
 import { switchToBaseCustomizationAndNotify } from '../util/customizationUtil'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSession } from '../util/codeWhispererSession'
 import { Commands } from '../../shared/vscode/commands2'
 import globals from '../../shared/extensionGlobals'
 import { noSuggestions, updateInlineLockKey } from '../models/constants'
@@ -43,6 +42,7 @@ import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
+import { RecommendationService } from './recommendationService'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
@@ -60,7 +60,7 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.codeWhisperer.rejectCodeSuggestion', () => async () => {
-    RecommendationHandler.instance.reportUserDecisions(-1)
+    RecommendationHandler.instance.reportUserDecisions(RecommendationService.instance.session)
 })
 
 const lock = new AsyncLock({ maxPending: 1 })
@@ -71,8 +71,10 @@ export class RecommendationHandler {
     private nextToken: string
     private cancellationToken: vscode.CancellationTokenSource
     public isGenerateRecommendationInProgress: boolean
-    private _onDidReceiveRecommendation: vscode.EventEmitter<void> = new vscode.EventEmitter<void>()
-    public readonly onDidReceiveRecommendation: vscode.Event<void> = this._onDidReceiveRecommendation.event
+    private _onDidReceiveRecommendation: vscode.EventEmitter<CodeWhispererSession> =
+        new vscode.EventEmitter<CodeWhispererSession>()
+    public readonly onDidReceiveRecommendation: vscode.Event<CodeWhispererSession> =
+        this._onDidReceiveRecommendation.event
     private inlineCompletionProvider?: CWInlineCompletionItemProvider
     private inlineCompletionProviderDisposable?: vscode.Disposable
     private reject: vscode.Disposable
@@ -99,6 +101,7 @@ export class RecommendationHandler {
     }
 
     isValidResponse(): boolean {
+        const session = RecommendationService.instance.session
         return (
             session.recommendations !== undefined &&
             session.recommendations.length > 0 &&
@@ -151,6 +154,7 @@ export class RecommendationHandler {
     }
 
     async getRecommendations(
+        session: CodeWhispererSession,
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
         triggerType: CodewhispererTriggerType,
@@ -326,6 +330,7 @@ export class RecommendationHandler {
                     Failed request id: ${requestId}`)
                     await switchToBaseCustomizationAndNotify()
                     await this.getRecommendations(
+                        session,
                         client,
                         editor,
                         triggerType,
@@ -381,8 +386,8 @@ export class RecommendationHandler {
                 session.setCompletionType(recommendationIndex, r)
             })
             session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
-            if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
-                this._onDidReceiveRecommendation.fire()
+            if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(session, typedPrefix)) {
+                this._onDidReceiveRecommendation.fire(session)
             }
         }
 
@@ -403,8 +408,8 @@ export class RecommendationHandler {
                     session.requestContext.supplementalMetadata
                 )
             }
-            if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
-                this.reportUserDecisions(-1)
+            if (!this.hasAtLeastOneValidSuggestion(session, typedPrefix)) {
+                this.reportUserDecisions(session)
             }
         }
         return Promise.resolve<GetRecommendationsResponse>({
@@ -413,7 +418,7 @@ export class RecommendationHandler {
         })
     }
 
-    hasAtLeastOneValidSuggestion(typedPrefix: string): boolean {
+    hasAtLeastOneValidSuggestion(session: CodeWhispererSession, typedPrefix: string): boolean {
         return session.recommendations.some(r => r.content.trim() !== '' && r.content.startsWith(typedPrefix))
     }
 
@@ -439,13 +444,8 @@ export class RecommendationHandler {
      * Clear recommendation state
      */
     clearRecommendations() {
-        session.recommendations = []
-        session.suggestionStates = new Map<number, string>()
-        session.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.requestId = ''
-        session.sessionId = ''
         this.nextToken = ''
-        session.requestContext.supplementalMetadata = undefined
     }
 
     async clearInlineCompletionStates() {
@@ -467,17 +467,17 @@ export class RecommendationHandler {
         }
     }
 
-    reportDiscardedUserDecisions() {
+    reportDiscardedUserDecisions(session: CodeWhispererSession) {
         session.recommendations.forEach((r, i) => {
             session.setSuggestionState(i, 'Discard')
         })
-        this.reportUserDecisions(-1)
+        this.reportUserDecisions(session)
     }
 
     /**
      * Emits telemetry reflecting user decision for current recommendation.
      */
-    reportUserDecisions(acceptIndex: number) {
+    reportUserDecisions(session: CodeWhispererSession) {
         if (session.sessionId === '' || this.requestId === '') {
             return
         }
@@ -485,12 +485,15 @@ export class RecommendationHandler {
             session.requestIdList,
             session.sessionId,
             session.recommendations,
-            acceptIndex,
+            session.acceptedIndex,
             session.recommendations.length,
             session.completionTypes,
             session.suggestionStates,
             session.requestContext.supplementalMetadata
         )
+
+        session.isJobDone = true
+
         if (isCloud9('any')) {
             this.clearRecommendations()
         } else if (isInlineCompletionEnabled()) {
@@ -505,10 +508,11 @@ export class RecommendationHandler {
     canShowRecommendationInIntelliSense(
         editor: vscode.TextEditor,
         showPrompt: boolean = false,
-        response: GetRecommendationsResponse
+        response: GetRecommendationsResponse,
+        session: CodeWhispererSession
     ): boolean {
         const reject = () => {
-            this.reportUserDecisions(-1)
+            this.reportUserDecisions(session)
         }
         if (!this.isValidResponse()) {
             if (showPrompt) {
@@ -589,8 +593,10 @@ export class RecommendationHandler {
 
     async showRecommendation(indexShift: number, noSuggestionVisible: boolean = false) {
         await lock.acquire(updateInlineLockKey, async () => {
+            const session = RecommendationService.instance.session
+
             if (!vscode.window.state.focused) {
-                this.reportDiscardedUserDecisions()
+                this.reportDiscardedUserDecisions(session)
                 return
             }
             const inlineCompletionProvider = new CWInlineCompletionItemProvider(
@@ -618,17 +624,17 @@ export class RecommendationHandler {
             }
             if (noSuggestionVisible) {
                 await vscode.commands.executeCommand(`editor.action.inlineSuggest.trigger`)
-                this.sendPerceivedLatencyTelemetry()
+                this.sendPerceivedLatencyTelemetry(session)
             }
         })
     }
 
     async onEditorChange() {
-        this.reportUserDecisions(-1)
+        RecommendationService.instance.flushUserDecisions()
     }
 
     async onFocusChange() {
-        this.reportUserDecisions(-1)
+        RecommendationService.instance.flushUserDecisions()
     }
 
     async onCursorChange(e: vscode.TextEditorSelectionChangeEvent) {
@@ -647,7 +653,7 @@ export class RecommendationHandler {
         return this.inlineCompletionProvider?.getActiveItemIndex !== undefined
     }
 
-    async tryShowRecommendation() {
+    async tryShowRecommendation(session: CodeWhispererSession) {
         const editor = vscode.window.activeTextEditor
         if (editor === undefined) {
             return
@@ -665,7 +671,7 @@ export class RecommendationHandler {
             session.recommendations.forEach((r, i) => {
                 session.setSuggestionState(i, 'Discard')
             })
-            this.reportUserDecisions(-1)
+            this.reportUserDecisions(session)
         } else if (session.recommendations.length > 0) {
             this.subscribeSuggestionCommands()
             // await this.startRejectionTimer(editor)
@@ -680,7 +686,7 @@ export class RecommendationHandler {
         }
     }
 
-    private sendPerceivedLatencyTelemetry() {
+    private sendPerceivedLatencyTelemetry(session: CodeWhispererSession) {
         if (vscode.window.activeTextEditor) {
             const languageContext = runtimeLanguageContext.getLanguageContext(
                 vscode.window.activeTextEditor.document.languageId

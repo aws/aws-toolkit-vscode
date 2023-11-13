@@ -14,8 +14,10 @@ import { CodeWhispererSupplementalContext } from './supplementalContext/suppleme
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
-class CodeWhispererSession {
-    static #instance: CodeWhispererSession
+export class CodeWhispererSession {
+    acceptedIndex: number = -1
+
+    isJobDone: boolean = false
 
     // Per-session states
     sessionId = ''
@@ -37,10 +39,6 @@ class CodeWhispererSession {
     fetchCredentialStartTime = 0
     sdkApiCallStartTime = 0
     invokeSuggestionStartTime = 0
-
-    public static get instance() {
-        return (this.#instance ??= new CodeWhispererSession())
-    }
 
     setFetchCredentialStart() {
         if (this.fetchCredentialStartTime === 0 && this.invokeSuggestionStartTime !== 0) {
@@ -71,6 +69,3 @@ class CodeWhispererSession {
         return this.completionTypes.get(index) || 'Line'
     }
 }
-
-// TODO: convert this to a function call
-export const session = CodeWhispererSession.instance

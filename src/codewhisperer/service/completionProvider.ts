@@ -10,14 +10,15 @@ import { Recommendation } from '../client/codewhisperer'
 import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
-import { session } from '../util/codeWhispererSession'
+import { CodeWhispererSession } from '../util/codeWhispererSession'
 /**
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
+    const session = new CodeWhispererSession()
     session.recommendations.forEach((recommendation, index) => {
-        completionItems.push(getCompletionItem(document, position, recommendation, index))
+        completionItems.push(getCompletionItem(document, position, recommendation, index, session))
         session.setSuggestionState(index, 'Showed')
     })
     return completionItems
@@ -27,7 +28,8 @@ export function getCompletionItem(
     document: vscode.TextDocument,
     position: vscode.Position,
     recommendationDetail: Recommendation,
-    recommendationIndex: number
+    recommendationIndex: number,
+    session: CodeWhispererSession
 ) {
     const start = session.startPos
     const range = new vscode.Range(start, start)
@@ -64,6 +66,7 @@ export function getCompletionItem(
             session.getCompletionType(recommendationIndex),
             languageContext.language,
             references,
+            session,
         ],
     }
     return completionItem
