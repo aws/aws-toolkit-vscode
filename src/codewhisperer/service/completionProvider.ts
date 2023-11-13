@@ -11,12 +11,13 @@ import { LicenseUtil } from '../util/licenseUtil'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodeWhispererSession } from '../util/codeWhispererSession'
+import { RecommendationService } from './recommendationService'
 /**
  * completion provider for intelliSense popup
  */
 export function getCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
     const completionItems: vscode.CompletionItem[] = []
-    const session = new CodeWhispererSession()
+    const session = RecommendationService.instance.session
     session.recommendations.forEach((recommendation, index) => {
         completionItems.push(getCompletionItem(document, position, recommendation, index, session))
         session.setSuggestionState(index, 'Showed')

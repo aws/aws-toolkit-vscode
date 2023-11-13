@@ -154,10 +154,16 @@ describe('telemetryHelper', function () {
                 [2, 'Block'],
                 [3, 'Block'],
             ])
+            session.suggestionStates = new Map([
+                [0, 'Showed'],
+                [1, 'Showed'],
+                [2, 'Showed'],
+                [3, 'Showed'],
+            ])
 
             sut.recordUserDecisionTelemetry(session)
 
-            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content, 0, undefined, 0)
+            sut.sendUserTriggerDecisionTelemetry(session, 0)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -189,10 +195,16 @@ describe('telemetryHelper', function () {
                 [2, 'Block'],
                 [3, 'Block'],
             ])
+            session.suggestionStates = new Map([
+                [0, 'Showed'],
+                [1, 'Showed'],
+                [2, 'Showed'],
+                [3, 'Showed'],
+            ])
 
             sut.recordUserDecisionTelemetry(session)
 
-            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content, 0, undefined, 0)
+            sut.sendUserTriggerDecisionTelemetry(session, 0)
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
                 codewhispererSessionId: 'aFakeSessionId',
@@ -216,7 +228,6 @@ describe('telemetryHelper', function () {
             session.requestIdList = ['aFakeRequestId', 'aFakeRequestId', 'aFakeRequestId2']
             session.sessionId = 'aFakeSessionId'
             session.recommendations = [aCompletion(), aCompletion(), aCompletion(), aCompletion()]
-            session.acceptedIndex = 0
             session.language = 'python'
             session.completionTypes = new Map([
                 [0, 'Line'],
@@ -224,10 +235,16 @@ describe('telemetryHelper', function () {
                 [2, 'Block'],
                 [3, 'Block'],
             ])
+            session.suggestionStates = new Map([
+                [0, 'Showed'],
+                [1, 'Showed'],
+                [2, 'Showed'],
+                [3, 'Showed'],
+            ])
 
             sut.recordUserDecisionTelemetry(session)
 
-            sut.sendUserTriggerDecisionTelemetry('aFakeSessionId', aCompletion().content, 0, undefined, 0)
+            sut.sendUserTriggerDecisionTelemetry(session, 0)
 
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertTelemetry({
@@ -323,7 +340,7 @@ describe('telemetryHelper', function () {
             assertTelemetry({
                 codewhispererRequestId: 'test_x',
                 codewhispererSessionId: 'test_x',
-                codewhispererPaginationProgress: 0,
+                codewhispererPaginationProgress: 1,
                 codewhispererTriggerType: 'AutoTrigger',
                 codewhispererSuggestionIndex: 0,
                 codewhispererSuggestionState: 'Accept',

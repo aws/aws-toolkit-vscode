@@ -45,7 +45,7 @@ export const acceptSuggestion = Commands.declare(
         ) => {
             const editor = vscode.window.activeTextEditor
             const onAcceptanceFunc = isInlineCompletionEnabled() ? onInlineAcceptance : onAcceptance
-            session.acceptedIndex = acceptIndex
+
             await onAcceptanceFunc(
                 {
                     editor,
@@ -75,6 +75,7 @@ export async function onInlineAcceptance(
     RecommendationHandler.instance.disposeInlineCompletion()
 
     const session = acceptanceEntry.session
+    session.acceptedIndex = acceptanceEntry.acceptIndex
 
     if (acceptanceEntry.editor) {
         await sleep(CodeWhispererConstants.vsCodeCursorUpdateDelay)

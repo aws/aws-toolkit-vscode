@@ -20,6 +20,7 @@ import { ReferenceHoverProvider } from '../service/referenceHoverProvider'
  */
 export async function onAcceptance(acceptanceEntry: OnRecommendationAcceptanceEntry, globalStorage: vscode.Memento) {
     RecommendationHandler.instance.cancelPaginatedRequest()
+    acceptanceEntry.session.acceptedIndex = acceptanceEntry.acceptIndex
     /**
      * Format document
      */

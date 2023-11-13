@@ -5,12 +5,13 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-
+import * as sinon from 'sinon'
 import { getCompletionItems, getCompletionItem, getLabel } from '../../../codewhisperer/service/completionProvider'
 import { createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { Recommendation } from '../../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
+import { RecommendationService } from '../../../codewhisperer/service/recommendationService'
 
 describe('completionProviderService', function () {
     let session: CodeWhispererSession
@@ -95,6 +96,7 @@ describe('completionProviderService', function () {
 
     describe('getCompletionItems', function () {
         it('should return completion items for each non-empty recommendation', async function () {
+            sinon.stub(RecommendationService.instance, 'session').returns(session)
             session.recommendations = [
                 { content: "\n\t\tconsole.log('Hello world!');\n\t}" },
                 { content: '\nvar a = 10' },
@@ -106,6 +108,7 @@ describe('completionProviderService', function () {
         })
 
         it('should return empty completion items when recommendation is empty', async function () {
+            sinon.stub(RecommendationService.instance, 'session').returns(session)
             session.recommendations = []
             const mockPosition = new vscode.Position(14, 83)
             const mockDocument = createMockDocument()

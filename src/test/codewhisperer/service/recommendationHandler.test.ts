@@ -24,6 +24,7 @@ import { extensionVersion } from '../../../shared/vscode/env'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
+import { RecommendationService } from '../../../codewhisperer/service/recommendationService'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -38,8 +39,13 @@ describe('recommendationHandler', function () {
     let session: CodeWhispererSession
 
     beforeEach(function () {
-        session = new CodeWhispererSession()
+        session = RecommendationService.instance.startSession()
+        sinon.stub(RecommendationService.instance, 'session').returns(session)
         resetCodeWhispererGlobalVariables()
+    })
+
+    afterEach(function () {
+        sinon.restore()
     })
 
     describe('getRecommendations', async function () {
@@ -213,8 +219,8 @@ describe('recommendationHandler', function () {
         afterEach(function () {
             sinon.restore()
         })
+
         it('should return true if any response is not empty', function () {
-            const handler = new RecommendationHandler()
             session.recommendations = [
                 {
                     content:
@@ -222,6 +228,8 @@ describe('recommendationHandler', function () {
                 },
                 { content: '' },
             ]
+            sinon.stub(RecommendationService.instance, 'session').get(() => session)
+            const handler = new RecommendationHandler()
             assert.ok(handler.isValidResponse())
         })
 
@@ -304,6 +312,7 @@ describe('recommendationHandler', function () {
         it('should remove inline reference onFocusChange', async function () {
             session.sessionId = 'aSessionId'
             RecommendationHandler.instance.requestId = 'aRequestId'
+            sinon.stub(RecommendationService.instance, 'session').get(() => session)
             await RecommendationHandler.instance.onFocusChange()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })

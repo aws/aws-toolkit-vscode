@@ -85,7 +85,6 @@ describe('inlineCompletionService', function () {
             assert.ok(session.recommendations.length > 0)
             await RecommendationHandler.instance.clearInlineCompletionStates()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
-            assert.strictEqual(session.recommendations.length, 0)
         })
     })
 
