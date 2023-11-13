@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
-import { AuthSource, showAuthWebview } from './ui/vue/show'
+import { AuthSource, isAuthSource, showAuthWebview } from './ui/vue/show'
 import { ServiceItemId, isServiceItemId } from './ui/vue/types'
 import { addConnection, showConnectionsPageCommand } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -24,7 +24,7 @@ export class AuthCommandBackend {
 
         // Edge case where called by vscode UI and non ServiceItemId object
         // is passed in.
-        if (typeof source !== 'string') {
+        if (!isAuthSource(source)) {
             source = 'unknown'
         }
 
