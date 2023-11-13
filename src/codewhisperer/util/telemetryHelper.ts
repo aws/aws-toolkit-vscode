@@ -119,7 +119,7 @@ export class TelemetryHelper {
     }
 
     public recordUserDecisionTelemetryForEmptyList(
-        requestId: string,
+        requestIdList: string[],
         sessionId: string,
         paginationIndex: number,
         languageId: string,
@@ -127,7 +127,7 @@ export class TelemetryHelper {
     ) {
         const languageContext = runtimeLanguageContext.getLanguageContext(languageId)
         telemetry.codewhisperer_userDecision.emit({
-            codewhispererRequestId: requestId,
+            codewhispererRequestId: requestIdList[0],
             codewhispererSessionId: sessionId ? sessionId : undefined,
             codewhispererPaginationProgress: paginationIndex,
             codewhispererTriggerType: this.triggerType,
@@ -157,7 +157,7 @@ export class TelemetryHelper {
      */
 
     public recordUserDecisionTelemetry(
-        requestId: string,
+        requestIdList: string[],
         sessionId: string,
         recommendations: RecommendationsList,
         acceptIndex: number,
@@ -178,7 +178,8 @@ export class TelemetryHelper {
                 recommendationSuggestionState?.set(i, 'Empty')
             }
             const event: CodewhispererUserDecision = {
-                codewhispererRequestId: requestId,
+                // TODO: maintain a list of RecommendationContexts with both recommendation and requestId in it, instead of two separate list items.
+                codewhispererRequestId: requestIdList[i],
                 codewhispererSessionId: sessionId ? sessionId : undefined,
                 codewhispererPaginationProgress: paginationIndex,
                 codewhispererTriggerType: this.triggerType,
@@ -204,7 +205,7 @@ export class TelemetryHelper {
         const referenceCount = this.getAggregatedSuggestionReferenceCount(events)
 
         // aggregate user decision events at requestId level
-        const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestId, sessionId)
+        const aggregatedEvent = this.aggregateUserDecisionByRequest(events, requestIdList[0], sessionId)
         if (aggregatedEvent) {
             this.sessionDecisions.push(aggregatedEvent)
         }
@@ -220,7 +221,7 @@ export class TelemetryHelper {
         // after we have all request level user decisions, aggregate them at session level and send
         if (
             this.isRequestCancelled ||
-            (this.lastRequestId && this.lastRequestId === requestId) ||
+            (this.lastRequestId && this.lastRequestId === requestIdList[requestIdList.length - 1]) ||
             (this.sessionDecisions.length && this.sessionDecisions.length === this.numberOfRequests)
         ) {
             this.sendUserTriggerDecisionTelemetry(

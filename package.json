@@ -2,7 +2,7 @@
     "name": "aws-toolkit-vscode",
     "displayName": "AWS Toolkit",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
-    "version": "1.98.0-SNAPSHOT",
+    "version": "1.99.0-SNAPSHOT",
     "extensionKind": [
         "workspace"
     ],
@@ -282,7 +282,7 @@
         "debuggers": [
             {
                 "type": "aws-sam",
-                "when": "isCloud9 || !isWeb",
+                "when": "isCloud9 || !aws.isWebExtHost",
                 "label": "%AWS.configuration.description.awssam.debug.label%",
                 "configurationAttributes": {
                     "direct-invoke": {
@@ -708,7 +708,7 @@
                 {
                     "id": "aws.explorer",
                     "name": "%AWS.lambda.explorerTitle%",
-                    "when": "isCloud9 || !isWeb"
+                    "when": "isCloud9 || !aws.isWebExtHost"
                 },
                 {
                     "id": "aws.developerTools",
@@ -728,7 +728,7 @@
                 "id": "aws.auth",
                 "label": "%AWS.submenu.auth.title%",
                 "icon": "$(ellipsis)",
-                "when": "isCloud9 || !isWeb"
+                "when": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "id": "aws.codewhisperer.submenu",
@@ -739,7 +739,7 @@
                 "id": "aws.codecatalyst.submenu",
                 "label": "%AWS.codecatalyst.submenu.title%",
                 "icon": "$(ellipsis)",
-                "when": "isCloud9 || !isWeb"
+                "when": "isCloud9 || !aws.isWebExtHost"
             }
         ],
         "menus": {
@@ -2032,7 +2032,7 @@
                 "command": "aws.launchConfigForm",
                 "title": "%AWS.command.launchConfigForm.title%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2043,7 +2043,7 @@
                 "command": "aws.apig.copyUrl",
                 "title": "%AWS.command.apig.copyUrl%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2054,7 +2054,7 @@
                 "command": "aws.apig.invokeRemoteRestApi",
                 "title": "%AWS.command.apig.invokeRemoteRestApi%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%",
@@ -2066,7 +2066,7 @@
                 "command": "aws.lambda.createNewSamApp",
                 "title": "%AWS.command.createNewSamApp%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2077,7 +2077,7 @@
                 "command": "aws.login",
                 "title": "%AWS.command.login%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.login.cn%",
@@ -2109,50 +2109,50 @@
                 "command": "aws.codecatalyst.openOrg",
                 "title": "%AWS.command.codecatalyst.openOrg%",
                 "category": "AWS",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.openProject",
                 "title": "%AWS.command.codecatalyst.openProject%",
                 "category": "AWS",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.openRepo",
                 "title": "%AWS.command.codecatalyst.openRepo%",
                 "category": "AWS",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.openDevEnv",
                 "title": "%AWS.command.codecatalyst.openDevEnv%",
                 "category": "AWS",
-                "enablement": "!isCloud9 && !isWeb"
+                "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.listCommands",
                 "title": "%AWS.command.codecatalyst.listCommands%",
                 "category": "AWS",
-                "enablement": "!isCloud9 && !isWeb"
+                "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.cloneRepo",
                 "title": "%AWS.command.codecatalyst.cloneRepo%",
                 "category": "AWS",
-                "enablement": "!isCloud9 && !isWeb"
+                "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.createDevEnv",
                 "title": "%AWS.command.codecatalyst.createDevEnv%",
                 "category": "AWS",
-                "enablement": "!isCloud9 && !isWeb"
+                "enablement": "!isCloud9 && !aws.isWebExtHost"
             },
             {
                 "command": "aws.codecatalyst.signout",
                 "title": "%AWS.command.codecatalyst.signout%",
                 "category": "AWS",
                 "icon": "$(debug-disconnect)",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.logout",
@@ -2216,7 +2216,7 @@
                 "title": "%AWS.command.ec2.openTerminal%",
                 "icon": "$(terminal-view-icon)",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2228,7 +2228,7 @@
                 "title": "%AWS.command.ec2.openRemoteConnection%",
                 "icon": "$(remote-explorer)",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2240,7 +2240,7 @@
                 "title": "%AWS.command.ec2.startInstance%",
                 "icon": "$(debug-start)",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2252,7 +2252,7 @@
                 "title": "%AWS.command.ec2.stopInstance%",
                 "icon": "$(debug-stop)",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2264,7 +2264,7 @@
                 "title": "%AWS.command.ec2.rebootInstance%",
                 "icon": "$(debug-restart)",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2275,7 +2275,7 @@
                 "command": "aws.ec2.copyInstanceId",
                 "title": "%AWS.command.ec2.copyInstanceId%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2286,7 +2286,7 @@
                 "command": "aws.ecr.copyTagUri",
                 "title": "%AWS.command.ecr.copyTagUri%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2297,7 +2297,7 @@
                 "command": "aws.ecr.deleteTag",
                 "title": "%AWS.command.ecr.deleteTag%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2308,7 +2308,7 @@
                 "command": "aws.ecr.copyRepositoryUri",
                 "title": "%AWS.command.ecr.copyRepositoryUri%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2319,7 +2319,7 @@
                 "command": "aws.ecr.createRepository",
                 "title": "%AWS.command.ecr.createRepository%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
@@ -2331,7 +2331,7 @@
                 "command": "aws.ecr.deleteRepository",
                 "title": "%AWS.command.ecr.deleteRepository%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2342,7 +2342,7 @@
                 "command": "aws.showRegion",
                 "title": "%AWS.command.showRegion%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2353,7 +2353,7 @@
                 "command": "aws.iot.createThing",
                 "title": "%AWS.command.iot.createThing%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
@@ -2365,7 +2365,7 @@
                 "command": "aws.iot.deleteThing",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2376,7 +2376,7 @@
                 "command": "aws.iot.createCert",
                 "title": "%AWS.command.iot.createCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
@@ -2388,7 +2388,7 @@
                 "command": "aws.iot.deleteCert",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2399,7 +2399,7 @@
                 "command": "aws.iot.attachCert",
                 "title": "%AWS.command.iot.attachCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-generic-attach-file)",
                 "cloud9": {
                     "cn": {
@@ -2411,7 +2411,7 @@
                 "command": "aws.iot.attachPolicy",
                 "title": "%AWS.command.iot.attachPolicy%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-generic-attach-file)",
                 "cloud9": {
                     "cn": {
@@ -2423,7 +2423,7 @@
                 "command": "aws.iot.activateCert",
                 "title": "%AWS.command.iot.activateCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2434,7 +2434,7 @@
                 "command": "aws.iot.deactivateCert",
                 "title": "%AWS.command.iot.deactivateCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2445,7 +2445,7 @@
                 "command": "aws.iot.revokeCert",
                 "title": "%AWS.command.iot.revokeCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2456,7 +2456,7 @@
                 "command": "aws.iot.createPolicy",
                 "title": "%AWS.command.iot.createPolicy%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
@@ -2468,7 +2468,7 @@
                 "command": "aws.iot.deletePolicy",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2479,7 +2479,7 @@
                 "command": "aws.iot.createPolicyVersion",
                 "title": "%AWS.command.iot.createPolicyVersion%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2490,7 +2490,7 @@
                 "command": "aws.iot.deletePolicyVersion",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2501,7 +2501,7 @@
                 "command": "aws.iot.detachCert",
                 "title": "%AWS.command.iot.detachCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2512,7 +2512,7 @@
                 "command": "aws.iot.detachPolicy",
                 "title": "%AWS.command.iot.detachCert%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2523,7 +2523,7 @@
                 "command": "aws.iot.viewPolicyVersion",
                 "title": "%AWS.command.iot.viewPolicyVersion%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2534,7 +2534,7 @@
                 "command": "aws.iot.setDefaultPolicy",
                 "title": "%AWS.command.iot.setDefaultPolicy%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2545,7 +2545,7 @@
                 "command": "aws.iot.copyEndpoint",
                 "title": "%AWS.command.iot.copyEndpoint%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2566,13 +2566,13 @@
                 "command": "aws.s3.presignedURL",
                 "title": "%AWS.command.s3.presignedURL%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.s3.copyPath",
                 "title": "%AWS.command.s3.copyPath%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2583,7 +2583,7 @@
                 "command": "aws.s3.downloadFileAs",
                 "title": "%AWS.command.s3.downloadFileAs%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-download)",
                 "cloud9": {
                     "cn": {
@@ -2595,21 +2595,21 @@
                 "command": "aws.s3.openFile",
                 "title": "%AWS.command.s3.openFile%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(open-preview)"
             },
             {
                 "command": "aws.s3.editFile",
                 "title": "%AWS.command.s3.editFile%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(edit)"
             },
             {
                 "command": "aws.s3.uploadFile",
                 "title": "%AWS.command.s3.uploadFile%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-upload)",
                 "cloud9": {
                     "cn": {
@@ -2621,7 +2621,7 @@
                 "command": "aws.s3.uploadFileToParent",
                 "title": "%AWS.command.s3.uploadFileToParent%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2632,7 +2632,7 @@
                 "command": "aws.s3.createFolder",
                 "title": "%AWS.command.s3.createFolder%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(new-folder)",
                 "cloud9": {
                     "cn": {
@@ -2644,7 +2644,7 @@
                 "command": "aws.s3.createBucket",
                 "title": "%AWS.command.s3.createBucket%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-s3-create-bucket)",
                 "cloud9": {
                     "cn": {
@@ -2656,7 +2656,7 @@
                 "command": "aws.s3.deleteBucket",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2667,7 +2667,7 @@
                 "command": "aws.s3.deleteFile",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2678,7 +2678,7 @@
                 "command": "aws.invokeLambda",
                 "title": "%AWS.command.invokeLambda%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "title": "%AWS.command.invokeLambda.cn%",
@@ -2700,7 +2700,7 @@
             {
                 "command": "aws.uploadLambda",
                 "title": "%AWS.command.uploadLambda%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2711,7 +2711,7 @@
             {
                 "command": "aws.deleteLambda",
                 "title": "%AWS.generic.promptDelete%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2722,7 +2722,7 @@
             {
                 "command": "aws.copyLambdaUrl",
                 "title": "%AWS.generic.copyUrl%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2733,7 +2733,7 @@
             {
                 "command": "aws.deploySamApplication",
                 "title": "%AWS.command.deploySamApplication%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2755,7 +2755,7 @@
             {
                 "command": "aws.refreshAwsExplorer",
                 "title": "%AWS.command.refreshAwsExplorer%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "icon": {
                     "dark": "resources/icons/vscode/dark/refresh.svg",
@@ -2765,7 +2765,7 @@
             {
                 "command": "aws.samcli.detect",
                 "title": "%AWS.command.samcli.detect%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2776,7 +2776,7 @@
             {
                 "command": "aws.deleteCloudFormation",
                 "title": "%AWS.command.deleteCloudFormation%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2787,7 +2787,7 @@
             {
                 "command": "aws.downloadStateMachineDefinition",
                 "title": "%AWS.command.downloadStateMachineDefinition%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2798,7 +2798,7 @@
             {
                 "command": "aws.executeStateMachine",
                 "title": "%AWS.command.executeStateMachine%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2809,7 +2809,7 @@
             {
                 "command": "aws.renderStateMachineGraph",
                 "title": "%AWS.command.renderStateMachineGraph%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -2821,7 +2821,7 @@
                 "command": "aws.copyArn",
                 "title": "%AWS.command.copyArn%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2832,7 +2832,7 @@
                 "command": "aws.copyName",
                 "title": "%AWS.command.copyName%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2854,7 +2854,7 @@
                 "command": "aws.viewSchemaItem",
                 "title": "%AWS.command.viewSchemaItem%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2865,7 +2865,7 @@
                 "command": "aws.searchSchema",
                 "title": "%AWS.command.searchSchema%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2876,7 +2876,7 @@
                 "command": "aws.searchSchemaPerRegistry",
                 "title": "%AWS.command.searchSchemaPerRegistry%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2887,7 +2887,7 @@
                 "command": "aws.downloadSchemaItemCode",
                 "title": "%AWS.command.downloadSchemaItemCode%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2933,7 +2933,7 @@
                 "command": "aws.cdk.refresh",
                 "title": "%AWS.command.refreshCdkExplorer%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": {
                     "dark": "resources/icons/vscode/dark/refresh.svg",
                     "light": "resources/icons/vscode/light/refresh.svg"
@@ -2948,13 +2948,13 @@
                 "command": "aws.cdk.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.stepfunctions.createStateMachineFromTemplate",
                 "title": "%AWS.command.stepFunctions.createStateMachineFromTemplate%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2965,7 +2965,7 @@
                 "command": "aws.stepfunctions.publishStateMachine",
                 "title": "%AWS.command.stepFunctions.publishStateMachine%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -2976,7 +2976,7 @@
                 "command": "aws.previewStateMachine",
                 "title": "%AWS.command.stepFunctions.previewStateMachine%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(aws-stepfunctions-preview)",
                 "cloud9": {
                     "cn": {
@@ -2987,7 +2987,7 @@
             {
                 "command": "aws.cdk.renderStateMachineGraph",
                 "title": "%AWS.command.cdk.previewStateMachine%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "AWS",
                 "icon": "$(aws-stepfunctions-preview)"
             },
@@ -2999,7 +2999,7 @@
             {
                 "command": "aws.cwl.viewLogStream",
                 "title": "%AWS.command.viewLogStream%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "category": "%AWS.title%",
                 "cloud9": {
                     "cn": {
@@ -3011,7 +3011,7 @@
                 "command": "aws.ssmDocument.createLocalDocument",
                 "title": "%AWS.command.ssmDocument.createLocalDocument%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3022,7 +3022,7 @@
                 "command": "aws.ssmDocument.openLocalDocument",
                 "title": "%AWS.command.ssmDocument.openLocalDocument%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-download)",
                 "cloud9": {
                     "cn": {
@@ -3034,7 +3034,7 @@
                 "command": "aws.ssmDocument.openLocalDocumentJson",
                 "title": "%AWS.command.ssmDocument.openLocalDocumentJson%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3045,7 +3045,7 @@
                 "command": "aws.ssmDocument.openLocalDocumentYaml",
                 "title": "%AWS.command.ssmDocument.openLocalDocumentYaml%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3056,7 +3056,7 @@
                 "command": "aws.ssmDocument.deleteDocument",
                 "title": "%AWS.command.ssmDocument.deleteDocument%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3067,7 +3067,7 @@
                 "command": "aws.ssmDocument.publishDocument",
                 "title": "%AWS.command.ssmDocument.publishDocument%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(cloud-upload)",
                 "cloud9": {
                     "cn": {
@@ -3079,7 +3079,7 @@
                 "command": "aws.ssmDocument.updateDocumentVersion",
                 "title": "%AWS.command.ssmDocument.updateDocumentVersion%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3090,7 +3090,7 @@
                 "command": "aws.copyLogResource",
                 "title": "%AWS.command.copyLogResource%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(files)",
                 "cloud9": {
                     "cn": {
@@ -3102,7 +3102,7 @@
                 "command": "aws.cwl.searchLogGroup",
                 "title": "%AWS.command.cloudWatchLogs.searchLogGroup%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
@@ -3114,7 +3114,7 @@
                 "command": "aws.saveCurrentLogDataContent",
                 "title": "%AWS.command.saveCurrentLogDataContent%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(save)",
                 "cloud9": {
                     "cn": {
@@ -3126,7 +3126,7 @@
                 "command": "aws.cwl.changeFilterPattern",
                 "title": "%AWS.command.cwl.changeFilterPattern%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(search-view-icon)",
                 "cloud9": {
                     "cn": {
@@ -3138,7 +3138,7 @@
                 "command": "aws.cwl.changeTimeFilter",
                 "title": "%AWS.command.cwl.changeTimeFilter%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(calendar)",
                 "cloud9": {
                     "cn": {
@@ -3150,7 +3150,7 @@
                 "command": "aws.addSamDebugConfig",
                 "title": "%AWS.command.addSamDebugConfig%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3161,7 +3161,7 @@
                 "command": "aws.toggleSamCodeLenses",
                 "title": "%AWS.command.toggleSamCodeLenses%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3194,7 +3194,7 @@
                 "command": "aws.ecs.enableEcsExec",
                 "title": "%AWS.ecs.enableEcsExec%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3205,7 +3205,7 @@
                 "command": "aws.ecs.viewDocumentation",
                 "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3216,7 +3216,7 @@
                 "command": "aws.resources.copyIdentifier",
                 "title": "%AWS.command.resources.copyIdentifier%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3227,7 +3227,7 @@
                 "command": "aws.resources.openResourcePreview",
                 "title": "%AWS.generic.preview%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(open-preview)",
                 "cloud9": {
                     "cn": {
@@ -3239,7 +3239,7 @@
                 "command": "aws.resources.createResource",
                 "title": "%AWS.generic.create%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(add)",
                 "cloud9": {
                     "cn": {
@@ -3251,7 +3251,7 @@
                 "command": "aws.resources.deleteResource",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3262,7 +3262,7 @@
                 "command": "aws.resources.updateResource",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(pencil)",
                 "cloud9": {
                     "cn": {
@@ -3274,7 +3274,7 @@
                 "command": "aws.resources.updateResourceInline",
                 "title": "%AWS.generic.promptUpdate%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(pencil)",
                 "cloud9": {
                     "cn": {
@@ -3286,7 +3286,7 @@
                 "command": "aws.resources.saveResource",
                 "title": "%AWS.generic.save%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(save)",
                 "cloud9": {
                     "cn": {
@@ -3298,7 +3298,7 @@
                 "command": "aws.resources.closeResource",
                 "title": "%AWS.generic.close%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(close)",
                 "cloud9": {
                     "cn": {
@@ -3310,7 +3310,7 @@
                 "command": "aws.resources.viewDocs",
                 "title": "%AWS.generic.viewDocs%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(book)",
                 "cloud9": {
                     "cn": {
@@ -3322,7 +3322,7 @@
                 "command": "aws.resources.configure",
                 "title": "%AWS.command.resources.configure%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "icon": "$(gear)",
                 "cloud9": {
                     "cn": {
@@ -3334,7 +3334,7 @@
                 "command": "aws.apprunner.createService",
                 "title": "%AWS.command.apprunner.createService%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3345,7 +3345,7 @@
                 "command": "aws.ecs.disableEcsExec",
                 "title": "%AWS.ecs.disableEcsExec%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3356,7 +3356,7 @@
                 "command": "aws.apprunner.createServiceFromEcr",
                 "title": "%AWS.command.apprunner.createServiceFromEcr%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3367,7 +3367,7 @@
                 "command": "aws.apprunner.pauseService",
                 "title": "%AWS.command.apprunner.pauseService%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3378,7 +3378,7 @@
                 "command": "aws.apprunner.resumeService",
                 "title": "%AWS.command.apprunner.resumeService%",
                 "category": "AWS",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3389,7 +3389,7 @@
                 "command": "aws.apprunner.copyServiceUrl",
                 "title": "%AWS.command.apprunner.copyServiceUrl%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3400,7 +3400,7 @@
                 "command": "aws.apprunner.open",
                 "title": "%AWS.command.apprunner.open%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3411,7 +3411,7 @@
                 "command": "aws.apprunner.deleteService",
                 "title": "%AWS.generic.promptDelete%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3422,7 +3422,7 @@
                 "command": "aws.apprunner.startDeployment",
                 "title": "%AWS.command.apprunner.startDeployment%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3433,7 +3433,7 @@
                 "command": "aws.cloudFormation.newTemplate",
                 "title": "%AWS.command.cloudFormation.newTemplate%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3444,7 +3444,7 @@
                 "command": "aws.sam.newTemplate",
                 "title": "%AWS.command.sam.newTemplate%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb",
+                "enablement": "isCloud9 || !aws.isWebExtHost",
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
@@ -3455,7 +3455,7 @@
                 "command": "aws.samcli.sync",
                 "title": "%AWS.command.samcli.sync%",
                 "category": "%AWS.title%",
-                "enablement": "isCloud9 || !isWeb"
+                "enablement": "isCloud9 || !aws.isWebExtHost"
             },
             {
                 "command": "aws.codeWhisperer",
