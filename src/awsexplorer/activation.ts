@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { submitFeedback } from '../feedback/vue/submitFeedback'
+import { submitFeedback as showSubmitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
@@ -101,6 +101,13 @@ export async function activate(args: {
     })
 }
 
+export const submitFeedback = Commands.declare(
+    { id: 'aws.submitFeedback', autoconnect: false },
+    (context: ExtContext) => async (id: 'CodeWhisperer' | 'AWS Toolkit') => {
+        await showSubmitFeedback(context, id)
+    }
+)
+
 async function registerAwsExplorerCommands(
     context: ExtContext,
     awsExplorer: AwsExplorer,
@@ -115,13 +122,7 @@ async function registerAwsExplorerCommands(
                 telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
-        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async id => {
-            if (id === 'CodeWhisperer') {
-                await submitFeedback(context, 'CodeWhisperer')
-            } else {
-                await submitFeedback(context, 'AWS Toolkit')
-            }
-        }),
+        submitFeedback.register(context),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
 

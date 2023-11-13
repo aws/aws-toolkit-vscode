@@ -56,6 +56,7 @@ import { handleWebviewError } from '../../../webviews/server'
 import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
+import { submitFeedback } from '../../../awsexplorer/activation'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -383,6 +384,10 @@ export class AuthWebview extends VueWebview {
 
     isExtensionFirstUse(): boolean {
         return ExtensionUse.instance.isFirstUse()
+    }
+
+    openFeedbackForm() {
+        submitFeedback.execute('AWS Toolkit')
     }
 
     // -------------------- Telemetry Stuff --------------------
