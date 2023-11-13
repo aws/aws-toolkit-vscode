@@ -24,7 +24,7 @@ import {
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
-import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
+import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -204,7 +204,7 @@ export class CWCTelemetryHelper {
     public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
         switch (triggerEvent?.type) {
             case 'editor_context_command':
-                return 'contextMenu'
+                return triggerEvent.command?.triggerType === 'keybinding' ? 'hotkeys' : 'contextMenu'
             case 'follow_up':
             case 'chat_message':
             default:

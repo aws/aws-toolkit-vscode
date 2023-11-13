@@ -48,7 +48,7 @@ export class Session {
             await this.setupConversation(msg)
             this.preloaderFinished = true
 
-            telemetry.awsq_assignCommand.emit({ awsqConversationId: this.conversationId, value: 1 })
+            telemetry.amazonq_startChat.emit({ amazonqConversationId: this.conversationId, value: 1 })
 
             const extensionVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
             this.messenger.sendAsyncEventProgress(
@@ -85,7 +85,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
 
     private getSessionStateConfig(): Omit<SessionStateConfig, 'uploadId'> {
         return {
-            llmConfig: this.config.llmConfig,
+            sourceRoot: this.config.sourceRoot,
             workspaceRoot: this.config.workspaceRoot,
             proxyClient: this.proxyClient,
             conversationId: this.conversationId,
@@ -122,7 +122,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
     }
 
     private async nextInteraction(msg: string | undefined) {
-        const files = await collectFiles(this.config.workspaceRoot)
+        const files = await collectFiles(this.config.sourceRoot)
 
         const resp = await this.state.interact({
             files,

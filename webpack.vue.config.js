@@ -42,7 +42,7 @@ const vueConfig = {
     target: 'web',
     entry: {
         ...createVueEntries(),
-        'src/awsq/webview/ui/awsq-ui': './src/awsq/webview/ui/main.ts',
+        'src/amazonq/webview/ui/amazonq-ui': './src/amazonq/webview/ui/main.ts',
     },
     output: {
         ...baseConfig.output,

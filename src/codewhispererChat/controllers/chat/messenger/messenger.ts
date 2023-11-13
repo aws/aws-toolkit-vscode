@@ -8,8 +8,9 @@ import {
     AppToWebViewMessageDispatcher,
     CodeReference,
     EditorContextCommandMessage,
+    OnboardingPageInteractionMessage,
 } from '../../../view/connector/connector'
-import { EditorContextCommand } from '../../../commands/registerCommands'
+import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
@@ -17,6 +18,9 @@ import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
+import { keys } from '../../../../shared/utilities/tsUtils'
+import { getLogger } from '../../../../shared/logger/logger'
+import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 
 export class Messenger {
     public constructor(
@@ -62,9 +66,16 @@ export class Messenger {
         )
         this.telemetryHelper.setResponseStreamStartTime(tabID)
 
-        await waitUntil(
+        const eventCounts = new Map<string, number>()
+        waitUntil(
             async () => {
                 for await (const chatEvent of response.generateAssistantResponseResponse!) {
+                    for (const key of keys(chatEvent)) {
+                        if ((chatEvent[key] as any) !== undefined) {
+                            eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)
+                        }
+                    }
+
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
@@ -73,14 +84,17 @@ export class Messenger {
                         chatEvent.codeReferenceEvent?.references !== undefined &&
                         chatEvent.codeReferenceEvent.references.length > 0
                     ) {
-                        codeReference = chatEvent.codeReferenceEvent.references.map(reference => ({
-                            ...reference,
-                            recommendationContentSpan: {
-                                start: reference.recommendationContentSpan?.start ?? 0,
-                                end: reference.recommendationContentSpan?.end ?? 0,
-                            },
-                            information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
-                        }))
+                        codeReference = [
+                            ...codeReference,
+                            ...chatEvent.codeReferenceEvent.references.map(reference => ({
+                                ...reference,
+                                recommendationContentSpan: {
+                                    start: reference.recommendationContentSpan?.start ?? 0,
+                                    end: reference.recommendationContentSpan?.end ?? 0,
+                                },
+                                information: `Reference code under **${reference.licenseName}** license from repository \`${reference.repository}\``,
+                            })),
+                        ]
                     }
 
                     if (
@@ -134,49 +148,55 @@ export class Messenger {
                 return true
             },
             { timeout: 60000, truthy: true }
-        )
+        ).finally(() => {
+            if (relatedSuggestions.length !== 0) {
+                this.dispatcher.sendChatMessage(
+                    new ChatMessage(
+                        {
+                            message: undefined,
+                            messageType: 'answer-part',
+                            followUps: undefined,
+                            relatedSuggestions,
+                            triggerID,
+                            messageID,
+                        },
+                        tabID
+                    )
+                )
+            }
 
-        if (relatedSuggestions.length !== 0) {
             this.dispatcher.sendChatMessage(
                 new ChatMessage(
                     {
                         message: undefined,
-                        messageType: 'answer-part',
-                        followUps: undefined,
-                        relatedSuggestions,
+                        messageType: 'answer',
+                        followUps: followUps,
+                        relatedSuggestions: undefined,
                         triggerID,
                         messageID,
                     },
                     tabID
                 )
             )
-        }
 
-        this.dispatcher.sendChatMessage(
-            new ChatMessage(
-                {
-                    message: undefined,
-                    messageType: 'answer',
-                    followUps: followUps,
-                    relatedSuggestions: undefined,
-                    triggerID,
-                    messageID,
-                },
-                tabID
+            getLogger().info(
+                `All events received. requestId=%s counts=%s`,
+                response.$metadata.requestId,
+                Object.fromEntries(eventCounts)
             )
-        )
 
-        this.telemetryHelper.setResponseStreamTotalTime(tabID)
+            this.telemetryHelper.setResponseStreamTotalTime(tabID)
 
-        const responseCode = response?.$metadata.httpStatusCode ?? 0
-        this.telemetryHelper.recordAddMessage(triggerPayload, {
-            followUpCount: followUps.length,
-            suggestionCount: relatedSuggestions.length,
-            tabID: tabID,
-            messageLength: message.length,
-            messageID,
-            responseCode,
-            codeReferenceCount: codeReference.length,
+            const responseCode = response?.$metadata.httpStatusCode ?? 0
+            this.telemetryHelper.recordAddMessage(triggerPayload, {
+                followUpCount: followUps.length,
+                suggestionCount: relatedSuggestions.length,
+                tabID: tabID,
+                messageLength: message.length,
+                messageID,
+                responseCode,
+                codeReferenceCount: codeReference.length,
+            })
         })
     }
 
@@ -192,25 +212,42 @@ export class Messenger {
         )
     }
 
-    private editorContextMenuCommandVerbs: Map<EditorContextCommand, string> = new Map([
-        ['aws.awsq.explainCode', 'Explain'],
-        ['aws.awsq.refactorCode', 'Refactor'],
-        ['aws.awsq.fixCode', 'Fix'],
-        ['aws.awsq.optimizeCode', 'Optimize'],
-        ['aws.awsq.sendToPrompt', 'Send to prompt'],
+    private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
+        ['aws.amazonq.explainCode', 'Explain'],
+        ['aws.amazonq.refactorCode', 'Refactor'],
+        ['aws.amazonq.fixCode', 'Fix'],
+        ['aws.amazonq.optimizeCode', 'Optimize'],
+        ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
 
-    public sendEditorContextCommandMessage(command: EditorContextCommand, selectedCode: string, triggerID: string) {
+    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string) {
+        let message
+        switch (interaction.type) {
+            case 'onboarding-page-cwc-button-clicked':
+                message = 'What can Amazon Q help me with?'
+                break
+        }
+
+        this.dispatcher.sendOnboardingPageInteractionMessage(
+            new OnboardingPageInteractionMessage({
+                message,
+                interactionType: interaction.type,
+                triggerID,
+            })
+        )
+    }
+
+    public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
         // Remove newlines and spaces before and after the code
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
         let message
-        if (command === 'aws.awsq.sendToPrompt') {
+        if (command === 'aws.amazonq.sendToPrompt') {
             message = ['\n```\n', trimmedCode, '\n```'].join('')
         } else {
             message = [
                 this.editorContextMenuCommandVerbs.get(command),
-                ' the following part of my code to me:',
+                ' the following part of my code:',
                 '\n```\n',
                 trimmedCode,
                 '\n```',
@@ -237,6 +274,9 @@ export class Messenger {
         if (requestID !== undefined) {
             message += `\n\nRequest ID: ${requestID}`
         }
+
+        message += `\n\nPlease create a ticket [here](https://issues.amazon.com/issues/create?template=70dc0f1b-c867-4b8d-b54c-2c13bec80a04) with a screenshot of this error and a copy of the logs.`
+
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
         )

@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { weaverbirdChat } from '../../constants'
 import { ChatItemType } from '../../models'
-import { ChatItemFollowUp, Suggestion } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui-chat'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -63,18 +63,39 @@ export class UpdatePlaceholderMessage extends UiMessage {
     }
 }
 
+export class ChatInputEnabledMessage extends UiMessage {
+    readonly enabled: boolean
+    override type = 'chatInputEnabledMessage'
+
+    constructor(tabID: string, enabled: boolean) {
+        super(tabID)
+        this.enabled = enabled
+    }
+}
+
+export class AuthenticationUpdateMessage {
+    readonly time: number = Date.now()
+    readonly sender: string = weaverbirdChat
+    readonly weaverbirdEnabled: boolean
+    readonly type = 'authenticationUpdateMessage'
+
+    constructor(weaverbirdEnabled: boolean) {
+        this.weaverbirdEnabled = weaverbirdEnabled
+    }
+}
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
-    readonly relatedSuggestions: Suggestion[] | undefined
+    readonly relatedSuggestions: SourceLink[] | undefined
 }
 
 export class ChatMessage extends UiMessage {
     readonly message: string | undefined
     readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
-    readonly relatedSuggestions: Suggestion[] | undefined
+    readonly relatedSuggestions: SourceLink[] | undefined
     readonly requestID!: string
     override type = 'chatMessage'
 
@@ -107,6 +128,14 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendPlaceholder(message: UpdatePlaceholderMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendChatInputEnabled(message: ChatInputEnabledMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAuthenticationUpdate(message: AuthenticationUpdateMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

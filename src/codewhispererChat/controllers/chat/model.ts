@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
-import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
+import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 
 export interface TriggerTabIDReceived {
     tabID: string

@@ -54,7 +54,7 @@ import { activate as activateIot } from './iot/activation'
 import { activate as activateDev } from './dev/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
-import { activate as activateCWChat } from './awsq/activation'
+import { activate as activateCWChat } from './amazonq/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
@@ -83,7 +83,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()
 
-    await initialize(context)
+    initialize(context)
     globals.machineId = await getMachineId()
     initializeManifestPaths(context)
 
@@ -423,7 +423,7 @@ async function checkSettingsHealth(settings: Settings): Promise<boolean> {
 }
 
 async function getMachineId(): Promise<string> {
-    const proc = new ChildProcess('hostname', [], { collect: true })
+    const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
 }
 

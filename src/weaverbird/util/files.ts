@@ -14,9 +14,7 @@ import { GitIgnoreFilter } from './gitignore'
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { ProjectSizeTooLargeError } from '../errors'
-import { projectSizeLimit } from '../limits'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from './telemetryHelper'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -29,6 +27,12 @@ export function getExcludePattern(additionalPatterns: string[] = []) {
         '**/*.jpg',
         '**/*.svg',
         '**/*.pyc',
+        '**/license.txt',
+        '**/License.txt',
+        '**/LICENSE.txt',
+        '**/license.md',
+        '**/License.md',
+        '**/LICENSE.md',
     ]
     const allPatterns = [...globAlwaysExcludedDirs, ...extraPatterns, ...additionalPatterns]
     return `{${allPatterns.join(',')}}`
@@ -86,15 +90,11 @@ export async function prepareRepoData(repoRootPath: string, conversationId: stri
         const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
         totalBytes += fileSize
 
-        if (totalBytes > projectSizeLimit) {
-            throw new ProjectSizeTooLargeError()
-        }
-
         const relativePath = getWorkspaceRelativePath(file.fsPath)
         const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
         zip.addLocalFile(file.fsPath, zipFolderPath)
     }
-    telemetry.awsq_repo.emit({ awsqConversationId: conversationId, awsqRepositorySize: totalBytes })
+    TelemetryHelper.instance.setRepositorySize(totalBytes)
     const zipFileBuffer = zip.toBuffer()
     return {
         zipFileBuffer,

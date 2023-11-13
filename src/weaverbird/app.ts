@@ -6,9 +6,9 @@
 import * as vscode from 'vscode'
 import { UIMessageListener } from './views/actions/uiMessageListener'
 import { WeaverbirdController } from './controllers/chat/controller'
-import { AwsQAppInitContext } from '../awsq/apps/initContext'
-import { MessagePublisher } from '../awsq/messages/messagePublisher'
-import { MessageListener } from '../awsq/messages/messageListener'
+import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
+import { MessagePublisher } from '../amazonq/messages/messagePublisher'
+import { MessageListener } from '../amazonq/messages/messageListener'
 import { fromQueryToParameters } from '../shared/utilities/uriUtils'
 import { getLogger } from '../shared/logger'
 import { TabIdNotFoundError } from './errors'
@@ -17,8 +17,10 @@ import { Messenger } from './controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from './views/connector/connector'
 import globals from '../shared/extensionGlobals'
 import { ChatSessionStorage } from './storages/chatSession'
+import { AuthUtil } from '../codewhisperer/util/authUtil'
+import { debounce } from 'lodash'
 
-export function init(appContext: AwsQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext) {
     const weaverbirdChatControllerEventEmitters = {
         processHumanChatMessage: new vscode.EventEmitter<any>(),
         followUpClicked: new vscode.EventEmitter<any>(),
@@ -32,7 +34,12 @@ export function init(appContext: AwsQAppInitContext) {
     const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
     const sessionStorage = new ChatSessionStorage(messenger)
 
-    new WeaverbirdController(weaverbirdChatControllerEventEmitters, messenger, sessionStorage)
+    new WeaverbirdController(
+        weaverbirdChatControllerEventEmitters,
+        messenger,
+        sessionStorage,
+        appContext.onDidChangeAmazonQVisibility.event
+    )
 
     const weaverbirdProvider = new (class implements vscode.TextDocumentContentProvider {
         async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
@@ -66,4 +73,22 @@ export function init(appContext: AwsQAppInitContext) {
     })
 
     appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(weaverbirdChatUIInputEventEmitter), 'wb')
+
+    const events = [
+        AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection,
+        AuthUtil.instance.auth.onDidChangeActiveConnection,
+        AuthUtil.instance.auth.onDidChangeConnectionState,
+        AuthUtil.instance.auth.onDidUpdateConnection,
+    ]
+
+    const debouncedEvent = debounce(
+        () => messenger.sendAuthenticationUpdate(AuthUtil.instance.isEnterpriseSsoInUse()),
+        500
+    )
+
+    events.forEach(event =>
+        event(() => {
+            debouncedEvent()
+        })
+    )
 }

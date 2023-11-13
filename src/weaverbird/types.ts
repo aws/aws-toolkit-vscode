@@ -3,22 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { WeaverbirdClient } from './client/weaverbird'
-
-const GenerationFlowOptions = ['fargate', 'lambda', 'stepFunction'] as const
-type GenerationFlowOption = (typeof GenerationFlowOptions)[number]
-
-export function isGenerationFlowOption(value: string): value is GenerationFlowOption {
-    return GenerationFlowOptions.includes(value as GenerationFlowOption)
-}
-
-// TODO: Reintroduce WeaverbirdConfigs and remove any
-export interface LLMConfig extends Required<any> {
-    generationFlow: GenerationFlowOption
-}
+import { weaverbirdScheme } from './constants'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -33,8 +23,9 @@ export interface SessionStateInteraction {
 export enum FollowUpTypes {
     WriteCode = 'WriteCode',
     AcceptCode = 'AcceptCode',
-    RejectCode = 'RejectCode',
+    ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     Retry = 'Retry',
+    ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
 }
 
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
@@ -50,7 +41,7 @@ export interface SessionState {
 }
 
 export interface SessionStateConfig {
-    llmConfig: LLMConfig
+    sourceRoot: string
     workspaceRoot: string
     conversationId: string
     proxyClient: WeaverbirdClient
@@ -75,4 +66,12 @@ export interface SessionInfo {
 
 export interface SessionStorage {
     [key: string]: SessionInfo
+}
+
+export function createUri(filePath: string, tabID?: string) {
+    return vscode.Uri.from({
+        scheme: weaverbirdScheme,
+        path: filePath,
+        ...(tabID ? { query: `tabID=${tabID}` } : {}),
+    })
 }

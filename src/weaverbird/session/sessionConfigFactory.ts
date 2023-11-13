@@ -4,15 +4,15 @@
  */
 
 import * as vscode from 'vscode'
-import { LLMConfig } from '../types'
-import { defaultLlmConfig, weaverbirdScheme } from '../constants'
+import { weaverbirdScheme } from '../constants'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { WorkspaceFolderNotFoundError } from '../errors'
+import { WorkspaceFolderNotFoundError, WorkspaceRootNotFoundError } from '../errors'
+import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
-    readonly llmConfig: LLMConfig
     readonly workspaceRoot: string
+    sourceRoot: string
     readonly fs: VirtualFileSystem
 }
 
@@ -20,18 +20,14 @@ export interface SessionConfig {
  * Factory method for creating session configurations
  * @returns An instantiated SessionConfig, using either the arguments provided or the defaults
  */
-export async function createSessionConfig(params?: {
-    workspaceRoot?: string
-    llmConfiguration?: LLMConfig
-}): Promise<SessionConfig> {
+export async function createSessionConfig(): Promise<SessionConfig> {
     const workspaceFolders = vscode.workspace.workspaceFolders
     if (workspaceFolders === undefined || workspaceFolders.length === 0) {
         throw new WorkspaceFolderNotFoundError()
     }
 
-    // TODO figure out how we want to handle multi root workspaces
-    const workspace = params?.workspaceRoot ?? workspaceFolders[0].uri.fsPath
-    const llmConfig = params?.llmConfiguration ?? defaultLlmConfig
+    let workspaceRoot = workspaceFolders[0].uri.fsPath
+    let sourceRoot = await getSourceCodePath(workspaceRoot, 'src')
 
     const fs = new VirtualFileSystem()
 
@@ -41,9 +37,22 @@ export async function createSessionConfig(params?: {
         new VirtualMemoryFile(new Uint8Array())
     )
 
-    return {
-        llmConfig,
-        workspaceRoot: workspace,
+    return Promise.resolve({
+        set sourceRoot(newSourceRoot: string) {
+            sourceRoot = newSourceRoot
+
+            const possibleWorkspaceRoot = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(sourceRoot))
+            if (!possibleWorkspaceRoot) {
+                throw new WorkspaceRootNotFoundError()
+            }
+            workspaceRoot = possibleWorkspaceRoot.uri.fsPath
+        },
+        get sourceRoot(): string {
+            return sourceRoot
+        },
+        get workspaceRoot(): string {
+            return workspaceRoot
+        },
         fs,
-    }
+    })
 }

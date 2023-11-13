@@ -4,8 +4,9 @@
  */
 
 import { Timestamp } from 'aws-sdk/clients/apigateway'
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
-import { EditorContextCommand } from '../../commands/registerCommands'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
+import { EditorContextCommandType } from '../../commands/registerCommands'
+import { OnboardingPageInteractionType } from '../../../amazonq/onboardingPage/model'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -148,13 +149,13 @@ export interface FollowUp {
 export interface EditorContextCommandMessageProps {
     readonly message: string
     readonly triggerID: string
-    readonly command?: EditorContextCommand
+    readonly command?: EditorContextCommandType
 }
 
 export class EditorContextCommandMessage extends UiMessage {
     readonly message: string
     readonly triggerID: string
-    readonly command?: EditorContextCommand
+    readonly command?: EditorContextCommandType
     override type = 'editorContextCommandMessage'
 
     constructor(props: EditorContextCommandMessageProps) {
@@ -162,6 +163,26 @@ export class EditorContextCommandMessage extends UiMessage {
         this.message = props.message
         this.triggerID = props.triggerID
         this.command = props.command
+    }
+}
+
+export interface OnboardingPageInteractionMessageProps {
+    readonly message: string
+    readonly triggerID: string
+    readonly interactionType: OnboardingPageInteractionType
+}
+
+export class OnboardingPageInteractionMessage extends UiMessage {
+    readonly message: string
+    readonly triggerID: string
+    readonly interactionType: OnboardingPageInteractionType
+    override type = 'editorContextCommandMessage'
+
+    constructor(props: OnboardingPageInteractionMessageProps) {
+        super(undefined)
+        this.message = props.message
+        this.triggerID = props.triggerID
+        this.interactionType = props.interactionType
     }
 }
 
@@ -177,6 +198,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendEditorContextCommandMessage(message: EditorContextCommandMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendOnboardingPageInteractionMessage(message: OnboardingPageInteractionMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

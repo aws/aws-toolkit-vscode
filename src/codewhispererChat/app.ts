@@ -6,9 +6,9 @@
 import { EventEmitter } from 'vscode'
 import { ChatController as CwChatController } from '../codewhispererChat/controllers/chat/controller'
 import { UIMessageListener } from './view/messages/messageListener'
-import { AwsQAppInitContext } from '../awsq/apps/initContext'
-import { MessageListener } from '../awsq/messages/messageListener'
-import { MessagePublisher } from '../awsq/messages/messagePublisher'
+import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
+import { MessageListener } from '../amazonq/messages/messageListener'
+import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
@@ -24,8 +24,9 @@ import {
     UIFocusMessage,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
+import { OnboardingPageInteraction } from '../amazonq/onboardingPage/model'
 
-export function init(appContext: AwsQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
@@ -40,6 +41,7 @@ export function init(appContext: AwsQAppInitContext) {
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
         processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
         processLinkClicked: new EventEmitter<ClickLink>(),
+        processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -78,6 +80,9 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
         processLinkClicked: new MessageListener<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
+        processOnboardingPageInteraction: new MessageListener<OnboardingPageInteraction>(
+            cwChatControllerEventEmitters.processOnboardingPageInteraction
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -118,6 +123,9 @@ export function init(appContext: AwsQAppInitContext) {
             cwChatControllerEventEmitters.processUIFocusMessage
         ),
         processLinkClicked: new MessagePublisher<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
+        processOnboardingPageInteraction: new MessagePublisher<OnboardingPageInteraction>(
+            cwChatControllerEventEmitters.processOnboardingPageInteraction
+        ),
     }
 
     new CwChatController(cwChatControllerMessageListeners, appContext.getAppsToWebViewMessagePublisher())

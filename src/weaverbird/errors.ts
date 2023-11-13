@@ -23,15 +23,11 @@ export class PanelLoadError extends ToolkitError {
     }
 }
 
-export class ProjectSizeTooLargeError extends ToolkitError {
-    constructor() {
-        super('Project size is too large', { code: 'ProjectSizeTooLarge' })
-    }
-}
-
 export class WorkspaceFolderNotFoundError extends ToolkitError {
     constructor() {
-        super(`Workspace folder was not found`, { code: 'WorkspaceFolderNotFound' })
+        super(`Workspace folder was not found. Open a workspace to continue using Weaverbird`, {
+            code: 'WorkspaceFolderNotFound',
+        })
     }
 }
 
@@ -44,6 +40,25 @@ export class SessionNotFoundError extends ToolkitError {
 export class UserMessageNotFoundError extends ToolkitError {
     constructor() {
         super(`Message was not found`, { code: 'MessageNotFound' })
+    }
+}
+
+export class WorkspaceRootNotFoundError extends ToolkitError {
+    constructor() {
+        super(`Unable to find workspace root from the provided source root`, {
+            code: 'WorkspaceRootNotFound',
+        })
+    }
+}
+
+export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
+    constructor() {
+        super(
+            `The selected folder is not in an opened workspace folder. Add the selected folder to the workspace or pick a new folder`,
+            {
+                code: 'SelectedFolderNotInWorkspaceFolder',
+            }
+        )
     }
 }
 

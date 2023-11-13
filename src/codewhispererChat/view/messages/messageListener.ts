@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageListener } from '../../../awsq/messages/messageListener'
-import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
+import { MessageListener } from '../../../amazonq/messages/messageListener'
+import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 
@@ -30,6 +30,9 @@ export class UIMessageListener {
 
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
+            case 'onboarding-page-interaction':
+                this.processOnboardingPageInteraction(msg)
+                break
             case 'clear':
             case 'chat-prompt':
                 this.processChatMessage(msg)
@@ -90,6 +93,11 @@ export class UIMessageListener {
         })
     }
 
+    private processOnboardingPageInteraction(msg: any) {
+        this.chatControllerMessagePublishers.processOnboardingPageInteraction.publish({
+            type: msg.type,
+        })
+    }
     private processUIFocus(msg: any) {
         this.chatControllerMessagePublishers.processUIFocusMessage.publish({
             command: msg.command,

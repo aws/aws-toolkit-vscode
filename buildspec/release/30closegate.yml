@@ -1,0 +1,19 @@
+version: 0.2
+
+phases:
+    install:
+        runtime-versions:
+            nodejs: 16
+
+    pre_build:
+        commands:
+            - STAGE_NAME=Release
+            - PIPELINE=$(echo $CODEBUILD_INITIATOR | sed -e 's/codepipeline\///')
+    build:
+        commands:
+            - |
+                aws codepipeline disable-stage-transition \
+                  --pipeline-name "$PIPELINE" \
+                  --stage-name "$STAGE_NAME" \
+                  --transition-type "Inbound" \
+                  --reason "Disabled by CloseGate (automation)"

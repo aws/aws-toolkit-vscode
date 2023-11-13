@@ -38,9 +38,7 @@ export class ChatSession {
             )
         }
 
-        if (this.client === undefined) {
-            this.client = await new CodeWhispererStreamingClient().createSdkClient()
-        }
+        this.client = await new CodeWhispererStreamingClient().createSdkClient()
 
         if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {
             chatRequest.conversationState.conversationId = this.sessionId

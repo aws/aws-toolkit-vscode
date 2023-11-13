@@ -162,14 +162,16 @@ export class InlineCompletionService {
         this.statusBar.command = undefined
         ;(this.statusBar as any).backgroundColor = undefined
         this.statusBar.show()
+        vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', false)
     }
 
     setCodeWhispererStatusBarDisconnected() {
         this._isPaginationRunning = false
         this.statusBar.text = codicon` ${getIcon('vscode-debug-disconnect')} CodeWhisperer`
-        this.statusBar.command = 'aws.codeWhisperer.reconnect'
+        this.statusBar.command = 'aws.codewhisperer.reconnect'
         ;(this.statusBar as any).backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground')
         this.statusBar.show()
+        vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', true)
     }
 
     isPaginationRunning(): boolean {
@@ -179,5 +181,6 @@ export class InlineCompletionService {
     hideCodeWhispererStatusBar() {
         this._isPaginationRunning = false
         this.statusBar.hide()
+        vscode.commands.executeCommand('setContext', 'aws.codewhisperer.disconnected', false)
     }
 }

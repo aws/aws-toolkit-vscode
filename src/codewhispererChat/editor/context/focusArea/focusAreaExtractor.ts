@@ -11,6 +11,22 @@ import { FocusAreaContext, FullyQualifiedName } from './model'
 const focusAreaCharLimit = 9_000
 
 export class FocusAreaContextExtractor {
+    public isCodeBlockSelected(editor: TextEditor): boolean {
+        if (editor.document === undefined) {
+            return false
+        }
+
+        // It means we don't really have a selection, but cursor position only
+        if (
+            editor.selection.start.line === editor.selection.end.line &&
+            editor.selection.start.character === editor.selection.end.character
+        ) {
+            return false
+        }
+
+        return true
+    }
+
     public async extract(editor: TextEditor): Promise<FocusAreaContext | undefined> {
         if (editor.document === undefined) {
             return undefined
@@ -19,10 +35,7 @@ export class FocusAreaContextExtractor {
         let importantRange: Range = editor.selection
 
         // It means we don't really have a selection, but cursor position only
-        if (
-            editor.selection.start.line === editor.selection.end.line &&
-            editor.selection.start.character === editor.selection.end.character
-        ) {
+        if (!this.isCodeBlockSelected(editor)) {
             importantRange = editor.visibleRanges[0]
         }
 
@@ -39,7 +52,7 @@ export class FocusAreaContextExtractor {
             extendedCodeBlock: this.getRangeText(editor.document, extendedCodeBlockRange),
             codeBlock: codeBlock,
             selectionInsideExtendedCodeBlock: this.getSelectionInsideExtendedCodeBlock(
-                editor.selection,
+                importantRange as Selection,
                 extendedCodeBlockRange
             ),
             names:
@@ -80,23 +93,35 @@ export class FocusAreaContextExtractor {
             (importantRange.start.line !== 0 || importantRange.end.line !== document.lineCount - 1)
         ) {
             if (addLineBefore && importantRange.start.line !== 0) {
-                importantRange = new Range(
+                const tmpRange = new Range(
                     importantRange.start.line - 1,
                     0,
                     importantRange.end.line,
                     importantRange.end.character
                 )
                 addLineBefore = false
+
+                if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
+                    break
+                }
+
+                importantRange = tmpRange
                 continue
             }
 
             if (importantRange.end.line !== document.lineCount - 1) {
-                importantRange = new Range(
+                const tmpRange = new Range(
                     importantRange.start.line,
                     importantRange.start.character,
                     importantRange.end.line + 1,
                     document.lineAt(importantRange.end.line + 1).range.end.character
                 )
+
+                if (this.getRangeText(document, tmpRange).length >= focusAreaCharLimit) {
+                    break
+                }
+
+                importantRange = tmpRange
             }
 
             addLineBefore = true
