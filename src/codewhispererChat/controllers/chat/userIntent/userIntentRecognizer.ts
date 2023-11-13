@@ -6,9 +6,17 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { EditorContextCommand } from '../../../commands/registerCommands'
 import { PromptMessage } from '../model'
+import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 
 export class UserIntentRecognizer {
-    public getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
+    public getFromOnboardingPageInteraction(interaction: OnboardingPageInteraction): UserIntent | undefined{
+        switch(interaction.type) {
+            default:
+                return undefined
+        }
+    }
+
+    public getFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
         switch (command.type) {
             case 'aws.amazonq.explainCode':
                 return UserIntent.EXPLAIN_CODE_SELECTION
@@ -23,7 +31,7 @@ export class UserIntentRecognizer {
         }
     }
 
-    public getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
+    public getFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
         if (prompt.message === undefined) {
             return undefined
         }
