@@ -19,7 +19,9 @@ const performance = globalThis.performance ?? require('perf_hooks').performance
 export class CodeWhispererSession {
     acceptedIndex: number = -1
 
-    isJobDone: boolean = false
+    isTelemetrySent: boolean = false
+    isRecommendationComplete: boolean = false
+
     nextToken: string = ''
 
     // Per-session states

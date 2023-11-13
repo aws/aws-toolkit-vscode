@@ -59,7 +59,6 @@ describe('recommendationHandler', function () {
             resetCodeWhispererGlobalVariables()
             mockClient.listRecommendations.resolves({})
             mockClient.generateRecommendations.resolves({})
-            RecommendationHandler.instance.clearRecommendations()
             sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
         })
 
@@ -304,12 +303,14 @@ describe('recommendationHandler', function () {
         it('should remove inline reference onEditorChange', async function () {
             session.sessionId = 'aSessionId'
             session.requestIdList.push('aRequestId')
+            session.isRecommendationComplete = true
             await RecommendationHandler.instance.onEditorChange()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)
         })
         it('should remove inline reference onFocusChange', async function () {
             session.sessionId = 'aSessionId'
             session.requestIdList.push('aRequestId')
+            session.isRecommendationComplete = true
             sinon.stub(RecommendationService.instance, 'session').get(() => session)
             await RecommendationHandler.instance.onFocusChange()
             assert.strictEqual(ReferenceInlineProvider.instance.refs.length, 0)

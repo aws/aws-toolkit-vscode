@@ -76,13 +76,21 @@ export class InlineCompletionService {
         config: ConfigurationEntry,
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         event?: vscode.TextDocumentChangeEvent
-    ) {
+    ): Promise<GetRecommendationsResponse> {
+        let response: GetRecommendationsResponse = {
+            result: 'Failed',
+            errorMessage: undefined,
+        }
+
         if (
             vsCodeState.isCodeWhispererEditing ||
             this._isPaginationRunning ||
             RecommendationHandler.instance.isSuggestionVisible()
         ) {
-            return
+            return {
+                ...response,
+                errorMessage: 'There is already one active CodeWhisperer session',
+            }
         }
 
         // Call report user decisions once to report recommendations leftover from last invocation.
@@ -98,7 +106,10 @@ export class InlineCompletionService {
         const isAutoTrigger = triggerType === 'AutoTrigger'
         if (AuthUtil.instance.isConnectionExpired()) {
             await AuthUtil.instance.notifyReauthenticate(isAutoTrigger)
-            return
+            return {
+                ...response,
+                errorMessage: 'Connection expired',
+            }
         }
 
         this.setCodeWhispererStatusBarLoading()
@@ -106,10 +117,7 @@ export class InlineCompletionService {
         TelemetryHelper.instance.setInvocationStartTime(performance.now())
         RecommendationHandler.instance.checkAndResetCancellationTokens()
         RecommendationHandler.instance.documentUri = editor.document.uri
-        let response: GetRecommendationsResponse = {
-            result: 'Failed',
-            errorMessage: undefined,
-        }
+
         try {
             let page = 0
             while (page < this.maxPage) {
@@ -129,7 +137,10 @@ export class InlineCompletionService {
                     RecommendationHandler.instance.reportUserDecisions(session)
                     vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
                     TelemetryHelper.instance.setIsRequestCancelled(true)
-                    return
+                    return {
+                        ...response,
+                        errorMessage: 'Request cancelled',
+                    }
                 }
                 if (!session.hasNextToken()) {
                     break
@@ -145,6 +156,7 @@ export class InlineCompletionService {
             showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
         TelemetryHelper.instance.tryRecordClientComponentLatency(session)
+        return response
     }
 
     setCodeWhispererStatusBarLoading() {

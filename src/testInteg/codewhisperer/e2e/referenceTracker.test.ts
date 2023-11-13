@@ -56,7 +56,6 @@ describe('CodeWhisperer service invocation', async function () {
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
         session = new CodeWhispererSession('javascript', 'OnDemand')
-        RecommendationHandler.instance.clearRecommendations()
         //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
         this.skip()
         //valid connection required to run tests

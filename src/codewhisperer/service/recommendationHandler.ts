@@ -14,7 +14,7 @@ import { AWSError } from 'aws-sdk'
 import { isAwsError } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { getLogger } from '../../shared/logger'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { isSageMaker } from '../../shared/extensionUtilities'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -430,17 +430,12 @@ export class RecommendationHandler {
         }
         return false
     }
-    /**
-     * Clear recommendation state
-     */
-    clearRecommendations() {}
 
     async clearInlineCompletionStates() {
         try {
             vsCodeState.isCodeWhispererEditing = false
             application()._clearCodeWhispererUIListener.fire()
             this.cancelPaginatedRequest()
-            this.clearRecommendations()
             this.disposeInlineCompletion()
             await vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
             this.disposeCommandOverrides()
@@ -465,15 +460,13 @@ export class RecommendationHandler {
      * Emits telemetry reflecting user decision for current recommendation.
      */
     reportUserDecisions(session: CodeWhispererSession) {
-        session.isJobDone = true
+        session.isTelemetrySent = true
         if (session.sessionId === '' || session.requestIdList.length === 0) {
             return
         }
         TelemetryHelper.instance.recordUserDecisionTelemetry(session)
 
-        if (isCloud9('any')) {
-            this.clearRecommendations()
-        } else if (isInlineCompletionEnabled()) {
+        if (isInlineCompletionEnabled()) {
             this.clearInlineCompletionStates()
         }
     }

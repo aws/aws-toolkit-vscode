@@ -36,6 +36,7 @@ export class RecommendationService {
         return this.activeSession
     }
 
+    // visible for testing
     startSession(
         language: CodewhispererLanguage,
         triggerType: CodewhispererTriggerType,
@@ -48,12 +49,12 @@ export class RecommendationService {
 
     flushUserDecisions() {
         this.sessionQueue.forEach(session => {
-            if (!session.isJobDone) {
+            if (!session.isTelemetrySent && session.isRecommendationComplete) {
                 RecommendationHandler.instance.reportUserDecisions(session)
             }
         })
 
-        this.sessionQueue = this.sessionQueue.filter(session => !session.isJobDone)
+        this.sessionQueue = this.sessionQueue.filter(session => !session.isTelemetrySent)
     }
 
     /** This method is assumed to be invoked first at the start of execution **/
@@ -62,6 +63,7 @@ export class RecommendationService {
         session.invokeSuggestionStartTime = performance.now()
     }
 
+    // this method is the entry point of any kind of generate recommendation action
     async generateRecommednation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
@@ -84,36 +86,40 @@ export class RecommendationService {
             vsCodeState.isIntelliSenseActive = false
             RecommendationHandler.instance.isGenerateRecommendationInProgress = true
 
+            let session: CodeWhispererSession = this.startSession(language, triggerType, autoTriggerType)
             try {
                 let response: GetRecommendationsResponse = {
                     result: 'Failed',
                     errorMessage: undefined,
                 }
 
-                const session = this.startSession(language, triggerType, autoTriggerType)
                 if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                    response = await RecommendationHandler.instance.getRecommendations(
-                        session,
-                        client,
-                        editor,
-                        triggerType,
-                        config,
-                        autoTriggerType,
-                        false
-                    )
+                    await this.executeWhileSessionActive(session, () => {
+                        return RecommendationHandler.instance.getRecommendations(
+                            session,
+                            client,
+                            editor,
+                            triggerType,
+                            config,
+                            autoTriggerType,
+                            false
+                        )
+                    })
                 } else {
                     if (AuthUtil.instance.isConnectionExpired()) {
                         await AuthUtil.instance.showReauthenticatePrompt()
                     }
-                    response = await RecommendationHandler.instance.getRecommendations(
-                        session,
-                        client,
-                        editor,
-                        triggerType,
-                        config,
-                        autoTriggerType,
-                        true
-                    )
+                    await this.executeWhileSessionActive(session, () => {
+                        return RecommendationHandler.instance.getRecommendations(
+                            session,
+                            client,
+                            editor,
+                            triggerType,
+                            config,
+                            autoTriggerType,
+                            true
+                        )
+                    })
                 }
                 if (
                     RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true, response, session)
@@ -131,15 +137,39 @@ export class RecommendationService {
             if (triggerType === 'OnDemand') {
                 ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
             }
-            await InlineCompletionService.instance.getPaginatedRecommendation(
-                session,
-                client,
-                editor,
-                triggerType,
-                config,
-                autoTriggerType,
-                event
-            )
+
+            this.executeWhileSessionActive(session, () => {
+                return InlineCompletionService.instance.getPaginatedRecommendation(
+                    session,
+                    client,
+                    editor,
+                    triggerType,
+                    config,
+                    autoTriggerType,
+                    event
+                )
+            })
         }
+    }
+
+    private async executeWhileSessionActive(
+        session: CodeWhispererSession,
+        runnable: () => Promise<GetRecommendationsResponse>
+    ) {
+        let response: GetRecommendationsResponse = {
+            result: 'Failed',
+            errorMessage: undefined,
+        }
+
+        try {
+            response = await runnable()
+            return response
+        } catch (e) {
+            response = { ...response, errorMessage: (e as Error).message }
+        } finally {
+            session.isRecommendationComplete = true
+        }
+
+        return response
     }
 }

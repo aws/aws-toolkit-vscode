@@ -39,7 +39,6 @@ describe('CodeWhisperer service invocation', async function () {
     beforeEach(function () {
         session = new CodeWhispererSession('python', 'OnDemand')
         resetCodeWhispererGlobalVariables()
-        RecommendationHandler.instance.clearRecommendations()
         //valid connection required to run tests
         skiptTestIfNoValidConn(validConnection, this)
     })
