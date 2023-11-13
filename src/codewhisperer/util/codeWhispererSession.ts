@@ -14,7 +14,7 @@ import { CodeWhispererSupplementalContext } from './supplementalContext/suppleme
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
-export class CodeWhispererSession {
+class CodeWhispererSession {
     static #instance: CodeWhispererSession
 
     // Per-session states
