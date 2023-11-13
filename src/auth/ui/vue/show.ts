@@ -47,11 +47,11 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
-import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
+import { CodeWhispererSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
-import { submitFeedback } from '../../../awsexplorer/activation'
 import { throttle } from 'lodash'
+import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -722,7 +722,12 @@ export const showManageConnections = Commands.declare(
     }
 )
 
-export async function showAuthWebview(
+/** Opens the Add Connections webview with CW highlighted */
+export const showManageCwConnections = (source: CodeWhispererSource) => {
+    showManageConnections.execute(placeholder, source, 'codewhisperer')
+}
+
+async function showAuthWebview(
     ctx: vscode.ExtensionContext,
     source: AuthSource,
     serviceToShow?: ServiceItemId

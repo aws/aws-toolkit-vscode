@@ -36,7 +36,6 @@ import {
     notifyNewCustomizationsCmd,
     connectWithCustomization,
     signoutCodeWhisperer,
-    showManageCwConnections,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -94,7 +93,6 @@ export async function activate(context: ExtContext): Promise<void> {
 
     context.extensionContext.subscriptions.push(
         signoutCodeWhisperer.register(auth),
-        showManageCwConnections.register(),
         /**
          * Configuration change
          */

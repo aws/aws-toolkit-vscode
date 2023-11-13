@@ -26,7 +26,6 @@ import {
     showCustomizationPrompt,
 } from '../util/customizationUtil'
 import { CodeWhispererSource } from './types'
-import { showManageConnections } from '../../auth/ui/vue/show'
 
 export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
@@ -102,14 +101,6 @@ export const reconnect = Commands.declare(
     { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await AuthUtil.instance.reauthenticate()
-    }
-)
-
-/** Opens the Add Connections webview with CW highlighted */
-export const showManageCwConnections = Commands.declare(
-    { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
-    () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
-        return showManageConnections.execute(_, source, 'codewhisperer')
     }
 )
 

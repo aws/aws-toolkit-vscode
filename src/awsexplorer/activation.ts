@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { submitFeedback as showSubmitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
@@ -31,6 +30,7 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { submitFeedback } from '../feedback/vue/submitFeedback'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -100,13 +100,6 @@ export async function activate(args: {
         codeWhisperer: getCodewhispererNode(),
     })
 }
-
-export const submitFeedback = Commands.declare(
-    { id: 'aws.submitFeedback', autoconnect: false },
-    (context: ExtContext) => async (id: 'CodeWhisperer' | 'AWS Toolkit') => {
-        await showSubmitFeedback(context, id)
-    }
-)
 
 async function registerAwsExplorerCommands(
     context: ExtContext,

@@ -15,7 +15,7 @@ import { FileSystemCommon } from '../../srcShared/fs'
 import { getLogger } from '../../shared/logger'
 import { PromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from '../commands/types'
-import { submitFeedback } from '../../awsexplorer/activation'
+import { submitFeedback } from '../../feedback/vue/submitFeedback'
 
 export type OSType = 'Mac' | 'RestOfOS'
 export class CodeWhispererWebview extends VueWebview {
