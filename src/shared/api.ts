@@ -4,10 +4,15 @@
  */
 
 import { Customization, Customizations } from '../codewhisperer/client/codewhispereruserclient'
-import { getAvailableCustomizationsList, setSelectedCustomization } from '../codewhisperer/util/customizationUtil'
+import {
+    getAvailableCustomizationsList,
+    getSelectedCustomization,
+    setSelectedCustomization,
+} from '../codewhisperer/util/customizationUtil'
 
 export interface AwsToolkitApi {
     setCustomization(customization: Customization): Promise<boolean>
+    getSelectedCustomization(): Customization
     listAvailableCustomizations(): Promise<Customizations>
 }
 
@@ -20,6 +25,9 @@ export function buildApi(): AwsToolkitApi {
             } catch (e) {
                 return false
             }
+        },
+        getSelectedCustomization: () => {
+            return getSelectedCustomization()
         },
         listAvailableCustomizations: async () => {
             return getAvailableCustomizationsList()
