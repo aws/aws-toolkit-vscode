@@ -55,15 +55,14 @@ function parseCloneParams(query: SearchParams) {
 
 export function parseConnectParams(query: SearchParams): ConnectParams {
     try {
-        const params = query.getFromKeysOrThrow(
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        const { sso_start_url, sso_region, ...rest } = query.getFromKeysOrThrow(
             'devEnvironmentId',
             'spaceName',
             'projectName',
             'sso_start_url',
             'sso_region'
         )
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        const { sso_start_url, sso_region, ...rest } = params
         return { ...rest, sso: { startUrl: sso_start_url, region: sso_region } }
     } catch {
         return query.getFromKeysOrThrow('devEnvironmentId', 'spaceName', 'projectName')

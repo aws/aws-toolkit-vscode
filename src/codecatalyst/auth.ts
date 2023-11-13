@@ -145,7 +145,7 @@ export class CodeCatalystAuthenticationProvider {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
         }
 
-        const conn = (await this.auth.listConnections()).find((c): c is SsoConnection => isBuilderIdConnection(c))
+        const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (conn === undefined) {
             telemetry.record({
@@ -202,13 +202,24 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async connectToAwsBuilderId() {
-        let conn = await this.tryGetBuilderIdConnection()
+        let conn: SsoConnection
+        let isConnectionOnboarded: boolean
 
-        if (this.auth.getConnectionState(conn) === 'invalid') {
-            conn = await this.auth.reauthenticate(conn)
+        try {
+            conn = await this.tryGetBuilderIdConnection()
+
+            if (this.auth.getConnectionState(conn) === 'invalid') {
+                conn = await this.auth.reauthenticate(conn)
+            }
+
+            isConnectionOnboarded = await this.isConnectionOnboarded(conn, true)
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to connect to Builder ID', {
+                code: 'FailedToConnect',
+            })
         }
 
-        if (!(await this.isConnectionOnboarded(conn, true))) {
+        if (!isConnectionOnboarded) {
             await this.promptOnboarding()
         }
 
@@ -216,8 +227,11 @@ export class CodeCatalystAuthenticationProvider {
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
+        let conn: SsoConnection | undefined
+        let isConnectionOnboarded: boolean
+
         try {
-            let conn = (await this.auth.listConnections()).find(
+            conn = (await this.auth.listConnections()).find(
                 (c): c is SsoConnection => isSsoConnection(c) && c.startUrl.toLowerCase() === startUrl.toLowerCase()
             )
 
@@ -231,16 +245,18 @@ export class CodeCatalystAuthenticationProvider {
                 conn = await this.auth.reauthenticate(conn)
             }
 
-            if (!(await this.isConnectionOnboarded(conn, true))) {
-                await this.promptOnboarding()
-            }
-
-            return this.secondaryAuth.useNewConnection(conn)
+            isConnectionOnboarded = await this.isConnectionOnboarded(conn, true)
         } catch (e) {
             throw ToolkitError.chain(e, 'Failed to connect to IAM Identity Center', {
                 code: 'FailedToConnect',
             })
         }
+
+        if (!isConnectionOnboarded) {
+            await this.promptOnboarding()
+        }
+
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {
