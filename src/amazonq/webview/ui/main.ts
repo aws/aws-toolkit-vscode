@@ -249,8 +249,12 @@ ${message}`,
             })
         },
         onChatItemEngagement: connector.triggerSuggestionEngagement,
-        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {},
-        onLinkClick: (tabId, messageId, link, mouseEvent) => {},
+        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
+            connector.onLinkClicked(tabId, messageId, link)
+        },
+        onLinkClick: (tabId, messageId, link, mouseEvent) => {
+            connector.onLinkClicked(tabId, messageId, link)
+        },
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {
             followUpsInteractionHandler.onFollowUpClicked(tabID, messageId, followUp)

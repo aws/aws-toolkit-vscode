@@ -159,8 +159,6 @@ export class ChatController {
     }
 
     private async processLinkClicked(message: ClickLink) {
-        console.log('About to send telemetry event for link click')
-        console.log('ClickLink message: ' + JSON.stringify(message))
         this.telemetryHelper.recordInteractWithMessage(message)
     }
 

@@ -237,10 +237,10 @@ export class Connector {
         }
     }
 
-    onLinkClicked = (tabID: string, messageId: string, suggestion: Suggestion): void => {
+    onLinkClicked = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
-                this.cwChatConnector.onLinkClicked(tabID, messageId, suggestion)
+                this.cwChatConnector.onLinkClicked(tabID, messageId, link)
                 break
         }
     }

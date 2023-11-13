@@ -89,7 +89,7 @@ export class UIMessageListener {
             command: msg.command,
             tabID: msg.tabID,
             messageId: msg.messageId,
-            url: msg.suggestion.url ?? '',
+            url: msg.link,
         })
     }
 

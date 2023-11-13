@@ -48,10 +48,10 @@ export class Connector {
         })
     }
 
-    onLinkClicked = (tabID: string, messageId: string, suggestion: Suggestion): void => {
+    onLinkClicked = (tabID: string, messageId: string, link: string): void => {
         this.sendMessageToExtension({
             command: 'link-was-clicked',
-            suggestion,
+            link,
             tabID,
             messageId,
             tabType: 'cwc',

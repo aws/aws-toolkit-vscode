@@ -196,7 +196,6 @@ export class CWCTelemetryHelper {
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.url,
                 })
-                console.log('Sent link clicked telemetry event')
                 break
         }
     }
