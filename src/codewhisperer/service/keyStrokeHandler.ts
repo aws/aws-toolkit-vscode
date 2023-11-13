@@ -15,7 +15,6 @@ import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
 import { ClassifierTrigger } from './classifierTrigger'
-import { session } from '../util/codeWhispererSession'
 import { extractContextForCodeWhisperer } from '../util/editorContext'
 import { RecommendationService } from './recommendationService'
 
@@ -104,7 +103,9 @@ export class KeyStrokeHandler {
             }
 
             // Skip Cloud9 IntelliSense acceptance event
+            const session = RecommendationService.instance.session
             if (isCloud9() && event.contentChanges.length > 0 && session.recommendations.length > 0) {
+                // is this condition really reflecting 'Cloud9 IntelliSense acceptance event'?????
                 if (event.contentChanges[0].text === session.recommendations[0].content) {
                     return
                 }
