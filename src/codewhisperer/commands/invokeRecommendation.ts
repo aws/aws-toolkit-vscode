@@ -4,17 +4,12 @@
  */
 
 import * as vscode from 'vscode'
-import { vsCodeState, ConfigurationEntry, GetRecommendationsResponse } from '../models/model'
+import { vsCodeState, ConfigurationEntry } from '../models/model'
 import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
-import { isInlineCompletionEnabled } from '../util/commonUtil'
-import { InlineCompletionService } from '../service/inlineCompletionService'
-import { AuthUtil } from '../util/authUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
-import { ClassifierTrigger } from '../service/classifierTrigger'
-import { isIamConnection } from '../../auth/connection'
+import { RecommendationService } from '../service/recommendationService'
 import { session } from '../util/codeWhispererSession'
 
 /**
@@ -57,51 +52,5 @@ export async function invokeRecommendation(
         )
     }
 
-    if (isCloud9('any')) {
-        if (RecommendationHandler.instance.isGenerateRecommendationInProgress) {
-            return
-        }
-        RecommendationHandler.instance.checkAndResetCancellationTokens()
-        vsCodeState.isIntelliSenseActive = false
-        RecommendationHandler.instance.isGenerateRecommendationInProgress = true
-        try {
-            let response: GetRecommendationsResponse = {
-                result: 'Failed',
-                errorMessage: undefined,
-            }
-            if (isCloud9('classic') || isIamConnection(AuthUtil.instance.conn)) {
-                response = await RecommendationHandler.instance.getRecommendations(
-                    client,
-                    editor,
-                    'OnDemand',
-                    config,
-                    undefined,
-                    false
-                )
-            } else {
-                if (AuthUtil.instance.isConnectionExpired()) {
-                    await AuthUtil.instance.showReauthenticatePrompt()
-                }
-                response = await RecommendationHandler.instance.getRecommendations(
-                    client,
-                    editor,
-                    'OnDemand',
-                    config,
-                    undefined,
-                    true
-                )
-            }
-            if (RecommendationHandler.instance.canShowRecommendationInIntelliSense(editor, true, response)) {
-                await vscode.commands.executeCommand('editor.action.triggerSuggest').then(() => {
-                    vsCodeState.isIntelliSenseActive = true
-                })
-            }
-        } finally {
-            RecommendationHandler.instance.isGenerateRecommendationInProgress = false
-        }
-    } else if (isInlineCompletionEnabled()) {
-        TelemetryHelper.instance.setInvokeSuggestionStartTime()
-        ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
-        await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
-    }
+    await RecommendationService.instance.generateRecommednation(client, editor, 'OnDemand', config, undefined)
 }
