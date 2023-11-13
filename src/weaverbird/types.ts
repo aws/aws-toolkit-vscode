@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { VirtualFileSystem } from '../shared/virtualFilesystem'
 import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { WeaverbirdClient } from './client/weaverbird'
+import { weaverbirdScheme } from './constants'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -40,6 +42,7 @@ export interface SessionState {
 }
 
 export interface SessionStateConfig {
+    sourceRoot: string
     workspaceRoot: string
     conversationId: string
     proxyClient: WeaverbirdClient
@@ -64,4 +67,12 @@ export interface SessionInfo {
 
 export interface SessionStorage {
     [key: string]: SessionInfo
+}
+
+export function createUri(filePath: string, tabID?: string) {
+    return vscode.Uri.from({
+        scheme: weaverbirdScheme,
+        path: filePath,
+        ...(tabID ? { query: `tabID=${tabID}` } : {}),
+    })
 }

@@ -51,7 +51,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-            this.config.workspaceRoot,
+            this.config.sourceRoot,
             this.config.conversationId
         )
 
@@ -362,7 +362,7 @@ export class PrepareIterationState implements SessionState {
         this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.workspaceRoot, this.conversationId)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, this.conversationId)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,

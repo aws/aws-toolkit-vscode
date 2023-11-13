@@ -48,6 +48,7 @@ const mockSessionStateConfig = ({
     conversationId: string
     uploadId: string
 }): SessionStateConfig => ({
+    sourceRoot: 'fake-source',
     workspaceRoot: 'fake-root',
     conversationId,
     proxyClient: {
