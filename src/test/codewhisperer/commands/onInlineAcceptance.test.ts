@@ -17,11 +17,14 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('onInlineAcceptance', function () {
+    let session: CodeWhispererSession
+
     describe('onInlineAcceptance', function () {
         beforeEach(function () {
+            session = new CodeWhispererSession()
             resetCodeWhispererGlobalVariables()
         })
 
@@ -46,6 +49,7 @@ describe('onInlineAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                     references: undefined,
+                    session: session,
                 },
                 globalState
             )
@@ -83,6 +87,7 @@ describe('onInlineAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                     references: undefined,
+                    session: session,
                 },
                 globalState
             )

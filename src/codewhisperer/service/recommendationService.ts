@@ -46,6 +46,12 @@ export class RecommendationService {
         this.sessionQueue = this.sessionQueue.filter(session => !session.isJobDone)
     }
 
+    /** This method is assumed to be invoked first at the start of execution **/
+    public setInvokeSuggestionStartTime(session: CodeWhispererSession) {
+        TelemetryHelper.instance.resetClientComponentLatencyTime()
+        session.invokeSuggestionStartTime = performance.now()
+    }
+
     async generateRecommednation(
         client: DefaultCodeWhispererClient,
         editor: vscode.TextEditor,
@@ -105,12 +111,13 @@ export class RecommendationService {
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            TelemetryHelper.instance.setInvokeSuggestionStartTime()
+            const session = this.startSession()
+            this.setInvokeSuggestionStartTime(session)
             if (triggerType === 'OnDemand') {
                 ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
             }
             await InlineCompletionService.instance.getPaginatedRecommendation(
-                this.startSession(),
+                session,
                 client,
                 editor,
                 triggerType,

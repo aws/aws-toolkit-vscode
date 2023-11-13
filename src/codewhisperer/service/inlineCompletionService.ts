@@ -141,7 +141,7 @@ export class InlineCompletionService {
         if (triggerType === 'OnDemand' && session.recommendations.length === 0) {
             showTimedMessage(response.errorMessage ? response.errorMessage : noSuggestions, 2000)
         }
-        TelemetryHelper.instance.tryRecordClientComponentLatency()
+        TelemetryHelper.instance.tryRecordClientComponentLatency(session)
     }
 
     setCodeWhispererStatusBarLoading() {

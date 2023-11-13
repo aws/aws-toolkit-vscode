@@ -13,11 +13,14 @@ import { RecommendationHandler } from '../../../codewhisperer/service/recommenda
 import * as codewhispererSdkClient from '../../../codewhisperer/client/codewhisperer'
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { CWInlineCompletionItemProvider } from '../../../codewhisperer/service/inlineCompletionItemProvider'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('inlineCompletionService', function () {
+    let session: CodeWhispererSession
+
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
+        session = new CodeWhispererSession()
     })
 
     describe('getPaginatedRecommendation', function () {
@@ -51,6 +54,7 @@ describe('inlineCompletionService', function () {
             )
             session.recommendations = [{ content: "\n\t\tconsole.log('Hello world!');\n\t}" }, { content: '' }]
             await InlineCompletionService.instance.getPaginatedRecommendation(
+                session,
                 mockClient,
                 mockEditor,
                 'OnDemand',

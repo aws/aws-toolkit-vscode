@@ -10,7 +10,7 @@ import { setValidConnection, skiptTestIfNoValidConn } from '../../util/codewhisp
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
 import { createMockTextEditor, resetCodeWhispererGlobalVariables } from '../../../test/codewhisperer/testUtil'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 
 /*
 New model deployment may impact references returned. 
@@ -34,6 +34,7 @@ const rightContext = `[i].title + '">' + cars[i].title + '</a>';
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
+    let session: CodeWhispererSession
     const client = new codewhispererClient.DefaultCodeWhispererClient()
     const configWithRefs: ConfigurationEntry = {
         isShowMethodsEnabled: true,
@@ -54,6 +55,7 @@ describe('CodeWhisperer service invocation', async function () {
 
     beforeEach(function () {
         resetCodeWhispererGlobalVariables()
+        session = new CodeWhispererSession()
         RecommendationHandler.instance.clearRecommendations()
         //TODO: remove this line (this.skip()) when these tests no longer auto-skipped
         this.skip()

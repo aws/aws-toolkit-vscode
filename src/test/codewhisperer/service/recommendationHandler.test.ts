@@ -22,7 +22,7 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 import { ReferenceInlineProvider } from '../../../codewhisperer/service/referenceInlineProvider'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
@@ -34,7 +34,11 @@ describe('recommendationHandler', function () {
         isAutomatedTriggerEnabled: true,
         isSuggestionsWithCodeReferencesEnabled: true,
     }
+
+    let session: CodeWhispererSession
+
     beforeEach(function () {
+        session = new CodeWhispererSession()
         resetCodeWhispererGlobalVariables()
     })
 
@@ -79,7 +83,7 @@ describe('recommendationHandler', function () {
             }
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+            await handler.getRecommendations(session, mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             const actual = session.recommendations
             const expected: RecommendationsList = [{ content: "print('Hello World!')" }, { content: '' }]
             assert.deepStrictEqual(actual, expected)
@@ -105,7 +109,7 @@ describe('recommendationHandler', function () {
             const handler = new RecommendationHandler()
             sinon.stub(handler, 'getServerResponse').resolves(mockServerResult)
             sinon.stub(handler, 'isCancellationRequested').returns(false)
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
+            await handler.getRecommendations(session, mockClient, mockEditor, 'AutoTrigger', config, 'Enter', false)
             assert.strictEqual(handler.requestId, 'test_request')
             assert.strictEqual(session.sessionId, 'test_request')
             assert.strictEqual(TelemetryHelper.instance.triggerType, 'AutoTrigger')
@@ -141,7 +145,7 @@ describe('recommendationHandler', function () {
             sinon.stub(performance, 'now').returns(0.0)
             session.startPos = new vscode.Position(1, 0)
             TelemetryHelper.instance.cursorOffset = 2
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+            await handler.getRecommendations(session, mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_serviceInvocation')
             assertTelemetry({
                 codewhispererRequestId: 'test_request',
@@ -187,7 +191,7 @@ describe('recommendationHandler', function () {
             session.startPos = new vscode.Position(1, 0)
             session.requestIdList = ['test_request_empty']
             TelemetryHelper.instance.cursorOffset = 2
-            await handler.getRecommendations(mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
+            await handler.getRecommendations(session, mockClient, mockEditor, 'AutoTrigger', config, 'Enter')
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             assertTelemetry({
                 codewhispererRequestId: 'test_request_empty',

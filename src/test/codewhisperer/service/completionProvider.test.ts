@@ -10,10 +10,13 @@ import { getCompletionItems, getCompletionItem, getLabel } from '../../../codewh
 import { createMockDocument, resetCodeWhispererGlobalVariables } from '../testUtil'
 import { Recommendation } from '../../../codewhisperer/client/codewhisperer'
 import { RecommendationHandler } from '../../../codewhisperer/service/recommendationHandler'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('completionProviderService', function () {
+    let session: CodeWhispererSession
+
     beforeEach(function () {
+        session = new CodeWhispererSession()
         resetCodeWhispererGlobalVariables()
     })
 
@@ -76,7 +79,8 @@ describe('completionProviderService', function () {
                 mockDocument,
                 mockPosition,
                 mockRecommendationDetail,
-                mockRecommendationIndex
+                mockRecommendationIndex,
+                session
             )
             assert.deepStrictEqual(actual.command, expected.command)
             assert.strictEqual(actual.sortText, expected.sortText)

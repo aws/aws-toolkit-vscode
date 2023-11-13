@@ -18,12 +18,15 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { extensionVersion } from '../../../shared/vscode/env'
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('onAcceptance', function () {
     describe('onAcceptance', function () {
+        let session: CodeWhispererSession
+
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
+            session = new CodeWhispererSession()
         })
 
         afterEach(function () {
@@ -58,6 +61,7 @@ describe('onAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                     references: fakeReferences,
+                    session: session,
                 },
                 extensionContext.globalState
             )
@@ -106,6 +110,7 @@ describe('onAcceptance', function () {
                     completionType: 'Line',
                     language: 'python',
                     references: undefined,
+                    session: session,
                 },
                 extensionContext.globalState
             )

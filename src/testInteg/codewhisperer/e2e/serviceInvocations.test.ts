@@ -19,10 +19,11 @@ import { KeyStrokeHandler } from '../../../codewhisperer/service/keyStrokeHandle
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { getTestWorkspaceFolder } from '../../integrationTestsUtilities'
-import { session } from '../../../codewhisperer/util/codeWhispererSession'
+import { CodeWhispererSession } from '../../../codewhisperer/util/codeWhispererSession'
 
 describe('CodeWhisperer service invocation', async function () {
     let validConnection: boolean
+    let session: CodeWhispererSession
     const client = new codewhispererClient.DefaultCodeWhispererClient()
     const config: ConfigurationEntry = {
         isShowMethodsEnabled: true,
@@ -36,6 +37,7 @@ describe('CodeWhisperer service invocation', async function () {
     })
 
     beforeEach(function () {
+        session = new CodeWhispererSession()
         resetCodeWhispererGlobalVariables()
         RecommendationHandler.instance.clearRecommendations()
         //valid connection required to run tests

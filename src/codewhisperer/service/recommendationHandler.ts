@@ -244,7 +244,7 @@ export class RecommendationHandler {
                 page === 0 && !retry,
                 codewhispererPromise
             )
-            TelemetryHelper.instance.setSdkApiCallEndTime()
+            TelemetryHelper.instance.setSdkApiCallEndTime(session)
             latency = startTime !== 0 ? performance.now() - startTime : 0
             if ('recommendations' in resp) {
                 recommendations = (resp && resp.recommendations) || []
@@ -400,13 +400,7 @@ export class RecommendationHandler {
             if (session.recommendations.length === 0) {
                 session.requestIdList.push(requestId)
                 // Received an empty list of recommendations
-                TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(
-                    session.requestIdList,
-                    sessionId,
-                    page,
-                    editor.document.languageId,
-                    session.requestContext.supplementalMetadata
-                )
+                TelemetryHelper.instance.recordUserDecisionTelemetryForEmptyList(session, page)
             }
             if (!this.hasAtLeastOneValidSuggestion(session, typedPrefix)) {
                 this.reportUserDecisions(session)
@@ -481,16 +475,7 @@ export class RecommendationHandler {
         if (session.sessionId === '' || this.requestId === '') {
             return
         }
-        TelemetryHelper.instance.recordUserDecisionTelemetry(
-            session.requestIdList,
-            session.sessionId,
-            session.recommendations,
-            session.acceptedIndex,
-            session.recommendations.length,
-            session.completionTypes,
-            session.suggestionStates,
-            session.requestContext.supplementalMetadata
-        )
+        TelemetryHelper.instance.recordUserDecisionTelemetry(session)
 
         session.isJobDone = true
 
