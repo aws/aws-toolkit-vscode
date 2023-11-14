@@ -3,13 +3,16 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ExtensionContext, commands, window } from 'vscode'
+import { ExtensionContext, window } from 'vscode'
 import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
 import { init as weaverbirdChatAppInit } from '../weaverbird/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
 import { weaverbirdEnabled } from '../weaverbird/config'
+import { Commands } from '../shared/vscode/commands2'
+import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
+import { learnMoreAmazonQCommand, runQTransformCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = new DefaultAmazonQAppInitContext()
@@ -33,11 +36,10 @@ export async function activate(context: ExtensionContext) {
         })
     )
 
-    context.subscriptions.push(
-        commands.registerCommand('aws.amazonq.welcome', () => {
-            welcome(context, cwcWebViewToAppsPublisher)
-        })
-    )
+    amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
+    learnMoreAmazonQCommand.register()
+    switchToAmazonQCommand.register()
+    runQTransformCommand.register()
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {
@@ -46,3 +48,10 @@ function registerApps(appInitContext: AmazonQAppInitContext) {
         weaverbirdChatAppInit(appInitContext)
     }
 }
+
+export const amazonQWelcomeCommand = Commands.declare(
+    'aws.amazonq.welcome',
+    (context: ExtensionContext, publisher: MessagePublisher<any>) => () => {
+        welcome(context, publisher)
+    }
+)
