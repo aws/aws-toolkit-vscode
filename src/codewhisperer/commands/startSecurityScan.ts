@@ -146,7 +146,7 @@ export async function startSecurityScan(
          */
         throwIfCancelled()
         serviceInvocationStartTime = performance.now()
-        const scanJob = await createScanJob(client, artifactMap, editor.document.languageId)
+        const scanJob = await createScanJob(client, artifactMap, codeScanTelemetryEntry.codewhispererLanguage)
         if (scanJob.status === 'Failed') {
             throw new Error(scanJob.errorMessage)
         }

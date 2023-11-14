@@ -27,6 +27,9 @@ const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'shell',
     'sql',
     'typescript',
+    'json',
+    'yaml',
+    'tf',
 ])
 
 export class RuntimeLanguageContext {

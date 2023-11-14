@@ -162,7 +162,7 @@ export class JavascriptDependencyGraph extends DependencyGraph {
                 //Check for .ts and .js file extensions & zip separately for security scans
                 if (
                     file.name.endsWith(
-                        this._languageId == 'typescript'
+                        this._languageId === 'typescript'
                             ? DependencyGraphConstants.tsExt
                             : DependencyGraphConstants.jsExt
                     ) &&
