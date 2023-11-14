@@ -8,7 +8,7 @@ import * as assert from 'assert'
 import * as path from 'path'
 import sinon from 'sinon'
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
-import { createController } from '../../utils'
+import { ControllerSetup, createController } from '../../utils'
 import { ChatControllerEventEmitters } from '../../../../weaverbird/controllers/chat/controller'
 import { FollowUpTypes, createUri } from '../../../../weaverbird/types'
 import { Session } from '../../../../weaverbird/session/session'
@@ -20,6 +20,16 @@ describe('Controller', () => {
     const tabID = '123'
     const conversationID = '456'
     const uploadID = '789'
+
+    let controllerSetup: ControllerSetup
+
+    beforeEach(async () => {
+        controllerSetup = await createController({
+            conversationID,
+            tabID,
+            uploadID,
+        })
+    })
 
     afterEach(() => {
         sinon.restore()
@@ -42,12 +52,7 @@ describe('Controller', () => {
         }
 
         it('uses empty file when file is not found locally', async () => {
-            const controller = await createController({
-                conversationID,
-                tabID,
-                uploadID,
-            })
-            const executedDiff = await openDiff(controller.emitters, path.join('src', 'mynewfile.js'))
+            const executedDiff = await openDiff(controllerSetup.emitters, path.join('src', 'mynewfile.js'))
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
@@ -58,15 +63,10 @@ describe('Controller', () => {
             )
         })
 
-        it('uses file location when file is found locally', async () => {
-            const controller = await createController({
-                conversationID,
-                tabID,
-                uploadID,
-            })
-            const newFileLocation = path.join(controller.workspaceFolder.uri.fsPath, 'mynewfile.js')
+        it('uses file location when file is found locally and /src is not available', async () => {
+            const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'mynewfile.js')
             toFile('', newFileLocation)
-            const executedDiff = await openDiff(controller.emitters, 'mynewfile.js')
+            const executedDiff = await openDiff(controllerSetup.emitters, 'mynewfile.js')
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
@@ -78,14 +78,9 @@ describe('Controller', () => {
         })
 
         it('uses file location when file is found locally and /src is available', async () => {
-            const controller = await createController({
-                conversationID,
-                tabID,
-                uploadID,
-            })
-            const newFileLocation = path.join(controller.workspaceFolder.uri.fsPath, 'src', 'mynewfile.js')
+            const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'src', 'mynewfile.js')
             toFile('', newFileLocation)
-            const executedDiff = await openDiff(controller.emitters, path.join('src', 'mynewfile.js'))
+            const executedDiff = await openDiff(controllerSetup.emitters, path.join('src', 'mynewfile.js'))
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
@@ -97,16 +92,15 @@ describe('Controller', () => {
         })
 
         it('uses file location when file is found locally and source folder was picked', async () => {
-            const controller = await createController({
-                conversationID,
-                tabID,
-                uploadID,
-            })
-            const newFileLocation = path.join(controller.workspaceFolder.uri.fsPath, 'foo', 'fi', 'mynewfile.js')
+            const newFileLocation = path.join(controllerSetup.workspaceFolder.uri.fsPath, 'foo', 'fi', 'mynewfile.js')
             toFile('', newFileLocation)
-            sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controller.workspaceFolder)
-            controller.session.config.sourceRoot = path.join(controller.workspaceFolder.uri.fsPath, 'foo', 'fi')
-            const executedDiff = await openDiff(controller.emitters, path.join('foo', 'fi', 'mynewfile.js'))
+            sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(controllerSetup.workspaceFolder)
+            controllerSetup.session.config.sourceRoot = path.join(
+                controllerSetup.workspaceFolder.uri.fsPath,
+                'foo',
+                'fi'
+            )
+            const executedDiff = await openDiff(controllerSetup.emitters, path.join('foo', 'fi', 'mynewfile.js'))
             assert.strictEqual(
                 executedDiff.calledWith(
                     'vscode.diff',
@@ -141,11 +135,6 @@ describe('Controller', () => {
         }
 
         it('fails if selected folder is not under a workspace folder', async () => {
-            const controllerSetup = await createController({
-                conversationID,
-                tabID,
-                uploadID,
-            })
             sinon.stub(vscode.workspace, 'getWorkspaceFolder').returns(undefined)
             const messengerSpy = sinon.spy(controllerSetup.messenger, 'sendAnswer')
             await modifyDefaultSourceFolder(controllerSetup.emitters, controllerSetup.session, '../../')

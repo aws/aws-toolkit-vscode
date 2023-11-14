@@ -32,6 +32,13 @@ export function createMockChatEmitters(): ChatControllerEventEmitters {
     }
 }
 
+export interface ControllerSetup {
+    emitters: ChatControllerEventEmitters
+    session: Session
+    workspaceFolder: vscode.WorkspaceFolder
+    messenger: Messenger
+}
+
 export async function createController({
     tabID,
     conversationID,
@@ -40,7 +47,7 @@ export async function createController({
     tabID: string
     conversationID: string
     uploadID: string
-}) {
+}): Promise<ControllerSetup> {
     const messenger = createMessenger()
 
     // Create a new workspace root

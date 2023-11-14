@@ -43,14 +43,6 @@ export class UserMessageNotFoundError extends ToolkitError {
     }
 }
 
-export class WorkspaceRootNotFoundError extends ToolkitError {
-    constructor() {
-        super(`Unable to find workspace root from the provided source root`, {
-            code: 'WorkspaceRootNotFound',
-        })
-    }
-}
-
 export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     constructor() {
         super(
