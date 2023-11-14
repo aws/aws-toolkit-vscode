@@ -4,7 +4,13 @@
  */
 import { GenerateAssistantResponseRequest, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
 
-import { GenerateResourceMessage, GenerateResourceResponseMessage, WebviewContext, Response } from '../types'
+import {
+    GenerateResourceRequestMessage,
+    GenerateResourceResponseMessage,
+    WebviewContext,
+    Command,
+    MessageType,
+} from '../types'
 import { ChatSession } from '../../codewhispererChat/clients/chat/v0/chat'
 import { AuthUtil, isValidCodeWhispererConnection } from '../../codewhisperer/util/authUtil'
 import globals from '../../shared/extensionGlobals'
@@ -12,11 +18,12 @@ import { getLogger } from '../../shared/logger/logger'
 
 const TIMEOUT = 30_000
 
-export async function generateResourceHandler(request: GenerateResourceMessage, context: WebviewContext) {
+export async function generateResourceHandler(request: GenerateResourceRequestMessage, context: WebviewContext) {
     const { chatResponse, references, metadata } = await generateResource(request.prompt)
 
     context.panel.webview.postMessage({
-        response: Response.GENERATE_RESOURCE,
+        command: Command.GENERATE_RESOURCE,
+        messageType: MessageType.RESPONSE,
         chatResponse: chatResponse,
         references: references,
         metadata: metadata,
