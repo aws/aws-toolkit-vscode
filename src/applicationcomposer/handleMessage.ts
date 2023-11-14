@@ -23,15 +23,23 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
 
     const { command, messageType } = composerMessage
 
-    if (command === Command.INIT && messageType === MessageType.REQUEST) {
-        initMessageHandler(context)
-    } else if (command === Command.LOAD_FILE && messageType === MessageType.REQUEST) {
-        await loadFileMessageHandler(message as LoadFileRequestMessage, context)
-    } else if (command === Command.SAVE_FILE && messageType === MessageType.REQUEST) {
-        await saveFileMessageHandler(message as SaveFileRequestMessage, context)
-    } else if (command === Command.ADD_FILE_WATCH && messageType === MessageType.REQUEST) {
-        addFileWatchMessageHandler(message as AddFileWatchRequestMessage, context)
-    } else if (command === Command.DEPLOY && messageType === MessageType.REQUEST) {
-        deployMessageHandler(context)
+    if (messageType === MessageType.REQUEST) {
+        switch (command) {
+            case Command.INIT:
+                initMessageHandler(context)
+                break
+            case Command.LOAD_FILE:
+                await loadFileMessageHandler(message as LoadFileRequestMessage, context)
+                break
+            case Command.SAVE_FILE:
+                await saveFileMessageHandler(message as SaveFileRequestMessage, context)
+                break
+            case Command.ADD_FILE_WATCH:
+                addFileWatchMessageHandler(message as AddFileWatchRequestMessage, context)
+                break
+            case Command.DEPLOY:
+                deployMessageHandler(context)
+                break
+        }
     }
 }
