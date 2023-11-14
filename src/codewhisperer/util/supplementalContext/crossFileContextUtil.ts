@@ -10,14 +10,12 @@ import { BM25Document, BM25Okapi } from './rankBm25'
 import { ToolkitError } from '../../../shared/errors'
 import { UserGroup, crossFileContextConfig, supplemetalContextFetchingTimeoutMsg } from '../../models/constants'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from './supplementalContextUtil'
 import { CodeWhispererUserGroupSettings } from '../userGroupUtil'
 import { isTestFile } from './codeParsingUtil'
 import { getFileDistance } from '../../../shared/filesystemUtilities'
 import { getOpenFilesInWindow } from '../../../shared/utilities/editorUtilities'
 import { getLogger } from '../../../shared/logger/logger'
-
-export type CrossFileStrategy = 'OpenTabs_BM25'
+import { CodeWhispererSupplementalContext, CodeWhispererSupplementalContextItem } from '../../models/model'
 
 type CrossFileSupportedLanguage =
     | 'java'
