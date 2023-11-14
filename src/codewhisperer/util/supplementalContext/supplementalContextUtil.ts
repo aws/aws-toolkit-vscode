@@ -3,33 +3,17 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { UtgStrategy, fetchSupplementalContextForTest } from './utgUtils'
-import { CrossFileStrategy, fetchSupplementalContextForSrc } from './crossFileContextUtil'
+import { fetchSupplementalContextForTest } from './utgUtils'
+import { fetchSupplementalContextForSrc } from './crossFileContextUtil'
 import { isTestFile } from './codeParsingUtil'
 import { DependencyGraphFactory } from '../dependencyGraph/dependencyGraphFactory'
 import * as vscode from 'vscode'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
+import { CodeWhispererSupplementalContext } from '../../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
-
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
-
-export interface CodeWhispererSupplementalContext {
-    isUtg: boolean
-    isProcessTimeout: boolean
-    supplementalContextItems: CodeWhispererSupplementalContextItem[]
-    contentsLength: number
-    latency: number
-    strategy: SupplementalContextStrategy
-}
-
-export interface CodeWhispererSupplementalContextItem {
-    content: string
-    filePath: string
-    score?: number
-}
 
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
