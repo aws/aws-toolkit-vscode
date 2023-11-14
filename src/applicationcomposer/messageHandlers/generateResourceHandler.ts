@@ -2,7 +2,7 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import { GenerateAssistantResponseRequest, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
+import { GenerateAssistantResponseRequest, SupplementaryWebLink, Reference } from '@amzn/codewhisperer-streaming'
 
 import { GenerateResourceMessage, GenerateResourceResponseMessage, WebviewContext, Response } from '../types'
 import { ChatSession } from '../../codewhispererChat/clients/chat/v0/chat'
@@ -43,6 +43,7 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
         let metadata
         let conversationId
         let supplementaryWebLinks: SupplementaryWebLink[] = []
+        let references: Reference[] = []
 
         startTime = globals.clock.Date.now()
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
@@ -78,16 +79,8 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
                 supplementaryWebLinks = supplementaryWebLinks.concat(newWebLinks)
             }
 
-            if (value?.codeReferenceEvent) {
-                // TODO: Code References are probably want we want to show users.
-                // Current interface should look like this
-                //     licenseName?: string
-                //     repository?: string
-                //     url?: string
-                //     recommendationContentSpan?: Span
-                getLogger().debug(
-                    `DEBUG: Found code reference event:\n${JSON.stringify(value.codeReferenceEvent, undefined, 2)}`
-                )
+            if (value.codeReferenceEvent?.references && value.codeReferenceEvent.references.length > 0) {
+                references = references.concat(value.codeReferenceEvent.references)
             }
         }
 
@@ -101,6 +94,7 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
         getLogger().debug(`CW Chat conversationId = ${conversationId}`)
         getLogger().debug(`CW Chat metadata = \n${JSON.stringify(metadata, undefined, 2)}`)
         getLogger().debug(`CW Chat supplementaryWebLinks = \n${JSON.stringify(supplementaryWebLinks, undefined, 2)}`)
+        getLogger().debug(`CW Chat references = \n${JSON.stringify(references, undefined, 2)}`)
         getLogger().debug(`===== CW Chat metadata end ======`)
         getLogger().debug(`===== CW Chat raw response start ======`)
         getLogger().debug(`${response}`)
