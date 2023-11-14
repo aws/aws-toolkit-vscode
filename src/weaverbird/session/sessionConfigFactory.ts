@@ -7,11 +7,13 @@ import * as vscode from 'vscode'
 import { weaverbirdScheme } from '../constants'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
-import { WorkspaceFolderNotFoundError, WorkspaceRootNotFoundError } from '../errors'
+import { SelectedFolderNotInWorkspaceFolderError, WorkspaceFolderNotFoundError } from '../errors'
 import { getSourceCodePath } from '../util/files'
 
 export interface SessionConfig {
+    // The root workspace folder of where the source code lives
     readonly workspaceRoot: string
+    // The path on disk to where the source code lives
     sourceRoot: string
     readonly fs: VirtualFileSystem
 }
@@ -43,7 +45,7 @@ export async function createSessionConfig(): Promise<SessionConfig> {
 
             const possibleWorkspaceRoot = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(sourceRoot))
             if (!possibleWorkspaceRoot) {
-                throw new WorkspaceRootNotFoundError()
+                throw new SelectedFolderNotInWorkspaceFolderError()
             }
             workspaceRoot = possibleWorkspaceRoot.uri.fsPath
         },
