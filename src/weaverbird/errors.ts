@@ -62,6 +62,12 @@ export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
     }
 }
 
+export class PrepareRepoFailedError extends ToolkitError {
+    constructor() {
+        super('Unable to prepare repository for uploading', { code: 'PrepareRepoFailed' })
+    }
+}
+
 const denyListedErrors: string[] = ['Deserialization error']
 
 export function createUserFacingErrorMessage(message: string) {

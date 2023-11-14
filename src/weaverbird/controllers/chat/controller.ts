@@ -145,7 +145,7 @@ export class WeaverbirdController {
             }
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
-                `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+                `Weaverbird request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
 
@@ -264,7 +264,7 @@ export class WeaverbirdController {
             this.messenger.sendUpdatePlaceholder(message.tabID, 'Select an option above to proceed')
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
-                `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+                `Weaverbird request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
