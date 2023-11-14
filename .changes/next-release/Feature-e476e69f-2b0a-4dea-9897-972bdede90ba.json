@@ -1,0 +1,4 @@
+{
+	"type": "Feature",
+	"description": "CodeWhisperer: faster code completion by enabling HTTP connection reuse for completions API"
+}
