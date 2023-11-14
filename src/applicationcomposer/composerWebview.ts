@@ -8,7 +8,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { handleRequestMessage } from './handleRequestMessage'
+import { handleMessage } from './handleMessage'
 import { FileWatchInfo } from './types'
 
 export class ApplicationComposer {
@@ -79,7 +79,7 @@ export class ApplicationComposer {
         // Handle messages from the webview
         this.disposables.push(
             panel.webview.onDidReceiveMessage(message =>
-                handleRequestMessage(message, {
+                handleMessage(message, {
                     panel: panel,
                     textDocument: textDocument,
                     workSpacePath: this.workSpacePath,

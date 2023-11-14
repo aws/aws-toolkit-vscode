@@ -15,7 +15,7 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://d1rviuszewp7pc.cloudfront.net'
+const cdn = 'https://d3cj1otc30c0xj.cloudfront.net'
 
 export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
