@@ -39,10 +39,10 @@ export class TabDataGenerator {
             'wb',
             `Welcome to /dev. 
 
-        Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
-        
-        Before I begin generating code, let's agree on an implementation plan. What problem are you looking to solve?
-        `,
+Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
+
+Before I begin generating code, let's agree on an implementation plan. What problem are you looking to solve?
+`,
         ],
     ])
 
