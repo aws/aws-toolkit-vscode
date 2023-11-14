@@ -24,7 +24,7 @@ import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
 export class RecommendationService {
     static #instance: RecommendationService
 
-    private activeSession: CodeWhispererSession = new CodeWhispererSession('java', 'OnDemand')
+    private activeSession: CodeWhispererSession
 
     private sessionQueue: CodeWhispererSession[] = []
 
@@ -36,15 +36,22 @@ export class RecommendationService {
         return this.activeSession
     }
 
+    constructor() {
+        // placeholder in order not to deal with
+        this.activeSession = new CodeWhispererSession('java', 'OnDemand')
+        this.activeSession.isRecommendationComplete = true
+        this.activeSession.isTelemetrySent = true
+    }
+
     // visible for testing
     startSession(
         language: CodewhispererLanguage,
         triggerType: CodewhispererTriggerType,
         autoTriggerType?: CodewhispererAutomatedTriggerType
     ): CodeWhispererSession {
-        const session = new CodeWhispererSession(language, triggerType, autoTriggerType)
-        this.sessionQueue.push(session)
-        return session
+        this.activeSession = new CodeWhispererSession(language, triggerType, autoTriggerType)
+        this.sessionQueue.push(this.activeSession)
+        return this.activeSession
     }
 
     flushUserDecisions() {

@@ -104,6 +104,7 @@ export class CWInlineCompletionItemProvider implements vscode.InlineCompletionIt
                     session.getCompletionType(index),
                     runtimeLanguageContext.getLanguageContext(document.languageId).language,
                     r.references,
+                    session,
                 ],
             },
         }
