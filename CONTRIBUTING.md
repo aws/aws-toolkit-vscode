@@ -299,6 +299,19 @@ Example:
 }
 ```
 
+Overrides specifically for CodeCatalyst can be set using the `aws.dev.codecatalystService` setting. This is a JSON object consisting of keys/values required to override API calls to CodeCatalyst: `region`, `endpoint`, `hostname`, and `gitHostname`. If this setting is present, then all keys need to be explicitly provided.
+
+Example:
+
+```json
+"aws.dev.codecatalystService": {
+    "region": "us-west-2",
+    "endpoint": "https://public.codecatalyst-gamma.global.api.aws",
+    "hostname": "integ.stage.REMOVE.codes",
+    "gitHostname": "git.gamma.source.caws.REMOVE",
+}
+```
+
 ### SAM/CFN ("goformation") JSON schema
 
 See [docs/cfn-schema-support.md](./docs/cfn-schema-support.md) for how to fix

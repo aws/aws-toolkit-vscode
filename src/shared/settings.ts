@@ -5,12 +5,13 @@
 
 import * as vscode from 'vscode'
 import * as packageJson from '../../package.json'
+import * as codecatalyst from './clients/codecatalystClient'
 import { getLogger } from './logger'
 import { cast, FromDescriptor, Record, TypeConstructor, TypeDescriptor } from './utilities/typeConstructors'
-import { ClassToInterfaceType, keys } from './utilities/tsUtils'
+import { assertHasProps, ClassToInterfaceType, keys } from './utilities/tsUtils'
 import { toRecord } from './utilities/collectionUtils'
 import { isNameMangled } from './vscode/env'
-import { once } from './utilities/functionUtils'
+import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
@@ -648,7 +649,7 @@ const devSettings = {
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
     endpoints: Record(String, String),
-    cawsStage: String,
+    codecatalystService: Record(String, String),
     ssoCacheDirectory: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
@@ -708,6 +709,28 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return Object.keys(this.activeSettings).length > 0
     }
 
+    public getCodeCatalystConfig(
+        defaultConfig: codecatalyst.CodeCatalystConfig
+    ): Readonly<codecatalyst.CodeCatalystConfig> {
+        const devSetting = 'codecatalystService'
+        const devConfig = this.get(devSetting, {})
+
+        if (Object.keys(devConfig).length === 0) {
+            this.logCodeCatalystConfigOnce('default')
+            return defaultConfig
+        }
+
+        try {
+            // The configuration in dev settings should explicitly override the entire default configuration.
+            assertHasProps(devConfig, ...Object.keys(defaultConfig))
+        } catch (err) {
+            throw ToolkitError.chain(err, `Dev setting '${devSetting}' has missing or invalid properties.`)
+        }
+
+        this.logCodeCatalystConfigOnce(JSON.stringify(devConfig, undefined, 4))
+        return devConfig as unknown as codecatalyst.CodeCatalystConfig
+    }
+
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
         if (!this.isSet(key)) {
             this.unset(key)
@@ -734,6 +757,10 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
             this.onDidChangeActiveSettingsEmitter.fire()
         }
     }
+
+    private logCodeCatalystConfigOnce = onceChanged(val => {
+        getLogger().info(`using CodeCatalyst service configuration: ${val}`)
+    })
 
     static #instance: DevSettings
 
