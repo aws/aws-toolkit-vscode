@@ -13,7 +13,7 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
     return data === undefined ? 'keybinding' : 'contextMenu'
 }
 
-export function registerCommands (controllerPublishers: ChatControllerMessagePublishers) {
+export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
     Commands.register('aws.amazonq.explainCode', async data => {
         focusAmazonQPanel().then(() => {
             controllerPublishers.processContextMenuCommand.publish({

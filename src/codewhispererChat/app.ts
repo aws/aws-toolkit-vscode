@@ -12,6 +12,7 @@ import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
+    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
@@ -39,7 +40,8 @@ export function init(appContext: AmazonQAppInitContext) {
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
         processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
-        processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>()
+        processLinkClicked: new EventEmitter<ClickLink>(),
+        processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -76,12 +78,11 @@ export function init(appContext: AmazonQAppInitContext) {
         processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
-        processUIFocusMessage: new MessageListener<UIFocusMessage>(
-            cwChatControllerEventEmitters.processUIFocusMessage
-        ),
+        processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
+        processLinkClicked: new MessageListener<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
         processOnboardingPageInteraction: new MessageListener<OnboardingPageInteraction>(
             cwChatControllerEventEmitters.processOnboardingPageInteraction
-        )
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -121,9 +122,10 @@ export function init(appContext: AmazonQAppInitContext) {
         processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
             cwChatControllerEventEmitters.processUIFocusMessage
         ),
+        processLinkClicked: new MessagePublisher<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
         processOnboardingPageInteraction: new MessagePublisher<OnboardingPageInteraction>(
             cwChatControllerEventEmitters.processOnboardingPageInteraction
-        )
+        ),
     }
 
     new CwChatController(cwChatControllerMessageListeners, appContext.getAppsToWebViewMessagePublisher())

@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp, ChatItemType, MynahUI } from "@aws/mynah-ui-chat"
-import { Connector } from "../connector"
-import { TabsStorage } from "../storages/tabsStorage"
-import { WelcomeFollowupType } from "../apps/amazonqCommonsConnector"
-import { TabDataGenerator } from "../tabs/generator"
+import { ChatItemFollowUp, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
+import { Connector } from '../connector'
+import { TabsStorage } from '../storages/tabsStorage'
+import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
+import { TabDataGenerator } from '../tabs/generator'
 
 export interface FollowUpInteractionHandlerProps {
     mynahUI: MynahUI
@@ -19,14 +19,14 @@ export interface FollowUpInteractionHandlerProps {
 export class FollowUpInteractionHandler {
     private mynahUI: MynahUI
     private connector: Connector
-    private tabsStorage: TabsStorage    
+    private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
 
-    constructor(props: FollowUpInteractionHandlerProps){
+    constructor(props: FollowUpInteractionHandlerProps) {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
-        this.tabsStorage = props.tabsStorage        
-        this.tabDataGenerator = new TabDataGenerator({isWeaverbirdEnabled: props.isWeaverbirdEnabled})
+        this.tabsStorage = props.tabsStorage
+        this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
     }
 
     public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
@@ -51,7 +51,7 @@ export class FollowUpInteractionHandler {
         this.connector.onFollowUpClicked(tabID, messageId, followUp)
     }
 
-    public onWelcomeFollowUpClicked (tabID: string, welcomeFollowUpType: WelcomeFollowupType) {
+    public onWelcomeFollowUpClicked(tabID: string, welcomeFollowUpType: WelcomeFollowupType) {
         if (welcomeFollowUpType === 'assign-code-task') {
             const newTabId = this.mynahUI.updateStore('', this.tabDataGenerator.getTabData('wb', true))
             // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,

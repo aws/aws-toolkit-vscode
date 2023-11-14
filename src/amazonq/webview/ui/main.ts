@@ -16,7 +16,6 @@ import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 
-
 export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: MynahUIDataModel) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
@@ -36,7 +35,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
     let isWeaverbirdEnabled = weaverbirdInitEnabled
 
     const tabDataGenerator = new TabDataGenerator({
-        isWeaverbirdEnabled
+        isWeaverbirdEnabled,
     })
 
     // eslint-disable-next-line prefer-const
@@ -47,7 +46,6 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
     let textMessageHandler: TextMessageHandler
     // eslint-disable-next-line prefer-const
     let messageControler: MessageController
-
 
     // eslint-disable-next-line prefer-const
     connector = new Connector({
@@ -69,12 +67,11 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
                 mynahUI.updateStore(selectedTab.id, {
                     chatItems: [],
                 })
-                mynahUI.updateStore(selectedTab.id, tabDataGenerator.getTabData('unknown', true))                
+                mynahUI.updateStore(selectedTab.id, tabDataGenerator.getTabData('unknown', true))
             }
         },
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string => {
             return messageControler.sendMessageToTab(message, 'cwc')
-
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
             const selectedTab = tabsStorage.getSelectedTab()
@@ -228,11 +225,11 @@ ${message}`,
             }
 
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
-               quickActionHandler.handle(prompt, tabID)
-               return
+                quickActionHandler.handle(prompt, tabID)
+                return
             }
 
-            textMessageHandler.handle(prompt, tabID)            
+            textMessageHandler.handle(prompt, tabID)
         },
         onVote: connector.onChatItemVoted,
         onSendFeedback: (tabId, feedbackPayload) => {
@@ -252,11 +249,15 @@ ${message}`,
             })
         },
         onChatItemEngagement: connector.triggerSuggestionEngagement,
-        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {},
-        onLinkClick: (tabId, messageId, link, mouseEvent) => {},
+        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
+            connector.onLinkClicked(tabId, messageId, link)
+        },
+        onLinkClick: (tabId, messageId, link, mouseEvent) => {
+            connector.onLinkClicked(tabId, messageId, link)
+        },
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {
-            followUpsInteractionHandler.onFollowUpClicked(tabID,messageId, followUp)            
+            followUpsInteractionHandler.onFollowUpClicked(tabID, messageId, followUp)
         },
         onOpenDiff: connector.onOpenDiff,
         tabs: {
@@ -270,7 +271,7 @@ ${message}`,
         },
         config: {
             feedbackOptions: feedbackOptions,
-            texts: uiComponentsTexts
+            texts: uiComponentsTexts,
         },
     })
 
@@ -278,23 +279,23 @@ ${message}`,
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled
+        isWeaverbirdEnabled,
     })
     quickActionHandler = new QuickActionHandler({
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled
+        isWeaverbirdEnabled,
     })
     textMessageHandler = new TextMessageHandler({
         mynahUI,
         connector,
-        tabsStorage
+        tabsStorage,
     })
     messageControler = new MessageController({
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled
+        isWeaverbirdEnabled,
     })
 }

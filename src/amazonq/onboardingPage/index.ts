@@ -27,7 +27,7 @@ export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublis
             switch (message.command) {
                 case 'sendToQ':
                     focusAmazonQPanel().then(() => {
-                        cwcWebViewToAppsPublisher.publish({                            
+                        cwcWebViewToAppsPublisher.publish({
                             type: 'onboarding-page-cwc-button-clicked',
                             command: 'onboarding-page-interaction',
                         })
@@ -57,7 +57,9 @@ function getWebviewContent(webview: vscode.Webview): string {
         )
     )
     const bgLogoDark = webview.asWebviewUri(
-        vscode.Uri.file(globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-white.svg')))
+        vscode.Uri.file(
+            globals.context.asAbsolutePath(path.join('resources', 'icons', 'aws', 'amazonq', 'q-white.svg'))
+        )
     )
     const cwLogoLight = webview.asWebviewUri(
         vscode.Uri.file(

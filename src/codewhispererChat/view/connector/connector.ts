@@ -182,7 +182,7 @@ export class OnboardingPageInteractionMessage extends UiMessage {
         super(undefined)
         this.message = props.message
         this.triggerID = props.triggerID
-        this.interactionType = props.interactionType        
+        this.interactionType = props.interactionType
     }
 }
 
@@ -201,7 +201,7 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendOnboardingPageInteractionMessage(message: OnboardingPageInteractionMessage){
+    public sendOnboardingPageInteractionMessage(message: OnboardingPageInteractionMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

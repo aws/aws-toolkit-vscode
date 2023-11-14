@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp } from "@aws/mynah-ui-chat"
-
+import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 
 export interface FollowUpsBlock {
-    text?: string;
-    options?: ChatItemFollowUp[];
-};
+    text?: string
+    options?: ChatItemFollowUp[]
+}

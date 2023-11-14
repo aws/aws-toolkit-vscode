@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, ChatPrompt, MynahUI } from "@aws/mynah-ui-chat"
-import { TabDataGenerator } from "../tabs/generator"
-import { Connector } from "../connector"
-import { TabsStorage } from "../storages/tabsStorage"
-
+import { ChatItemType, ChatPrompt, MynahUI } from '@aws/mynah-ui-chat'
+import { TabDataGenerator } from '../tabs/generator'
+import { Connector } from '../connector'
+import { TabsStorage } from '../storages/tabsStorage'
 
 export interface QuickActionsHandlerProps {
     mynahUI: MynahUI
@@ -16,7 +15,6 @@ export interface QuickActionsHandlerProps {
     isWeaverbirdEnabled: boolean
 }
 
-
 export class QuickActionHandler {
     private mynahUI: MynahUI
     private connector: Connector
@@ -24,7 +22,7 @@ export class QuickActionHandler {
     private tabDataGenerator: TabDataGenerator
     private isWeaverbirdEnabled: boolean
 
-    constructor (props: QuickActionsHandlerProps) {
+    constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
@@ -32,9 +30,7 @@ export class QuickActionHandler {
         this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
     }
 
-
-
-    public handle (chatPrompt: ChatPrompt, tabID: string) {
+    public handle(chatPrompt: ChatPrompt, tabID: string) {
         switch (chatPrompt.command) {
             case '/dev':
                 this.handleDevCommand(chatPrompt, tabID)
@@ -45,20 +41,17 @@ export class QuickActionHandler {
         }
     }
 
-
-    private handleClearCommand (tabID: string) {
+    private handleClearCommand(tabID: string) {
         this.mynahUI.updateStore(tabID, {
             chatItems: [],
         })
         this.connector.clearChat(tabID)
-
     }
 
-    private handleDevCommand (chatPrompt: ChatPrompt, tabID: string) {
+    private handleDevCommand(chatPrompt: ChatPrompt, tabID: string) {
         if (!this.isWeaverbirdEnabled) {
             return
         }
-
 
         let affectedTabId = tabID
         const realPromptText = chatPrompt.escapedPrompt?.trim() ?? ''
@@ -78,10 +71,10 @@ export class QuickActionHandler {
                 body: realPromptText,
                 ...(chatPrompt.attachment !== undefined
                     ? {
-                        relatedContent: {
-                            content: [chatPrompt.attachment],
-                        },
-                    }
+                          relatedContent: {
+                              content: [chatPrompt.attachment],
+                          },
+                      }
                     : {}),
             })
 
@@ -100,6 +93,4 @@ export class QuickActionHandler {
             })
         }
     }
-
-
 }

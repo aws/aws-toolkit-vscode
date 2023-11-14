@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
 export const uiComponentsTexts = {
     mainTitle: 'Amazon Q',
     copy: 'Copy',

@@ -14,6 +14,7 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
+    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptAnswer,
@@ -138,7 +139,7 @@ export class CWCTelemetryHelper {
     }
 
     public recordInteractWithMessage(
-        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage
+        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage | ClickLink
     ) {
         if (!globals.telemetry.telemetryEnabled) {
             return
@@ -186,6 +187,16 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
                 })
+                break
+            case 'link-was-clicked':
+                message = message as ClickLink
+                telemetry.codewhispererchat_interactWithMessage.emit({
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatInteractionType: 'clickLink',
+                    cwsprChatInteractionTarget: message.url,
+                })
+                break
         }
     }
 

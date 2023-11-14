@@ -21,8 +21,8 @@ export class PromptsGenerator {
         return [this.editorContextMenuCommandVerbs.get(command.type), ' the selected codeblock'].join('')
     }
 
-    public generateForOnboardingPageInteraction(interaction: OnboardingPageInteraction): string{
-        switch(interaction.type){
+    public generateForOnboardingPageInteraction(interaction: OnboardingPageInteraction): string {
+        switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
                 return 'What can Amazon Q help me with?'
         }

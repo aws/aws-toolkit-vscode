@@ -220,19 +220,21 @@ export class Messenger {
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
 
-    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string){
-        let message 
-        switch(interaction.type){
+    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string) {
+        let message
+        switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
                 message = 'What can Amazon Q help me with?'
                 break
         }
 
-        this.dispatcher.sendOnboardingPageInteractionMessage(new OnboardingPageInteractionMessage({
-            message,
-            interactionType: interaction.type,
-            triggerID
-        }))
+        this.dispatcher.sendOnboardingPageInteractionMessage(
+            new OnboardingPageInteractionMessage({
+                message,
+                interactionType: interaction.type,
+                triggerID,
+            })
+        )
     }
 
     public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {

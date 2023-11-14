@@ -20,6 +20,7 @@ import {
     TabCreatedMessage,
     TabChangedMessage,
     UIFocusMessage,
+    ClickLink,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -53,6 +54,7 @@ export interface ChatControllerMessagePublishers {
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
+    readonly processLinkClicked: MessagePublisher<ClickLink>
     readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
 }
 
@@ -69,6 +71,7 @@ export interface ChatControllerMessageListeners {
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
+    readonly processLinkClicked: MessageListener<ClickLink>
     readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
 }
 
@@ -149,6 +152,14 @@ export class ChatController {
         this.chatControllerMessageListeners.processOnboardingPageInteraction.onMessage(data => {
             this.processOnboardingPageInteraction(data)
         })
+
+        this.chatControllerMessageListeners.processLinkClicked.onMessage(data => {
+            this.processLinkClicked(data)
+        })
+    }
+
+    private async processLinkClicked(message: ClickLink) {
+        this.telemetryHelper.recordInteractWithMessage(message)
     }
 
     private processOnboardingPageInteraction(interaction: OnboardingPageInteraction) {

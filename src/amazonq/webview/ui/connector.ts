@@ -237,6 +237,14 @@ export class Connector {
         }
     }
 
+    onLinkClicked = (tabID: string, messageId: string, link: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onLinkClicked(tabID, messageId, link)
+                break
+        }
+    }
+
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
