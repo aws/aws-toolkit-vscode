@@ -28,16 +28,16 @@ export class TabDataGenerator {
         ['wb', 'What problem do you want to fix?'],
     ])
 
-    private tabWelcomeMessage: Map<TabType, string> = new Map([
+    private tabWelcomeMessage: Map<TabType, (name?: string) => string> = new Map([
         [
             'unknown',
-            `Hi, I am Amazon Q. I can answer your software development questions. 
+            () => `Hi, I am Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
         [
             'wb',
-            `Welcome to /dev. 
+            (name?: string) => `Welcome to ${name}. 
 
 Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
 
@@ -51,16 +51,21 @@ Before I begin generating code, let's agree on an implementation plan. What prob
         this.quickActionsGenerator = new QuickActionGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
     }
 
-    public getTabData(tabType: TabType, needWelcomeMessages: boolean): MynahUIDataModel {
+    public getTabData(
+        tabType: TabType,
+        needWelcomeMessages: boolean,
+        taskName?: string,
+        commandName?: string
+    ): MynahUIDataModel {
         return {
-            tabTitle: this.tabTitle.get(tabType),
+            tabTitle: taskName ?? this.tabTitle.get(tabType),
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
             promptInputPlaceholder: this.tabInputPlaceholder.get(tabType),
             chatItems: needWelcomeMessages
                 ? [
                       {
                           type: ChatItemType.ANSWER,
-                          body: this.tabWelcomeMessage.get(tabType),
+                          body: this.tabWelcomeMessage.get(tabType)?.(commandName),
                       },
                       {
                           type: ChatItemType.ANSWER,
