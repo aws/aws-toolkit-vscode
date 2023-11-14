@@ -32,9 +32,11 @@ import {
     updateReferenceLog,
     showIntroduction,
     reconnect,
+    openSecurityIssuePanel,
     selectCustomizationPrompt,
     notifyNewCustomizationsCmd,
     connectWithCustomization,
+    applySecurityFix,
     signoutCodeWhisperer,
     showManageConnections,
 } from './commands/basicCommands'
@@ -55,6 +57,8 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
+import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
+import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './commands/statusBarCommands'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -171,6 +175,8 @@ export async function activate(context: ExtContext): Promise<void> {
         enableCodeSuggestions.register(context),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
+        // show security issue webview panel
+        openSecurityIssuePanel.register(context),
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
         // show reconnect prompt
@@ -183,6 +189,8 @@ export async function activate(context: ExtContext): Promise<void> {
         updateReferenceLog.register(),
         // refresh codewhisperer status bar
         refreshStatusBar.register(),
+        // apply suggested fix
+        applySecurityFix.register(),
         // quick pick with codewhisperer options
         listCodeWhispererCommands.register(),
         // manual trigger
@@ -218,6 +226,14 @@ export async function activate(context: ExtContext): Promise<void> {
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.platformLanguageIds, { scheme: 'untitled' }],
             ImportAdderProvider.instance
+        ),
+        vscode.languages.registerHoverProvider(
+            [...CodeWhispererConstants.platformLanguageIds],
+            SecurityIssueHoverProvider.instance
+        ),
+        vscode.languages.registerCodeActionsProvider(
+            [...CodeWhispererConstants.platformLanguageIds],
+            SecurityIssueCodeActionProvider.instance
         )
     )
 
@@ -303,6 +319,9 @@ export async function activate(context: ExtContext): Promise<void> {
                  * CodeWhisperer security panel dynamic handling
                  */
                 disposeSecurityDiagnostic(e)
+
+                SecurityIssueHoverProvider.instance.handleDocumentChange(e)
+                SecurityIssueCodeActionProvider.instance.handleDocumentChange(e)
 
                 CodeWhispererCodeCoverageTracker.getTracker(e.document.languageId)?.countTotalTokens(e)
 
