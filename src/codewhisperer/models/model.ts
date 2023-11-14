@@ -39,6 +39,27 @@ export const vsCodeState: VsCodeState = {
     lastUserModificationTime: 0,
 }
 
+export type UtgStrategy = 'ByName' | 'ByContent'
+
+export type CrossFileStrategy = 'OpenTabs_BM25'
+
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+
+export interface CodeWhispererSupplementalContext {
+    isUtg: boolean
+    isProcessTimeout: boolean
+    supplementalContextItems: CodeWhispererSupplementalContextItem[]
+    contentsLength: number
+    latency: number
+    strategy: SupplementalContextStrategy
+}
+
+export interface CodeWhispererSupplementalContextItem {
+    content: string
+    filePath: string
+    score?: number
+}
+
 // This response struct can contain more info as needed
 export interface GetRecommendationsResponse {
     readonly result: 'Succeeded' | 'Failed'
