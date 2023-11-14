@@ -20,6 +20,7 @@ import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
+import { keepAliveHeader } from './agent'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -125,6 +126,7 @@ export class DefaultCodeWhispererClient {
                         if (req.operation === 'generateCompletions') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+                                req.httpRequest.headers['Connection'] = keepAliveHeader
                             })
                         }
                     },
