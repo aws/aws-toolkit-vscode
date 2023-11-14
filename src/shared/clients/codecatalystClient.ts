@@ -18,7 +18,6 @@ import { showMessageWithCancel } from '../utilities/messages'
 import { assertHasProps, ClassToInterfaceType, isNonNullable, RequiredProps } from '../utilities/tsUtils'
 import { AsyncCollection, toCollection } from '../utilities/asyncCollection'
 import { joinAll, pageableToCollection } from '../utilities/collectionUtils'
-import { DevSettings } from '../settings'
 import { CodeCatalyst } from 'aws-sdk'
 import { ToolkitError } from '../errors'
 import { TokenProvider } from '../../auth/sso/sdkV2Compat'
@@ -30,32 +29,24 @@ import {
 } from 'aws-sdk/clients/codecatalyst'
 import { truncateProps } from '../utilities/textUtilities'
 import { SsoConnection } from '../../auth/connection'
+import { DevSettings } from '../settings'
 
-interface CodeCatalystConfig {
+export interface CodeCatalystConfig {
     readonly region: string
     readonly endpoint: string
     readonly hostname: string
     readonly gitHostname: string
 }
 
-export function getCodeCatalystConfig(): CodeCatalystConfig {
-    const stage = DevSettings.instance.get('cawsStage', 'prod')
+export const defaultServiceConfig: CodeCatalystConfig = {
+    region: 'us-east-1',
+    endpoint: 'https://public.codecatalyst.global.api.aws',
+    hostname: 'codecatalyst.aws',
+    gitHostname: 'codecatalyst.aws',
+}
 
-    if (stage === 'gamma') {
-        return {
-            region: 'us-west-2',
-            endpoint: 'https://public.codecatalyst-gamma.global.api.aws',
-            hostname: 'integ.stage.REMOVED.codes',
-            gitHostname: 'git.gamma.source.caws.REMOVED',
-        }
-    } else {
-        return {
-            region: 'us-east-1',
-            endpoint: 'https://public.codecatalyst.global.api.aws',
-            hostname: 'codecatalyst.aws',
-            gitHostname: 'codecatalyst.aws',
-        }
-    }
+export function getCodeCatalystConfig(): CodeCatalystConfig {
+    return DevSettings.instance.getCodeCatalystConfig(defaultServiceConfig)
 }
 
 export interface DevEnvironment extends CodeCatalyst.DevEnvironmentSummary {
