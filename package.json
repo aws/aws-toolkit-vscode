@@ -1359,7 +1359,7 @@
                     "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.auth.addConnection",
+                    "command": "aws.codewhisperer.manageConnections",
                     "when": "view == aws.AmazonQChatView",
                     "group": "1_amazonQ@1"
                 },
