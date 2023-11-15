@@ -8,7 +8,6 @@ import * as codewhispererClient from '../client/codewhisperer'
 import * as path from 'path'
 import * as CodeWhispererConstants from '../models/constants'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { TelemetryHelper } from './telemetryHelper'
 import { getLogger } from '../../shared/logger/logger'
 import { runtimeLanguageContext } from './runtimeLanguageContext'
 import { fetchSupplementalContext } from './supplementalContext/supplementalContextUtil'
@@ -24,7 +23,6 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
     const document = editor.document
     const curPos = editor.selection.active
     const offset = document.offsetAt(curPos)
-    TelemetryHelper.instance.cursorOffset = offset
 
     const caretLeftFileContext = editor.document.getText(
         new vscode.Range(

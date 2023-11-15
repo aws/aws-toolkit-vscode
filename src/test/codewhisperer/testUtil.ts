@@ -18,7 +18,7 @@ export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isCodeWhispererEditing = false
     CodeWhispererCodeCoverageTracker.instances.clear()
     globals.telemetry.logger.clear()
-    session.language = 'python'
+    session.reset()
     CodeSuggestionsState.instance.setSuggestionsEnabled(false)
 }
 

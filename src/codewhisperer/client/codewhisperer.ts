@@ -6,7 +6,12 @@ import { AWSError, Credentials, Service } from 'aws-sdk'
 import globals from '../../shared/extensionGlobals'
 import * as CodeWhispererClient from './codewhispererclient'
 import * as CodeWhispererUserClient from './codewhispereruserclient'
-import { ListAvailableCustomizationsResponse, SendTelemetryEventRequest } from './codewhispereruserclient'
+import {
+    ListAvailableCustomizationsResponse,
+    ListFeatureEvaluationsRequest,
+    ListFeatureEvaluationsResponse,
+    SendTelemetryEventRequest,
+} from './codewhispereruserclient'
 import * as CodeWhispererConstants from '../models/constants'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { hasVendedIamCredentials } from '../../auth/auth'
@@ -22,6 +27,7 @@ import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
 import { getOptOutPreference } from '../util/commonUtil'
+import * as os from 'os'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -228,6 +234,28 @@ export class DefaultCodeWhispererClient {
         }
         const response = await (await this.createUserSdkClient()).sendTelemetryEvent(requestWithOptOut).promise()
         getLogger().debug(`codewhisperer: sendTelemetryEvent requestID: ${response.$response.requestId}`)
+    }
+
+    public async listFeatureEvaluations(): Promise<ListFeatureEvaluationsResponse> {
+        const request: ListFeatureEvaluationsRequest = {
+            userContext: {
+                ideCategory: 'VSCODE',
+                operatingSystem: this.getOperatingSystem(),
+                product: 'CodeWhisperer',
+            },
+        }
+        return (await this.createUserSdkClient()).listFeatureEvaluations(request).promise()
+    }
+
+    private getOperatingSystem(): string {
+        const osId = os.platform() // 'darwin', 'win32', 'linux', etc.
+        if (osId === 'darwin') {
+            return 'MAC'
+        } else if (osId === 'win32') {
+            return 'WINDOWS'
+        } else {
+            return 'LINUX'
+        }
     }
 }
 

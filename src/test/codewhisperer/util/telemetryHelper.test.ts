@@ -16,6 +16,7 @@ import {
     CodewhispererUserDecision,
 } from '../../../shared/telemetry/telemetry.gen'
 import { Completion } from '../../../codewhisperer/client/codewhispereruserclient'
+import { session } from '../../../codewhisperer/util/codeWhispererSession'
 
 // TODO: improve and move the following test utils to codewhisperer/testUtils.ts
 function aUserDecision(
@@ -63,8 +64,6 @@ describe('telemetryHelper', function () {
         })
 
         it('should return Line and Accept', function () {
-            sut.sessionInvocations.push(aServiceInvocation())
-
             const decisions: CodewhispererUserDecision[] = [
                 aUserDecision('Line', 0, 'Accept'),
                 aUserDecision('Line', 1, 'Discard'),
@@ -79,8 +78,6 @@ describe('telemetryHelper', function () {
         })
 
         it('should return Line and Reject', function () {
-            sut.sessionInvocations.push(aServiceInvocation())
-
             const decisions: CodewhispererUserDecision[] = [
                 aUserDecision('Line', 0, 'Discard'),
                 aUserDecision('Line', 1, 'Reject'),
@@ -95,8 +92,6 @@ describe('telemetryHelper', function () {
         })
 
         it('should return Block and Accept', function () {
-            sut.sessionInvocations.push(aServiceInvocation())
-
             const decisions: CodewhispererUserDecision[] = [
                 aUserDecision('Block', 0, 'Discard'),
                 aUserDecision('Block', 1, 'Accept'),
@@ -117,7 +112,6 @@ describe('telemetryHelper', function () {
         beforeEach(function () {
             resetCodeWhispererGlobalVariables()
             sut = new TelemetryHelper()
-            sut.sessionInvocations.push(aServiceInvocation())
             CodeWhispererUserGroupSettings.instance.userGroup = CodeWhispererConstants.UserGroup.Control
         })
 
@@ -285,7 +279,7 @@ describe('telemetryHelper', function () {
             const response = [{ content: "print('Hello')" }]
             const requestIdList = ['test_x', 'test_x', 'test_y']
             const sessionId = 'test_x'
-            telemetryHelper.triggerType = 'AutoTrigger'
+            session.triggerType = 'AutoTrigger'
             const assertTelemetry = assertTelemetryCurried('codewhisperer_userDecision')
             const suggestionState = new Map<number, string>([[0, 'Showed']])
             const completionTypes = new Map<number, CodewhispererCompletionType>([[0, 'Line']])
