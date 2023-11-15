@@ -6,13 +6,7 @@
 import assert from 'assert'
 import * as vscode from 'vscode'
 import * as sinon from 'sinon'
-import {
-    assertTabCount,
-    assertTelemetry,
-    assertTelemetryCurried,
-    createTestWorkspaceFolder,
-    openATextEditorWithText,
-} from '../../testUtil'
+import { assertTabCount, assertTelemetry, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 import {
     DefaultCodeWhispererClient,
     ListRecommendationsRequest,
@@ -83,43 +77,7 @@ describe('', async function () {
         assert.strictEqual(session.completionTypes.size, 0)
     }
 
-    async function manualTrigger(
-        editor: vscode.TextEditor,
-        client: DefaultCodeWhispererClient,
-        config: ConfigurationEntry
-    ) {
-        await invokeRecommendation(editor, client, config)
-    }
-
-    async function waitUntilSuggestionSeen(index: number) {
-        const state = await waitUntil(
-            async () => {
-                const r = session.getSuggestionState(index)
-                if (r) {
-                    return r
-                }
-            },
-            {
-                interval: 50,
-            }
-        )
-
-        assert.ok(state === 'Showed')
-    }
-
-    function acceptByTab() {
-        return vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
-    }
-
-    async function rejectByEsc() {
-        return vscode.commands.executeCommand('aws.codeWhisperer.rejectCodeSuggestion')
-    }
-
-    async function closeActiveEditor() {
-        return vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    }
-
-    it('1', async function () {
+    it('this test should be removed', async function () {
         const r = (await client.listRecommendations(aRequest())) as any
         const r2 = (await client.listRecommendations(aRequest())) as any
 
@@ -139,21 +97,22 @@ describe('', async function () {
         // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
         await sleep(vsCodeCursorUpdateDelay + 10)
 
-        const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
-        assertUserTriggerDecision({
-            codewhispererSessionId: 'session_id_1',
-            codewhispererFirstRequestId: 'request_id_1',
-            codewhispererLanguage: 'python',
-            codewhispererTriggerType: 'OnDemand',
-            codewhispererLineNumber: 0,
-            codewhispererCursorOffset: 0,
-            codewhispererSuggestionCount: 2,
-            codewhispererCompletionType: 'Line',
-            codewhispererSuggestionState: 'Accept',
-            codewhispererSuggestionImportCount: 0,
-            codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: 'Control',
-        })
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            {
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
+                codewhispererLanguage: 'python',
+                codewhispererTriggerType: 'OnDemand',
+                codewhispererLineNumber: 0,
+                codewhispererCursorOffset: 0,
+                codewhispererSuggestionCount: 2,
+                codewhispererCompletionType: 'Line',
+                codewhispererSuggestionState: 'Accept',
+                codewhispererSuggestionImportCount: 0,
+                codewhispererTypeaheadLength: 0,
+                codewhispererUserGroup: 'Control',
+            },
+        ])
     })
 
     it('multiple accept - tab', async function () {
@@ -205,56 +164,90 @@ describe('', async function () {
         ])
     })
 
-    it('reject: esc key then onEditorChange', async function () {
+    it('reject: esc key', async function () {
         assertCleanStates()
         const editor = await openATextEditorWithText('', 'test.py')
 
         await manualTrigger(editor, client, config)
         await waitUntilSuggestionSeen(0)
         await rejectByEsc()
-        // force codewhisperer to flush telemetry
-        RecommendationHandler.instance.onEditorChange()
-        const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
-        assertUserTriggerDecision({
-            codewhispererSessionId: 'session_id_1',
-            codewhispererFirstRequestId: 'request_id_1',
-            codewhispererLanguage: 'python',
-            codewhispererTriggerType: 'OnDemand',
-            codewhispererLineNumber: 0,
-            codewhispererCursorOffset: 0,
-            codewhispererSuggestionCount: 2,
-            codewhispererCompletionType: 'Line',
-            codewhispererSuggestionState: 'Reject',
-            codewhispererSuggestionImportCount: 0,
-            codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: 'Control',
-        })
+
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            {
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
+                codewhispererLanguage: 'python',
+                codewhispererTriggerType: 'OnDemand',
+                codewhispererLineNumber: 0,
+                codewhispererCursorOffset: 0,
+                codewhispererSuggestionCount: 2,
+                codewhispererCompletionType: 'Line',
+                codewhispererSuggestionState: 'Reject',
+                codewhispererSuggestionImportCount: 0,
+                codewhispererTypeaheadLength: 0,
+                codewhispererUserGroup: 'Control',
+            },
+        ])
     })
 
-    it('reject: esc key then onFocusChange', async function () {
+    it('reject: trigger then open another editor', async function () {
+        assertCleanStates()
+        const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen(0)
+
+        await openATextEditorWithText('foo', 'another1.py', tempFolder, {
+            preview: false,
+        })
+        const anotherEditor = await openATextEditorWithText('bar', 'another2.py', tempFolder, {
+            preview: false,
+        })
+
+        assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
+        await assertTabCount(3)
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            {
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
+                codewhispererLanguage: 'python',
+                codewhispererTriggerType: 'OnDemand',
+                codewhispererLineNumber: 0,
+                codewhispererCursorOffset: 0,
+                codewhispererSuggestionCount: 2,
+                codewhispererCompletionType: 'Line',
+                codewhispererSuggestionState: 'Reject',
+                codewhispererSuggestionImportCount: 0,
+                codewhispererTypeaheadLength: 0,
+                codewhispererUserGroup: 'Control',
+            },
+        ])
+    })
+
+    it('reject: onFocusChange', async function () {
         assertCleanStates()
         const editor = await openATextEditorWithText('', 'test.py')
 
         await manualTrigger(editor, client, config)
         await waitUntilSuggestionSeen(0)
-        await rejectByEsc()
-        // force codewhisperer to flush telemetry
+
         await RecommendationHandler.instance.onFocusChange()
-        const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
-        assertUserTriggerDecision({
-            codewhispererSessionId: 'session_id_1',
-            codewhispererFirstRequestId: 'request_id_1',
-            codewhispererLanguage: 'python',
-            codewhispererTriggerType: 'OnDemand',
-            codewhispererLineNumber: 0,
-            codewhispererCursorOffset: 0,
-            codewhispererSuggestionCount: 2,
-            codewhispererCompletionType: 'Line',
-            codewhispererSuggestionState: 'Reject',
-            codewhispererSuggestionImportCount: 0,
-            codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: 'Control',
-        })
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            {
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
+                codewhispererLanguage: 'python',
+                codewhispererTriggerType: 'OnDemand',
+                codewhispererLineNumber: 0,
+                codewhispererCursorOffset: 0,
+                codewhispererSuggestionCount: 2,
+                codewhispererCompletionType: 'Line',
+                codewhispererSuggestionState: 'Reject',
+                codewhispererSuggestionImportCount: 0,
+                codewhispererTypeaheadLength: 0,
+                codewhispererUserGroup: 'Control',
+            },
+        ])
     })
 
     it('reject: trigger then close editor', async function () {
@@ -283,44 +276,15 @@ describe('', async function () {
         ])
     })
 
-    it('reject: trigger then open another editor', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen(0)
-        const anotherEditor = await openATextEditorWithText('another editor', 'another.py', tempFolder, {
-            preview: false,
-        })
-
-        assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
-        await assertTabCount(2)
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            {
-                codewhispererSessionId: 'session_id_1',
-                codewhispererFirstRequestId: 'request_id_1',
-                codewhispererLanguage: 'python',
-                codewhispererTriggerType: 'OnDemand',
-                codewhispererLineNumber: 0,
-                codewhispererCursorOffset: 0,
-                codewhispererSuggestionCount: 2,
-                codewhispererCompletionType: 'Line',
-                codewhispererSuggestionState: 'Reject',
-                codewhispererSuggestionImportCount: 0,
-                codewhispererTypeaheadLength: 0,
-                codewhispererUserGroup: 'Control',
-            },
-        ])
-    })
-
-    it('simple reject - esc key then invoke again', async function () {
+    it('reject - esc key then invoke again', async function () {
         assertCleanStates()
         const editor = await openATextEditorWithText('', 'test.py')
 
         await manualTrigger(editor, client, config)
         await waitUntilSuggestionSeen(0)
         await rejectByEsc()
-        // force codewhisperer to flush telemetry
+
+        assertCleanStates()
         await manualTrigger(editor, client, config)
 
         assertTelemetry('codewhisperer_userTriggerDecision', [
@@ -341,6 +305,42 @@ describe('', async function () {
         ])
     })
 })
+
+async function manualTrigger(
+    editor: vscode.TextEditor,
+    client: DefaultCodeWhispererClient,
+    config: ConfigurationEntry
+) {
+    await invokeRecommendation(editor, client, config)
+}
+
+async function waitUntilSuggestionSeen(index: number) {
+    const state = await waitUntil(
+        async () => {
+            const r = session.getSuggestionState(index)
+            if (r) {
+                return r
+            }
+        },
+        {
+            interval: 50,
+        }
+    )
+
+    assert.ok(state === 'Showed')
+}
+
+function acceptByTab() {
+    return vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
+}
+
+async function rejectByEsc() {
+    return vscode.commands.executeCommand('aws.codeWhisperer.rejectCodeSuggestion')
+}
+
+async function closeActiveEditor() {
+    return vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+}
 
 function aRequest(): ListRecommendationsRequest {
     return {
