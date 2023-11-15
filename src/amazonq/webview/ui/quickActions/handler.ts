@@ -13,7 +13,7 @@ export interface QuickActionsHandlerProps {
     mynahUI: MynahUI
     connector: Connector
     tabsStorage: TabsStorage
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
 }
 
@@ -22,30 +22,30 @@ export class QuickActionHandler {
     private connector: Connector
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
-    private isWeaverbirdEnabled: boolean
+    private isFeatureDevEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
-            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
         })
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isFeatureDevEnabled = props.isFeatureDevEnabled
     }
 
     public handle(chatPrompt: ChatPrompt, tabID: string) {
         this.tabsStorage.resetTabTimer(tabID)
         switch (chatPrompt.command) {
             case '/dev':
-                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
+                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
                 break
             case '/tests':
-                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Tests', '/tests')
+                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Tests', '/tests')
                 break
             case '/fix':
-                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
+                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
                 break
             case '/clear':
                 this.handleClearCommand(tabID)
@@ -67,8 +67,8 @@ export class QuickActionHandler {
         this.connector.clearChat(tabID)
     }
 
-    private handleWeaverbirdCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {
-        if (!this.isWeaverbirdEnabled) {
+    private handleFeatureDevCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {
+        if (!this.isFeatureDevEnabled) {
             return
         }
 

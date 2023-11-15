@@ -13,7 +13,7 @@ export interface MessageControllerProps {
     mynahUI: MynahUI
     connector: Connector
     tabsStorage: TabsStorage
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
 }
 
@@ -28,7 +28,7 @@ export class MessageController {
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
-            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
         })
     }

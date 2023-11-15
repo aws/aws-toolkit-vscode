@@ -17,7 +17,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 
 export const createMynahUI = (
-    weaverbirdInitEnabled: boolean,
+    featureDevInitEnabled: boolean,
     gumbyInitEnabled: boolean,
     initialData?: MynahUIDataModel
 ) => {
@@ -46,13 +46,13 @@ export const createMynahUI = (
         isSelected: true,
     })
 
-    // used to keep track of whether or not weaverbird is enabled and has an active idC
-    let isWeaverbirdEnabled = weaverbirdInitEnabled
+    // used to keep track of whether or not featureDev is enabled and has an active idC
+    let isFeatureDevEnabled = featureDevInitEnabled
 
     const isGumbyEnabled = gumbyInitEnabled
 
     const tabDataGenerator = new TabDataGenerator({
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
         isGumbyEnabled,
     })
 
@@ -68,10 +68,10 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
-        onUpdateAuthentication: (weaverbirdEnabled: boolean): void => {
+        onUpdateAuthentication: (featureDevEnabled: boolean): void => {
             const selectedTab = tabsStorage.getSelectedTab()
 
-            isWeaverbirdEnabled = weaverbirdEnabled
+            isFeatureDevEnabled = featureDevEnabled
 
             if (!selectedTab) {
                 return
@@ -79,7 +79,7 @@ export const createMynahUI = (
 
             /**
              * If someone switches authentication when they're on the main page then reset the chat items and the quick actions
-             * and that triggers a change in weaverbird availability
+             * and that triggers a change in featureDev availability
              */
             if (selectedTab?.type === 'unknown') {
                 mynahUI.updateStore(selectedTab.id, {
@@ -312,14 +312,14 @@ ${message}`,
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
         isGumbyEnabled,
     })
     quickActionHandler = new QuickActionHandler({
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
         isGumbyEnabled,
     })
     textMessageHandler = new TextMessageHandler({
@@ -331,7 +331,7 @@ ${message}`,
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
         isGumbyEnabled,
     })
 }

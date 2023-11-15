@@ -10,14 +10,14 @@ import { FollowUpsBlock } from './model'
 export type AuthFollowUpType = 'full-auth' | 're-auth'
 
 export interface FollowUpGeneratorProps {
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
 }
 
 export class FollowUpGenerator {
-    private isWeaverbirdEnabled: boolean
+    private isFeatureDevEnabled: boolean
 
     constructor(props: FollowUpGeneratorProps) {
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isFeatureDevEnabled = props.isFeatureDevEnabled
     }
 
     public generateAuthFollowUps(tabType: TabType, authType: AuthFollowUpType): FollowUpsBlock {
@@ -53,7 +53,7 @@ export class FollowUpGenerator {
                 return {
                     text: 'Or you can select one of these',
                     options: [
-                        ...(this.isWeaverbirdEnabled
+                        ...(this.isFeatureDevEnabled
                             ? [
                                   {
                                       pillText: 'I want to assign a code task',

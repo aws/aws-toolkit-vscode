@@ -5,11 +5,11 @@
 
 import { ChatItem, ChatItemFollowUp, FeedbackPayload, Engagement } from '@aws/mynah-ui-chat'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
-import { Connector as WeaverbirdChatConnector } from './apps/weaverbirdChatConnector'
+import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
 import { ExtensionMessage } from './commands'
 import { TabsStorage } from './storages/tabsStorage'
-import { weaverbirdChat } from '../../../weaverbird/constants'
+import { featureDevChat } from '../../../amazonqFeatureDev/constants'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 import { AuthFollowUpType } from './followUps/generator'
@@ -31,7 +31,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
-    onUpdateAuthentication: (weaverbirdEnabled: boolean) => void
+    onUpdateAuthentication: (featureDevEnabled: boolean) => void
     tabsStorage: TabsStorage
 }
 
@@ -39,7 +39,7 @@ export class Connector {
     private readonly sendMessageToExtension
     private readonly onMessageReceived
     private readonly cwChatConnector
-    private readonly weaverbirdChatConnector
+    private readonly featureDevChatConnector
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
@@ -49,7 +49,7 @@ export class Connector {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
-        this.weaverbirdChatConnector = new WeaverbirdChatConnector(props)
+        this.featureDevChatConnector = new FeatureDevChatConnector(props)
         this.amazonqCommonsConnector = new AmazonQCommonsConnector({
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
         })
@@ -77,7 +77,7 @@ export class Connector {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
                     case 'wb':
-                        this.weaverbirdChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
                         break
                     default:
                         this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
@@ -121,8 +121,8 @@ export class Connector {
 
         if (messageData.sender === 'CWChat') {
             this.cwChatConnector.handleMessageReceive(messageData)
-        } else if (messageData.sender === weaverbirdChat) {
-            this.weaverbirdChatConnector.handleMessageReceive(messageData)
+        } else if (messageData.sender === featureDevChat) {
+            this.featureDevChatConnector.handleMessageReceive(messageData)
         }
     }
 
@@ -147,7 +147,7 @@ export class Connector {
     onKnownTabOpen = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
-                this.weaverbirdChatConnector.onTabOpen(tabID)
+                this.featureDevChatConnector.onTabOpen(tabID)
                 break
         }
     }
@@ -169,7 +169,7 @@ export class Connector {
                 this.cwChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
         }
     }
@@ -186,7 +186,7 @@ export class Connector {
                 this.cwChatConnector.onCopyCodeToClipboard(tabID, messageId, code, type, codeReference)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
+                this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
         }
     }
@@ -199,7 +199,7 @@ export class Connector {
                 this.cwChatConnector.onTabRemove(tabID)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onTabRemove(tabID)
+                this.featureDevChatConnector.onTabRemove(tabID)
                 break
         }
     }
@@ -262,7 +262,7 @@ export class Connector {
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.followUpClicked(tabID, followUp)
+                this.featureDevChatConnector.followUpClicked(tabID, followUp)
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
@@ -273,7 +273,7 @@ export class Connector {
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
-                this.weaverbirdChatConnector.onOpenDiff(tabID, leftPath, rightPath)
+                this.featureDevChatConnector.onOpenDiff(tabID, leftPath, rightPath)
                 break
         }
     }
@@ -281,7 +281,7 @@ export class Connector {
     onStopChatResponse = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'wb':
-                this.weaverbirdChatConnector.onStopChatResponse(tabID)
+                this.featureDevChatConnector.onStopChatResponse(tabID)
                 break
             case 'cwc':
                 this.cwChatConnector.onStopChatResponse(tabID)
@@ -292,7 +292,7 @@ export class Connector {
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
             case 'wb':
-                this.weaverbirdChatConnector.sendFeedback(tabId, feedbackPayload)
+                this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
                 break
             case 'cwc':
                 this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)
@@ -306,7 +306,7 @@ export class Connector {
                 this.cwChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
             case 'wb':
-                this.weaverbirdChatConnector.onChatItemVoted(tabId, messageId, vote)
+                this.featureDevChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
         }
     }

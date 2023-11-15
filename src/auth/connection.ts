@@ -23,7 +23,7 @@ export const scopesSsoAccountAccess = ['sso:account:access']
 /** These are the non-chat scopes for CW. */
 export const scopesCodeWhispererCore = ['codewhisperer:completions', 'codewhisperer:analysis']
 export const scopesCodeWhispererChat = ['codewhisperer:conversations']
-export const scopesWeaverbird = ['codewhisperer:taskassist']
+export const scopesFeatureDev = ['codewhisperer:taskassist']
 export const scopesGumby = ['codewhisperer:transformations']
 
 export const defaultSsoRegion = 'us-east-1'

@@ -281,7 +281,7 @@
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
                 },
-                "aws.weaverBird.region": {
+                "aws.amazonqFeatureDev.region": {
                     "type": "string",
                     "default": "Gamma-IAD",
                     "description": "AWS region to use during the invocation.",

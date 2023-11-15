@@ -7,16 +7,16 @@ import { QuickActionCommandGroup } from '@aws/mynah-ui-chat/dist/static'
 import { TabType } from '../storages/tabsStorage'
 
 export interface QuickActionGeneratorProps {
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
 }
 
 export class QuickActionGenerator {
-    private isWeaverbirdEnabled: boolean
+    private isFeatureDevEnabled: boolean
     private isGumbyEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isFeatureDevEnabled = props.isFeatureDevEnabled
         this.isGumbyEnabled = props.isGumbyEnabled
     }
 
@@ -26,7 +26,7 @@ export class QuickActionGenerator {
                 return []
             default:
                 return [
-                    ...(this.isWeaverbirdEnabled
+                    ...(this.isFeatureDevEnabled
                         ? [
                               {
                                   groupName: 'Project-level Application Development by Q',
