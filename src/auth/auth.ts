@@ -45,13 +45,13 @@ import {
     SsoProfile,
     StatefulConnection,
     StoredProfile,
-    codecatalystScopes,
+    scopesCodeCatalyst,
     createBuilderIdProfile,
     hasScopes,
     isBuilderIdConnection,
     loadIamProfilesIntoStore,
     loadLinkedProfilesIntoStore,
-    ssoAccountAccessScopes,
+    scopesSsoAccountAccess,
 } from './connection'
 import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 
@@ -233,7 +233,7 @@ export class Auth implements AuthService, ConnectionManager {
             ): entry is [string, StoredProfile<SsoProfile>] => {
                 const r =
                     entry[1].type === 'sso' &&
-                    hasScopes(entry[1], ssoAccountAccessScopes) &&
+                    hasScopes(entry[1], scopesSsoAccountAccess) &&
                     entry[1].metadata.connectionState === 'valid'
                 return r
             }
@@ -544,7 +544,7 @@ export class Auth implements AuthService, ConnectionManager {
         const shouldUseSoftwareStatement =
             getCodeCatalystDevEnvId() !== undefined &&
             profile.startUrl === builderIdStartUrl &&
-            profile.scopes?.every(scope => codecatalystScopes.includes(scope))
+            profile.scopes?.every(scope => scopesCodeCatalyst.includes(scope))
 
         const tokenIdentifier = shouldUseSoftwareStatement ? this.getSsoSessionName() : id
 
@@ -709,7 +709,7 @@ export class Auth implements AuthService, ConnectionManager {
 
             if (connections.length === 0) {
                 const key = uuid.v4()
-                await this.store.addProfile(key, createBuilderIdProfile(codecatalystScopes))
+                await this.store.addProfile(key, createBuilderIdProfile(scopesCodeCatalyst))
                 await this.store.setCurrentProfileId(key)
             }
         }

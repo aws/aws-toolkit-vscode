@@ -17,7 +17,7 @@ import { makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import { SharedCredentialsProviderFactory } from '../../auth/providers/sharedCredentialsProviderFactory'
 import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUtils'
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
-import { Connection, isIamConnection, isSsoConnection, ssoAccountAccessScopes } from '../../auth/connection'
+import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, promptForConnection } from '../../auth/utils'
 
 const ssoProfile = createSsoProfile()
@@ -243,7 +243,7 @@ describe('Auth', function () {
     })
 
     describe('Linked Connections', function () {
-        const linkedSsoProfile = createSsoProfile({ scopes: ssoAccountAccessScopes })
+        const linkedSsoProfile = createSsoProfile({ scopes: scopesSsoAccountAccess })
         const accountRoles = [
             { accountId: '1245678910', roleName: 'foo' },
             { accountId: '9876543210', roleName: 'foo' },
@@ -353,7 +353,7 @@ describe('Auth', function () {
         })
 
         describe('Multiple Connections', function () {
-            const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+            const otherProfile = createBuilderIdProfile({ scopes: scopesSsoAccountAccess })
 
             // Equivalent profiles from multiple sources is a fairly rare situation right now
             // Ideally they would be de-duped although the implementation can be tricky
@@ -370,7 +370,7 @@ describe('Auth', function () {
             })
 
             it('does not stop discovery if one connection fails', async function () {
-                const otherProfile = createBuilderIdProfile({ scopes: ssoAccountAccessScopes })
+                const otherProfile = createBuilderIdProfile({ scopes: scopesSsoAccountAccess })
                 await auth.createConnection(linkedSsoProfile)
                 await auth.createConnection(otherProfile)
                 auth.ssoClient.listAccounts.onFirstCall().rejects(new Error('No access'))

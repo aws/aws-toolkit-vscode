@@ -12,8 +12,8 @@ import { ToolkitError, isAwsError } from '../shared/errors'
 import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemetry'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import {
-    ssoAccountAccessScopes,
-    codecatalystScopes,
+    scopesSsoAccountAccess,
+    scopesCodeCatalyst,
     SsoConnection,
     Connection,
     isBuilderIdConnection,
@@ -38,7 +38,7 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
-const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
+const defaultScopes = [...scopesSsoAccountAccess, ...scopesCodeCatalyst]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
