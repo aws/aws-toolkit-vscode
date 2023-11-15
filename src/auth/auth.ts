@@ -10,7 +10,6 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
-import * as fs from 'fs'
 import * as uuid from 'uuid' // TODO: use crypto.randomUUID when C9 is on node16
 import { Credentials } from '@aws-sdk/types'
 import { SsoAccessTokenProvider } from './sso/ssoAccessTokenProvider'
@@ -532,7 +531,8 @@ export class Auth implements AuthService, ConnectionManager {
     private detectSsoSessionNameForCodeCatalyst = once((): string => {
         try {
             const configFile = getConfigFilename()
-            const contents: string = fs.readFileSync(configFile, 'utf-8')
+            // `require('fs')` is workaround for web mode:
+            const contents: string = require('fs').readFileSync(configFile, 'utf-8')
             const identifier = contents.match(/\[sso\-session (.*)\]/)?.[1]
             if (!identifier) {
                 throw new ToolkitError('No sso-session name found in ~/.aws/config', { code: 'NoSsoSessionName' })
