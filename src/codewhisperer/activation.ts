@@ -60,6 +60,7 @@ import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from '.
 import { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 import { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
 import { listCodeWhispererCommands } from './commands/statusBarCommands'
+import { updateUserProxyUrl } from './client/agent'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -150,6 +151,10 @@ export async function activate(context: ExtContext): Promise<void> {
                             vscode.commands.executeCommand('workbench.action.reloadWindow')
                         }
                     })
+            }
+
+            if (configurationChangeEvent.affectsConfiguration('http.proxy')) {
+                updateUserProxyUrl()
             }
         }),
         /**
