@@ -120,7 +120,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
+        onChatAnswerReceived: (tabID: string, item: ChatItem) => {          
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -248,12 +248,18 @@ ${message}`,
                 content: 'Selected code is copied to clipboard',
             })
         },
-        onChatItemEngagement: connector.triggerSuggestionEngagement,
-        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
-            connector.onLinkClicked(tabId, messageId, link)
+        onChatItemEngagement: connector.triggerSuggestionEngagement,         
+         onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
+            mouseEvent?.preventDefault()
+            mouseEvent?.stopPropagation()
+            mouseEvent?.stopImmediatePropagation()
+            connector.onSourceLinkClick(tabId, messageId, link)
         },
         onLinkClick: (tabId, messageId, link, mouseEvent) => {
-            connector.onLinkClicked(tabId, messageId, link)
+            mouseEvent?.preventDefault()
+            mouseEvent?.stopPropagation()
+            mouseEvent?.stopImmediatePropagation()
+            connector.onResponseBodyLinkClick(tabId, messageId, link)
         },
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {

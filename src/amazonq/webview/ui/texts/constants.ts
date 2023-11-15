@@ -4,7 +4,7 @@
  */
 
 export const uiComponentsTexts = {
-    mainTitle: 'Amazon Q',
+    mainTitle: 'Amazon Q (Preview)',
     copy: 'Copy',
     insertAtCursorLabel: 'Insert at cursor',
     feedbackFormTitle: 'Report an issue',

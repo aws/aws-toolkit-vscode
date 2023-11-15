@@ -49,13 +49,13 @@ export class AuthUtil {
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
 
-    public get isCustomizationFeatureEnabled(): boolean {
+    public get isCustomizationFeatureEnabled (): boolean {
         return this._isCustomizationFeatureEnabled
     }
 
     // This boolean controls whether the Select Customization node will be visible. A change to this value
     // means that the old UX was wrong and must refresh the devTool tree.
-    public set isCustomizationFeatureEnabled(value: boolean) {
+    public set isCustomizationFeatureEnabled (value: boolean) {
         if (this._isCustomizationFeatureEnabled === value) {
             return
         }
@@ -73,7 +73,7 @@ export class AuthUtil {
     )
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
-    public constructor(public readonly auth = Auth.instance) {
+    public constructor (public readonly auth = Auth.instance) {
         this.auth.onDidChangeConnectionState(e => {
             if (e.state !== 'authenticating') {
                 this.refreshCodeWhisperer()
@@ -112,44 +112,44 @@ export class AuthUtil {
         })
     }
 
-    public reformatStartUrl(startUrl: string | undefined) {
+    public reformatStartUrl (startUrl: string | undefined) {
         return !startUrl ? undefined : startUrl.replace(/[\/#]+$/g, '')
     }
 
     // current active cwspr connection
-    public get conn() {
+    public get conn () {
         return this.secondaryAuth.activeConnection
     }
 
     // TODO: move this to the shared auth.ts
-    public get startUrl(): string | undefined {
+    public get startUrl (): string | undefined {
         // Reformat the url to remove any trailing '/' and `#`
         // e.g. https://view.awsapps.com/start/# will become https://view.awsapps.com/start
         return isSsoConnection(this.conn) ? this.reformatStartUrl(this.conn?.startUrl) : undefined
     }
 
-    public get isUsingSavedConnection() {
+    public get isUsingSavedConnection () {
         return this.conn !== undefined && this.secondaryAuth.hasSavedConnection
     }
 
-    public isConnected(): boolean {
+    public isConnected (): boolean {
         return this.conn !== undefined
     }
 
-    public isEnterpriseSsoInUse(): boolean {
+    public isEnterpriseSsoInUse (): boolean {
         return this.conn !== undefined && this.usingEnterpriseSSO
     }
 
     // If there is an active SSO connection
-    public isValidEnterpriseSsoInUse(): boolean {
+    public isValidEnterpriseSsoInUse (): boolean {
         return this.isEnterpriseSsoInUse() && !this.isConnectionExpired()
     }
 
-    public isBuilderIdInUse(): boolean {
+    public isBuilderIdInUse (): boolean {
         return this.conn !== undefined && isBuilderIdConnection(this.conn)
     }
 
-    public async connectToAwsBuilderId() {
+    public async connectToAwsBuilderId () {
         let conn = (await this.auth.listConnections()).find(isBuilderIdConnection)
 
         if (!conn) {
@@ -165,7 +165,7 @@ export class AuthUtil {
         return this.secondaryAuth.useNewConnection(conn)
     }
 
-    public async connectToEnterpriseSso(startUrl: string, region: string) {
+    public async connectToEnterpriseSso (startUrl: string, region: string) {
         const existingConn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
@@ -182,7 +182,7 @@ export class AuthUtil {
         }
     }
 
-    public static get instance() {
+    public static get instance () {
         if (this.#instance !== undefined) {
             return this.#instance
         }
@@ -191,7 +191,7 @@ export class AuthUtil {
         return self
     }
 
-    public async getBearerToken(): Promise<string> {
+    public async getBearerToken (): Promise<string> {
         await this.restore()
 
         if (this.conn === undefined) {
@@ -206,7 +206,7 @@ export class AuthUtil {
         return bearerToken.accessToken
     }
 
-    public async getCredentials() {
+    public async getCredentials () {
         await this.restore()
 
         if (this.conn === undefined) {
@@ -220,7 +220,7 @@ export class AuthUtil {
         return this.conn.getCredentials()
     }
 
-    public isConnectionValid(): boolean {
+    public isConnectionValid (): boolean {
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
         getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
                             connection is undefined = ${this.conn === undefined},
@@ -228,7 +228,7 @@ export class AuthUtil {
         return connectionValid
     }
 
-    public isConnectionExpired(): boolean {
+    public isConnectionExpired (): boolean {
         const connectionExpired =
             this.secondaryAuth.isConnectionExpired &&
             this.conn !== undefined &&
@@ -244,7 +244,7 @@ export class AuthUtil {
         return connectionExpired
     }
 
-    public async reauthenticate() {
+    public async reauthenticate () {
         try {
             await this.auth.reauthenticate(this.conn!)
         } catch (err) {
@@ -252,7 +252,7 @@ export class AuthUtil {
         }
     }
 
-    public async refreshCodeWhisperer() {
+    public async refreshCodeWhisperer () {
         await Promise.all([
             vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
@@ -262,7 +262,7 @@ export class AuthUtil {
         ])
     }
 
-    public async showReauthenticatePrompt(isAutoTrigger?: boolean) {
+    public async showReauthenticatePrompt (isAutoTrigger?: boolean) {
         const settings = PromptSettings.instance
         const shouldShow = await settings.isPromptEnabled('codeWhispererConnectionExpired')
         if (!shouldShow || (isAutoTrigger && this.reauthenticatePromptShown)) {
@@ -287,7 +287,48 @@ export class AuthUtil {
         }
     }
 
-    public async notifyReauthenticate(isAutoTrigger?: boolean) {
+    public async notifyReauthenticate (isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
     }
+
+    /**
+ * Determines whether or not the current CodeWhisperer credential is active or not, with a display message.
+ *
+ * @returns a credentialState with a display message and whether to run a full authorization or reauth,
+ *          or undefined if the credential is valid.
+ */
+    public async getCodeWhispererCredentialState (): Promise<CWCredentialState | undefined> {      
+        const auth = AuthUtil.instance
+        const curr = auth.conn
+        if (!curr) {
+            return {
+                message: 'No connection to Amazon Q (Preview). Sign into CodeWhisperer.',
+                fullAuth: true,
+            }
+        } else if (!isValidCodeWhispererConnection(curr)) {
+            return {
+                message: 'Existing Amazon Q (Preview) connection does not have required scopes. Sign into CodeWhisperer.',
+                fullAuth: true,
+            }
+        } else if (auth.isConnectionExpired()) {
+            return {
+                message: 'Connection to Amazon Q (Preview) has expired. Reauthorize with CodeWhisperer.',
+                fullAuth: false,
+            }
+        } else if (!auth.isConnectionValid()) {
+            return {
+                message: 'Connection to Amazon Q (Preview) is invalid. Reauthorize with CodeWhisperer.',
+                fullAuth: false,
+            }
+        }
+
+        return undefined
+    }
+    
 }
+
+export type CWCredentialState = {
+    message: string
+    fullAuth: boolean
+}
+

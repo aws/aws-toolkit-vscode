@@ -78,6 +78,25 @@ export interface StopResponseMessage {
     tabID: string
 }
 
+export interface ClickLink {
+    command: string | undefined
+    tabID: string
+    messageId: string
+    url: string
+}
+
+export interface SourceLinkClickMessage {
+    tabID: string
+    messageId: string
+    link: string
+}
+
+export interface ResponseBodyLinkClickMessage {
+    tabID: string
+    messageId: string
+    link: string
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string

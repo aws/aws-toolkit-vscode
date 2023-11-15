@@ -11,11 +11,12 @@ import { MessageListener } from '../amazonq/messages/messageListener'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import {
     ChatItemFeedbackMessage,
-    ChatItemVotedMessage,
-    ClickLink,
+    ChatItemVotedMessage,    
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
+    ResponseBodyLinkClickMessage,
+    SourceLinkClickMessage,
     StopResponseMessage,
     TabChangedMessage,
     TabClosedMessage,
@@ -26,7 +27,7 @@ import {
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 import { OnboardingPageInteraction } from '../amazonq/onboardingPage/model'
 
-export function init(appContext: AmazonQAppInitContext) {
+export function init (appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
@@ -40,8 +41,9 @@ export function init(appContext: AmazonQAppInitContext) {
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
         processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
-        processLinkClicked: new EventEmitter<ClickLink>(),
         processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>(),
+        processSourceLinkClick: new EventEmitter<SourceLinkClickMessage>(),
+        processResponseBodyLinkClick: new EventEmitter<ResponseBodyLinkClickMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -78,10 +80,15 @@ export function init(appContext: AmazonQAppInitContext) {
         processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
-        processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
-        processLinkClicked: new MessageListener<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
+        processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),        
         processOnboardingPageInteraction: new MessageListener<OnboardingPageInteraction>(
             cwChatControllerEventEmitters.processOnboardingPageInteraction
+        ),
+        processSourceLinkClick: new MessageListener<SourceLinkClickMessage>(
+            cwChatControllerEventEmitters.processSourceLinkClick
+        ),
+        processResponseBodyLinkClick: new MessageListener<ResponseBodyLinkClickMessage>(
+            cwChatControllerEventEmitters.processResponseBodyLinkClick
         ),
     }
 
@@ -121,10 +128,15 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
             cwChatControllerEventEmitters.processUIFocusMessage
-        ),
-        processLinkClicked: new MessagePublisher<ClickLink>(cwChatControllerEventEmitters.processLinkClicked),
+        ),        
         processOnboardingPageInteraction: new MessagePublisher<OnboardingPageInteraction>(
             cwChatControllerEventEmitters.processOnboardingPageInteraction
+        ),
+        processSourceLinkClick: new MessagePublisher<SourceLinkClickMessage>(
+            cwChatControllerEventEmitters.processSourceLinkClick
+        ),
+        processResponseBodyLinkClick: new MessagePublisher<ResponseBodyLinkClickMessage>(
+            cwChatControllerEventEmitters.processResponseBodyLinkClick
         ),
     }
 

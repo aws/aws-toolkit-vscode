@@ -12,6 +12,7 @@ import { TabsStorage } from './storages/tabsStorage'
 import { weaverbirdChat } from '../../../weaverbird/constants'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
+import { AuthFollowUpType } from './followUps/generator'
 
 export interface ChatPayload {
     chatMessage: string
@@ -53,6 +54,22 @@ export class Connector {
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
         })
         this.tabsStorage = props.tabsStorage
+    }
+
+    onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {      
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onSourceLinkClick(tabID, messageId, link)
+                break
+        }
+    }
+
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {        
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
+                break
+        }
     }
 
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
@@ -220,6 +237,14 @@ export class Connector {
         // })
     }
 
+    onAuthFollowUpClicked = (tabID: string, authType: AuthFollowUpType) => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {            
+            default:
+                this.cwChatConnector.authFollowUpClicked(tabID, authType)
+                break
+        }
+    }
+
     onFollowUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             // TODO: We cannot rely on the tabType here,
@@ -233,14 +258,6 @@ export class Connector {
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
-                break
-        }
-    }
-
-    onLinkClicked = (tabID: string, messageId: string, link: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'cwc':
-                this.cwChatConnector.onLinkClicked(tabID, messageId, link)
                 break
         }
     }

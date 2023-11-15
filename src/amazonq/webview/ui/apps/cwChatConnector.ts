@@ -7,6 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
+import { AuthFollowUpType, FollowUpGenerator } from '../followUps/generator'
 
 interface ChatPayload {
     chatMessage: string
@@ -29,29 +30,49 @@ export class Connector {
     private readonly onWarning
     private readonly onChatAnswerReceived
     private readonly onCWCContextCommandMessage
+    private readonly followUpGenerator: FollowUpGenerator
 
-    constructor(props: ConnectorProps) {
+    constructor (props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
+        this.followUpGenerator = new FollowUpGenerator({ isWeaverbirdEnabled: false })
+    }
+
+    onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'source-link-click',
+            tabID,
+            messageId,
+            link,
+            tabType: 'cwc',
+        })
+    }
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'response-body-link-click',
+            tabID,
+            messageId,
+            link,
+            tabType: 'cwc',
+        })
+    }
+
+    authFollowUpClicked = (tabID: string, authType: AuthFollowUpType) => {
+        this.sendMessageToExtension({
+            command: 'auth-follow-up-was-clicked',
+            authType,
+            tabID,
+            tabType: 'cwc',
+        })
     }
 
     followUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
         this.sendMessageToExtension({
             command: 'follow-up-was-clicked',
             followUp,
-            tabID,
-            messageId,
-            tabType: 'cwc',
-        })
-    }
-
-    onLinkClicked = (tabID: string, messageId: string, link: string): void => {
-        this.sendMessageToExtension({
-            command: 'link-was-clicked',
-            link,
             tabID,
             messageId,
             tabType: 'cwc',
@@ -206,9 +227,9 @@ export class Connector {
             const followUps =
                 messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
-                          text: 'Would you like to follow up with one of these?',
-                          options: messageData.followUps,
-                      }
+                        text: 'Would you like to follow up with one of these?',
+                        options: messageData.followUps,
+                    }
                     : undefined
 
             const answer: ChatItem = {
@@ -253,15 +274,31 @@ export class Connector {
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
-                              text: 'Would you like to follow up with one of these?',
-                              options: messageData.followUps,
-                          }
+                            text: 'Would you like to follow up with one of these?',
+                            options: messageData.followUps,
+                        }
                         : undefined,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
 
             return
         }
+    }
+
+    private processAuthNeededException = async (messageData: any): Promise<void> => {
+        if (this.onChatAnswerReceived === undefined) {
+            return
+        }
+
+        this.onChatAnswerReceived(messageData.tabID, {
+            type: ChatItemType.ANSWER,
+            messageId: messageData.triggerID,
+            body: messageData.message,
+            followUp: this.followUpGenerator.generateAuthFollowUps('cwc', messageData.authType),
+            canBeVoted: false
+        })
+
+        return
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
@@ -281,6 +318,11 @@ export class Connector {
 
         if (messageData.type === 'editorContextCommandMessage') {
             await this.processEditorContextCommandMessage(messageData)
+            return
+        }
+
+        if (messageData.type === 'authNeededException') {
+            await this.processAuthNeededException(messageData)
             return
         }
     }

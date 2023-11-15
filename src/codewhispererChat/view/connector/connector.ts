@@ -7,6 +7,7 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { OnboardingPageInteractionType } from '../../../amazonq/onboardingPage/model'
+import { AuthFollowUpType } from '../../auth/model'
 
 class UiMessage {
     readonly time: number = Date.now()
@@ -107,6 +108,30 @@ export interface CodeReference {
         end?: number
     }
 }
+
+
+export interface AuthNeededExceptionProps {
+    readonly message: string 
+    readonly authType: AuthFollowUpType    
+    readonly triggerID: string    
+}
+
+
+export class AuthNeededException extends UiMessage{
+    readonly message: string 
+    readonly authType: AuthFollowUpType
+    readonly triggerID: string   
+    override type = 'authNeededException'
+
+    constructor(props: AuthNeededExceptionProps, tabID: string) {
+        super(tabID)
+        this.message = props.message        
+        this.triggerID = props.triggerID
+        this.authType = props.authType
+    }
+}
+
+
 export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
@@ -140,7 +165,7 @@ export class ChatMessage extends UiMessage {
     }
 }
 
-export interface FollowUp {
+export interface  FollowUp {
     readonly type: string
     readonly pillText: string
     readonly prompt: string
@@ -202,6 +227,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOnboardingPageInteractionMessage(message: OnboardingPageInteractionMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAuthNeededExceptionMessage(message: AuthNeededException){
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

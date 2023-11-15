@@ -242,7 +242,7 @@ export class WeaverbirdController {
             if (!this.isAmazonQVisible) {
                 const open = 'Open chat'
                 const resp = await vscode.window.showInformationMessage(
-                    'Your code suggestions from Amazon Q are ready to review',
+                    'Your code suggestions from Amazon Q (Preview) are ready to review',
                     open
                 )
                 if (resp === open) {

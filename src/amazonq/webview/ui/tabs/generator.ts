@@ -31,7 +31,7 @@ export class TabDataGenerator {
     private tabWelcomeMessage: Map<TabType, (name?: string) => string> = new Map([
         [
             'unknown',
-            () => `Hi, I am Amazon Q. I can answer your software development questions. 
+            () => `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],

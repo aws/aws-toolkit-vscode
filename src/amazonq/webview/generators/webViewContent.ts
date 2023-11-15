@@ -13,7 +13,7 @@ export class WebViewContentGenerator {
         return `<!DOCTYPE html>
         <html>
             <head>
-                <title>Amazon Q</title>                
+                <title>Amazon Q (Preview)</title>                
                 ${this.generateJS(extensionURI, webView)}                
             </head>
             <body>
