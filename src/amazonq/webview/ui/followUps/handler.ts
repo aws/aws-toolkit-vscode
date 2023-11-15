@@ -30,8 +30,8 @@ export class FollowUpInteractionHandler {
         this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
     }
 
-    public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {        
-        if (followUp.type !== undefined && ['full-auth', 're-auth'].includes(followUp.type)){
+    public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
+        if (followUp.type !== undefined && ['full-auth', 're-auth'].includes(followUp.type)) {
             this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
             return
         }

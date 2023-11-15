@@ -20,7 +20,7 @@ export class UIMessageListener {
     private referenceLogController: ReferenceLogController
     private authController: AuthController
 
-    constructor (props: UIMessageListenerProps) {
+    constructor(props: UIMessageListenerProps) {
         this.chatControllerMessagePublishers = props.chatControllerMessagePublishers
         this.webViewMessageListener = props.webViewMessageListener
         this.referenceLogController = new ReferenceLogController()
@@ -31,7 +31,7 @@ export class UIMessageListener {
         })
     }
 
-    private handleMessage (msg: ExtensionMessage) {
+    private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
             case 'onboarding-page-interaction':
                 this.processOnboardingPageInteraction(msg)
@@ -93,45 +93,45 @@ export class UIMessageListener {
         }
     }
 
-    private processAuthFollowUpWasClicked (msg: any) {
+    private processAuthFollowUpWasClicked(msg: any) {
         this.authController.handleAuth(msg.authType)
     }
-    private processResponseBodyLinkClick (msg: any) {
+    private processResponseBodyLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processResponseBodyLinkClick.publish({
             messageId: msg.messageId,
             tabID: msg.tabID,
-            link: msg.link
+            link: msg.link,
         })
     }
 
-    private processSourceLinkClick (msg: any) {
+    private processSourceLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processSourceLinkClick.publish({
             messageId: msg.messageId,
             tabID: msg.tabID,
-            link: msg.link
+            link: msg.link,
         })
     }
 
-    private processOnboardingPageInteraction (msg: any) {
+    private processOnboardingPageInteraction(msg: any) {
         this.chatControllerMessagePublishers.processOnboardingPageInteraction.publish({
             type: msg.type,
         })
     }
-    private processUIFocus (msg: any) {
+    private processUIFocus(msg: any) {
         this.chatControllerMessagePublishers.processUIFocusMessage.publish({
             command: msg.command,
             type: msg.type,
         })
     }
 
-    private processTriggerTabIDReceived (msg: any) {
+    private processTriggerTabIDReceived(msg: any) {
         this.chatControllerMessagePublishers.processTriggerTabIDReceived.publish({
             tabID: msg.tabID,
             triggerID: msg.triggerID,
         })
     }
 
-    private processInsertCodeAtCursorPosition (msg: any) {
+    private processInsertCodeAtCursorPosition(msg: any) {
         this.referenceLogController.addReferenceLog(msg.codeReference)
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
@@ -142,7 +142,7 @@ export class UIMessageListener {
         })
     }
 
-    private processCodeWasCopiedToClipboard (msg: any) {
+    private processCodeWasCopiedToClipboard(msg: any) {
         this.chatControllerMessagePublishers.processCopyCodeToClipboard.publish({
             command: msg.command,
             tabID: msg.tabID,
@@ -152,27 +152,27 @@ export class UIMessageListener {
         })
     }
 
-    private processTabWasRemoved (msg: any) {
+    private processTabWasRemoved(msg: any) {
         this.chatControllerMessagePublishers.processTabClosedMessage.publish({
             tabID: msg.tabID,
         })
     }
 
-    private processNewTabWasCreated (msg: any) {
+    private processNewTabWasCreated(msg: any) {
         this.chatControllerMessagePublishers.processTabCreatedMessage.publish({
             tabID: msg.tabID,
             tabOpenInteractionType: msg.tabOpenInteractionType,
         })
     }
 
-    private processTabWasChanged (msg: any) {
+    private processTabWasChanged(msg: any) {
         this.chatControllerMessagePublishers.processTabChangedMessage.publish({
             tabID: msg.tabID,
             prevTabID: msg.prevTabID,
         })
     }
 
-    private processChatMessage (msg: any) {
+    private processChatMessage(msg: any) {
         this.chatControllerMessagePublishers.processPromptChatMessage.publish({
             message: msg.chatMessage,
             command: msg.command,
@@ -182,13 +182,13 @@ export class UIMessageListener {
         })
     }
 
-    private stopResponse (msg: any) {
+    private stopResponse(msg: any) {
         this.chatControllerMessagePublishers.processStopResponseMessage.publish({
             tabID: msg.tabID,
         })
     }
 
-    private chatItemVoted (msg: any) {
+    private chatItemVoted(msg: any) {
         this.chatControllerMessagePublishers.processChatItemVotedMessage.publish({
             tabID: msg.tabID,
             command: msg.command,
@@ -197,7 +197,7 @@ export class UIMessageListener {
         })
     }
 
-    private async chatItemFeedback (msg: any) {
+    private async chatItemFeedback(msg: any) {
         this.chatControllerMessagePublishers.processChatItemFeedbackMessage.publish({
             messageId: msg.messageId,
             tabID: msg.tabID,

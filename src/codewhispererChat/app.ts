@@ -11,7 +11,7 @@ import { MessageListener } from '../amazonq/messages/messageListener'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import {
     ChatItemFeedbackMessage,
-    ChatItemVotedMessage,    
+    ChatItemVotedMessage,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
@@ -27,7 +27,7 @@ import {
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
 import { OnboardingPageInteraction } from '../amazonq/onboardingPage/model'
 
-export function init (appContext: AmazonQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
@@ -80,7 +80,7 @@ export function init (appContext: AmazonQAppInitContext) {
         processChatItemFeedbackMessage: new MessageListener<ChatItemFeedbackMessage>(
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
-        processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),        
+        processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
         processOnboardingPageInteraction: new MessageListener<OnboardingPageInteraction>(
             cwChatControllerEventEmitters.processOnboardingPageInteraction
         ),
@@ -128,7 +128,7 @@ export function init (appContext: AmazonQAppInitContext) {
         ),
         processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
             cwChatControllerEventEmitters.processUIFocusMessage
-        ),        
+        ),
         processOnboardingPageInteraction: new MessagePublisher<OnboardingPageInteraction>(
             cwChatControllerEventEmitters.processOnboardingPageInteraction
         ),

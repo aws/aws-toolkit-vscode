@@ -10,9 +10,14 @@ import { MessagePublisher } from '../messages/messagePublisher'
 import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
 
 export function welcome(context: vscode.ExtensionContext, cwcWebViewToAppsPublisher: MessagePublisher<any>): void {
-    const panel = vscode.window.createWebviewPanel('amazonQWelcome', 'Meet Amazon Q (Preview)', vscode.ViewColumn.Active, {
-        enableScripts: true,
-    })
+    const panel = vscode.window.createWebviewPanel(
+        'amazonQWelcome',
+        'Meet Amazon Q (Preview)',
+        vscode.ViewColumn.Active,
+        {
+            enableScripts: true,
+        }
+    )
 
     // TODO: get svg gradient icon and use `getIcon` (currently only works with svg)
     panel.iconPath = vscode.Uri.file(

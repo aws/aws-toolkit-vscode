@@ -32,7 +32,7 @@ export class Connector {
     private readonly onCWCContextCommandMessage
     private readonly followUpGenerator: FollowUpGenerator
 
-    constructor (props: ConnectorProps) {
+    constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onChatAnswerReceived = props.onChatAnswerReceived
         this.onWarning = props.onWarning
@@ -227,9 +227,9 @@ export class Connector {
             const followUps =
                 messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
-                        text: 'Would you like to follow up with one of these?',
-                        options: messageData.followUps,
-                    }
+                          text: 'Would you like to follow up with one of these?',
+                          options: messageData.followUps,
+                      }
                     : undefined
 
             const answer: ChatItem = {
@@ -274,9 +274,9 @@ export class Connector {
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
-                            text: 'Would you like to follow up with one of these?',
-                            options: messageData.followUps,
-                        }
+                              text: 'Would you like to follow up with one of these?',
+                              options: messageData.followUps,
+                          }
                         : undefined,
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
@@ -295,7 +295,7 @@ export class Connector {
             messageId: messageData.triggerID,
             body: messageData.message,
             followUp: this.followUpGenerator.generateAuthFollowUps('cwc', messageData.authType),
-            canBeVoted: false
+            canBeVoted: false,
         })
 
         return
