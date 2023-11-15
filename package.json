@@ -1,6 +1,6 @@
 {
     "name": "aws-toolkit-vscode",
-    "displayName": "AWS Toolkit",
+    "displayName": "AWS Toolkit - Amazon Q, CodeWhisperer, and more",
     "description": "Including CodeWhisperer, CodeCatalyst, and support for Lambda, S3, CloudWatch Logs, and many other services",
     "version": "1.99.0-SNAPSHOT",
     "extensionKind": [
