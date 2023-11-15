@@ -758,9 +758,20 @@
                     "type": "webview",
                     "id": "aws.codeWhisperer.transformationHub",
                     "name": ""
+                },
+                {
+                    "id": "aws.codeWhisperer.transformationProposedChangesTree",
+                    "name": "Proposed Changes",
+                    "when": "gumby.transformationProposalInProgress"
                 }
             ]
         },
+        "viewsWelcome": [
+            {
+                "view": "aws.codeWhisperer.transformationProposedChangesTree",
+                "contents": "Project transformation is complete.\n[Review Proposed Changes](command:aws.codeWhisperer.reviewTransformationChanges.processDiff)"
+            }
+        ],
         "submenus": [
             {
                 "id": "aws.auth",
@@ -1289,6 +1300,16 @@
                     "command": "aws.codeWhisperer.showHistoryInHub",
                     "when": "view == aws.codeWhisperer.transformationHub",
                     "group": "navigation@4"
+                },
+                {
+                    "command": "aws.codewhisperer.transformationHub.acceptChanges",
+                    "when": "view == aws.codeWhisperer.transformationProposedChangesTree",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "aws.codewhisperer.transformationHub.rejectChanges",
+                    "when": "view == aws.codeWhisperer.transformationProposedChangesTree",
+                    "group": "navigation@2"
                 },
                 {
                     "command": "aws.submitFeedback",
@@ -2353,6 +2374,14 @@
                 "command": "aws.codewhisperer.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
                 "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codewhisperer.transformationHub.acceptChanges",
+                "title": "Accept"
+            },
+            {
+                "command": "aws.codewhisperer.transformationHub.rejectChanges",
+                "title": "Reject"
             },
             {
                 "command": "aws.auth.switchConnections",
@@ -4253,6 +4282,7 @@
         "moment": "^2.29.4",
         "node-fetch": "^2.7.0",
         "portfinder": "^1.0.32",
+        "parse-diff": "0.11.1",
         "sanitize-html": "^2.3.3",
         "semver": "^7.5.4",
         "strip-ansi": "^5.2.0",

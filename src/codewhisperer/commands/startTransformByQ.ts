@@ -22,10 +22,13 @@ import {
     convertToTimeString,
     convertDateToTimestamp,
     getValidModules,
+    downloadArchive,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
+import AdmZip from 'adm-zip'
+import { ProposedTransformationExplorer } from '../service/transformationResultsViewProvider'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop Transform by Q')
@@ -219,10 +222,7 @@ export async function startTransformByQ() {
             getLogger().error(errorMessage, error)
             throw error
         }
-        // TODO: download transformed code
-        if (status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED') {
-            // ExportDataArchive
-        } else {
+        if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
             errorMessage = 'Failed to complete modernization'
             getLogger().error(errorMessage)
             sessionPlanProgress['transformCode'] = StepProgress.Failed
@@ -231,13 +231,16 @@ export async function startTransformByQ() {
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         throwIfCancelled()
         sessionPlanProgress['transformCode'] = StepProgress.Succeeded
-        // step 4: open diff viewer with results from ExportDataArchive
-        /*
-         * TODO: diff viewer logic here
-         */
-        throwIfCancelled()
-        transformByQState.setToSucceeded()
+
+        // step 4: download transformed code archive
+
+        const pathToArchive = await downloadArchive(jobId, ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
+        console.log(`Downloaded archive to ${pathToArchive}`)
+        const zip = new AdmZip(pathToArchive)
+        zip.extractAllTo(ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
+        await vscode.commands.executeCommand('aws.codeWhisperer.reviewTransformationChanges.reveal')
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        transformByQState.setToSucceeded()
         throwIfCancelled()
         sessionPlanProgress['returnCode'] = StepProgress.Succeeded
     } catch (error) {
