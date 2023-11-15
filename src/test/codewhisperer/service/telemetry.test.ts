@@ -32,7 +32,7 @@ describe('', async function () {
     let sandbox: sinon.SinonSandbox
     let client: DefaultCodeWhispererClient
 
-    let config: ConfigurationEntry = {
+    const config: ConfigurationEntry = {
         isShowMethodsEnabled: true,
         isManualTriggerEnabled: true,
         isAutomatedTriggerEnabled: true,
@@ -91,6 +91,38 @@ describe('', async function () {
 
         await manualTrigger(editor, client, config)
         await waitUntilSuggestionSeen(0)
+        await acceptByTab()
+
+        // TODO: any better way to do this with waitUntil()?
+        // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
+        await sleep(vsCodeCursorUpdateDelay + 10)
+
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            {
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
+                codewhispererLanguage: 'python',
+                codewhispererTriggerType: 'OnDemand',
+                codewhispererLineNumber: 0,
+                codewhispererCursorOffset: 0,
+                codewhispererSuggestionCount: 2,
+                codewhispererCompletionType: 'Line',
+                codewhispererSuggestionState: 'Accept',
+                codewhispererSuggestionImportCount: 0,
+                codewhispererTypeaheadLength: 0,
+                codewhispererUserGroup: 'Control',
+            },
+        ])
+    })
+
+    it('accept - typeahead match and accept', async function () {
+        assertCleanStates()
+        const editor = await openATextEditorWithText('', 'test.py')
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen(0)
+        await typing(editor, 'F')
+        await sleep(2000) // see if we can use waitUntil to replace it
         await acceptByTab()
 
         // TODO: any better way to do this with waitUntil()?
@@ -340,6 +372,34 @@ async function rejectByEsc() {
 
 async function closeActiveEditor() {
     return vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+}
+
+async function typing(editor: vscode.TextEditor, s: string) {
+    for (const char of s) {
+        await typeAChar(editor, char)
+    }
+}
+
+async function typeAChar(editor: vscode.TextEditor, s: string) {
+    if (s.length !== 1) {
+        throw new Error('only single char is allowed')
+    }
+    await editor.edit(edit => {
+        edit.insert(editor.selection.active, s)
+    })
+
+    const positionBefore = editor.selection.active
+
+    let positionAfter: vscode.Position
+    if (s === '\n') {
+        positionAfter = positionBefore.translate(1)
+    } else {
+        positionAfter = positionBefore.translate(0, s.length)
+    }
+
+    editor.selection = new vscode.Selection(positionAfter, positionAfter)
+
+    assert.ok(positionAfter.isAfter(positionBefore))
 }
 
 function aRequest(): ListRecommendationsRequest {
