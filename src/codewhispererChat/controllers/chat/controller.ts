@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
+import { Event as VSCodeEvent } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger } from './messenger/messenger'
@@ -94,7 +94,7 @@ export class ChatController {
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
         appsToWebViewMessagePublisher: MessagePublisher<any>,
-        onDidChangeAmazonQVisibility: vscode.Event<boolean>
+        onDidChangeAmazonQVisibility: VSCodeEvent<boolean>
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
