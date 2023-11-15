@@ -443,6 +443,7 @@ function getInstrumenter(
     threshold: number,
     telemetryName?: MetricName
 ) {
+    handleBadCompositeKey(id)
     const currentTime = globals.clock.Date.now()
     const info = TelemetryDebounceInfo.instance.get(id)
 
@@ -473,6 +474,33 @@ function getInstrumenter(
 
             return fn(...args)
         })
+}
+
+function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: CompositeKey }) {
+    const id = data.id
+    const args = data.args
+    const compositeKey = data.compositeKey
+
+    if (Object.keys(compositeKey).length === 0) {
+        return // nothing to do since no key
+    }
+
+    Object.entries(compositeKey).forEach(([index, field]) => {
+        const indexAsInt = parseInt(index)
+        const arg = args[indexAsInt]
+        if (field === 'source' && typeof arg !== 'string') {
+            /**
+             * This case happens when either the caller sets the wrong args themselves through
+             * vscode.commands.executeCommand OR if through a VS Code UI component like the ellipsis menu
+             *
+             * TODO: To fix this we insert a value in the `source` arg so that there is something there
+             * for the metric to emit. We need to figure out a better way to handle either incorrectly called
+             * or the VS Code UI component.
+             */
+            getLogger().error(`Commands/Telemetry: "${id}" executed with invalid "source" type: "${args}"`)
+            args[indexAsInt] = 'sourceImproperlySet'
+        }
+    })
 }
 
 /**
