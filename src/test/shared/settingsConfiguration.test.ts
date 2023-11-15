@@ -9,6 +9,7 @@ import { DevSettings, Experiments, fromExtensionManifest, PromptSettings, Settin
 import { TestSettings } from '../utilities/testSettingsConfiguration'
 import { ClassToInterfaceType } from '../../shared/utilities/tsUtils'
 import { Optional } from '../../shared/utilities/typeConstructors'
+import { ToolkitError } from '../../shared/errors'
 
 const settingsTarget = vscode.ConfigurationTarget.Workspace
 
@@ -279,6 +280,44 @@ describe('DevSetting', function () {
             await settings.update('aws.dev.forceDevMode', false)
             await settings.update(`aws.dev.${testSetting}`, true).then(() => sut.get(testSetting, false))
             assert.strictEqual(sut.isDevMode(), false)
+        })
+    })
+
+    describe('getCodeCatalystConfig()', function () {
+        const devSettingName = 'aws.dev.codecatalystService'
+        const defaultConfig = {
+            region: 'default',
+            endpoint: 'default',
+            hostname: 'default',
+            gitHostname: 'default',
+        }
+
+        it('throws an error for incomplete dev configuration', async function () {
+            const testSetting = {
+                // missing region
+                endpoint: 'test_endpoint',
+                hostname: 'test_hostname',
+                gitHostname: 'test_githostname',
+            }
+
+            await settings.update(devSettingName, testSetting)
+            assert.throws(() => sut.getCodeCatalystConfig(defaultConfig), ToolkitError)
+        })
+
+        it('returns dev settings configuration when provided', async function () {
+            const testSetting = {
+                region: 'test_region',
+                endpoint: 'test_endpoint',
+                hostname: 'test_hostname',
+                gitHostname: 'test_githostname',
+            }
+
+            await settings.update(devSettingName, testSetting)
+            assert.deepStrictEqual(sut.getCodeCatalystConfig(defaultConfig), testSetting)
+        })
+
+        it('returns default configuration when dev settings are not provided', function () {
+            assert.deepStrictEqual(sut.getCodeCatalystConfig(defaultConfig), defaultConfig)
         })
     })
 })
