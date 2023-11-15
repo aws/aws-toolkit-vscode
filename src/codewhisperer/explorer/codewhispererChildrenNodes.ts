@@ -14,6 +14,7 @@ import {
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
+    showTransformByQ,
     showLearnMore,
     showFreeTierLimit,
     reconnect,
@@ -22,9 +23,10 @@ import {
     showManageConnections,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { codeScanState } from '../models/model'
+import { codeScanState, transformByQState } from '../models/model'
 import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
+import * as CodeWhispererConstants from '../models/constants'
 
 export function createAutoSuggestions(type: 'item', pause: boolean): DataQuickPickItem<'autoSuggestions'>
 export function createAutoSuggestions(type: 'tree', pause: boolean): TreeNode<Command>
@@ -111,6 +113,28 @@ export function createSecurityScan(type: 'item' | 'tree'): any {
                 onClick: () => showSecurityScan.execute(cwQuickPickSource),
             } as DataQuickPickItem<'securityScan'>
     }
+}
+
+export const createTransformByQ = () => {
+    const prefix = transformByQState.getPrefixTextForButton()
+    let status = ''
+    if (transformByQState.isRunning()) {
+        status = CodeWhispererConstants.transformByQStateRunningMessage
+    } else if (transformByQState.isCancelled()) {
+        status = CodeWhispererConstants.transformByQStateCancellingMessage
+    } else if (transformByQState.isFailed()) {
+        status = CodeWhispererConstants.transformByQStateFailedMessage
+    } else if (transformByQState.isSucceeded()) {
+        status = CodeWhispererConstants.transformByQStateSucceededMessage
+    }
+    vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+
+    return showTransformByQ.build().asTreeNode({
+        label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
+        iconPath: transformByQState.getIconForButton(),
+        tooltip: `${prefix} Transform`,
+        contextValue: `awsCodeWhisperer${prefix}TransformByQ`,
+    })
 }
 
 export function createSignIn(type: 'item'): DataQuickPickItem<'signIn'>

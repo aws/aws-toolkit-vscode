@@ -1,6 +1,6 @@
 {
-  "extends": "./tsconfig",
-  "compilerOptions": {
-    "outDir": "dist-cjs"
-  }
+    "extends": "./tsconfig",
+    "compilerOptions": {
+        "outDir": "dist-cjs"
+    }
 }
