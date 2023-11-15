@@ -27,7 +27,6 @@
             <div class="codewhisperer-content-form-container">
                 <BuilderIdForm
                     :state="builderIdState"
-                    :disabled="true"
                     @auth-connection-updated="onAuthConnectionUpdated"
                 ></BuilderIdForm>
 

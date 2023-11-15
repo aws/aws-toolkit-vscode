@@ -18,48 +18,9 @@ export type FileWatchInfo = {
     fileContents: string
 }
 
-export enum Response {
-    INIT = 'INIT',
-    LOAD_FILE = 'LOAD_FILE',
-    SAVE_FILE = 'SAVE_FILE',
-    ADD_FILE_WATCH = 'ADD_FILE_WATCH',
-    FILE_CHANGED = 'FILE_CHANGED',
-    GENERATE_RESOURCE = 'GENERATE_RESOURCE',
-}
-
-export interface ResponseMessage {
-    response: Response
-}
-
-export interface InitResponseMessage extends ResponseMessage {
-    templateFileName: string
-    templateFilePath: string
-}
-
-export interface LoadFileResponseMessage extends ResponseMessage {
-    eventId: string
-    fileName: string
-    fileContents: string
-    isSuccess: boolean
-    reason?: string
-}
-
-export interface SaveFileResponseMessage extends ResponseMessage {
-    eventId: string
-    filePath: string
-    isSuccess: boolean
-    reason?: string
-}
-
-export interface AddFileWatchResponseMessage extends ResponseMessage {
-    eventId: string
-    isSuccess: boolean
-    reason?: string
-}
-
-export interface FileChangedResponseMessage extends ResponseMessage {
-    fileName: string
-    fileContents: string
+export interface Message {
+    command: Command
+    messageType: MessageType
 }
 
 export enum Command {
@@ -68,29 +29,67 @@ export enum Command {
     SAVE_FILE = 'SAVE_FILE',
     ADD_FILE_WATCH = 'ADD_FILE_WATCH',
     DEPLOY = 'DEPLOY',
+    FILE_CHANGED = 'FILE_CHANGED',
     GENERATE_RESOURCE = 'GENERATE_RESOURCE',
 }
 
-export interface RequestMessage {
+export enum MessageType {
+    REQUEST = 'REQUEST',
+    RESPONSE = 'RESPONSE',
+    BROADCAST = 'BROADCAST',
+}
+
+export interface InitResponseMessage extends Message {
+    templateFileName: string
+    templateFilePath: string
+}
+
+export interface LoadFileResponseMessage extends Message {
+    eventId: string
+    fileName: string
+    fileContents: string
+    isSuccess: boolean
+    failureReason?: string
+}
+
+export interface SaveFileResponseMessage extends Message {
+    eventId: string
+    filePath: string
+    isSuccess: boolean
+    failureReason?: string
+}
+
+export interface AddFileWatchResponseMessage extends Message {
+    eventId: string
+    isSuccess: boolean
+    failureReason?: string
+}
+
+export interface FileChangedMessage extends Message {
+    fileName: string
+    fileContents: string
+}
+
+export interface RequestMessage extends Message {
     command: Command
 }
 
-export interface InitRequestMessage extends RequestMessage {
+export interface InitRequestMessage extends Message {
     eventId?: string
 }
 
-export interface LoadFileRequestMessage extends RequestMessage {
+export interface LoadFileRequestMessage extends Message {
     eventId: string
     fileName: string
 }
 
-export interface SaveFileRequestMessage extends RequestMessage {
+export interface SaveFileRequestMessage extends Message {
     eventId: string
     filePath: string
     fileContents: string
 }
 
-export interface AddFileWatchRequestMessage extends RequestMessage {
+export interface AddFileWatchRequestMessage extends Message {
     eventId: string
     fileName: string
 }
@@ -101,7 +100,7 @@ export interface ReferenceDetails {
     snippet?: string
 }
 
-export interface GenerateResourceMessage extends RequestMessage {
+export interface GenerateResourceRequestMessage extends RequestMessage {
     prompt: string
 }
 

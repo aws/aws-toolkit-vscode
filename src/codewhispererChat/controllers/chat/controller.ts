@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EditorContextExtractor, TriggerType } from '../../editor/context/extractor'
+import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger } from './messenger/messenger'
 import {
@@ -20,10 +20,12 @@ import {
     TabCreatedMessage,
     TabChangedMessage,
     UIFocusMessage,
+    SourceLinkClickMessage,
+    ResponseBodyLinkClickMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
-import { MessageListener } from '../../../awsq/messages/messageListener'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
+import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { EditorContentController } from '../../editor/context/contentController'
 import { EditorContextCommand } from '../../commands/registerCommands'
 import { PromptsGenerator } from './prompts/promptsGenerator'
@@ -38,6 +40,9 @@ import { CWCTelemetryHelper } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
+import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -52,6 +57,9 @@ export interface ChatControllerMessagePublishers {
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
+    readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
+    readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
+    readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -67,6 +75,9 @@ export interface ChatControllerMessageListeners {
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
+    readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
+    readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
+    readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
 }
 
 export class ChatController {
@@ -142,6 +153,74 @@ export class ChatController {
         this.chatControllerMessageListeners.processUIFocusMessage.onMessage(data => {
             this.processUIFocusMessage(data)
         })
+
+        this.chatControllerMessageListeners.processOnboardingPageInteraction.onMessage(data => {
+            this.processOnboardingPageInteraction(data)
+        })
+        this.chatControllerMessageListeners.processSourceLinkClick.onMessage(data => {
+            this.processSourceLinkClick(data)
+        })
+        this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage(data => {
+            this.processResponseBodyLinkClick(data)
+        })
+    }
+
+    private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage) {
+        this.telemetryHelper.recordInteractWithMessage({
+            command: 'link-was-clicked',
+            tabID: click.tabID,
+            messageId: click.messageId,
+            url: click.link,
+        })
+        ExternalBrowserUtils.instance.openLink(click.link)
+    }
+
+    private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
+        this.openLinkInExternalBrowser(click)
+    }
+
+    private processSourceLinkClick(click: SourceLinkClickMessage) {
+        this.openLinkInExternalBrowser(click)
+    }
+
+    private processOnboardingPageInteraction(interaction: OnboardingPageInteraction) {
+        this.editorContextExtractor
+            .extractContextForTrigger('OnboardingPageInteraction')
+            .then(context => {
+                const triggerID = randomUUID()
+
+                const prompt = this.promptGenerator.generateForOnboardingPageInteraction(interaction)
+
+                this.messenger.sendOnboardingPageInteractionMessage(interaction, triggerID)
+
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: undefined,
+                    message: prompt,
+                    type: 'onboarding_page_interaction',
+                    context,
+                    onboardingPageInteraction: interaction,
+                })
+
+                this.generateResponse(
+                    {
+                        message: prompt,
+                        trigger: ChatTriggerType.ChatMessage,
+                        query: undefined,
+                        codeSelection: context?.focusAreaContext?.selectionInsideExtendedCodeBlock,
+                        fileText: context?.focusAreaContext?.extendedCodeBlock,
+                        fileLanguage: context?.activeFileContext?.fileLanguage,
+                        filePath: context?.activeFileContext?.filePath,
+                        matchPolicy: context?.activeFileContext?.matchPolicy,
+                        codeQuery: context?.focusAreaContext?.names,
+                        userIntent: this.userIntentRecognizer.getFromOnboardingPageInteraction(interaction),
+                    },
+                    triggerID
+                )
+            })
+            .catch(e => {
+                this.processException(e, '')
+            })
     }
 
     private async processChatItemFeedbackMessage(message: ChatItemFeedbackMessage) {
@@ -248,8 +327,13 @@ export class ChatController {
     }
 
     private async processContextMenuCommand(command: EditorContextCommand) {
+        // Just open the chat panel in this case
+        if (!this.editorContextExtractor.isCodeBlockSelected() && command.type === 'aws.amazonq.sendToPrompt') {
+            return
+        }
+
         this.editorContextExtractor
-            .extractContextForTrigger(TriggerType.ContextMenu)
+            .extractContextForTrigger('ContextMenu')
             .then(context => {
                 const triggerID = randomUUID()
 
@@ -265,7 +349,7 @@ export class ChatController {
                     triggerID
                 )
 
-                if (command.type === 'aws.awsq.sendToPrompt') {
+                if (command.type === 'aws.amazonq.sendToPrompt') {
                     // No need for response if send the code to prompt
                     return
                 }
@@ -290,7 +374,7 @@ export class ChatController {
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getUserIntentFromContextMenuCommand(command),
+                        userIntent: this.userIntentRecognizer.getFromContextMenuCommand(command),
                     },
                     triggerID
                 )
@@ -371,7 +455,7 @@ export class ChatController {
 
     private async processPromptMessageAsNewThread(message: PromptMessage) {
         this.editorContextExtractor
-            .extractContextForTrigger(TriggerType.ChatMessage)
+            .extractContextForTrigger('ChatMessage')
             .then(context => {
                 const triggerID = randomUUID()
                 this.triggerEventsStorage.addTriggerEvent({
@@ -392,7 +476,7 @@ export class ChatController {
                         filePath: context?.activeFileContext?.filePath,
                         matchPolicy: context?.activeFileContext?.matchPolicy,
                         codeQuery: context?.focusAreaContext?.names,
-                        userIntent: this.userIntentRecognizer.getUserIntentFromPromptChatMessage(message),
+                        userIntent: this.userIntentRecognizer.getFromPromptChatMessage(message),
                     },
                     triggerID
                 )
@@ -416,6 +500,14 @@ export class ChatController {
         }
 
         const tabID = triggerEvent.tabID
+
+        const credentialsState = await AuthUtil.instance.getCodeWhispererCredentialState()
+
+        if (credentialsState !== undefined) {
+            this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
+            return
+        }
+
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(

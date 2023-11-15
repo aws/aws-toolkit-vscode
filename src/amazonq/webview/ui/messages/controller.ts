@@ -1,0 +1,81 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { ChatItem, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
+import { Connector } from '../connector'
+import { TabType, TabsStorage } from '../storages/tabsStorage'
+import { TabDataGenerator } from '../tabs/generator'
+
+export interface MessageControllerProps {
+    mynahUI: MynahUI
+    connector: Connector
+    tabsStorage: TabsStorage
+    isWeaverbirdEnabled: boolean
+}
+
+export class MessageController {
+    private mynahUI: MynahUI
+    private connector: Connector
+    private tabsStorage: TabsStorage
+    private tabDataGenerator: TabDataGenerator
+
+    constructor(props: MessageControllerProps) {
+        this.mynahUI = props.mynahUI
+        this.connector = props.connector
+        this.tabsStorage = props.tabsStorage
+        this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
+    }
+
+    public sendMessageToTab(message: ChatItem, tabType: TabType): string {
+        const selectedTab = this.tabsStorage.getSelectedTab()
+
+        if (
+            selectedTab !== undefined &&
+            [tabType, 'unknown'].includes(selectedTab.type) &&
+            selectedTab.status === 'free'
+        ) {
+            this.tabsStorage.updateTabStatus(selectedTab.id, 'busy')
+            this.tabsStorage.updateTabTypeFromUnknown(selectedTab.id, tabType)
+
+            this.mynahUI.updateStore(selectedTab.id, {
+                loadingChat: true,
+                promptInputDisabledState: true,
+            })
+            this.mynahUI.addChatItem(selectedTab.id, message)
+            this.mynahUI.addChatItem(selectedTab.id, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
+            })
+
+            return selectedTab.id
+        }
+
+        const newTabID = this.mynahUI.updateStore('', this.tabDataGenerator.getTabData('cwc', false))
+        this.mynahUI.addChatItem(newTabID, {
+            type: ChatItemType.ANSWER_STREAM,
+            body: '',
+        })
+
+        this.mynahUI.updateStore(newTabID, {
+            loadingChat: true,
+            promptInputDisabledState: true,
+        })
+
+        // We have race condition here with onTabAdd Ui event. This way we need to update store twice to be sure
+        this.tabsStorage.addTab({
+            id: newTabID,
+            type: 'cwc',
+            status: 'busy',
+            isSelected: true,
+            openInteractionType: 'contextMenu',
+        })
+
+        this.tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')
+        this.connector.onUpdateTabType(newTabID)
+        this.tabsStorage.updateTabStatus(newTabID, 'busy')
+
+        return newTabID
+    }
+}

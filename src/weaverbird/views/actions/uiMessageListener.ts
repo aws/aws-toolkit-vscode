@@ -4,8 +4,8 @@
  */
 
 import { ChatControllerEventEmitters } from '../../controllers/chat/controller'
-import { MessageListener } from '../../../awsq/messages/messageListener'
-import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
+import { MessageListener } from '../../../amazonq/messages/messageListener'
+import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 
 export interface UIMessageListenerProps {
     readonly chatControllerEventEmitters: ChatControllerEventEmitters
@@ -20,7 +20,7 @@ export class UIMessageListener {
         this.weaverbirdControllerEventsEmitters = props.chatControllerEventEmitters
         this.webViewMessageListener = props.webViewMessageListener
 
-        // Now we are listening to events that get sent from awsq/webview/actions/actionListener (e.g. the tab)
+        // Now we are listening to events that get sent from amazonq/webview/actions/actionListener (e.g. the tab)
         this.webViewMessageListener.onMessage(msg => {
             this.handleMessage(msg)
         })

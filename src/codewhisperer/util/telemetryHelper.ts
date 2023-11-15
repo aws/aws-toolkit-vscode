@@ -25,12 +25,12 @@ import {
 import { getImportCount } from './importAdderUtil'
 import { CodeWhispererSettings } from './codewhispererSettings'
 import { CodeWhispererUserGroupSettings } from './userGroupUtil'
-import { CodeWhispererSupplementalContext } from './supplementalContext/supplementalContextUtil'
 import { getSelectedCustomization } from './customizationUtil'
 import { AuthUtil } from './authUtil'
 import { isAwsError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
 import { session } from './codeWhispererSession'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 

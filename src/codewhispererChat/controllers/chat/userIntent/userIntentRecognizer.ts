@@ -6,24 +6,32 @@
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { EditorContextCommand } from '../../../commands/registerCommands'
 import { PromptMessage } from '../model'
+import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 
 export class UserIntentRecognizer {
-    public getUserIntentFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
+    public getFromOnboardingPageInteraction(interaction: OnboardingPageInteraction): UserIntent | undefined {
+        switch (interaction.type) {
+            default:
+                return undefined
+        }
+    }
+
+    public getFromContextMenuCommand(command: EditorContextCommand): UserIntent | undefined {
         switch (command.type) {
-            case 'aws.awsq.explainCode':
+            case 'aws.amazonq.explainCode':
                 return UserIntent.EXPLAIN_CODE_SELECTION
-            case 'aws.awsq.refactorCode':
+            case 'aws.amazonq.refactorCode':
                 return UserIntent.SUGGEST_ALTERNATE_IMPLEMENTATION
-            case 'aws.awsq.fixCode':
+            case 'aws.amazonq.fixCode':
                 return UserIntent.APPLY_COMMON_BEST_PRACTICES
-            case 'aws.awsq.optimizeCode':
+            case 'aws.amazonq.optimizeCode':
                 return UserIntent.IMPROVE_CODE
             default:
                 return undefined
         }
     }
 
-    public getUserIntentFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
+    public getFromPromptChatMessage(prompt: PromptMessage): UserIntent | undefined {
         if (prompt.message === undefined) {
             return undefined
         }

@@ -9,7 +9,7 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry } from './models/model'
+import { vsCodeState, ConfigurationEntry, CodeSuggestionsState } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -32,10 +32,11 @@ import {
     updateReferenceLog,
     showIntroduction,
     reconnect,
-    refreshStatusBar,
     selectCustomizationPrompt,
     notifyNewCustomizationsCmd,
     connectWithCustomization,
+    signoutCodeWhisperer,
+    showManageConnections,
 } from './commands/basicCommands'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
@@ -45,7 +46,7 @@ import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
-import { InlineCompletionService } from './service/inlineCompletionService'
+import { InlineCompletionService, refreshStatusBar } from './service/inlineCompletionService'
 import { isInlineCompletionEnabled } from './util/commonUtil'
 import { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
 import { AuthUtil } from './util/authUtil'
@@ -54,7 +55,8 @@ import { TelemetryHelper } from './util/telemetryHelper'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { notifyNewCustomizations } from './util/customizationUtil'
 import { CodeWhispererCommandBackend, CodeWhispererCommandDeclarations } from './commands/gettingStartedPageCommands'
-import { AuthCommandDeclarations } from '../auth/commands'
+import { listCodeWhispererCommands } from './commands/statusBarCommands'
+import { updateUserProxyUrl } from './client/agent'
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
 export async function activate(context: ExtContext): Promise<void> {
@@ -91,14 +93,8 @@ export async function activate(context: ExtContext): Promise<void> {
     ImportAdderProvider.instance
 
     context.extensionContext.subscriptions.push(
-        Commands.register('aws.codewhisperer.signout', () => auth.secondaryAuth.deleteConnection()),
-        /** Opens the Add Connections webview with CW highlighted */
-        Commands.register('aws.codewhisperer.manageConnections', () => {
-            AuthCommandDeclarations.instance.declared.showManageConnections.execute(
-                'codewhispererDeveloperTools',
-                'codewhisperer'
-            )
-        }),
+        signoutCodeWhisperer.register(auth),
+        showManageConnections.register(),
         /**
          * Configuration change
          */
@@ -152,6 +148,10 @@ export async function activate(context: ExtContext): Promise<void> {
                         }
                     })
             }
+
+            if (configurationChangeEvent.affectsConfiguration('http.proxy')) {
+                updateUserProxyUrl()
+            }
         }),
         /**
          * Open Configuration
@@ -171,7 +171,7 @@ export async function activate(context: ExtContext): Promise<void> {
         // direct CodeWhisperer connection setup with customization
         connectWithCustomization.register(),
         // toggle code suggestions
-        toggleCodeSuggestions.register(context.extensionContext.globalState),
+        toggleCodeSuggestions.register(CodeSuggestionsState.instance),
         // enable code suggestions
         enableCodeSuggestions.register(context),
         // code scan
@@ -188,6 +188,8 @@ export async function activate(context: ExtContext): Promise<void> {
         updateReferenceLog.register(),
         // refresh codewhisperer status bar
         refreshStatusBar.register(),
+        // quick pick with codewhisperer options
+        listCodeWhispererCommands.register(),
         // manual trigger
         Commands.register({ id: 'aws.codeWhisperer', autoconnect: true }, async () => {
             invokeRecommendation(vscode.window.activeTextEditor as vscode.TextEditor, client, await getConfigEntry())
@@ -213,7 +215,7 @@ export async function activate(context: ExtContext): Promise<void> {
             ReferenceHoverProvider.instance
         ),
         vscode.window.registerWebviewViewProvider(ReferenceLogViewProvider.viewType, ReferenceLogViewProvider.instance),
-        showReferenceLog.register(context),
+        showReferenceLog.register(),
         vscode.languages.registerCodeLensProvider(
             [...CodeWhispererConstants.platformLanguageIds],
             ReferenceInlineProvider.instance
@@ -250,7 +252,7 @@ export async function activate(context: ExtContext): Promise<void> {
     }
 
     function getAutoTriggerStatus(): boolean {
-        return context.extensionContext.globalState.get<boolean>(CodeWhispererConstants.autoTriggerEnabledKey) || false
+        return CodeSuggestionsState.instance.isSuggestionsEnabled()
     }
 
     async function getConfigEntry(): Promise<ConfigurationEntry> {

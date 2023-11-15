@@ -8,7 +8,7 @@ import * as path from 'path'
 import sinon from 'sinon'
 import assert from 'assert'
 import { collectFiles, prepareRepoData } from '../../../weaverbird/util/files'
-import { createTestWorkspace, toFile } from '../../testUtil'
+import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../testUtil'
 
 describe('file utils', () => {
     describe('collectFiles', function () {
@@ -131,5 +131,28 @@ describe('file utils', () => {
             ],
             result
         )
+    })
+
+    it('does not return license files', async function () {
+        const workspace = await createTestWorkspaceFolder()
+
+        sinon.stub(vscode.workspace, 'workspaceFolders').value([workspace])
+
+        const fileContent = ''
+        for (const fmt of ['txt', 'md']) {
+            // root license files
+            toFile(fileContent, workspace.uri.fsPath, `license.${fmt}`)
+            toFile(fileContent, workspace.uri.fsPath, `License.${fmt}`)
+            toFile(fileContent, workspace.uri.fsPath, `LICENSE.${fmt}`)
+
+            // nested license files
+            toFile(fileContent, workspace.uri.fsPath, 'src', `license.${fmt}`)
+            toFile(fileContent, workspace.uri.fsPath, 'src', `License.${fmt}`)
+            toFile(fileContent, workspace.uri.fsPath, 'src', `LICENSE.${fmt}`)
+        }
+
+        const result = await collectFiles(workspace.uri.fsPath, true)
+
+        assert.deepStrictEqual([], result)
     })
 })

@@ -1,6 +1,6 @@
 # Build
 
-The AWSQ features rely on the `codewhisperer-streaming` service, who's client
+The AmazonQ features rely on the `codewhisperer-streaming` service, who's client
 is generated from the service's smithy models and placed in
 `src.gen/@amzn/codewhisperer-streaming` (For more
 information about this client and how it is generated, please see this

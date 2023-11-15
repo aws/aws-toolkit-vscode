@@ -6,8 +6,9 @@
 import {
     AddFileWatchRequestMessage,
     AddFileWatchResponseMessage,
-    FileChangedResponseMessage,
-    Response,
+    MessageType,
+    FileChangedMessage,
+    Command,
     WebviewContext,
 } from '../types'
 import vscode from 'vscode'
@@ -26,28 +27,31 @@ export async function addFileWatchMessageHandler(request: AddFileWatchRequestMes
         fileWatch.onDidChange(async () => {
             const fileContents = (await vscode.workspace.fs.readFile(vscode.Uri.file(filePath))).toString()
             if (fileContents !== context.fileWatches[filePath].fileContents) {
-                const fileChangedResponseMessage: FileChangedResponseMessage = {
-                    response: Response.FILE_CHANGED,
+                const fileChangedMessage: FileChangedMessage = {
+                    messageType: MessageType.BROADCAST,
+                    command: Command.FILE_CHANGED,
                     fileName: fileName,
                     fileContents: fileContents,
                 }
 
-                context.panel.webview.postMessage(fileChangedResponseMessage)
+                context.panel.webview.postMessage(fileChangedMessage)
                 context.fileWatches[filePath] = { fileContents: fileContents }
             }
         })
 
         addFileWatchResponseMessage = {
-            response: Response.ADD_FILE_WATCH,
+            messageType: MessageType.RESPONSE,
+            command: Command.ADD_FILE_WATCH,
             eventId: request.eventId,
             isSuccess: true,
         }
     } catch (e) {
         addFileWatchResponseMessage = {
-            response: Response.ADD_FILE_WATCH,
+            messageType: MessageType.RESPONSE,
+            command: Command.ADD_FILE_WATCH,
             eventId: request.eventId,
             isSuccess: false,
-            reason: (e as Error).message,
+            failureReason: (e as Error).message,
         }
     }
 

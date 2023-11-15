@@ -55,7 +55,7 @@ import { activate as activateDev } from './dev/activation'
 import { activate as activateApplicationComposer } from './applicationcomposer/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
-import { activate as activateCWChat } from './awsq/activation'
+import { activate as activateCWChat } from './amazonq/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
@@ -76,10 +76,12 @@ import { showMessageWithUrl, showViewLogsMessage } from './shared/utilities/mess
 import { registerWebviewErrorHandler } from './webviews/server'
 import { initializeManifestPaths } from './extensionShared'
 import { ChildProcess } from './shared/utilities/childProcess'
+import { initializeNetworkAgent } from './codewhisperer/client/agent'
 
 let localize: nls.LocalizeFunc
 
 export async function activate(context: vscode.ExtensionContext) {
+    initializeNetworkAgent()
     await initializeComputeRegion()
     const activationStartedOn = Date.now()
     localize = nls.loadMessageBundle()

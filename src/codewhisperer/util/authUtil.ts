@@ -61,6 +61,7 @@ export class AuthUtil {
         }
         this._isCustomizationFeatureEnabled = value
         vscode.commands.executeCommand('aws.codeWhisperer.refresh')
+        vscode.commands.executeCommand('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
@@ -91,18 +92,20 @@ export class AuthUtil {
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+                vscode.commands.executeCommand('aws.amazonq.refresh'),
+                vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
             const prompts = PromptSettings.instance
 
-            const shouldShow = await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')
+            const shouldShow = await prompts.isPromptEnabled('amazonQWelcomePage')
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
                 if (shouldShow) {
-                    vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
-                    prompts.disablePrompt('codeWhispererNewWelcomeMessage')
+                    prompts.disablePrompt('amazonQWelcomePage')
+                    vscode.commands.executeCommand('aws.awsq.welcome')
                 }
             }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
@@ -253,6 +256,8 @@ export class AuthUtil {
         await Promise.all([
             vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
+            vscode.commands.executeCommand('aws.amazonq.refresh'),
+            vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
         ])
     }
@@ -285,4 +290,44 @@ export class AuthUtil {
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
     }
+
+    /**
+     * Determines whether or not the current CodeWhisperer credential is active or not, with a display message.
+     *
+     * @returns a credentialState with a display message and whether to run a full authorization or reauth,
+     *          or undefined if the credential is valid.
+     */
+    public async getCodeWhispererCredentialState(): Promise<CWCredentialState | undefined> {
+        const auth = AuthUtil.instance
+        const curr = auth.conn
+        if (!curr) {
+            return {
+                message: 'No connection to Amazon Q (Preview). Sign into CodeWhisperer.',
+                fullAuth: true,
+            }
+        } else if (!isValidCodeWhispererConnection(curr)) {
+            return {
+                message:
+                    'Existing Amazon Q (Preview) connection does not have required scopes. Sign into CodeWhisperer.',
+                fullAuth: true,
+            }
+        } else if (auth.isConnectionExpired()) {
+            return {
+                message: 'Connection to Amazon Q (Preview) has expired. Reauthorize with CodeWhisperer.',
+                fullAuth: false,
+            }
+        } else if (!auth.isConnectionValid()) {
+            return {
+                message: 'Connection to Amazon Q (Preview) is invalid. Reauthorize with CodeWhisperer.',
+                fullAuth: false,
+            }
+        }
+
+        return undefined
+    }
+}
+
+export type CWCredentialState = {
+    message: string
+    fullAuth: boolean
 }

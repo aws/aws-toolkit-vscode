@@ -10,10 +10,7 @@ import { FileContext } from './file/model'
 import { EditorContext } from './model'
 import { window } from 'vscode'
 
-export enum TriggerType {
-    ChatMessage = 'ChatMessage',
-    ContextMenu = 'ContextMenu',
-}
+export type TriggerType = 'ChatMessage' | 'ContextMenu' | 'OnboardingPageInteraction'
 
 export class EditorContextExtractor {
     private readonly activeFileContextExtractor: FileContextExtractor
@@ -26,15 +23,20 @@ export class EditorContextExtractor {
 
     public async extractContextForTrigger(triggerType: TriggerType): Promise<EditorContext | undefined> {
         switch (triggerType) {
-            case TriggerType.ChatMessage:
+            case 'ChatMessage':
                 return {
                     activeFileContext: await this.extractActiveFileContext(),
                     focusAreaContext: await this.extractActiveEditorCodeSelectionContext(),
                 }
-            case TriggerType.ContextMenu:
+            case 'ContextMenu':
                 return {
                     activeFileContext: await this.extractActiveFileContext(),
                     focusAreaContext: await this.extractActiveEditorCodeSelectionContext(),
+                }
+            case 'OnboardingPageInteraction':
+                return {
+                    activeFileContext: undefined,
+                    focusAreaContext: undefined,
                 }
         }
         return undefined
@@ -47,6 +49,15 @@ export class EditorContextExtractor {
         }
 
         return this.focusAreaContextExtractor.extract(editor)
+    }
+
+    public isCodeBlockSelected(): boolean {
+        const editor = window.activeTextEditor
+        if (editor === undefined) {
+            return false
+        }
+
+        return this.focusAreaContextExtractor.isCodeBlockSelected(editor)
     }
 
     private async extractActiveFileContext(): Promise<FileContext | undefined> {
