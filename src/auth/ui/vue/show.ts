@@ -44,7 +44,7 @@ import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
-import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
+import { amazonQChatSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -719,6 +719,7 @@ export const AuthSources = {
     unknown: 'unknown',
     cwQuickPick: cwQuickPickSource,
     cwTreeNode: cwTreeNodeSource,
+    amazonQChat: amazonQChatSource,
 } as const
 
 export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]

@@ -7,6 +7,8 @@
 export const cwTreeNodeSource = 'codewhispererTreeNode'
 /** Indicates a CodeWhisperer command was executed through a quick pick item */
 export const cwQuickPickSource = 'codewhispererQuickPick'
+/** Indicates a CodeWhisperer command was executed through the Amazon Q chat pane */
+export const amazonQChatSource = 'amazonQChat'
 
 /** Indicates what caused the CodeWhisperer command to be executed, since a command can be executed from different "sources" */
-export type CodeWhispererSource = typeof cwQuickPickSource | typeof cwTreeNodeSource
+export type CodeWhispererSource = typeof cwQuickPickSource | typeof cwTreeNodeSource | typeof amazonQChatSource
