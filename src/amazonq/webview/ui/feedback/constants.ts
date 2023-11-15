@@ -13,10 +13,6 @@ export const feedbackOptions = [
         label: 'Harmful content',
     },
     {
-        value: 'overlap',
-        label: 'Overlaps with existing content',
-    },
-    {
         value: 'incorrect-syntax',
         label: 'Incorrect syntax',
     },

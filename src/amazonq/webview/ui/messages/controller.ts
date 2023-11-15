@@ -66,7 +66,7 @@ export class MessageController {
                 content: uiComponentsTexts.noMoreTabsTooltip,
                 type: NotificationType.WARNING,
             })
-            return
+            return undefined
         } else {
             this.mynahUI.addChatItem(newTabID, {
                 type: ChatItemType.ANSWER_STREAM,

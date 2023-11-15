@@ -10,7 +10,7 @@ export const uiComponentsTexts = {
     feedbackFormTitle: 'Report an issue',
     feedbackFormOptionsLabel: 'What type of issue would you like to report?',
     feedbackFormCommentLabel: 'Description of issue (optional):',
-    feedbackThanks: 'Thanks!',
+    feedbackThanks: 'Thanks for your feedback!',
     feedbackReportButtonLabel: 'Report an issue',
     codeSuggestions: 'Code Suggestions',
     files: 'file(s)',
