@@ -476,6 +476,8 @@ function getInstrumenter(
         })
 }
 
+export const unsetSource = 'sourceImproperlySet'
+
 function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: CompositeKey }) {
     const id = data.id
     const args = data.args
@@ -498,7 +500,7 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
              * or the VS Code UI component.
              */
             getLogger().error(`Commands/Telemetry: "${id}" executed with invalid "source" type: "${args}"`)
-            args[indexAsInt] = 'sourceImproperlySet'
+            args[indexAsInt] = unsetSource
         }
     })
 }
