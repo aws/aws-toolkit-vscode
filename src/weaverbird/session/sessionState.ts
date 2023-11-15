@@ -62,7 +62,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         )
 
         await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
-        const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID)
+        const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID, 0)
         return nextState.interact(action)
     }
 }
@@ -73,7 +73,12 @@ export class RefinementState implements SessionState {
     public readonly uploadId: string
     public readonly phase = 'Approach'
 
-    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
+    constructor(
+        private config: SessionStateConfig,
+        public approach: string,
+        public tabID: string,
+        private currentIteration: number
+    ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.conversationId = config.conversationId
         this.uploadId = config.uploadId
@@ -83,7 +88,7 @@ export class RefinementState implements SessionState {
         return telemetry.amazonq_approachInvoke.run(async span => {
             try {
                 span.record({ amazonqConversationId: this.conversationId })
-                TelemetryHelper.instance.setGenerateApproachIteration(0)
+                TelemetryHelper.instance.setGenerateApproachIteration(this.currentIteration)
                 TelemetryHelper.instance.setGenerateApproachLastInvocationTime()
                 if (!action.msg) {
                     throw new UserMessageNotFoundError()
@@ -104,13 +109,14 @@ export class RefinementState implements SessionState {
 
                 TelemetryHelper.instance.recordUserApproachTelemetry(this.conversationId)
                 return {
-                    nextState: new RefinementIterationState(
+                    nextState: new RefinementState(
                         {
                             ...this.config,
                             conversationId: this.conversationId,
                         },
                         this.approach,
-                        this.tabID
+                        this.tabID,
+                        this.currentIteration + 1
                     ),
                     interaction: {
                         content: `${this.approach}\n`,
@@ -120,49 +126,6 @@ export class RefinementState implements SessionState {
                 throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
             }
         })
-    }
-}
-
-export class RefinementIterationState implements SessionState {
-    public tokenSource: vscode.CancellationTokenSource
-    public readonly phase = 'Approach'
-    public readonly conversationId: string
-    public readonly uploadId: string
-
-    constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
-        this.tokenSource = new vscode.CancellationTokenSource()
-        this.conversationId = config.conversationId
-        this.uploadId = config.uploadId
-    }
-
-    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        TelemetryHelper.instance.setGenerateApproachIteration(1)
-        TelemetryHelper.instance.setGenerateApproachLastInvocationTime()
-        if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
-            return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
-        }
-
-        if (!action.msg) {
-            throw new UserMessageNotFoundError()
-        }
-
-        const approach = await this.config.proxyClient.generatePlan(
-            this.config.conversationId,
-            this.config.uploadId,
-            action.msg
-        )
-
-        this.approach = sanitizeHtml(
-            approach ?? 'There has been a problem generating an approach. Please open a conversation in a new tab',
-            {}
-        )
-        TelemetryHelper.instance.recordUserApproachTelemetry(this.conversationId)
-        return {
-            nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
-            interaction: {
-                content: `${this.approach}\n`,
-            },
-        }
     }
 }
 
@@ -253,7 +216,7 @@ abstract class CodeGenBase {
 export class CodeGenState extends CodeGenBase implements SessionState {
     public filePaths: string[]
 
-    constructor(config: SessionStateConfig, public approach: string, tabID: string) {
+    constructor(config: SessionStateConfig, public approach: string, tabID: string, private currentIteration: number) {
         super(config, tabID)
         this.filePaths = []
     }
@@ -264,16 +227,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         return telemetry.amazonq_codeGenerationInvoke.run(async span => {
             try {
                 span.record({ amazonqConversationId: this.config.conversationId })
-                TelemetryHelper.instance.setGenerateApproachIteration(0)
+                TelemetryHelper.instance.setGenerateCodeIteration(this.currentIteration)
                 TelemetryHelper.instance.setGenerateCodeLastInvocationTime()
 
-                action.messenger.sendAnswer({
-                    message: 'Uploading code ...',
-                    type: 'answer-part',
-                    tabID: this.tabID,
-                })
-
-                // TODO: Upload code once more before starting code generation
                 const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
                     this.config.uploadId
@@ -291,7 +247,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 })
                 this.filePaths = codeGeneration.newFilePaths
                 TelemetryHelper.instance.recordUserCodeGenerationTelemetry(this.conversationId)
-                const nextState = new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID)
+                const nextState = new PrepareCodeGenState(
+                    this.config,
+                    this.approach,
+                    this.filePaths,
+                    this.tabID,
+                    this.currentIteration + 1
+                )
                 return {
                     nextState,
                     interaction: {},
@@ -345,14 +307,15 @@ export class MockCodeGenState implements SessionState {
                     conversationId: this.conversationId,
                 },
                 this.approach,
-                this.tabID
+                this.tabID,
+                0
             ),
             interaction: {},
         }
     }
 }
 
-export class PrepareIterationState implements SessionState {
+export class PrepareCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public readonly phase = 'Codegen'
     public uploadId: string
@@ -361,13 +324,20 @@ export class PrepareIterationState implements SessionState {
         private config: SessionStateConfig,
         public approach: string,
         public filePaths: string[],
-        public tabID: string
+        public tabID: string,
+        private currentIteration: number
     ) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.uploadId = config.uploadId
         this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        action.messenger.sendAnswer({
+            message: 'Uploading code ...',
+            type: 'answer-part',
+            tabID: this.tabID,
+        })
+
         const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, this.conversationId)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
@@ -377,48 +347,7 @@ export class PrepareIterationState implements SessionState {
 
         this.uploadId = uploadId
         await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
-        const nextState = new CodeGenIterationState({ ...this.config, uploadId }, '', this.filePaths, this.tabID)
+        const nextState = new CodeGenState({ ...this.config, uploadId }, '', this.tabID, this.currentIteration)
         return nextState.interact(action)
-    }
-}
-
-export class CodeGenIterationState extends CodeGenBase implements SessionState {
-    constructor(config: SessionStateConfig, public approach: string, public filePaths: string[], tabID: string) {
-        super(config, tabID)
-    }
-
-    async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        TelemetryHelper.instance.setGenerateCodeIteration(1)
-        TelemetryHelper.instance.setGenerateCodeLastInvocationTime()
-        action.messenger.sendAnswer({
-            message: 'Uploading code ...',
-            type: 'answer-part',
-            tabID: this.tabID,
-        })
-
-        const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
-            this.config.conversationId,
-            this.config.uploadId,
-            action.msg
-        )
-
-        action.messenger.sendAnswer({
-            message: 'Generating code ...',
-            type: 'answer-part',
-            tabID: this.tabID,
-        })
-
-        const codeGeneration = await this.generateCode({
-            fs: action.fs,
-            codeGenerationId,
-        })
-
-        this.filePaths = codeGeneration.newFilePaths
-        TelemetryHelper.instance.recordUserCodeGenerationTelemetry(this.conversationId)
-
-        return {
-            nextState: new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID),
-            interaction: {},
-        }
     }
 }

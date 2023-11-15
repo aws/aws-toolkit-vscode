@@ -55,10 +55,10 @@ export class TelemetryHelper {
         telemetry.amazonq_codeGenerationIteration.emit(event)
     }
     public setGenerateApproachIteration(generateApproachIteration: number) {
-        this.generateApproachIteration += generateApproachIteration
+        this.generateApproachIteration = generateApproachIteration
     }
     public setGenerateCodeIteration(generateCodeIteration: number) {
-        this.generateCodeIteration += generateCodeIteration
+        this.generateCodeIteration = generateCodeIteration
     }
     public setGenerateApproachLastInvocationTime() {
         this.generateApproachLastInvocationTime = performance.now()

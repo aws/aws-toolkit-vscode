@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as path from 'path'
 
 import { collectFiles } from '../util/files'
-import { CodeGenState, ConversationNotStartedState, PrepareRefinementState } from './sessionState'
+import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementState } from './sessionState'
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { weaverbirdScheme } from '../constants'
@@ -96,14 +96,16 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
      * Triggered by the Write Code follow up button to move to the code generation phase
      */
     initCodegen(): void {
-        this._state = new CodeGenState(
+        this._state = new PrepareCodeGenState(
             {
                 ...this.getSessionStateConfig(),
                 conversationId: this.conversationId,
                 uploadId: this.uploadId,
             },
             this.approach,
-            this.tabID
+            [],
+            this.tabID,
+            0
         )
         this._latestMessage = ''
     }

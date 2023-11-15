@@ -7,12 +7,10 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import sinon from 'sinon'
 import {
-    RefinementIterationState,
     RefinementState,
     MockCodeGenState,
-    CodeGenIterationState,
     CodeGenState,
-    PrepareIterationState,
+    PrepareCodeGenState,
     PrepareRefinementState,
 } from '../../../weaverbird/session/sessionState'
 import { VirtualFileSystem } from '../../../shared/virtualFilesystem'
@@ -78,159 +76,6 @@ describe('sessionState', () => {
         sinon.restore()
     })
 
-    describe('RefinementState', () => {
-        const testAction = mockSessionStateAction({})
-
-        it('transitions to RefinementIterationState and returns an approach', async () => {
-            mockGeneratePlan = sinon.stub().resolves(testApproach)
-            const state = new RefinementState(testConfig, testApproach, tabId)
-            const result = await state.interact(testAction)
-
-            assert.deepStrictEqual(result, {
-                nextState: new RefinementIterationState(testConfig, testApproach, tabId),
-                interaction: {
-                    content: `${testApproach}\n`,
-                },
-            })
-        })
-
-        it('transitions to RefinementIterationState but does not return an approach', async () => {
-            mockGeneratePlan = sinon.stub().resolves(undefined)
-            const state = new RefinementState(testConfig, testApproach, tabId)
-            const result = await state.interact(testAction)
-            const invokeFailureApproach =
-                'There has been a problem generating an approach. Please open a conversation in a new tab'
-
-            assert.deepStrictEqual(result, {
-                nextState: new RefinementIterationState(testConfig, invokeFailureApproach, tabId),
-                interaction: {
-                    content: `${invokeFailureApproach}\n`,
-                },
-            })
-        })
-
-        it('invalid html gets sanitized', async () => {
-            const invalidHTMLApproach =
-                '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
-            mockGeneratePlan = sinon.stub().resolves(invalidHTMLApproach)
-            const state = new RefinementState(testConfig, invalidHTMLApproach, tabId)
-            const result = await state.interact(testAction)
-
-            const expectedApproach = `<h1>hello world</h1>`
-            assert.deepStrictEqual(result, {
-                nextState: new RefinementIterationState(testConfig, expectedApproach, tabId),
-                interaction: {
-                    content: `${expectedApproach}\n`,
-                },
-            })
-        })
-    })
-
-    describe('MockCodeGenState', () => {
-        it('transitions to RefinementState', async () => {
-            const testAction = mockSessionStateAction({})
-            const state = new MockCodeGenState(testConfig, testApproach, tabId)
-            const result = await state.interact(testAction)
-            const nextState = new RefinementState(testConfig, testApproach, tabId)
-
-            assert.deepStrictEqual(result, {
-                nextState: nextState,
-                interaction: {},
-            })
-        })
-    })
-
-    describe('CodeGenState', () => {
-        it('transitions to PrepareIterationState when codeGenerationStatus ready ', async () => {
-            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
-            mockExportResultArchive = sinon.stub().resolves([])
-            const testAction = mockSessionStateAction({})
-            const state = new CodeGenState(testConfig, testApproach, tabId)
-            const result = await state.interact(testAction)
-
-            const nextState = new PrepareIterationState(testConfig, testApproach, [], tabId)
-
-            assert.deepStrictEqual(result, {
-                nextState,
-                interaction: {},
-            })
-        })
-
-        it('fails when codeGenerationStatus failed ', async () => {
-            mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
-            const testAction = mockSessionStateAction({})
-            const state = new CodeGenState(testConfig, testApproach, tabId)
-            try {
-                await state.interact(testAction)
-                assert.fail('failed code generations should throw an error')
-            } catch (e: any) {
-                assert.deepStrictEqual(e.message, 'Code generation failed')
-            }
-        })
-    })
-
-    describe('RefinementIterationState', () => {
-        const refinementIterationState = new RefinementIterationState(testConfig, testApproach, tabId)
-
-        it('transitions after interaction to MockCodeGenState if action is MOCK CODE', async () => {
-            const testAction = mockSessionStateAction({ msg: 'MOCK CODE' })
-            const interactionResult = await refinementIterationState.interact(testAction)
-
-            assert.deepStrictEqual(interactionResult, {
-                nextState: new RefinementState(testConfig, testApproach, tabId),
-                interaction: {},
-            })
-        })
-
-        it('keeps on RefinementIterationState after interaction in any other case', async () => {
-            mockGeneratePlan = sinon.stub().resolves(testApproach)
-            const testAction = mockSessionStateAction({ msg: 'OTHER' })
-            const interactionResult = await refinementIterationState.interact(testAction)
-
-            assert.deepStrictEqual(interactionResult, {
-                nextState: new RefinementIterationState(testConfig, testApproach, tabId),
-                interaction: {
-                    content: `${testApproach}\n`,
-                },
-            })
-        })
-
-        it('invalid html gets sanitized', async () => {
-            const invalidHTMLApproach =
-                '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
-            mockGeneratePlan = sinon.stub().resolves(invalidHTMLApproach)
-            const state = new RefinementIterationState(testConfig, invalidHTMLApproach, tabId)
-            const testAction = mockSessionStateAction({})
-            const result = await state.interact(testAction)
-
-            const expectedApproach = `<h1>hello world</h1>`
-            assert.deepStrictEqual(result, {
-                nextState: new RefinementIterationState(testConfig, expectedApproach, tabId),
-                interaction: {
-                    content: `${expectedApproach}\n`,
-                },
-            })
-        })
-    })
-
-    describe('CodeGenIterationState', () => {
-        it('transitions to PrepareIterationState', async () => {
-            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
-            mockExportResultArchive = sinon.stub().resolves([])
-            const testAction = mockSessionStateAction({})
-
-            const codeGenIterationState = new CodeGenIterationState(testConfig, testApproach, [], tabId)
-            const codeGenIterationStateResult = await codeGenIterationState.interact(testAction)
-
-            const nextState = new PrepareIterationState(testConfig, testApproach, [], tabId)
-
-            assert.deepStrictEqual(codeGenIterationStateResult, {
-                nextState: nextState,
-                interaction: {},
-            })
-        })
-    })
-
     describe('PrepareRefinementState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
@@ -243,15 +88,106 @@ describe('sessionState', () => {
         })
     })
 
-    describe('PrepareIterationState', () => {
+    describe('RefinementState', () => {
+        const testAction = mockSessionStateAction({})
+
+        it('transitions to RefinementState and returns an approach', async () => {
+            mockGeneratePlan = sinon.stub().resolves(testApproach)
+            const state = new RefinementState(testConfig, testApproach, tabId, 0)
+            const result = await state.interact(testAction)
+
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementState(testConfig, testApproach, tabId, 1),
+                interaction: {
+                    content: `${testApproach}\n`,
+                },
+            })
+        })
+
+        it('transitions to RefinementState but does not return an approach', async () => {
+            mockGeneratePlan = sinon.stub().resolves(undefined)
+            const state = new RefinementState(testConfig, testApproach, tabId, 0)
+            const result = await state.interact(testAction)
+            const invokeFailureApproach =
+                'There has been a problem generating an approach. Please open a conversation in a new tab'
+
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementState(testConfig, invokeFailureApproach, tabId, 1),
+                interaction: {
+                    content: `${invokeFailureApproach}\n`,
+                },
+            })
+        })
+
+        it('invalid html gets sanitized', async () => {
+            const invalidHTMLApproach =
+                '<head><script src="https://foo"></script></head><body><h1>hello world</h1></body>'
+            mockGeneratePlan = sinon.stub().resolves(invalidHTMLApproach)
+            const state = new RefinementState(testConfig, invalidHTMLApproach, tabId, 0)
+            const result = await state.interact(testAction)
+
+            const expectedApproach = `<h1>hello world</h1>`
+            assert.deepStrictEqual(result, {
+                nextState: new RefinementState(testConfig, expectedApproach, tabId, 1),
+                interaction: {
+                    content: `${expectedApproach}\n`,
+                },
+            })
+        })
+    })
+
+    describe('MockCodeGenState', () => {
+        it('transitions to RefinementState', async () => {
+            const testAction = mockSessionStateAction({})
+            const state = new MockCodeGenState(testConfig, testApproach, tabId)
+            const result = await state.interact(testAction)
+            const nextState = new RefinementState(testConfig, testApproach, tabId, 0)
+
+            assert.deepStrictEqual(result, {
+                nextState: nextState,
+                interaction: {},
+            })
+        })
+    })
+
+    describe('PrepareCodeGenState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
             const testAction = mockSessionStateAction({})
 
             assert.rejects(() => {
-                return new PrepareIterationState(testConfig, testApproach, [], tabId).interact(testAction)
-            }, PrepareIterationState)
+                return new PrepareCodeGenState(testConfig, testApproach, [], tabId, 0).interact(testAction)
+            }, PrepareCodeGenState)
+        })
+    })
+
+    describe('CodeGenState', () => {
+        it('transitions to PrepareCodeGenState when codeGenerationStatus ready ', async () => {
+            mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
+            mockExportResultArchive = sinon.stub().resolves([])
+            const testAction = mockSessionStateAction({})
+            const state = new CodeGenState(testConfig, testApproach, tabId, 0)
+            const result = await state.interact(testAction)
+
+            const nextState = new PrepareCodeGenState(testConfig, testApproach, [], tabId, 1)
+
+            assert.deepStrictEqual(result, {
+                nextState,
+                interaction: {},
+            })
+        })
+
+        it('fails when codeGenerationStatus failed ', async () => {
+            mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
+            const testAction = mockSessionStateAction({})
+            const state = new CodeGenState(testConfig, testApproach, tabId, 0)
+            try {
+                await state.interact(testAction)
+                assert.fail('failed code generations should throw an error')
+            } catch (e: any) {
+                assert.deepStrictEqual(e.message, 'Code generation failed')
+            }
         })
     })
 })
