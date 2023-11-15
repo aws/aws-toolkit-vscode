@@ -99,7 +99,7 @@ export const selectCustomizationPrompt = Commands.declare(
 )
 
 export const reconnect = Commands.declare(
-    { id: 'aws.codeWhisperer.reconnect', compositeKey: { 0: 'source' } },
+    { id: 'aws.codewhisperer.reconnect', compositeKey: { 0: 'source' } },
     () => async (source: CodeWhispererSource) => {
         await AuthUtil.instance.reauthenticate()
     }
@@ -200,18 +200,18 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     }
 )
 
+/**
+ * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
+ * Used on first load, and any time we want to directly populate chat.
+ */
+export async function focusAmazonQPanel(): Promise<void> {
+    // VS Code-owned command: "View: Show Amazon Q"
+    await vscode.commands.executeCommand('workbench.view.extension.amazonq')
+}
+
 export const signoutCodeWhisperer = Commands.declare(
     { id: 'aws.codewhisperer.signout', compositeKey: { 0: 'source' } },
     (auth: AuthUtil) => (source: CodeWhispererSource) => {
         return auth.secondaryAuth.deleteConnection()
     }
 )
-
-/**
- * Forces focus to AWS Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
- * Used on first load, and any time we want to directly populate chat.
- */
-export async function focusAwsqPanel(): Promise<void> {
-    // VS Code-owned command: "View: Show AWS Q"
-    await vscode.commands.executeCommand('workbench.view.extension.awsq')
-}

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { focusAmazonQPanel } from '../../codewhisperer/commands/basicCommands'
 import { Commands } from '../../shared/vscode/commands2'
 import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
 
@@ -13,46 +14,56 @@ const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
 }
 
 export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
-    Commands.register('aws.awsq.explainCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.explainCode',
-            triggerType: getCommandTriggerType(data),
+    Commands.register('aws.amazonq.explainCode', async data => {
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.explainCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
-    Commands.register('aws.awsq.refactorCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.refactorCode',
-            triggerType: getCommandTriggerType(data),
+    Commands.register('aws.amazonq.refactorCode', async data => {
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.refactorCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
-    Commands.register('aws.awsq.fixCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.fixCode',
-            triggerType: getCommandTriggerType(data),
+    Commands.register('aws.amazonq.fixCode', async data => {
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.fixCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
-    Commands.register('aws.awsq.optimizeCode', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.optimizeCode',
-            triggerType: getCommandTriggerType(data),
+    Commands.register('aws.amazonq.optimizeCode', async data => {
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.optimizeCode',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
-    Commands.register('aws.awsq.sendToPrompt', async data => {
-        controllerPublishers.processContextMenuCommand.publish({
-            type: 'aws.awsq.sendToPrompt',
-            triggerType: getCommandTriggerType(data),
+    Commands.register('aws.amazonq.sendToPrompt', async data => {
+        focusAmazonQPanel().then(() => {
+            controllerPublishers.processContextMenuCommand.publish({
+                type: 'aws.amazonq.sendToPrompt',
+                triggerType: getCommandTriggerType(data),
+            })
         })
     })
 }
 
 export type EditorContextCommandType =
-    | 'aws.awsq.explainCode'
-    | 'aws.awsq.refactorCode'
-    | 'aws.awsq.fixCode'
-    | 'aws.awsq.optimizeCode'
-    | 'aws.awsq.sendToPrompt'
+    | 'aws.amazonq.explainCode'
+    | 'aws.amazonq.refactorCode'
+    | 'aws.amazonq.fixCode'
+    | 'aws.amazonq.optimizeCode'
+    | 'aws.amazonq.sendToPrompt'
 
-export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette'
+export type EditorContextCommandTriggerType = 'contextMenu' | 'keybinding' | 'commandPalette' | 'click'
 
 export interface EditorContextCommand {
     type: EditorContextCommandType

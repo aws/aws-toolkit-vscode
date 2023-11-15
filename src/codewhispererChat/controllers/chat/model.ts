@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
-import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
+import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -49,6 +49,13 @@ export interface CopyCodeToClipboard {
     insertionTargetType: string | undefined
 }
 
+export interface ClickLink {
+    command: string | undefined
+    tabID: string
+    messageId: string
+    url: string
+}
+
 export interface PromptMessage {
     message: string | undefined
     messageId: string
@@ -69,6 +76,25 @@ export interface PromptAnswer {
 
 export interface StopResponseMessage {
     tabID: string
+}
+
+export interface ClickLink {
+    command: string | undefined
+    tabID: string
+    messageId: string
+    url: string
+}
+
+export interface SourceLinkClickMessage {
+    tabID: string
+    messageId: string
+    link: string
+}
+
+export interface ResponseBodyLinkClickMessage {
+    tabID: string
+    messageId: string
+    link: string
 }
 
 export interface ChatItemVotedMessage {

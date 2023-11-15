@@ -4,7 +4,6 @@
  */
 
 import { CodeWhispererStreamingClient } from '../../../../shared/clients/codeWhispererChatStreamingClient'
-import { AuthUtil } from '../../../../codewhisperer/util/authUtil'
 import {
     CodeWhispererStreaming,
     GenerateAssistantResponseCommandOutput,
@@ -31,13 +30,6 @@ export class ChatSession {
     }
 
     async chat(chatRequest: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            AuthUtil.instance.showReauthenticatePrompt()
-            throw new ToolkitError(
-                'Connection expired. To continue using CodeWhisperer, connect with AWS Builder ID or AWS IAM Identity center.'
-            )
-        }
-
         this.client = await new CodeWhispererStreamingClient().createSdkClient()
 
         if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {

@@ -31,6 +31,7 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
+import { amazonQNode } from '../amazonq/explorer/amazonQNode'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -77,7 +78,7 @@ export async function activate(args: {
 
     const authProvider = CodeCatalystAuthenticationProvider.fromContext(args.context.extensionContext)
     const codecatalystNode = isCloud9('classic') || isSageMaker() ? [] : [new CodeCatalystRootNode(authProvider)]
-    const nodes = [...codecatalystNode, cdkNode, getCodewhispererNode()]
+    const nodes = [amazonQNode, ...codecatalystNode, cdkNode, getCodewhispererNode()]
     const developerTools = createLocalExplorerView(nodes)
     args.context.extensionContext.subscriptions.push(developerTools)
 

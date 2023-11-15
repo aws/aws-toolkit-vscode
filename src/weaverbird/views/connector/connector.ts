@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessagePublisher } from '../../../awsq/messages/messagePublisher'
+import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { weaverbirdChat } from '../../constants'
 import { ChatItemType } from '../../models'
 import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui-chat'

@@ -6,8 +6,10 @@
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
+    AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
+    OnboardingPageInteractionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
 import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
@@ -17,6 +19,10 @@ import { ChatException } from './model'
 import { CWCTelemetryHelper } from '../telemetryHelper'
 import { TriggerPayload } from '../model'
 import { ToolkitError } from '../../../../shared/errors'
+import { keys } from '../../../../shared/utilities/tsUtils'
+import { getLogger } from '../../../../shared/logger/logger'
+import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
+import { CWCredentialState } from '../../../../codewhisperer/util/authUtil'
 
 export class Messenger {
     public constructor(
@@ -24,7 +30,20 @@ export class Messenger {
         private readonly telemetryHelper: CWCTelemetryHelper
     ) {}
 
-    async sendAIResponse(
+    public async sendAuthNeededExceptionMessage(credentialState: CWCredentialState, tabID: string, triggerID: string) {
+        this.dispatcher.sendAuthNeededExceptionMessage(
+            new AuthNeededException(
+                {
+                    message: credentialState.message,
+                    authType: credentialState.fullAuth ? 'full-auth' : 're-auth',
+                    triggerID,
+                },
+                tabID
+            )
+        )
+    }
+
+    public async sendAIResponse(
         response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
         tabID: string,
@@ -62,9 +81,16 @@ export class Messenger {
         )
         this.telemetryHelper.setResponseStreamStartTime(tabID)
 
+        const eventCounts = new Map<string, number>()
         waitUntil(
             async () => {
                 for await (const chatEvent of response.generateAssistantResponseResponse!) {
+                    for (const key of keys(chatEvent)) {
+                        if ((chatEvent[key] as any) !== undefined) {
+                            eventCounts.set(key, (eventCounts.get(key) ?? 0) + 1)
+                        }
+                    }
+
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
@@ -168,6 +194,12 @@ export class Messenger {
                 )
             )
 
+            getLogger().info(
+                `All events received. requestId=%s counts=%s`,
+                response.$metadata.requestId,
+                Object.fromEntries(eventCounts)
+            )
+
             this.telemetryHelper.setResponseStreamTotalTime(tabID)
 
             const responseCode = response?.$metadata.httpStatusCode ?? 0
@@ -196,19 +228,36 @@ export class Messenger {
     }
 
     private editorContextMenuCommandVerbs: Map<EditorContextCommandType, string> = new Map([
-        ['aws.awsq.explainCode', 'Explain'],
-        ['aws.awsq.refactorCode', 'Refactor'],
-        ['aws.awsq.fixCode', 'Fix'],
-        ['aws.awsq.optimizeCode', 'Optimize'],
-        ['aws.awsq.sendToPrompt', 'Send to prompt'],
+        ['aws.amazonq.explainCode', 'Explain'],
+        ['aws.amazonq.refactorCode', 'Refactor'],
+        ['aws.amazonq.fixCode', 'Fix'],
+        ['aws.amazonq.optimizeCode', 'Optimize'],
+        ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
+
+    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string) {
+        let message
+        switch (interaction.type) {
+            case 'onboarding-page-cwc-button-clicked':
+                message = 'What can Amazon Q (Preview) help me with?'
+                break
+        }
+
+        this.dispatcher.sendOnboardingPageInteractionMessage(
+            new OnboardingPageInteractionMessage({
+                message,
+                interactionType: interaction.type,
+                triggerID,
+            })
+        )
+    }
 
     public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
         // Remove newlines and spaces before and after the code
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
         let message
-        if (command === 'aws.awsq.sendToPrompt') {
+        if (command === 'aws.amazonq.sendToPrompt') {
             message = ['\n```\n', trimmedCode, '\n```'].join('')
         } else {
             message = [

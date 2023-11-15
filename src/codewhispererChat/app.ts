@@ -6,15 +6,17 @@
 import { EventEmitter } from 'vscode'
 import { ChatController as CwChatController } from '../codewhispererChat/controllers/chat/controller'
 import { UIMessageListener } from './view/messages/messageListener'
-import { AwsQAppInitContext } from '../awsq/apps/initContext'
-import { MessageListener } from '../awsq/messages/messageListener'
-import { MessagePublisher } from '../awsq/messages/messagePublisher'
+import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
+import { MessageListener } from '../amazonq/messages/messageListener'
+import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptMessage,
+    ResponseBodyLinkClickMessage,
+    SourceLinkClickMessage,
     StopResponseMessage,
     TabChangedMessage,
     TabClosedMessage,
@@ -23,8 +25,9 @@ import {
     UIFocusMessage,
 } from './controllers/chat/model'
 import { EditorContextCommand, registerCommands } from './commands/registerCommands'
+import { OnboardingPageInteraction } from '../amazonq/onboardingPage/model'
 
-export function init(appContext: AwsQAppInitContext) {
+export function init(appContext: AmazonQAppInitContext) {
     const cwChatControllerEventEmitters = {
         processPromptChatMessage: new EventEmitter<PromptMessage>(),
         processTabCreatedMessage: new EventEmitter<TabCreatedMessage>(),
@@ -38,6 +41,9 @@ export function init(appContext: AwsQAppInitContext) {
         processChatItemVotedMessage: new EventEmitter<ChatItemVotedMessage>(),
         processChatItemFeedbackMessage: new EventEmitter<ChatItemFeedbackMessage>(),
         processUIFocusMessage: new EventEmitter<UIFocusMessage>(),
+        processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>(),
+        processSourceLinkClick: new EventEmitter<SourceLinkClickMessage>(),
+        processResponseBodyLinkClick: new EventEmitter<ResponseBodyLinkClickMessage>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -75,6 +81,15 @@ export function init(appContext: AwsQAppInitContext) {
             cwChatControllerEventEmitters.processChatItemFeedbackMessage
         ),
         processUIFocusMessage: new MessageListener<UIFocusMessage>(cwChatControllerEventEmitters.processUIFocusMessage),
+        processOnboardingPageInteraction: new MessageListener<OnboardingPageInteraction>(
+            cwChatControllerEventEmitters.processOnboardingPageInteraction
+        ),
+        processSourceLinkClick: new MessageListener<SourceLinkClickMessage>(
+            cwChatControllerEventEmitters.processSourceLinkClick
+        ),
+        processResponseBodyLinkClick: new MessageListener<ResponseBodyLinkClickMessage>(
+            cwChatControllerEventEmitters.processResponseBodyLinkClick
+        ),
     }
 
     const cwChatControllerMessagePublishers = {
@@ -113,6 +128,15 @@ export function init(appContext: AwsQAppInitContext) {
         ),
         processUIFocusMessage: new MessagePublisher<UIFocusMessage>(
             cwChatControllerEventEmitters.processUIFocusMessage
+        ),
+        processOnboardingPageInteraction: new MessagePublisher<OnboardingPageInteraction>(
+            cwChatControllerEventEmitters.processOnboardingPageInteraction
+        ),
+        processSourceLinkClick: new MessagePublisher<SourceLinkClickMessage>(
+            cwChatControllerEventEmitters.processSourceLinkClick
+        ),
+        processResponseBodyLinkClick: new MessagePublisher<ResponseBodyLinkClickMessage>(
+            cwChatControllerEventEmitters.processResponseBodyLinkClick
         ),
     }
 

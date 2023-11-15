@@ -14,6 +14,7 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
+    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptAnswer,
@@ -23,7 +24,7 @@ import {
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
-import { TabOpenType } from '../../../awsq/webview/ui/storages/tabsStorage'
+import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -138,7 +139,7 @@ export class CWCTelemetryHelper {
     }
 
     public recordInteractWithMessage(
-        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage
+        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage | ClickLink
     ) {
         if (!globals.telemetry.telemetryEnabled) {
             return
@@ -186,6 +187,16 @@ export class CWCTelemetryHelper {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
                 })
+                break
+            case 'link-was-clicked':
+                message = message as ClickLink
+                telemetry.codewhispererchat_interactWithMessage.emit({
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatInteractionType: 'clickLink',
+                    cwsprChatInteractionTarget: message.url,
+                })
+                break
         }
     }
 

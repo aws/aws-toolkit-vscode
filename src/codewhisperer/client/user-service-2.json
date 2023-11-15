@@ -280,6 +280,31 @@
             "max": 256,
             "min": 0
         },
+        "Dimension": {
+            "type": "structure",
+            "members": {
+                "name": { "shape": "DimensionNameString" },
+                "value": { "shape": "DimensionValueString" }
+            }
+        },
+        "DimensionList": {
+            "type": "list",
+            "member": { "shape": "Dimension" },
+            "max": 30,
+            "min": 0
+        },
+        "DimensionNameString": {
+            "type": "string",
+            "max": 255,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "DimensionValueString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
+        },
         "Double": {
             "type": "double",
             "box": true
@@ -438,6 +463,22 @@
                 "nextToken": { "shape": "PaginationToken" },
                 "codeAnalysisFindings": { "shape": "String" }
             }
+        },
+        "MetricData": {
+            "type": "structure",
+            "required": ["metricName", "metricValue", "timestamp"],
+            "members": {
+                "metricName": { "shape": "MetricDataMetricNameString" },
+                "metricValue": { "shape": "Double" },
+                "timestamp": { "shape": "Timestamp" },
+                "dimensions": { "shape": "DimensionList" }
+            }
+        },
+        "MetricDataMetricNameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "pattern": "[-a-zA-Z0-9._]*"
         },
         "OptOutPreference": {
             "type": "string",
@@ -632,7 +673,8 @@
                 "userTriggerDecisionEvent": { "shape": "UserTriggerDecisionEvent" },
                 "codeCoverageEvent": { "shape": "CodeCoverageEvent" },
                 "userModificationEvent": { "shape": "UserModificationEvent" },
-                "codeScanEvent": { "shape": "CodeScanEvent" }
+                "codeScanEvent": { "shape": "CodeScanEvent" },
+                "metricData": { "shape": "MetricData" }
             },
             "union": true
         },

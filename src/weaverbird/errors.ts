@@ -43,6 +43,23 @@ export class UserMessageNotFoundError extends ToolkitError {
     }
 }
 
+export class SelectedFolderNotInWorkspaceFolderError extends ToolkitError {
+    constructor() {
+        super(
+            `The selected folder is not in an opened workspace folder. Add the selected folder to the workspace or pick a new folder`,
+            {
+                code: 'SelectedFolderNotInWorkspaceFolder',
+            }
+        )
+    }
+}
+
+export class PrepareRepoFailedError extends ToolkitError {
+    constructor() {
+        super('Unable to prepare repository for uploading', { code: 'PrepareRepoFailed' })
+    }
+}
+
 const denyListedErrors: string[] = ['Deserialization error']
 
 export function createUserFacingErrorMessage(message: string) {

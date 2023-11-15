@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { MessageListener } from '../../../awsq/messages/messageListener'
-import { ExtensionMessage } from '../../../awsq/webview/ui/commands'
+import { MessageListener } from '../../../amazonq/messages/messageListener'
+import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
+import { AuthController } from '../../auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 
@@ -17,11 +18,13 @@ export class UIMessageListener {
     private chatControllerMessagePublishers: ChatControllerMessagePublishers
     private webViewMessageListener: MessageListener<any>
     private referenceLogController: ReferenceLogController
+    private authController: AuthController
 
     constructor(props: UIMessageListenerProps) {
         this.chatControllerMessagePublishers = props.chatControllerMessagePublishers
         this.webViewMessageListener = props.webViewMessageListener
         this.referenceLogController = new ReferenceLogController()
+        this.authController = new AuthController()
 
         this.webViewMessageListener.onMessage(msg => {
             this.handleMessage(msg)
@@ -30,8 +33,10 @@ export class UIMessageListener {
 
     private handleMessage(msg: ExtensionMessage) {
         switch (msg.command) {
+            case 'onboarding-page-interaction':
+                this.processOnboardingPageInteraction(msg)
+                break
             case 'clear':
-            case 'onboarding-page-cwc-button-clicked':
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break
@@ -43,6 +48,9 @@ export class UIMessageListener {
                 break
             case 'tab-was-changed':
                 this.processTabWasChanged(msg)
+                break
+            case 'auth-follow-up-was-clicked':
+                this.processAuthFollowUpWasClicked(msg)
                 break
             case 'follow-up-was-clicked':
                 if (msg.followUp?.prompt !== undefined) {
@@ -76,9 +84,39 @@ export class UIMessageListener {
             case 'ui-focus':
                 this.processUIFocus(msg)
                 break
+            case 'source-link-click':
+                this.processSourceLinkClick(msg)
+                break
+            case 'response-body-link-click':
+                this.processResponseBodyLinkClick(msg)
+                break
         }
     }
 
+    private processAuthFollowUpWasClicked(msg: any) {
+        this.authController.handleAuth(msg.authType)
+    }
+    private processResponseBodyLinkClick(msg: any) {
+        this.chatControllerMessagePublishers.processResponseBodyLinkClick.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            link: msg.link,
+        })
+    }
+
+    private processSourceLinkClick(msg: any) {
+        this.chatControllerMessagePublishers.processSourceLinkClick.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            link: msg.link,
+        })
+    }
+
+    private processOnboardingPageInteraction(msg: any) {
+        this.chatControllerMessagePublishers.processOnboardingPageInteraction.publish({
+            type: msg.type,
+        })
+    }
     private processUIFocus(msg: any) {
         this.chatControllerMessagePublishers.processUIFocusMessage.publish({
             command: msg.command,

@@ -26,6 +26,7 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import { randomUUID } from 'crypto'
 import { uploadCode } from '../util/upload'
 import { UserMessageNotFoundError } from '../errors'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const fs = FileSystemCommon.instance
 
@@ -51,7 +52,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-            this.config.workspaceRoot,
+            this.config.sourceRoot,
             this.config.conversationId
         )
 
@@ -79,10 +80,11 @@ export class RefinementState implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        return telemetry.awsq_approachInvoke.run(async span => {
+        return telemetry.amazonq_approachInvoke.run(async span => {
             try {
-                span.record({ awsqConversationId: this.conversationId })
-
+                span.record({ amazonqConversationId: this.conversationId })
+                TelemetryHelper.instance.setGenerateApproachIteration(0)
+                TelemetryHelper.instance.setGenerateApproachLastInvocationTime()
                 if (!action.msg) {
                     throw new UserMessageNotFoundError()
                 }
@@ -98,6 +100,9 @@ export class RefinementState implements SessionState {
                         'There has been a problem generating an approach. Please open a conversation in a new tab',
                     {}
                 )
+                getLogger().info(`Approach response: ${JSON.stringify(this.approach)}`)
+
+                TelemetryHelper.instance.recordUserApproachTelemetry(this.conversationId)
                 return {
                     nextState: new RefinementIterationState(
                         {
@@ -131,6 +136,8 @@ export class RefinementIterationState implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
+        TelemetryHelper.instance.setGenerateApproachIteration(1)
+        TelemetryHelper.instance.setGenerateApproachLastInvocationTime()
         if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
             return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
         }
@@ -139,7 +146,6 @@ export class RefinementIterationState implements SessionState {
             throw new UserMessageNotFoundError()
         }
 
-        telemetry.awsq_approach.emit({ awsqConversationId: this.conversationId, value: 1 })
         const approach = await this.config.proxyClient.generatePlan(
             this.config.conversationId,
             this.config.uploadId,
@@ -150,7 +156,7 @@ export class RefinementIterationState implements SessionState {
             approach ?? 'There has been a problem generating an approach. Please open a conversation in a new tab',
             {}
         )
-
+        TelemetryHelper.instance.recordUserApproachTelemetry(this.conversationId)
         return {
             nextState: new RefinementIterationState(this.config, this.approach, this.tabID),
             interaction: {
@@ -174,7 +180,6 @@ async function createFilePaths(
         const uri = vscode.Uri.from({ scheme: weaverbirdScheme, path: generationFilePath })
         fs.registerProvider(uri, new VirtualMemoryFile(contents))
         filePaths.push(filePath)
-        telemetry.awsq_filesChanged.emit({ awsqConversationId: conversationId, value: 1 })
     }
 
     return filePaths
@@ -205,12 +210,13 @@ abstract class CodeGenBase {
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
             getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
-
+            TelemetryHelper.instance.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
                 case 'Complete': {
                     // const newFiles = codegenResult.result?.newFileContents ?? []
                     const newFiles = await this.config.proxyClient.exportResultArchive(this.conversationId)
                     const newFilePaths = await createFilePaths(fs, newFiles, this.uploadId, this.conversationId)
+                    TelemetryHelper.instance.setNumberOfFilesGenerated(newFilePaths.length)
                     return {
                         newFiles,
                         newFilePaths,
@@ -253,11 +259,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        telemetry.awsq_isApproachAccepted.emit({ awsqConversationId: this.config.conversationId, enabled: true })
+        telemetry.amazonq_isApproachAccepted.emit({ amazonqConversationId: this.config.conversationId, enabled: true })
 
-        return telemetry.awsq_codeGenerationInvoke.run(async span => {
+        return telemetry.amazonq_codeGenerationInvoke.run(async span => {
             try {
-                span.record({ awsqConversationId: this.config.conversationId })
+                span.record({ amazonqConversationId: this.config.conversationId })
+                TelemetryHelper.instance.setGenerateApproachIteration(0)
+                TelemetryHelper.instance.setGenerateCodeLastInvocationTime()
 
                 action.messenger.sendAnswer({
                     message: 'Uploading code ...',
@@ -282,15 +290,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                 })
                 this.filePaths = codeGeneration.newFilePaths
-
+                TelemetryHelper.instance.recordUserCodeGenerationTelemetry(this.conversationId)
                 const nextState = new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID)
-                span.record({ awsqConversationId: this.config.conversationId })
                 return {
                     nextState,
                     interaction: {},
                 }
             } catch (e) {
-                span.record({ awsqConversationId: this.config.conversationId })
                 throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
             }
         })
@@ -362,7 +368,7 @@ export class PrepareIterationState implements SessionState {
         this.conversationId = config.conversationId
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.workspaceRoot, this.conversationId)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, this.conversationId)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
@@ -382,8 +388,8 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        telemetry.awsq_codeReGeneration.emit({ awsqConversationId: this.config.conversationId, value: 1 })
-
+        TelemetryHelper.instance.setGenerateCodeIteration(1)
+        TelemetryHelper.instance.setGenerateCodeLastInvocationTime()
         action.messenger.sendAnswer({
             message: 'Uploading code ...',
             type: 'answer-part',
@@ -408,6 +414,7 @@ export class CodeGenIterationState extends CodeGenBase implements SessionState {
         })
 
         this.filePaths = codeGeneration.newFilePaths
+        TelemetryHelper.instance.recordUserCodeGenerationTelemetry(this.conversationId)
 
         return {
             nextState: new PrepareIterationState(this.config, this.approach, this.filePaths, this.tabID),

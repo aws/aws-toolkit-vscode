@@ -14,7 +14,9 @@ import { GitIgnoreFilter } from './gitignore'
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { getStringHash } from '../../shared/utilities/textUtilities'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from './telemetryHelper'
+import { PrepareRepoFailedError } from '../errors'
+import { getLogger } from '../../shared/logger/logger'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -27,6 +29,12 @@ export function getExcludePattern(additionalPatterns: string[] = []) {
         '**/*.jpg',
         '**/*.svg',
         '**/*.pyc',
+        '**/license.txt',
+        '**/License.txt',
+        '**/LICENSE.txt',
+        '**/license.md',
+        '**/License.md',
+        '**/LICENSE.md',
     ]
     const allPatterns = [...globAlwaysExcludedDirs, ...extraPatterns, ...additionalPatterns]
     return `{${allPatterns.join(',')}}`
@@ -71,28 +79,33 @@ export async function collectFiles(rootPath: string, respectGitIgnore: boolean =
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
 export async function prepareRepoData(repoRootPath: string, conversationId: string) {
-    const zip = new AdmZip()
+    try {
+        const zip = new AdmZip()
 
-    const allFiles = await vscode.workspace.findFiles(
-        new vscode.RelativePattern(repoRootPath, '**'),
-        getExcludePattern()
-    )
-    const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
+        const allFiles = await vscode.workspace.findFiles(
+            new vscode.RelativePattern(repoRootPath, '**'),
+            getExcludePattern()
+        )
+        const files = await filterOutGitignoredFiles(repoRootPath, allFiles)
 
-    let totalBytes = 0
-    for (const file of files) {
-        const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
-        totalBytes += fileSize
+        let totalBytes = 0
+        for (const file of files) {
+            const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
+            totalBytes += fileSize
 
-        const relativePath = getWorkspaceRelativePath(file.fsPath)
-        const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
-        zip.addLocalFile(file.fsPath, zipFolderPath)
-    }
-    telemetry.awsq_repo.emit({ awsqConversationId: conversationId, awsqRepositorySize: totalBytes })
-    const zipFileBuffer = zip.toBuffer()
-    return {
-        zipFileBuffer,
-        zipFileChecksum: getStringHash(zipFileBuffer),
+            const relativePath = getWorkspaceRelativePath(file.fsPath)
+            const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
+            zip.addLocalFile(file.fsPath, zipFolderPath)
+        }
+        TelemetryHelper.instance.setRepositorySize(totalBytes)
+        const zipFileBuffer = zip.toBuffer()
+        return {
+            zipFileBuffer,
+            zipFileChecksum: getStringHash(zipFileBuffer),
+        }
+    } catch (error) {
+        getLogger().debug(`weaverbird: Failed to prepare repo: ${error}`)
+        throw new PrepareRepoFailedError()
     }
 }
 

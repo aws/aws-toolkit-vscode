@@ -9,13 +9,12 @@ import { existsSync } from 'fs'
 import { EventEmitter } from 'vscode'
 import { Messenger } from './messenger/messenger'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { FollowUpTypes, SessionStatePhase } from '../../types'
+import { FollowUpTypes, SessionStatePhase, createUri } from '../../types'
 import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui-chat'
-import { weaverbirdScheme } from '../../constants'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { telemetry } from '../../../shared/telemetry/telemetry'
-import { createUserFacingErrorMessage } from '../../errors'
+import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 
 export interface ChatControllerEventEmitters {
@@ -31,14 +30,26 @@ export interface ChatControllerEventEmitters {
 export class WeaverbirdController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
+    private isAmazonQVisible: boolean
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
         messenger: Messenger,
-        sessionStorage: ChatSessionStorage
+        sessionStorage: ChatSessionStorage,
+        onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
+
+        /**
+         * defaulted to true because onDidChangeAmazonQVisibility doesn't get fire'd until after
+         * the view is opened
+         */
+        this.isAmazonQVisible = true
+
+        onDidChangeAmazonQVisibility(visible => {
+            this.isAmazonQVisible = visible
+        })
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data)
@@ -56,9 +67,6 @@ export class WeaverbirdController {
                     break
                 case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
                     this.provideFeedbackAndRegenerateCode(data)
-                    break
-                case FollowUpTypes.RejectCode:
-                    // TODO figure out what we want to do here
                     break
                 case FollowUpTypes.Retry:
                     this.retryRequest(data)
@@ -88,20 +96,26 @@ export class WeaverbirdController {
         switch (session?.state.phase) {
             case 'Approach':
                 if (vote === 'upvote') {
-                    telemetry.awsq_approachThumbsUp.emit({ awsqConversationId: session?.conversationId, value: 1 })
+                    telemetry.amazonq_approachThumbsUp.emit({
+                        amazonqConversationId: session?.conversationId,
+                        value: 1,
+                    })
                 } else if (vote === 'downvote') {
-                    telemetry.awsq_approachThumbsDown.emit({ awsqConversationId: session?.conversationId, value: 1 })
+                    telemetry.amazonq_approachThumbsDown.emit({
+                        amazonqConversationId: session?.conversationId,
+                        value: 1,
+                    })
                 }
                 break
             case 'Codegen':
                 if (vote === 'upvote') {
-                    telemetry.awsq_codeGenerationThumbsUp.emit({
-                        awsqConversationId: session?.conversationId,
+                    telemetry.amazonq_codeGenerationThumbsUp.emit({
+                        amazonqConversationId: session?.conversationId,
                         value: 1,
                     })
                 } else if (vote === 'downvote') {
-                    telemetry.awsq_codeGenerationThumbsDown.emit({
-                        awsqConversationId: session?.conversationId,
+                    telemetry.amazonq_codeGenerationThumbsDown.emit({
+                        amazonqConversationId: session?.conversationId,
                         value: 1,
                     })
                 }
@@ -131,7 +145,7 @@ export class WeaverbirdController {
             }
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
-                `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+                `Weaverbird request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
 
@@ -170,7 +184,6 @@ export class WeaverbirdController {
      */
     private async onCodeGeneration(session: Session, message: string | undefined, tabID: string) {
         // lock the UI/show loading bubbles
-        telemetry.awsq_codeGenerateClick.emit({ awsqConversationId: session.conversationId, value: 1 })
 
         this.messenger.sendAsyncEventProgress(
             tabID,
@@ -225,6 +238,18 @@ export class WeaverbirdController {
 
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(tabID, false)
+
+            if (!this.isAmazonQVisible) {
+                const open = 'Open chat'
+                const resp = await vscode.window.showInformationMessage(
+                    'Your code suggestions from Amazon Q (Preview) are ready to review',
+                    open
+                )
+                if (resp === open) {
+                    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
+                    // TODO add focusing on the specific tab once that's implemented
+                }
+            }
         }
     }
 
@@ -239,7 +264,7 @@ export class WeaverbirdController {
             this.messenger.sendUpdatePlaceholder(message.tabID, 'Select an option above to proceed')
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
-                `Weaverbird API request failed: ${err.cause?.message ?? err.message}`
+                `Weaverbird request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }
@@ -250,7 +275,10 @@ export class WeaverbirdController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
-            telemetry.awsq_isAcceptedCodeChanges.emit({ awsqConversationId: session.conversationId, enabled: true })
+            telemetry.amazonq_isAcceptedCodeChanges.emit({
+                amazonqConversationId: session.conversationId,
+                enabled: true,
+            })
             await session.acceptChanges()
 
             // Unlock the chat input if the changes were accepted
@@ -323,12 +351,6 @@ export class WeaverbirdController {
                         icon: 'refresh' as MynahIcons,
                         status: 'info',
                     },
-                    {
-                        pillText: 'Reject and discuss',
-                        type: FollowUpTypes.RejectCode,
-                        icon: 'revert' as MynahIcons,
-                        status: 'error',
-                    },
                 ]
             default:
                 return []
@@ -344,10 +366,25 @@ export class WeaverbirdController {
             canSelectFiles: false,
         }).prompt()
 
-        if (uri && uri instanceof vscode.Uri) {
-            session.config.workspaceRoot = uri.fsPath
+        if (uri instanceof vscode.Uri && !vscode.workspace.getWorkspaceFolder(uri)) {
             this.messenger.sendAnswer({
-                message: `Changed workspace root to: ${session.config.workspaceRoot}`,
+                tabID: message.tabID,
+                type: 'answer',
+                followUps: [
+                    {
+                        pillText: 'Modify source folder',
+                        type: 'ModifyDefaultSourceFolder',
+                    },
+                ],
+                message: new SelectedFolderNotInWorkspaceFolderError().message,
+            })
+            return
+        }
+
+        if (uri && uri instanceof vscode.Uri) {
+            session.config.sourceRoot = uri.fsPath
+            this.messenger.sendAnswer({
+                message: `Changed source root to: ${session.config.sourceRoot}`,
                 type: 'answer',
                 tabID: message.tabID,
             })
@@ -356,24 +393,19 @@ export class WeaverbirdController {
 
     private async openDiff(message: any) {
         const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.awsq_filesReviewed.emit({ awsqConversationId: session.conversationId, value: 1 })
-        const workspaceRoot = session.config.workspaceRoot ?? ''
-        const originalPath = path.join(workspaceRoot, message.rightPath)
+        telemetry.amazonq_isReviewedChanges.emit({ amazonqConversationId: session.conversationId, enabled: true })
+        const originalPath = path.join(session.config.workspaceRoot, message.rightPath)
         let left
         if (existsSync(originalPath)) {
             left = vscode.Uri.file(originalPath)
         } else {
-            left = vscode.Uri.from({ scheme: weaverbirdScheme, path: 'empty', query: `tabID=${message.tabID}` })
+            left = createUri('empty', message.tabID)
         }
 
         vscode.commands.executeCommand(
             'vscode.diff',
             left,
-            vscode.Uri.from({
-                scheme: weaverbirdScheme,
-                path: path.join(session.uploadId, message.rightPath),
-                query: `tabID=${message.tabID}`,
-            })
+            createUri(path.join(session.uploadId, message.rightPath), message.tabID)
         )
     }
 
