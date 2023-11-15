@@ -8,6 +8,7 @@ import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
 import { TabDataGenerator } from '../tabs/generator'
+import { AuthFollowUpType } from './generator'
 
 export interface FollowUpInteractionHandlerProps {
     mynahUI: MynahUI
@@ -29,7 +30,11 @@ export class FollowUpInteractionHandler {
         this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
     }
 
-    public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
+    public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {        
+        if (followUp.type !== undefined && ['full-auth', 're-auth'].includes(followUp.type)){
+            this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
+            return
+        }
         // we need to check if there is a prompt
         // which will cause an api call
         // then we can set the loading state to true

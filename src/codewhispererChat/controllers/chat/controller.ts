@@ -20,7 +20,8 @@ import {
     TabCreatedMessage,
     TabChangedMessage,
     UIFocusMessage,
-    ClickLink,
+    SourceLinkClickMessage,
+    ResponseBodyLinkClickMessage,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -40,6 +41,8 @@ import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhisper
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
+import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -53,9 +56,10 @@ export interface ChatControllerMessagePublishers {
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
-    readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
-    readonly processLinkClicked: MessagePublisher<ClickLink>
+    readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>    
     readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
+    readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
+    readonly processResponseBodyLinkClick:MessagePublisher<ResponseBodyLinkClickMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -71,8 +75,9 @@ export interface ChatControllerMessageListeners {
     readonly processChatItemVotedMessage: MessageListener<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessageListener<ChatItemFeedbackMessage>
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
-    readonly processLinkClicked: MessageListener<ClickLink>
     readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
+    readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
+    readonly processResponseBodyLinkClick:MessageListener<ResponseBodyLinkClickMessage>
 }
 
 export class ChatController {
@@ -152,14 +157,32 @@ export class ChatController {
         this.chatControllerMessageListeners.processOnboardingPageInteraction.onMessage(data => {
             this.processOnboardingPageInteraction(data)
         })
-
-        this.chatControllerMessageListeners.processLinkClicked.onMessage(data => {
-            this.processLinkClicked(data)
+        this.chatControllerMessageListeners.processSourceLinkClick.onMessage(data => {
+            this.processSourceLinkClick(data)
+        })
+        this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage(data => {
+            this.processResponseBodyLinkClick(data)
         })
     }
 
-    private async processLinkClicked(message: ClickLink) {
-        this.telemetryHelper.recordInteractWithMessage(message)
+
+    private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage){
+        this.telemetryHelper.recordInteractWithMessage({
+            command: 'link-was-clicked',
+            tabID: click.tabID,
+            messageId: click.messageId,
+            url: click.link
+
+        })
+        ExternalBrowserUtils.instance.openLink(click.link)
+    }    
+
+    private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage){    
+        this.openLinkInExternalBrowser(click)
+    }
+
+    private processSourceLinkClick(click: SourceLinkClickMessage){
+        this.openLinkInExternalBrowser(click)
     }
 
     private processOnboardingPageInteraction(interaction: OnboardingPageInteraction) {
@@ -477,8 +500,16 @@ export class ChatController {
             }, 20)
             return
         }
-
+        
         const tabID = triggerEvent.tabID
+
+        const credentialsState = await AuthUtil.instance.getCodeWhispererCredentialState()
+                
+        if (credentialsState !== undefined) {
+            this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
+            return
+        }
+
         const request = triggerPayloadToChatRequest(triggerPayload)
         const session = this.sessionStorage.getSession(tabID)
         getLogger().info(

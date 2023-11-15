@@ -12,6 +12,7 @@ type MessageCommand =
     | 'ui-is-ready'
     | 'ui-focus'
     | 'follow-up-was-clicked'
+    | 'auth-follow-up-was-clicked'
     | 'open-diff'
     | 'code_was_copied_to_clipboard'
     | 'insert_code_at_cursor_position'
@@ -22,5 +23,7 @@ type MessageCommand =
     | 'chat-item-feedback'
     | 'link-was-clicked'
     | 'onboarding-page-interaction'
+    | 'source-link-click'
+    | 'response-body-link-click'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { TabType } from '../storages/tabsStorage'
-import { FollowUpsBlock } from './model'
+import { MynahIcons } from "@aws/mynah-ui-chat"
+import { TabType } from "../storages/tabsStorage"
+import { FollowUpsBlock } from "./model"
+
+
+export type AuthFollowUpType = 'full-auth' | 're-auth'
 
 export interface FollowUpGeneratorProps {
     isWeaverbirdEnabled: boolean
@@ -17,7 +21,24 @@ export class FollowUpGenerator {
         this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
     }
 
-    public generateWelcomeBlockForTab(tabType: TabType): FollowUpsBlock {
+    public generateAuthFollowUps (tabType: TabType, authType: AuthFollowUpType): FollowUpsBlock {
+        switch (tabType) {
+            default:
+                return {
+                    text: '',
+                    options: [
+                        {
+                            pillText: authType === 'full-auth' ? 'Authenticate' : 'Re-Authenticate',
+                            type: authType,
+                            status: 'info',
+                            icon: 'refresh' as MynahIcons,
+                        }
+                    ]
+                }
+        }
+    }
+
+    public generateWelcomeBlockForTab (tabType: TabType): FollowUpsBlock {
         switch (tabType) {
             case 'wb':
                 return {
@@ -35,11 +56,11 @@ export class FollowUpGenerator {
                     options: [
                         ...(this.isWeaverbirdEnabled
                             ? [
-                                  {
-                                      pillText: 'I want Q to implement a task for me',
-                                      type: 'assign-code-task',
-                                  },
-                              ]
+                                {
+                                    pillText: 'I want to assign a code task',
+                                    type: 'assign-code-task',
+                                },
+                            ]
                             : []),
                         {
                             pillText: 'I have a software development question',

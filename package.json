@@ -3795,6 +3795,27 @@
         ],
         "walkthroughs": [],
         "icons": {
+            "aws-amazonq-q-gradient": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1aa"
+                }
+            },
+            "aws-amazonq-q-squid-ink": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1ab"
+                }
+            },
+            "aws-amazonq-q-white": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1ac"
+                }
+            },
             "aws-apprunner-service": {
                 "description": "AWS Contributed Icon",
                 "default": {
@@ -4010,27 +4031,6 @@
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cb"
-                }
-            },
-            "aws-amazonq-q-gradient": {
-                "description": "AWS Contributed Icon",
-                "default": {
-                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\f1aa"
-                }
-            },
-            "aws-amazonq-q-squid-ink": {
-                "description": "AWS Contributed Icon",
-                "default": {
-                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\f1ab"
-                }
-            },
-            "aws-amazonq-q-white": {
-                "description": "AWS Contributed Icon",
-                "default": {
-                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
-                    "fontCharacter": "\\f1ac"
                 }
             }
         },

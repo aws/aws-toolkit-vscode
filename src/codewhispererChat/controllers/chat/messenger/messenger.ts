@@ -6,6 +6,7 @@
 import { waitUntil } from '../../../../shared/utilities/timeoutUtils'
 import {
     AppToWebViewMessageDispatcher,
+    AuthNeededException,
     CodeReference,
     EditorContextCommandMessage,
     OnboardingPageInteractionMessage,
@@ -21,14 +22,25 @@ import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
+import { CWCredentialState } from '../../../../codewhisperer/util/authUtil'
 
 export class Messenger {
-    public constructor(
+    public constructor (
         private readonly dispatcher: AppToWebViewMessageDispatcher,
         private readonly telemetryHelper: CWCTelemetryHelper
-    ) {}
+    ) { }
 
-    async sendAIResponse(
+    public async sendAuthNeededExceptionMessage (credentialState: CWCredentialState, tabID: string, triggerID: string) {
+        this.dispatcher.sendAuthNeededExceptionMessage(
+            new AuthNeededException({
+                message: credentialState.message,
+                authType: credentialState.fullAuth ? 'full-auth' : 're-auth',
+                triggerID
+            }, tabID),            
+        )        
+    }
+
+    public async sendAIResponse (
         response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
         tabID: string,
@@ -200,7 +212,7 @@ export class Messenger {
         })
     }
 
-    public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
+    public sendErrorMessage (errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
         this.showChatExceptionMessage(
             {
                 errorMessage: errorMessage,
@@ -220,11 +232,11 @@ export class Messenger {
         ['aws.amazonq.sendToPrompt', 'Send to prompt'],
     ])
 
-    public sendOnboardingPageInteractionMessage(interaction: OnboardingPageInteraction, triggerID: string) {
+    public sendOnboardingPageInteractionMessage (interaction: OnboardingPageInteraction, triggerID: string) {
         let message
         switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
-                message = 'What can Amazon Q help me with?'
+                message = 'What can Amazon Q (Preview) help me with?'
                 break
         }
 
@@ -237,7 +249,7 @@ export class Messenger {
         )
     }
 
-    public sendEditorContextCommandMessage(command: EditorContextCommandType, selectedCode: string, triggerID: string) {
+    public sendEditorContextCommandMessage (command: EditorContextCommandType, selectedCode: string, triggerID: string) {
         // Remove newlines and spaces before and after the code
         const trimmedCode = selectedCode.trimStart().trimEnd()
 
@@ -259,7 +271,7 @@ export class Messenger {
         )
     }
 
-    private showChatExceptionMessage(e: ChatException, tabID: string, requestID: string | undefined) {
+    private showChatExceptionMessage (e: ChatException, tabID: string, requestID: string | undefined) {
         let message = 'This error is reported to the team automatically. We will attempt to fix it as soon as possible.'
         if (e.errorMessage !== undefined) {
             message += `\n\nDetails: ${e.errorMessage}`
