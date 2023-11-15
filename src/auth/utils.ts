@@ -48,7 +48,7 @@ import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
-import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
+import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -592,7 +592,7 @@ async function findSsoConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isIdcSsoConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
             }
             break
         case 'any':
@@ -624,7 +624,7 @@ async function findBuilderIdConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isBuilderIdConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
             }
             break
         case 'codecatalyst':
