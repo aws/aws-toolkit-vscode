@@ -16,6 +16,7 @@ import { Session } from '../../session/session'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
+import { featureName } from '../../constants'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -145,7 +146,7 @@ export class WeaverbirdController {
             }
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
-                `Weaverbird request failed: ${err.cause?.message ?? err.message}`
+                `${featureName} request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
 
@@ -264,7 +265,7 @@ export class WeaverbirdController {
             this.messenger.sendUpdatePlaceholder(message.tabID, 'Select an option above to proceed')
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
-                `Weaverbird request failed: ${err.cause?.message ?? err.message}`
+                `${featureName} request failed: ${err.cause?.message ?? err.message}`
             )
             this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
         }

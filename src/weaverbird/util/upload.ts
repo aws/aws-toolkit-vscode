@@ -6,6 +6,7 @@
 import got from 'got'
 
 import { getLogger } from '../../shared/logger/logger'
+import { featureName } from '../constants'
 
 /**
  * uploadCode
@@ -26,7 +27,7 @@ export async function uploadCode(url: string, buffer: Buffer, kmsKeyArn?: string
             },
         })
     } catch (e) {
-        getLogger().error(`weaverbird: failed to upload code to s3: ${(e as Error).message}`)
+        getLogger().error(`${featureName}: failed to upload code to s3: ${(e as Error).message}`)
         throw e
     }
 }

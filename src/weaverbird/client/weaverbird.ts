@@ -15,6 +15,7 @@ import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
 import * as WeaverbirdProxyClient from './weaverbirdproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
+import { featureName } from '../constants'
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
@@ -87,7 +88,9 @@ export class WeaverbirdClient {
             return conversationId
         } catch (e) {
             getLogger().error(
-                `weaverbird: failed to start conversation: ${(e as Error).message} RequestId: ${(e as any).requestId}`
+                `${featureName}: failed to start conversation: ${(e as Error).message} RequestId: ${
+                    (e as any).requestId
+                }`
             )
             throw e
         }
@@ -111,7 +114,7 @@ export class WeaverbirdClient {
             const response = await client.createUploadUrl(params).promise()
             return response
         } catch (e) {
-            getLogger().error(`weaverbird: failed to generate presigned url: ${(e as Error).message}`)
+            getLogger().error(`${featureName}: failed to generate presigned url: ${(e as Error).message}`)
             throw e
         }
     }
@@ -142,7 +145,7 @@ export class WeaverbirdClient {
             return assistantResponse.join(' ')
         } catch (e) {
             getLogger().error(
-                `weaverbird: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
+                `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
             )
             throw e
         }
@@ -168,7 +171,7 @@ export class WeaverbirdClient {
             return response
         } catch (e) {
             getLogger().error(
-                `weaverbird: failed to start code generation: ${(e as Error).message} RequestId: ${
+                `${featureName}: failed to start code generation: ${(e as Error).message} RequestId: ${
                     (e as any).requestId
                 }`
             )
@@ -189,7 +192,7 @@ export class WeaverbirdClient {
             return response
         } catch (e) {
             getLogger().error(
-                `weaverbird: failed to start get code generation results: ${(e as Error).message} RequestId: ${
+                `${featureName}: failed to start get code generation results: ${(e as Error).message} RequestId: ${
                     (e as any).requestId
                 }`
             )
@@ -229,7 +232,7 @@ export class WeaverbirdClient {
             return newFileContents
         } catch (e) {
             getLogger().error(
-                `weaverbird: failed to export archive result: ${(e as Error).message} RequestId: ${
+                `${featureName}: failed to export archive result: ${(e as Error).message} RequestId: ${
                     (e as any).requestId
                 }`
             )

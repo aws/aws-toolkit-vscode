@@ -8,3 +8,5 @@ export const weaverbirdScheme = 'aws-weaverbird'
 
 // For uniquely identifiying which chat messages should be routed to Weaverbird
 export const weaverbirdChat = 'weaverbirdChat'
+
+export const featureName = 'Amazon Q feature development'

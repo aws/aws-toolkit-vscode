@@ -4,6 +4,7 @@
  */
 
 import { ToolkitError } from '../shared/errors'
+import { featureName } from './constants'
 
 export class ConversationIdNotFoundError extends ToolkitError {
     constructor() {
@@ -19,13 +20,13 @@ export class TabIdNotFoundError extends ToolkitError {
 
 export class PanelLoadError extends ToolkitError {
     constructor() {
-        super(`Weaverbird UI panel failed to load`, { code: 'PanelLoadFailed' })
+        super(`${featureName} UI panel failed to load`, { code: 'PanelLoadFailed' })
     }
 }
 
 export class WorkspaceFolderNotFoundError extends ToolkitError {
     constructor() {
-        super(`Workspace folder was not found. Open a workspace to continue using Weaverbird`, {
+        super(`Workspace folder was not found. Open a workspace to continue using ${featureName}`, {
             code: 'WorkspaceFolderNotFound',
         })
     }
@@ -64,7 +65,7 @@ const denyListedErrors: string[] = ['Deserialization error']
 
 export function createUserFacingErrorMessage(message: string) {
     if (denyListedErrors.some(err => message.includes(err))) {
-        return 'Weaverbird API request failed'
+        return `${featureName} API request failed`
     }
     return message
 }
