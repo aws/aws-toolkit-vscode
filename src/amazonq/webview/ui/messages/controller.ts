@@ -61,7 +61,13 @@ export class MessageController {
             '',
             this.tabDataGenerator.getTabData('cwc', false)
         )
-        if (newTabID !== undefined) {
+        if (newTabID === undefined) {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
+            })
+            return
+        } else {
             this.mynahUI.addChatItem(newTabID, {
                 type: ChatItemType.ANSWER_STREAM,
                 body: '',
@@ -86,11 +92,6 @@ export class MessageController {
             this.tabsStorage.updateTabStatus(newTabID, 'busy')
 
             return newTabID
-        } else {
-            this.mynahUI.notify({
-                content: uiComponentsTexts.noMoreTabsTooltip,
-                type: NotificationType.WARNING,
-            })
         }
     }
 }

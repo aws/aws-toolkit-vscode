@@ -77,7 +77,13 @@ export class QuickActionHandler {
         if (this.tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
             affectedTabId = this.mynahUI.updateStore('', {})
         }
-        if (affectedTabId !== undefined) {
+        if (affectedTabId === undefined) {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
+            })
+            return
+        } else {
             this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
             this.connector.onKnownTabOpen(affectedTabId)
             this.connector.onUpdateTabType(affectedTabId)
@@ -115,11 +121,6 @@ export class QuickActionHandler {
                     chatMessage: realPromptText,
                 })
             }
-        } else {
-            this.mynahUI.notify({
-                content: uiComponentsTexts.noMoreTabsTooltip,
-                type: NotificationType.WARNING,
-            })
         }
     }
 }

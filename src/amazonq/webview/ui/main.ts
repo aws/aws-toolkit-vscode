@@ -214,7 +214,13 @@ ${message}`,
                     promptInputPlaceholder: '',
                     chatItems: [answer],
                 })
-                if (newTabId !== undefined) {
+                if (newTabId === undefined) {
+                    mynahUI.notify({
+                        content: uiComponentsTexts.noMoreTabsTooltip,
+                        type: NotificationType.WARNING,
+                    })
+                    return
+                } else {
                     // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
                     // It means that it cannot trigger after the updateStore function returns.
                     tabsStorage.addTab({
@@ -222,11 +228,6 @@ ${message}`,
                         status: 'busy',
                         type: 'unknown',
                         isSelected: true,
-                    })
-                } else {
-                    mynahUI.notify({
-                        content: uiComponentsTexts.noMoreTabsTooltip,
-                        type: NotificationType.WARNING,
                     })
                 }
             }
