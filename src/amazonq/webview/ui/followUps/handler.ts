@@ -68,7 +68,12 @@ export class FollowUpInteractionHandler {
                 '',
                 this.tabDataGenerator.getTabData('wb', true, 'Q - Dev', '/dev')
             )
-            if (newTabId !== undefined) {
+            if (newTabId === undefined) {
+                this.mynahUI.notify({
+                    content: uiComponentsTexts.noMoreTabsTooltip,
+                    type: NotificationType.WARNING,
+                })
+            } else {
                 // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
                 // It means that it cannot trigger after the updateStore function returns.
                 this.tabsStorage.addTab({
@@ -86,11 +91,6 @@ export class FollowUpInteractionHandler {
 
                 // Let weaverbird know a wb tab has been opened
                 this.connector.onKnownTabOpen(newTabId)
-            } else {
-                this.mynahUI.notify({
-                    content: uiComponentsTexts.noMoreTabsTooltip,
-                    type: NotificationType.WARNING,
-                })
             }
             return
         }
