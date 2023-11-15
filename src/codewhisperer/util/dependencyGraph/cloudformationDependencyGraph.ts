@@ -53,6 +53,8 @@ export class cloudformationDependencyGraph extends DependencyGraph {
             if (workspaceFolder === undefined) {
                 this._pickedSourceFiles.add(uri.fsPath)
             } else {
+                //Add selected file to _pickedSourceFiles for the security scan.
+                this._pickedSourceFiles.add(uri.fsPath)
                 await this.traverseDir(this.getProjectPath(uri))
             }
             await sleep(1000)
