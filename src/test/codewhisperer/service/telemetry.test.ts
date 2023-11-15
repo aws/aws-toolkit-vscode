@@ -11,6 +11,7 @@ import {
     DefaultCodeWhispererClient,
     ListRecommendationsRequest,
     ListRecommendationsResponse,
+    Recommendation,
 } from '../../../codewhisperer/client/codewhisperer'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { ConfigurationEntry } from '../../../codewhisperer/models/model'
@@ -39,7 +40,7 @@ describe('', async function () {
     beforeEach(async function () {
         sandbox = sinon.createSandbox()
         tempFolder = (await createTestWorkspaceFolder()).uri.fsPath
-        client = mockClient(aResponse())
+        client = mockClient()
         await resetStates()
     })
 
@@ -52,10 +53,16 @@ describe('', async function () {
         resetCodeWhispererGlobalVariables()
     }
 
-    function mockClient(response: CodeWhispererResponse): DefaultCodeWhispererClient {
+    function mockClient(): DefaultCodeWhispererClient {
+        const response1 = aResponse('session_id_1', 'request_id_1', { content: 'Foo' }, { content: 'Bar' })
+        const response2 = aResponse('session_id_2', 'request_id_2', { content: 'Baz' })
+        const response3 = aResponse('session_id_3', 'request_id_3', { content: 'Qoo' })
+
         const cwClient = new DefaultCodeWhispererClient()
-        sandbox.stub(cwClient, 'listRecommendations').resolves(response)
-        sandbox.stub(cwClient, 'generateRecommendations').resolves(response)
+        const stub = sandbox.stub(cwClient, 'listRecommendations')
+        stub.onCall(0).resolves(response1)
+        stub.onCall(1).resolves(response2)
+        stub.onCall(2).resolves(response3)
 
         return cwClient
     }
@@ -109,8 +116,8 @@ describe('', async function () {
         acceptByTab().then(() => {
             const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertUserTriggerDecision({
-                codewhispererSessionId: 'sessionId',
-                codewhispererFirstRequestId: 'requestId',
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
                 codewhispererLanguage: 'python',
                 codewhispererTriggerType: 'OnDemand',
                 codewhispererLineNumber: 0,
@@ -125,32 +132,133 @@ describe('', async function () {
         })
     })
 
-    it('simple reject - esc key', async function () {
+    it('multiple accept - tab', async function () {
         assertCleanStates()
         const editor = await openATextEditorWithText('', 'test.py')
 
         await manualTrigger(editor, client, config)
         await waitUntilSuggestionSeen(0)
-        await rejectByEsc().then(() => {
-            const s = session
-            console.log()
-            // force codewhisperer to flush telemetry
-            RecommendationHandler.instance.onEditorChange()
-
+        acceptByTab().then(() => {
             const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
             assertUserTriggerDecision({
-                codewhispererSessionId: 'sessionId',
-                codewhispererFirstRequestId: 'requestId',
+                codewhispererSessionId: 'session_id_1',
+                codewhispererFirstRequestId: 'request_id_1',
                 codewhispererLanguage: 'python',
                 codewhispererTriggerType: 'OnDemand',
                 codewhispererLineNumber: 0,
                 codewhispererCursorOffset: 0,
                 codewhispererSuggestionCount: 1,
                 codewhispererCompletionType: 'Line',
-                codewhispererSuggestionState: 'Reject',
+                codewhispererSuggestionState: 'Accept',
                 codewhispererSuggestionImportCount: 0,
                 codewhispererTypeaheadLength: 0,
                 codewhispererUserGroup: 'Control',
+            })
+
+            assertCleanStates()
+            manualTrigger(editor, client, config).then(() => {
+                waitUntilSuggestionSeen(0).then(() => {
+                    acceptByTab().then(() => {
+                        assertUserTriggerDecision({
+                            codewhispererSessionId: 'sessionId_id_2',
+                            codewhispererFirstRequestId: 'request_id_2',
+                            codewhispererLanguage: 'python',
+                            codewhispererTriggerType: 'OnDemand',
+                            codewhispererLineNumber: 0,
+                            codewhispererCursorOffset: 0,
+                            codewhispererSuggestionCount: 1,
+                            codewhispererCompletionType: 'Line',
+                            codewhispererSuggestionState: 'Accept',
+                            codewhispererSuggestionImportCount: 0,
+                            codewhispererTypeaheadLength: 0,
+                            codewhispererUserGroup: 'Control',
+                        })
+                    })
+                })
+            })
+        })
+    })
+
+    it('simple reject - esc key then onEditorChange', async function () {
+        assertCleanStates()
+        const editor = await openATextEditorWithText('', 'test.py')
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen(0)
+        await rejectByEsc().then(() => {
+            // force codewhisperer to flush telemetry
+            RecommendationHandler.instance.onEditorChange().then(() => {
+                const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
+                assertUserTriggerDecision({
+                    codewhispererSessionId: 'session_id_1',
+                    codewhispererFirstRequestId: 'request_id_1',
+                    codewhispererLanguage: 'python',
+                    codewhispererTriggerType: 'OnDemand',
+                    codewhispererLineNumber: 0,
+                    codewhispererCursorOffset: 0,
+                    codewhispererSuggestionCount: 1,
+                    codewhispererCompletionType: 'Line',
+                    codewhispererSuggestionState: 'Reject',
+                    codewhispererSuggestionImportCount: 0,
+                    codewhispererTypeaheadLength: 0,
+                    codewhispererUserGroup: 'Control',
+                })
+            })
+        })
+    })
+
+    it('simple reject - esc key then onFocusChange', async function () {
+        assertCleanStates()
+        const editor = await openATextEditorWithText('', 'test.py')
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen(0)
+        await rejectByEsc().then(() => {
+            // force codewhisperer to flush telemetry
+            RecommendationHandler.instance.onFocusChange().then(() => {
+                const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
+                assertUserTriggerDecision({
+                    codewhispererSessionId: 'session_id_1',
+                    codewhispererFirstRequestId: 'request_id_1',
+                    codewhispererLanguage: 'python',
+                    codewhispererTriggerType: 'OnDemand',
+                    codewhispererLineNumber: 0,
+                    codewhispererCursorOffset: 0,
+                    codewhispererSuggestionCount: 1,
+                    codewhispererCompletionType: 'Line',
+                    codewhispererSuggestionState: 'Reject',
+                    codewhispererSuggestionImportCount: 0,
+                    codewhispererTypeaheadLength: 0,
+                    codewhispererUserGroup: 'Control',
+                })
+            })
+        })
+    })
+
+    it('simple reject - esc key then invoke again', async function () {
+        assertCleanStates()
+        const editor = await openATextEditorWithText('', 'test.py')
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen(0)
+        await rejectByEsc().then(() => {
+            // force codewhisperer to flush telemetry
+            manualTrigger(editor, client, config).then(() => {
+                const assertUserTriggerDecision = assertTelemetryCurried('codewhisperer_userTriggerDecision')
+                assertUserTriggerDecision({
+                    codewhispererSessionId: 'session_id_1',
+                    codewhispererFirstRequestId: 'request_id_1',
+                    codewhispererLanguage: 'python',
+                    codewhispererTriggerType: 'OnDemand',
+                    codewhispererLineNumber: 0,
+                    codewhispererCursorOffset: 0,
+                    codewhispererSuggestionCount: 1,
+                    codewhispererCompletionType: 'Line',
+                    codewhispererSuggestionState: 'Reject',
+                    codewhispererSuggestionImportCount: 0,
+                    codewhispererTypeaheadLength: 0,
+                    codewhispererUserGroup: 'Control',
+                })
             })
         })
     })
@@ -167,18 +275,14 @@ function aRequest(): ListRecommendationsRequest {
     }
 }
 
-function aResponse(): CodeWhispererResponse {
+function aResponse(sessionId: string, requestId: string, ...args: Recommendation[]): CodeWhispererResponse {
     return {
-        recommendations: [
-            {
-                content: '"Hello world"',
-            },
-        ],
+        recommendations: args,
         $response: {
-            requestId: 'requestId',
+            requestId: requestId,
             httpResponse: {
                 headers: {
-                    'x-amzn-sessionid': 'sessionId',
+                    'x-amzn-sessionid': sessionId,
                 },
             },
         },
