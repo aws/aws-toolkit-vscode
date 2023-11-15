@@ -85,16 +85,18 @@ export class CWCTelemetryHelper {
                 return 'applyCommonBestPractices'
             case UserIntent.IMPROVE_CODE:
                 return 'improveCode'
+            case UserIntent.CITE_SOURCES:
+                return 'citeSources'
+            case UserIntent.EXPLAIN_LINE_BY_LINE:
+                return 'explainLineByLine'
+            case UserIntent.SHOW_EXAMPLES:
+                return 'showExample'
             default:
                 return undefined
         }
     }
 
     public recordOpenChat(triggerInteractionType: TabOpenType) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         let cwsprChatTriggerInteraction: CwsprChatTriggerInteraction = 'click'
         switch (triggerInteractionType) {
             case 'click':
@@ -112,33 +114,18 @@ export class CWCTelemetryHelper {
     }
 
     public recordCloseChat() {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         telemetry.codewhispererchat_closeChat.emit()
     }
 
     public recordEnterFocusChat() {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         telemetry.codewhispererchat_enterFocusChat.emit()
     }
 
     public recordExitFocusChat() {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         telemetry.codewhispererchat_exitFocusChat.emit()
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
         const logger = getLogger()
         try {
             await globals.telemetry.postFeedback({
@@ -166,20 +153,12 @@ export class CWCTelemetryHelper {
     }
 
     public recordFeedbackResult(feedbackResult: Result) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         telemetry.feedback_result.emit({ result: feedbackResult })
     }
 
     public recordInteractWithMessage(
         message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage | ClickLink
     ) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const conversationId = this.getConversationId(message.tabID)
         let event: CodewhispererchatInteractWithMessage | undefined
         switch (message.command) {
@@ -259,10 +238,6 @@ export class CWCTelemetryHelper {
     }
 
     public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         if (triggerEvent.tabID === undefined) {
             return
         }
@@ -284,10 +259,6 @@ export class CWCTelemetryHelper {
     }
 
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
         const event: CodewhispererchatAddMessage = {
@@ -321,10 +292,6 @@ export class CWCTelemetryHelper {
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
         telemetry.codewhispererchat_messageResponseError.emit({
@@ -342,10 +309,6 @@ export class CWCTelemetryHelper {
     }
 
     public recordEnterFocusConversation(tabID: string) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
             telemetry.codewhispererchat_enterFocusConversation.emit({
@@ -355,10 +318,6 @@ export class CWCTelemetryHelper {
     }
 
     public recordExitFocusConversation(tabID: string) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
             telemetry.codewhispererchat_exitFocusConversation.emit({
@@ -372,7 +331,7 @@ export class CWCTelemetryHelper {
         this.responseStreamTimeToFirstChunk.set(tabID, undefined)
     }
 
-    public setReponseStreamTimeToFirstChunk(tabID: string) {
+    public setResponseStreamTimeToFirstChunk(tabID: string) {
         if (this.responseStreamTimeToFirstChunk.get(tabID) === undefined) {
             this.responseStreamTimeToFirstChunk.set(
                 tabID,
