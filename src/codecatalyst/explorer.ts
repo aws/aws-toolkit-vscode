@@ -17,7 +17,7 @@ import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
 import { Connection, isBuilderIdConnection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { AuthCommandDeclarations } from '../auth/commands'
+import { showManageConnections } from '../auth/ui/vue/show'
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
@@ -35,12 +35,10 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
-            AuthCommandDeclarations.instance.declared.showManageConnections
-                .build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
-                .asTreeNode({
-                    label: 'Start',
-                    iconPath: getIcon('vscode-debug-start'),
-                }),
+            showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
+                label: 'Start',
+                iconPath: getIcon('vscode-debug-start'),
+            }),
             learnMoreCommand.build(docsUrl).asTreeNode({
                 label: 'Learn More about CodeCatalyst',
                 iconPath: getIcon('vscode-question'),

@@ -19,7 +19,7 @@ import {
     reconnect,
     selectCustomizationPrompt,
     signoutCodeWhisperer,
-    showManageConnections,
+    showManageCwConnections,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
@@ -122,7 +122,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showManageConnections.build(placeholder, cwTreeNodeSource).asTreeNode({
+            return showManageCwConnections.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -130,7 +130,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
             return {
                 data: 'signIn',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showManageConnections.execute(placeholder, cwQuickPickSource),
+                onClick: () => showManageCwConnections.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'signIn'>
     }
 }
