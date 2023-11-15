@@ -41,7 +41,7 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
-const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
+export const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && !isValidCodeCatalystConnection(conn)
