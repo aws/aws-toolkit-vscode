@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 import {
-    createSsoSignIn,
-    createFreeTierLimitMetNode,
-    createReconnectNode,
+    createFreeTierLimitMet,
+    createSignIn,
+    createReconnect,
 } from '../../codewhisperer/explorer/codewhispererChildrenNodes'
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
@@ -62,13 +62,13 @@ export class AmazonQNode implements RootNode {
 
     public getChildren() {
         if (AuthUtil.instance.isConnectionExpired()) {
-            return [createReconnectNode(), createLearnMoreNode()]
+            return [createReconnect('tree'), createLearnMoreNode()]
         }
         if (!AuthUtil.instance.isConnected()) {
-            return [createSsoSignIn(), createLearnMoreNode()]
+            return [createSignIn('tree'), createLearnMoreNode()]
         }
         if (this._showFreeTierLimitReachedNode) {
-            return [createFreeTierLimitMetNode()]
+            return [createFreeTierLimitMet('tree')]
         } else {
             // logged in
             return [switchToAmazonQNode(), runQTransformNode()]
