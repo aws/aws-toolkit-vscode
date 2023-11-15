@@ -20,7 +20,7 @@ import {
     isIamConnection,
     isSsoConnection,
     isBuilderIdConnection,
-    ssoAccountAccessScopes,
+    scopesSsoAccountAccess,
     scopesCodeWhispererChat,
     scopesWeaverbird,
     scopesGumby,
@@ -29,7 +29,7 @@ import {
 import { getLogger } from '../../shared/logger'
 
 /** Backwards compatibility for connections w pre-chat scopes */
-export const codeWhispererCoreScopes = [...ssoAccountAccessScopes, ...scopesCodeWhispererCore]
+export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
 export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesWeaverbird]
 
