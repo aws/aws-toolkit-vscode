@@ -21,6 +21,7 @@ import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
 import { indent } from '../../shared/utilities/textUtilities'
 import { keepAliveHeader } from './agent'
+import { getOptOutPreference } from '../util/commonUtil'
 
 export type ProgrammingLanguage = Readonly<
     CodeWhispererClient.ProgrammingLanguage | CodeWhispererUserClient.ProgrammingLanguage
@@ -220,7 +221,7 @@ export class DefaultCodeWhispererClient {
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
         const requestWithOptOut: SendTelemetryEventRequest = {
             ...request,
-            optOutPreference: globals.telemetry.telemetryEnabled ? 'OPTIN' : 'OPTOUT',
+            optOutPreference: getOptOutPreference(),
         }
         if (!AuthUtil.instance.isValidEnterpriseSsoInUse() && !globals.telemetry.telemetryEnabled) {
             return
