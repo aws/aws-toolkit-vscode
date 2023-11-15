@@ -19,6 +19,8 @@ import apiConfig = require('./service-2.json')
 import userApiConfig = require('./user-service-2.json')
 import { session } from '../util/codeWhispererSession'
 import { getLogger } from '../../shared/logger'
+import { indent } from '../../shared/utilities/textUtilities'
+import { keepAliveHeader } from './agent'
 import { getOptOutPreference } from '../util/commonUtil'
 
 export type ProgrammingLanguage = Readonly<
@@ -125,6 +127,7 @@ export class DefaultCodeWhispererClient {
                         if (req.operation === 'generateCompletions') {
                             req.on('build', () => {
                                 req.httpRequest.headers['x-amzn-codewhisperer-optout'] = `${isOptedOut}`
+                                req.httpRequest.headers['Connection'] = keepAliveHeader
                             })
                         }
                     },
@@ -198,7 +201,21 @@ export class DefaultCodeWhispererClient {
         const client = await this.createUserSdkClient()
         const requester = async (request: CodeWhispererUserClient.ListAvailableCustomizationsRequest) =>
             client.listAvailableCustomizations(request).promise()
-        return pageableToCollection(requester, {}, 'nextToken').promise()
+        return pageableToCollection(requester, {}, 'nextToken')
+            .promise()
+            .then(resps => {
+                let logStr = 'CodeWhisperer: listAvailableCustomizations API request:'
+                resps.forEach(resp => {
+                    const requestId = resp.$response.requestId
+                    logStr += `\n${indent('RequestID: ', 4)}${requestId},\n${indent('Customizations:', 4)}`
+                    resp.customizations.forEach((c, index) => {
+                        const entry = `${index.toString().padStart(2, '0')}: ${c.name?.trim()}`
+                        logStr += `\n${indent(entry, 8)}`
+                    })
+                })
+                getLogger().debug(logStr)
+                return resps
+            })
     }
 
     public async sendTelemetryEvent(request: SendTelemetryEventRequest) {
