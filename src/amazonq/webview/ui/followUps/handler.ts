@@ -3,12 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp, ChatItemType, MynahUI, NotificationType } from '@aws/mynah-ui-chat'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
 import { TabDataGenerator } from '../tabs/generator'
 import { AuthFollowUpType } from './generator'
+import { uiComponentsTexts } from '../texts/constants'
 
 export interface FollowUpInteractionHandlerProps {
     mynahUI: MynahUI
@@ -56,6 +57,7 @@ export class FollowUpInteractionHandler {
                 body: '',
             })
             this.tabsStorage.updateTabStatus(tabID, 'busy')
+            this.tabsStorage.resetTabTimer(tabID)
         }
         this.connector.onFollowUpClicked(tabID, messageId, followUp)
     }
@@ -66,23 +68,30 @@ export class FollowUpInteractionHandler {
                 '',
                 this.tabDataGenerator.getTabData('wb', true, 'Q - Dev', '/dev')
             )
-            // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
-            // It means that it cannot trigger after the updateStore function returns.
-            this.tabsStorage.addTab({
-                id: newTabId,
-                status: 'busy',
-                type: 'unknown',
-                isSelected: true,
-                openInteractionType: 'click',
-            })
+            if (newTabId === undefined) {
+                this.mynahUI.notify({
+                    content: uiComponentsTexts.noMoreTabsTooltip,
+                    type: NotificationType.WARNING,
+                })
+            } else {
+                // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
+                // It means that it cannot trigger after the updateStore function returns.
+                this.tabsStorage.addTab({
+                    id: newTabId,
+                    status: 'busy',
+                    type: 'unknown',
+                    isSelected: true,
+                    openInteractionType: 'click',
+                })
 
-            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-            this.connector.onUpdateTabType(tabID)
-            this.tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
-            this.connector.onUpdateTabType(newTabId)
+                this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+                this.connector.onUpdateTabType(tabID)
+                this.tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
+                this.connector.onUpdateTabType(newTabId)
 
-            // Let weaverbird know a wb tab has been opened
-            this.connector.onKnownTabOpen(newTabId)
+                // Let weaverbird know a wb tab has been opened
+                this.connector.onKnownTabOpen(newTabId)
+            }
             return
         }
 
