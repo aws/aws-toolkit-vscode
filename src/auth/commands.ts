@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import * as vscode from 'vscode'
-import { CommandDeclarations, Commands } from '../shared/vscode/commands2'
-import { AuthSource, isAuthSource, showAuthWebview } from './ui/vue/show'
+import { CommandDeclarations, Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
+import { AuthSource, showAuthWebview } from './ui/vue/show'
 import { ServiceItemId, isServiceItemId } from './ui/vue/types'
 import { addConnection, showConnectionsPageCommand } from './utils'
 import { isCloud9 } from '../shared/extensionUtilities'
@@ -15,17 +15,15 @@ import { isCloud9 } from '../shared/extensionUtilities'
 export class AuthCommandBackend {
     constructor(private readonly extContext: vscode.ExtensionContext) {}
 
-    public showManageConnections(source: AuthSource, serviceToShow?: ServiceItemId) {
+    public showManageConnections(_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) {
         // The auth webview page does not make sense to use in C9,
         // so show the auth quick pick instead.
         if (isCloud9('any')) {
             return addConnection.execute()
         }
 
-        // Edge case where called by vscode UI and non ServiceItemId object
-        // is passed in.
-        if (!isAuthSource(source)) {
-            source = 'unknown'
+        if (_ !== placeholder) {
+            source = 'vscodeExecution'
         }
 
         if (!isServiceItemId(serviceToShow)) {

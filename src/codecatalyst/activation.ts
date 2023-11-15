@@ -17,7 +17,7 @@ import { watchRestartingDevEnvs } from './reconnect'
 import { PromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
 import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
 import { getThisDevEnv } from './model'
@@ -40,6 +40,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),
         Commands.register('aws.codecatalyst.manageConnections', () => {
             AuthCommandDeclarations.instance.declared.showManageConnections.execute(
+                placeholder,
                 'codecatalystDeveloperTools',
                 'codecatalyst'
             )

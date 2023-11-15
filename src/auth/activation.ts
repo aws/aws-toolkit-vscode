@@ -8,7 +8,7 @@ import { AwsContext } from '../shared/awsContext'
 import { Auth } from './auth'
 import { LoginManager } from './deprecated/loginManager'
 import { fromString } from './providers/credentials'
-import { registerCommandsWithVSCode } from '../shared/vscode/commands2'
+import { placeholder, registerCommandsWithVSCode } from '../shared/vscode/commands2'
 import { AuthCommandBackend, AuthCommandDeclarations } from './commands'
 import { getLogger } from '../shared/logger'
 import { ExtensionUse } from './utils'
@@ -57,5 +57,5 @@ async function showManageConnectionsOnStartup() {
     }
 
     // Show connection management to user
-    AuthCommandDeclarations.instance.declared.showManageConnections.execute('firstStartup')
+    AuthCommandDeclarations.instance.declared.showManageConnections.execute(placeholder, 'firstStartup')
 }

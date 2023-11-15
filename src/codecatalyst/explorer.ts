@@ -9,7 +9,7 @@ import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
@@ -36,7 +36,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
             AuthCommandDeclarations.instance.declared.showManageConnections
-                .build('codecatalystDeveloperTools', 'codecatalyst')
+                .build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst')
                 .asTreeNode({
                     label: 'Start',
                     iconPath: getIcon('vscode-debug-start'),

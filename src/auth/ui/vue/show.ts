@@ -45,6 +45,7 @@ import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../share
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
 import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
+import { vscodeComponent } from '../../../shared/vscode/commands2'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -712,20 +713,22 @@ const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
+/**
+ * Different places the Add Connection command could be executed from.
+ *
+ * Useful for telemetry.
+ */
 export const AuthSources = {
     addConnectionQuickPick: 'addConnectionQuickPick',
     firstStartup: 'firstStartup',
     codecatalystDeveloperTools: 'codecatalystDeveloperTools',
-    unknown: 'unknown',
+    vscodeComponent: vscodeComponent,
     cwQuickPick: cwQuickPickSource,
-    cwTreeNode: cwTreeNodeSource
+    cwTreeNode: cwTreeNodeSource,
+    authNode: 'authNode'
 } as const
 
-export type AuthSource = typeof AuthSources[keyof typeof AuthSources]
-
-export function isAuthSource(obj: any): obj is AuthSource {
-    return Object.values(AuthSources).includes(obj)
-} 
+export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 
 export async function showAuthWebview(
     ctx: vscode.ExtensionContext,
