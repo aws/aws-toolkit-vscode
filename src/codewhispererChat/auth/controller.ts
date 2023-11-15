@@ -3,14 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthUtil } from "../../codewhisperer/util/authUtil"
-import { AuthFollowUpType } from "./model"
-import {commands} from 'vscode'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { AuthFollowUpType } from './model'
+import { commands } from 'vscode'
 
 export class AuthController {
-
-    public handleAuth(type: AuthFollowUpType){
-        switch(type){
+    public handleAuth(type: AuthFollowUpType) {
+        switch (type) {
             case 'full-auth':
                 this.handleFullAuth()
                 break
@@ -20,12 +19,11 @@ export class AuthController {
         }
     }
 
-    private handleFullAuth(){
+    private handleFullAuth() {
         commands.executeCommand('aws.codewhisperer.manageConnections')
     }
 
-    private handleReAuth(){
+    private handleReAuth() {
         AuthUtil.instance.showReauthenticatePrompt()
     }
-
 }

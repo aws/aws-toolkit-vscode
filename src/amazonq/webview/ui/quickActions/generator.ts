@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-
-import {QuickActionCommandGroup } from "@aws/mynah-ui-chat/dist/static"
-import { TabType } from "../storages/tabsStorage"
-import { QuickActionCommands } from "./constants"
+import { QuickActionCommandGroup } from '@aws/mynah-ui-chat/dist/static'
+import { TabType } from '../storages/tabsStorage'
+import { QuickActionCommands } from './constants'
 
 export interface QuickActionGeneratorProps {
     isWeaverbirdEnabled: boolean
@@ -23,7 +22,7 @@ export class QuickActionGenerator {
         switch (tabType) {
             case 'wb':
                 return []
-            default: 
+            default:
                 return QuickActionCommands(this.isWeaverbirdEnabled)
         }
     }
