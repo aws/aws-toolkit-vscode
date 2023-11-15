@@ -5,8 +5,11 @@
 
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
+    CodewhispererchatAddMessage,
+    CodewhispererchatInteractWithMessage,
     CwsprChatTriggerInteraction,
     CwsprChatUserIntent,
+    MetricBase,
     Result,
     telemetry,
 } from '../../../shared/telemetry/telemetry'
@@ -25,8 +28,40 @@ import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
+import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
+import CodeWhispererUserClient, { Dimension } from '../../../codewhisperer/client/codewhispereruserclient'
+import { isAwsError } from '../../../shared/errors'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
+
+export function mapToClientTelemetryEvent<T extends MetricBase>(
+    name: string,
+    event: T
+): CodeWhispererUserClient.SendTelemetryEventRequest {
+    return {
+        telemetryEvent: {
+            metricData: {
+                metricName: name,
+                metricValue: 1,
+                timestamp: new Date(Date.now()),
+                dimensions: Object.keys(event).map(
+                    (key): Dimension => ({ name: key, value: event[key as keyof T]?.toString() })
+                ),
+            },
+        },
+    }
+}
+
+export function logSendTelemetryEventFailure(error: any) {
+    let requestId: string | undefined
+    if (isAwsError(error)) {
+        requestId = error.requestId
+    }
+
+    getLogger().debug(
+        `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${error.message}`
+    )
+}
 
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
@@ -146,57 +181,69 @@ export class CWCTelemetryHelper {
         }
 
         const conversationId = this.getConversationId(message.tabID)
-
+        let event: CodewhispererchatInteractWithMessage | undefined
         switch (message.command) {
             case 'insert_code_at_cursor_position':
-                //TODO: has reference
                 message = message as InsertCodeAtCursorPosition
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
-                    cwsprChatHasReference: undefined,
-                })
+                    cwsprChatHasReference: undefined, //TODO
+                }
                 break
             case 'code_was_copied_to_clipboard':
-                //TODO: has reference
                 message = message as CopyCodeToClipboard
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
-                    cwsprChatHasReference: undefined,
-                })
+                    cwsprChatHasReference: undefined, //TODO
+                }
                 break
             case 'follow-up-was-clicked':
                 message = message as PromptMessage
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
-                })
+                }
                 break
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
-                })
+                }
                 break
             case 'link-was-clicked':
                 message = message as ClickLink
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: 'clickLink',
                     cwsprChatInteractionTarget: message.url,
-                })
+                }
                 break
+        }
+
+        if (!event) {
+            return
+        }
+
+        telemetry.codewhispererchat_interactWithMessage.emit(event)
+
+        try {
+            codeWhispererClient.sendTelemetryEvent(
+                mapToClientTelemetryEvent('codewhispererchat_interactWithMessage', event)
+            )
+        } catch (error) {
+            logSendTelemetryEventFailure(error)
         }
     }
 
@@ -243,8 +290,7 @@ export class CWCTelemetryHelper {
 
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
-        // TODO: response code snippet count
-        telemetry.codewhispererchat_addMessage.emit({
+        const event: CodewhispererchatAddMessage = {
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
@@ -253,7 +299,7 @@ export class CWCTelemetryHelper {
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
-            cwsprChatResponseCodeSnippetCount: 0,
+            cwsprChatResponseCodeSnippetCount: 0, // TODO
             cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: message.codeReferenceCount,
@@ -263,7 +309,15 @@ export class CWCTelemetryHelper {
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
-        })
+        }
+
+        telemetry.codewhispererchat_addMessage.emit(event)
+
+        try {
+            codeWhispererClient.sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_addMessage', event))
+        } catch (error) {
+            logSendTelemetryEventFailure(error)
+        }
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {

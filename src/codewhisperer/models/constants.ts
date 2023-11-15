@@ -7,7 +7,13 @@
  * SDK Client
  */
 
-export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+// export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+
+// export const endpoint = 'https://rts-641299012133.test.codewhisperer.ai.aws.dev/' // alpha IAD
+
+// export const endpoint = 'https://rts-732200995377.test.codewhisperer.ai.aws.dev/' // gamma IAD
+
+export const endpoint = 'https://rts-171763828851.test.codewhisperer.ai.aws.dev/' // gamma PDX
 
 export const region = 'us-east-1'
 
@@ -275,6 +281,96 @@ export const updateInlineLockKey = 'CODEWHISPERER_INLINE_UPDATE_LOCK_KEY'
 export const newCustomizationMessage = 'You have access to new CodeWhisperer customizations.'
 
 export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
+
+// Transform by Q
+
+export const logoPath = '../../resources/icons/aws/codewhisperer/transform-landing-page-icon.svg'
+
+export const selectTargetLanguagePrompt = 'Select the target language'
+
+export const selectTargetVersionPrompt = 'Select the target version'
+
+export const selectModulePrompt = 'Select the module you want to transform'
+
+export const transformByQWindowTitle = 'Transform by Q'
+
+export const stopTransformByQMessage = 'Stop Transform by Q?'
+
+export const stoppingTransformByQMessage = 'Stopping Transform by Q...'
+
+export const transformByQFailedMessage = 'Transform by Q failed'
+
+export const transformByQCancelledMessage = 'Transform by Q cancelled'
+
+export const transformByQCompleted = 'Transform by Q completed'
+
+export const noPomXmlFoundMessage =
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations.'
+
+export const noOngoingJobMessage = 'No job is in-progress at the moment'
+
+export const cancellationInProgressMessage = 'Cancellation is in-progress'
+
+export const noSupportedJavaProjectsFoundMessage =
+    'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11.'
+
+export const JDK8VersionNumber = '52'
+
+export const JDK11VersionNumber = '55'
+
+export const numMillisecondsPerSecond = 1000
+
+export const transformByQStateRunningMessage = 'running'
+
+export const transformByQStateCancellingMessage = 'cancelling'
+
+export const transformByQStateFailedMessage = 'failed'
+
+export const transformByQStateSucceededMessage = 'succeeded'
+
+export const transformByQStoppedState = 'STOPPED'
+
+export const transformationJobPollingIntervalSeconds = 10
+
+export const transformationJobTimeoutSeconds = 36000 // TODO: adjust
+
+export const progressIntervalMs = 1000
+
+export const targetLanguages = ['Java']
+
+export const targetVersions = new Map<string, string[]>([['Java', ['JDK17']]])
+
+export const defaultLanguage = 'Java'
+
+export const contentChecksumType = 'SHA_256'
+
+export const uploadIntent = 'TRANSFORMATION'
+
+export const transformationType = 'LANGUAGE_UPGRADE'
+
+// when in one of these states, we can definitely say if the plan is or is not available
+// in other states, we keep polling/waiting
+export const validStatesForCheckingPlanAvailability = [
+    'COMPLETED',
+    'PARTIALLY_COMPLETED',
+    'FAILED',
+    'STOPPING',
+    'STOPPED',
+    'REJECTED',
+    'PLANNED',
+    'TRANSFORMING',
+    'TRANSFORMED',
+]
+
+// similarly, when in one of these states, we can stop polling, and if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
+export const validStatesForCheckingDownloadUrl = [
+    'COMPLETED',
+    'PARTIALLY_COMPLETED',
+    'FAILED',
+    'STOPPING',
+    'STOPPED',
+    'REJECTED',
+]
 
 export enum UserGroup {
     Classifier = 'Classifier',

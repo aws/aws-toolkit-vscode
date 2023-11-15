@@ -109,28 +109,25 @@ export interface CodeReference {
     }
 }
 
-
 export interface AuthNeededExceptionProps {
-    readonly message: string 
-    readonly authType: AuthFollowUpType    
-    readonly triggerID: string    
+    readonly message: string
+    readonly authType: AuthFollowUpType
+    readonly triggerID: string
 }
 
-
-export class AuthNeededException extends UiMessage{
-    readonly message: string 
+export class AuthNeededException extends UiMessage {
+    readonly message: string
     readonly authType: AuthFollowUpType
-    readonly triggerID: string   
+    readonly triggerID: string
     override type = 'authNeededException'
 
     constructor(props: AuthNeededExceptionProps, tabID: string) {
         super(tabID)
-        this.message = props.message        
+        this.message = props.message
         this.triggerID = props.triggerID
         this.authType = props.authType
     }
 }
-
 
 export interface ChatMessageProps {
     readonly message: string | undefined
@@ -165,7 +162,7 @@ export class ChatMessage extends UiMessage {
     }
 }
 
-export interface  FollowUp {
+export interface FollowUp {
     readonly type: string
     readonly pillText: string
     readonly prompt: string
@@ -230,7 +227,7 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendAuthNeededExceptionMessage(message: AuthNeededException){
+    public sendAuthNeededExceptionMessage(message: AuthNeededException) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

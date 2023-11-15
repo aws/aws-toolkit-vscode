@@ -212,6 +212,149 @@ export class CodeScanStoppedError extends ToolkitError {
     }
 }
 
+// for internal use; store status of job
+enum TransformByQStatus {
+    NotStarted = 'Not Started',
+    Running = 'Running', // includes creating job, uploading code, analyzing, testing, transforming, etc.
+    Cancelled = 'Cancelled', // if user manually cancels
+    Failed = 'Failed', // if job is rejected or if any other error experienced; user will receive specific error message
+    Succeeded = 'Succeeded',
+}
+
+export enum StepProgress {
+    NotStarted = 'Not Started',
+    Pending = 'Pending',
+    Succeeded = 'Succeeded',
+    Failed = 'Failed',
+}
+
+enum JDKVersion {
+    JDK8 = '8',
+    JDK11 = '11',
+    JDK17 = '17',
+}
+
+export enum DropdownStep {
+    STEP_1 = 1,
+    STEP_2 = 2,
+    STEP_3 = 3,
+}
+
+export class ZipManifest {
+    sourcesRoot: string = 'sources/'
+    version: string = '1.0'
+}
+
+export class TransformByQState {
+    private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
+
+    private jobId: string = ''
+
+    private sourceJDKVersion: JDKVersion = JDKVersion.JDK8
+
+    private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+
+    public isNotStarted() {
+        return this.transformByQState === TransformByQStatus.NotStarted
+    }
+
+    public isRunning() {
+        return this.transformByQState === TransformByQStatus.Running
+    }
+
+    public isCancelled() {
+        return this.transformByQState === TransformByQStatus.Cancelled
+    }
+
+    public isFailed() {
+        return this.transformByQState === TransformByQStatus.Failed
+    }
+
+    public isSucceeded() {
+        return this.transformByQState === TransformByQStatus.Succeeded
+    }
+
+    public getJobId() {
+        return this.jobId
+    }
+
+    public getSourceJDKVersion() {
+        return this.sourceJDKVersion
+    }
+
+    public getTargetJDKVersion() {
+        return this.targetJDKVersion
+    }
+
+    public getStatus() {
+        return this.transformByQState
+    }
+
+    public setToNotStarted() {
+        this.transformByQState = TransformByQStatus.NotStarted
+    }
+
+    public setToRunning() {
+        this.transformByQState = TransformByQStatus.Running
+    }
+
+    public setToCancelled() {
+        this.transformByQState = TransformByQStatus.Cancelled
+    }
+
+    public setToFailed() {
+        this.transformByQState = TransformByQStatus.Failed
+    }
+
+    public setToSucceeded() {
+        this.transformByQState = TransformByQStatus.Succeeded
+    }
+
+    public setJobId(id: string) {
+        this.jobId = id
+    }
+
+    public setSourceJDKVersionToJDK8() {
+        this.sourceJDKVersion = JDKVersion.JDK8
+    }
+
+    public setSourceJDKVersionToJDK11() {
+        this.sourceJDKVersion = JDKVersion.JDK11
+    }
+
+    public setTargetJDKVersionToJDK17() {
+        this.targetJDKVersion = JDKVersion.JDK17
+    }
+
+    public getPrefixTextForButton() {
+        switch (this.transformByQState) {
+            case TransformByQStatus.NotStarted:
+                return 'Run'
+            case TransformByQStatus.Cancelled:
+                return 'Stopping'
+            default:
+                return 'Stop'
+        }
+    }
+
+    public getIconForButton() {
+        switch (this.transformByQState) {
+            case TransformByQStatus.NotStarted:
+                return getIcon('vscode-play')
+            default:
+                return getIcon('vscode-stop-circle')
+        }
+    }
+}
+
+export const transformByQState: TransformByQState = new TransformByQState()
+
+export class TransformByQStoppedError extends ToolkitError {
+    constructor() {
+        super('Transform by Q stopped by user.', { cancelled: true })
+    }
+}
+
 export interface CodeScanTelemetryEntry {
     codewhispererCodeScanJobId?: string
     codewhispererLanguage: CodewhispererLanguage

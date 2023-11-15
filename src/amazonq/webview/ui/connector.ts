@@ -56,7 +56,7 @@ export class Connector {
         this.tabsStorage = props.tabsStorage
     }
 
-    onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {      
+    onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
                 this.cwChatConnector.onSourceLinkClick(tabID, messageId, link)
@@ -64,7 +64,7 @@ export class Connector {
         }
     }
 
-    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {        
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
                 this.cwChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
@@ -238,7 +238,7 @@ export class Connector {
     }
 
     onAuthFollowUpClicked = (tabID: string, authType: AuthFollowUpType) => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {            
+        switch (this.tabsStorage.getTab(tabID)?.type) {
             default:
                 this.cwChatConnector.authFollowUpClicked(tabID, authType)
                 break

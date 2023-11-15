@@ -56,10 +56,10 @@ export interface ChatControllerMessagePublishers {
     readonly processStopResponseMessage: MessagePublisher<StopResponseMessage>
     readonly processChatItemVotedMessage: MessagePublisher<ChatItemVotedMessage>
     readonly processChatItemFeedbackMessage: MessagePublisher<ChatItemFeedbackMessage>
-    readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>    
+    readonly processUIFocusMessage: MessagePublisher<UIFocusMessage>
     readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
-    readonly processResponseBodyLinkClick:MessagePublisher<ResponseBodyLinkClickMessage>
+    readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
 }
 
 export interface ChatControllerMessageListeners {
@@ -77,7 +77,7 @@ export interface ChatControllerMessageListeners {
     readonly processUIFocusMessage: MessageListener<UIFocusMessage>
     readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
-    readonly processResponseBodyLinkClick:MessageListener<ResponseBodyLinkClickMessage>
+    readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
 }
 
 export class ChatController {
@@ -165,23 +165,21 @@ export class ChatController {
         })
     }
 
-
-    private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage){
+    private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage) {
         this.telemetryHelper.recordInteractWithMessage({
             command: 'link-was-clicked',
             tabID: click.tabID,
             messageId: click.messageId,
-            url: click.link
-
+            url: click.link,
         })
         ExternalBrowserUtils.instance.openLink(click.link)
-    }    
+    }
 
-    private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage){    
+    private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
         this.openLinkInExternalBrowser(click)
     }
 
-    private processSourceLinkClick(click: SourceLinkClickMessage){
+    private processSourceLinkClick(click: SourceLinkClickMessage) {
         this.openLinkInExternalBrowser(click)
     }
 
@@ -500,11 +498,11 @@ export class ChatController {
             }, 20)
             return
         }
-        
+
         const tabID = triggerEvent.tabID
 
         const credentialsState = await AuthUtil.instance.getCodeWhispererCredentialState()
-                
+
         if (credentialsState !== undefined) {
             this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return

@@ -5,6 +5,7 @@
 
 import * as vscode from 'vscode'
 import {
+    createTransformByQ,
     createAutoSuggestions,
     createOpenReferenceLog,
     createSecurityScan,
@@ -71,8 +72,10 @@ export class CodeWhispererNode implements RootNode {
                 return 'IAM Connected'
             }
         } else if (AuthUtil.instance.isConnectionExpired()) {
+            vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
             return 'Expired Connection'
         }
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         return ''
     }
 
@@ -113,6 +116,7 @@ export class CodeWhispererNode implements RootNode {
                     return [
                         createAutoSuggestions(type, autoTriggerEnabled),
                         createSecurityScan(type),
+                        createTransformByQ(),
                         createOpenReferenceLog(type),
                         createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page
                     ]

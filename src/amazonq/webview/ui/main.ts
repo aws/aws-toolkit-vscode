@@ -120,7 +120,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
         sendMessageToExtension: message => {
             ideApi.postMessage(message)
         },
-        onChatAnswerReceived: (tabID: string, item: ChatItem) => {          
+        onChatAnswerReceived: (tabID: string, item: ChatItem) => {
             if (item.type === ChatItemType.ANSWER_PART || item.type === ChatItemType.CODE_RESULT) {
                 mynahUI.updateLastChatAnswer(tabID, {
                     ...(item.messageId !== undefined ? { messageId: item.messageId } : {}),
@@ -248,8 +248,8 @@ ${message}`,
                 content: 'Selected code is copied to clipboard',
             })
         },
-        onChatItemEngagement: connector.triggerSuggestionEngagement,         
-         onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
+        onChatItemEngagement: connector.triggerSuggestionEngagement,
+        onSourceLinkClick: (tabId, messageId, link, mouseEvent) => {
             mouseEvent?.preventDefault()
             mouseEvent?.stopPropagation()
             mouseEvent?.stopImmediatePropagation()

@@ -8,10 +8,15 @@ import globals from '../../shared/extensionGlobals'
 import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { CodewhispererchatModifyCode, telemetry } from '../../shared/telemetry/telemetry'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
+import { codeWhispererClient } from '../client/codewhisperer'
+import {
+    logSendTelemetryEventFailure,
+    mapToClientTelemetryEvent,
+} from '../../codewhispererChat/controllers/chat/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -97,11 +102,18 @@ export class CodeWhispererTracker {
             getLogger().verbose(`Exception Thrown from CodeWhispererTracker: ${e}`)
         } finally {
             if ('conversationID' in suggestion) {
-                telemetry.codewhispererchat_modifyCode.emit({
+                const event: CodewhispererchatModifyCode = {
                     cwsprChatConversationId: suggestion.conversationID,
                     cwsprChatMessageId: suggestion.messageID,
                     cwsprChatModificationPercentage: percentage ? percentage : 0,
-                })
+                }
+
+                telemetry.codewhispererchat_modifyCode.emit(event)
+
+                codeWhispererClient
+                    .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_modifyCode', event))
+                    .then()
+                    .catch(logSendTelemetryEventFailure)
             } else {
                 telemetry.codewhisperer_userModification.emit({
                     codewhispererRequestId: suggestion.requestId ? suggestion.requestId : 'undefined',

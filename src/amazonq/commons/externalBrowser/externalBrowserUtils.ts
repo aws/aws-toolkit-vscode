@@ -2,12 +2,12 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import {env, Uri} from 'vscode';
+import { env, Uri } from 'vscode'
 
 export class ExternalBrowserUtils {
     static #instance: ExternalBrowserUtils
 
-    public static get instance () {
+    public static get instance() {
         if (this.#instance !== undefined) {
             return this.#instance
         }
@@ -16,7 +16,7 @@ export class ExternalBrowserUtils {
         return self
     }
 
-    public openLink(link: string){
-        env.openExternal(Uri.parse(link));
+    public openLink(link: string) {
+        env.openExternal(Uri.parse(link))
     }
 }

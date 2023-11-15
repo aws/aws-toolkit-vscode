@@ -557,7 +557,6 @@
         },
         "CreateUploadUrlRequest": {
             "type": "structure",
-            "required": ["contentMd5"],
             "members": {
                 "contentMd5": {
                     "shape": "CreateUploadUrlRequestContentMd5String"
