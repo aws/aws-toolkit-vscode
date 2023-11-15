@@ -452,7 +452,7 @@ function getInstrumenter(
     if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
         info.debounceCount += 1
         TelemetryDebounceInfo.instance.set(id, info)
-        getLogger().debug(`commands: skipped telemetry for "${id.id}" with key "${JSON.stringify(id.compositeKey)}"`)
+        getLogger().debug('commands: skipped telemetry for "%s" with key "%O"', id.id, id.compositeKey)
 
         return undefined
     }
@@ -499,7 +499,7 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
              * for the metric to emit. We need to figure out a better way to handle either incorrectly called
              * or the VS Code UI component.
              */
-            getLogger().error(`Commands/Telemetry: "${id}" executed with invalid "source" type: "${args}"`)
+            getLogger().error('Commands/Telemetry: "%s" executed with invalid "source" type: "%O"', id, args)
             args[indexAsInt] = unsetSource
         }
     })
