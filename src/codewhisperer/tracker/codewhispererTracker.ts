@@ -13,8 +13,10 @@ import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
 import { codeWhispererClient } from '../client/codewhisperer'
-import { mapToClientTelemetryEvent } from '../../codewhispererChat/controllers/chat/telemetryHelper'
-import { isAwsError } from '../../shared/errors'
+import {
+    logSendTelemetryEventFailure,
+    mapToClientTelemetryEvent,
+} from '../../codewhispererChat/controllers/chat/telemetryHelper'
 
 /**
  * This singleton class is mainly used for calculating the percentage of user modification.
@@ -111,18 +113,7 @@ export class CodeWhispererTracker {
                 codeWhispererClient
                     .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_modifyCode', event))
                     .then()
-                    .catch(error => {
-                        let requestId: string | undefined
-                        if (isAwsError(error)) {
-                            requestId = error.requestId
-                        }
-
-                        getLogger().debug(
-                            `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
-                                error.message
-                            }`
-                        )
-                    })
+                    .catch(logSendTelemetryEventFailure)
             } else {
                 telemetry.codewhisperer_userModification.emit({
                     codewhispererRequestId: suggestion.requestId ? suggestion.requestId : 'undefined',

@@ -52,6 +52,17 @@ export function mapToClientTelemetryEvent<T extends MetricBase>(
     }
 }
 
+export function logSendTelemetryEventFailure(error: any) {
+    let requestId: string | undefined
+    if (isAwsError(error)) {
+        requestId = error.requestId
+    }
+
+    getLogger().debug(
+        `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${error.message}`
+    )
+}
+
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
@@ -227,21 +238,13 @@ export class CWCTelemetryHelper {
 
         telemetry.codewhispererchat_interactWithMessage.emit(event)
 
-        codeWhispererClient
-            .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_interactWithMessage', event))
-            .then()
-            .catch(error => {
-                let requestId: string | undefined
-                if (isAwsError(error)) {
-                    requestId = error.requestId
-                }
-
-                getLogger().debug(
-                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
-                        error.message
-                    }`
-                )
-            })
+        try {
+            codeWhispererClient.sendTelemetryEvent(
+                mapToClientTelemetryEvent('codewhispererchat_interactWithMessage', event)
+            )
+        } catch (error) {
+            logSendTelemetryEventFailure(error)
+        }
     }
 
     public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
@@ -310,21 +313,11 @@ export class CWCTelemetryHelper {
 
         telemetry.codewhispererchat_addMessage.emit(event)
 
-        codeWhispererClient
-            .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_addMessage', event))
-            .then()
-            .catch(error => {
-                let requestId: string | undefined
-                if (isAwsError(error)) {
-                    requestId = error.requestId
-                }
-
-                getLogger().debug(
-                    `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${
-                        error.message
-                    }`
-                )
-            })
+        try {
+            codeWhispererClient.sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_addMessage', event))
+        } catch (error) {
+            logSendTelemetryEventFailure(error)
+        }
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
