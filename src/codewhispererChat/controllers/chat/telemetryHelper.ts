@@ -217,13 +217,10 @@ export class CWCTelemetryHelper {
 
         telemetry.codewhispererchat_interactWithMessage.emit(event)
 
-        try {
-            codeWhispererClient.sendTelemetryEvent(
-                mapToClientTelemetryEvent('codewhispererchat_interactWithMessage', event)
-            )
-        } catch (error) {
-            logSendTelemetryEventFailure(error)
-        }
+        codeWhispererClient
+            .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_interactWithMessage', event))
+            .then()
+            .catch(logSendTelemetryEventFailure)
     }
 
     public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
@@ -284,11 +281,10 @@ export class CWCTelemetryHelper {
 
         telemetry.codewhispererchat_addMessage.emit(event)
 
-        try {
-            codeWhispererClient.sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_addMessage', event))
-        } catch (error) {
-            logSendTelemetryEventFailure(error)
-        }
+        codeWhispererClient
+            .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_addMessage', event))
+            .then()
+            .catch(logSendTelemetryEventFailure)
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
