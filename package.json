@@ -4086,6 +4086,13 @@
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cb"
                 }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1cc"
+                }
             }
         },
         "notebooks": [
@@ -4116,8 +4123,9 @@
         "test": "npm run testCompile && ts-node ./scripts/test/test.ts && npm run report",
         "testE2E": "npm run testCompile && ts-node ./scripts/test/testE2E.ts && npm run report",
         "testInteg": "npm run testCompile && ts-node ./scripts/test/testInteg.ts && npm run report",
-        "lint": "ts-node ./scripts/lint/testLint.ts",
-        "lintfix": "eslint -c .eslintrc.js --fix --ext .ts .",
+        "lint": "ts-node ./scripts/lint/testLint.ts && npm run prettier --check src",
+        "lintfix": "eslint -c .eslintrc.js --fix --ext .ts . && npm run formatfix",
+        "formatfix": "prettier --write src",
         "package": "ts-node ./scripts/build/package.ts",
         "install-plugin": "vsce package -o aws-toolkit-vscode-test.vsix && code --install-extension aws-toolkit-vscode-test.vsix",
         "generateClients": "npm run build -w @amzn/codewhisperer-streaming && ts-node ./scripts/build/generateServiceClient.ts ",

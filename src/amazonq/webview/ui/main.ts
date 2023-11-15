@@ -16,7 +16,11 @@ import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 
-export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: MynahUIDataModel) => {
+export const createMynahUI = (
+    weaverbirdInitEnabled: boolean,
+    gumbyInitEnabled: boolean,
+    initialData?: MynahUIDataModel
+) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
@@ -34,8 +38,11 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
     // used to keep track of whether or not weaverbird is enabled and has an active idC
     let isWeaverbirdEnabled = weaverbirdInitEnabled
 
+    const isGumbyEnabled = gumbyInitEnabled
+
     const tabDataGenerator = new TabDataGenerator({
         isWeaverbirdEnabled,
+        isGumbyEnabled,
     })
 
     // eslint-disable-next-line prefer-const
@@ -286,12 +293,14 @@ ${message}`,
         connector,
         tabsStorage,
         isWeaverbirdEnabled,
+        isGumbyEnabled,
     })
     quickActionHandler = new QuickActionHandler({
         mynahUI,
         connector,
         tabsStorage,
         isWeaverbirdEnabled,
+        isGumbyEnabled,
     })
     textMessageHandler = new TextMessageHandler({
         mynahUI,
@@ -303,5 +312,6 @@ ${message}`,
         connector,
         tabsStorage,
         isWeaverbirdEnabled,
+        isGumbyEnabled,
     })
 }

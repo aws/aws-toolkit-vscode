@@ -13,6 +13,7 @@ export interface MessageControllerProps {
     connector: Connector
     tabsStorage: TabsStorage
     isWeaverbirdEnabled: boolean
+    isGumbyEnabled: boolean
 }
 
 export class MessageController {
@@ -25,7 +26,10 @@ export class MessageController {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
-        this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
+        this.tabDataGenerator = new TabDataGenerator({
+            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isGumbyEnabled: props.isGumbyEnabled,
+        })
     }
 
     public sendMessageToTab(message: ChatItem, tabType: TabType): string {

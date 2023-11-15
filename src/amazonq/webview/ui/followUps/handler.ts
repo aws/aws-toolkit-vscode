@@ -15,6 +15,7 @@ export interface FollowUpInteractionHandlerProps {
     connector: Connector
     tabsStorage: TabsStorage
     isWeaverbirdEnabled: boolean
+    isGumbyEnabled: boolean
 }
 
 export class FollowUpInteractionHandler {
@@ -27,7 +28,10 @@ export class FollowUpInteractionHandler {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
-        this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
+        this.tabDataGenerator = new TabDataGenerator({
+            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isGumbyEnabled: props.isGumbyEnabled,
+        })
     }
 
     public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
