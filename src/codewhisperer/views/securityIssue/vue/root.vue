@@ -60,8 +60,10 @@
             <h3>Suggested code fix preview</h3>
             <span v-html="suggestedFixHtml"></span>
 
-            <h4>Why are we recommending this?</h4>
-            <span>{{ suggestedFixDescription }}</span>
+            <div v-if="isFixDescriptionAvailable">
+                <h4>Why are we recommending this?</h4>
+                <span>{{ suggestedFixDescription }}</span>
+            </div>
         </div>
     </div>
 </template>
@@ -110,6 +112,7 @@ export default defineComponent({
             suggestedFix: '',
             suggestedFixDescription: '',
             isFixAvailable: false,
+            isFixDescriptionAvailable: false,
             relatedVulnerabilities: [] as string[],
             startLine: 0,
             relativePath: '',
@@ -140,6 +143,12 @@ export default defineComponent({
                 if (suggestedFix) {
                     this.isFixAvailable = true
                     this.suggestedFix = suggestedFix.code
+                    if (
+                        suggestedFix.description.trim() !== '' &&
+                        suggestedFix.description.trim() !== 'Suggested remediation:'
+                    ) {
+                        this.isFixDescriptionAvailable = true
+                    }
                     this.suggestedFixDescription = suggestedFix.description
                 }
             }
