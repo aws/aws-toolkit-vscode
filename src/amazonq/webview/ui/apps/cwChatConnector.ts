@@ -203,9 +203,10 @@ export class Connector {
             },
             messageData.command
         )
-        if (triggerTabID !== undefined) {
-            this.sendTriggerTabIDReceived(messageData.triggerID, triggerTabID)
-        }
+        this.sendTriggerTabIDReceived(
+            messageData.triggerID,
+            triggerTabID !== undefined ? triggerTabID : 'no-available-tabs'
+        )
     }
 
     private sendTriggerTabIDReceived = async (triggerID: string, tabID: string): Promise<void> => {
@@ -229,7 +230,7 @@ export class Connector {
             const followUps =
                 messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
-                          text: 'Would you like to follow up with one of these?',
+                          text: 'Suggested follow up questions:',
                           options: messageData.followUps,
                       }
                     : undefined
@@ -276,7 +277,7 @@ export class Connector {
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
-                              text: 'Would you like to follow up with one of these?',
+                              text: 'Suggested follow up questions:',
                               options: messageData.followUps,
                           }
                         : undefined,

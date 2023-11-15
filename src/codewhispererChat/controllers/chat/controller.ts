@@ -492,6 +492,11 @@ export class ChatController {
         if (triggerEvent === undefined) {
             return
         }
+
+        if (triggerEvent.tabID === 'no-available-tabs') {
+            return
+        }
+
         if (triggerEvent.tabID === undefined) {
             setTimeout(() => {
                 this.generateResponse(triggerPayload, triggerID)
