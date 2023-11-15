@@ -68,52 +68,6 @@ async function collectInputs(validModules: vscode.QuickPickItem[] | undefined) {
     return state as UserInputState
 }
 
-/* 
-async function pickTargetLanguage(
-    input: MultiStepInputFlowController,
-    state: Partial<UserInputState>,
-    targetLanguages: vscode.QuickPickItem[],
-    validModules: vscode.QuickPickItem[] | undefined
-) {
-    const pick = await input.showQuickPick({
-        title: CodeWhispererConstants.transformByQWindowTitle,
-        step: DropdownStep.STEP_1,
-        totalSteps: DropdownStep.STEP_3,
-        placeholder: CodeWhispererConstants.selectTargetLanguagePrompt,
-        items: targetLanguages,
-        activeItem: typeof state.targetLanguage !== 'string' ? state.targetLanguage : undefined,
-        shouldResume: () => Promise.resolve(true),
-    })
-    state.targetLanguage = pick
-    const versionKey = state.targetLanguage.label
-    return (input: MultiStepInputFlowController) => pickTargetVersion(input, state, versionKey, validModules)
-}
-
-async function pickTargetVersion(
-    input: MultiStepInputFlowController,
-    state: Partial<UserInputState>,
-    versionKey: string,
-    validModules: vscode.QuickPickItem[] | undefined
-) {
-    const targetVersions: QuickPickItem[] = CodeWhispererConstants.targetVersions
-        .get(versionKey!)!
-        .map(label => ({ label }))
-
-    const pick = await input.showQuickPick({
-        title: CodeWhispererConstants.transformByQWindowTitle,
-        step: DropdownStep.STEP_2,
-        totalSteps: DropdownStep.STEP_3,
-        placeholder: CodeWhispererConstants.selectTargetVersionPrompt,
-        items: targetVersions,
-        activeItem: state.targetVersion,
-        shouldResume: () => Promise.resolve(true),
-    })
-    state.targetVersion = pick
-    transformByQState.setTargetJDKVersionToJDK17()
-    return (input: MultiStepInputFlowController) => pickModule(input, state, validModules)
-}
-*/
-
 async function pickModule(
     input: MultiStepInputFlowController,
     state: Partial<UserInputState>,
@@ -145,6 +99,7 @@ export async function startTransformByQ() {
     const state = await collectInputs(validModules)
 
     vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
+    vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
 
     const startTime = new Date()
 
@@ -208,6 +163,8 @@ export async function startTransformByQ() {
         const filePath = path.join(os.tmpdir(), 'transformation-plan.md')
         fs.writeFileSync(filePath, plan)
         vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.file(filePath))
+        transformByQState.setPlanFilePath(filePath)
+        vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
 
         // step 3: poll until artifacts are ready to download
         throwIfCancelled()
@@ -237,6 +194,9 @@ export async function startTransformByQ() {
          */
         throwIfCancelled()
         transformByQState.setToSucceeded()
+        if (status === 'PARTIALLY_COMPLETED') {
+            transformByQState.setToPartiallySucceeded()
+        }
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         throwIfCancelled()
         sessionPlanProgress['returnCode'] = StepProgress.Succeeded

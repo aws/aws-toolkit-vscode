@@ -1291,6 +1291,11 @@
                     "group": "navigation@4"
                 },
                 {
+                    "command": "aws.codeWhisperer.showTransformationPlanInHub",
+                    "when": "view == aws.codeWhisperer.transformationHub",
+                    "group": "navigation@5"
+                },
+                {
                     "command": "aws.submitFeedback",
                     "when": "view == aws.explorer",
                     "group": "navigation@6"
@@ -3686,12 +3691,18 @@
             {
                 "command": "aws.codeWhisperer.showPlanProgressInHub",
                 "title": "Show Plan Progress",
-                "icon": "$(book)"
+                "icon": "$(checklist)"
             },
             {
                 "command": "aws.codeWhisperer.showHistoryInHub",
                 "title": "Show Job History",
                 "icon": "$(history)"
+            },
+            {
+                "command": "aws.codeWhisperer.showTransformationPlanInHub",
+                "title": "Show Transformation Plan",
+                "icon": "$(book)",
+                "enablement": "gumby.isPlanAvailable"
             }
         ],
         "jsonValidation": [
@@ -4085,6 +4096,13 @@
                 "default": {
                     "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
                     "fontCharacter": "\\f1cb"
+                }
+            },
+            "aws-stepfunctions-preview": {
+                "description": "AWS Contributed Icon",
+                "default": {
+                    "fontPath": "./resources/fonts/aws-toolkit-icons.woff",
+                    "fontCharacter": "\\f1cc"
                 }
             }
         },

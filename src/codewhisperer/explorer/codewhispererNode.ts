@@ -95,7 +95,7 @@ export class CodeWhispererNode implements RootNode {
                 if (hasVendedIamCredentials()) {
                     return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
                 } else {
-                    return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
+                    return [createFreeTierLimitMet(type), createSecurityScan(type), createTransformByQ(), createOpenReferenceLog(type)]
                 }
             } else {
                 if (hasVendedIamCredentials()) {
@@ -108,6 +108,7 @@ export class CodeWhispererNode implements RootNode {
                         return [
                             createAutoSuggestions(type, autoTriggerEnabled),
                             createSecurityScan(type),
+                            createTransformByQ(),
                             createSelectCustomization(type),
                             createOpenReferenceLog(type),
                             createGettingStarted(type), // "Learn" node : opens Learn CodeWhisperer page

@@ -212,6 +212,10 @@ export async function activate(context: ExtContext): Promise<void> {
             transformationHubViewProvider.updateContent('plan progress')
         }),
 
+        Commands.register('aws.codeWhisperer.showTransformationPlanInHub', async () => {
+            vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.file(transformByQState.getPlanFilePath()))
+        }),
+
         // sign in with sso or AWS ID
         showSsoSignIn.register(),
         // show reconnect prompt
