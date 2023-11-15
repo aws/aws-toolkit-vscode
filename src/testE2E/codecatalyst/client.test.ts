@@ -31,7 +31,7 @@ import { toCollection } from '../../shared/utilities/asyncCollection'
 import { getLogger } from '../../shared/logger'
 import { isAwsError } from '../../shared/errors'
 import {
-    codecatalystScopes,
+    scopesCodeCatalyst,
     createBuilderIdProfile,
     isValidCodeCatalystConnection,
     SsoConnection,
@@ -437,7 +437,7 @@ describe.skip('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function useCodeCatalystSsoConnection(auth: Auth): Promise<SsoConnection> {
         const builderIdSsoConnection = (await auth.listConnections()).find(isValidCodeCatalystConnection)
-        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile(codecatalystScopes)))
+        const conn = builderIdSsoConnection ?? (await auth.createConnection(createBuilderIdProfile(scopesCodeCatalyst)))
 
         return auth.useConnection(conn)
     }

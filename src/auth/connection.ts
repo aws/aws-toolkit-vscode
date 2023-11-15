@@ -18,7 +18,7 @@ const warnOnce = onceChanged((s: string, url: string) => {
     showMessageWithUrl(s, url, undefined, 'error')
 })
 
-export const codecatalystScopes = ['codecatalyst:read_write']
+export const scopesCodeCatalyst = ['codecatalyst:read_write']
 export const ssoAccountAccessScopes = ['sso:account:access']
 /** These are the non-chat scopes for CW. */
 export const scopesCodeWhispererCore = ['codewhisperer:completions', 'codewhisperer:analysis']
@@ -57,7 +57,7 @@ export const isIdcSsoConnection = (conn?: Connection): conn is SsoConnection => 
 export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'builderId')
 
 export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
-    isBuilderIdConnection(conn) && hasScopes(conn, codecatalystScopes)
+    isBuilderIdConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
 export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
     return scopes?.every(s => target.scopes?.includes(s))

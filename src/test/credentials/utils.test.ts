@@ -6,7 +6,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import { FakeExtensionContext } from '../fakeExtensionContext'
 import { BuilderIdKind, ExtensionUse, SsoKind, hasBuilderId, hasIamCredentials, hasSso } from '../../auth/utils'
-import { Connection, SsoConnection, codecatalystScopes } from '../../auth/connection'
+import { Connection, SsoConnection, scopesCodeCatalyst } from '../../auth/connection'
 import { builderIdConnection, iamConnection, ssoConnection } from './testUtil'
 import { amazonQScopes } from '../../codewhisperer/util/authUtil'
 
@@ -78,7 +78,7 @@ describe('connection exists funcs', function () {
     }
     const ccBuilderIdConnection: SsoConnection = {
         ...builderIdConnection,
-        scopes: codecatalystScopes,
+        scopes: scopesCodeCatalyst,
         label: 'codeCatalystBuilderId',
     }
     const ssoConnections: Connection[] = [

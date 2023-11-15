@@ -13,7 +13,7 @@ import { MetricName, MetricShapes, telemetry } from '../shared/telemetry/telemet
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import {
     ssoAccountAccessScopes,
-    codecatalystScopes,
+    scopesCodeCatalyst,
     SsoConnection,
     Connection,
     isBuilderIdConnection,
@@ -38,7 +38,7 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
-const defaultScopes = [...ssoAccountAccessScopes, ...codecatalystScopes]
+const defaultScopes = [...ssoAccountAccessScopes, ...scopesCodeCatalyst]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
     isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
