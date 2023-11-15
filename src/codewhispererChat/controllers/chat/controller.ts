@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { Messenger } from './messenger/messenger'
@@ -92,7 +93,8 @@ export class ChatController {
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerMessageListeners,
-        appsToWebViewMessagePublisher: MessagePublisher<any>
+        appsToWebViewMessagePublisher: MessagePublisher<any>,
+        onDidChangeAmazonQVisibility: vscode.Event<boolean>
     ) {
         this.sessionStorage = new ChatSessionStorage()
         this.triggerEventsStorage = new TriggerEventsStorage()
@@ -105,6 +107,14 @@ export class ChatController {
         this.editorContentController = new EditorContentController()
         this.promptGenerator = new PromptsGenerator()
         this.userIntentRecognizer = new UserIntentRecognizer()
+
+        onDidChangeAmazonQVisibility(visible => {
+            if (visible) {
+                this.telemetryHelper.recordOpenChat('click')
+            } else {
+                this.telemetryHelper.recordCloseChat()
+            }
+        })
 
         this.chatControllerMessageListeners.processPromptChatMessage.onMessage(data => {
             this.processPromptChatMessage(data)
