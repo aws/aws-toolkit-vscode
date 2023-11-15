@@ -181,6 +181,7 @@ export class RecommendationHandler {
         let shouldRecordServiceInvocation = true
         session.language = runtimeLanguageContext.getLanguageContext(editor.document.languageId).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
+        session.requestIdList = []
 
         if (pagination) {
             if (page === 0) {
