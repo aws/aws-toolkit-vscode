@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
+import { ChatItem, ChatItemType, MynahUI, NotificationType } from '@aws/mynah-ui-chat'
 import { Connector } from '../connector'
 import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { TabDataGenerator } from '../tabs/generator'
+import { uiComponentsTexts } from '../texts/constants'
 
 export interface MessageControllerProps {
     mynahUI: MynahUI
@@ -32,7 +33,7 @@ export class MessageController {
         })
     }
 
-    public sendMessageToTab(message: ChatItem, tabType: TabType): string {
+    public sendMessageToTab(message: ChatItem, tabType: TabType): string | undefined {
         const selectedTab = this.tabsStorage.getSelectedTab()
 
         if (
@@ -56,30 +57,40 @@ export class MessageController {
             return selectedTab.id
         }
 
-        const newTabID = this.mynahUI.updateStore('', this.tabDataGenerator.getTabData('cwc', false))
-        this.mynahUI.addChatItem(newTabID, {
-            type: ChatItemType.ANSWER_STREAM,
-            body: '',
-        })
+        const newTabID: string | undefined = this.mynahUI.updateStore(
+            '',
+            this.tabDataGenerator.getTabData('cwc', false)
+        )
+        if (newTabID !== undefined) {
+            this.mynahUI.addChatItem(newTabID, {
+                type: ChatItemType.ANSWER_STREAM,
+                body: '',
+            })
 
-        this.mynahUI.updateStore(newTabID, {
-            loadingChat: true,
-            promptInputDisabledState: true,
-        })
+            this.mynahUI.updateStore(newTabID, {
+                loadingChat: true,
+                promptInputDisabledState: true,
+            })
 
-        // We have race condition here with onTabAdd Ui event. This way we need to update store twice to be sure
-        this.tabsStorage.addTab({
-            id: newTabID,
-            type: 'cwc',
-            status: 'busy',
-            isSelected: true,
-            openInteractionType: 'contextMenu',
-        })
+            // We have race condition here with onTabAdd Ui event. This way we need to update store twice to be sure
+            this.tabsStorage.addTab({
+                id: newTabID,
+                type: 'cwc',
+                status: 'busy',
+                isSelected: true,
+                openInteractionType: 'contextMenu',
+            })
 
-        this.tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')
-        this.connector.onUpdateTabType(newTabID)
-        this.tabsStorage.updateTabStatus(newTabID, 'busy')
+            this.tabsStorage.updateTabTypeFromUnknown(newTabID, 'cwc')
+            this.connector.onUpdateTabType(newTabID)
+            this.tabsStorage.updateTabStatus(newTabID, 'busy')
 
-        return newTabID
+            return newTabID
+        } else {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
+            })
+        }
     }
 }

@@ -18,7 +18,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string
+    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     tabsStorage: TabsStorage
@@ -203,7 +203,9 @@ export class Connector {
             },
             messageData.command
         )
-        this.sendTriggerTabIDReceived(messageData.triggerID, triggerTabID)
+        if (triggerTabID !== undefined) {
+            this.sendTriggerTabIDReceived(messageData.triggerID, triggerTabID)
+        }
     }
 
     private sendTriggerTabIDReceived = async (triggerID: string, tabID: string): Promise<void> => {

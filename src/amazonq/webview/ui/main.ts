@@ -26,7 +26,18 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     let connector: Connector
     const ideApi = acquireVsCodeApi()
-    const tabsStorage = new TabsStorage()
+    const tabsStorage = new TabsStorage({
+        onTabTimeout: tabID => {
+            mynahUI.addChatItem(tabID, {
+                type: ChatItemType.ANSWER,
+                body: 'Your session is ended for this tab, please open a new one.',
+            })
+            mynahUI.updateStore(tabID, {
+                promptInputDisabledState: true,
+                promptInputPlaceholder: 'Session ended.',
+            })
+        },
+    })
     // Adding the first tab as CWC tab
     tabsStorage.addTab({
         id: 'tab-1',
@@ -77,10 +88,10 @@ export const createMynahUI = (
                 mynahUI.updateStore(selectedTab.id, tabDataGenerator.getTabData('unknown', true))
             }
         },
-        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string => {
+        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageControler.sendMessageToTab(message, 'cwc')
         },
-        onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
+        onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
             const selectedTab = tabsStorage.getSelectedTab()
 
             if (selectedTab !== undefined && command === 'aws.amazonq.sendToPrompt') {
@@ -95,7 +106,7 @@ export const createMynahUI = (
         },
         onChatInputEnabled: (tabID: string, enabled: boolean) => {
             mynahUI.updateStore(tabID, {
-                promptInputDisabledState: !enabled,
+                promptInputDisabledState: tabsStorage.isTabDead(tabID) || !enabled,
             })
         },
         onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
@@ -120,7 +131,7 @@ export const createMynahUI = (
 
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
-                promptInputDisabledState: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabID),
             })
             tabsStorage.updateTabStatus(tabID, 'free')
         },
@@ -161,7 +172,7 @@ export const createMynahUI = (
             if (item.type === ChatItemType.ANSWER) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: false,
-                    promptInputDisabledState: false,
+                    promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
             }
@@ -177,7 +188,7 @@ export const createMynahUI = (
             })
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
-                promptInputDisabledState: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabID),
             })
             tabsStorage.updateTabStatus(tabID, 'free')
         },
@@ -191,7 +202,7 @@ ${message}`,
             if (tabID !== '') {
                 mynahUI.updateStore(tabID, {
                     loadingChat: false,
-                    promptInputDisabledState: false,
+                    promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
 
@@ -203,14 +214,21 @@ ${message}`,
                     promptInputPlaceholder: '',
                     chatItems: [answer],
                 })
-                // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
-                // It means that it cannot trigger after the updateStore function returns.
-                tabsStorage.addTab({
-                    id: newTabId,
-                    status: 'busy',
-                    type: 'unknown',
-                    isSelected: true,
-                })
+                if (newTabId !== undefined) {
+                    // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
+                    // It means that it cannot trigger after the updateStore function returns.
+                    tabsStorage.addTab({
+                        id: newTabId,
+                        status: 'busy',
+                        type: 'unknown',
+                        isSelected: true,
+                    })
+                } else {
+                    mynahUI.notify({
+                        content: uiComponentsTexts.noMoreTabsTooltip,
+                        type: NotificationType.WARNING,
+                    })
+                }
             }
             return
         },
@@ -283,6 +301,7 @@ ${message}`,
             store: tabDataGenerator.getTabData('unknown', true),
         },
         config: {
+            maxTabs: 10,
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
         },

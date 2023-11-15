@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, ChatPrompt, MynahUI } from '@aws/mynah-ui-chat'
+import { ChatItemType, ChatPrompt, MynahUI, NotificationType } from '@aws/mynah-ui-chat'
 import { TabDataGenerator } from '../tabs/generator'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
+import { uiComponentsTexts } from '../texts/constants'
 
 export interface QuickActionsHandlerProps {
     mynahUI: MynahUI
@@ -35,6 +36,7 @@ export class QuickActionHandler {
     }
 
     public handle(chatPrompt: ChatPrompt, tabID: string) {
+        this.tabsStorage.resetTabTimer(tabID)
         switch (chatPrompt.command) {
             case '/dev':
                 this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
@@ -70,46 +72,53 @@ export class QuickActionHandler {
             return
         }
 
-        let affectedTabId = tabID
+        let affectedTabId: string | undefined = tabID
         const realPromptText = chatPrompt.escapedPrompt?.trim() ?? ''
         if (this.tabsStorage.getTab(affectedTabId)?.type !== 'unknown') {
             affectedTabId = this.mynahUI.updateStore('', {})
         }
-        this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
-        this.connector.onKnownTabOpen(affectedTabId)
-        this.connector.onUpdateTabType(affectedTabId)
+        if (affectedTabId !== undefined) {
+            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
+            this.connector.onKnownTabOpen(affectedTabId)
+            this.connector.onUpdateTabType(affectedTabId)
 
-        this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
-        this.mynahUI.updateStore(
-            affectedTabId,
-            this.tabDataGenerator.getTabData('wb', realPromptText === '', taskName, commandName)
-        )
+            this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
+            this.mynahUI.updateStore(
+                affectedTabId,
+                this.tabDataGenerator.getTabData('wb', realPromptText === '', taskName, commandName)
+            )
 
-        if (realPromptText !== '') {
-            this.mynahUI.addChatItem(affectedTabId, {
-                type: ChatItemType.PROMPT,
-                body: realPromptText,
-                ...(chatPrompt.attachment !== undefined
-                    ? {
-                          relatedContent: {
-                              content: [chatPrompt.attachment],
-                          },
-                      }
-                    : {}),
-            })
+            if (realPromptText !== '') {
+                this.mynahUI.addChatItem(affectedTabId, {
+                    type: ChatItemType.PROMPT,
+                    body: realPromptText,
+                    ...(chatPrompt.attachment !== undefined
+                        ? {
+                              relatedContent: {
+                                  content: [chatPrompt.attachment],
+                              },
+                          }
+                        : {}),
+                })
 
-            this.mynahUI.addChatItem(affectedTabId, {
-                type: ChatItemType.ANSWER_STREAM,
-                body: '',
-            })
+                this.mynahUI.addChatItem(affectedTabId, {
+                    type: ChatItemType.ANSWER_STREAM,
+                    body: '',
+                })
 
-            this.mynahUI.updateStore(affectedTabId, {
-                loadingChat: true,
-                promptInputDisabledState: true,
-            })
+                this.mynahUI.updateStore(affectedTabId, {
+                    loadingChat: true,
+                    promptInputDisabledState: true,
+                })
 
-            this.connector.requestGenerativeAIAnswer(affectedTabId, {
-                chatMessage: realPromptText,
+                this.connector.requestGenerativeAIAnswer(affectedTabId, {
+                    chatMessage: realPromptText,
+                })
+            }
+        } else {
+            this.mynahUI.notify({
+                content: uiComponentsTexts.noMoreTabsTooltip,
+                type: NotificationType.WARNING,
             })
         }
     }
