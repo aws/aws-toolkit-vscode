@@ -302,7 +302,7 @@ ${message}`,
             store: tabDataGenerator.getTabData('unknown', true),
         },
         config: {
-            maxTabs: 10,
+            maxTabs: 10000,
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
         },
