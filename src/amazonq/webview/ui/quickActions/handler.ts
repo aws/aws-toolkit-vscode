@@ -13,6 +13,7 @@ export interface QuickActionsHandlerProps {
     connector: Connector
     tabsStorage: TabsStorage
     isWeaverbirdEnabled: boolean
+    isGumbyEnabled: boolean
 }
 
 export class QuickActionHandler {
@@ -26,7 +27,10 @@ export class QuickActionHandler {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
-        this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
+        this.tabDataGenerator = new TabDataGenerator({
+            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isGumbyEnabled: props.isGumbyEnabled,
+        })
         this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
     }
 
@@ -44,7 +48,14 @@ export class QuickActionHandler {
             case '/clear':
                 this.handleClearCommand(tabID)
                 break
+            case '/transform':
+                this.handleGumbyCommand(tabID)
+                break
         }
+    }
+
+    private handleGumbyCommand(tabID: string) {
+        this.connector.transform(tabID)
     }
 
     private handleClearCommand(tabID: string) {

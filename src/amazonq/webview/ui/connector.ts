@@ -99,6 +99,14 @@ export class Connector {
         }
     }
 
+    transform = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            default:
+                this.cwChatConnector.transform(tabID)
+                break
+        }
+    }
+
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
         if (message.data === undefined) {
             return

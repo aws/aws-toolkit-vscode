@@ -95,7 +95,7 @@ describe('CodeWhisperer-basicCommands', function () {
             resetCodeWhispererGlobalVariables()
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
-      
+
         it('has suggestions disabled by default', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)

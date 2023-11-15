@@ -25,5 +25,6 @@ type MessageCommand =
     | 'onboarding-page-interaction'
     | 'source-link-click'
     | 'response-body-link-click'
+    | 'transform'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

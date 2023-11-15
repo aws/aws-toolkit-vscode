@@ -5,17 +5,19 @@
 
 import { QuickActionCommandGroup } from '@aws/mynah-ui-chat/dist/static'
 import { TabType } from '../storages/tabsStorage'
-import { QuickActionCommands } from './constants'
 
 export interface QuickActionGeneratorProps {
     isWeaverbirdEnabled: boolean
+    isGumbyEnabled: boolean
 }
 
 export class QuickActionGenerator {
     private isWeaverbirdEnabled: boolean
+    private isGumbyEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {
         this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isGumbyEnabled = props.isGumbyEnabled
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
@@ -23,7 +25,52 @@ export class QuickActionGenerator {
             case 'wb':
                 return []
             default:
-                return QuickActionCommands(this.isWeaverbirdEnabled)
+                return [
+                    ...(this.isWeaverbirdEnabled
+                        ? [
+                              {
+                                  groupName: 'Project-level Application Development by Q',
+                                  commands: [
+                                      {
+                                          command: '/tests',
+                                          placeholder: 'Let Q write tests for your project',
+                                          description: 'Let Q write tests for your project',
+                                      },
+                                      {
+                                          command: '/dev',
+                                          placeholder: 'Describe a new feature or improvement',
+                                          description: 'Describe a new feature or improvement',
+                                      },
+                                      {
+                                          command: '/fix',
+                                          placeholder: 'Fix an issue across your project',
+                                          description: 'Fix an issue across your project',
+                                      },
+                                  ],
+                              },
+                          ]
+                        : []),
+                    {
+                        commands: [
+                            {
+                                command: '/clear',
+                                description: 'Clear this session',
+                            },
+                        ],
+                    },
+                    ...(this.isGumbyEnabled
+                        ? [
+                              {
+                                  commands: [
+                                      {
+                                          command: '/transform',
+                                          description: 'Transform your code',
+                                      },
+                                  ],
+                              },
+                          ]
+                        : []),
+                ]
         }
     }
 }

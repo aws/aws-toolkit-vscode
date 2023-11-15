@@ -71,7 +71,7 @@ describe('codewhisperer children nodes', function () {
 
         assert.strictEqual(node.resource.id, 'aws.awsq.transform')
     })
-      
+
     it('builds the selectCustomization command node', function () {
         const node = createSelectCustomization('tree')
 

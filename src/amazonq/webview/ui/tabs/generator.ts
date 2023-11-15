@@ -10,6 +10,7 @@ import { QuickActionGenerator } from '../quickActions/generator'
 
 export interface TabDataGeneratorProps {
     isWeaverbirdEnabled: boolean
+    isGumbyEnabled: boolean
 }
 
 export class TabDataGenerator {
@@ -48,7 +49,10 @@ Before I begin generating code, let's agree on an implementation plan. What prob
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
-        this.quickActionsGenerator = new QuickActionGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
+        this.quickActionsGenerator = new QuickActionGenerator({
+            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isGumbyEnabled: props.isGumbyEnabled,
+        })
     }
 
     public getTabData(
