@@ -4,9 +4,10 @@
  */
 import * as vscode from 'vscode'
 import { CommandDeclarations, Commands } from '../../shared/vscode/commands2'
-import { showCodeWhispererWebview, CodeWhispererSource } from '../vue/backend'
+import { showCodeWhispererWebview } from '../vue/backend'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { PromptSettings } from '../../shared/settings'
+import { CodeWhispererSource } from './types'
 /**
  * The methods with backend logic for the Codewhisperer Getting Started Page commands.
  */
