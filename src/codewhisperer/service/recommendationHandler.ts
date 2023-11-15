@@ -440,6 +440,7 @@ export class RecommendationHandler {
      */
     clearRecommendations() {
         session.recommendations = []
+        session.requestIdList = []
         session.suggestionStates = new Map<number, string>()
         session.completionTypes = new Map<number, CodewhispererCompletionType>()
         this.requestId = ''
