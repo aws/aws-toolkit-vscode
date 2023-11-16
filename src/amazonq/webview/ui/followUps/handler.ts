@@ -31,6 +31,10 @@ export class FollowUpInteractionHandler {
             this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
             return
         }
+        if (followUp.type !== undefined && followUp.type === 'help') {
+            this.connector.help(tabID)
+            return
+        }
         // we need to check if there is a prompt
         // which will cause an api call
         // then we can set the loading state to true

@@ -52,7 +52,30 @@ export class FollowUpGenerator {
                     ],
                 }
             default:
-                return {}
+                return {
+                    text: 'Try Examples:',
+                    options: [
+                        {
+                            pillText: 'When should I use ElastiCache?',
+                            prompt: 'When should I use ElastiCache?',
+                            type: '',
+                        },
+                        {
+                            pillText: 'How do I create an Application Load Balancer?',
+                            prompt: 'How do I create an Application Load Balancer?',
+                            type: '',
+                        },
+                        {
+                            pillText: 'What is the syntax of declaring a variable in TypeScript?',
+                            prompt: 'What is the syntax of declaring a variable in TypeScript?',
+                            type: '',
+                        },
+                        {
+                            pillText: 'How can Amazon Q help?',
+                            type: 'help',
+                        },
+                    ],
+                }
         }
     }
 }
