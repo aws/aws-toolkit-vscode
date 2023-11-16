@@ -14,7 +14,6 @@ import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/teleme
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
@@ -210,7 +209,6 @@ export class KeyStrokeHandler {
                 RecommendationHandler.instance.isGenerateRecommendationInProgress = false
             }
         } else if (isInlineCompletionEnabled()) {
-            TelemetryHelper.instance.setInvokeSuggestionStartTime()
             await InlineCompletionService.instance.getPaginatedRecommendation(
                 client,
                 editor,
