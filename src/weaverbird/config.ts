@@ -7,4 +7,4 @@
  * and the chat follow up buttons/assist quick commands won't be shown
  */
 export const weaverbirdEnabled = true
-export const gumbyEnabled = false
+export const gumbyEnabled = true

@@ -46,8 +46,10 @@ export class AmazonQNode implements RootNode {
     }
 
     private getDescription(): string {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionValid()) {
             if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return 'IAM Identity Center Connected'
             } else if (AuthUtil.instance.isBuilderIdInUse()) {
                 return 'AWS Builder ID Connected'
@@ -55,14 +57,13 @@ export class AmazonQNode implements RootNode {
                 return 'IAM Connected'
             }
         } else if (AuthUtil.instance.isConnectionExpired()) {
-            vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
             return 'Expired Connection'
         }
-        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         return ''
     }
 
     public getChildren() {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionExpired()) {
             return [createReconnect('tree'), createLearnMoreNode()]
         }
@@ -73,8 +74,11 @@ export class AmazonQNode implements RootNode {
             return [createFreeTierLimitMet('tree')]
         } else {
             // logged in
-            vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-            return [switchToAmazonQNode(), createTransformByQ()]
+            if (AuthUtil.instance.isConnectionValid() && AuthUtil.instance.isEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+                return [switchToAmazonQNode(), createTransformByQ()] // transform only available for IdC users
+            }
+            return [switchToAmazonQNode()]
         }
     }
 

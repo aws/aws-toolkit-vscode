@@ -309,6 +309,8 @@ export const noPomXmlFoundMessage =
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
+export const jobInProgressMessage = 'Job is in-progress'
+
 export const cancellationInProgressMessage = 'Cancellation is in-progress'
 
 export const noSupportedJavaProjectsFoundMessage =
@@ -348,19 +350,11 @@ export const uploadIntent = 'TRANSFORMATION'
 
 export const transformationType = 'LANGUAGE_UPGRADE'
 
-// when in one of these states, we can definitely say if the plan is or is not available
+// when in one of these states, we can definitely say the plan is available
 // in other states, we keep polling/waiting
-export const validStatesForCheckingPlanAvailability = [
-    'COMPLETED',
-    'PARTIALLY_COMPLETED',
-    'FAILED',
-    'STOPPING',
-    'STOPPED',
-    'REJECTED',
-    'PLANNED',
-    'TRANSFORMING',
-    'TRANSFORMED',
-]
+export const validStatesForGettingPlan = ['COMPLETED', 'PARTIALLY_COMPLETED', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+
+export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
 
 // similarly, when in one of these states, we can stop polling, and if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
 export const validStatesForCheckingDownloadUrl = [

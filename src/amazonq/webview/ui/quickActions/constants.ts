@@ -26,7 +26,6 @@ export const QuickActionCommands = (weaverbirdEnabled: boolean) => [
                       },
                       {
                           command: '/transform',
-                          placeholder: '',
                           description: 'Transform your Java 8 or 11 Maven project to Java 17',
                       },
                   ],

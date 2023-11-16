@@ -50,6 +50,18 @@ export class QuickActionGenerator {
                               },
                           ]
                         : []),
+                    ...(this.isGumbyEnabled
+                        ? [
+                              {
+                                  commands: [
+                                      {
+                                          command: '/transform',
+                                          description: 'Transform your Java 8 or 11 Maven project to Java 17',
+                                      },
+                                  ],
+                              },
+                          ]
+                        : []),
                     {
                         commands: [
                             {
@@ -58,18 +70,6 @@ export class QuickActionGenerator {
                             },
                         ],
                     },
-                    ...(this.isGumbyEnabled
-                        ? [
-                              {
-                                  commands: [
-                                      {
-                                          command: '/transform',
-                                          description: 'Transform your code',
-                                      },
-                                  ],
-                              },
-                          ]
-                        : []),
                 ]
         }
     }

@@ -99,6 +99,8 @@ export async function startTransformByQ() {
         throw err
     }
 
+    // TODO: if only 1 workspace module open, skip collectInputs
+
     const state = await collectInputs(validModules)
 
     vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
@@ -149,9 +151,9 @@ export async function startTransformByQ() {
         // intermediate step: show transformation-plan.md file
         // TO-DO: on IDE restart, resume here if a job was ongoing
         try {
-            await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingPlanAvailability)
+            await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
         } catch (error) {
-            errorMessage = 'Failed to poll transformation job for plan availability'
+            errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
             getLogger().error(errorMessage, error)
             throw error
         }
@@ -180,7 +182,7 @@ export async function startTransformByQ() {
             getLogger().error(errorMessage, error)
             throw error
         }
-        
+
         if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
             errorMessage = 'Failed to complete modernization'
             getLogger().error(errorMessage)
@@ -194,7 +196,6 @@ export async function startTransformByQ() {
         // step 4: download transformed code archive
 
         const pathToArchive = await downloadArchive(jobId, ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
-        console.log(`Downloaded archive to ${pathToArchive}`)
         const zip = new AdmZip(pathToArchive)
         zip.extractAllTo(ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
         await vscode.commands.executeCommand('aws.codeWhisperer.reviewTransformationChanges.reveal')

@@ -257,6 +257,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         if (validStates.includes(status)) {
             break
         }
+        if (CodeWhispererConstants.failureStates.includes(status)) {
+            throw new Error('Job failed, not going to retrieve plan')
+        }
         await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds
         if (timer > CodeWhispererConstants.transformationJobTimeoutSeconds) {

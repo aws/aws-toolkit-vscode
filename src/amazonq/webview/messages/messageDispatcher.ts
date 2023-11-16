@@ -3,11 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import vscode from 'vscode'
 import { Webview } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
 import { TabType } from '../ui/storages/tabsStorage'
 import { startTransformByQWithProgress } from '../../../codewhisperer/commands/startTransformByQ'
+import { transformByQState } from '../../../codewhisperer/models/model'
+import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
@@ -15,7 +18,11 @@ export function dispatchWebViewMessagesToApps(
 ) {
     webview.onDidReceiveMessage(msg => {
         if (msg.command === 'transform-by-q') {
-            startTransformByQWithProgress()
+            if (transformByQState.isNotStarted()) {
+                startTransformByQWithProgress()
+            } else {
+                vscode.window.showInformationMessage(CodeWhispererConstants.jobInProgressMessage)
+            }
         } else {
             const appMessagePublisher = webViewToAppsMessagePublishers.get(msg.tabType)
             if (appMessagePublisher === undefined) {
