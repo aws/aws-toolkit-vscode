@@ -285,7 +285,7 @@ export class Messenger {
                 \n\n- /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."
                 \n\n- /transform - Transform your code. Use to upgrade Java code versions.
                 \n\n- /help - View chat topics and commands.
-                \n\n- + Right click context menu to ask Amazon Q about a piece of selected code
+                \n\n- Right click context menu to ask Amazon Q about a piece of selected code
                 \n\n- Right-click a highlighted code snippet to open a context menu with actions                 
                 \n\n### Things to note:                
                 \n\n- I may not always provide completely accurate or current information. 
