@@ -22,7 +22,7 @@ import {
     isBuilderIdConnection,
     scopesSsoAccountAccess,
     scopesCodeWhispererChat,
-    scopesWeaverbird,
+    scopesFeatureDev,
     scopesGumby,
     isIdcSsoConnection,
 } from '../../auth/connection'
@@ -31,7 +31,7 @@ import { getLogger } from '../../shared/logger'
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
-export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesWeaverbird]
+export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(codeWhispererChatScopes)
 

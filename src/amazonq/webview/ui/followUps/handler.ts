@@ -15,7 +15,7 @@ export interface FollowUpInteractionHandlerProps {
     mynahUI: MynahUI
     connector: Connector
     tabsStorage: TabsStorage
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
 }
 
@@ -30,7 +30,7 @@ export class FollowUpInteractionHandler {
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
-            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
         })
     }
@@ -89,7 +89,7 @@ export class FollowUpInteractionHandler {
                 this.tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
                 this.connector.onUpdateTabType(newTabId)
 
-                // Let weaverbird know a wb tab has been opened
+                // Let featureDev know a wb tab has been opened
                 this.connector.onKnownTabOpen(newTabId)
             }
             return
