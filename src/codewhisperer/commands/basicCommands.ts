@@ -6,7 +6,7 @@
 import * as vscode from 'vscode'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
@@ -26,11 +26,11 @@ import {
     showCustomizationPrompt,
 } from '../util/customizationUtil'
 import { CodeWhispererSource } from './types'
-import { AuthCommandDeclarations } from '../../auth/commands'
+import { showManageConnections } from '../../auth/ui/vue/show'
 
 export const toggleCodeSuggestions = Commands.declare(
-    { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: {0: 'source'} },
-    (suggestionState: CodeSuggestionsState) => async (source: CodeWhispererSource) => {
+    { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
+    (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
         telemetry.aws_modifySetting.emit({
             settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
@@ -55,8 +55,8 @@ export const enableCodeSuggestions = Commands.declare(
 )
 
 export const showReferenceLog = Commands.declare(
-    { id: 'aws.codeWhisperer.openReferencePanel', compositeKey: {0: 'source'} },
-    () => async (source: CodeWhispererSource) => {
+    { id: 'aws.codeWhisperer.openReferencePanel', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-reference-log')
     }
 )
@@ -66,9 +66,9 @@ export const showIntroduction = Commands.declare('aws.codeWhisperer.introduction
 })
 
 export const showSecurityScan = Commands.declare(
-    { id: 'aws.codeWhisperer.security.scan', compositeKey: {0: 'source'} },
+    { id: 'aws.codeWhisperer.security.scan', compositeKey: { 1: 'source' } },
     (context: ExtContext, securityPanelViewProvider: SecurityPanelViewProvider, client: DefaultCodeWhispererClient) =>
-        async (source: CodeWhispererSource) => {
+        async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
             if (AuthUtil.instance.isConnectionExpired()) {
                 await AuthUtil.instance.notifyReauthenticate()
             }
@@ -91,25 +91,25 @@ export const showSecurityScan = Commands.declare(
 )
 
 export const selectCustomizationPrompt = Commands.declare(
-    { id: 'aws.codeWhisperer.selectCustomization', compositeKey: {0: 'source'} },
-    () => async (source: CodeWhispererSource) => {
+    { id: 'aws.codeWhisperer.selectCustomization', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
         showCustomizationPrompt().then()
     }
 )
 
 export const reconnect = Commands.declare(
-    { id: 'aws.codeWhisperer.reconnect', compositeKey: {0: 'source'} },
-    () => async (source: CodeWhispererSource) => {
+    { id: 'aws.codeWhisperer.reconnect', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await AuthUtil.instance.reauthenticate()
     }
 )
 
 /** Opens the Add Connections webview with CW highlighted */
-export const showManageConnections = Commands.declare(
-    { id: 'aws.codewhisperer.manageConnections', compositeKey: {0: 'source'} },
-    () => (source: CodeWhispererSource) => {
-        return AuthCommandDeclarations.instance.declared.showManageConnections.execute(source, 'codewhisperer')
+export const showManageCwConnections = Commands.declare(
+    { id: 'aws.codewhisperer.manageConnections', compositeKey: { 1: 'source' } },
+    () => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
+        return showManageConnections.execute(_, source, 'codewhisperer')
     }
 )
 
@@ -167,7 +167,7 @@ export const connectWithCustomization = Commands.declare(
 )
 
 export const showLearnMore = Commands.declare(
-    { id: 'aws.codeWhisperer.learnMore', compositeKey: {0: 'source'} },
+    { id: 'aws.codeWhisperer.learnMore', compositeKey: { 0: 'source' } },
     () => async (source: CodeWhispererSource) => {
         telemetry.ui_click.emit({ elementId: 'cw_learnMore_Cta' })
         openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUriGeneral))
@@ -176,8 +176,8 @@ export const showLearnMore = Commands.declare(
 
 // TODO: Use a different URI
 export const showFreeTierLimit = Commands.declare(
-    { id: 'aws.codeWhisperer.freeTierLimit', compositeKey: {0: 'source'} },
-    () => async (source: CodeWhispererSource) => {
+    { id: 'aws.codeWhisperer.freeTierLimit', compositeKey: { 1: 'source' } },
+    () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         openUrl(vscode.Uri.parse(CodeWhispererConstants.learnMoreUri))
     }
 )
@@ -186,9 +186,8 @@ export const updateReferenceLog = Commands.declare(
     {
         id: 'aws.codeWhisperer.updateReferenceLog',
         logging: false,
-        compositeKey: {0: 'source'},
     },
-    () => (source: CodeWhispererSource) => {
+    () => () => {
         return ReferenceLogViewProvider.instance.update()
     }
 )
@@ -201,8 +200,8 @@ export const notifyNewCustomizationsCmd = Commands.declare(
 )
 
 export const signoutCodeWhisperer = Commands.declare(
-    { id: 'aws.codewhisperer.signout', compositeKey: {0: 'source'} },
-    (auth: AuthUtil) => (source: CodeWhispererSource) => {
+    { id: 'aws.codewhisperer.signout', compositeKey: { 1: 'source' } },
+    (auth: AuthUtil) => (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         return auth.secondaryAuth.deleteConnection()
     }
 )
