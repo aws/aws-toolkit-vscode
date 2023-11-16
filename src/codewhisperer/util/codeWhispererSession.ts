@@ -79,6 +79,7 @@ class CodeWhispererSession {
 
     reset() {
         this.sessionId = ''
+        this.requestContext = { request: {} as any, supplementalMetadata: {} as any }
         this.requestIdList = []
         this.startPos = new Position(0, 0)
         this.startCursorOffset = 0

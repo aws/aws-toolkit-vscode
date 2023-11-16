@@ -40,7 +40,7 @@ export class FeatureConfigProvider {
             return
         }
 
-        getLogger().debug('Fetching feature configs')
+        getLogger().debug('CodeWhisperer: Fetching feature configs')
         try {
             const response = await client.listFeatureEvaluations()
 
@@ -52,11 +52,12 @@ export class FeatureConfigProvider {
                 )
             })
         } catch (e) {
-            getLogger().debug('Error when fetching feature configs', e)
+            getLogger().debug('CodeWhisperer: Error when fetching feature configs', e)
         }
-        getLogger().debug(`Current feature configs: ${this.getFeatureConfigsTelemetry()}`)
+        getLogger().debug(`CodeWhisperer: Current feature configs: ${this.getFeatureConfigsTelemetry()}`)
     }
 
+    // Sample format: "{testFeature: CONTROL}""
     getFeatureConfigsTelemetry(): string {
         return `{${Array.from(this.featureConfigs.entries())
             .map(([name, context]) => `${name}: ${context.variation}`)

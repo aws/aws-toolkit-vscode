@@ -12,6 +12,13 @@ import { getLogger } from '../../shared/logger'
 import { CodeWhispererCodeCoverageTracker } from '../../codewhisperer/tracker/codewhispererCodeCoverageTracker'
 import globals from '../../shared/extensionGlobals'
 import { session } from '../../codewhisperer/util/codeWhispererSession'
+import { DefaultAWSClientBuilder, ServiceOptions } from '../../shared/awsClientBuilder'
+import { FakeAwsContext } from '../utilities/fakeAwsContext'
+import { spy } from '../utilities/mockito'
+import { Service } from 'aws-sdk'
+import userApiConfig = require('./../../codewhisperer/client/user-service-2.json')
+import CodeWhispererUserClient = require('../../codewhisperer/client/codewhispereruserclient')
+import { codeWhispererClient } from '../../codewhisperer/client/codewhisperer'
 
 export function resetCodeWhispererGlobalVariables() {
     vsCodeState.isIntelliSenseActive = false
@@ -140,4 +147,15 @@ export function createTextDocumentChangeEvent(document: vscode.TextDocument, ran
             },
         ],
     }
+}
+
+export async function createSpyClient() {
+    const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
+    let clientSpy = spy(
+        (await builder.createAwsService(Service, {
+            apiConfig: userApiConfig,
+        } as ServiceOptions)) as CodeWhispererUserClient
+    )
+    sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
+    return clientSpy
 }
