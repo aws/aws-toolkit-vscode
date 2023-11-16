@@ -439,6 +439,7 @@ export class RecommendationHandler {
      * Clear recommendation state
      */
     clearRecommendations() {
+        session.requestIdList = []
         session.recommendations = []
         session.suggestionStates = new Map<number, string>()
         session.completionTypes = new Map<number, CodewhispererCompletionType>()

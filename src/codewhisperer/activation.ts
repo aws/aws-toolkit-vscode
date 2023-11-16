@@ -38,7 +38,7 @@ import {
     connectWithCustomization,
     showTransformationHub,
     signoutCodeWhisperer,
-    showManageConnections,
+    showManageCwConnections,
 } from './commands/basicCommands'
 import { confirmStopTransformByQ, startTransformByQWithProgress } from './commands/startTransformByQ'
 import { sleep } from '../shared/utilities/timeoutUtils'
@@ -103,7 +103,7 @@ export async function activate(context: ExtContext): Promise<void> {
 
     context.extensionContext.subscriptions.push(
         signoutCodeWhisperer.register(auth),
-        showManageConnections.register(),
+        showManageCwConnections.register(),
         /**
          * Configuration change
          */
