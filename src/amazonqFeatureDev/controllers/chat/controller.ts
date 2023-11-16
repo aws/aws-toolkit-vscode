@@ -175,10 +175,13 @@ export class FeatureDevController {
 
         // Follow up with action items and complete the request stream
         this.messenger.sendAnswer({
-            type: 'answer',
+            type: 'system-prompt', // show the followups on the right side
             followUps: this.getFollowUpOptions(session.state.phase),
             tabID: tabID,
         })
+
+        // Unlock the prompt again so that users can iterate
+        this.messenger.sendAsyncEventProgress(tabID, false, undefined)
     }
 
     /**
