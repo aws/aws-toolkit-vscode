@@ -9,11 +9,18 @@ import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConne
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
 import { ExtensionMessage } from './commands'
 import { TabsStorage } from './storages/tabsStorage'
-import { featureDevChat } from '../../../amazonqFeatureDev/constants'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
-import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 import { AuthFollowUpType } from './followUps/generator'
-import { getLogger } from '../../../shared/logger/logger'
+
+export interface CodeReference {
+    licenseName?: string
+    repository?: string
+    url?: string
+    recommendationContentSpan?: {
+        start?: number
+        end?: number
+    }
+}
 
 export interface ChatPayload {
     chatMessage: string
@@ -117,7 +124,6 @@ export class Connector {
     }
 
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
-        getLogger().debug('Message received', { message })
         if (message.data === undefined) {
             return
         }
@@ -131,7 +137,7 @@ export class Connector {
 
         if (messageData.sender === 'CWChat') {
             this.cwChatConnector.handleMessageReceive(messageData)
-        } else if (messageData.sender === featureDevChat) {
+        } else if (messageData.sender === 'featureDevChat') {
             this.featureDevChatConnector.handleMessageReceive(messageData)
         }
     }
