@@ -41,12 +41,6 @@ export class QuickActionHandler {
             case '/dev':
                 this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
                 break
-            case '/tests':
-                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Tests', '/tests')
-                break
-            case '/fix':
-                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
-                break
             case '/help':
                 this.handleHelpCommand(tabID)
                 break

@@ -20,7 +20,7 @@ export class TabDataGenerator {
     private tabTitle: Map<TabType, string> = new Map([
         ['unknown', 'Chat'],
         ['cwc', 'Chat'],
-        ['featuredev', 'Q - Task'],
+        ['featuredev', 'Q - Dev'],
     ])
 
     private tabInputPlaceholder: Map<TabType, string> = new Map([
