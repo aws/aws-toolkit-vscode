@@ -13,7 +13,6 @@ import {
     createAutoSuggestions,
     createOpenReferenceLog,
     createSecurityScan,
-    createTransformByQ,
     createReconnect,
     createSelectCustomization,
 } from '../../../codewhisperer/explorer/codewhispererChildrenNodes'
@@ -64,12 +63,6 @@ describe('codewhisperer children nodes', function () {
         const node = createFreeTierLimitMet('tree')
 
         assert.strictEqual(node.resource.id, 'aws.codeWhisperer.freeTierLimit')
-    })
-
-    it('should build transformByQ command node', function () {
-        const node = createTransformByQ()
-
-        assert.strictEqual(node.resource.id, 'aws.awsq.transform')
     })
       
     it('builds the selectCustomization command node', function () {

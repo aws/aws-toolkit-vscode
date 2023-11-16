@@ -7,6 +7,7 @@ import { ChatItemType, ChatPrompt, MynahUI } from '@aws/mynah-ui-chat'
 import { TabDataGenerator } from '../tabs/generator'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
+// import { vscode } from '../../../../../resources/vscode'
 
 export interface QuickActionsHandlerProps {
     mynahUI: MynahUI
@@ -40,6 +41,9 @@ export class QuickActionHandler {
                 break
             case '/fix':
                 this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
+                break
+            case '/transform':
+                this.connector.getSendMessageToExtension()({ command: 'transform-by-q' })
                 break
             case '/clear':
                 this.handleClearCommand(tabID)

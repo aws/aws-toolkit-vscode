@@ -12,7 +12,7 @@ import {
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, runQTransformNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { createLearnMoreNode, createTransformByQ, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 
 export class AmazonQNode implements RootNode {
@@ -55,8 +55,10 @@ export class AmazonQNode implements RootNode {
                 return 'IAM Connected'
             }
         } else if (AuthUtil.instance.isConnectionExpired()) {
+            vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
             return 'Expired Connection'
         }
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         return ''
     }
 
@@ -71,7 +73,8 @@ export class AmazonQNode implements RootNode {
             return [createFreeTierLimitMet('tree')]
         } else {
             // logged in
-            return [switchToAmazonQNode(), runQTransformNode()]
+            vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+            return [switchToAmazonQNode(), createTransformByQ()]
         }
     }
 

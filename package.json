@@ -756,7 +756,7 @@
             "aws-codewhisperer-transformation-hub": [
                 {
                     "type": "webview",
-                    "id": "aws.codeWhisperer.transformationHub",
+                    "id": "aws.amazonq.transformationHub",
                     "name": ""
                 }
             ]
@@ -1271,28 +1271,28 @@
             ],
             "view/title": [
                 {
-                    "command": "aws.codeWhisperer.startTransformationInHub",
-                    "when": "view == aws.codeWhisperer.transformationHub",
+                    "command": "aws.amazonq.startTransformationInHub",
+                    "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.codeWhisperer.stopTransformationInHub",
-                    "when": "view == aws.codeWhisperer.transformationHub",
+                    "command": "aws.amazonq.stopTransformationInHub",
+                    "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@2"
                 },
                 {
-                    "command": "aws.codeWhisperer.showPlanProgressInHub",
-                    "when": "view == aws.codeWhisperer.transformationHub",
+                    "command": "aws.amazonq.showPlanProgressInHub",
+                    "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@3"
                 },
                 {
-                    "command": "aws.codeWhisperer.showHistoryInHub",
-                    "when": "view == aws.codeWhisperer.transformationHub",
+                    "command": "aws.amazonq.showHistoryInHub",
+                    "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@4"
                 },
                 {
-                    "command": "aws.codeWhisperer.showTransformationPlanInHub",
-                    "when": "view == aws.codeWhisperer.transformationHub",
+                    "command": "aws.amazonq.showTransformationPlanInHub",
+                    "when": "view == aws.amazonq.transformationHub",
                     "group": "navigation@5"
                 },
                 {
@@ -3677,29 +3677,29 @@
                 "enablement": "aws.isDevMode"
             },
             {
-                "command": "aws.codeWhisperer.startTransformationInHub",
+                "command": "aws.amazonq.startTransformationInHub",
                 "title": "Start Transformation",
                 "icon": "$(play)",
                 "enablement": "gumby.isTransformAvailable"
             },
             {
-                "command": "aws.codeWhisperer.stopTransformationInHub",
+                "command": "aws.amazonq.stopTransformationInHub",
                 "title": "Stop Transformation",
                 "icon": "$(stop)",
                 "enablement": "gumby.isStopButtonAvailable"
             },
             {
-                "command": "aws.codeWhisperer.showPlanProgressInHub",
+                "command": "aws.amazonq.showPlanProgressInHub",
                 "title": "Show Plan Progress",
                 "icon": "$(checklist)"
             },
             {
-                "command": "aws.codeWhisperer.showHistoryInHub",
+                "command": "aws.amazonq.showHistoryInHub",
                 "title": "Show Job History",
                 "icon": "$(history)"
             },
             {
-                "command": "aws.codeWhisperer.showTransformationPlanInHub",
+                "command": "aws.amazonq.showTransformationPlanInHub",
                 "title": "Show Transformation Plan",
                 "icon": "$(book)",
                 "enablement": "gumby.isPlanAvailable"

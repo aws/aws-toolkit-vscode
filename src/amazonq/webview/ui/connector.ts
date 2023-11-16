@@ -56,6 +56,10 @@ export class Connector {
         this.tabsStorage = props.tabsStorage
     }
 
+    public getSendMessageToExtension() {
+        return this.sendMessageToExtension
+    }
+
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {      
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
