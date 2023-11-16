@@ -86,13 +86,13 @@ export class Settings {
     }
 
     /**
-     * Checks that the user `settings.json` works correctly. #3910
+     * Checks that user `settings.json` actually works. #3910
      *
-     * Note: This checks that we can actually _write_ settings. vscode notifies the user if
-     * settings.json is complete nonsense, but is silent if there are only "recoverable" JSON syntax
-     * errors.
+     * Note: This checks that we can actually "roundtrip" (read and write) settings. vscode notifies
+     * the user if settings.json is complete nonsense, but silently fails if there are only
+     * "recoverable" JSON syntax errors.
      */
-    public async isValid(): Promise<boolean> {
+    public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
         const key = 'aws.samcli.lambdaTimeout'
         const config = this.getConfig()
         const tempValOld = 1234 // Legacy temp value we are migrating from.
@@ -111,15 +111,21 @@ export class Settings {
                 await config.update(key, userVal, this.updateTarget)
             }
 
-            return true
+            return 'ok'
         } catch (e) {
-            getLogger().warn(
-                'settings: invalid "settings.json" file? failed to update "%s": %s',
-                key,
-                (e as Error).message
-            )
+            const err = e as Error
+            // If anything tries to update an unwritable settings.json, vscode will thereafter treat
+            // it as an "unsaved" file. #4043
+            if (err.message.includes('EACCES') || err.message.includes('the file has unsaved changes')) {
+                const logMsg = 'settings: unwritable settings.json: %s'
+                getLogger().warn(logMsg, err.message)
+                return 'nowrite'
+            }
 
-            return false
+            const logMsg = 'settings: invalid "settings.json": %s'
+            getLogger().error(logMsg, err.message)
+
+            return 'invalid'
         }
     }
 
