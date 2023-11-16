@@ -65,6 +65,11 @@ export class QuickActionHandler {
     }
 
     private handleHelpCommand(tabID: string) {
+        // User entered help action, so change the tab type to 'cwc' if it's an unknown tab
+        if (this.tabsStorage.getTab(tabID)?.type === 'unknown') {
+            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+        }
+
         this.connector.help(tabID)
     }
 
