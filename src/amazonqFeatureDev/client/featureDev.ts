@@ -92,7 +92,7 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
-            throw e
+            throw new ToolkitError((e as Error).message, { code: 'CreateConversationFailed' })
         }
     }
 
@@ -115,7 +115,7 @@ export class FeatureDevClient {
             return response
         } catch (e) {
             getLogger().error(`${featureName}: failed to generate presigned url: ${(e as Error).message}`)
-            throw e
+            throw new ToolkitError((e as Error).message, { code: 'CreateUploadUrlFailed' })
         }
     }
     public async generatePlan(conversationId: string, uploadId: string, userMessage: string) {
@@ -147,7 +147,7 @@ export class FeatureDevClient {
             getLogger().error(
                 `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
             )
-            throw e
+            throw new ToolkitError((e as Error).message, { code: 'GeneratePlanFailed' })
         }
     }
 
@@ -175,7 +175,7 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
-            throw e
+            throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
         }
     }
 
@@ -196,7 +196,7 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
-            throw e
+            throw new ToolkitError((e as Error).message, { code: 'GetCodeGenerationFailed' })
         }
     }
 
@@ -236,7 +236,7 @@ export class FeatureDevClient {
                     (e as any).requestId
                 }`
             )
-            throw e
+            throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
         }
     }
 }
