@@ -56,7 +56,9 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
-    public readonly onDidConnectionUpdate = new vscode.EventEmitter<ServiceItemId>()
+    public readonly onDidConnectionChangeCodeCatalyst = new vscode.EventEmitter<void>()
+    public readonly onDidConnectionChangeExplorer = new vscode.EventEmitter<void>()
+    public readonly onDidConnectionChangeCodeWhisperer = new vscode.EventEmitter<void>()
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
@@ -342,13 +344,13 @@ export class AuthWebview extends VueWebview {
      * that happen outside of the webview (eg: status bar > quickpick).
      */
     setupConnectionChangeEmitter() {
-        const codeWhispererConnectionChanged = createThrottle(() => this.onDidConnectionUpdate.fire('codewhisperer'))
+        const codeWhispererConnectionChanged = createThrottle(() => this.onDidConnectionChangeCodeWhisperer.fire())
         CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
 
-        const codeCatalystConnectionChanged = createThrottle(() => this.onDidConnectionUpdate.fire('codecatalyst'))
+        const codeCatalystConnectionChanged = createThrottle(() => this.onDidConnectionChangeCodeCatalyst.fire())
         this.codeCatalystAuth.onDidChangeActiveConnection(codeCatalystConnectionChanged)
 
-        const awsExplorerConnectionChanged = createThrottle(() => this.onDidConnectionUpdate.fire('awsExplorer'))
+        const awsExplorerConnectionChanged = createThrottle(() => this.onDidConnectionChangeExplorer.fire())
         Auth.instance.onDidChangeActiveConnection(awsExplorerConnectionChanged)
         Auth.instance.onDidChangeConnectionState(awsExplorerConnectionChanged)
         Auth.instance.onDidUpdateConnection(awsExplorerConnectionChanged)

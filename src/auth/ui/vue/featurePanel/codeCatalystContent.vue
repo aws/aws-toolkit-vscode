@@ -1,5 +1,5 @@
 <template>
-    <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
+    <div class="feature-panel-container border-common">
         <div class="feature-panel-container-upper">
             <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
 
@@ -21,7 +21,7 @@
 
         <hr />
 
-        <div class="feature-panel-form-container" :key="authFormContainerKey">
+        <div class="feature-panel-form-container" :key="authFormContainerKey" v-show="isAllAuthsLoaded">
             <div class="feature-panel-form-section">
                 <BuilderIdForm
                     :state="builderIdState"
@@ -58,29 +58,29 @@ import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
-import { ServiceItemId } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
+
+function initialData() {
+    return {
+        isLoaded: {
+                builderIdCodeCatalyst: false,
+            } as Record<AuthFormId, boolean>,
+        isAllAuthsLoaded: false,
+        isIdentityCenterShown: false,
+    }
+}
 
 export default defineComponent({
     name: 'CodeCatalystContent',
     components: { BuilderIdForm, IdentityCenterForm },
     extends: BaseServiceItemContent,
     data() {
-        return {
-            isLoaded: {
-                builderIdCodeCatalyst: false,
-            } as Record<AuthFormId, boolean>,
-            isAllAuthsLoaded: false,
-            isIdentityCenterShown: false,
-        }
+        return initialData()
     },
     created() {
-        client.onDidConnectionUpdate((id: ServiceItemId) => {
-            if (id !== 'codecatalyst') {
-                return
-            }
-            this.refreshAuthFormContainer()
+        client.onDidConnectionChangeCodeCatalyst(() => {
+            this.refreshPanel()
         })
     },
     computed: {
@@ -95,6 +95,10 @@ export default defineComponent({
         },
     },
     methods: {
+        refreshPanel() {
+            Object.assign(this.$data, initialData())
+            this.refreshAuthFormContainer()
+        },
         updateIsAllAuthsLoaded() {
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded

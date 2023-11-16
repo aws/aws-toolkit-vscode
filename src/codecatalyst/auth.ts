@@ -69,7 +69,9 @@ export class CodeCatalystAuthenticationProvider {
         })
 
         // set initial context in case event does not trigger
-        setCodeCatalystConnectedContext(this.isConnectionValid())
+        this.restore().then(() => {
+            setCodeCatalystConnectedContext(this.isConnectionValid())
+        })
     }
 
     public get activeConnection() {

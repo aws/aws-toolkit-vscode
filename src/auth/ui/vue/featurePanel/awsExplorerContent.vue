@@ -1,5 +1,5 @@
 <template>
-    <div class="feature-panel-container border-common" v-show="isAllAuthsLoaded">
+    <div class="feature-panel-container border-common">
         <div class="feature-panel-container-upper">
             <div class="feature-panel-container-title">AWS Explorer</div>
 
@@ -23,8 +23,8 @@
 
         <hr />
 
-        <div class="feature-panel-form-container" :key="authFormContainerKey">
-            <div v-if="isAuthConnected" class="feature-panel-form-section">
+        <div class="feature-panel-form-container" :key="authFormContainerKey" v-show="isAllAuthsLoaded">
+            <div v-if="isAnyAuthConnected" class="feature-panel-form-section">
                 <ExplorerAggregateForm
                     :identityCenterState="identityCenterFormState"
                     :credentialsState="credentialsFormState"
@@ -107,45 +107,36 @@ import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import ExplorerAggregateForm from '../authForms/manageExplorer.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
-import { ServiceItemId } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
+
+function initialData() {
+    return {
+        /** We want to delay showing auth forms until all are done loading, once they are done this will be true */
+        isAllAuthsLoaded: false,
+        isLoaded: {
+            credentials: false,
+            identityCenterExplorer: false,
+            aggregateExplorer: false,
+        } as { [k in AuthFormId]?: boolean },
+        isCredentialsShown: false,
+        isIdentityCenterShown: false,
+        isAnyAuthConnected: false,
+    }
+}
 
 export default defineComponent({
     name: 'AwsExplorerContent',
     components: { CredentialsForm, IdentityCenterForm, ExplorerAggregateForm },
     extends: BaseServiceItemContent,
     data() {
-        return {
-            isAllAuthsLoaded: false,
-            isLoaded: {
-                credentials: false,
-                identityCenterExplorer: false,
-                aggregateExplorer: false,
-            } as Record<AuthFormId, boolean>,
-            isCredentialsShown: false,
-            isIdentityCenterShown: false,
-            isAuthConnected: false,
-        }
+        return initialData()
     },
     async created() {
-        this.isAuthConnected = await this.state.hasConnectedAuth()
-        if (!this.isAuthConnected) {
-            // This does not get loaded at all when auth is not connected
-            // so we'll mark it as loaded as to not block the overall loading
-            this.isLoaded.aggregateExplorer = true
-        }
+        this.refreshPanel()
 
-        // The created() method is not truly awaited and this causes a
-        // race condition with @auth-connection-updated triggering updateIsAllAuthsLoaded().
-        // So we must do a final update here to ensure the latest values.
-        this.updateIsAllAuthsLoaded()
-
-        client.onDidConnectionUpdate((id: ServiceItemId) => {
-            if (id !== 'awsExplorer') {
-                return
-            }
-            this.refreshAuthFormContainer()
+        client.onDidConnectionChangeExplorer(() => {
+            this.refreshPanel()
         })
     },
     computed: {
@@ -157,6 +148,28 @@ export default defineComponent({
         },
     },
     methods: {
+        /**
+         * Refreshes the auth form section of the feature panel
+         *
+         * This overrides the base class method because refreshing
+         * is more complex for this feature panel.
+         */
+        async refreshPanel() {
+            Object.assign(this.$data, initialData())
+
+            this.isAnyAuthConnected = await this.state.hasConnectedAuth()
+            if (!this.isAnyAuthConnected) {
+                // This does not get loaded at all when auth is not connected
+                // so we'll mark it as loaded as to not block the overall loading
+                this.isLoaded.aggregateExplorer = true
+            }
+
+            // The created() method is not truly awaited and this causes a
+            // race condition with @auth-connection-updated triggering updateIsAllAuthsLoaded().
+            // So we must do a final update here to ensure the latest values.
+            this.updateIsAllAuthsLoaded()
+            this.refreshAuthFormContainer()
+        },
         updateIsAllAuthsLoaded() {
             const allAuthsCount = Object.values(this.isLoaded).length
             const allLoadedAuths = Object.values(this.isLoaded).filter(val => val)

@@ -28,6 +28,7 @@ export default defineComponent({
         emitAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
             this.$emit('auth-connection-updated', id, args)
         },
+        /** Refreshes the element that has the ":key=authFormContainerKey" attribute set */
         refreshAuthFormContainer() {
             this.authFormContainerKey++
         },
