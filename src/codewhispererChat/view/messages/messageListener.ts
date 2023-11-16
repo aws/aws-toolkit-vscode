@@ -36,6 +36,7 @@ export class UIMessageListener {
             case 'onboarding-page-interaction':
                 this.processOnboardingPageInteraction(msg)
                 break
+            case 'help':
             case 'clear':
             case 'chat-prompt':
                 this.processChatMessage(msg)

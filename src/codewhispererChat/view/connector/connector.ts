@@ -208,6 +208,23 @@ export class OnboardingPageInteractionMessage extends UiMessage {
     }
 }
 
+export interface QuickActionMessageProps {
+    readonly message: string
+    readonly triggerID: string
+}
+
+export class QuickActionMessage extends UiMessage {
+    readonly message: string
+    readonly triggerID: string
+    override type = 'editorContextCommandMessage'
+
+    constructor(props: QuickActionMessageProps) {
+        super(undefined)
+        this.message = props.message
+        this.triggerID = props.triggerID
+    }
+}
+
 export class AppToWebViewMessageDispatcher {
     constructor(private readonly appsToWebViewMessagePublisher: MessagePublisher<any>) {}
 
@@ -224,6 +241,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendOnboardingPageInteractionMessage(message: OnboardingPageInteractionMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendQuickActionMessage(message: QuickActionMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

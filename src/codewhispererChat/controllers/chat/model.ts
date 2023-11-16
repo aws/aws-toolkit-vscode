@@ -56,10 +56,17 @@ export interface ClickLink {
     url: string
 }
 
+export type ChatPromptCommandType =
+    | 'help'
+    | 'clear'
+    | 'follow-up-was-clicked'
+    | 'onboarding-page-cwc-button-clicked'
+    | 'chat-prompt'
+
 export interface PromptMessage {
     message: string | undefined
     messageId: string
-    command: string | undefined
+    command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
 }

@@ -17,6 +17,7 @@ import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 
 export const createMynahUI = (
+    ideApi: any,
     featureDevInitEnabled: boolean,
     gumbyInitEnabled: boolean,
     initialData?: MynahUIDataModel
@@ -25,12 +26,11 @@ export const createMynahUI = (
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
-    const ideApi = acquireVsCodeApi()
     const tabsStorage = new TabsStorage({
         onTabTimeout: tabID => {
             mynahUI.addChatItem(tabID, {
                 type: ChatItemType.ANSWER,
-                body: 'Your session is ended for this tab, please open a new one.',
+                body: 'This conversation has timed out after 48 hours. It will not be saved. Start a new conversation.',
             })
             mynahUI.updateStore(tabID, {
                 promptInputDisabledState: true,
@@ -42,7 +42,7 @@ export const createMynahUI = (
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: 'unknown',
+        type: 'cwc',
         isSelected: true,
     })
 
@@ -228,7 +228,7 @@ ${message}`,
                     tabsStorage.addTab({
                         id: newTabId,
                         status: 'busy',
-                        type: 'unknown',
+                        type: 'cwc',
                         isSelected: true,
                     })
                 }
@@ -297,11 +297,11 @@ ${message}`,
         tabs: {
             'tab-1': {
                 isSelected: true,
-                store: tabDataGenerator.getTabData('unknown', true),
+                store: tabDataGenerator.getTabData('cwc', true),
             },
         },
         defaults: {
-            store: tabDataGenerator.getTabData('unknown', true),
+            store: tabDataGenerator.getTabData('cwc', true),
         },
         config: {
             maxTabs: 10,
