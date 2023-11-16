@@ -21,6 +21,6 @@ export const uiComponentsTexts = {
     submit: 'Submit',
     stopGenerating: 'Stop generating',
     copyToClipboard: 'Copied to clipboard',
-    noMoreTabsTooltip: "You've reached maximum number of tabs you can simultaneously use.",
+    noMoreTabsTooltip: 'You can only open ten conversation tabs at a time.',
     codeSuggestionWithReferenceTitle: 'Some suggestions contain code with references.',
 }

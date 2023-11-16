@@ -24,14 +24,20 @@ export class TabDataGenerator {
     ])
 
     private tabInputPlaceholder: Map<TabType, string> = new Map([
-        ['unknown', 'Ask a question or enter "/" for actions'],
-        ['cwc', 'Ask a question or enter "/" for actions'],
+        ['unknown', 'Ask a question or enter "/" for quick commands'],
+        ['cwc', 'Ask a question or enter "/" for quick commands'],
         ['featuredev', 'What problem do you want to fix?'],
     ])
 
     private tabWelcomeMessage: Map<TabType, (name?: string) => string> = new Map([
         [
             'unknown',
+            () => `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
+        Ask me to explain, debug, or optimize your code. 
+        You can enter \`/\` to see a list of quick actions.`,
+        ],
+        [
+            'cwc',
             () => `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
@@ -63,6 +69,8 @@ Before I begin generating code, let's agree on an implementation plan. What prob
     ): MynahUIDataModel {
         return {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
+            promptInputInfo:
+                'Amazon Q may produce inaccurate information. Verify all provided code or information before using it in any environment or workload.',
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
             promptInputPlaceholder: this.tabInputPlaceholder.get(tabType),
             chatItems: needWelcomeMessages

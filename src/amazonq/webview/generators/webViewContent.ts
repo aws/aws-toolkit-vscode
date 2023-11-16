@@ -37,7 +37,9 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(${featureDevEnabled && AuthUtil.instance.isEnterpriseSsoInUse()}, ${gumbyEnabled});
+                createMynahUI(acquireVsCodeApi(), ${
+                    featureDevEnabled && AuthUtil.instance.isEnterpriseSsoInUse()
+                }, ${gumbyEnabled});
             }
     </script>
         `
