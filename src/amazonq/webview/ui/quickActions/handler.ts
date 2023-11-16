@@ -47,6 +47,9 @@ export class QuickActionHandler {
             case '/fix':
                 this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
                 break
+            case '/help':
+                this.handleHelpCommand(tabID)
+                break
             case '/clear':
                 this.handleClearCommand(tabID)
                 break
@@ -65,6 +68,10 @@ export class QuickActionHandler {
             chatItems: [],
         })
         this.connector.clearChat(tabID)
+    }
+
+    private handleHelpCommand(tabID: string) {
+        this.connector.help(tabID)
     }
 
     private handleFeatureDevCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {

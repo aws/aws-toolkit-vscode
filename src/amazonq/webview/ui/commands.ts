@@ -19,6 +19,7 @@ type MessageCommand =
     | 'stop-response'
     | 'trigger-tabID-received'
     | 'clear'
+    | 'help'
     | 'chat-item-voted'
     | 'chat-item-feedback'
     | 'link-was-clicked'
