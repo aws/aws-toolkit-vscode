@@ -103,7 +103,7 @@ export class Connector {
         }
     }
 
-eiifcbfccrgnffvgvtbgcvbulrurc    transform = (tabID: string): void => {
+    transform = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             default:
                 this.cwChatConnector.transform(tabID)
