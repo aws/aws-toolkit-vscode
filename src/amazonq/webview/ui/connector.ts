@@ -99,6 +99,14 @@ export class Connector {
         }
     }
 
+    help = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.help(tabID)
+                break
+        }
+    }
+
     transform = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             default:

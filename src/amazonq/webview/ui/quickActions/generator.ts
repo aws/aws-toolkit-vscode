@@ -53,6 +53,10 @@ export class QuickActionGenerator {
                     {
                         commands: [
                             {
+                                command: '/help',
+                                description: 'Learn more about Amazon Q',
+                            },
+                            {
                                 command: '/clear',
                                 description: 'Clear this session',
                             },

@@ -40,15 +40,7 @@ export class FollowUpGenerator {
                     ],
                 }
             default:
-                return {
-                    text: 'Or you can select one of these',
-                    options: [
-                        {
-                            pillText: 'I have a software development question',
-                            type: 'continue-to-chat',
-                        },
-                    ],
-                }
+                return {}
         }
     }
 }

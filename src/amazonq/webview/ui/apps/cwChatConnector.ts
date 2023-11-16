@@ -187,6 +187,15 @@ export class Connector {
         })
     }
 
+    help = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'help',
+            chatMessage: '',
+            tabType: 'cwc',
+        })
+    }
+
     private sendTriggerMessageProcessed = async (requestID: any): Promise<void> => {
         this.sendMessageToExtension({
             command: 'trigger-message-processed',
