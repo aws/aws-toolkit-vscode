@@ -23,7 +23,6 @@ import {
     isBuilderIdConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
-import { FeatureConfigProvider } from '../service/featureConfigProvider'
 
 export const defaultCwScopes = [...ssoAccountAccessScopes, ...codewhispererScopes]
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(defaultCwScopes)
@@ -107,7 +106,7 @@ export class AuthUtil {
                 }
 
                 // start the feature config polling job
-                FeatureConfigProvider.instance.fetchFeatureConfigs()
+                vscode.commands.executeCommand('aws.codewhisperer.fetchFeatureConfigs')
             }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
