@@ -4171,7 +4171,7 @@
     },
     "devDependencies": {
         "@aws-sdk/types": "^3.13.1",
-        "@aws-toolkits/telemetry": "^1.0.163",
+        "@aws-toolkits/telemetry": "^1.0.165",
         "@aws/fully-qualified-names": "^2.1.1",
         "@cspotcode/source-map-support": "^0.8.1",
         "@sinonjs/fake-timers": "^10.0.2",
@@ -4281,8 +4281,8 @@
         "mime-types": "^2.1.32",
         "moment": "^2.29.4",
         "node-fetch": "^2.7.0",
-        "portfinder": "^1.0.32",
         "parse-diff": "0.11.1",
+        "portfinder": "^1.0.32",
         "sanitize-html": "^2.3.3",
         "semver": "^7.5.4",
         "strip-ansi": "^5.2.0",

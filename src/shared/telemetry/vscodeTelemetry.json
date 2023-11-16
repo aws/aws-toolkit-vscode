@@ -7,7 +7,7 @@
         },
         {
             "name": "amazonqGenerateApproachIteration",
-            "type": "int",
+            "type": "double",
             "description": "Order of approach iteration. For initial code changes it is 0"
         },
         {
@@ -17,7 +17,7 @@
         },
         {
             "name": "amazonqGenerateCodeIteration",
-            "type": "int",
+            "type": "double",
             "description": "Order of code generation iteration. For initial code changes it is 0"
         },
         {
@@ -27,18 +27,18 @@
         },
         {
             "name": "amazonqCodeGenerationResult",
-            "type": "double",
+            "type": "string",
             "description": "Captures if code generation result is Complete, Failed,etc"
         },
         {
             "name": "amazonqNumberOfFilesGenerated",
-            "type": "int",
+            "type": "double",
             "description": "Captures the number of files generated as a part of code generation iteration"
         },
 
         {
             "name": "amazonqRepositorySize",
-            "type": "int",
+            "type": "double",
             "description": "Captures  size of the source code"
         },
         {

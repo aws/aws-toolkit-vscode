@@ -45,8 +45,7 @@ export class TelemetryHelper {
             amazonqConversationId,
             amazonqGenerateCodeIteration: this.generateCodeIteration,
             amazonqGenerateCodeResponseLatency: performance.now() - this.generateCodeLastInvocationTime,
-            // TODO: should be codeGenerationResult: this.codeGenerationResult. Type should be fixed on /aws-toolkit-common/
-            amazonqCodeGenerationResult: 0,
+            amazonqCodeGenerationResult: this.codeGenerationResult,
             amazonqNumberOfFilesGenerated: this.numberOfFilesGenerated,
             amazonqRepositorySize: this.repositorySize,
         }
