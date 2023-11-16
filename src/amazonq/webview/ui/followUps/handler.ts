@@ -31,6 +31,12 @@ export class FollowUpInteractionHandler {
             this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
             return
         }
+        if (followUp.type !== undefined && followUp.type === 'help') {
+            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+            this.connector.onUpdateTabType(tabID)
+            this.connector.help(tabID)
+            return
+        }
         // we need to check if there is a prompt
         // which will cause an api call
         // then we can set the loading state to true
@@ -49,6 +55,13 @@ export class FollowUpInteractionHandler {
             })
             this.tabsStorage.updateTabStatus(tabID, 'busy')
             this.tabsStorage.resetTabTimer(tabID)
+
+            if (followUp.type !== undefined && followUp.type === 'init-prompt') {
+                this.connector.requestGenerativeAIAnswer(tabID, {
+                    chatMessage: followUp.prompt,
+                })
+                return
+            }
         }
         this.connector.onFollowUpClicked(tabID, messageId, followUp)
     }

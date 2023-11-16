@@ -52,7 +52,20 @@ export class FollowUpGenerator {
                     ],
                 }
             default:
-                return {}
+                return {
+                    text: 'Try Examples:',
+                    options: [
+                        {
+                            pillText: 'Explain selected code',
+                            prompt: 'Explain selected code',
+                            type: 'init-prompt',
+                        },
+                        {
+                            pillText: 'How can Amazon Q help me?',
+                            type: 'help',
+                        },
+                    ],
+                }
         }
     }
 }
