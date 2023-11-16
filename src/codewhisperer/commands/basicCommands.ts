@@ -99,7 +99,7 @@ export const selectCustomizationPrompt = Commands.declare(
 )
 
 export const reconnect = Commands.declare(
-    { id: 'aws.codeWhisperer.reconnect', compositeKey: { 1: 'source' } },
+    { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await AuthUtil.instance.reauthenticate()
     }
