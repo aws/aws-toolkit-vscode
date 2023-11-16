@@ -61,7 +61,7 @@ export class PrepareRepoFailedError extends ToolkitError {
     }
 }
 
-const denyListedErrors: string[] = ['Deserialization error']
+const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
 
 export function createUserFacingErrorMessage(message: string) {
     if (denyListedErrors.some(err => message.includes(err))) {
