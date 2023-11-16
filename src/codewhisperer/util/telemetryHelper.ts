@@ -247,7 +247,7 @@ export class TelemetryHelper {
         }
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererSessionId: sessionId,
-            codewhispererFirstRequestId: this.sessionInvocations[0].codewhispererRequestId ?? requestId,
+            codewhispererFirstRequestId: requestId, // suggested change, not required, otherwise we have to 100% sure this.serviceInvocation is correct
             credentialStartUrl: events[0].credentialStartUrl,
             codewhispererLanguage: events[0].codewhispererLanguage,
             codewhispererGettingStartedTask: session.taskType,
