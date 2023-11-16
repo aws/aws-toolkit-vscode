@@ -36,12 +36,13 @@ describe('Controller', () => {
     })
 
     describe('openDiff', async () => {
-        async function openDiff(controllerEventEmitter: ChatControllerEventEmitters, filePath: string) {
+        async function openDiff(
+            controllerEventEmitter: ChatControllerEventEmitters,
+            filePath: string,
+            deleted = false
+        ) {
             const executeDiff = sinon.stub(vscode.commands, 'executeCommand').returns(Promise.resolve(undefined))
-            controllerEventEmitter.openDiff.fire({
-                tabID,
-                rightPath: filePath,
-            })
+            controllerEventEmitter.openDiff.fire({ tabID, filePath, deleted })
 
             // Wait until the controller has time to process the event
             await waitUntil(() => {

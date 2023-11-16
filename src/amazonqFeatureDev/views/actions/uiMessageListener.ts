@@ -78,8 +78,8 @@ export class UIMessageListener {
     private openDiff(msg: any) {
         this.featureDevControllerEventsEmitters?.openDiff.fire({
             tabID: msg.tabID,
-            leftPath: msg.leftPath,
-            rightPath: msg.rightPath,
+            filePath: msg.filePath,
+            deleted: msg.deleted,
         })
     }
 

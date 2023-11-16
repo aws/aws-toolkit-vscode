@@ -77,12 +77,12 @@ export class Connector {
         })
     }
 
-    onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
+    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
         this.sendMessageToExtension({
             command: 'open-diff',
             tabID,
-            leftPath,
-            rightPath,
+            filePath,
+            deleted,
             tabType: 'featuredev',
         })
     }
@@ -133,12 +133,15 @@ export class Connector {
         if (this.onChatAnswerReceived !== undefined) {
             const answer: ChatItem = {
                 type: ChatItemType.CODE_RESULT,
-                body: messageData.filePaths,
                 relatedContent: undefined,
                 followUp: undefined,
                 canBeVoted: true,
                 // TODO get the backend to store a message id in addition to conversationID
                 messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
+                fileList: {
+                    filePaths: messageData.filePaths,
+                    deletedFiles: messageData.deletedFiles,
+                },
             }
             this.onChatAnswerReceived(messageData.tabID, answer)
         }

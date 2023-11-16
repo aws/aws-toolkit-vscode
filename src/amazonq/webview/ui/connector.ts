@@ -13,6 +13,7 @@ import { featureDevChat } from '../../../amazonqFeatureDev/constants'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { CodeReference } from '../../../codewhispererChat/view/connector/connector'
 import { AuthFollowUpType } from './followUps/generator'
+import { getLogger } from '../../../shared/logger/logger'
 
 export interface ChatPayload {
     chatMessage: string
@@ -116,6 +117,7 @@ export class Connector {
     }
 
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
+        getLogger().debug('Message received', { message })
         if (message.data === undefined) {
             return
         }
@@ -278,10 +280,10 @@ export class Connector {
         }
     }
 
-    onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
+    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'featuredev':
-                this.featureDevChatConnector.onOpenDiff(tabID, leftPath, rightPath)
+                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted)
                 break
         }
     }

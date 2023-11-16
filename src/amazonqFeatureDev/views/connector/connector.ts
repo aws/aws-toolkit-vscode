@@ -30,13 +30,15 @@ export class ErrorMessage extends UiMessage {
 
 export class FilePathMessage extends UiMessage {
     readonly filePaths!: string[]
+    readonly deletedFiles!: string[]
     readonly message!: string
     readonly conversationID!: string
     override type = 'filePathMessage'
 
-    constructor(filePaths: string[], tabID: string, conversationID: string) {
+    constructor(filePaths: string[], deletedFiles: string[], tabID: string, conversationID: string) {
         super(tabID)
         this.filePaths = filePaths
+        this.deletedFiles = deletedFiles
         this.conversationID = conversationID
     }
 }

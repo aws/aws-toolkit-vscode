@@ -104,6 +104,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
             },
             this.approach,
             [],
+            [],
             this.tabID,
             0
         )
@@ -163,6 +164,10 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
 
             await fs.mkdir(path.dirname(absolutePath))
             await fs.writeFile(absolutePath, decodedContent)
+        }
+        for (const filePath of this.state.deletedFiles ?? []) {
+            const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
+            await fs.delete(absolutePath)
         }
     }
 

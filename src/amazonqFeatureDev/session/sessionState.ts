@@ -3,30 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
+import { MynahIcons } from '@aws/mynah-ui-chat'
+import { randomUUID } from 'crypto'
 import * as path from 'path'
 import sanitizeHtml from 'sanitize-html'
-import { collectFiles, prepareRepoData } from '../util/files'
+import * as vscode from 'vscode'
+import { ToolkitError } from '../../shared/errors'
+import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger'
-import { FileSystemCommon } from '../../srcShared/fs'
+import { telemetry } from '../../shared/telemetry/telemetry'
 import { VirtualFileSystem } from '../../shared/virtualFilesystem'
 import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
+import { FileSystemCommon } from '../../srcShared/fs'
 import { featureDevScheme } from '../constants'
+import { UserMessageNotFoundError } from '../errors'
 import {
+    FollowUpTypes,
+    NewFileContents,
+    SessionState,
     SessionStateAction,
     SessionStateConfig,
     SessionStateInteraction,
-    SessionState,
-    NewFileContents,
     SessionStatePhase,
 } from '../types'
-import globals from '../../shared/extensionGlobals'
-import { ToolkitError } from '../../shared/errors'
-import { telemetry } from '../../shared/telemetry/telemetry'
-import { randomUUID } from 'crypto'
-import { uploadCode } from '../util/upload'
-import { UserMessageNotFoundError } from '../errors'
+import { collectFiles, prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { uploadCode } from '../util/upload'
 
 const fs = FileSystemCommon.instance
 
@@ -86,6 +88,9 @@ export class RefinementState implements SessionState {
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
         return telemetry.amazonq_approachInvoke.run(async span => {
+            if (action.msg && action.msg.indexOf('MOCK CODE') !== -1) {
+                return new MockCodeGenState(this.config, this.approach, this.tabID).interact(action)
+            }
             try {
                 span.record({ amazonqConversationId: this.conversationId })
                 TelemetryHelper.instance.setGenerateApproachIteration(this.currentIteration)
@@ -132,8 +137,7 @@ export class RefinementState implements SessionState {
 async function createFilePaths(
     fs: VirtualFileSystem,
     newFileContents: NewFileContents,
-    uploadId: string,
-    conversationId: string
+    uploadId: string
 ): Promise<string[]> {
     const filePaths: string[] = []
     for (const { filePath, fileContent } of newFileContents) {
@@ -165,6 +169,7 @@ abstract class CodeGenBase {
     async generateCode({ fs, codeGenerationId }: { fs: VirtualFileSystem; codeGenerationId: string }): Promise<{
         newFiles: any
         newFilePaths: string[]
+        deletedFiles: string[]
     }> {
         for (
             let pollingIteration = 0;
@@ -176,13 +181,15 @@ abstract class CodeGenBase {
             TelemetryHelper.instance.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
                 case 'Complete': {
-                    // const newFiles = codegenResult.result?.newFileContents ?? []
-                    const newFiles = await this.config.proxyClient.exportResultArchive(this.conversationId)
-                    const newFilePaths = await createFilePaths(fs, newFiles, this.uploadId, this.conversationId)
+                    const { newFileContents, deletedFiles } = await this.config.proxyClient.exportResultArchive(
+                        this.conversationId
+                    )
+                    const newFilePaths = await createFilePaths(fs, newFileContents, this.uploadId)
                     TelemetryHelper.instance.setNumberOfFilesGenerated(newFilePaths.length)
                     return {
-                        newFiles,
+                        newFiles: newFileContents,
                         newFilePaths,
+                        deletedFiles,
                     }
                 }
                 case 'predict-ready':
@@ -209,16 +216,21 @@ abstract class CodeGenBase {
         return {
             newFiles: [],
             newFilePaths: [],
+            deletedFiles: [],
         }
     }
 }
 
 export class CodeGenState extends CodeGenBase implements SessionState {
-    public filePaths: string[]
-
-    constructor(config: SessionStateConfig, public approach: string, tabID: string, private currentIteration: number) {
+    constructor(
+        config: SessionStateConfig,
+        public approach: string,
+        public filePaths: string[],
+        public deletedFiles: string[],
+        tabID: string,
+        private currentIteration: number
+    ) {
         super(config, tabID)
-        this.filePaths = []
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
@@ -246,11 +258,13 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     codeGenerationId,
                 })
                 this.filePaths = codeGeneration.newFilePaths
+                this.deletedFiles = codeGeneration.deletedFiles
                 TelemetryHelper.instance.recordUserCodeGenerationTelemetry(this.conversationId)
                 const nextState = new PrepareCodeGenState(
                     this.config,
                     this.approach,
                     this.filePaths,
+                    this.deletedFiles,
                     this.tabID,
                     this.currentIteration + 1
                 )
@@ -268,12 +282,14 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 export class MockCodeGenState implements SessionState {
     public tokenSource: vscode.CancellationTokenSource
     public filePaths: string[]
+    public deletedFiles: string[]
     public readonly conversationId: string
     public readonly uploadId: string
 
     constructor(private config: SessionStateConfig, public approach: string, public tabID: string) {
         this.tokenSource = new vscode.CancellationTokenSource()
         this.filePaths = []
+        this.deletedFiles = []
         this.conversationId = config.conversationId
         this.uploadId = randomUUID()
     }
@@ -292,8 +308,29 @@ export class MockCodeGenState implements SessionState {
                     filePath: f.filePath.replace('mock-data/', ''),
                     fileContent: f.fileContent,
                 }))
-                this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId, this.conversationId)
+                this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId)
+                this.deletedFiles = ['src/this-file-should-be-deleted.ts']
             }
+            action.messenger.sendFilePaths(this.filePaths, this.deletedFiles, this.tabID, this.uploadId)
+            action.messenger.sendAnswer({
+                message: undefined,
+                type: 'system-prompt',
+                followUps: [
+                    {
+                        pillText: 'Accept changes',
+                        type: FollowUpTypes.AcceptCode,
+                        icon: 'ok' as MynahIcons,
+                        status: 'success',
+                    },
+                    {
+                        pillText: 'Provide feedback & regenerate',
+                        type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
+                        icon: 'refresh' as MynahIcons,
+                        status: 'info',
+                    },
+                ],
+                tabID: this.tabID,
+            })
         } catch (e) {
             // TODO: handle this error properly, double check what would be expected behaviour if mock code does not work.
             getLogger().error('Unable to use mock code generation: %O', e)
@@ -301,15 +338,7 @@ export class MockCodeGenState implements SessionState {
 
         return {
             // no point in iterating after a mocked code gen?
-            nextState: new RefinementState(
-                {
-                    ...this.config,
-                    conversationId: this.conversationId,
-                },
-                this.approach,
-                this.tabID,
-                0
-            ),
+            nextState: this,
             interaction: {},
         }
     }
@@ -324,6 +353,7 @@ export class PrepareCodeGenState implements SessionState {
         private config: SessionStateConfig,
         public approach: string,
         public filePaths: string[],
+        public deletedFiles: string[],
         public tabID: string,
         private currentIteration: number
     ) {
@@ -347,7 +377,14 @@ export class PrepareCodeGenState implements SessionState {
 
         this.uploadId = uploadId
         await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
-        const nextState = new CodeGenState({ ...this.config, uploadId }, '', this.tabID, this.currentIteration)
+        const nextState = new CodeGenState(
+            { ...this.config, uploadId },
+            '',
+            this.filePaths,
+            this.deletedFiles,
+            this.tabID,
+            this.currentIteration
+        )
         return nextState.interact(action)
     }
 }

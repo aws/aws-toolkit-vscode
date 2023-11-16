@@ -3,20 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as vscode from 'vscode'
-import * as path from 'path'
-import { existsSync } from 'fs'
-import { EventEmitter } from 'vscode'
-import { Messenger } from './messenger/messenger'
-import { ChatSessionStorage } from '../../storages/chatSession'
-import { FollowUpTypes, SessionStatePhase, createUri } from '../../types'
 import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui-chat'
+import { existsSync } from 'fs'
+import * as path from 'path'
+import * as vscode from 'vscode'
+import { EventEmitter } from 'vscode'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
+import { featureDevScheme } from '../../constants'
+import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
-import { telemetry } from '../../../shared/telemetry/telemetry'
-import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
-import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { featureName } from '../../constants'
+import { ChatSessionStorage } from '../../storages/chatSession'
+import { FollowUpTypes, SessionStatePhase } from '../../types'
+import { Messenger } from './messenger/messenger'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -28,6 +29,7 @@ export interface ChatControllerEventEmitters {
     readonly processChatItemVotedMessage: EventEmitter<any>
 }
 
+type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
@@ -190,6 +192,7 @@ export class FeatureDevController {
     private async onCodeGeneration(session: Session, message: string | undefined, tabID: string) {
         // lock the UI/show loading bubbles
 
+        // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
             tabID,
             true,
@@ -203,8 +206,9 @@ export class FeatureDevController {
                 tabID,
             })
             await session.send(message)
-            const filePaths = session.state.filePaths
-            if (!filePaths || filePaths.length === 0) {
+            const filePaths = session.state.filePaths ?? []
+            const deletedFiles = session.state.deletedFiles ?? []
+            if (filePaths.length === 0 && deletedFiles.length === 0) {
                 this.messenger.sendAnswer({
                     message: 'Unable to generate any file changes',
                     type: 'answer',
@@ -234,7 +238,7 @@ export class FeatureDevController {
                 return
             }
 
-            this.messenger.sendFilePaths(filePaths, tabID, session.uploadId)
+            this.messenger.sendFilePaths(filePaths, deletedFiles, tabID, session.uploadId)
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',
@@ -400,22 +404,36 @@ export class FeatureDevController {
         }
     }
 
-    private async openDiff(message: any) {
+    private getOriginalFileUri({ filePath, tabID }: OpenDiffMessage, session: Session) {
+        const originalPath = path.join(session.config.workspaceRoot, filePath)
+        return existsSync(originalPath)
+            ? vscode.Uri.file(originalPath)
+            : vscode.Uri.from({ scheme: featureDevScheme, path: 'empty', query: `tabID=${tabID}` })
+    }
+
+    private getFileDiffUris(message: OpenDiffMessage, session: Session) {
+        const left = this.getOriginalFileUri(message, session)
+        const right = vscode.Uri.from({
+            scheme: featureDevScheme,
+            path: path.join(session.uploadId, message.filePath!),
+            query: `tabID=${message.tabID}`,
+        })
+
+        return { left, right }
+    }
+
+    private async openDiff(message: OpenDiffMessage) {
         const session = await this.sessionStorage.getSession(message.tabID)
         telemetry.amazonq_isReviewedChanges.emit({ amazonqConversationId: session.conversationId, enabled: true })
-        const originalPath = path.join(session.config.workspaceRoot, message.rightPath)
-        let left
-        if (existsSync(originalPath)) {
-            left = vscode.Uri.file(originalPath)
-        } else {
-            left = createUri('empty', message.tabID)
-        }
 
-        vscode.commands.executeCommand(
-            'vscode.diff',
-            left,
-            createUri(path.join(session.uploadId, message.rightPath), message.tabID)
-        )
+        if (message.deleted) {
+            const fileUri = this.getOriginalFileUri(message, session)
+            const basename = path.basename(message.filePath)
+            vscode.commands.executeCommand('vscode.open', fileUri, {}, `${basename} (Deleted)`)
+        } else {
+            const { left, right } = this.getFileDiffUris(message, session)
+            vscode.commands.executeCommand('vscode.diff', left, right)
+        }
     }
 
     private async stopResponse(message: any) {

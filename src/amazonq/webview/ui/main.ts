@@ -146,7 +146,9 @@ export const createMynahUI = (
                     ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
-                    ...(item.type === ChatItemType.CODE_RESULT ? { type: ChatItemType.CODE_RESULT } : {}),
+                    ...(item.type === ChatItemType.CODE_RESULT
+                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
+                        : {}),
                 })
                 return
             }

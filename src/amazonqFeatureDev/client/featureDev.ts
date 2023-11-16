@@ -218,10 +218,10 @@ export class FeatureDevClient {
             }
 
             const {
-                code_generation_result: { new_file_contents: newFiles },
+                code_generation_result: { new_file_contents: newFiles = [], deleted_files: deletedFiles = [] },
             } = JSON.parse(new TextDecoder().decode(Buffer.from(buffer))) as {
                 // eslint-disable-next-line @typescript-eslint/naming-convention
-                code_generation_result: { new_file_contents: Record<string, string> }
+                code_generation_result: { new_file_contents?: Record<string, string>; deleted_files?: string[] }
             }
 
             const newFileContents: { filePath: string; fileContent: string }[] = []
@@ -229,7 +229,7 @@ export class FeatureDevClient {
                 newFileContents.push({ filePath, fileContent })
             }
 
-            return newFileContents
+            return { newFileContents, deletedFiles }
         } catch (e) {
             getLogger().error(
                 `${featureName}: failed to export archive result: ${(e as Error).message} RequestId: ${

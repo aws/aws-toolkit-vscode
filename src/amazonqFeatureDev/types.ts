@@ -32,6 +32,7 @@ export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
 
 export interface SessionState {
     readonly filePaths?: string[]
+    readonly deletedFiles?: string[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
     approach: string

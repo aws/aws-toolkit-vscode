@@ -16,12 +16,6 @@ import {
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 
-export interface ResponseProps {
-    message?: string
-    followUps?: ChatItemFollowUp[]
-    filePaths?: string[]
-}
-
 export class Messenger {
     public constructor(private readonly dispatcher: AppToWebViewMessageDispatcher) {}
 
@@ -71,8 +65,8 @@ export class Messenger {
         })
     }
 
-    public sendFilePaths(filePaths: string[], tabID: string, uploadId: string) {
-        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, tabID, uploadId))
+    public sendFilePaths(filePaths: string[], deletedFiles: string[], tabID: string, uploadId: string) {
+        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, deletedFiles, tabID, uploadId))
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
