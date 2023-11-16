@@ -174,7 +174,7 @@ export class WeaverbirdController {
 
         // Follow up with action items and complete the request stream
         this.messenger.sendAnswer({
-            type: 'system-prompt',
+            type: 'answer',
             followUps: this.getFollowUpOptions(session.state.phase),
             tabID: tabID,
         })
