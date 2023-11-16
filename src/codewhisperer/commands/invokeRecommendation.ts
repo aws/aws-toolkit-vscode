@@ -12,7 +12,6 @@ import { RecommendationHandler } from '../service/recommendationHandler'
 import { isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
-import { TelemetryHelper } from '../util/telemetryHelper'
 import { ClassifierTrigger } from '../service/classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
@@ -100,7 +99,6 @@ export async function invokeRecommendation(
             RecommendationHandler.instance.isGenerateRecommendationInProgress = false
         }
     } else if (isInlineCompletionEnabled()) {
-        TelemetryHelper.instance.setInvokeSuggestionStartTime()
         ClassifierTrigger.instance.recordClassifierResultForManualTrigger(editor)
         await InlineCompletionService.instance.getPaginatedRecommendation(client, editor, 'OnDemand', config)
     }
