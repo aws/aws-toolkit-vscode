@@ -9,7 +9,7 @@ import { codicon, getIcon } from '../../shared/icons'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { Command } from '../../shared/vscode/commands2'
+import { Command, placeholder } from '../../shared/vscode/commands2'
 import {
     toggleCodeSuggestions,
     showReferenceLog,
@@ -20,7 +20,7 @@ import {
     reconnect,
     selectCustomizationPrompt,
     signoutCodeWhisperer,
-    showManageConnections,
+    showManageCwConnections,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState, transformByQState } from '../models/model'
@@ -42,7 +42,7 @@ export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): an
 
     switch (type) {
         case 'tree':
-            return toggleCodeSuggestions.build(cwTreeNodeSource).asTreeNode(
+            return toggleCodeSuggestions.build(placeholder, cwTreeNodeSource).asTreeNode(
                 pause
                     ? {
                           label: labelPause,
@@ -58,7 +58,7 @@ export function createAutoSuggestions(type: 'item' | 'tree', pause: boolean): an
                 data: 'autoSuggestions',
                 label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
                 description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
-                onClick: () => toggleCodeSuggestions.execute(cwQuickPickSource),
+                onClick: () => toggleCodeSuggestions.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'autoSuggestions'>
     }
 }
@@ -72,7 +72,7 @@ export function createOpenReferenceLog(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showReferenceLog.build(cwTreeNodeSource).asTreeNode({
+            return showReferenceLog.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 tooltip: localize(
@@ -85,7 +85,7 @@ export function createOpenReferenceLog(type: 'item' | 'tree'): any {
             return {
                 data: 'openReferenceLog',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showReferenceLog.execute(cwQuickPickSource),
+                onClick: () => showReferenceLog.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'openReferenceLog'>
     }
 }
@@ -100,7 +100,7 @@ export function createSecurityScan(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showSecurityScan.build(cwTreeNodeSource).asTreeNode({
+            return showSecurityScan.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 tooltip: label,
@@ -110,7 +110,7 @@ export function createSecurityScan(type: 'item' | 'tree'): any {
             return {
                 data: 'securityScan',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showSecurityScan.execute(cwQuickPickSource),
+                onClick: () => showSecurityScan.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'securityScan'>
     }
 }
@@ -146,7 +146,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showManageConnections.build(cwTreeNodeSource).asTreeNode({
+            return showManageCwConnections.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -154,7 +154,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
             return {
                 data: 'signIn',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showManageConnections.execute(cwQuickPickSource),
+                onClick: () => showManageCwConnections.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'signIn'>
     }
 }
@@ -168,7 +168,7 @@ export function createReconnect(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return reconnect.build(cwTreeNodeSource).asTreeNode({
+            return reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -176,7 +176,7 @@ export function createReconnect(type: 'item' | 'tree'): any {
             return {
                 data: 'reconnect',
                 label: codicon`${icon} ${label}`,
-                onClick: () => reconnect.execute(cwQuickPickSource),
+                onClick: () => reconnect.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'reconnect'>
     }
 }
@@ -216,7 +216,7 @@ export function createFreeTierLimitMet(type: 'tree' | 'item'): any {
 
     switch (type) {
         case 'tree':
-            return showFreeTierLimit.build(cwTreeNodeSource).asTreeNode({
+            return showFreeTierLimit.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 description: localize('AWS.explorerNode.freeTierLimitMet.tooltip', `paused until ${nextMonth}`),
@@ -226,7 +226,7 @@ export function createFreeTierLimitMet(type: 'tree' | 'item'): any {
             return {
                 data: 'freeTierLimitMet',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showFreeTierLimit.execute(cwQuickPickSource),
+                onClick: () => showFreeTierLimit.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'freeTierLimitMet'>
     }
 }
@@ -246,7 +246,7 @@ export function createSelectCustomization(type: 'tree' | 'item'): any {
 
     switch (type) {
         case 'tree':
-            return selectCustomizationPrompt.build(cwTreeNodeSource).asTreeNode({
+            return selectCustomizationPrompt.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
                 description: `${newText}${selectedCustomization.arn === '' ? '' : selectedCustomization.name}`,
@@ -256,7 +256,7 @@ export function createSelectCustomization(type: 'tree' | 'item'): any {
                 data: 'selectCustomization',
                 label: codicon`${icon} ${label}`,
                 description: `Using ${selectedCustomization.name}`,
-                onClick: () => selectCustomizationPrompt.execute(cwQuickPickSource),
+                onClick: () => selectCustomizationPrompt.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'selectCustomization'>
     }
 }
@@ -271,7 +271,7 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
     switch (type) {
         case 'tree':
             return CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage
-                .build(cwTreeNodeSource)
+                .build(placeholder, cwTreeNodeSource)
                 .asTreeNode({
                     label: label,
                     iconPath: icon,
@@ -283,6 +283,7 @@ export function createGettingStarted(type: 'item' | 'tree'): any {
                 label: codicon`${icon} ${label}`,
                 onClick: () =>
                     CodeWhispererCommandDeclarations.instance.declared.showGettingStartedPage.execute(
+                        placeholder,
                         cwQuickPickSource
                     ),
             } as DataQuickPickItem<'gettingStarted'>
@@ -302,7 +303,7 @@ export function createSignout(type: 'item' | 'tree'): any {
             return {
                 data: 'signout',
                 label: codicon`${icon} ${label}`,
-                onClick: () => signoutCodeWhisperer.execute(cwQuickPickSource),
+                onClick: () => signoutCodeWhisperer.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'signout'>
     }
 }

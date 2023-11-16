@@ -32,12 +32,20 @@ import {
     isIamConnection,
     isSsoConnection,
 } from '../../connection'
-import { tryAddCredentials, signout, showRegionPrompter, promptAndUseConnection, ExtensionUse } from '../../utils'
+import {
+    tryAddCredentials,
+    signout,
+    showRegionPrompter,
+    promptAndUseConnection,
+    ExtensionUse,
+    showConnectionsPageCommand,
+    addConnection,
+} from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { debounce } from '../../../shared/utilities/functionUtils'
-import { AuthError, ServiceItemId, userCancelled } from './types'
+import { AuthError, ServiceItemId, isServiceItemId, userCancelled } from './types'
 import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
@@ -45,6 +53,7 @@ import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../share
 import { AuthFormId, isBuilderIdAuth } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
 import { amazonQChatSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
+import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
@@ -712,21 +721,43 @@ const Panel = VueWebview.compilePanel(AuthWebview)
 let activePanel: InstanceType<typeof Panel> | undefined
 let subscriptions: vscode.Disposable[] | undefined
 
+/**
+ * Different places the Add Connection command could be executed from.
+ *
+ * Useful for telemetry.
+ */
 export const AuthSources = {
     addConnectionQuickPick: 'addConnectionQuickPick',
     firstStartup: 'firstStartup',
     codecatalystDeveloperTools: 'codecatalystDeveloperTools',
-    unknown: 'unknown',
+    vscodeComponent: vscodeComponent,
     cwQuickPick: cwQuickPickSource,
     cwTreeNode: cwTreeNodeSource,
     amazonQChat: amazonQChatSource,
+    authNode: 'authNode',
 } as const
 
 export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 
-export function isAuthSource(obj: any): obj is AuthSource {
-    return Object.values(AuthSources).includes(obj)
-}
+export const showManageConnections = Commands.declare(
+    { id: showConnectionsPageCommand, compositeKey: { 1: 'source' } },
+    (context: vscode.ExtensionContext) => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+        // The auth webview page does not make sense to use in C9,
+        // so show the auth quick pick instead.
+        if (isCloud9('any')) {
+            return addConnection.execute()
+        }
+
+        if (_ !== placeholder) {
+            source = 'vscodeComponent'
+        }
+
+        if (!isServiceItemId(serviceToShow)) {
+            serviceToShow = undefined
+        }
+        return showAuthWebview(context, source, serviceToShow)
+    }
+)
 
 export async function showAuthWebview(
     ctx: vscode.ExtensionContext,
