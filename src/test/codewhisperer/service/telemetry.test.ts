@@ -33,49 +33,44 @@ describe('', async function () {
     let sandbox: sinon.SinonSandbox
     let client: DefaultCodeWhispererClient
 
-    const acceptSession1: CodewhispererUserTriggerDecision = {
-        codewhispererSessionId: 'session_id_1',
-        codewhispererFirstRequestId: 'request_id_1',
-        codewhispererLanguage: 'python',
-        codewhispererTriggerType: 'OnDemand',
-        codewhispererLineNumber: 0,
-        codewhispererCursorOffset: 0,
-        codewhispererSuggestionCount: 2,
-        codewhispererCompletionType: 'Line',
-        codewhispererSuggestionState: 'Accept',
-        codewhispererSuggestionImportCount: 0,
-        codewhispererTypeaheadLength: 0,
-        codewhispererUserGroup: 'Control',
+    function session1UserTriggerEvent(
+        ops?: Partial<CodewhispererUserTriggerDecision>
+    ): CodewhispererUserTriggerDecision {
+        return {
+            codewhispererSessionId: 'session_id_1',
+            codewhispererFirstRequestId: 'request_id_1',
+            codewhispererLanguage: 'python',
+            codewhispererTriggerType: 'OnDemand',
+            codewhispererLineNumber: 0,
+            codewhispererCursorOffset: 0,
+            codewhispererSuggestionCount: 2,
+            codewhispererCompletionType: 'Line',
+            codewhispererSuggestionState: 'Accept',
+            codewhispererSuggestionImportCount: 0,
+            codewhispererTypeaheadLength: 0,
+            codewhispererUserGroup: 'Control',
+            ...ops,
+        }
     }
 
-    const rejectSession1: CodewhispererUserTriggerDecision = {
-        codewhispererSessionId: 'session_id_1',
-        codewhispererFirstRequestId: 'request_id_1',
-        codewhispererLanguage: 'python',
-        codewhispererTriggerType: 'OnDemand',
-        codewhispererLineNumber: 0,
-        codewhispererCursorOffset: 0,
-        codewhispererSuggestionCount: 2,
-        codewhispererCompletionType: 'Line',
-        codewhispererSuggestionState: 'Reject',
-        codewhispererSuggestionImportCount: 0,
-        codewhispererTypeaheadLength: 0,
-        codewhispererUserGroup: 'Control',
-    }
-
-    const acceptSession2: CodewhispererUserTriggerDecision = {
-        codewhispererSessionId: 'session_id_2',
-        codewhispererFirstRequestId: 'request_id_2',
-        codewhispererLanguage: 'python',
-        codewhispererTriggerType: 'OnDemand',
-        codewhispererLineNumber: 0,
-        codewhispererCursorOffset: 3,
-        codewhispererSuggestionCount: 1,
-        codewhispererCompletionType: 'Line',
-        codewhispererSuggestionState: 'Accept',
-        codewhispererSuggestionImportCount: 0,
-        codewhispererTypeaheadLength: 0,
-        codewhispererUserGroup: 'Control',
+    function session2UserTriggerEvent(
+        ops?: Partial<CodewhispererUserTriggerDecision>
+    ): CodewhispererUserTriggerDecision {
+        return {
+            codewhispererSessionId: 'session_id_2',
+            codewhispererFirstRequestId: 'request_id_2',
+            codewhispererLanguage: 'python',
+            codewhispererTriggerType: 'OnDemand',
+            codewhispererLineNumber: 0,
+            codewhispererCursorOffset: 0,
+            codewhispererSuggestionCount: 1,
+            codewhispererCompletionType: 'Line',
+            codewhispererSuggestionState: 'Accept',
+            codewhispererSuggestionImportCount: 0,
+            codewhispererTypeaheadLength: 0,
+            codewhispererUserGroup: 'Control',
+            ...ops,
+        }
     }
 
     const config: ConfigurationEntry = {
@@ -148,7 +143,7 @@ describe('', async function () {
         // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
         await sleep(vsCodeCursorUpdateDelay + 10)
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [acceptSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
     })
 
     it('accept - typeahead match and accept', async function () {
@@ -165,7 +160,7 @@ describe('', async function () {
         // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
         await sleep(vsCodeCursorUpdateDelay + 10)
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [acceptSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
     })
 
     it('multiple accept - tab', async function () {
@@ -185,7 +180,10 @@ describe('', async function () {
 
         await sleep(vsCodeCursorUpdateDelay + 10)
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [acceptSession1, acceptSession2])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent(),
+            session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
+        ])
     })
 
     it('reject: esc key', async function () {
@@ -196,7 +194,27 @@ describe('', async function () {
         await waitUntilSuggestionSeen()
         await rejectByEsc()
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [rejectSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
+    })
+
+    it('multiple reject: esc key', async function () {
+        assertCleanStates()
+        const editor = await openATextEditorWithText('', 'test.py')
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen()
+        await rejectByEsc()
+
+        await manualTrigger(editor, client, config)
+        await waitUntilSuggestionSeen()
+        await rejectByEsc()
+
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            session2UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
     })
 
     it('reject: trigger then open another editor', async function () {
@@ -215,7 +233,9 @@ describe('', async function () {
 
         assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
         await assertTabCount(3)
-        assertTelemetry('codewhisperer_userTriggerDecision', [rejectSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
     })
 
     it('reject: onFocusChange', async function () {
@@ -226,7 +246,9 @@ describe('', async function () {
         await waitUntilSuggestionSeen()
 
         await RecommendationHandler.instance.onFocusChange()
-        assertTelemetry('codewhisperer_userTriggerDecision', [rejectSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
     })
 
     it('reject: trigger then close editor', async function () {
@@ -237,7 +259,9 @@ describe('', async function () {
         await waitUntilSuggestionSeen()
         await closeActiveEditor()
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [rejectSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
     })
 
     it('reject - esc key then invoke again', async function () {
@@ -251,7 +275,9 @@ describe('', async function () {
         assertCleanStates()
         await manualTrigger(editor, client, config)
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [rejectSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
     })
 
     it('reject - typeahead not matching after suggestion is shown', async function () {
@@ -266,7 +292,9 @@ describe('', async function () {
         RecommendationHandler.instance.onEditorChange()
         await sleep(vsCodeCursorUpdateDelay + 10)
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [rejectSession1])
+        assertTelemetry('codewhisperer_userTriggerDecision', [
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+        ])
     })
 
     it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
@@ -292,34 +320,8 @@ describe('', async function () {
         await sleep(vsCodeCursorUpdateDelay + 10)
 
         assertTelemetry('codewhisperer_userTriggerDecision', [
-            {
-                codewhispererSessionId: 'session_id_1',
-                codewhispererFirstRequestId: 'request_id_1',
-                codewhispererLanguage: 'python',
-                codewhispererTriggerType: 'OnDemand',
-                codewhispererLineNumber: 0,
-                codewhispererCursorOffset: 0,
-                codewhispererSuggestionCount: 2,
-                codewhispererCompletionType: 'Line',
-                codewhispererSuggestionState: 'Reject',
-                codewhispererSuggestionImportCount: 0,
-                codewhispererTypeaheadLength: 0,
-                codewhispererUserGroup: 'Control',
-            },
-            {
-                codewhispererSessionId: 'session_id_1',
-                codewhispererFirstRequestId: 'request_id_1',
-                codewhispererLanguage: 'python',
-                codewhispererTriggerType: 'OnDemand',
-                codewhispererLineNumber: 0,
-                codewhispererCursorOffset: 0,
-                codewhispererSuggestionCount: 2,
-                codewhispererCompletionType: 'Line',
-                codewhispererSuggestionState: 'Accept',
-                codewhispererSuggestionImportCount: 0,
-                codewhispererTypeaheadLength: 0,
-                codewhispererUserGroup: 'Control',
-            },
+            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
         ])
     })
 })
