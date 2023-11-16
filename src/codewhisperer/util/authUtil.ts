@@ -104,6 +104,9 @@ export class AuthUtil {
                     vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
                     prompts.disablePrompt('codeWhispererNewWelcomeMessage')
                 }
+
+                // start the feature config polling job
+                vscode.commands.executeCommand('aws.codewhisperer.fetchFeatureConfigs')
             }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })

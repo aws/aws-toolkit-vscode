@@ -4,18 +4,16 @@
  */
 
 import sinon from 'sinon'
-import { anyString, spy } from '../../utilities/mockito'
+import { anyString } from '../../utilities/mockito'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import CodeWhispererUserClient, {
     SendTelemetryEventResponse,
     TelemetryEvent,
 } from '../../../codewhisperer/client/codewhispereruserclient'
 import globals from '../../../shared/extensionGlobals'
-import { AWSError, Request, Service } from 'aws-sdk'
-import { DefaultAWSClientBuilder, ServiceOptions } from '../../../shared/awsClientBuilder'
-import { FakeAwsContext } from '../../utilities/fakeAwsContext'
-import userApiConfig = require('./../../../codewhisperer/client/user-service-2.json')
+import { AWSError, Request } from 'aws-sdk'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { createSpyClient } from '../testUtil'
 
 describe('codewhisperer', async function () {
     let clientSpy: CodeWhispererUserClient
@@ -34,13 +32,7 @@ describe('codewhisperer', async function () {
 
     beforeEach(async function () {
         sinon.restore()
-        const builder = new DefaultAWSClientBuilder(new FakeAwsContext())
-        clientSpy = spy(
-            (await builder.createAwsService(Service, {
-                apiConfig: userApiConfig,
-            } as ServiceOptions)) as CodeWhispererUserClient
-        )
-        sinon.stub(codeWhispererClient, 'createUserSdkClient').returns(Promise.resolve(clientSpy))
+        clientSpy = await createSpyClient()
         telemetryEnabledDefault = globals.telemetry.telemetryEnabled
     })
 
