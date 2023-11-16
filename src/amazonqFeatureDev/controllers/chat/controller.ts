@@ -170,6 +170,7 @@ export class FeatureDevController {
             message: interactions.content,
             type: 'answer-part',
             tabID: tabID,
+            canBeVoted: true,
         })
 
         // Follow up with action items and complete the request stream

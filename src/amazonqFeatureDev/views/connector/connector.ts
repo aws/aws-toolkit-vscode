@@ -89,6 +89,7 @@ export interface ChatMessageProps {
     readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
     readonly relatedSuggestions: SourceLink[] | undefined
+    readonly canBeVoted: boolean
 }
 
 export class ChatMessage extends UiMessage {
@@ -96,6 +97,7 @@ export class ChatMessage extends UiMessage {
     readonly messageType: ChatItemType
     readonly followUps: ChatItemFollowUp[] | undefined
     readonly relatedSuggestions: SourceLink[] | undefined
+    readonly canBeVoted: boolean
     readonly requestID!: string
     override type = 'chatMessage'
 
@@ -105,6 +107,7 @@ export class ChatMessage extends UiMessage {
         this.messageType = props.messageType
         this.followUps = props.followUps
         this.relatedSuggestions = props.relatedSuggestions
+        this.canBeVoted = props.canBeVoted
     }
 }
 
