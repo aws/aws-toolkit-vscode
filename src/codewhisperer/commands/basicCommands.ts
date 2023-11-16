@@ -111,7 +111,7 @@ export const showTransformationHub = Commands.declare('aws.codeWhisperer.showTra
 })
 
 export const selectCustomizationPrompt = Commands.declare(
-    { id: 'aws.codewhisperer.selectCustomization', compositeKey: { 1: 'source' } },
+    { id: 'aws.codeWhisperer.selectCustomization', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         telemetry.ui_click.emit({ elementId: 'cw_selectCustomization_Cta' })
         showCustomizationPrompt().then()
@@ -119,7 +119,7 @@ export const selectCustomizationPrompt = Commands.declare(
 )
 
 export const reconnect = Commands.declare(
-    { id: 'aws.codeWhisperer.reconnect', compositeKey: { 1: 'source' } },
+    { id: 'aws.codewhisperer.reconnect', compositeKey: { 1: 'source' } },
     () => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         await AuthUtil.instance.reauthenticate()
     }
