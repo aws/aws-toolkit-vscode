@@ -42,7 +42,7 @@ import {
     isIamConnection,
     isValidCodeCatalystConnection,
 } from './connection'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder, vscodeComponent } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
@@ -62,7 +62,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        vscode.commands.executeCommand(showConnectionsPageCommand, source)
+        vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
         return undefined
     }
 
@@ -490,7 +490,8 @@ export const login = Commands.register('aws.login', async () => {
     const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
-        return vscode.commands.executeCommand(showConnectionsPageCommand)
+        const source: AuthSource = vscodeComponent
+        return vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
     } else {
         return switchConnections.execute(auth)
     }
@@ -524,7 +525,12 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            item.command = { title: 'Add Connection', command: showConnectionsPageCommand }
+            const source: AuthSource = 'authNode'
+            item.command = {
+                title: 'Add Connection',
+                command: showConnectionsPageCommand,
+                arguments: [placeholder, source],
+            }
 
             return item
         }
