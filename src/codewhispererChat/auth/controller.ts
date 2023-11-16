@@ -27,6 +27,6 @@ export class AuthController {
     }
 
     private handleReAuth() {
-        AuthUtil.instance.showReauthenticatePrompt()
+        AuthUtil.instance.reauthenticate()
     }
 }
