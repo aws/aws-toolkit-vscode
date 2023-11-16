@@ -105,7 +105,7 @@ export class RefinementState implements SessionState {
                         'There has been a problem generating an approach. Please open a conversation in a new tab',
                     {}
                 )
-                getLogger().info(`Approach response: ${JSON.stringify(this.approach)}`)
+                getLogger().debug(`Approach response: %O`, this.approach)
 
                 TelemetryHelper.instance.recordUserApproachTelemetry(this.conversationId)
                 return {
@@ -172,7 +172,7 @@ abstract class CodeGenBase {
             ++pollingIteration
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
-            getLogger().info(`Codegen response: ${JSON.stringify(codegenResult)}`)
+            getLogger().debug(`Codegen response: %O`, codegenResult)
             TelemetryHelper.instance.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
                 case 'Complete': {

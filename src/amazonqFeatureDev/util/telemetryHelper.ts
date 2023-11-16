@@ -36,7 +36,7 @@ export class TelemetryHelper {
             amazonqGenerateApproachIteration: this.generateApproachIteration,
             amazonGenerateApproachLatency: performance.now() - this.generateApproachLastInvocationTime,
         }
-        getLogger().info(`recordUserApproachTelemetry: ${JSON.stringify(event)}`)
+        getLogger().debug(`recordUserApproachTelemetry: %O`, event)
 
         telemetry.amazonq_approachIteration.emit(event)
     }
@@ -50,7 +50,7 @@ export class TelemetryHelper {
             amazonqNumberOfFilesGenerated: this.numberOfFilesGenerated,
             amazonqRepositorySize: this.repositorySize,
         }
-        getLogger().info(`recordUserCodeGenerationTelemetry: ${JSON.stringify(event)}`)
+        getLogger().debug(`recordUserCodeGenerationTelemetry: %O`, event)
 
         telemetry.amazonq_codeGenerationIteration.emit(event)
     }
