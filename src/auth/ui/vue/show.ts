@@ -38,7 +38,6 @@ import {
     showRegionPrompter,
     promptAndUseConnection,
     ExtensionUse,
-    showConnectionsPageCommand,
     addConnection,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
@@ -740,7 +739,7 @@ export const AuthSources = {
 export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 
 export const showManageConnections = Commands.declare(
-    { id: showConnectionsPageCommand, compositeKey: { 1: 'source' } },
+    { id: 'aws.auth.manageConnections', compositeKey: { 1: 'source' } },
     (context: vscode.ExtensionContext) => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
         // The auth webview page does not make sense to use in C9,
         // so show the auth quick pick instead.

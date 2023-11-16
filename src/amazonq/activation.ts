@@ -13,6 +13,7 @@ import { Commands } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
 import { learnMoreAmazonQCommand, runQTransformCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
+import { focusAmazonQPanel } from '../codewhisperer/commands/basicCommands'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = new DefaultAmazonQAppInitContext()
@@ -52,6 +53,7 @@ function registerApps(appInitContext: AmazonQAppInitContext) {
 export const amazonQWelcomeCommand = Commands.declare(
     'aws.amazonq.welcome',
     (context: ExtensionContext, publisher: MessagePublisher<any>) => () => {
+        focusAmazonQPanel()
         welcome(context, publisher)
     }
 )

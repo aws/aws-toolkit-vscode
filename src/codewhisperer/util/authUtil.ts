@@ -130,7 +130,7 @@ export class AuthUtil {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
                 if (shouldShow) {
                     prompts.disablePrompt('amazonQWelcomePage')
-                    vscode.commands.executeCommand('aws.amazonq.welcome')
+                    await vscode.commands.executeCommand('aws.amazonq.welcome')
                 }
             }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())

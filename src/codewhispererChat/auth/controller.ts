@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { commands } from 'vscode'
 import { showManageCwConnections } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
-import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { placeholder } from '../../shared/vscode/commands2'
 import { AuthFollowUpType } from './model'
 
@@ -27,6 +27,6 @@ export class AuthController {
     }
 
     private handleReAuth() {
-        AuthUtil.instance.reauthenticate()
+        commands.executeCommand('aws.codewhisperer.reconnect', amazonQChatSource)
     }
 }
