@@ -26,7 +26,6 @@ import {
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
-    // showTransformByQ,
     showLearnMore,
     showSsoSignIn,
     showFreeTierLimit,

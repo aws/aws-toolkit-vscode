@@ -42,7 +42,7 @@ export const createMynahUI = (
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: 'unknown',
+        type: 'cwc',
         isSelected: true,
     })
 

@@ -291,7 +291,7 @@ export class Connector {
     transform = (tabID: string): void => {
         this.sendMessageToExtension({
             tabID: tabID,
-            command: 'transform-by-q',
+            command: 'transform',
             chatMessage: 'transform',
             tabType: 'cwc',
         })

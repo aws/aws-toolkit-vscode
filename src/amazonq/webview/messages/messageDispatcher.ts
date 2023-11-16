@@ -17,7 +17,7 @@ export function dispatchWebViewMessagesToApps(
     webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>>
 ) {
     webview.onDidReceiveMessage(msg => {
-        if (msg.command === 'transform-by-q') {
+        if (msg.command === 'transform') {
             if (transformByQState.isNotStarted()) {
                 startTransformByQWithProgress()
             } else {

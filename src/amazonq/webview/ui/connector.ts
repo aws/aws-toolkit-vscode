@@ -101,7 +101,7 @@ export class Connector {
 
     transform = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            default:
+            case 'cwc':
                 this.cwChatConnector.transform(tabID)
                 break
         }
