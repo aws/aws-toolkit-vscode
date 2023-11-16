@@ -50,7 +50,7 @@ describe('codewhisperer children nodes', function () {
 
     it('builds the reconnect command node', async function () {
         const resumeNode = createReconnect('tree')
-        assert.strictEqual(resumeNode.resource.id, 'aws.codeWhisperer.reconnect')
+        assert.strictEqual(resumeNode.resource.id, 'aws.codewhisperer.reconnect')
     })
 
     it('should build showLearnMore command node', function () {
