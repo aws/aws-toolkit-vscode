@@ -22,7 +22,7 @@ describe('emitWebviewClosed()', function () {
         authWebview.getAuthsAdded.returns([])
         authWebview.getAuthsInitial.returns(new Set())
         authWebview.getTotalAuthAttempts.returns(0)
-        authWebview.getSource.returns('firstStartup')
+        authWebview.getSource.returns('addConnectionQuickPick')
     })
 
     afterEach(function () {
@@ -35,7 +35,7 @@ describe('emitWebviewClosed()', function () {
         assertTelemetry('auth_addedConnections', {
             result: 'Cancelled',
             attempts: 0,
-            source: 'unknown',
+            source: 'addConnectionQuickPick',
         })
     })
 
