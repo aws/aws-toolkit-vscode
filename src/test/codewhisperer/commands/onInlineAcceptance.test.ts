@@ -61,6 +61,7 @@ describe('onInlineAcceptance', function () {
             const testStartUrl = 'testStartUrl'
             sinon.stub(AuthUtil.instance, 'startUrl').value(testStartUrl)
             const mockEditor = createMockTextEditor()
+            session.requestIdList = ['test']
             RecommendationHandler.instance.requestId = 'test'
             session.sessionId = 'test'
             session.startPos = new vscode.Position(1, 0)
