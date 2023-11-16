@@ -72,7 +72,10 @@ export function init(appContext: AmazonQAppInitContext) {
         webViewMessageListener: new MessageListener<any>(featureDevChatUIInputEventEmitter),
     })
 
-    appContext.registerWebViewToAppMessagePublisher(new MessagePublisher<any>(featureDevChatUIInputEventEmitter), 'wb')
+    appContext.registerWebViewToAppMessagePublisher(
+        new MessagePublisher<any>(featureDevChatUIInputEventEmitter),
+        'featuredev'
+    )
 
     const events = [
         AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection,

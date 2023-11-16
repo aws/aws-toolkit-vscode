@@ -84,14 +84,14 @@ export class QuickActionHandler {
             })
             return
         } else {
-            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
+            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'featuredev')
             this.connector.onKnownTabOpen(affectedTabId)
             this.connector.onUpdateTabType(affectedTabId)
 
             this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
             this.mynahUI.updateStore(
                 affectedTabId,
-                this.tabDataGenerator.getTabData('wb', realPromptText === '', taskName, commandName)
+                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName, commandName)
             )
 
             if (realPromptText !== '') {
