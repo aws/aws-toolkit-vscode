@@ -33,6 +33,7 @@ describe('', async function () {
     let sandbox: sinon.SinonSandbox
     let client: DefaultCodeWhispererClient
 
+    // can refactor to single 1 function
     function session1UserTriggerEvent(
         ops?: Partial<CodewhispererUserTriggerDecision>
     ): CodewhispererUserTriggerDecision {
@@ -59,6 +60,26 @@ describe('', async function () {
         return {
             codewhispererSessionId: 'session_id_2',
             codewhispererFirstRequestId: 'request_id_2',
+            codewhispererLanguage: 'python',
+            codewhispererTriggerType: 'OnDemand',
+            codewhispererLineNumber: 0,
+            codewhispererCursorOffset: 0,
+            codewhispererSuggestionCount: 1,
+            codewhispererCompletionType: 'Line',
+            codewhispererSuggestionState: 'Accept',
+            codewhispererSuggestionImportCount: 0,
+            codewhispererTypeaheadLength: 0,
+            codewhispererUserGroup: 'Control',
+            ...ops,
+        }
+    }
+
+    function sesssion3UserTriggerEvent(
+        ops?: Partial<CodewhispererUserTriggerDecision>
+    ): CodewhispererUserTriggerDecision {
+        return {
+            codewhispererSessionId: 'session_id_3',
+            codewhispererFirstRequestId: 'request_id_3',
             codewhispererLanguage: 'python',
             codewhispererTriggerType: 'OnDemand',
             codewhispererLineNumber: 0,
@@ -131,198 +152,228 @@ describe('', async function () {
         assert.ok(!AuthUtil.instance.isConnectionExpired())
     })
 
-    it('simple accept - tab', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
+    describe('tab and esc', function () {
+        it('single accept', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
 
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await acceptByTab()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
 
-        // TODO: any better way to do this with waitUntil()?
-        // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
-        await sleep(vsCodeCursorUpdateDelay + 10)
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
-    })
-
-    it('accept - typeahead match and accept', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await typing(editor, 'F')
-        await sleep(2000) // see if we can use waitUntil to replace it
-        await acceptByTab()
-
-        // TODO: any better way to do this with waitUntil()?
-        // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
-        await sleep(vsCodeCursorUpdateDelay + 10)
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
-    })
-
-    it('multiple accept - tab', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await acceptByTab()
-
-        await sleep(vsCodeCursorUpdateDelay + 10)
-
-        assertCleanStates()
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await acceptByTab()
-
-        await sleep(vsCodeCursorUpdateDelay + 10)
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent(),
-            session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
-        ])
-    })
-
-    it('reject: esc key', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await rejectByEsc()
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
-    })
-
-    it('multiple reject: esc key', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await rejectByEsc()
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await rejectByEsc()
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-            session2UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
-    })
-
-    it('reject: trigger then open another editor', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-
-        await openATextEditorWithText('foo', 'another1.py', tempFolder, {
-            preview: false,
-        })
-        const anotherEditor = await openATextEditorWithText('bar', 'another2.py', tempFolder, {
-            preview: false,
+            assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
 
-        assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
-        await assertTabCount(3)
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
+        it('single reject', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
+
+        it('accept - accept - accept', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
+
+            assertCleanStates()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
+
+            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            assertCleanStates()
+            await manualTrigger(anotherEditor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent(),
+                session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
+                sesssion3UserTriggerEvent(),
+            ])
+        })
+
+        it('accept - reject - accept', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
+
+            assertCleanStates()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            assertCleanStates()
+            await manualTrigger(anotherEditor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent(),
+                session2UserTriggerEvent({ codewhispererCursorOffset: 3, codewhispererSuggestionState: 'Reject' }),
+                sesssion3UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
+
+        it('multiple reject: esc key', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+                session2UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
+
+        it('reject - esc key then invoke again', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            assertCleanStates()
+            await manualTrigger(editor, client, config)
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
     })
 
-    it('reject: onFocusChange', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
+    describe('typing', function () {
+        it('accept - typeahead match and accept', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
 
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await typing(editor, 'F')
+            await sleep(2000) // see if we can use waitUntil to replace it
+            await acceptByTab()
 
-        await RecommendationHandler.instance.onFocusChange()
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
+            // TODO: any better way to do this with waitUntil()?
+            // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
+            await sleep(vsCodeCursorUpdateDelay + 10)
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
+        })
+
+        it('reject - typeahead not matching after suggestion is shown', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await typing(editor, 'H')
+            await sleep(2000) // see if we can use waitUntil to replace it
+
+            RecommendationHandler.instance.onEditorChange()
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
+
+        it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
+            // no idea why this one doesn't work, the second inline suggestion will not be shown
+            this.skip()
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await sleep(2000) // see if we can use waitUntil to replace it
+            await typing(editor, 'H')
+            await sleep(2000) // see if we can use waitUntil to replace it
+            // await acceptByTab()
+
+            await manualTrigger(editor, client, config)
+            await sleep(5000)
+            // await waitUntilSuggestionSeen()
+            await acceptByTab()
+
+            // TODO: any better way to do this with waitUntil()?
+            // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
+            await sleep(vsCodeCursorUpdateDelay + 10)
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+                session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
+            ])
+        })
     })
 
-    it('reject: trigger then close editor', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
+    describe('on editor change, focus change', function () {
+        it('reject: trigger then open another editor', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
 
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await closeActiveEditor()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
-    })
+            await openATextEditorWithText('foo', 'another1.py', tempFolder, {
+                preview: false,
+            })
+            const anotherEditor = await openATextEditorWithText('bar', 'another2.py', tempFolder, {
+                preview: false,
+            })
 
-    it('reject - esc key then invoke again', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
+            assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
+            await assertTabCount(3)
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
 
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await rejectByEsc()
+        it('reject: trigger then close editor', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
 
-        assertCleanStates()
-        await manualTrigger(editor, client, config)
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await closeActiveEditor()
 
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
-    })
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
 
-    it('reject - typeahead not matching after suggestion is shown', async function () {
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
+        it('reject: onFocusChange', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
 
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await typing(editor, 'H')
-        await sleep(2000) // see if we can use waitUntil to replace it
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
 
-        RecommendationHandler.instance.onEditorChange()
-        await sleep(vsCodeCursorUpdateDelay + 10)
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-        ])
-    })
-
-    it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
-        // no idea why this one doesn't work, the second inline suggestion will not be shown
-        this.skip()
-        assertCleanStates()
-        const editor = await openATextEditorWithText('', 'test.py')
-
-        await manualTrigger(editor, client, config)
-        await waitUntilSuggestionSeen()
-        await sleep(2000) // see if we can use waitUntil to replace it
-        await typing(editor, 'H')
-        await sleep(2000) // see if we can use waitUntil to replace it
-        // await acceptByTab()
-
-        await manualTrigger(editor, client, config)
-        await sleep(5000)
-        // await waitUntilSuggestionSeen()
-        await acceptByTab()
-
-        // TODO: any better way to do this with waitUntil()?
-        // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
-        await sleep(vsCodeCursorUpdateDelay + 10)
-
-        assertTelemetry('codewhisperer_userTriggerDecision', [
-            session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-            session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
-        ])
+            await RecommendationHandler.instance.onFocusChange()
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
     })
 })
 
@@ -350,8 +401,11 @@ async function waitUntilSuggestionSeen(index: number = 0) {
     assert.ok(state === 'Showed')
 }
 
-function acceptByTab() {
-    return vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
+async function acceptByTab() {
+    await vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
+
+    // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
+    await sleep(vsCodeCursorUpdateDelay + 10)
 }
 
 async function rejectByEsc() {
