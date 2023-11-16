@@ -7,5 +7,6 @@ version: 2
 updates:
   - package-ecosystem: "gradle" 
     directory: "/"
+    target-branch: "main" # Don't run on forks, staging, etc.
     schedule:
       interval: "daily"
