@@ -11,7 +11,6 @@ import * as CodeWhispererConstants from '../../../codewhisperer/models/constants
 import { CodeWhispererUserGroupSettings } from '../../../codewhisperer/util/userGroupUtil'
 import {
     CodewhispererCompletionType,
-    CodewhispererServiceInvocation,
     CodewhispererSuggestionState,
     CodewhispererUserDecision,
 } from '../../../shared/telemetry/telemetry.gen'
@@ -34,17 +33,6 @@ function aUserDecision(
         codewhispererSuggestionState: codewhispererSuggestionState,
         codewhispererTriggerType: 'OnDemand',
         credentialStartUrl: 'https://www.amazon.com',
-        codewhispererUserGroup: 'Control',
-    }
-}
-
-function aServiceInvocation(): CodewhispererServiceInvocation {
-    return {
-        codewhispererCursorOffset: 0,
-        codewhispererLanguage: 'python',
-        codewhispererLineNumber: 0,
-        codewhispererRequestId: 'aFakeRequestId',
-        codewhispererTriggerType: 'OnDemand',
         codewhispererUserGroup: 'Control',
     }
 }
