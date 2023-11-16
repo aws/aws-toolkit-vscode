@@ -70,7 +70,7 @@ Before I begin generating code, let's agree on an implementation plan. What prob
         return {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
-                '<sup>*Amazon Q may produce inaccurate information. Verify all provided code or information before using it in any environment or workload.*</sup>',
+                'Amazon Q may produce inaccurate information. Verify all provided code or information before using it in any environment or workload.',
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
             promptInputPlaceholder: this.tabInputPlaceholder.get(tabType),
             chatItems: needWelcomeMessages

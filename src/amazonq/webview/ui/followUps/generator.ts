@@ -58,7 +58,7 @@ export class FollowUpGenerator {
                         {
                             pillText: 'Explain selected code',
                             prompt: 'Explain selected code',
-                            type: '',
+                            type: 'init-prompt',
                         },
                         {
                             pillText: 'How can Amazon Q help me?',

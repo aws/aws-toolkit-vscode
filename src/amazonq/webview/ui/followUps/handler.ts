@@ -32,6 +32,8 @@ export class FollowUpInteractionHandler {
             return
         }
         if (followUp.type !== undefined && followUp.type === 'help') {
+            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+            this.connector.onUpdateTabType(tabID)
             this.connector.help(tabID)
             return
         }
@@ -53,6 +55,13 @@ export class FollowUpInteractionHandler {
             })
             this.tabsStorage.updateTabStatus(tabID, 'busy')
             this.tabsStorage.resetTabTimer(tabID)
+
+            if (followUp.type !== undefined && followUp.type === 'init-prompt') {
+                this.connector.requestGenerativeAIAnswer(tabID, {
+                    chatMessage: followUp.prompt,
+                })
+                return
+            }
         }
         this.connector.onFollowUpClicked(tabID, messageId, followUp)
     }
