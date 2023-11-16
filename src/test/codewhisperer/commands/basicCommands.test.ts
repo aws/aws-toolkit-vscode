@@ -379,7 +379,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
 
-            await targetCommand.execute()
+            await targetCommand.execute('qTreeNode')
             assert.ok(spy.called)
         })
     })
