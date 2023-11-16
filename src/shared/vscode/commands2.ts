@@ -19,6 +19,34 @@ type Callback = (...args: any[]) => any
 type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) => T
 
 /**
+ * HACK
+ *
+ * If a command matches the following conditions:
+ * - Is registered with VS Code
+ * - Has args for the execution of the command
+ * - Can be executed through a package.json contribution (eg: ellipsis menu in View)
+ *
+ * Then unexpected args will be passed to the command.
+ * - Currently it sets arg[0] to an object or undefined, depending on the context.
+ * - And the rest of the args will be undefined do not exist.
+ * ---
+ * **So as a workaround**, commands who meet the above criteria should
+ * - have this type as their first arg as a placeholder
+ * - When executing the command from within the code, pass in {@link placeholder} as the first arg.
+ * - In the command check if the first arg is NOT `undefined`, and if so you will need to
+ *   set values for the other args since they will not exist.
+ */
+export type VsCodeCommandArg = typeof placeholder
+/** A placeholder value for Commands that use {@link VsCodeCommandArg} */
+export const placeholder = 'placeholder**' as const
+
+/**
+ * The command was executed by a VSCode UI component which we
+ * cannot accurately determine a source.
+ */
+export const vscodeComponent = 'vscodeComponent'
+
+/**
  * A handle for a generic "command" that is registered (or will be registered) through
  * VS Code's `commands` API.
  *
@@ -373,7 +401,7 @@ interface CommandInfo<T extends Callback> {
     /**
      * The indexes of args in `execute()` that will be used to determine
      * the uniqueness of the metric `vscode_executeCommand`.
-     * 
+     *
      * - By default, {@link VscodeExecuteCommand} is throttled for metrics of the
      *   same {@link VscodeExecuteCommand.command}.
      * - By defining this property, the values of the args will be combined
@@ -384,17 +412,17 @@ interface CommandInfo<T extends Callback> {
      *
      * @example
      * const compositeKey: CompositeKey = {
-     *     0: 'source' // the value is the "source" field of `vscode_executeCommand`
+     *     1: 'source' // the value is the "source" field of `vscode_executeCommand`
      * }
      * ...
-     * myCommand.execute('SourceValue', 'thisIsNotUsed')
+     * myCommand.execute(undefined, 'SourceValue')
      * ...
-     * // vscode_executeCommand -> { command: 'myCommand' source: 'SourceValue' } 
+     * // vscode_executeCommand -> { command: 'myCommand' source: 'SourceValue' }
      */
     readonly compositeKey?: CompositeKey
 }
 
-/** 
+/**
  * Indicates that the arg should be used as a telemetry field
  * for the metric {@link VscodeExecuteCommand}.
  */
@@ -402,19 +430,20 @@ export type CompositeKey = { [index: number]: MetricField }
 
 /** Supported {@link VscodeExecuteCommand} fields */
 const MetricFields = {
-    /** 
-     * TODO: Figure out how to derive "source" as a type from {@link VscodeExecuteCommand.source} 
+    /**
+     * TODO: Figure out how to derive "source" as a type from {@link VscodeExecuteCommand.source}
      * instead of explicitly writing it.
      */
-    source: 'source'
+    source: 'source',
 } as const
-type MetricField = typeof MetricFields[keyof typeof MetricFields]
+type MetricField = (typeof MetricFields)[keyof typeof MetricFields]
 
 function getInstrumenter(
     id: { id: string; args: any[]; compositeKey: CompositeKey },
     threshold: number,
     telemetryName?: MetricName
 ) {
+    handleBadCompositeKey(id)
     const currentTime = globals.clock.Date.now()
     const info = TelemetryDebounceInfo.instance.get(id)
 
@@ -423,7 +452,7 @@ function getInstrumenter(
     if (!telemetryName && info?.startTime !== undefined && currentTime - info.startTime < threshold) {
         info.debounceCount += 1
         TelemetryDebounceInfo.instance.set(id, info)
-        getLogger().debug(`commands: skipped telemetry for "${id.id}" with key "${id.compositeKey}"`)
+        getLogger().debug('commands: skipped telemetry for "%s" with key "%O"', id.id, id.compositeKey)
 
         return undefined
     }
@@ -447,18 +476,47 @@ function getInstrumenter(
         })
 }
 
-/** 
+export const unsetSource = 'sourceImproperlySet'
+
+function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: CompositeKey }) {
+    const id = data.id
+    const args = data.args
+    const compositeKey = data.compositeKey
+
+    if (Object.keys(compositeKey).length === 0) {
+        return // nothing to do since no key
+    }
+
+    Object.entries(compositeKey).forEach(([index, field]) => {
+        const indexAsInt = parseInt(index)
+        const arg = args[indexAsInt]
+        if (field === 'source' && typeof arg !== 'string') {
+            /**
+             * This case happens when either the caller sets the wrong args themselves through
+             * vscode.commands.executeCommand OR if through a VS Code UI component like the ellipsis menu
+             *
+             * TODO: To fix this we insert a value in the `source` arg so that there is something there
+             * for the metric to emit. We need to figure out a better way to handle either incorrectly called
+             * or the VS Code UI component.
+             */
+            getLogger().error('Commands/Telemetry: "%s" executed with invalid "source" type: "%O"', id, args)
+            args[indexAsInt] = unsetSource
+        }
+    })
+}
+
+/**
  * Returns a map that contains values for the fields of {@link VscodeExecuteCommand}.
- * 
+ *
  * These fields are resolved by extracting the {@link args} that were specified
  * in {@link compositeKey}.
  */
-function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): {[field in MetricField]?: any} {
+function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): { [field in MetricField]?: any } {
     const indexes = keysAsInt(compositeKey)
     const indexesWithValue = indexes.filter(i => compositeKey[i] !== undefined)
     const sortedIndexesWithValue = indexesWithValue.sort((a, b) => a - b)
-    
-    const result: { [field in MetricField]?: any} = {}
+
+    const result: { [field in MetricField]?: any } = {}
     sortedIndexesWithValue.forEach(i => {
         const fieldName: MetricField = compositeKey[i]
         const fieldValue = args[i]
