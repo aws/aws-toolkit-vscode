@@ -56,7 +56,11 @@ export class Connector {
         this.tabsStorage = props.tabsStorage
     }
 
-    onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
+    public getSendMessageToExtension() {
+        return this.sendMessageToExtension
+    }
+
+    onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {      
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
                 this.cwChatConnector.onSourceLinkClick(tabID, messageId, link)
@@ -99,7 +103,7 @@ export class Connector {
         }
     }
 
-    transform = (tabID: string): void => {
+eiifcbfccrgnffvgvtbgcvbulrurc    transform = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             default:
                 this.cwChatConnector.transform(tabID)

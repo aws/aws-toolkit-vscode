@@ -320,23 +320,22 @@ describe('CodeWhisperer-basicCommands', function () {
             await listCodeWhispererCommands.execute()
         })
 
-        // it('shows expected quick pick items when connected', async function () {
-        //     sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
-        //     sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-        //     getTestWindow().onDidShowQuickPick(e => {
-        //         e.assertItems([
-        //             createAutoSuggestions('item', false),
-        //             createSecurityScan('item'),
-        //             createOpenReferenceLog('item'),
-        //             createGettingStarted('item'),
-        //             createSeparator(),
-        //             createSignout('item'),
-        //         ])
-        //         e.dispose() // skip needing to select an item to continue
-        //     })
-
-        //     await listCodeWhispererCommands.execute()
-        // })
+        it('shows expected quick pick items when connected', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            getTestWindow().onDidShowQuickPick(e => {
+                e.assertItems([
+                    createAutoSuggestions('item', false),
+                    createSecurityScan('item'),
+                    createOpenReferenceLog('item'),
+                    createGettingStarted('item'),
+                    createSeparator(),
+                    createSignout('item'),
+                ])
+                e.dispose() // skip needing to select an item to continue
+            })
+            await listCodeWhispererCommands.execute()
+        })
 
         it('also shows customizations when connected to valid sso', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
@@ -380,7 +379,7 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
             const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
 
-            await targetCommand.execute()
+            await targetCommand.execute('qTreeNode')
             assert.ok(spy.called)
         })
     })

@@ -47,6 +47,9 @@ export class QuickActionHandler {
             case '/fix':
                 this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
                 break
+            case '/transform':
+                this.connector.getSendMessageToExtension()({ command: 'transform-by-q' })
+                break
             case '/clear':
                 this.handleClearCommand(tabID)
                 break

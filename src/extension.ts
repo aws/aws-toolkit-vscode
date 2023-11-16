@@ -261,7 +261,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
-        await activateCWChat(extContext.extensionContext)
+        await activateCWChat(extContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 

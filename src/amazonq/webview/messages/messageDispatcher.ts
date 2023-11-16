@@ -7,17 +7,22 @@ import { Webview } from 'vscode'
 import { MessagePublisher } from '../../messages/messagePublisher'
 import { MessageListener } from '../../messages/messageListener'
 import { TabType } from '../ui/storages/tabsStorage'
+import { startTransformByQWithProgress } from '../../../codewhisperer/commands/startTransformByQ'
 
 export function dispatchWebViewMessagesToApps(
     webview: Webview,
     webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>>
 ) {
     webview.onDidReceiveMessage(msg => {
-        const appMessagePublisher = webViewToAppsMessagePublishers.get(msg.tabType)
-        if (appMessagePublisher === undefined) {
-            return
+        if (msg.command === 'transform-by-q') {
+            startTransformByQWithProgress()
+        } else {
+            const appMessagePublisher = webViewToAppsMessagePublishers.get(msg.tabType)
+            if (appMessagePublisher === undefined) {
+                return
+            }
+            appMessagePublisher.publish(msg)
         }
-        appMessagePublisher.publish(msg)
     })
 }
 
