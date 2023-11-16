@@ -56,22 +56,12 @@ export class FollowUpGenerator {
                     text: 'Try Examples:',
                     options: [
                         {
-                            pillText: 'When should I use ElastiCache?',
-                            prompt: 'When should I use ElastiCache?',
+                            pillText: 'Explain selected code',
+                            prompt: 'Explain selected code',
                             type: '',
                         },
                         {
-                            pillText: 'How do I create an Application Load Balancer?',
-                            prompt: 'How do I create an Application Load Balancer?',
-                            type: '',
-                        },
-                        {
-                            pillText: 'What is the syntax of declaring a variable in TypeScript?',
-                            prompt: 'What is the syntax of declaring a variable in TypeScript?',
-                            type: '',
-                        },
-                        {
-                            pillText: 'How can Amazon Q help?',
+                            pillText: 'How can Amazon Q help me?',
                             type: 'help',
                         },
                     ],
