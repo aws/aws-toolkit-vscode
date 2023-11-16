@@ -95,19 +95,20 @@ export class Settings {
     public async isValid(): Promise<boolean> {
         const key = 'aws.samcli.lambdaTimeout'
         const config = this.getConfig()
+        const tempValOld = 1234 // Legacy temp value we are migrating from.
+        const tempVal = 91234 // Temp value used to check that read/write works.
         const defaultVal = settingsProps[key].default
 
         try {
-            const oldVal = config.get<number>(key)
-            // Try to write to settings.json.
-            await config.update(key, 1234, this.updateTarget)
-            // Restore the old value, if any.
-            if (oldVal === undefined || defaultVal === oldVal) {
-                // vscode will return the default even if there was no entry in settings.json.
-                // Avoid polluting the user's settings.json unnecessarily.
+            const userVal = config.get<number>(key)
+            // Try to write a temporary "sentinel" value to settings.json.
+            await config.update(key, tempVal, this.updateTarget)
+            if (userVal === undefined || [defaultVal, tempValOld, tempVal].includes(userVal)) {
+                // Avoid polluting the user's settings.json.
                 await config.update(key, undefined, this.updateTarget)
             } else {
-                await config.update(key, oldVal, this.updateTarget)
+                // Restore the user's actual setting value.
+                await config.update(key, userVal, this.updateTarget)
             }
 
             return true
