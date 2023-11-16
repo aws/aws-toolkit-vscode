@@ -57,11 +57,12 @@ export class Messenger {
         )
         this.sendAnswer({
             message: undefined,
-            type: 'answer',
+            type: 'system-prompt',
             followUps: [
                 {
                     pillText: 'Retry',
                     type: FollowUpTypes.Retry,
+                    status: 'warning',
                 },
             ],
             tabID,

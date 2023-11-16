@@ -174,7 +174,7 @@ export class WeaverbirdController {
 
         // Follow up with action items and complete the request stream
         this.messenger.sendAnswer({
-            type: 'answer',
+            type: 'system-prompt',
             followUps: this.getFollowUpOptions(session.state.phase),
             tabID: tabID,
         })
@@ -204,6 +204,10 @@ export class WeaverbirdController {
                 this.messenger.sendAnswer({
                     message: 'Unable to generate any file changes',
                     type: 'answer',
+                    tabID: tabID,
+                })
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
                     tabID: tabID,
                     followUps:
                         this.retriesRemaining(session) > 0
