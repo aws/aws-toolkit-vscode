@@ -34,17 +34,15 @@ describe('', async function () {
     let client: DefaultCodeWhispererClient
 
     // can refactor to single 1 function
-    function session1UserTriggerEvent(
-        ops?: Partial<CodewhispererUserTriggerDecision>
-    ): CodewhispererUserTriggerDecision {
+    function aUserTriggerEvent(ops: Partial<CodewhispererUserTriggerDecision>): CodewhispererUserTriggerDecision {
         return {
-            codewhispererSessionId: 'session_id_1',
-            codewhispererFirstRequestId: 'request_id_1',
+            codewhispererSessionId: '',
+            codewhispererFirstRequestId: '',
             codewhispererLanguage: 'python',
             codewhispererTriggerType: 'OnDemand',
             codewhispererLineNumber: 0,
             codewhispererCursorOffset: 0,
-            codewhispererSuggestionCount: 2,
+            codewhispererSuggestionCount: 0,
             codewhispererCompletionType: 'Line',
             codewhispererSuggestionState: 'Accept',
             codewhispererSuggestionImportCount: 0,
@@ -52,46 +50,39 @@ describe('', async function () {
             codewhispererUserGroup: 'Control',
             ...ops,
         }
+    }
+
+    function session1UserTriggerEvent(
+        ops?: Partial<CodewhispererUserTriggerDecision>
+    ): CodewhispererUserTriggerDecision {
+        return aUserTriggerEvent({
+            codewhispererSessionId: 'session_id_1',
+            codewhispererFirstRequestId: 'request_id_1',
+            codewhispererSuggestionCount: 2,
+            ...ops,
+        })
     }
 
     function session2UserTriggerEvent(
         ops?: Partial<CodewhispererUserTriggerDecision>
     ): CodewhispererUserTriggerDecision {
-        return {
+        return aUserTriggerEvent({
             codewhispererSessionId: 'session_id_2',
             codewhispererFirstRequestId: 'request_id_2',
-            codewhispererLanguage: 'python',
-            codewhispererTriggerType: 'OnDemand',
-            codewhispererLineNumber: 0,
-            codewhispererCursorOffset: 0,
             codewhispererSuggestionCount: 1,
-            codewhispererCompletionType: 'Line',
-            codewhispererSuggestionState: 'Accept',
-            codewhispererSuggestionImportCount: 0,
-            codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: 'Control',
             ...ops,
-        }
+        })
     }
 
     function sesssion3UserTriggerEvent(
         ops?: Partial<CodewhispererUserTriggerDecision>
     ): CodewhispererUserTriggerDecision {
-        return {
+        return aUserTriggerEvent({
             codewhispererSessionId: 'session_id_3',
             codewhispererFirstRequestId: 'request_id_3',
-            codewhispererLanguage: 'python',
-            codewhispererTriggerType: 'OnDemand',
-            codewhispererLineNumber: 0,
-            codewhispererCursorOffset: 0,
             codewhispererSuggestionCount: 1,
-            codewhispererCompletionType: 'Line',
-            codewhispererSuggestionState: 'Accept',
-            codewhispererSuggestionImportCount: 0,
-            codewhispererTypeaheadLength: 0,
-            codewhispererUserGroup: 'Control',
             ...ops,
-        }
+        })
     }
 
     const config: ConfigurationEntry = {
@@ -265,14 +256,14 @@ describe('', async function () {
     })
 
     describe('typing', function () {
-        it('accept - typeahead match and accept', async function () {
+        it('typeahead match and accept', async function () {
             assertCleanStates()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'F')
-            await sleep(2000) // see if we can use waitUntil to replace it
+            // await sleep(2000) // see if we can use waitUntil to replace it
             await acceptByTab()
 
             // TODO: any better way to do this with waitUntil()?
@@ -282,14 +273,39 @@ describe('', async function () {
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
 
-        it('reject - typeahead not matching after suggestion is shown', async function () {
+        it('typeahead match and accept - mixed', async function () {
+            assertCleanStates()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await typing(editor, 'F')
+            await acceptByTab()
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+
+            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            await manualTrigger(anotherEditor, client, config)
+            await waitUntilSuggestionSeen()
+            await typing(anotherEditor, 'Qo')
+            await acceptByTab()
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent(),
+                session2UserTriggerEvent({ codewhispererCursorOffset: 3, codewhispererSuggestionState: 'Reject' }),
+                sesssion3UserTriggerEvent(),
+            ])
+        })
+
+        it('typeahead not match after suggestion is shown and reject', async function () {
             assertCleanStates()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'H')
-            await sleep(2000) // see if we can use waitUntil to replace it
 
             RecommendationHandler.instance.onEditorChange()
 
@@ -420,6 +436,7 @@ async function typing(editor: vscode.TextEditor, s: string) {
     for (const char of s) {
         await typeAChar(editor, char)
     }
+    await sleep(2000) // see if we can use waitUntil to replace it
 }
 
 async function typeAChar(editor: vscode.TextEditor, s: string) {
