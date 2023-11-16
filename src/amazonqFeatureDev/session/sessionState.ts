@@ -128,7 +128,9 @@ export class RefinementState implements SessionState {
                     },
                 }
             } catch (e) {
-                throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
+                throw e instanceof ToolkitError
+                    ? e
+                    : ToolkitError.chain(e, 'Server side error', { code: 'UnhandledApproachServerSideError' })
             }
         })
     }
@@ -273,7 +275,9 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                     interaction: {},
                 }
             } catch (e) {
-                throw e instanceof ToolkitError ? e : ToolkitError.chain(e, 'Server side error')
+                throw e instanceof ToolkitError
+                    ? e
+                    : ToolkitError.chain(e, 'Server side error', { code: 'UnhandledCodeGenServerSideError' })
             }
         })
     }
