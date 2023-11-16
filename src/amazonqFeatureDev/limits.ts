@@ -11,3 +11,7 @@ export const codeGenRetryLimit = 3
 
 // The default retry limit used when the session could not be found
 export const defaultRetryLimit = 0
+
+// The max size a file that is uploaded can be
+// 1024 KB
+export const maxFileSizeBytes = 1024000

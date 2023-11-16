@@ -17,6 +17,7 @@ import { getStringHash } from '../../shared/utilities/textUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
+import { maxFileSizeBytes } from '../limits'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -91,6 +92,11 @@ export async function prepareRepoData(repoRootPath: string, conversationId: stri
         let totalBytes = 0
         for (const file of files) {
             const fileSize = (await vscode.workspace.fs.stat(vscode.Uri.file(file.fsPath))).size
+
+            if (fileSize >= maxFileSizeBytes) {
+                continue
+            }
+
             totalBytes += fileSize
 
             const relativePath = getWorkspaceRelativePath(file.fsPath)
