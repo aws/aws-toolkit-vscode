@@ -9,17 +9,7 @@ import { FollowUpsBlock } from './model'
 
 export type AuthFollowUpType = 'full-auth' | 're-auth'
 
-export interface FollowUpGeneratorProps {
-    isFeatureDevEnabled: boolean
-}
-
 export class FollowUpGenerator {
-    private isFeatureDevEnabled: boolean
-
-    constructor(props: FollowUpGeneratorProps) {
-        this.isFeatureDevEnabled = props.isFeatureDevEnabled
-    }
-
     public generateAuthFollowUps(tabType: TabType, authType: AuthFollowUpType): FollowUpsBlock {
         switch (tabType) {
             default:
@@ -53,14 +43,6 @@ export class FollowUpGenerator {
                 return {
                     text: 'Or you can select one of these',
                     options: [
-                        ...(this.isFeatureDevEnabled
-                            ? [
-                                  {
-                                      pillText: 'I want to assign a code task',
-                                      type: 'assign-code-task',
-                                  },
-                              ]
-                            : []),
                         {
                             pillText: 'I have a software development question',
                             type: 'continue-to-chat',

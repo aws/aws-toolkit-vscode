@@ -312,8 +312,6 @@ ${message}`,
         mynahUI,
         connector,
         tabsStorage,
-        isFeatureDevEnabled,
-        isGumbyEnabled,
     })
     quickActionHandler = new QuickActionHandler({
         mynahUI,
