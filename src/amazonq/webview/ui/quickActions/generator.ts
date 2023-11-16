@@ -22,7 +22,7 @@ export class QuickActionGenerator {
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
         switch (tabType) {
-            case 'wb':
+            case 'featuredev':
                 return []
             default:
                 return [

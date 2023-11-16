@@ -29,7 +29,7 @@ export class FollowUpGenerator {
 
     public generateWelcomeBlockForTab(tabType: TabType): FollowUpsBlock {
         switch (tabType) {
-            case 'wb':
+            case 'featuredev':
                 return {
                     text: 'Would you like to follow up with',
                     options: [

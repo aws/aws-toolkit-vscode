@@ -76,7 +76,7 @@ export class Connector {
         new Promise((resolve, reject) => {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
-                    case 'wb':
+                    case 'featuredev':
                         this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
                         break
                     default:
@@ -154,7 +154,7 @@ export class Connector {
 
     onKnownTabOpen = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onTabOpen(tabID)
                 break
         }
@@ -176,7 +176,7 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onCodeInsertToCursorPosition(tabID, messageId, code, type, codeReference)
                 break
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
                 break
         }
@@ -193,7 +193,7 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onCopyCodeToClipboard(tabID, messageId, code, type, codeReference)
                 break
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
         }
@@ -206,7 +206,7 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onTabRemove(tabID)
                 break
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onTabRemove(tabID)
                 break
         }
@@ -269,7 +269,7 @@ export class Connector {
             case 'unknown':
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.followUpClicked(tabID, followUp)
                 break
             default:
@@ -280,7 +280,7 @@ export class Connector {
 
     onOpenDiff = (tabID: string, leftPath: string, rightPath: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onOpenDiff(tabID, leftPath, rightPath)
                 break
         }
@@ -288,7 +288,7 @@ export class Connector {
 
     onStopChatResponse = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onStopChatResponse(tabID)
                 break
             case 'cwc':
@@ -299,7 +299,7 @@ export class Connector {
 
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
                 break
             case 'cwc':
@@ -313,7 +313,7 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
-            case 'wb':
+            case 'featuredev':
                 this.featureDevChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
         }

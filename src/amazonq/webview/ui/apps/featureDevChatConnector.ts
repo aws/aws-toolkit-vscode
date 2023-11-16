@@ -58,7 +58,7 @@ export class Connector {
             code,
             command: 'insert_code_at_cursor_position',
             codeReference,
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 
@@ -73,7 +73,7 @@ export class Connector {
             code,
             command: 'code_was_copied_to_clipboard',
             codeReference,
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 
@@ -83,7 +83,7 @@ export class Connector {
             tabID,
             leftPath,
             rightPath,
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 
@@ -92,7 +92,7 @@ export class Connector {
             command: 'follow-up-was-clicked',
             followUp,
             tabID,
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 
@@ -102,7 +102,7 @@ export class Connector {
                 tabID: tabID,
                 command: 'chat-prompt',
                 chatMessage: payload.chatMessage,
-                tabType: 'wb',
+                tabType: 'featuredev',
             })
         })
 
@@ -197,7 +197,7 @@ export class Connector {
         this.sendMessageToExtension({
             tabID,
             command: 'new-tab-was-created',
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 
@@ -205,7 +205,7 @@ export class Connector {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'tab-was-removed',
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 
@@ -219,7 +219,7 @@ export class Connector {
             messageId: messageId,
             vote: vote,
             command: 'chat-item-voted',
-            tabType: 'wb',
+            tabType: 'featuredev',
         })
     }
 }

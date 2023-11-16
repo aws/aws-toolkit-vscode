@@ -20,13 +20,13 @@ export class TabDataGenerator {
     private tabTitle: Map<TabType, string> = new Map([
         ['unknown', 'Chat'],
         ['cwc', 'Chat'],
-        ['wb', 'Q - Task'],
+        ['featuredev', 'Q - Task'],
     ])
 
     private tabInputPlaceholder: Map<TabType, string> = new Map([
         ['unknown', 'Ask a question or enter "/" for actions'],
         ['cwc', 'Ask a question or enter "/" for actions'],
-        ['wb', 'What problem do you want to fix?'],
+        ['featuredev', 'What problem do you want to fix?'],
     ])
 
     private tabWelcomeMessage: Map<TabType, (name?: string) => string> = new Map([
@@ -37,7 +37,7 @@ export class TabDataGenerator {
         You can enter \`/\` to see a list of quick actions.`,
         ],
         [
-            'wb',
+            'featuredev',
             (name?: string) => `Welcome to ${name}. 
 
 Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
