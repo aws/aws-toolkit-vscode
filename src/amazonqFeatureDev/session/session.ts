@@ -18,6 +18,7 @@ import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { TelemetryHelper } from '../util/telemetryHelper'
 
 const fs = FileSystemCommon.instance
 
@@ -31,6 +32,7 @@ export class Session {
     private codeGenRetries: number
     private preloaderFinished = false
     private _latestMessage: string = ''
+    private telemetry: TelemetryHelper
 
     constructor(public readonly config: SessionConfig, private messenger: Messenger, private readonly tabID: string) {
         this._state = new ConversationNotStartedState('', tabID)
@@ -38,6 +40,8 @@ export class Session {
 
         this.approachRetries = approachRetryLimit
         this.codeGenRetries = codeGenRetryLimit
+
+        this.telemetry = new TelemetryHelper()
     }
 
     /**
@@ -133,6 +137,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
             msg,
             fs: this.config.fs,
             messenger: this.messenger,
+            telemetry: this.telemetry,
         })
 
         if (resp.nextState) {

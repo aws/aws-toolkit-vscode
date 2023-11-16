@@ -22,6 +22,7 @@ import { FeatureDevClient } from '../../../amazonqFeatureDev/client/featureDev'
 import { ToolkitError } from '../../../shared/errors'
 import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import crypto from 'crypto'
+import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 
 interface MockSessionStateActionInput {
     msg?: 'MOCK CODE' | 'OTHER'
@@ -36,6 +37,7 @@ const mockSessionStateAction = ({ msg }: MockSessionStateActionInput): SessionSt
         messenger: new Messenger(
             new AppToWebViewMessageDispatcher(new MessagePublisher<any>(new vscode.EventEmitter<any>()))
         ),
+        telemetry: new TelemetryHelper(),
     }
 }
 

@@ -79,7 +79,7 @@ export async function collectFiles(rootPath: string, respectGitIgnore: boolean =
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
-export async function prepareRepoData(repoRootPath: string, conversationId: string) {
+export async function prepareRepoData(repoRootPath: string, telemetry: TelemetryHelper) {
     try {
         const zip = new AdmZip()
 
@@ -103,7 +103,7 @@ export async function prepareRepoData(repoRootPath: string, conversationId: stri
             const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
             zip.addLocalFile(file.fsPath, zipFolderPath)
         }
-        TelemetryHelper.instance.setRepositorySize(totalBytes)
+        telemetry.setRepositorySize(totalBytes)
         const zipFileBuffer = zip.toBuffer()
         return {
             zipFileBuffer,

@@ -53,10 +53,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(
-            this.config.sourceRoot,
-            this.config.conversationId
-        )
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, action.telemetry)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
@@ -93,8 +90,8 @@ export class RefinementState implements SessionState {
             }
             try {
                 span.record({ amazonqConversationId: this.conversationId })
-                TelemetryHelper.instance.setGenerateApproachIteration(this.currentIteration)
-                TelemetryHelper.instance.setGenerateApproachLastInvocationTime()
+                action.telemetry.setGenerateApproachIteration(this.currentIteration)
+                action.telemetry.setGenerateApproachLastInvocationTime()
                 if (!action.msg) {
                     throw new UserMessageNotFoundError()
                 }
@@ -112,7 +109,7 @@ export class RefinementState implements SessionState {
                 )
                 getLogger().debug(`Approach response: %O`, this.approach)
 
-                TelemetryHelper.instance.recordUserApproachTelemetry(this.conversationId)
+                action.telemetry.recordUserApproachTelemetry(this.conversationId)
                 return {
                     nextState: new RefinementState(
                         {
@@ -166,7 +163,15 @@ abstract class CodeGenBase {
         this.uploadId = config.uploadId
     }
 
-    async generateCode({ fs, codeGenerationId }: { fs: VirtualFileSystem; codeGenerationId: string }): Promise<{
+    async generateCode({
+        fs,
+        codeGenerationId,
+        telemetry: telemetry,
+    }: {
+        fs: VirtualFileSystem
+        codeGenerationId: string
+        telemetry: TelemetryHelper
+    }): Promise<{
         newFiles: any
         newFilePaths: string[]
         deletedFiles: string[]
@@ -178,14 +183,14 @@ abstract class CodeGenBase {
         ) {
             const codegenResult = await this.config.proxyClient.getCodeGeneration(this.conversationId, codeGenerationId)
             getLogger().debug(`Codegen response: %O`, codegenResult)
-            TelemetryHelper.instance.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
+            telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
                 case 'Complete': {
                     const { newFileContents, deletedFiles } = await this.config.proxyClient.exportResultArchive(
                         this.conversationId
                     )
                     const newFilePaths = await createFilePaths(fs, newFileContents, this.uploadId)
-                    TelemetryHelper.instance.setNumberOfFilesGenerated(newFilePaths.length)
+                    telemetry.setNumberOfFilesGenerated(newFilePaths.length)
                     return {
                         newFiles: newFileContents,
                         newFilePaths,
@@ -239,8 +244,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         return telemetry.amazonq_codeGenerationInvoke.run(async span => {
             try {
                 span.record({ amazonqConversationId: this.config.conversationId })
-                TelemetryHelper.instance.setGenerateCodeIteration(this.currentIteration)
-                TelemetryHelper.instance.setGenerateCodeLastInvocationTime()
+                action.telemetry.setGenerateCodeIteration(this.currentIteration)
+                action.telemetry.setGenerateCodeLastInvocationTime()
 
                 const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
@@ -256,10 +261,11 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 const codeGeneration = await this.generateCode({
                     fs: action.fs,
                     codeGenerationId,
+                    telemetry: action.telemetry,
                 })
                 this.filePaths = codeGeneration.newFilePaths
                 this.deletedFiles = codeGeneration.deletedFiles
-                TelemetryHelper.instance.recordUserCodeGenerationTelemetry(this.conversationId)
+                action.telemetry.recordUserCodeGenerationTelemetry(this.conversationId)
                 const nextState = new PrepareCodeGenState(
                     this.config,
                     this.approach,
@@ -368,7 +374,7 @@ export class PrepareCodeGenState implements SessionState {
             tabID: this.tabID,
         })
 
-        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, this.conversationId)
+        const { zipFileBuffer, zipFileChecksum } = await prepareRepoData(this.config.sourceRoot, action.telemetry)
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
