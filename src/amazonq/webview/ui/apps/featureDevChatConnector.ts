@@ -113,7 +113,7 @@ export class Connector {
                 body: messageData.message ?? undefined,
                 messageId: messageData.messageID ?? messageData.triggerID ?? '',
                 relatedContent: undefined,
-                canBeVoted: true,
+                canBeVoted: messageData.canBeVoted,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {

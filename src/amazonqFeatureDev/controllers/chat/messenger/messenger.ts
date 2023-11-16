@@ -30,6 +30,7 @@ export class Messenger {
         type: 'answer' | 'answer-part' | 'answer-stream' | 'system-prompt'
         followUps?: ChatItemFollowUp[]
         tabID: string
+        canBeVoted?: boolean
     }) {
         this.dispatcher.sendChatMessage(
             new ChatMessage(
@@ -38,6 +39,7 @@ export class Messenger {
                     messageType: params.type,
                     followUps: params.followUps,
                     relatedSuggestions: undefined,
+                    canBeVoted: params.canBeVoted ?? false,
                 },
                 params.tabID
             )
