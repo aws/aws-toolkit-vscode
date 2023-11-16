@@ -48,7 +48,7 @@ Before I begin generating code, let's agree on an implementation plan. What prob
     ])
 
     constructor(props: TabDataGeneratorProps) {
-        this.followUpsGenerator = new FollowUpGenerator({ isFeatureDevEnabled: props.isFeatureDevEnabled })
+        this.followUpsGenerator = new FollowUpGenerator()
         this.quickActionsGenerator = new QuickActionGenerator({
             isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,

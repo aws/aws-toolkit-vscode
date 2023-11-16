@@ -38,7 +38,7 @@ export class Connector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
-        this.followUpGenerator = new FollowUpGenerator({ isFeatureDevEnabled: false })
+        this.followUpGenerator = new FollowUpGenerator()
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
