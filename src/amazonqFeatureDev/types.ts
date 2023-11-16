@@ -9,6 +9,7 @@ import type { CancellationTokenSource } from 'vscode'
 import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { featureDevScheme } from './constants'
+import { TelemetryHelper } from './util/telemetryHelper'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -55,6 +56,7 @@ export interface SessionStateAction {
     msg?: string
     messenger: Messenger
     fs: VirtualFileSystem
+    telemetry: TelemetryHelper
 }
 
 export type NewFileContents = { filePath: string; fileContent: string }[]

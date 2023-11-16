@@ -26,10 +26,7 @@ export class TelemetryHelper {
         this.numberOfFilesGenerated = 0
         this.repositorySize = 0
     }
-    static #instance: TelemetryHelper
-    public static get instance() {
-        return (this.#instance ??= new this())
-    }
+
     public recordUserApproachTelemetry(amazonqConversationId: string) {
         const event = {
             amazonqConversationId,
@@ -40,6 +37,7 @@ export class TelemetryHelper {
 
         telemetry.amazonq_approachIteration.emit(event)
     }
+
     public recordUserCodeGenerationTelemetry(amazonqConversationId: string) {
         const event = {
             amazonqConversationId,
@@ -53,24 +51,31 @@ export class TelemetryHelper {
 
         telemetry.amazonq_codeGenerationIteration.emit(event)
     }
+
     public setGenerateApproachIteration(generateApproachIteration: number) {
         this.generateApproachIteration = generateApproachIteration
     }
+
     public setGenerateCodeIteration(generateCodeIteration: number) {
         this.generateCodeIteration = generateCodeIteration
     }
+
     public setGenerateApproachLastInvocationTime() {
         this.generateApproachLastInvocationTime = performance.now()
     }
+
     public setGenerateCodeLastInvocationTime() {
         this.generateCodeLastInvocationTime = performance.now()
     }
+
     public setCodeGenerationResult(status: string) {
         this.codeGenerationResult = status
     }
+
     public setNumberOfFilesGenerated(numberOfFilesGenerated: number) {
         this.numberOfFilesGenerated = numberOfFilesGenerated
     }
+
     public setRepositorySize(repositorySize: number) {
         this.repositorySize = repositorySize
     }

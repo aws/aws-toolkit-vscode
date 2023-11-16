@@ -9,6 +9,7 @@ import sinon from 'sinon'
 import assert from 'assert'
 import { collectFiles, prepareRepoData } from '../../../amazonqFeatureDev/util/files'
 import { createTestWorkspace, createTestWorkspaceFolder, toFile } from '../../testUtil'
+import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 
 describe('file utils', () => {
     describe('collectFiles', function () {
@@ -36,14 +37,15 @@ describe('file utils', () => {
             const fileAmount = 2
             const fileNamePrefix = 'file'
             const fileContent = 'test content'
-            const conversationId = 'fake-conversation-id'
 
             const workspace = await createTestWorkspace(fileAmount, { fileNamePrefix, fileContent })
 
-            const result = await prepareRepoData(workspace.uri.fsPath, conversationId)
+            const telemetry = new TelemetryHelper()
+            const result = await prepareRepoData(workspace.uri.fsPath, telemetry)
             assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
             // checksum is not the same across different test executions because some unique random folder names are generated
             assert.strictEqual(result.zipFileChecksum.length, 64)
+            assert.strictEqual(telemetry.repositorySize, 24)
         })
     })
 
