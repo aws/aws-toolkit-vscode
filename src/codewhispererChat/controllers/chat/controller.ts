@@ -43,7 +43,7 @@ import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhisper
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 
 export interface ChatControllerMessagePublishers {
@@ -555,9 +555,9 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = await AuthUtil.instance.getCodeWhispererCredentialState()
+        const credentialsState = getChatAuthState()
 
-        if (credentialsState !== undefined) {
+        if (credentialsState.codewhispererChat !== 'connected' && credentialsState.codewhispererCore !== 'connected') {
             this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }
@@ -585,9 +585,11 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = await AuthUtil.instance.getCodeWhispererCredentialState()
+        const credentialsState = getChatAuthState()
 
-        if (credentialsState !== undefined) {
+        if (
+            !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
+        ) {
             this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }

@@ -327,46 +327,6 @@ export class AuthUtil {
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
     }
-
-    /**
-     * Determines whether or not the current CodeWhisperer credential is active or not, with a display message.
-     *
-     * @returns a credentialState with a display message and whether to run a full authorization or reauth,
-     *          or undefined if the credential is valid.
-     */
-    public async getCodeWhispererCredentialState(): Promise<CWCredentialState | undefined> {
-        const auth = AuthUtil.instance
-        const curr = auth.conn
-        if (!curr) {
-            return {
-                message: 'No connection to Amazon Q (Preview). Sign into CodeWhisperer.',
-                fullAuth: true,
-            }
-        } else if (!isValidAmazonQConnection(curr)) {
-            return {
-                message:
-                    'Existing Amazon Q (Preview) connection does not have required scopes. Sign into CodeWhisperer.',
-                fullAuth: true,
-            }
-        } else if (auth.isConnectionExpired()) {
-            return {
-                message: 'Connection to Amazon Q (Preview) has expired. Reauthorize with CodeWhisperer.',
-                fullAuth: false,
-            }
-        } else if (!auth.isConnectionValid()) {
-            return {
-                message: 'Connection to Amazon Q (Preview) is invalid. Reauthorize with CodeWhisperer.',
-                fullAuth: false,
-            }
-        }
-
-        return undefined
-    }
-}
-
-export type CWCredentialState = {
-    message: string
-    fullAuth: boolean
 }
 
 /**

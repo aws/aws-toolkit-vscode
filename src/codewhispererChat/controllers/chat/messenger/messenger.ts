@@ -23,7 +23,8 @@ import { ToolkitError } from '../../../../shared/errors'
 import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
-import { CWCredentialState } from '../../../../codewhisperer/util/authUtil'
+import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
+import { AuthFollowUpType } from '../../../auth/model'
 
 export type StaticTextResponseType = 'help'
 
@@ -33,12 +34,32 @@ export class Messenger {
         private readonly telemetryHelper: CWCTelemetryHelper
     ) {}
 
-    public async sendAuthNeededExceptionMessage(credentialState: CWCredentialState, tabID: string, triggerID: string) {
+    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
+        let authType: AuthFollowUpType = 'full-auth'
+        let message = "You don't have access to Amazon Q. Please authenticate to get started."
+        if (
+            credentialState.codewhispererChat === 'disconnected' &&
+            credentialState.codewhispererCore === 'disconnected'
+        ) {
+            authType = 'full-auth'
+            message = "You don't have access to Amazon Q. Please authenticate to get started."
+        }
+
+        if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
+            authType = 'missing_scopes'
+            message = "You haven't enabled Amazon Q in VSCode"
+        }
+
+        if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
+            authType = 're-auth'
+            message = 'Your Amazon Q session has timed out. Re-authenticate to continue.'
+        }
+
         this.dispatcher.sendAuthNeededExceptionMessage(
             new AuthNeededException(
                 {
-                    message: credentialState.message,
-                    authType: credentialState.fullAuth ? 'full-auth' : 're-auth',
+                    message,
+                    authType,
                     triggerID,
                 },
                 tabID
