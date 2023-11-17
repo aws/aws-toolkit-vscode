@@ -87,11 +87,17 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
 const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
     telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
 
-    if (auth instanceof Auth) {
-        return promptAndUseConnection(auth)
-    } else {
-        return promptAndUseConnection(getResourceFromTreeNode(auth, Instance(Auth)))
+    if (!(auth instanceof Auth)) {
+        try {
+            auth = getResourceFromTreeNode(auth, Instance(Auth))
+        } catch {
+            // Fall back in case this command is called from something in package.json.
+            // If so, then the value of auth will be unusable.
+            auth = Auth.instance
+        }
     }
+
+    return promptAndUseConnection(auth as Auth)
 })
 
 export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {

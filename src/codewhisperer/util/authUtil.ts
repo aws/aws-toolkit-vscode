@@ -99,10 +99,12 @@ export class AuthUtil {
     public readonly restore = () => this.secondaryAuth.restoreConnection()
 
     public constructor(public readonly auth = Auth.instance) {
-        this.auth.onDidChangeConnectionState(e => {
+        this.auth.onDidChangeConnectionState(async e => {
             if (e.state !== 'authenticating') {
                 this.refreshCodeWhisperer()
             }
+
+            await this.setVscodeContextProps()
         })
 
         this.secondaryAuth.onDidChangeActiveConnection(async conn => {
@@ -133,8 +135,15 @@ export class AuthUtil {
                     await vscode.commands.executeCommand('aws.amazonq.welcome')
                 }
             }
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await this.setVscodeContextProps()
         })
+    }
+
+    public async setVscodeContextProps() {
+        if (!isCloud9()) {
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_DISCONNECTED', this.isConnectionExpired())
+        }
     }
 
     public reformatStartUrl(startUrl: string | undefined) {
@@ -286,6 +295,8 @@ export class AuthUtil {
             await this.auth.reauthenticate(this.conn!)
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
+        } finally {
+            this.setVscodeContextProps()
         }
     }
 
@@ -326,6 +337,7 @@ export class AuthUtil {
 
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
+        this.setVscodeContextProps()
     }
 }
 
