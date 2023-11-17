@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { FollowUpTypes, SessionStatePhase } from '../../../types'
 import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
-import { FollowUpTypes } from '../../../types'
 import {
     ChatMessage,
     AsyncEventProgressMessage,
@@ -41,17 +41,53 @@ export class Messenger {
         )
     }
 
-    public sendErrorMessage(errorMessage: string, tabID: string, retries: number) {
+    public sendErrorMessage(
+        errorMessage: string,
+        tabID: string,
+        retries: number,
+        phase: SessionStatePhase | undefined
+    ) {
         if (retries === 0) {
             this.dispatcher.sendErrorMessage(
-                new ErrorMessage(`We're unable to process your request at this time.`, errorMessage, tabID)
+                new ErrorMessage(
+                    `Sorry, we're unable to provide a response at this time. Please try again later or share feedback with our team to help us troubleshoot.`,
+                    errorMessage,
+                    tabID
+                )
             )
             return
         }
 
-        this.dispatcher.sendErrorMessage(
-            new ErrorMessage('An error occured while processing your request.', errorMessage, tabID)
-        )
+        switch (phase) {
+            case 'Approach':
+                this.dispatcher.sendErrorMessage(
+                    new ErrorMessage(
+                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                        errorMessage,
+                        tabID
+                    )
+                )
+                break
+            case 'Codegen':
+                this.dispatcher.sendErrorMessage(
+                    new ErrorMessage(
+                        `Sorry, we're experiencing an issue on our side. Restarting generation...`,
+                        errorMessage,
+                        tabID
+                    )
+                )
+                break
+            default:
+                this.dispatcher.sendErrorMessage(
+                    new ErrorMessage(
+                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                        errorMessage,
+                        tabID
+                    )
+                )
+                break
+        }
+
         this.sendAnswer({
             message: undefined,
             type: 'system-prompt',
