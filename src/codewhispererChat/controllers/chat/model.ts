@@ -49,13 +49,6 @@ export interface CopyCodeToClipboard {
     insertionTargetType: string | undefined
 }
 
-export interface ClickLink {
-    command: string | undefined
-    tabID: string
-    messageId: string
-    url: string
-}
-
 export type ChatPromptCommandType =
     | 'help'
     | 'clear'
@@ -86,20 +79,15 @@ export interface StopResponseMessage {
     tabID: string
 }
 
-export interface ClickLink {
-    command: string | undefined
-    tabID: string
-    messageId: string
-    url: string
-}
-
 export interface SourceLinkClickMessage {
+    command: string | undefined
     tabID: string
     messageId: string
     link: string
 }
 
 export interface ResponseBodyLinkClickMessage {
+    command: string | undefined
     tabID: string
     messageId: string
     link: string

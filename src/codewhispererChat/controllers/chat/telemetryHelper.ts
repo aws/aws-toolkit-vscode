@@ -17,17 +17,17 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
-    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptAnswer,
     PromptMessage,
+    ResponseBodyLinkClickMessage,
+    SourceLinkClickMessage,
     TriggerPayload,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
-import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import CodeWhispererUserClient, { Dimension } from '../../../codewhisperer/client/codewhispereruserclient'
 import { isAwsError } from '../../../shared/errors'
@@ -96,21 +96,8 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public recordOpenChat(triggerInteractionType: TabOpenType) {
-        let cwsprChatTriggerInteraction: CwsprChatTriggerInteraction = 'click'
-        switch (triggerInteractionType) {
-            case 'click':
-                cwsprChatTriggerInteraction = 'click'
-                break
-            case 'contextMenu':
-                cwsprChatTriggerInteraction = 'contextMenu'
-                break
-            case 'hotkeys':
-                cwsprChatTriggerInteraction = 'hotkeys'
-                break
-        }
-
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
+    public recordOpenChat() {
+        telemetry.codewhispererchat_openChat.emit()
     }
 
     public recordCloseChat() {
@@ -157,7 +144,13 @@ export class CWCTelemetryHelper {
     }
 
     public recordInteractWithMessage(
-        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage | ClickLink
+        message:
+            | InsertCodeAtCursorPosition
+            | CopyCodeToClipboard
+            | PromptMessage
+            | ChatItemVotedMessage
+            | SourceLinkClickMessage
+            | ResponseBodyLinkClickMessage
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: CodewhispererchatInteractWithMessage | undefined
@@ -200,13 +193,22 @@ export class CWCTelemetryHelper {
                     cwsprChatInteractionType: message.vote,
                 }
                 break
-            case 'link-was-clicked':
-                message = message as ClickLink
+            case 'source-link-click':
+                message = message as SourceLinkClickMessage
                 event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: 'clickLink',
-                    cwsprChatInteractionTarget: message.url,
+                    cwsprChatInteractionTarget: message.link,
+                }
+                break
+            case 'response-body-link-click':
+                message = message as ResponseBodyLinkClickMessage
+                event = {
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatInteractionType: 'clickBodyLink',
+                    cwsprChatInteractionTarget: message.link,
                 }
                 break
         }

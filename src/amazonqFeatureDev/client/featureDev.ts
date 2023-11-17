@@ -152,13 +152,15 @@ export class FeatureDevClient {
         }
     }
 
-    public async startCodeGeneration(conversationId: string, uploadId: string, message?: string) {
+    public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
         try {
             const client = await this.getClient()
             const params = {
                 conversationState: {
                     conversationId,
-                    currentMessage: { ...(message ? { userInputMessage: { content: message } } : {}) },
+                    currentMessage: {
+                        userInputMessage: { content: message },
+                    },
                     chatTriggerType: 'MANUAL',
                 },
                 workspaceState: {
