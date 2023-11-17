@@ -60,7 +60,6 @@ export class RuntimeLanguageContext {
             c_cpp: 'cpp',
             go: 'go',
             golang: 'go',
-            hcl: 'hcl',
             java: 'java',
             javascript: 'javascript',
             javascriptreact: 'jsx',
@@ -83,16 +82,18 @@ export class RuntimeLanguageContext {
             typescriptreact: 'tsx',
             yaml: 'yaml',
             yml: 'yaml',
+            hcl: 'tf',
+            terraform: 'tf',
+            terragrunt: 'tf',
+            packer: 'tf',
         })
         this.supportedLanguageExtensionMap = createConstantMap<CodewhispererLanguage, string>({
             c: 'c',
             cpp: 'cpp',
             csharp: 'cs',
             go: 'go',
-            hcl: 'hcl',
             java: 'java',
             javascript: 'js',
-            json: 'json',
             jsx: 'jsx',
             kotlin: 'kt',
             plaintext: 'txt',
@@ -103,11 +104,13 @@ export class RuntimeLanguageContext {
             scala: 'scala',
             shell: 'sh',
             sql: 'sql',
-            tf: 'tf',
             tsx: 'tsx',
             typescript: 'ts',
+            json: 'json',
             yaml: 'yaml',
+            tf: 'tf',
             yml: 'yaml',
+            hcl: 'tf',
         })
     }
 

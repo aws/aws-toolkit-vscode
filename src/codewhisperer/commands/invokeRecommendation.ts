@@ -9,12 +9,13 @@ import { resetIntelliSenseState } from '../util/globalStateUtil'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from '../service/recommendationHandler'
-import { isInlineCompletionEnabled } from '../util/commonUtil'
+import { checkKeyWords, isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from '../service/inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from '../service/classifierTrigger'
 import { isIamConnection } from '../../auth/connection'
 import { session } from '../util/codeWhispererSession'
+import { extractContextForCodeWhisperer } from '../util/editorContext'
 
 /**
  * This function is for manual trigger CodeWhisperer
@@ -54,6 +55,16 @@ export async function invokeRecommendation(
             config.isAutomatedTriggerEnabled,
             RecommendationHandler.instance.isValidResponse()
         )
+    }
+    /**
+     * skipping for json and yaml when there is no Iac AWS template keywords
+     */
+    const { leftFileContent } = extractContextForCodeWhisperer(editor)
+    if (
+        (editor.document.languageId === 'json' || editor.document.languageId === 'yaml') &&
+        checkKeyWords(leftFileContent)
+    ) {
+        return
     }
 
     if (isCloud9('any')) {

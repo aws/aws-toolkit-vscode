@@ -12,7 +12,7 @@ import { isCloud9 } from '../../shared/extensionUtilities'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
-import { isInlineCompletionEnabled } from '../util/commonUtil'
+import { checkKeyWords, isInlineCompletionEnabled } from '../util/commonUtil'
 import { InlineCompletionService } from './inlineCompletionService'
 import { AuthUtil } from '../util/authUtil'
 import { ClassifierTrigger } from './classifierTrigger'
@@ -119,7 +119,18 @@ export class KeyStrokeHandler {
             if (
                 rightContextAtCurrentLine.length &&
                 !rightContextAtCurrentLine.startsWith(' ') &&
-                rightContextAtCurrentLine.trim() !== '}'
+                rightContextAtCurrentLine.trim() !== '}' &&
+                rightContextAtCurrentLine.trim() !== ')'
+            ) {
+                return
+            }
+
+            const { leftFileContent } = extractContextForCodeWhisperer(editor)
+            const { programmingLanguage } = extractContextForCodeWhisperer(editor)
+
+            if (
+                (programmingLanguage.languageName == 'json' || programmingLanguage.languageName == 'yaml') &&
+                checkKeyWords(leftFileContent)
             ) {
                 return
             }

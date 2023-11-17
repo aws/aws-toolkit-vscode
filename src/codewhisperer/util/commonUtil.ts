@@ -8,6 +8,7 @@ import * as semver from 'semver'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { getInlineSuggestEnabled } from '../../shared/utilities/editorUtilities'
 import { getLogger } from '../../shared/logger'
+import { AWSTemplateCaseInsensitiveKeyWords, AWSTemplateKeyWords } from '../models/constants'
 
 export function getLocalDatetime() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -71,5 +72,12 @@ export async function set(key: string, value: any, context: vscode.Memento): Pro
         error => {
             getLogger().verbose(`Failed to update global state: ${error}`)
         }
+    )
+}
+
+export function checkKeyWords(content: string) {
+    return (
+        !AWSTemplateKeyWords.some(substring => content.includes(substring)) &&
+        !AWSTemplateCaseInsensitiveKeyWords.some(substring => content.toLowerCase().includes(substring))
     )
 }

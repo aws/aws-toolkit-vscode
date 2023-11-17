@@ -11,9 +11,9 @@
 
 // export const endpoint = 'https://rts-641299012133.test.codewhisperer.ai.aws.dev/' // alpha IAD
 
-// export const endpoint = 'https://rts-732200995377.test.codewhisperer.ai.aws.dev/' // gamma IAD
+export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/' // gamma IAD
 
-export const endpoint = 'https://rts-171763828851.test.codewhisperer.ai.aws.dev/' // gamma PDX
+// export const endpoint = 'https://rts-171763828851.test.codewhisperer.ai.aws.dev/' // gamma PDX
 
 export const region = 'us-east-1'
 
@@ -31,6 +31,10 @@ export const idleTimerPollPeriod = 25 // milliseconds
 export const showRecommendationTimerPollPeriod = 25
 
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
+
+export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AWS::', 'Description']
+
+export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
@@ -97,7 +101,11 @@ export const platformLanguageIds = [
     'yaml',
     'hcl',
     'tf',
+    'yml',
     'plaintext',
+    'terraform',
+    'terragrunt',
+    'packer',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
