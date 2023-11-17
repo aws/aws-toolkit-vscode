@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Fix a not connected error when starting connection to CodeCatalyst Dev Environment from link"
+}
