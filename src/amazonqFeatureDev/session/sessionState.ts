@@ -255,7 +255,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
 
                 const { codeGenerationId } = await this.config.proxyClient.startCodeGeneration(
                     this.config.conversationId,
-                    this.config.uploadId
+                    this.config.uploadId,
+                    action.msg
                 )
 
                 action.messenger.sendAnswer({

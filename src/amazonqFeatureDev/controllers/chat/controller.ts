@@ -207,7 +207,7 @@ export class FeatureDevController {
     /**
      * Handle a regular incoming message when a user is in the code generation phase
      */
-    private async onCodeGeneration(session: Session, message: string | undefined, tabID: string) {
+    private async onCodeGeneration(session: Session, message: string, tabID: string) {
         // lock the UI/show loading bubbles
 
         // lock the UI/show loading bubbles
@@ -298,7 +298,7 @@ export class FeatureDevController {
         try {
             session = await this.sessionStorage.getSession(message.tabID)
             session.initCodegen()
-            await this.onCodeGeneration(session, undefined, message.tabID)
+            await this.onCodeGeneration(session, '', message.tabID)
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
                 `${featureName} request failed: ${err.cause?.message ?? err.message}`
