@@ -58,7 +58,7 @@ describe('', async function () {
         return aUserTriggerEvent({
             codewhispererSessionId: 'session_id_1',
             codewhispererFirstRequestId: 'request_id_1',
-            codewhispererSuggestionCount: 2,
+            codewhispererSuggestionCount: 3,
             ...ops,
         })
     }
@@ -112,15 +112,23 @@ describe('', async function () {
     }
 
     function mockClient(): DefaultCodeWhispererClient {
-        const response1 = aResponse('session_id_1', 'request_id_1', { content: 'Foo' }, { content: 'Bar' })
-        const response2 = aResponse('session_id_2', 'request_id_2', { content: 'Baz' })
-        const response3 = aResponse('session_id_3', 'request_id_3', { content: 'Qoo' })
+        const response1_1 = aResponse(
+            'session_id_1',
+            'request_id_1',
+            'fake-nextToken',
+            { content: 'Foo' },
+            { content: 'Bar' }
+        )
+        const response1_2 = aResponse('session_id_1', 'request_id_2', undefined, { content: 'FooFoo' })
+        const response2 = aResponse('session_id_2', 'request_id_2', undefined, { content: 'Baz' })
+        const response3 = aResponse('session_id_3', 'request_id_3', undefined, { content: 'Qoo' })
 
         const cwClient = new DefaultCodeWhispererClient()
         const stub = sandbox.stub(cwClient, 'listRecommendations')
-        stub.onCall(0).resolves(response1)
-        stub.onCall(1).resolves(response2)
-        stub.onCall(2).resolves(response3)
+        stub.onCall(0).resolves(response1_1)
+        stub.onCall(1).resolves(response1_2)
+        stub.onCall(2).resolves(response2)
+        stub.onCall(3).resolves(response3)
 
         return cwClient
     }
@@ -537,9 +545,15 @@ function aRequest(): ListRecommendationsRequest {
     }
 }
 
-function aResponse(sessionId: string, requestId: string, ...args: Recommendation[]): CodeWhispererResponse {
+function aResponse(
+    sessionId: string,
+    requestId: string,
+    nextToken: string | undefined,
+    ...args: Recommendation[]
+): CodeWhispererResponse {
     return {
         recommendations: args,
+        nextToken: nextToken,
         $response: {
             requestId: requestId,
             httpResponse: {
