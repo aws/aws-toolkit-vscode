@@ -31,30 +31,29 @@ describe('commonUtil', function () {
         })
     })
 
-    describe('checkLeftContextKeywordsForJsonAndYaml'),
-        function () {
-            it('Should return true for valid left context keywords', async function () {
-                assert.strictEqual(
-                    checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer', 'json'),
-                    true
-                )
-                assert.strictEqual(
-                    checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer', 'yaml'),
-                    true
-                )
-            })
-            it('Should return false for invalid left context keywords', async function () {
-                assert.strictEqual(
-                    checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer in cfn', 'yaml'),
-                    false
-                )
-                assert.strictEqual(
-                    checkLeftContextKeywordsForJsonAndYaml(
-                        'Create an S3 Bucket named CodeWhisperer in Cloudformation',
-                        'json'
-                    ),
-                    false
-                )
-            })
-        }
+    describe('checkLeftContextKeywordsForJsonAndYaml', function () {
+        it('Should return true for valid left context keywords', async function () {
+            assert.strictEqual(
+                checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer', 'json'),
+                true
+            )
+            assert.strictEqual(
+                checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer', 'yaml'),
+                true
+            )
+        })
+        it('Should return false for invalid left context keywords', async function () {
+            assert.strictEqual(
+                checkLeftContextKeywordsForJsonAndYaml('Create an S3 Bucket named CodeWhisperer in cfn', 'yaml'),
+                false
+            )
+            assert.strictEqual(
+                checkLeftContextKeywordsForJsonAndYaml(
+                    'Create an S3 Bucket named CodeWhisperer in Cloudformation',
+                    'json'
+                ),
+                false
+            )
+        })
+    })
 })
