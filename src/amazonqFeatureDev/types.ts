@@ -10,6 +10,7 @@ import { Messenger } from './controllers/chat/messenger/messenger'
 import { FeatureDevClient } from './client/featureDev'
 import { featureDevScheme } from './constants'
 import { TelemetryHelper } from './util/telemetryHelper'
+import { CodeReference } from '../amazonq/webview/ui/connector'
 
 export type Interaction = {
     // content to be sent back to the chat UI
@@ -27,6 +28,7 @@ export enum FollowUpTypes {
     ProvideFeedbackAndRegenerateCode = 'ProvideFeedbackAndRegenerateCode',
     Retry = 'Retry',
     ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
+    DevExamples = 'DevExamples',
 }
 
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
@@ -34,6 +36,7 @@ export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
 export interface SessionState {
     readonly filePaths?: string[]
     readonly deletedFiles?: string[]
+    readonly references?: CodeReference[]
     readonly phase?: SessionStatePhase
     readonly uploadId: string
     approach: string

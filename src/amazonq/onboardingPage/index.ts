@@ -124,6 +124,7 @@ function getWebviewContent(webview: vscode.Webview): string {
                 font-size: 20px;
                 padding: 0.5em 1em;
                 text-align: center;
+                cursor: pointer;
             }
             #wrapper {
                 height: 100%;
@@ -175,6 +176,12 @@ function getWebviewContent(webview: vscode.Webview): string {
             a {
                 cursor: pointer;
             }
+            .spacingrow {
+                display: flex;
+                flex-direction: row;
+                gap: 40px;
+                flex-wrap: nowrap;
+            }
             </style>
         </head>
         <body>
@@ -182,16 +189,20 @@ function getWebviewContent(webview: vscode.Webview): string {
             <div id="wrapper">
                 <div id="content">
                     <img id="qLogo" src="${logo}"/>
-                    <h1 id="header">Amazon Q (Preview) is a generative AI-powered conversational assistant.</h1>
+                    <h1 id="header">Amazon Q is a generative AI-powered conversational assistant.</h1>
                     <div id="buttonContainer">
-                        <button id="sendToQButton">"What can Q help me with?"</button>
+                        <button id="sendToQButton">Ask Amazon Q a question to get started</button>
                     </div>
+                    <!-- spacing -->
+                    <div class="spacingrow"> </div>
+                    <div class="spacingrow"> </div>
+                    <!-- end spacing -->
                     <div id="codewhisperer">
                         <div id="imageContainer">
                             <img id="codewhispererLogo"/>
                         </div>
                         <div id="textWrapper">
-                            <p>Inline suggestions powered by CodeWhisperer are enabled.<br><a id="goToHelpLink">Try Examples</a></p>
+                            <p>Inline suggestions powered by CodeWhisperer are enabled.<br><a id="goToHelpLink">Try it</a></p>
                         </div>
                     </div>
                 </div>

@@ -133,7 +133,7 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
-        this.referenceLogController.addReferenceLog(msg.codeReference)
+        this.referenceLogController.addReferenceLog(msg.codeReference, (msg.code as string) ?? '')
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
             tabID: msg.tabID,

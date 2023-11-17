@@ -77,6 +77,9 @@ export class FeatureDevController {
                 case FollowUpTypes.ModifyDefaultSourceFolder:
                     this.modifyDefaultSourceFolder(data)
                     break
+                case FollowUpTypes.DevExamples:
+                    this.initialExamples(data)
+                    break
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
@@ -168,6 +171,9 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
+        // Ensure that the loading icon stays showing
+        this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
+
         this.messenger.sendUpdatePlaceholder(tabID, 'Generating approach ...')
         const interactions = await session.send(message)
         this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the approach')
@@ -178,6 +184,13 @@ export class FeatureDevController {
             type: 'answer-part',
             tabID: tabID,
             canBeVoted: true,
+        })
+
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID,
+            message:
+                'Would you like me to generate a suggestion for this? You will be able to review a file diff before inserting code in your project.',
         })
 
         // Follow up with action items and complete the request stream
@@ -201,7 +214,7 @@ export class FeatureDevController {
         this.messenger.sendAsyncEventProgress(
             tabID,
             true,
-            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this /dev`
+            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel`
         )
 
         try {
@@ -243,7 +256,13 @@ export class FeatureDevController {
                 return
             }
 
-            this.messenger.sendFilePaths(filePaths, deletedFiles, tabID, session.uploadId)
+            this.messenger.sendCodeResult(
+                filePaths,
+                deletedFiles,
+                session.state.references ?? [],
+                tabID,
+                session.uploadId
+            )
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',
@@ -414,6 +433,23 @@ export class FeatureDevController {
                 tabID: message.tabID,
             })
         }
+    }
+
+    private initialExamples(message: any) {
+        const examples = `
+You can use /dev to:
+- Add a new feature or logic
+- Write tests 
+- Fix a bug in your project
+- Generate a README for a file, folder, or project
+
+To learn more, visit the _Amazon Q User Guide_.
+`
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: examples,
+        })
     }
 
     private getOriginalFileUri({ filePath, tabID }: OpenDiffMessage, session: Session) {

@@ -4,11 +4,12 @@
  */
 
 import { FollowUpTypes, SessionStatePhase } from '../../../types'
+import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
 import {
     ChatMessage,
     AsyncEventProgressMessage,
     ErrorMessage,
-    FilePathMessage,
+    CodeResultMessage,
     UpdatePlaceholderMessage,
     ChatInputEnabledMessage,
     AuthenticationUpdateMessage,
@@ -101,8 +102,14 @@ export class Messenger {
         })
     }
 
-    public sendFilePaths(filePaths: string[], deletedFiles: string[], tabID: string, uploadId: string) {
-        this.dispatcher.sendFilePaths(new FilePathMessage(filePaths, deletedFiles, tabID, uploadId))
+    public sendCodeResult(
+        filePaths: string[],
+        deletedFiles: string[],
+        references: CodeReference[],
+        tabID: string,
+        uploadId: string
+    ) {
+        this.dispatcher.sendCodeResult(new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId))
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
