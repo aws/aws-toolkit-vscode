@@ -17,6 +17,8 @@ const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
 const cdn = 'https://d2sp2encosghg4.cloudfront.net' // apurvaja's starling build
 
+const enabledFeatures = ['ide-only', 'anything-resource', 'sfnV2']
+
 export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
 
@@ -39,12 +41,24 @@ export class ApplicationComposerManager {
     }
 
     private getWebviewContent = () => {
-        const source = isLocalDev ? localhost : cdn
         if (!this.webviewHtml) {
             return ''
         }
         const htmlFileSplit = this.webviewHtml.split('<head>')
-        return htmlFileSplit[0] + '<head><base href="' + source + '/" >' + htmlFileSplit[1]
+
+        // Set asset source to CDN
+        const source = isLocalDev ? localhost : cdn
+        const baseTag = '<base href="' + source + '/" >'
+
+        // Set dark mode, locale, and feature flags
+        const locale = vscode.env.language
+        const localeTag = `<meta name="locale" content="${locale}">`
+        const theme = vscode.window.activeColorTheme.kind
+        const isDarkMode = theme === vscode.ColorThemeKind.Dark || theme === vscode.ColorThemeKind.HighContrast
+        const darkModeTag = `<meta name="dark-mode" content="${isDarkMode}">`
+        const featuresTag = `<meta name="feature-flags" content='${JSON.stringify(enabledFeatures)}'>`
+
+        return htmlFileSplit[0] + '<head>' + baseTag + localeTag + darkModeTag + featuresTag + htmlFileSplit[1]
     }
 
     public async visualizeTemplate(
