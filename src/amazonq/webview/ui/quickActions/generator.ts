@@ -29,12 +29,13 @@ export class QuickActionGenerator {
                     ...(this.isFeatureDevEnabled
                         ? [
                               {
-                                  groupName: 'Project-level Application Development by Q',
+                                  groupName: 'Application Development',
                                   commands: [
                                       {
                                           command: '/dev',
-                                          placeholder: 'Describe a new feature or improvement',
-                                          description: 'Describe a new feature or improvement',
+                                          placeholder: 'Briefly describe a task or issue',
+                                          description:
+                                              'Use all project files as context for code suggestions (increases latency).',
                                       },
                                   ],
                               },
