@@ -125,11 +125,10 @@ export class KeyStrokeHandler {
                 return
             }
 
-            const { leftFileContent } = extractContextForCodeWhisperer(editor)
-            const { programmingLanguage } = extractContextForCodeWhisperer(editor)
+            const { leftFileContent, programmingLanguage } = extractContextForCodeWhisperer(editor)
 
             if (
-                (programmingLanguage.languageName == 'json' || programmingLanguage.languageName == 'yaml') &&
+                (programmingLanguage.languageName === 'json' || programmingLanguage.languageName === 'yaml') &&
                 checkKeyWords(leftFileContent)
             ) {
                 return
