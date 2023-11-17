@@ -167,7 +167,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), 'Foo')
 
@@ -179,7 +178,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), '')
 
@@ -193,20 +191,17 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), 'Foo')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), `FooBaz${os.EOL}Baz`)
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(anotherEditor.document.getText(), 'Qoo')
 
@@ -222,20 +217,17 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), 'Foo')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), 'Foo')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(anotherEditor.document.getText(), '')
 
@@ -251,19 +243,16 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), '')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), '')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), '')
 
@@ -279,19 +268,16 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), '')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), `Baz${os.EOL}Baz`)
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), `Baz${os.EOL}Baz`)
 
@@ -328,7 +314,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await navigateNext()
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), `Bar${os.EOL}Bar`)
@@ -345,7 +330,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await navigateNext()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), '')
@@ -364,7 +348,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await navigateNext()
             await navigatePrev()
             await acceptByTab()
@@ -380,7 +363,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await typing(editor, 'F')
             assert.strictEqual(editor.document.getText(), 'F')
             await acceptByTab()
@@ -394,9 +376,7 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await typing(editor, 'F')
-            await waitUntilSuggestionSeen()
             assert.strictEqual(editor.document.getText(), 'F')
             await backsapce(editor)
             assert.strictEqual(editor.document.getText(), '')
@@ -411,20 +391,17 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await typing(editor, 'F')
             assert.strictEqual(editor.document.getText(), 'F')
             await acceptByTab()
             assert.strictEqual(editor.document.getText(), 'Foo')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await rejectByEsc()
             assert.strictEqual(editor.document.getText(), 'Foo')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
-            await waitUntilSuggestionSeen()
             await typing(anotherEditor, 'Qo')
             assert.strictEqual(anotherEditor.document.getText(), 'Qo')
             await acceptByTab()
@@ -442,7 +419,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await typing(editor, 'H')
             assert.strictEqual(editor.document.getText(), 'H')
 
@@ -456,7 +432,6 @@ describe('CodeWhisperer telemetry', async function () {
             await backsapce(editor) // todo: without this, the following manual trigger will not be displayed in the test, investigate and fix it
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
@@ -471,13 +446,11 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await typing(editor, 'H')
             assert.strictEqual(editor.document.getText(), 'H')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
-            await waitUntilSuggestionSeen()
             await acceptByTab()
             assert.strictEqual(anotherEditor.document.getText(), `Baz${os.EOL}Baz`)
 
@@ -494,7 +467,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
 
             await openATextEditorWithText('text in 2nd editor', 'another1.py', tempFolder, {
                 preview: false,
@@ -516,7 +488,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             await closeActiveEditor()
             assert.strictEqual(editor.document.getText(), '')
 
@@ -530,7 +501,6 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            await waitUntilSuggestionSeen()
             assert.strictEqual(editor.document.getText(), '')
 
             await RecommendationHandler.instance.onFocusChange()
@@ -547,6 +517,7 @@ async function manualTrigger(
     config: ConfigurationEntry
 ) {
     await invokeRecommendation(editor, client, config)
+    await waitUntilSuggestionSeen()
 }
 
 // Note: RecommendationHandler.isSuggestionVisible seems not to work well, hence not using it
