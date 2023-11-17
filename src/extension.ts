@@ -139,8 +139,8 @@ export async function activate(context: vscode.ExtensionContext) {
         const settings = Settings.instance
         const experiments = Experiments.instance
 
-        await initializeCredentials(context, awsContext, loginManager)
         await activateTelemetry(context, awsContext, settings)
+        await initializeCredentials(context, awsContext, loginManager)
 
         experiments.onDidChange(({ key }) => {
             telemetry.aws_experimentActivation.run(span => {

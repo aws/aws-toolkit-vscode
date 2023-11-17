@@ -115,4 +115,102 @@ describe('CodeCatalystAuthenticationProvider', async function () {
             assert.deepStrictEqual(conn.scopes, [otherScope, ...defaultScopes])
         })
     })
+
+    describe('tryConnectTo', async () => {
+        it('should do nothing if connection is already active', async function () {
+            Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
+            const connectToEnterpriseSso = Sinon.spy(codecatalystAuth, 'connectToEnterpriseSso')
+
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                picker.acceptItem(picker.items[1])
+            })
+
+            await codecatalystAuth.connectToEnterpriseSso(enterpriseSsoStartUrl, 'us-east-1')
+            let conn = codecatalystAuth.activeConnection
+            assert.strictEqual(conn?.type, 'sso')
+            assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
+
+            await codecatalystAuth.tryConnectTo({ startUrl: enterpriseSsoStartUrl, region: 'us-east-1' })
+            conn = codecatalystAuth.activeConnection
+            assert.strictEqual(conn?.type, 'sso')
+            assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
+
+            assert.strictEqual(connectToEnterpriseSso.callCount, 1, 'Expected no extra calls on active connection')
+        })
+
+        it('should switch to IAM Identity Center', async function () {
+            Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
+            const connectToEnterpriseSso = Sinon.spy(codecatalystAuth, 'connectToEnterpriseSso')
+
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                picker.acceptItem(picker.items[1])
+            })
+
+            await codecatalystAuth.connectToEnterpriseSso(enterpriseSsoStartUrl, 'us-east-1')
+            let conn = codecatalystAuth.activeConnection
+            assert.strictEqual(conn?.type, 'sso')
+            assert.strictEqual(conn.label, 'IAM Identity Center (enterprise)')
+            assert.strictEqual(connectToEnterpriseSso.callCount, 1, 'Expected one call to connectToEnterpriseSso')
+
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                picker.acceptItem(picker.items[1])
+            })
+
+            await codecatalystAuth.tryConnectTo({
+                startUrl: 'https://other-enterprise.awsapps.com/start',
+                region: 'us-east-1',
+            })
+            conn = codecatalystAuth.activeConnection
+            assert.strictEqual(conn?.type, 'sso')
+            assert.strictEqual(conn.label, 'IAM Identity Center (other-enterprise)')
+            assert.strictEqual(conn.startUrl, 'https://other-enterprise.awsapps.com/start')
+
+            assert.strictEqual(
+                connectToEnterpriseSso.callCount,
+                2,
+                'Expected two calls to complete switch for connectToEnterpriseSso'
+            )
+        })
+
+        it('should switch to Builder ID', async function () {
+            Sinon.stub(codecatalystAuth, 'isConnectionOnboarded').resolves(true)
+            const connectToAwsBuilderId = Sinon.spy(codecatalystAuth, 'connectToAwsBuilderId')
+            const connectToEnterpriseSso = Sinon.spy(codecatalystAuth, 'connectToEnterpriseSso')
+
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                picker.acceptItem(picker.items[1])
+            })
+
+            await codecatalystAuth.tryConnectTo({
+                startUrl: 'https://other-enterprise.awsapps.com/start',
+                region: 'us-east-1',
+            })
+            let conn = codecatalystAuth.activeConnection
+            assert.strictEqual(conn?.type, 'sso')
+            assert.strictEqual(conn.label, 'IAM Identity Center (other-enterprise)')
+            assert.strictEqual(conn.startUrl, 'https://other-enterprise.awsapps.com/start')
+
+            assert.strictEqual(connectToEnterpriseSso.callCount, 1, 'Expected one call to connectToEnterpriseSso')
+
+            getTestWindow().onDidShowQuickPick(async picker => {
+                await picker.untilReady()
+                picker.acceptItem(picker.items[1])
+            })
+
+            await codecatalystAuth.connectToAwsBuilderId()
+            conn = codecatalystAuth.activeConnection
+            assert.strictEqual(conn?.type, 'sso')
+            assert.strictEqual(conn.label, 'AWS Builder ID')
+            assert.strictEqual(connectToAwsBuilderId.callCount, 1, 'Expected one call to connectToAwsBuilderId')
+            assert.strictEqual(
+                connectToEnterpriseSso.callCount,
+                1,
+                'Expected no additional calls to connectToEnterpriseSso'
+            )
+        })
+    })
 })
