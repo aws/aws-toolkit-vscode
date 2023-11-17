@@ -5,7 +5,8 @@
 
 import assert from 'assert'
 import * as vscode from 'vscode'
-import * as sinon from 'sinon'
+import sinon from 'sinon'
+import semver from 'semver'
 import { assertTabCount, assertTelemetry, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 import {
     DefaultCodeWhispererClient,
@@ -22,6 +23,7 @@ import { session } from '../../../codewhisperer/util/codeWhispererSession'
 import { vsCodeCursorUpdateDelay } from '../../../codewhisperer/models/constants'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { CodewhispererUserTriggerDecision } from '../../../shared/telemetry/telemetry.gen'
+import { getMinVscodeVersion } from '../../../shared/vscode/env'
 
 type CodeWhispererResponse = ListRecommendationsResponse & {
     $response: { requestId: string; httpResponse: { headers: { [key: string]: string } } }
@@ -294,7 +296,22 @@ describe('', async function () {
     })
 
     describe('navigation', function () {
+        // as per vscode official repo PR https://github.com/microsoft/vscode/commit/cb0e59c56677181b570b110167d13efb4ba7677d#diff-84b7f4a5ab7c383d86e2d40e2c704d255dc1e187a29386c036023a4696196556R19
+        // navigation commands seem to be introduced since 1.78.0
+        function shouldRun() {
+            const version = getMinVscodeVersion()
+            if (semver.gte(version, '1.78.0')) {
+                throw new Error('Minimum VSCode version is greater than 1.78.0, this check should be removed')
+            }
+
+            return semver.valid(vscode.version) && semver.gte(vscode.version, '1.78.0')
+        }
+
         it('next and accept', async function () {
+            if (!shouldRun()) {
+                this.skip()
+            }
+
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
@@ -308,6 +325,10 @@ describe('', async function () {
         })
 
         it('next and reject', async function () {
+            if (!shouldRun()) {
+                this.skip()
+            }
+
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
@@ -323,6 +344,10 @@ describe('', async function () {
         })
 
         it('next and accept', async function () {
+            if (!shouldRun()) {
+                this.skip()
+            }
+
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
