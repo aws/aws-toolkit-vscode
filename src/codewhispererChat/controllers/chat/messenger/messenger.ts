@@ -115,6 +115,10 @@ export class Messenger {
                         }
                     }
 
+                    if (chatEvent.messageMetadataEvent !== undefined) {
+                        session.setSessionID(chatEvent.messageMetadataEvent!.conversationId)
+                    }
+
                     if (session.tokenSource.token.isCancellationRequested) {
                         return true
                     }
