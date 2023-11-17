@@ -119,7 +119,7 @@ describe('', async function () {
             { content: 'Foo' },
             { content: 'Bar' }
         )
-        const response1_2 = aResponse('session_id_1', 'request_id_2', undefined, { content: 'FooFoo' })
+        const response1_2 = aResponse('session_id_1', 'request_id_1_2', undefined, { content: 'FooFoo' })
         const response2 = aResponse('session_id_2', 'request_id_2', undefined, { content: 'Baz' })
         const response3 = aResponse('session_id_3', 'request_id_3', undefined, { content: 'Qoo' })
 
@@ -315,6 +315,7 @@ describe('', async function () {
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'F')
+            await waitUntilSuggestionSeen()
             assert.strictEqual(editor.document.getText(), 'F')
             await backsapce(editor)
             assert.strictEqual(editor.document.getText(), '')
@@ -364,7 +365,12 @@ describe('', async function () {
             await typing(editor, 'H')
             assert.strictEqual(editor.document.getText(), 'H')
 
+            // states will not be cleaned until reportUserDecision is called
+            assert.strictEqual(session.sessionId, 'session_id_1')
+            assert.deepStrictEqual(session.requestIdList, ['request_id_1', 'request_id_1', 'request_id_1_2'])
+
             RecommendationHandler.instance.onEditorChange()
+            assertSessionClean()
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -456,10 +462,10 @@ async function manualTrigger(
 }
 
 async function waitUntilSuggestionSeen(index: number = 0) {
-    const state = await waitUntil(
+    await waitUntil(
         async () => {
-            const r = session.getSuggestionState(index)
-            if (r) {
+            const r = RecommendationHandler.instance.isSuggestionVisible()
+            if (r === true) {
                 return r
             }
         },
@@ -468,7 +474,7 @@ async function waitUntilSuggestionSeen(index: number = 0) {
         }
     )
 
-    assert.ok(state === 'Showed')
+    assert.ok(RecommendationHandler.instance.isSuggestionVisible())
 }
 
 async function acceptByTab() {
@@ -490,7 +496,9 @@ async function typing(editor: vscode.TextEditor, s: string) {
     for (const char of s) {
         await typeAChar(editor, char)
     }
-    await sleep(2000) // see if we can use waitUntil to replace it
+    // waitUntilSuggestionSeen doesn't work for this
+    // see if we can find another way to wait
+    await sleep(2000)
 }
 
 async function backsapce(editor: vscode.TextEditor) {
