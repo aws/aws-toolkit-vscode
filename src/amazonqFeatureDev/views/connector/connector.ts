@@ -4,7 +4,8 @@
  */
 
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
-import { featureDevChat } from '../../constants'
+import { CodeReference } from '../../../amazonq/webview/ui/connector'
+import { featureDevChat, licenseText } from '../../constants'
 import { ChatItemType } from '../../models'
 import { ChatItemFollowUp, SourceLink } from '@aws/mynah-ui-chat'
 
@@ -28,17 +29,43 @@ export class ErrorMessage extends UiMessage {
     }
 }
 
-export class FilePathMessage extends UiMessage {
+export class CodeResultMessage extends UiMessage {
     readonly filePaths!: string[]
     readonly deletedFiles!: string[]
     readonly message!: string
+    readonly references!: {
+        information: string
+        recommendationContentSpan: {
+            start: number
+            end: number
+        }
+    }[]
     readonly conversationID!: string
-    override type = 'filePathMessage'
+    override type = 'codeResultMessage'
 
-    constructor(filePaths: string[], deletedFiles: string[], tabID: string, conversationID: string) {
+    constructor(
+        filePaths: string[],
+        deletedFiles: string[],
+        references: CodeReference[],
+        tabID: string,
+        conversationID: string
+    ) {
         super(tabID)
         this.filePaths = filePaths
         this.deletedFiles = deletedFiles
+        this.references = references
+            .filter(ref => ref.licenseName && ref.repository && ref.url)
+            .map(ref => {
+                return {
+                    information: licenseText(ref),
+
+                    // We're forced to provide these otherwise mynah ui errors somewhere down the line. Though they aren't used
+                    recommendationContentSpan: {
+                        start: 0,
+                        end: 0,
+                    },
+                }
+            })
         this.conversationID = conversationID
     }
 }
@@ -124,7 +151,7 @@ export class AppToWebViewMessageDispatcher {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 
-    public sendFilePaths(message: FilePathMessage) {
+    public sendCodeResult(message: CodeResultMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 

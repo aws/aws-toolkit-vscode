@@ -16,6 +16,7 @@ import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
+import { CodeReference } from '../../amazonq/webview/ui/connector'
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
@@ -218,10 +219,20 @@ export class FeatureDevClient {
             }
 
             const {
-                code_generation_result: { new_file_contents: newFiles = [], deleted_files: deletedFiles = [] },
+                code_generation_result: {
+                    new_file_contents: newFiles = [],
+                    deleted_files: deletedFiles = [],
+                    references = [],
+                },
             } = JSON.parse(new TextDecoder().decode(Buffer.from(buffer))) as {
                 // eslint-disable-next-line @typescript-eslint/naming-convention
-                code_generation_result: { new_file_contents?: Record<string, string>; deleted_files?: string[] }
+                code_generation_result: {
+                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                    new_file_contents?: Record<string, string>
+                    // eslint-disable-next-line @typescript-eslint/naming-convention
+                    deleted_files?: string[]
+                    references?: CodeReference[]
+                }
             }
 
             const newFileContents: { filePath: string; fileContent: string }[] = []
@@ -229,7 +240,7 @@ export class FeatureDevClient {
                 newFileContents.push({ filePath, fileContent })
             }
 
-            return { newFileContents, deletedFiles }
+            return { newFileContents, deletedFiles, references }
         } catch (e) {
             getLogger().error(
                 `${featureName}: failed to export archive result: ${(e as Error).message} RequestId: ${
