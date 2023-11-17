@@ -90,11 +90,6 @@ function getWebviewContent(webview: vscode.Webview): string {
             >
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
-            body {
-                height: 100vh;
-                overflow: hidden;
-                position: relative;
-            }
             body.vscode-light #bg {
                 content: url(${bgLogoLight});
                 opacity: 0.05;
@@ -109,8 +104,11 @@ function getWebviewContent(webview: vscode.Webview): string {
             body.vscode-dark #codewhispererLogo {
                 content: url(${cwLogoDark})
             }
+            body {
+                height: 100vh;
+            }
             #bg {
-                position: absolute;
+                position: fixed;
                 left: 70%;
                 top: -10%;
                 overflow: hidden;
@@ -126,59 +124,86 @@ function getWebviewContent(webview: vscode.Webview): string {
                 font-size: 20px;
                 padding: 0.5em 1em;
                 text-align: center;
+                cursor: pointer;
+            }
+            #wrapper {
+                height: 100%;
+                width: 100%;
+                min-width: 600px;
+                overflow-y: auto;
+                overflow-x: auto;
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
             }
             #content {
-                margin: auto;
-                width: 50%;
-                text-align: center;
-                width: 800px;
-                transform: translateY(30vh);
+                max-width: 550px;
+                padding: 30px;
+                display: flex;
+                flex-direction: column;
+                gap: 30px;
+                align-items: center;
             }
             #codewhisperer {
-                padding-left: 15%;
-                text-align: left;
-                padding-right: 15%;
-                margin-top: 50px;
-            }
-            #codewhisperer div{
-                float: left;
-                margin-left: 1em;
-                padding: 1em;
+                display: flex;
+                align-items: center;
+                flex-direction: row;
+                gap: 40px;
+                flex-wrap: nowrap;
             }
             #codewhisperer div p {
                 margin: 0px;
                 font-size: 12pt;
             }
             #qLogo {
-                width: 10%
+                width: 70px
             }
             #imageContainer {
                 width: 40px;
                 height: auto;
+                flex-shrink: 0;
+                flex-grow: 0;
+            }
+            #textWrapper {
+                flex-shrink: 1;
+                flex-grow: 1;
             }
             #header {
-                width: 60%; 
-                margin: 50px auto;
+                text-align: center;
+                margin: 0;
             }
             a {
                 cursor: pointer;
+            }
+            .spacingrow {
+                display: flex;
+                flex-direction: row;
+                gap: 40px;
+                flex-wrap: nowrap;
             }
             </style>
         </head>
         <body>
             <img id="bg">
-            <div id="content">
-                <img id="qLogo" src="${logo}"/>
-                <h1 id="header">Amazon Q (Preview) is a generative AI-powered conversational assistant.</h1>
-                <div id="buttonContainer">
-                    <button id="sendToQButton">"What can Q help me with?"</button>
-                </div>
-                <div id="codewhisperer">
-                    <div id="imageContainer">
-                        <img id="codewhispererLogo"/>
+            <div id="wrapper">
+                <div id="content">
+                    <img id="qLogo" src="${logo}"/>
+                    <h1 id="header">Amazon Q is a generative AI-powered conversational assistant.</h1>
+                    <div id="buttonContainer">
+                        <button id="sendToQButton">Ask Amazon Q a question to get started</button>
                     </div>
-                    <div id="textWrapper">
-                        <p>Inline suggestions powered by CodeWhisperer are enabled.<br><a id="goToHelpLink">Try Examples</a></p>
+                    <!-- spacing -->
+                    <div class="spacingrow"> </div>
+                    <div class="spacingrow"> </div>
+                    <!-- end spacing -->
+                    <div id="codewhisperer">
+                        <div id="imageContainer">
+                            <img id="codewhispererLogo"/>
+                        </div>
+                        <div id="textWrapper">
+                            <p>Inline suggestions powered by CodeWhisperer are enabled.<br><a id="goToHelpLink">Try it</a></p>
+                        </div>
                     </div>
                 </div>
             </div>

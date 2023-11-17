@@ -6,7 +6,7 @@
 import { Event as VSCodeEvent } from 'vscode'
 import { EditorContextExtractor } from '../../editor/context/extractor'
 import { ChatSessionStorage } from '../../storages/chatSession'
-import { Messenger } from './messenger/messenger'
+import { Messenger, StaticTextResponseType } from './messenger/messenger'
 import {
     PromptMessage,
     ChatTriggerType,
@@ -23,6 +23,7 @@ import {
     UIFocusMessage,
     SourceLinkClickMessage,
     ResponseBodyLinkClickMessage,
+    ChatPromptCommandType,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -42,7 +43,7 @@ import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhisper
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 
 export interface ChatControllerMessagePublishers {
@@ -193,6 +194,33 @@ export class ChatController {
         this.openLinkInExternalBrowser(click)
     }
 
+    private processQuickActionCommand(quickActionCommand: ChatPromptCommandType) {
+        this.editorContextExtractor
+            .extractContextForTrigger('QuickAction')
+            .then(context => {
+                const triggerID = randomUUID()
+
+                this.messenger.sendQuickActionMessage(quickActionCommand, triggerID)
+
+                this.triggerEventsStorage.addTriggerEvent({
+                    id: triggerID,
+                    tabID: undefined,
+                    message: undefined,
+                    type: 'quick_action',
+                    quickAction: quickActionCommand,
+                    context,
+                })
+
+                if (quickActionCommand === 'help') {
+                    this.generateStaticTextResponse('help', triggerID)
+                    return
+                }
+            })
+            .catch(e => {
+                this.processException(e, '')
+            })
+    }
+
     private processOnboardingPageInteraction(interaction: OnboardingPageInteraction) {
         this.editorContextExtractor
             .extractContextForTrigger('OnboardingPageInteraction')
@@ -211,6 +239,11 @@ export class ChatController {
                     context,
                     onboardingPageInteraction: interaction,
                 })
+
+                if (interaction.type === 'onboarding-page-cwc-button-clicked') {
+                    this.generateStaticTextResponse('help', triggerID)
+                    return
+                }
 
                 this.generateResponse(
                     {
@@ -419,10 +452,16 @@ export class ChatController {
     }
 
     private async processCommandMessage(message: PromptMessage) {
-        if (message.command === 'clear') {
-            this.sessionStorage.deleteSession(message.tabID)
-            this.triggerEventsStorage.removeTabEvents(message.tabID)
+        if (message.command === undefined) {
             return
+        }
+        switch (message.command) {
+            case 'clear':
+                this.sessionStorage.deleteSession(message.tabID)
+                this.triggerEventsStorage.removeTabEvents(message.tabID)
+                return
+            default:
+                this.processQuickActionCommand(message.command)
         }
     }
 
@@ -496,6 +535,36 @@ export class ChatController {
             })
     }
 
+    private async generateStaticTextResponse(responseType: StaticTextResponseType, triggerID: string) {
+        // Loop while we waiting for tabID to be set
+        const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
+        if (triggerEvent === undefined) {
+            return
+        }
+
+        if (triggerEvent.tabID === 'no-available-tabs') {
+            return
+        }
+
+        if (triggerEvent.tabID === undefined) {
+            setTimeout(() => {
+                this.generateStaticTextResponse(responseType, triggerID)
+            }, 20)
+            return
+        }
+
+        const tabID = triggerEvent.tabID
+
+        const credentialsState = getChatAuthState()
+
+        if (credentialsState.codewhispererChat !== 'connected' && credentialsState.codewhispererCore !== 'connected') {
+            this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
+            return
+        }
+
+        this.messenger.sendStaticTextResponse(responseType, triggerID, tabID)
+    }
+
     private async generateResponse(triggerPayload: TriggerPayload, triggerID: string) {
         // Loop while we waiting for tabID to be set
         const triggerEvent = this.triggerEventsStorage.getTriggerEvent(triggerID)
@@ -516,9 +585,11 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = await AuthUtil.instance.getCodeWhispererCredentialState()
+        const credentialsState = getChatAuthState()
 
-        if (credentialsState !== undefined) {
+        if (
+            !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
+        ) {
             this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
             return
         }

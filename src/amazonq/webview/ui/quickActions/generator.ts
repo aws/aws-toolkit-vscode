@@ -7,44 +7,35 @@ import { QuickActionCommandGroup } from '@aws/mynah-ui-chat/dist/static'
 import { TabType } from '../storages/tabsStorage'
 
 export interface QuickActionGeneratorProps {
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
 }
 
 export class QuickActionGenerator {
-    private isWeaverbirdEnabled: boolean
+    private isFeatureDevEnabled: boolean
     private isGumbyEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isFeatureDevEnabled = props.isFeatureDevEnabled
         this.isGumbyEnabled = props.isGumbyEnabled
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
         switch (tabType) {
-            case 'wb':
+            case 'featuredev':
                 return []
             default:
                 return [
-                    ...(this.isWeaverbirdEnabled
+                    ...(this.isFeatureDevEnabled
                         ? [
                               {
-                                  groupName: 'Project-level Application Development by Q',
+                                  groupName: 'Application Development',
                                   commands: [
                                       {
-                                          command: '/tests',
-                                          placeholder: 'Let Q write tests for your project',
-                                          description: 'Let Q write tests for your project',
-                                      },
-                                      {
                                           command: '/dev',
-                                          placeholder: 'Describe a new feature or improvement',
-                                          description: 'Describe a new feature or improvement',
-                                      },
-                                      {
-                                          command: '/fix',
-                                          placeholder: 'Fix an issue across your project',
-                                          description: 'Fix an issue across your project',
+                                          placeholder: 'Briefly describe a task or issue',
+                                          description:
+                                              'Use all project files as context for code suggestions (increases latency).',
                                       },
                                   ],
                               },
@@ -64,6 +55,10 @@ export class QuickActionGenerator {
                         : []),
                     {
                         commands: [
+                            {
+                                command: '/help',
+                                description: 'Learn more about Amazon Q',
+                            },
                             {
                                 command: '/clear',
                                 description: 'Clear this session',

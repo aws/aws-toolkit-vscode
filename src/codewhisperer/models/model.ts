@@ -219,7 +219,7 @@ enum TransformByQStatus {
     Cancelled = 'Cancelled', // if user manually cancels
     Failed = 'Failed', // if job is rejected or if any other error experienced; user will receive specific error message
     Succeeded = 'Succeeded',
-    PartiallySucceeded = 'Partially Succeeded'
+    PartiallySucceeded = 'Partially Succeeded',
 }
 
 export enum StepProgress {
@@ -390,7 +390,28 @@ export interface CodeScanTelemetryEntry {
     result: Result
     reason?: string
     codewhispererCodeScanTotalIssues: number
+    codewhispererCodeScanIssuesWithFixes: number
     credentialStartUrl: string | undefined
+}
+
+export interface RecommendationDescription {
+    text: string
+    markdown: string
+}
+
+export interface Recommendation {
+    text: string
+    url: string
+}
+
+export interface SuggestedFix {
+    description: string
+    code: string
+}
+
+export interface Remediation {
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
 }
 
 export interface RawCodeScanIssue {
@@ -398,16 +419,28 @@ export interface RawCodeScanIssue {
     startLine: number
     endLine: number
     title: string
-    description: {
-        text: string
-        markdown: string
-    }
+    description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    findingId: string
+    relatedVulnerabilities: string[]
+    severity: string
+    remediation: Remediation
 }
 
 export interface CodeScanIssue {
     startLine: number
     endLine: number
     comment: string
+    title: string
+    description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    findingId: string
+    relatedVulnerabilities: string[]
+    severity: string
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
 }
 
 export interface AggregatedCodeScanIssue {

@@ -5,14 +5,22 @@
 
 import path from 'path'
 import { Uri, Webview } from 'vscode'
-import { gumbyEnabled, weaverbirdEnabled } from '../../../weaverbird/config'
+import { gumbyEnabled, featureDevEnabled } from '../../../amazonqFeatureDev/config'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
     public generate(extensionURI: Uri, webView: Webview): string {
+        const entrypoint = process.env.WEBPACK_DEVELOPER_SERVER
+            ? 'http: localhost'
+            : 'https: *.vscode-resources.vscode-cdn.net'
+
+        const contentPolicy = `default-src ${entrypoint} data: blob: 'unsafe-inline';
+        script-src ${entrypoint} filesystem: ws: wss: 'unsafe-inline';`
+
         return `<!DOCTYPE html>
         <html>
             <head>
+                <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>                
                 ${this.generateJS(extensionURI, webView)}                
             </head>
@@ -37,7 +45,7 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(${weaverbirdEnabled && AuthUtil.instance.isEnterpriseSsoInUse()}, ${
+                createMynahUI(acquireVsCodeApi(), ${featureDevEnabled && AuthUtil.instance.isEnterpriseSsoInUse()}, ${
             gumbyEnabled && AuthUtil.instance.isEnterpriseSsoInUse()
         });
             }

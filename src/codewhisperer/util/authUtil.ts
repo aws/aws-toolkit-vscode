@@ -22,7 +22,7 @@ import {
     isBuilderIdConnection,
     scopesSsoAccountAccess,
     scopesCodeWhispererChat,
-    scopesWeaverbird,
+    scopesFeatureDev,
     scopesGumby,
     isIdcSsoConnection,
 } from '../../auth/connection'
@@ -31,7 +31,7 @@ import { getLogger } from '../../shared/logger'
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
 export const codeWhispererChatScopes = [...codeWhispererCoreScopes, ...scopesCodeWhispererChat]
-export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesWeaverbird]
+export const amazonQScopes = [...codeWhispererChatScopes, ...scopesGumby, ...scopesFeatureDev]
 
 export const awsBuilderIdSsoProfile = createBuilderIdProfile(codeWhispererChatScopes)
 
@@ -130,7 +130,7 @@ export class AuthUtil {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
                 if (shouldShow) {
                     prompts.disablePrompt('amazonQWelcomePage')
-                    vscode.commands.executeCommand('aws.amazonq.welcome')
+                    await vscode.commands.executeCommand('aws.amazonq.welcome')
                 }
             }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
@@ -327,46 +327,6 @@ export class AuthUtil {
     public async notifyReauthenticate(isAutoTrigger?: boolean) {
         this.showReauthenticatePrompt(isAutoTrigger)
     }
-
-    /**
-     * Determines whether or not the current CodeWhisperer credential is active or not, with a display message.
-     *
-     * @returns a credentialState with a display message and whether to run a full authorization or reauth,
-     *          or undefined if the credential is valid.
-     */
-    public async getCodeWhispererCredentialState(): Promise<CWCredentialState | undefined> {
-        const auth = AuthUtil.instance
-        const curr = auth.conn
-        if (!curr) {
-            return {
-                message: 'No connection to Amazon Q (Preview). Sign into CodeWhisperer.',
-                fullAuth: true,
-            }
-        } else if (!isValidAmazonQConnection(curr)) {
-            return {
-                message:
-                    'Existing Amazon Q (Preview) connection does not have required scopes. Sign into CodeWhisperer.',
-                fullAuth: true,
-            }
-        } else if (auth.isConnectionExpired()) {
-            return {
-                message: 'Connection to Amazon Q (Preview) has expired. Reauthorize with CodeWhisperer.',
-                fullAuth: false,
-            }
-        } else if (!auth.isConnectionValid()) {
-            return {
-                message: 'Connection to Amazon Q (Preview) is invalid. Reauthorize with CodeWhisperer.',
-                fullAuth: false,
-            }
-        }
-
-        return undefined
-    }
-}
-
-export type CWCredentialState = {
-    message: string
-    fullAuth: boolean
 }
 
 /**

@@ -64,7 +64,7 @@ describe('codewhisperer children nodes', function () {
 
         assert.strictEqual(node.resource.id, 'aws.codeWhisperer.freeTierLimit')
     })
-      
+
     it('builds the selectCustomization command node', function () {
         const node = createSelectCustomization('tree')
 

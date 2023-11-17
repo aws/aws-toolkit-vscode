@@ -38,7 +38,7 @@ export class Connector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
-        this.followUpGenerator = new FollowUpGenerator({ isWeaverbirdEnabled: false })
+        this.followUpGenerator = new FollowUpGenerator()
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -182,6 +182,15 @@ export class Connector {
         this.sendMessageToExtension({
             tabID: tabID,
             command: 'clear',
+            chatMessage: '',
+            tabType: 'cwc',
+        })
+    }
+
+    help = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'help',
             chatMessage: '',
             tabType: 'cwc',
         })

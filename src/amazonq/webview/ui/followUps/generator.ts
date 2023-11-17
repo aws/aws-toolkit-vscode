@@ -7,27 +7,29 @@ import { MynahIcons } from '@aws/mynah-ui-chat'
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpsBlock } from './model'
 
-export type AuthFollowUpType = 'full-auth' | 're-auth'
-
-export interface FollowUpGeneratorProps {
-    isWeaverbirdEnabled: boolean
-}
+export type AuthFollowUpType = 'full-auth' | 're-auth' | 'missing_scopes'
 
 export class FollowUpGenerator {
-    private isWeaverbirdEnabled: boolean
-
-    constructor(props: FollowUpGeneratorProps) {
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
-    }
-
     public generateAuthFollowUps(tabType: TabType, authType: AuthFollowUpType): FollowUpsBlock {
+        let pillText
+        switch (authType) {
+            case 'full-auth':
+                pillText = 'Authenticate'
+                break
+            case 'missing_scopes':
+                pillText = 'Enable Amazon Q'
+                break
+            case 're-auth':
+                pillText = 'Re-authenticate'
+                break
+        }
         switch (tabType) {
             default:
                 return {
                     text: '',
                     options: [
                         {
-                            pillText: authType === 'full-auth' ? 'Authenticate' : 'Re-Authenticate',
+                            pillText: pillText,
                             type: authType,
                             status: 'info',
                             icon: 'refresh' as MynahIcons,
@@ -39,10 +41,14 @@ export class FollowUpGenerator {
 
     public generateWelcomeBlockForTab(tabType: TabType): FollowUpsBlock {
         switch (tabType) {
-            case 'wb':
+            case 'featuredev':
                 return {
                     text: 'Would you like to follow up with',
                     options: [
+                        {
+                            pillText: 'What are some examples of how I can use /dev?',
+                            type: 'DevExamples',
+                        },
                         {
                             pillText: 'Modify source folder',
                             type: 'ModifyDefaultSourceFolder',
@@ -51,19 +57,16 @@ export class FollowUpGenerator {
                 }
             default:
                 return {
-                    text: 'Or you can select one of these',
+                    text: 'Try Examples:',
                     options: [
-                        ...(this.isWeaverbirdEnabled
-                            ? [
-                                  {
-                                      pillText: 'I want to assign a code task',
-                                      type: 'assign-code-task',
-                                  },
-                              ]
-                            : []),
                         {
-                            pillText: 'I have a software development question',
-                            type: 'continue-to-chat',
+                            pillText: 'Explain selected code',
+                            prompt: 'Explain selected code',
+                            type: 'init-prompt',
+                        },
+                        {
+                            pillText: 'How can Amazon Q help me?',
+                            type: 'help',
                         },
                     ],
                 }

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { CodewhispererCodeScanIssueApplyFix, Component, telemetry } from '../../shared/telemetry/telemetry'
 import { ExtContext } from '../../shared/extensions'
 import { Commands, VsCodeCommandArg } from '../../shared/vscode/commands2'
 import * as CodeWhispererConstants from '../models/constants'
@@ -12,7 +12,7 @@ import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startSecurityScan'
 import { startTransformByQWithProgress, confirmStopTransformByQ } from './startTransformByQ'
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
-import { CodeSuggestionsState, codeScanState, transformByQState } from '../models/model'
+import { CodeScanIssue, codeScanState, CodeSuggestionsState, transformByQState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
 import { showConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
@@ -26,6 +26,10 @@ import {
     selectCustomization,
     showCustomizationPrompt,
 } from '../util/customizationUtil'
+import { applyPatch } from 'diff'
+import { closeSecurityIssueWebview, showSecurityIssueWebview } from '../views/securityIssue/securityIssueWebview'
+import { FileSystemCommon } from '../../srcShared/fs'
+import { Mutable } from '../../shared/utilities/tsUtils'
 import { CodeWhispererSource } from './types'
 import { showManageConnections } from '../../auth/ui/vue/show'
 
@@ -91,24 +95,30 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const showTransformByQ = Commands.declare({ id: 'aws.awsq.transform', compositeKey: { 0: 'source' } }, (context: ExtContext) => async (source: string) => {
-    if (AuthUtil.instance.isConnectionExpired()) {
-        await AuthUtil.instance.notifyReauthenticate()
-    }
+export const showTransformByQ = Commands.declare(
+    { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
+    (context: ExtContext) => async (source: string) => {
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate()
+        }
 
-    if (transformByQState.isNotStarted()) {
-        startTransformByQWithProgress()
-    } else if (transformByQState.isCancelled()) {
-        vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
-    } else if (transformByQState.isRunning()) {
-        await confirmStopTransformByQ(transformByQState.getJobId())
+        if (transformByQState.isNotStarted()) {
+            startTransformByQWithProgress()
+        } else if (transformByQState.isCancelled()) {
+            vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
+        } else if (transformByQState.isRunning()) {
+            await confirmStopTransformByQ(transformByQState.getJobId())
+        }
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     }
-    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-})
+)
 
-export const showTransformationHub = Commands.declare({ id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } }, () => async (source: string) => {
-    await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
-})
+export const showTransformationHub = Commands.declare(
+    { id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    }
+)
 
 export const selectCustomizationPrompt = Commands.declare(
     { id: 'aws.codeWhisperer.selectCustomization', compositeKey: { 1: 'source' } },
@@ -212,6 +222,13 @@ export const updateReferenceLog = Commands.declare(
     }
 )
 
+export const openSecurityIssuePanel = Commands.declare(
+    'aws.codeWhisperer.openSecurityIssuePanel',
+    (context: ExtContext) => (issue: CodeScanIssue, filePath: string) => {
+        showSecurityIssueWebview(context.extensionContext, issue, filePath)
+    }
+)
+
 export const notifyNewCustomizationsCmd = Commands.declare(
     { id: 'aws.codeWhisperer.notifyNewCustomizations', logging: false },
     () => () => {
@@ -219,6 +236,59 @@ export const notifyNewCustomizationsCmd = Commands.declare(
     }
 )
 
+export const applySecurityFix = Commands.declare(
+    'aws.codeWhisperer.applySecurityFix',
+    () => async (issue: CodeScanIssue, filePath: string, source: Component) => {
+        const [suggestedFix] = issue.suggestedFixes
+        if (!suggestedFix || !filePath) {
+            return
+        }
+
+        const applyFixTelemetryEntry: Mutable<CodewhispererCodeScanIssueApplyFix> = {
+            detectorId: issue.detectorId,
+            findingId: issue.findingId,
+            component: source,
+            result: 'Succeeded',
+        }
+
+        try {
+            const patch = suggestedFix.code
+            const document = await vscode.workspace.openTextDocument(filePath)
+            const fileContent = document.getText()
+
+            const updatedContent = applyPatch(fileContent, patch)
+            if (!updatedContent) {
+                vscode.window.showErrorMessage(CodeWhispererConstants.codeFixAppliedFailedMessage)
+                throw Error('Failed to get updated content from applying diff patch')
+            }
+
+            // saving the document text if not save
+            const isSaved = await document.save()
+            if (!isSaved) {
+                throw Error('Failed to save editor text changes into the file.')
+            }
+
+            // writing the patch applied version of document into the file
+            await FileSystemCommon.instance.writeFile(filePath, updatedContent)
+            vscode.window
+                .showInformationMessage(CodeWhispererConstants.codeFixAppliedSuccessMessage, {
+                    title: CodeWhispererConstants.runSecurityScanButtonTitle,
+                })
+                .then(res => {
+                    if (res?.title === CodeWhispererConstants.runSecurityScanButtonTitle) {
+                        vscode.commands.executeCommand('aws.codeWhisperer.security.scan')
+                    }
+                })
+            closeSecurityIssueWebview(issue.findingId)
+        } catch (err) {
+            getLogger().error(`Apply fix command failed. ${err}`)
+            applyFixTelemetryEntry.result = 'Failed'
+            applyFixTelemetryEntry.reason = err as string
+        } finally {
+            telemetry.codewhisperer_codeScanIssueApplyFix.emit(applyFixTelemetryEntry)
+        }
+    }
+)
 /**
  * Forces focus to Amazon Q panel - USE THIS SPARINGLY (don't betray customer trust by hijacking the IDE)
  * Used on first load, and any time we want to directly populate chat.

@@ -13,7 +13,7 @@ export interface QuickActionsHandlerProps {
     mynahUI: MynahUI
     connector: Connector
     tabsStorage: TabsStorage
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
 }
 
@@ -22,30 +22,27 @@ export class QuickActionHandler {
     private connector: Connector
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
-    private isWeaverbirdEnabled: boolean
+    private isFeatureDevEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
         this.tabDataGenerator = new TabDataGenerator({
-            isWeaverbirdEnabled: props.isWeaverbirdEnabled,
+            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
         })
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isFeatureDevEnabled = props.isFeatureDevEnabled
     }
 
     public handle(chatPrompt: ChatPrompt, tabID: string) {
         this.tabsStorage.resetTabTimer(tabID)
         switch (chatPrompt.command) {
             case '/dev':
-                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
+                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
                 break
-            case '/tests':
-                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Tests', '/tests')
-                break
-            case '/fix':
-                this.handleWeaverbirdCommand(chatPrompt, tabID, 'Q - Fix', '/fix')
+            case '/help':
+                this.handleHelpCommand(tabID)
                 break
             case '/transform':
                 this.handleGumbyCommand(tabID)
@@ -67,8 +64,17 @@ export class QuickActionHandler {
         this.connector.clearChat(tabID)
     }
 
-    private handleWeaverbirdCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {
-        if (!this.isWeaverbirdEnabled) {
+    private handleHelpCommand(tabID: string) {
+        // User entered help action, so change the tab type to 'cwc' if it's an unknown tab
+        if (this.tabsStorage.getTab(tabID)?.type === 'unknown') {
+            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+        }
+
+        this.connector.help(tabID)
+    }
+
+    private handleFeatureDevCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {
+        if (!this.isFeatureDevEnabled) {
             return
         }
 
@@ -84,14 +90,14 @@ export class QuickActionHandler {
             })
             return
         } else {
-            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'wb')
+            this.tabsStorage.updateTabTypeFromUnknown(affectedTabId, 'featuredev')
             this.connector.onKnownTabOpen(affectedTabId)
             this.connector.onUpdateTabType(affectedTabId)
 
             this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
             this.mynahUI.updateStore(
                 affectedTabId,
-                this.tabDataGenerator.getTabData('wb', realPromptText === '', taskName, commandName)
+                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName, commandName)
             )
 
             if (realPromptText !== '') {

@@ -40,6 +40,7 @@ export class UIMessageListener {
             case 'onboarding-page-interaction':
                 this.processOnboardingPageInteraction(msg)
                 break
+            case 'help':
             case 'clear':
             case 'chat-prompt':
                 this.processChatMessage(msg)
@@ -147,7 +148,7 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
-        this.referenceLogController.addReferenceLog(msg.codeReference)
+        this.referenceLogController.addReferenceLog(msg.codeReference, (msg.code as string) ?? '')
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
             tabID: msg.tabID,
