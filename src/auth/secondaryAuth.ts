@@ -157,13 +157,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
     /**
      * Globally deletes the connection that this secondary auth is using,
      * effectively doing a signout.
-     *
-     * The deletion automatically propogates to the other users of this
-     * connection, assuming they've configured the event listeners.
      */
     public async deleteConnection() {
         if (this.activeConnection) {
             await this.auth.deleteConnection(this.activeConnection)
+            await this.clearSavedConnection()
         }
     }
 
