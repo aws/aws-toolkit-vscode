@@ -19,12 +19,12 @@ import {
     reconnect,
     selectCustomizationPrompt,
     signoutCodeWhisperer,
+    showManageCwConnections,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
 import { codeScanState } from '../models/model'
 import { getNewCustomizationAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource, cwTreeNodeSource } from '../commands/types'
-import { showManageConnections, showManageCwConnections } from '../../auth/ui/vue/show'
 
 export function createAutoSuggestions(type: 'item', pause: boolean): DataQuickPickItem<'autoSuggestions'>
 export function createAutoSuggestions(type: 'tree', pause: boolean): TreeNode<Command>
@@ -122,7 +122,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
 
     switch (type) {
         case 'tree':
-            return showManageConnections.build(placeholder, cwTreeNodeSource, 'codewhisperer').asTreeNode({
+            return showManageCwConnections.build(placeholder, cwTreeNodeSource).asTreeNode({
                 label: label,
                 iconPath: icon,
             })
@@ -130,7 +130,7 @@ export function createSignIn(type: 'item' | 'tree'): any {
             return {
                 data: 'signIn',
                 label: codicon`${icon} ${label}`,
-                onClick: () => showManageCwConnections(cwQuickPickSource),
+                onClick: () => showManageCwConnections.execute(placeholder, cwQuickPickSource),
             } as DataQuickPickItem<'signIn'>
     }
 }

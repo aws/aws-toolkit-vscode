@@ -48,7 +48,7 @@ import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../share
 import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
-import { CodeWhispererSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
+import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 import { throttle } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
@@ -723,11 +723,6 @@ export const showManageConnections = Commands.declare(
         return showAuthWebview(context, source, serviceToShow)
     }
 )
-
-/** Opens the Add Connections webview with CW highlighted */
-export const showManageCwConnections = (source: CodeWhispererSource) => {
-    showManageConnections.execute(placeholder, source, 'codewhisperer')
-}
 
 async function showAuthWebview(
     ctx: vscode.ExtensionContext,
