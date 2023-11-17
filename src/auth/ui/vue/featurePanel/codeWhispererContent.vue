@@ -1,53 +1,48 @@
 <template>
-    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">Amazon CodeWhisperer</div>
+    <div class="feature-panel-container border-common">
+        <div class="feature-panel-container-upper">
+            <div class="feature-panel-container-title">Amazon CodeWhisperer</div>
 
-        <div class="centered-items">
-            <img
-                class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
-                alt="CodeWhisperer example GIF"
-            />
-        </div>
+            <div class="centered-items">
+                <img
+                    class="service-item-content-image"
+                    src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
+                    alt="CodeWhisperer example GIF"
+                />
+            </div>
 
-        <div>
-            Amazon CodeWhisperer is an AI coding companion that generates whole line and full function code suggestions
-            in your IDE in real-time, to help you quickly write secure code.
-        </div>
-
-        <div>
-            <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
-                >Learn more about CodeWhisperer.</a
-            >
+            <div class="feature-panel-container-description">
+                An AI coding companion that generates code suggestions as you type.
+                <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
+                    >Learn more.</a
+                >
+            </div>
         </div>
 
         <hr />
 
-        <div class="service-item-content-form-section">
-            <div class="codewhisperer-content-form-container">
+        <div class="feature-panel-form-container" :key="authFormContainerKey" v-show="isAllAuthsLoaded">
+            <div class="feature-panel-form-section">
                 <BuilderIdForm
                     :state="builderIdState"
                     @auth-connection-updated="onAuthConnectionUpdated"
                 ></BuilderIdForm>
 
                 <div>
-                    <div
-                        v-on:click="toggleIdentityCenterShown"
-                        style="cursor: pointer; display: flex; flex-direction: row"
-                    >
-                        <div style="font-weight: bold; font-size: medium" :class="collapsibleClass"></div>
+                    <div v-on:click="toggleIdentityCenterShown" class="collapsible-title">
                         <div>
-                            <div style="font-weight: bold; font-size: 14px">
-                                Have a Professional Tier subscription? Sign in with IAM Identity Center.
-                            </div>
                             <div>
-                                Professional Tier offers administrative capabilities for organizations of developers.
+                                <div :class="collapsibleClass" style="height: 0"></div>
+                                Have a Professional Tier subscription?
                             </div>
-                            <a
-                                href="https://aws.amazon.com/codewhisperer/pricing/"
-                                v-on:click="uiClick('auth_learnMoreProfessionalTierCodeWhisperer')"
-                                >Learn more.</a
-                            >
+                            <div class="collapsible-description" style="margin-left: 1.3rem">
+                                Sign in with IAM Identity Center (SSO)
+                                <a
+                                    class="icon icon-lg icon-vscode-question"
+                                    href="https://aws.amazon.com/codewhisperer/pricing/"
+                                    v-on:click="uiClick('auth_learnMoreProfessionalTierCodeWhisperer')"
+                                ></a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -76,19 +71,29 @@ import { AuthUiClick, AuthWebview } from '../show'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
+function initialData() {
+    return {
+        isLoaded: {
+            builderIdCodeWhisperer: false,
+            identityCenterCodeWhisperer: false,
+        } as Record<AuthFormId, boolean>,
+        isAllAuthsLoaded: false,
+        isIdentityCenterShown: false,
+    }
+}
+
 export default defineComponent({
     name: 'CodeWhispererContent',
     components: { BuilderIdForm, IdentityCenterForm },
     extends: BaseServiceItemContent,
     data() {
-        return {
-            isAllAuthsLoaded: false,
-            isLoaded: {
-                builderIdCodeWhisperer: false,
-                identityCenterCodeWhisperer: false,
-            } as Record<AuthFormId, boolean>,
-            isIdentityCenterShown: false,
-        }
+        return initialData()
+    },
+    created() {
+        this.refreshPanel()
+        client.onDidConnectionChangeCodeWhisperer(() => {
+            this.refreshPanel()
+        })
     },
     computed: {
         builderIdState(): CodeWhispererBuilderIdState {
@@ -103,6 +108,11 @@ export default defineComponent({
         },
     },
     methods: {
+        async refreshPanel() {
+            Object.assign(this.$data, initialData())
+            this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
+            this.refreshAuthFormContainer()
+        },
         updateIsAllAuthsLoaded() {
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded
@@ -140,12 +150,4 @@ export class CodeWhispererContentState extends FeatureStatus {
 <style>
 @import './baseServiceItemContent.css';
 @import '../shared.css';
-
-.codewhisperer-content-form-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    justify-content: center;
-    align-items: left;
-}
 </style>
