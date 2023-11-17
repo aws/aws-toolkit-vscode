@@ -116,6 +116,8 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
             0
         )
         this._latestMessage = ''
+
+        telemetry.amazonq_isApproachAccepted.emit({ amazonqConversationId: this.conversationId, enabled: true })
     }
 
     async send(msg: string | undefined): Promise<Interaction> {
