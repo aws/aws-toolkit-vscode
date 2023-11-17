@@ -365,29 +365,23 @@ describe('', async function () {
 
         it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
             // no idea why this one doesn't work, the second inline suggestion will not be shown
-            this.skip()
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
-            await sleep(2000) // see if we can use waitUntil to replace it
             await typing(editor, 'H')
-            await sleep(2000) // see if we can use waitUntil to replace it
-            // await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'H')
 
-            await manualTrigger(editor, client, config)
-            await sleep(5000)
-            // await waitUntilSuggestionSeen()
+            const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
+            await manualTrigger(anotherEditor, client, config)
+            await waitUntilSuggestionSeen()
             await acceptByTab()
-
-            // TODO: any better way to do this with waitUntil()?
-            // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
-            await sleep(vsCodeCursorUpdateDelay + 10)
+            assert.strictEqual(anotherEditor.document.getText(), 'Baz')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
-                session2UserTriggerEvent({ codewhispererCursorOffset: 3 }),
+                session2UserTriggerEvent(),
             ])
         })
     })
