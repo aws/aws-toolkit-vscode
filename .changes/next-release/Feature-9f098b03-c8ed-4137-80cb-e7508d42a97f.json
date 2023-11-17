@@ -1,4 +1,0 @@
-{
-	"type": "Feature",
-	"description": "Don't show \"invalid settings.json\" message if settings.json is valid but unwritable"
-}
