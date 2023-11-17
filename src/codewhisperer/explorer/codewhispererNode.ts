@@ -19,7 +19,7 @@ import {
 } from './codewhispererChildrenNodes'
 import { Command, Commands } from '../../shared/vscode/commands2'
 import { RootNode } from '../../awsexplorer/localExplorer'
-import { hasVendedIamCredentials } from '../../auth/auth'
+import { isCloud9 } from '../../shared/extensionUtilities'
 import { AuthUtil } from '../util/authUtil'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { DataQuickPickItem } from '../../shared/ui/pickerPrompter'
@@ -63,13 +63,9 @@ export class CodeWhispererNode implements RootNode {
 
     private getDescription(): string {
         if (AuthUtil.instance.isConnectionValid()) {
-            if (AuthUtil.instance.isEnterpriseSsoInUse()) {
-                return 'IAM Identity Center Connected'
-            } else if (AuthUtil.instance.isBuilderIdInUse()) {
-                return 'AWS Builder ID Connected'
-            } else {
-                return 'IAM Connected'
-            }
+            return AuthUtil.instance.isEnterpriseSsoInUse()
+                ? 'IAM Identity Center Connected'
+                : 'AWS Builder ID Connected'
         } else if (AuthUtil.instance.isConnectionExpired()) {
             return 'Expired Connection'
         }
@@ -89,13 +85,13 @@ export class CodeWhispererNode implements RootNode {
                 return [createSignIn(type), createLearnMore(type)]
             }
             if (this._showFreeTierLimitReachedNode) {
-                if (hasVendedIamCredentials()) {
+                if (isCloud9()) {
                     return [createFreeTierLimitMet(type), createOpenReferenceLog(type)]
                 } else {
                     return [createFreeTierLimitMet(type), createSecurityScan(type), createOpenReferenceLog(type)]
                 }
             } else {
-                if (hasVendedIamCredentials()) {
+                if (isCloud9()) {
                     return [createAutoSuggestions(type, autoTriggerEnabled), createOpenReferenceLog(type)]
                 } else {
                     if (
@@ -123,7 +119,7 @@ export class CodeWhispererNode implements RootNode {
         const children = _getChildren()
 
         // Add 'Sign Out' to quick pick if user is connected
-        if (AuthUtil.instance.isConnected() && type === 'item' && !hasVendedIamCredentials()) {
+        if (AuthUtil.instance.isConnected() && type === 'item' && !isCloud9()) {
             return [...children, createSeparator(), createSignout('item')]
         }
 

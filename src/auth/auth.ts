@@ -53,7 +53,6 @@ import {
     loadLinkedProfilesIntoStore,
     ssoAccountAccessScopes,
 } from './connection'
-import { isSageMaker, isCloud9 } from '../shared/extensionUtilities'
 
 interface AuthService {
     /**
@@ -780,16 +779,4 @@ export class Auth implements AuthService, ConnectionManager {
             ? localizedText.builderId()
             : `${localizedText.iamIdentityCenter} (${truncatedUrl})`
     }
-}
-/**
- * Returns true if credentials are provided by the environment (ex. via ~/.aws/)
- *
- * @param isC9 boolean for if Cloud9 is host
- * @param isSM boolean for if SageMaker is host
- * @returns boolean for if C9 "OR" SM
- */
-export function hasVendedIamCredentials(isC9?: boolean, isSM?: boolean) {
-    isC9 ??= isCloud9()
-    isSM ??= isSageMaker()
-    return isSM || isC9
 }

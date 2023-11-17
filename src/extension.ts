@@ -27,7 +27,6 @@ import {
     getToolkitEnvironmentDetails,
     initializeComputeRegion,
     isCloud9,
-    isSageMaker,
     showQuickStartWebview,
     showWelcomeMessage,
 } from './shared/extensionUtilities'
@@ -215,10 +214,7 @@ export async function activate(context: vscode.ExtensionContext) {
             })
         )
 
-        // do not enable codecatalyst for sagemaker
-        if (!isSageMaker()) {
-            await codecatalyst.activate(extContext)
-        }
+        await codecatalyst.activate(extContext)
 
         await activateCloudFormationTemplateRegistry(context)
 

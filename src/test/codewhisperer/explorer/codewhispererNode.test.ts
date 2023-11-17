@@ -44,7 +44,6 @@ describe('codewhispererNode', function () {
 
         it('should create a node showing AWS Builder ID connection', function () {
             sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => true)
-            sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').resolves(true)
             isConnectionValid.returns(true)
 
             const node = codewhispererNode
@@ -53,20 +52,6 @@ describe('codewhispererNode', function () {
             assert.strictEqual(treeItem.label, 'CodeWhisperer')
             assert.strictEqual(treeItem.contextValue, 'awsCodeWhispererNodeSaved')
             assert.strictEqual(treeItem.description, 'AWS Builder ID Connected')
-            assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
-        })
-
-        it('should create a node showing IAM connection', function () {
-            sinon.stub(AuthUtil.instance, 'isUsingSavedConnection').get(() => true)
-            //sinon.stub(AuthUtil.instance, 'isBuilderIdInUse').resolves(false)
-            isConnectionValid.returns(true)
-
-            const node = codewhispererNode
-            const treeItem = node.getTreeItem()
-
-            assert.strictEqual(treeItem.label, 'CodeWhisperer')
-            assert.strictEqual(treeItem.contextValue, 'awsCodeWhispererNodeSaved')
-            assert.strictEqual(treeItem.description, 'IAM Connected')
             assert.strictEqual(treeItem.collapsibleState, vscode.TreeItemCollapsibleState.Collapsed)
         })
 
