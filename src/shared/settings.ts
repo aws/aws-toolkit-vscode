@@ -16,6 +16,9 @@ import { ToolkitError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
+/** Used by isValid(). Must be something that's defined in our package.json. */
+const testSetting = 'aws.samcli.lambdaTimeout'
+
 /**
  * A class for manipulating VS Code user settings (from all extensions).
  *
@@ -86,39 +89,46 @@ export class Settings {
     }
 
     /**
-     * Checks that the user `settings.json` works correctly. #3910
+     * Checks that user `settings.json` actually works. #3910
      *
-     * Note: This checks that we can actually _write_ settings. vscode notifies the user if
-     * settings.json is complete nonsense, but is silent if there are only "recoverable" JSON syntax
-     * errors.
+     * Note: This checks that we can actually "roundtrip" (read and write) settings. vscode notifies
+     * the user if settings.json is complete nonsense, but silently fails if there are only
+     * "recoverable" JSON syntax errors.
      */
-    public async isValid(): Promise<boolean> {
-        const key = 'aws.samcli.lambdaTimeout'
+    public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
+        const key = testSetting
         const config = this.getConfig()
+        const tempValOld = 1234 // Legacy temp value we are migrating from.
+        const tempVal = 91234 // Temp value used to check that read/write works.
         const defaultVal = settingsProps[key].default
 
         try {
-            const oldVal = config.get<number>(key)
-            // Try to write to settings.json.
-            await config.update(key, 1234, this.updateTarget)
-            // Restore the old value, if any.
-            if (oldVal === undefined || defaultVal === oldVal) {
-                // vscode will return the default even if there was no entry in settings.json.
-                // Avoid polluting the user's settings.json unnecessarily.
+            const userVal = config.get<number>(key)
+            // Try to write a temporary "sentinel" value to settings.json.
+            await config.update(key, tempVal, this.updateTarget)
+            if (userVal === undefined || [defaultVal, tempValOld, tempVal].includes(userVal)) {
+                // Avoid polluting the user's settings.json.
                 await config.update(key, undefined, this.updateTarget)
             } else {
-                await config.update(key, oldVal, this.updateTarget)
+                // Restore the user's actual setting value.
+                await config.update(key, userVal, this.updateTarget)
             }
 
-            return true
+            return 'ok'
         } catch (e) {
-            getLogger().warn(
-                'settings: invalid "settings.json" file? failed to update "%s": %s',
-                key,
-                (e as Error).message
-            )
+            const err = e as Error
+            // If anything tries to update an unwritable settings.json, vscode will thereafter treat
+            // it as an "unsaved" file. #4043
+            if (err.message.includes('EACCES') || err.message.includes('the file has unsaved changes')) {
+                const logMsg = 'settings: unwritable settings.json: %s'
+                getLogger().warn(logMsg, err.message)
+                return 'nowrite'
+            }
 
-            return false
+            const logMsg = 'settings: invalid settings.json: %s'
+            getLogger().error(logMsg, err.message)
+
+            return 'invalid'
         }
     }
 
@@ -379,7 +389,9 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 }
 
                 for (const key of props.filter(isDifferent)) {
-                    this.log('key "%s" changed', key)
+                    if (`${section}.${key}` !== testSetting) {
+                        this.log('key "%s" changed', key)
+                    }
                     emitter.fire({ key })
                 }
             })
