@@ -32,7 +32,7 @@ type CodeWhispererResponse = ListRecommendationsResponse & {
 
 let tempFolder: string
 
-describe('', async function () {
+describe('CodeWhisperer telemetry', async function () {
     let sandbox: sinon.SinonSandbox
     let client: DefaultCodeWhispererClient
 
