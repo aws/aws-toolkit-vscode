@@ -8,10 +8,10 @@ import { CodeReference } from '../connector/connector'
 import { ReferenceLogViewProvider } from '../../../codewhisperer/service/referenceLogViewProvider'
 
 export class ReferenceLogController {
-    public addReferenceLog(codeReference: CodeReference[] | undefined) {
+    public addReferenceLog(codeReference: CodeReference[] | undefined, code: string) {
         const editor = window.activeTextEditor
         if (codeReference !== undefined && editor !== undefined) {
-            const referenceLog = ReferenceLogViewProvider.getReferenceLog('', codeReference, editor)
+            const referenceLog = ReferenceLogViewProvider.getReferenceLog(code, codeReference, editor)
             ReferenceLogViewProvider.instance.addReferenceLog(referenceLog)
         }
     }
