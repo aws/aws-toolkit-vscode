@@ -121,7 +121,7 @@ describe('', async function () {
             'request_id_1',
             'fake-nextToken',
             { content: 'Foo' },
-            { content: 'Bar\n\nBar' }
+            { content: 'Bar\nBar' }
         )
         const response12 = aResponse('session_id_1', 'request_id_1_2', undefined, { content: 'FooFoo' })
         const response2 = aResponse(
@@ -331,7 +331,7 @@ describe('', async function () {
             await waitUntilSuggestionSeen()
             await navigateNext()
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Bar\n\nBar')
+            assert.strictEqual(editor.document.getText(), `Bar${os.EOL}Bar`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
