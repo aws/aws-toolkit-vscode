@@ -563,6 +563,7 @@ async function waitUntilSuggestionSeen(index: number = 0) {
     )
 
     assert.ok(state === 'Showed')
+    await sleep(50)
 }
 
 async function acceptByTab() {
@@ -594,7 +595,7 @@ async function typing(editor: vscode.TextEditor, s: string) {
     }
     // waitUntilSuggestionSeen doesn't work for this
     // see if we can find another way to wait
-    await sleep(2000)
+    await sleep(100)
 }
 
 async function backsapce(editor: vscode.TextEditor) {
