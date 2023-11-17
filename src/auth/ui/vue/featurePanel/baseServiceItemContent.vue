@@ -1,5 +1,5 @@
 <template>
-    <div class="service-item-content-container border-common">Must Be Implemented</div>
+    <div class="feature-panel-container border-common">Must Be Implemented</div>
 </template>
 
 <script lang="ts">
@@ -19,9 +19,18 @@ export default defineComponent({
             required: true,
         },
     },
+    data() {
+        return {
+            authFormContainerKey: 0,
+        }
+    },
     methods: {
         emitAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
             this.$emit('auth-connection-updated', id, args)
+        },
+        /** Refreshes the element that has the ":key=authFormContainerKey" attribute set */
+        refreshAuthFormContainer() {
+            this.authFormContainerKey++
         },
     },
 })

@@ -575,7 +575,7 @@ export async function hasIamCredentials(
     return (await allConnections()).some(isIamConnection)
 }
 
-export type SsoKind = 'any' | 'codewhisperer'
+export type SsoKind = 'any' | 'codewhisperer' | 'codecatalyst'
 
 /**
  * Returns true if an Identity Center SSO connection exists.
@@ -599,6 +599,11 @@ async function findSsoConnections(
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
                 return isIdcSsoConnection(conn) && isValidCodeWhispererConnection(conn)
+            }
+            break
+        case 'codecatalyst':
+            predicate = (conn?: Connection) => {
+                return isIdcSsoConnection(conn) && isValidCodeCatalystConnection(conn)
             }
             break
         case 'any':

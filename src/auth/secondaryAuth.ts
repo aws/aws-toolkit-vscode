@@ -105,8 +105,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
             ) {
                 await this.clearSavedConnection()
             } else {
+                const currentConn = this.activeConnection
                 this.#activeConnection = conn
-                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+                if (currentConn?.id !== this.activeConnection?.id) {
+                    // The user will get a different active connection from before, so notify them.
+                    this.#onDidChangeActiveConnection.fire(this.activeConnection)
+                }
             }
         }
 
