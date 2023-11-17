@@ -263,12 +263,7 @@ describe('', async function () {
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'F')
-            // await sleep(2000) // see if we can use waitUntil to replace it
             await acceptByTab()
-
-            // TODO: any better way to do this with waitUntil()?
-            // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
-            await sleep(vsCodeCursorUpdateDelay + 10)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
