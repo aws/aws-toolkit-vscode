@@ -252,13 +252,8 @@ export async function prepareDevEnvConnection(
 export async function openDevEnv(
     client: CodeCatalystClient,
     devenv: DevEnvironmentId,
-    targetPath?: string,
-    onBeforeConnect?: () => Promise<void>
+    targetPath?: string
 ): Promise<void> {
-    if (onBeforeConnect) {
-        await onBeforeConnect()
-    }
-
     const env = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
 
     if (!targetPath) {
