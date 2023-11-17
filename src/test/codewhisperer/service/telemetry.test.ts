@@ -112,21 +112,21 @@ describe('', async function () {
     }
 
     function mockClient(): DefaultCodeWhispererClient {
-        const response1_1 = aResponse(
+        const response11 = aResponse(
             'session_id_1',
             'request_id_1',
             'fake-nextToken',
             { content: 'Foo' },
             { content: 'Bar' }
         )
-        const response1_2 = aResponse('session_id_1', 'request_id_1_2', undefined, { content: 'FooFoo' })
+        const response12 = aResponse('session_id_1', 'request_id_1_2', undefined, { content: 'FooFoo' })
         const response2 = aResponse('session_id_2', 'request_id_2', undefined, { content: 'Baz' })
         const response3 = aResponse('session_id_3', 'request_id_3', undefined, { content: 'Qoo' })
 
         const cwClient = new DefaultCodeWhispererClient()
         const stub = sandbox.stub(cwClient, 'listRecommendations')
-        stub.onCall(0).resolves(response1_1)
-        stub.onCall(1).resolves(response1_2)
+        stub.onCall(0).resolves(response11)
+        stub.onCall(1).resolves(response12)
         stub.onCall(2).resolves(response2)
         stub.onCall(3).resolves(response3)
 
