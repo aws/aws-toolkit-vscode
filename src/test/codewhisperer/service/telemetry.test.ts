@@ -564,7 +564,6 @@ async function waitUntilSuggestionSeen(index: number = 0) {
     )
 
     assert.ok(state === 'Showed')
-    await sleep(50)
 }
 
 async function acceptByTab() {
