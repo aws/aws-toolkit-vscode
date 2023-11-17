@@ -97,7 +97,7 @@ class CodeWhispererStatusBarWidget(project: Project) :
         } else if (CodeWhispererInvocationStatus.getInstance().hasExistingInvocation()) {
             AnimatedIcon.Default()
         } else {
-            AllIcons.Actions.Commit
+            AllIcons.General.InspectionsOK
         }
 
     companion object {
