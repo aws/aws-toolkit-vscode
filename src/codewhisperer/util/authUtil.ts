@@ -27,6 +27,7 @@ import {
     isIdcSsoConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
+import { getMemento } from '../../shared/utilities/mementos'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -73,6 +74,7 @@ export class AuthUtil {
     private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
+    private readonly mementoKey: string = 'hasAlreadySeenQWelcome'
 
     public get isCustomizationFeatureEnabled(): boolean {
         return this._isCustomizationFeatureEnabled
@@ -122,14 +124,14 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
-            const prompts = PromptSettings.instance
 
-            const shouldShow = await prompts.isPromptEnabled('amazonQWelcomePage')
+            const memento = getMemento()
+            const shouldShow = memento.get(this.mementoKey)
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-                if (shouldShow) {
-                    prompts.disablePrompt('amazonQWelcomePage')
+                if (!shouldShow) {
+                    memento.update(this.mementoKey, true)
                     await vscode.commands.executeCommand('aws.amazonq.welcome')
                 }
             }

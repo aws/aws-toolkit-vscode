@@ -315,7 +315,7 @@ export class Messenger {
         let message = ''
         switch (quickAction) {
             case 'help':
-                message = 'What can Amazon Q (Preview) help me with?'
+                message = 'What can Amazon Q help me with?'
                 break
         }
 
@@ -331,7 +331,7 @@ export class Messenger {
         let message
         switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
-                message = 'What can Amazon Q (Preview) help me with?'
+                message = 'What can Amazon Q help me with?'
                 break
         }
 

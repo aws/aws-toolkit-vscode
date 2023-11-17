@@ -25,7 +25,7 @@ import { asString, CredentialsId, CredentialsProvider, fromString } from './prov
 import { once } from '../shared/utilities/functionUtils'
 import { CredentialsSettings } from './credentials/utils'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
-import { partition } from '../shared/utilities/mementos'
+import { getMemento } from '../shared/utilities/mementos'
 import { SsoCredentialsProvider } from './providers/ssoCredentialsProvider'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { join, toStream } from '../shared/utilities/collectionUtils'
@@ -754,23 +754,6 @@ export class Auth implements AuthService, ConnectionManager {
     static #instance: Auth | undefined
     public static get instance() {
         return (this.#instance ??= new Auth(new ProfileStore(getMemento())))
-
-        function getMemento() {
-            if (!vscode.env.remoteName) {
-                // local compute: no further partitioning
-                return globals.context.globalState
-            }
-
-            const devEnvId = getCodeCatalystDevEnvId()
-
-            if (devEnvId !== undefined) {
-                // dev env: partition to dev env ID (compute backend might not always be the same)
-                return partition(globals.context.globalState, devEnvId)
-            }
-
-            // remote env: keeps a shared "global state" for all workspaces that report the same machine ID
-            return partition(globals.context.globalState, globals.machineId)
-        }
     }
 
     private getSsoProfileLabel(profile: SsoProfile) {
