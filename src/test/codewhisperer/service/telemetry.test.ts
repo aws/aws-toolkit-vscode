@@ -537,11 +537,12 @@ async function manualTrigger(
     await invokeRecommendation(editor, client, config)
 }
 
+// Note: RecommendationHandler.isSuggestionVisible seems not to work well, hence not using it
 async function waitUntilSuggestionSeen(index: number = 0) {
-    await waitUntil(
+    const state = await waitUntil(
         async () => {
-            const r = RecommendationHandler.instance.isSuggestionVisible()
-            if (r === true) {
+            const r = session.getSuggestionState(index)
+            if (r) {
                 return r
             }
         },
@@ -550,7 +551,7 @@ async function waitUntilSuggestionSeen(index: number = 0) {
         }
     )
 
-    assert.ok(RecommendationHandler.instance.isSuggestionVisible())
+    assert.ok(state === 'Showed')
 }
 
 async function acceptByTab() {
