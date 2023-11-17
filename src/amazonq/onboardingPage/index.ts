@@ -202,7 +202,7 @@ function getWebviewContent(webview: vscode.Webview): string {
                             <img id="codewhispererLogo"/>
                         </div>
                         <div id="textWrapper">
-                            <p>Inline suggestions powered by CodeWhisperer are enabled.<br><a id="goToHelpLink">Try it</a></p>
+                            <p>CodeWhisperer inline suggestions are also enabled.<br><a id="goToHelpLink">Try it</a></p>
                         </div>
                     </div>
                 </div>
