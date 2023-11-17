@@ -17,17 +17,17 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
-    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptAnswer,
     PromptMessage,
+    ResponseBodyLinkClickMessage,
+    SourceLinkClickMessage,
     TriggerPayload,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
-import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
 import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
 import CodeWhispererUserClient, { Dimension } from '../../../codewhisperer/client/codewhispereruserclient'
 import { isAwsError } from '../../../shared/errors'
@@ -144,7 +144,13 @@ export class CWCTelemetryHelper {
     }
 
     public recordInteractWithMessage(
-        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage | ClickLink
+        message:
+            | InsertCodeAtCursorPosition
+            | CopyCodeToClipboard
+            | PromptMessage
+            | ChatItemVotedMessage
+            | SourceLinkClickMessage
+            | ResponseBodyLinkClickMessage
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: CodewhispererchatInteractWithMessage | undefined
@@ -188,12 +194,21 @@ export class CWCTelemetryHelper {
                 }
                 break
             case 'link-was-clicked':
-                message = message as ClickLink
+                message = message as SourceLinkClickMessage
                 event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: 'clickLink',
-                    cwsprChatInteractionTarget: message.url,
+                    cwsprChatInteractionTarget: message.link,
+                }
+                break
+            case 'body-link-was-clicked':
+                message = message as ResponseBodyLinkClickMessage
+                event = {
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatInteractionType: 'clickBodyLink',
+                    cwsprChatInteractionTarget: message.link,
                 }
                 break
         }

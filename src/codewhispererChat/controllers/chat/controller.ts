@@ -178,21 +178,16 @@ export class ChatController {
     }
 
     private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage) {
-        this.telemetryHelper.recordInteractWithMessage({
-            command: 'link-was-clicked',
-            tabID: click.tabID,
-            messageId: click.messageId,
-            url: click.link,
-        })
+        this.telemetryHelper.recordInteractWithMessage(click)
         ExternalBrowserUtils.instance.openLink(click.link)
     }
 
     private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
-        this.openLinkInExternalBrowser(click)
+        this.openLinkInExternalBrowser({ ...click, command: 'body-link-was-clicked' })
     }
 
     private processSourceLinkClick(click: SourceLinkClickMessage) {
-        this.openLinkInExternalBrowser(click)
+        this.openLinkInExternalBrowser({ ...click, command: 'link-was-clicked' })
     }
 
     private processQuickActionCommand(quickActionCommand: ChatPromptCommandType) {
