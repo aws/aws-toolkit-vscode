@@ -18,6 +18,8 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.LatencyContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.TriggerTypeInfo
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.CodeWhispererAutomatedTriggerType
@@ -40,23 +42,36 @@ class CodeWhispererServiceTest {
 
     private lateinit var sut: CodeWhispererService
     private lateinit var userGroupSetting: CodeWhispererUserGroupSettings
+    private lateinit var customizationConfig: CodeWhispererModelConfigurator
 
     @Before
     fun setUp() {
         sut = CodeWhispererService.getInstance()
         userGroupSetting = mock()
+        customizationConfig = mock()
 
         ApplicationManager.getApplication().replaceService(CodeWhispererUserGroupSettings::class.java, userGroupSetting, disposableRule.disposable)
     }
 
     @Test
-    fun `getRequestContext - cross file context should be non-null for cross-file user group`() {
+    fun `getRequestContext should have supplementalContext and customizatioArn if they're present`() {
         whenever(userGroupSetting.getUserGroup()).thenReturn(CodeWhispererUserGroup.CrossFile)
+        whenever(customizationConfig.activeCustomization(projectRule.project)).thenReturn(
+            CodeWhispererCustomization(
+                "fake-arn",
+                "fake-name",
+                ""
+            )
+        )
+
         val mockFileContextProvider = mock<FileContextProvider> {
             on { this.extractFileContext(any(), any()) } doReturn aFileContextInfo()
             onBlocking { this.extractSupplementalFileContext(any(), any()) } doThrow TimeoutCancellationException::class
         }
+
         projectRule.project.replaceService(FileContextProvider::class.java, mockFileContextProvider, disposableRule.disposable)
+        ApplicationManager.getApplication().replaceService(CodeWhispererModelConfigurator::class.java, customizationConfig, disposableRule.disposable)
+
         val file = projectRule.fixture.addFileToProject("main.java", "public class Main {}")
         runInEdtAndWait {
             projectRule.fixture.openFileInEditor(file.virtualFile)
@@ -70,6 +85,7 @@ class CodeWhispererServiceTest {
             LatencyContext()
         )
 
+        assertThat(actual.customizationArn).isEqualTo("fake-arn")
         actual.supplementalContext.let {
             assertThat(it).isNotNull
             assertThat(it?.isProcessTimeout)

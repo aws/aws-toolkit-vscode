@@ -241,6 +241,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                     it.timestamp(Instant.now())
                     it.suggestionReferenceCount(suggestionReferenceCount)
                     it.generatedLine(lineCount)
+                    it.customizationArn(requestContext.customizationArn)
                 }
             }
             requestBuilder.optOutPreference(getTelemetryOptoutPreference())
