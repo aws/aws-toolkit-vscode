@@ -9,11 +9,7 @@
 
 // export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
-// export const endpoint = 'https://rts-641299012133.test.codewhisperer.ai.aws.dev/' // alpha IAD
-
-// export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/' // gamma IAD
-
-export const endpoint = 'https://rts-171763828851.test.codewhisperer.ai.aws.dev/' // gamma PDX
+export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/' // gamma IAD
 
 export const region = 'us-east-1'
 

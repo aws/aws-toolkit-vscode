@@ -75,9 +75,13 @@ export async function set(key: string, value: any, context: vscode.Memento): Pro
     )
 }
 
-export function checkKeyWords(content: string) {
-    return (
-        !AWSTemplateKeyWords.some(substring => content.includes(substring)) &&
-        !AWSTemplateCaseInsensitiveKeyWords.some(substring => content.toLowerCase().includes(substring))
-    )
+export function checkLeftContextKeywordsForJsonAndYaml(leftFileContent: string, language: string): boolean {
+    if (
+        (language === 'json' || language === 'yaml') &&
+        !AWSTemplateKeyWords.some(substring => leftFileContent.includes(substring)) &&
+        !AWSTemplateCaseInsensitiveKeyWords.some(substring => leftFileContent.toLowerCase().includes(substring))
+    ) {
+        return true
+    }
+    return false
 }
