@@ -200,7 +200,7 @@ describe('', async function () {
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'FooBaz\nBaz')
+            assert.strictEqual(normalizeLineBreaker(editor.document.getText()), 'FooBaz\nBaz')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             assertSessionClean()
@@ -286,13 +286,13 @@ describe('', async function () {
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Baz\nBaz')
+            assert.strictEqual(normalizeLineBreaker(editor.document.getText()), 'Baz\nBaz')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), 'Baz\nBaz')
+            assert.strictEqual(normalizeLineBreaker(editor.document.getText()), 'Baz\nBaz')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -478,7 +478,7 @@ describe('', async function () {
             await manualTrigger(anotherEditor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
-            assert.strictEqual(anotherEditor.document.getText(), 'Baz\nBaz')
+            assert.strictEqual(normalizeLineBreaker(anotherEditor.document.getText()), 'Baz\nBaz')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -539,6 +539,10 @@ describe('', async function () {
         })
     })
 })
+
+function normalizeLineBreaker(s: string) {
+    return s.replace(/\r\n/g, '\n')
+}
 
 async function manualTrigger(
     editor: vscode.TextEditor,
