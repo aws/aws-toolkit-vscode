@@ -205,6 +205,7 @@ export class FeatureDevController {
                 type: 'answer-stream',
                 tabID,
             })
+            this.messenger.sendUpdatePlaceholder(tabID, 'Writing code ...')
             await session.send(message)
             const filePaths = session.state.filePaths ?? []
             const deletedFiles = session.state.deletedFiles ?? []
@@ -245,6 +246,7 @@ export class FeatureDevController {
                 followUps: this.getFollowUpOptions(session?.state.phase),
                 tabID: tabID,
             })
+            this.messenger.sendUpdatePlaceholder(tabID, 'Select an option above to proceed')
         } finally {
             // Finish processing the event
             this.messenger.sendAsyncEventProgress(tabID, false, undefined)
@@ -270,11 +272,9 @@ export class FeatureDevController {
     private async writeCodeClicked(message: any) {
         let session
         try {
-            this.messenger.sendUpdatePlaceholder(message.tabID, 'Writing code ...')
             session = await this.sessionStorage.getSession(message.tabID)
             session.initCodegen()
             await this.onCodeGeneration(session, undefined, message.tabID)
-            this.messenger.sendUpdatePlaceholder(message.tabID, 'Select an option above to proceed')
         } catch (err: any) {
             const errorMessage = createUserFacingErrorMessage(
                 `${featureName} request failed: ${err.cause?.message ?? err.message}`
@@ -308,6 +308,14 @@ export class FeatureDevController {
     private async provideFeedbackAndRegenerateCode(message: any) {
         // Unblock the message button
         this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
+
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: 'How can the code be improved?',
+        })
+
+        this.messenger.sendUpdatePlaceholder(message.tabID, 'Feedback, comments ...')
     }
 
     private async retryRequest(message: any) {
