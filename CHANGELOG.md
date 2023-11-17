@@ -1,3 +1,7 @@
+# _1.87_ (2023-11-10)
+- **(Bug Fix)** Fix issue where images in 'Authenticate' panel do not show up
+- **(Deprecation)** An upcoming release will remove support for JetBrains Gateway version 2023.2 and for for IDEs based on the 2022.3 platform
+
 # _1.86_ (2023-11-08)
 - **(Feature)** Added the 'Setup Authentication for AWS Toolkit' page
 - **(Feature)** Added 2023.3 support

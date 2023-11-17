@@ -1,0 +1,8 @@
+{
+  "date" : "2023-11-17",
+  "version" : "1.88",
+  "entries" : [ {
+    "type" : "bugfix",
+    "description" : "Fix issue where the toolkit calls the wrong CodeCatalyst service endpoint"
+  } ]
+}
