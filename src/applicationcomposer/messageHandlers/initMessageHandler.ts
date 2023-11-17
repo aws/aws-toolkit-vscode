@@ -5,6 +5,7 @@
 
 import path from 'path'
 import { InitResponseMessage, MessageType, WebviewContext, Command } from '../types'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
 
 export function initMessageHandler(context: WebviewContext) {
     const filePath = context.defaultTemplatePath
@@ -13,6 +14,7 @@ export function initMessageHandler(context: WebviewContext) {
         command: Command.INIT,
         templateFileName: path.basename(filePath),
         templateFilePath: filePath,
+        isConnectedToCodeWhisperer: AuthUtil.instance.isConnected(),
     }
 
     context.panel.webview.postMessage(responseMessage)
