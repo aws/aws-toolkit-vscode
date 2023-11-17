@@ -42,7 +42,9 @@ export class ConversationNotStartedState implements Omit<SessionState, 'uploadId
     }
 
     async interact(_action: SessionStateAction): Promise<SessionStateInteraction> {
-        throw new ToolkitError('Illegal transition between states, restart the conversation')
+        throw new ToolkitError('Illegal transition between states, restart the conversation', {
+            code: 'IllegalStateTransition',
+        })
     }
 }
 
@@ -207,18 +209,18 @@ abstract class CodeGenBase {
                 case 'predict-failed':
                 case 'debate-failed':
                 case 'Failed': {
-                    throw new ToolkitError('Code generation failed')
+                    throw new ToolkitError('Code generation failed', { code: 'CodeGenFailed' })
                 }
                 default: {
                     const errorMessage = `Unknown status: ${codegenResult.codeGenerationStatus.status}\n`
-                    throw new ToolkitError(errorMessage)
+                    throw new ToolkitError(errorMessage, { code: 'UnknownCodeGenError' })
                 }
             }
         }
         if (!this.tokenSource.token.isCancellationRequested) {
             // still in progress
             const errorMessage = 'Code generation did not finish withing the expected time'
-            throw new ToolkitError(errorMessage)
+            throw new ToolkitError(errorMessage, { code: 'CodeGenTimeout' })
         }
         return {
             newFiles: [],
