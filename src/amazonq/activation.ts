@@ -12,7 +12,7 @@ import { featureDevEnabled } from '../amazonqFeatureDev/config'
 import { Commands } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
-import { learnMoreAmazonQCommand, runQTransformCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
+import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
 import { focusAmazonQPanel } from '../codewhisperer/commands/basicCommands'
 
 export async function activate(context: ExtensionContext) {
@@ -40,7 +40,6 @@ export async function activate(context: ExtensionContext) {
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
     learnMoreAmazonQCommand.register()
     switchToAmazonQCommand.register()
-    runQTransformCommand.register()
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

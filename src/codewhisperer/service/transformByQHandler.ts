@@ -211,8 +211,8 @@ export async function zipCode(modulePath: string) {
 }
 
 export async function startJob(uploadId: string) {
-    const sourceLanguageVersion = 'JAVA_' + transformByQState.getSourceJDKVersion()
-    const targetLanguageVersion = 'JAVA_' + transformByQState.getTargetJDKVersion()
+    const sourceLanguageVersion = `JAVA_${transformByQState.getSourceJDKVersion()}`
+    const targetLanguageVersion = `JAVA_${transformByQState.getTargetJDKVersion()}`
     const response = await codeWhisperer.codeWhispererClient.codeModernizerStartCodeTransformation({
         workspaceState: {
             uploadId: uploadId,
@@ -256,6 +256,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         status = response.transformationJob.status!
         if (validStates.includes(status)) {
             break
+        }
+        if (CodeWhispererConstants.failureStates.includes(status)) {
+            throw new Error('Job failed, not going to retrieve plan')
         }
         await sleep(CodeWhispererConstants.transformationJobPollingIntervalSeconds * 1000)
         timer += CodeWhispererConstants.transformationJobPollingIntervalSeconds

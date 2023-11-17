@@ -9,7 +9,7 @@ import { KeyStrokeHandler } from './service/keyStrokeHandler'
 import * as EditorContext from './util/editorContext'
 import * as CodeWhispererConstants from './models/constants'
 import { getCompletionItems } from './service/completionProvider'
-import { vsCodeState, ConfigurationEntry, CodeSuggestionsState, transformByQState } from './models/model'
+import { vsCodeState, ConfigurationEntry, CodeSuggestionsState } from './models/model'
 import { invokeRecommendation } from './commands/invokeRecommendation'
 import { acceptSuggestion } from './commands/onInlineAcceptance'
 import { resetIntelliSenseState } from './util/globalStateUtil'
@@ -26,7 +26,6 @@ import {
     toggleCodeSuggestions,
     showReferenceLog,
     showSecurityScan,
-    showTransformByQ,
     showLearnMore,
     showSsoSignIn,
     showFreeTierLimit,
@@ -38,17 +37,14 @@ import {
     notifyNewCustomizationsCmd,
     connectWithCustomization,
     applySecurityFix,
-    showTransformationHub,
     signoutCodeWhisperer,
     showManageCwConnections,
 } from './commands/basicCommands'
-import { confirmStopTransformByQ, startTransformByQWithProgress } from './commands/startTransformByQ'
 import { sleep } from '../shared/utilities/timeoutUtils'
 import { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
 import { ReferenceHoverProvider } from './service/referenceHoverProvider'
 import { ReferenceInlineProvider } from './service/referenceInlineProvider'
 import { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
-import { TransformationHubViewProvider } from './service/transformationHubViewProvider'
 import { disposeSecurityDiagnostic } from './service/diagnosticsProvider'
 import { RecommendationHandler } from './service/recommendationHandler'
 import { Commands, registerCommandsWithVSCode } from '../shared/vscode/commands2'
@@ -90,11 +86,6 @@ export async function activate(context: ExtContext): Promise<void> {
      */
     const securityPanelViewProvider = new SecurityPanelViewProvider(context.extensionContext)
     activateSecurityScan()
-
-    /**
-     * CodeWhisperer transformation hub
-     */
-    const transformationHubViewProvider = new TransformationHubViewProvider()
 
     /**
      * Service control
@@ -189,34 +180,9 @@ export async function activate(context: ExtContext): Promise<void> {
         enableCodeSuggestions.register(context),
         // code scan
         showSecurityScan.register(context, securityPanelViewProvider, client),
+
         // show security issue webview panel
         openSecurityIssuePanel.register(context),
-        // transform by Q
-        showTransformByQ.register(context),
-
-        showTransformationHub.register(),
-
-        vscode.window.registerWebviewViewProvider('aws.codeWhisperer.transformationHub', transformationHubViewProvider),
-
-        Commands.register('aws.codeWhisperer.startTransformationInHub', async () => {
-            await startTransformByQWithProgress()
-        }),
-
-        Commands.register('aws.codeWhisperer.stopTransformationInHub', async () => {
-            if (transformByQState.isRunning()) {
-                confirmStopTransformByQ(transformByQState.getJobId())
-            } else {
-                vscode.window.showInformationMessage(CodeWhispererConstants.noOngoingJobMessage)
-            }
-        }),
-
-        Commands.register('aws.codeWhisperer.showHistoryInHub', async () => {
-            transformationHubViewProvider.updateContent('job history')
-        }),
-
-        Commands.register('aws.codeWhisperer.showPlanProgressInHub', async () => {
-            transformationHubViewProvider.updateContent('plan progress')
-        }),
 
         // sign in with sso or AWS ID
         showSsoSignIn.register(),

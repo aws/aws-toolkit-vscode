@@ -95,24 +95,30 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
-export const showTransformByQ = Commands.declare('aws.awsq.transform', (context: ExtContext) => async () => {
-    if (AuthUtil.instance.isConnectionExpired()) {
-        await AuthUtil.instance.notifyReauthenticate()
-    }
+export const showTransformByQ = Commands.declare(
+    { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
+    (context: ExtContext) => async (source: string) => {
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.notifyReauthenticate()
+        }
 
-    if (transformByQState.isNotStarted()) {
-        startTransformByQWithProgress()
-    } else if (transformByQState.isCancelled()) {
-        vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
-    } else if (transformByQState.isRunning()) {
-        await confirmStopTransformByQ(transformByQState.getJobId())
+        if (transformByQState.isNotStarted()) {
+            startTransformByQWithProgress()
+        } else if (transformByQState.isCancelled()) {
+            vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
+        } else if (transformByQState.isRunning()) {
+            await confirmStopTransformByQ(transformByQState.getJobId())
+        }
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     }
-    await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-})
+)
 
-export const showTransformationHub = Commands.declare('aws.codeWhisperer.showTransformationHub', () => async () => {
-    await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
-})
+export const showTransformationHub = Commands.declare(
+    { id: 'aws.amazonq.showTransformationHub', compositeKey: { 0: 'source' } },
+    () => async (source: string) => {
+        await vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    }
+)
 
 export const selectCustomizationPrompt = Commands.declare(
     { id: 'aws.codeWhisperer.selectCustomization', compositeKey: { 1: 'source' } },

@@ -219,6 +219,7 @@ enum TransformByQStatus {
     Cancelled = 'Cancelled', // if user manually cancels
     Failed = 'Failed', // if job is rejected or if any other error experienced; user will receive specific error message
     Succeeded = 'Succeeded',
+    PartiallySucceeded = 'Partially Succeeded',
 }
 
 export enum StepProgress {
@@ -254,6 +255,8 @@ export class TransformByQState {
 
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
+    private planFilePath: string = ''
+
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
     }
@@ -274,6 +277,10 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.Succeeded
     }
 
+    public isPartiallySucceeded() {
+        return this.transformByQState === TransformByQStatus.PartiallySucceeded
+    }
+
     public getJobId() {
         return this.jobId
     }
@@ -288,6 +295,10 @@ export class TransformByQState {
 
     public getStatus() {
         return this.transformByQState
+    }
+
+    public getPlanFilePath() {
+        return this.planFilePath
     }
 
     public setToNotStarted() {
@@ -310,6 +321,10 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.Succeeded
     }
 
+    public setToPartiallySucceeded() {
+        this.transformByQState = TransformByQStatus.PartiallySucceeded
+    }
+
     public setJobId(id: string) {
         this.jobId = id
     }
@@ -324,6 +339,10 @@ export class TransformByQState {
 
     public setTargetJDKVersionToJDK17() {
         this.targetJDKVersion = JDKVersion.JDK17
+    }
+
+    public setPlanFilePath(filePath: string) {
+        this.planFilePath = filePath
     }
 
     public getPrefixTextForButton() {

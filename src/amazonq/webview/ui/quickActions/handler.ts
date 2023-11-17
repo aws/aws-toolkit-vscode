@@ -44,11 +44,11 @@ export class QuickActionHandler {
             case '/help':
                 this.handleHelpCommand(tabID)
                 break
-            case '/clear':
-                this.handleClearCommand(tabID)
-                break
             case '/transform':
                 this.handleGumbyCommand(tabID)
+                break
+            case '/clear':
+                this.handleClearCommand(tabID)
                 break
         }
     }

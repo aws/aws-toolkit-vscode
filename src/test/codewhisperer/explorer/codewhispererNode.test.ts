@@ -110,7 +110,6 @@ describe('codewhispererNode', function () {
             assert.deepStrictEqual(ids, [
                 'aws.codeWhisperer.toggleCodeSuggestion',
                 'aws.codeWhisperer.security.scan',
-                'aws.awsq.transform',
                 'aws.codeWhisperer.openReferencePanel',
                 'aws.codeWhisperer.gettingStarted',
             ])

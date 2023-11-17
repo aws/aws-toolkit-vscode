@@ -45,6 +45,7 @@ import { triggerPayloadToChatRequest } from './chatRequest/converter'
 import { OnboardingPageInteraction } from '../../../amazonq/onboardingPage/model'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
+import { processTransformByQ } from '../../../amazonqGumby/entrypoint'
 
 export interface ChatControllerMessagePublishers {
     readonly processPromptChatMessage: MessagePublisher<PromptMessage>
@@ -456,6 +457,9 @@ export class ChatController {
             return
         }
         switch (message.command) {
+            case 'transform':
+                processTransformByQ()
+                return
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
                 this.triggerEventsStorage.removeTabEvents(message.tabID)

@@ -12,7 +12,7 @@ import {
 import { RootNode } from '../../awsexplorer/localExplorer'
 import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, runQTransformNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { createLearnMoreNode, createTransformByQ, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 
 export class AmazonQNode implements RootNode {
@@ -46,8 +46,10 @@ export class AmazonQNode implements RootNode {
     }
 
     private getDescription(): string {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionValid()) {
             if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return 'IAM Identity Center Connected'
             } else if (AuthUtil.instance.isBuilderIdInUse()) {
                 return 'AWS Builder ID Connected'
@@ -61,6 +63,7 @@ export class AmazonQNode implements RootNode {
     }
 
     public getChildren() {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionExpired()) {
             return [createReconnect('tree'), createLearnMoreNode()]
         }
@@ -71,7 +74,11 @@ export class AmazonQNode implements RootNode {
             return [createFreeTierLimitMet('tree')]
         } else {
             // logged in
-            return [switchToAmazonQNode(), runQTransformNode()]
+            if (AuthUtil.instance.isConnectionValid() && AuthUtil.instance.isEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+                return [switchToAmazonQNode(), createTransformByQ()] // transform only available for IdC users
+            }
+            return [switchToAmazonQNode()]
         }
     }
 

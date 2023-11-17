@@ -62,6 +62,7 @@ export type ChatPromptCommandType =
     | 'follow-up-was-clicked'
     | 'onboarding-page-cwc-button-clicked'
     | 'chat-prompt'
+    | 'transform'
 
 export interface PromptMessage {
     message: string | undefined

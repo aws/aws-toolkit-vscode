@@ -38,6 +38,7 @@ export class UIMessageListener {
                 break
             case 'help':
             case 'clear':
+            case 'transform':
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break

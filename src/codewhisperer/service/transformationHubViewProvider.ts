@@ -9,7 +9,7 @@ import { getJobHistory, getPlanProgress } from '../commands/startTransformByQ'
 import { StepProgress } from '../models/model'
 
 export class TransformationHubViewProvider implements vscode.WebviewViewProvider {
-    public static readonly viewType = 'aws.codeWhisperer.transformationHub'
+    public static readonly viewType = 'aws.amazonq.transformationHub'
     private _view?: vscode.WebviewView
     private lastClickedButton: string = ''
     private _extensionUri: vscode.Uri = globals.context.extensionUri
@@ -73,7 +73,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <th>Module</th>
                         <th>Status</th>
                         <th>Duration</th>
-                        <th>Id</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,7 +82,6 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         <td>${job.module}</td>
                         <td>${job.status}</td>
                         <td>${job.duration}</td>
-                        <td>${job.id}</td>
                     </tr>`
                     )}
                 </tbody>
