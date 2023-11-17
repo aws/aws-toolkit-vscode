@@ -90,6 +90,7 @@ export default defineComponent({
         return initialData()
     },
     created() {
+        this.refreshPanel()
         client.onDidConnectionChangeCodeWhisperer(() => {
             this.refreshPanel()
         })
@@ -109,6 +110,7 @@ export default defineComponent({
     methods: {
         async refreshPanel() {
             Object.assign(this.$data, initialData())
+            this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
             this.refreshAuthFormContainer()
         },
         updateIsAllAuthsLoaded() {

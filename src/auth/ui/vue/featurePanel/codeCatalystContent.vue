@@ -79,6 +79,7 @@ export default defineComponent({
         return initialData()
     },
     created() {
+        this.refreshPanel()
         client.onDidConnectionChangeCodeCatalyst(() => {
             this.refreshPanel()
         })
@@ -95,8 +96,9 @@ export default defineComponent({
         },
     },
     methods: {
-        refreshPanel() {
+        async refreshPanel() {
             Object.assign(this.$data, initialData())
+            this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
             this.refreshAuthFormContainer()
         },
         updateIsAllAuthsLoaded() {
@@ -105,6 +107,9 @@ export default defineComponent({
         },
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
             this.isLoaded[args.id] = true
+            if (args.id === 'identityCenterCodeCatalyst') {
+                this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
+            }
             this.updateIsAllAuthsLoaded()
             this.emitAuthConnectionUpdated('codecatalyst', args)
         },
