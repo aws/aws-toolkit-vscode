@@ -30,13 +30,13 @@
             </div>
 
             <div class="feature-panel-form-section">
-                <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
-                        <div style="font-weight: bold; font-size: medium" :class="identityCenterCollapsibleClass"></div>
-                        <div>
-                            <div style="font-weight: bold; font-size: 14px">Sign in with IAM Identity Center.</div>
-                        </div>
+                <div v-on:click="toggleIdentityCenterShown" class="collapsible-title">
+                    <div :class="identityCenterCollapsibleClass" style="height: 0"></div>
+                    <div>
+                        <div>Sign in with IAM Identity Center.</div>
+                    </div>
                 </div>
-            
+
                 <IdentityCenterForm
                     :state="identityCenterState"
                     :allow-existing-start-url="true"
@@ -64,8 +64,8 @@ const client = WebviewClientFactory.create<AuthWebview>()
 function initialData() {
     return {
         isLoaded: {
-                builderIdCodeCatalyst: false,
-            } as Record<AuthFormId, boolean>,
+            builderIdCodeCatalyst: false,
+        } as Record<AuthFormId, boolean>,
         isAllAuthsLoaded: false,
         isIdentityCenterShown: false,
     }
