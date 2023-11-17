@@ -10,9 +10,17 @@ import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
     public generate(extensionURI: Uri, webView: Webview): string {
+        const entrypoint = process.env.WEBPACK_DEVELOPER_SERVER
+            ? 'http: localhost'
+            : 'https: *.vscode-resources.vscode-cdn.net'
+
+        const contentPolicy = `default-src ${entrypoint} data: blob: 'unsafe-inline';
+        script-src ${entrypoint} filesystem: ws: wss: 'unsafe-inline';`
+
         return `<!DOCTYPE html>
         <html>
             <head>
+                <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>                
                 ${this.generateJS(extensionURI, webView)}                
             </head>
