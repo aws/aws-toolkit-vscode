@@ -4,9 +4,11 @@
  -->
 
 <template>
-    <div v-if="isConnected" style="display: flex">
-        <div class="pass-icon icon icon-lg icon-vscode-pass-filled"></div>
-        <label class="auth-form-title">Connected to <slot></slot></label>
+    <div v-if="isConnected" style="display: flex; gap: 1em">
+        <label class="auth-form-title"
+            ><div class="pass-icon icon icon-vscode-pass-filled"></div>
+            Connected to <slot></slot
+        ></label>
     </div>
     <div v-else>
         <label class="auth-form-title"><slot></slot></label>
@@ -28,6 +30,5 @@ export default defineComponent({
 <style>
 .pass-icon {
     color: #73c991;
-    margin-right: 5px;
 }
 </style>

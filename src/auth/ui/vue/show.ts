@@ -23,14 +23,7 @@ import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
 import { ToolkitError } from '../../../shared/errors'
-import {
-    Connection,
-    SsoConnection,
-    createSsoProfile,
-    isBuilderIdConnection,
-    isIamConnection,
-    isSsoConnection,
-} from '../../connection'
+import { createSsoProfile, isBuilderIdConnection, isIdcSsoConnection } from '../../connection'
 import {
     tryAddCredentials,
     signout,
@@ -39,25 +32,33 @@ import {
     ExtensionUse,
     showConnectionsPageCommand,
     addConnection,
+    hasIamCredentials,
+    hasBuilderId,
+    hasSso,
+    BuilderIdKind,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
-import { debounce } from '../../../shared/utilities/functionUtils'
-import { AuthError, ServiceItemId, isServiceItemId, userCancelled } from './types'
 import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
+import { AuthError, ServiceItemId, isServiceItemId, authFormTelemetryMapping, userCancelled } from './types'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
-import { AuthFormId, isBuilderIdAuth } from './authForms/types'
+import { AuthFormId } from './authForms/types'
 import { handleWebviewError } from '../../../webviews/server'
-import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
+import { cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
+import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
+import { throttle } from 'lodash'
+import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 
 export class AuthWebview extends VueWebview {
     public override id: string = 'authWebview'
     public override source: string = 'src/auth/ui/vue/index.js'
-    public readonly onDidConnectionUpdate = new vscode.EventEmitter<undefined>()
+    public readonly onDidConnectionChangeCodeCatalyst = new vscode.EventEmitter<void>()
+    public readonly onDidConnectionChangeExplorer = new vscode.EventEmitter<void>()
+    public readonly onDidConnectionChangeCodeWhisperer = new vscode.EventEmitter<void>()
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
@@ -103,7 +104,7 @@ export class AuthWebview extends VueWebview {
      * Returns true if any credentials are found, including those discovered from SSO service API.
      */
     async isCredentialExists(): Promise<boolean> {
-        return (await Auth.instance.listAndTraverseConnections().promise()).find(isIamConnection) !== undefined
+        return hasIamCredentials()
     }
 
     isCredentialConnected(): boolean {
@@ -154,6 +155,10 @@ export class AuthWebview extends VueWebview {
 
     isCodeWhispererBuilderIdConnected(): boolean {
         return CodeWhispererAuth.instance.isBuilderIdInUse() && CodeWhispererAuth.instance.isConnectionValid()
+    }
+
+    hasBuilderId(kind: BuilderIdKind): Promise<boolean> {
+        return hasBuilderId(kind)
     }
 
     isCodeCatalystBuilderIdConnected(): boolean {
@@ -261,10 +266,7 @@ export class AuthWebview extends VueWebview {
      * does not have to be active.
      */
     async isIdentityCenterExists(): Promise<boolean> {
-        const nonBuilderIdSsoConns = (await Auth.instance.listConnections()).find(conn =>
-            this.isNonBuilderIdSsoConnection(conn)
-        )
-        return nonBuilderIdSsoConns !== undefined
+        return hasSso('any')
     }
 
     isCodeWhispererIdentityCenterConnected(): boolean {
@@ -273,6 +275,14 @@ export class AuthWebview extends VueWebview {
 
     isCodeCatalystIdentityCenterConnected(): boolean {
         return this.codeCatalystAuth.isEnterpriseSsoInUse() && this.codeCatalystAuth.isConnectionValid()
+    }
+
+    isCodeCatalystIdCExists(): Promise<boolean> {
+        return hasSso('codecatalyst')
+    }
+
+    isCodeWhispererIdCExists(): Promise<boolean> {
+        return hasSso('codewhisperer')
     }
 
     async signoutCWIdentityCenter(): Promise<void> {
@@ -309,17 +319,13 @@ export class AuthWebview extends VueWebview {
 
     async signoutIdentityCenter(): Promise<void> {
         const conn = Auth.instance.activeConnection
-        const activeConn = this.isNonBuilderIdSsoConnection(conn) ? conn : undefined
+        const activeConn = isIdcSsoConnection(conn) ? conn : undefined
         if (!activeConn) {
             getLogger().warn('authWebview: Attempted to signout of identity center when it was not being used')
             return
         }
 
         await signout(Auth.instance, activeConn)
-    }
-
-    private isNonBuilderIdSsoConnection(conn?: Connection): conn is SsoConnection {
-        return isSsoConnection(conn) && !isBuilderIdConnection(conn)
     }
 
     getSsoUrlError(url: string | undefined, canUrlExist: boolean = true) {
@@ -338,23 +344,24 @@ export class AuthWebview extends VueWebview {
      * that happen outside of the webview (eg: status bar > quickpick).
      */
     setupConnectionChangeEmitter() {
-        const events = [
-            this.codeCatalystAuth.onDidChangeActiveConnection,
-            CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection,
-            Auth.instance.onDidChangeActiveConnection,
-            Auth.instance.onDidChangeConnectionState,
-            Auth.instance.onDidUpdateConnection,
-        ]
+        const codeWhispererConnectionChanged = createThrottle(() => this.onDidConnectionChangeCodeWhisperer.fire())
+        CodeWhispererAuth.instance.secondaryAuth.onDidChangeActiveConnection(codeWhispererConnectionChanged)
 
-        // The event handler in the frontend refreshes all connection statuses
-        // when triggered, and multiple events can fire at the same time so we debounce.
-        const debouncedFire = debounce(() => this.onDidConnectionUpdate.fire(undefined), 500)
+        const codeCatalystConnectionChanged = createThrottle(() => this.onDidConnectionChangeCodeCatalyst.fire())
+        this.codeCatalystAuth.onDidChangeActiveConnection(codeCatalystConnectionChanged)
 
-        events.forEach(event =>
-            event(() => {
-                debouncedFire()
-            })
-        )
+        const awsExplorerConnectionChanged = createThrottle(() => this.onDidConnectionChangeExplorer.fire())
+        Auth.instance.onDidChangeActiveConnection(awsExplorerConnectionChanged)
+        Auth.instance.onDidChangeConnectionState(awsExplorerConnectionChanged)
+        Auth.instance.onDidUpdateConnection(awsExplorerConnectionChanged)
+
+        /**
+         * Multiple events can be received in rapid succession
+         * so we throttle all subsequent events after the first.
+         */
+        function createThrottle(callback: () => void) {
+            return throttle(callback, 500, { leading: true })
+        }
     }
 
     #initialService?: ServiceItemId
@@ -384,53 +391,42 @@ export class AuthWebview extends VueWebview {
         return ExtensionUse.instance.isFirstUse()
     }
 
+    openFeedbackForm() {
+        submitFeedback.execute('AWS Toolkit')
+    }
+
     // -------------------- Telemetry Stuff --------------------
+    // We will want to move this in to its own class once we make it possible with webviews
 
-    async getConnectionCount(): Promise<number> {
-        return (await Auth.instance.listConnections()).length
-    }
-
-    /** The number of auth connections when the webview first starts. We will diff this to see if new connections were added. */
-    private initialNumConnections: number | undefined
-
-    async setInitialNumConnections() {
-        this.initialNumConnections = await this.getConnectionCount()
-    }
-
-    /** This represents the cause for the webview to open, wether a certain button was clicked or it opened automatically */
+    /** This represents the cause for the webview to open, whether a certain button was clicked or it opened automatically */
     #authSource?: AuthSource
-
-    setSource(source: AuthSource | undefined) {
+    setSource(source: AuthSource) {
         if (this.#authSource) {
             return
         }
         this.#authSource = source
     }
-
     getSource(): AuthSource | undefined {
         return this.#authSource
     }
 
     /**
-     * Represents the 'unlocked' tabs/auth areas in the UI
-     *
-     * We use this to get a high level view of what features are enabled/unlocked
+     * All auths that existed prior to the webview being opened.
      */
-    private initialConnectedAuths: Set<AuthFormId> = new Set()
-    setInitialConnectedAuths(auths: AuthFormId[]) {
-        this.initialConnectedAuths = new Set(auths)
+    #authsInitial: Set<AuthFormId> = new Set()
+    setAuthsInitial(auths: AuthFormId[]) {
+        this.#authsInitial = new Set(auths)
     }
-
-    #allConnectedAuths: Set<AuthFormId> | undefined
-    authFormSuccess(id: AuthFormId | undefined) {
-        if (!id) {
-            return
-        }
-        this.#allConnectedAuths ??= new Set(this.initialConnectedAuths)
-        this.#allConnectedAuths.add(id)
+    getAuthsInitial() {
+        return new Set(this.#authsInitial)
     }
-    getAllConnectedAuths(): Set<AuthFormId> {
-        return (this.#allConnectedAuths ??= new Set())
+    /** All auths that currently exist */
+    #authsAdded: AuthFormId[] = []
+    addSuccessfulAuth(id: AuthFormId) {
+        this.#authsAdded.push(id)
+    }
+    getAuthsAdded(): AuthFormId[] {
+        return [...this.#authsAdded] // make a copy
     }
 
     /**
@@ -450,7 +446,13 @@ export class AuthWebview extends VueWebview {
      * Eg: Builder ID for CodeWhisperer, Credentials for AWS Explorer
      */
     private previousAuthType: CredentialSourceId | undefined
+    getPreviousAuthType(): CredentialSourceId | undefined {
+        return this.previousAuthType
+    }
     private previousFeatureType: FeatureId | undefined
+    getPreviousFeatureType(): FeatureId | undefined {
+        return this.previousFeatureType
+    }
 
     /**
      * This function is called whenever some sort of user interaction with an auth form happens in
@@ -480,7 +482,7 @@ export class AuthWebview extends VueWebview {
      * The metric for when an auth form that was unsuccessfully interacted with is
      * done being interacted with
      */
-    private async stopAuthFormInteraction(featureType: FeatureId, authType: CredentialSourceId) {
+    async stopAuthFormInteraction(featureType: FeatureId, authType: CredentialSourceId) {
         if (
             this.#previousFailedAuth &&
             this.#previousFailedAuth.featureType === featureType &&
@@ -519,29 +521,34 @@ export class AuthWebview extends VueWebview {
           }
         | undefined
 
-    async failedAuthAttempt(args: {
-        authType: CredentialSourceId
-        featureType: FeatureId
-        reason: string
-        invalidInputFields?: string[]
-    }) {
+    async failedAuthAttempt(
+        id: AuthFormId,
+        args: {
+            reason: string
+            invalidInputFields?: string[]
+        }
+    ) {
+        const mapping = authFormTelemetryMapping[id]
+        const featureType = mapping.featureType
+        const authType = mapping.authType
+
         // Send metric about specific individual failure regardless
         telemetry.auth_addConnection.emit({
             source: this.#authSource ?? '',
-            credentialSourceId: args.authType,
-            featureId: args.featureType,
+            credentialSourceId: authType,
+            featureId: featureType,
             result: args.reason === userCancelled ? 'Cancelled' : 'Failed',
             reason: args.reason,
             invalidInputFields: args.invalidInputFields
-                ? builderCommaDelimitedString(args.invalidInputFields)
+                ? buildCommaDelimitedString(args.invalidInputFields)
                 : undefined,
             isAggregated: false,
         })
 
         if (
             this.#previousFailedAuth &&
-            this.#previousFailedAuth.authType === args.authType &&
-            this.#previousFailedAuth.featureType === args.featureType
+            this.#previousFailedAuth.authType === authType &&
+            this.#previousFailedAuth.featureType === featureType
         ) {
             // Another failed attempt on same auth + feature. Update with newest failure info.
             this.#previousFailedAuth = {
@@ -552,6 +559,8 @@ export class AuthWebview extends VueWebview {
         } else {
             // A new failed attempt on a new auth + feature
             this.#previousFailedAuth = {
+                authType,
+                featureType,
                 invalidInputFields: undefined, // args may not have this field, so we set the default
                 ...args,
                 attempts: 1,
@@ -571,18 +580,30 @@ export class AuthWebview extends VueWebview {
         return 0
     }
 
-    async successfulAuthAttempt(args: { authType: CredentialSourceId; featureType: FeatureId }) {
+    async successfulAuthAttempt(id: AuthFormId) {
+        if (id === 'aggregateExplorer') {
+            throw new ToolkitError('This should not be called for the aggregate explorer')
+        }
+
+        const mapping = authFormTelemetryMapping[id]
+        const featureType = mapping.featureType
+        const authType = mapping.authType
+
         // All previous failed attempts + 1 successful attempt
-        const authAttempts = this.getPreviousAuthAttempts(args.featureType, args.authType) + 1
+        const authAttempts = this.getPreviousAuthAttempts(featureType, authType) + 1
         this.emitAuthAttempt({
-            authType: args.authType,
-            featureType: args.featureType,
+            authType,
+            featureType,
             result: 'Succeeded',
             attempts: authAttempts,
         })
+        this.addSuccessfulAuth(id)
     }
 
     #totalAuthAttempts: number = 0
+    getTotalAuthAttempts() {
+        return this.#totalAuthAttempts
+    }
 
     /**
      * This metric is emitted on an attempt to signin/connect/submit auth regardless
@@ -602,7 +623,7 @@ export class AuthWebview extends VueWebview {
             featureId: args.featureType,
             result: args.result,
             reason: args.reason,
-            invalidInputFields: args.invalidFields ? builderCommaDelimitedString(args.invalidFields) : undefined,
+            invalidInputFields: args.invalidFields ? buildCommaDelimitedString(args.invalidFields) : undefined,
             attempts: args.attempts,
             isAggregated: true,
         })
@@ -616,93 +637,6 @@ export class AuthWebview extends VueWebview {
             this.previousFeatureType = undefined
             this.#previousFailedAuth = undefined
         }
-    }
-
-    /**
-     * The metric emitted when the webview is closed by the user.
-     */
-    async emitWebviewClosed() {
-        if (this.previousFeatureType && this.previousAuthType) {
-            // We are closing the webview, and have an auth form if they were
-            // interacting but did not complete it.
-            await this.stopAuthFormInteraction(this.previousFeatureType, this.previousAuthType)
-        }
-
-        const allConnectedAuths = this.getAllConnectedAuths()
-        const newConnectedAuths = new Set(
-            [...allConnectedAuths].filter(value => !this.initialConnectedAuths.has(value))
-        )
-        const uncountedBuilderIds = this.getUncountedBuilderIds(allConnectedAuths, newConnectedAuths)
-
-        let numAuthConnections = (await this.getConnectionCount()) + uncountedBuilderIds
-        let numNewAuthConnections = numAuthConnections - this.initialNumConnections! + uncountedBuilderIds
-
-        if (numNewAuthConnections < 0) {
-            // Edge Case:
-            // numAuthConnections gets the latest number of connections, and it is
-            // possible that the user signed out or removed connections they initially had.
-            // If this is the case, we will set the total connections to what it initially was
-            // since we don't consider removing connections as not having existed.
-            numAuthConnections = this.initialNumConnections!
-            numNewAuthConnections = newConnectedAuths.size // best effort guess but can be wrong
-        }
-
-        let result: Result
-
-        if (numNewAuthConnections > 0) {
-            result = 'Succeeded'
-        } else if (this.#totalAuthAttempts > 0) {
-            // There were no new auth connections added, but attempts were made
-            result = 'Failed'
-        } else {
-            // No new auth connections added, but no attempts were made
-            result = 'Cancelled'
-        }
-
-        if (this.getSource() === 'firstStartup' && numNewAuthConnections === 0) {
-            if (this.initialNumConnections! > 0) {
-                // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
-                // system which we discovered. We consider this a success even though they added no new connections.
-                result = 'Succeeded'
-            } else {
-                // A brand new user with no new auth connections did not add any
-                // connections
-                result = 'Failed'
-            }
-        }
-
-        telemetry.auth_addedConnections.emit({
-            source: this.getSource() ?? '',
-            result,
-            attempts: this.#totalAuthAttempts,
-            reason: 'closedWebview',
-            authConnectionsCount: numAuthConnections,
-            newAuthConnectionsCount: numNewAuthConnections,
-            enabledAuthConnections: builderCommaDelimitedString(allConnectedAuths),
-            newEnabledAuthConnections: builderCommaDelimitedString(newConnectedAuths),
-        })
-    }
-
-    /**
-     * Additional Builder IDs don't count toward the total connection count,
-     * since they are seen as 1 connection.
-     *
-     * This does some work to find the missing ones that were not considered.
-     */
-    private getUncountedBuilderIds(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
-        const newBuilderIds = [...newAuths].filter(isBuilderIdAuth).length
-        if (this.hadBuilderIdBefore(allAuths, newAuths)) {
-            // Had a builder id so all new builder ids didn't get added.
-            return newBuilderIds
-        }
-        // Didn't have builder id before, so only the first was added, but not the rest (hence -1)
-        return newBuilderIds > 0 ? newBuilderIds - 1 : 0
-    }
-
-    private hadBuilderIdBefore(allAuths: Set<AuthFormId>, newAuths: Set<AuthFormId>) {
-        const initialAuths = [...allAuths].filter(auth => !newAuths.has(auth))
-        const initialBuilderIds = initialAuths.filter(isBuilderIdAuth)
-        return initialBuilderIds.length > 0
     }
 
     /**
@@ -740,7 +674,7 @@ export type AuthUiClick =
 
 // type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-export function builderCommaDelimitedString(strings: Iterable<string>): string {
+export function buildCommaDelimitedString(strings: Iterable<string>): string {
     const sorted = Array.from(new Set(strings)).sort((a, b) => a.localeCompare(b))
     return sorted.join(',')
 }
@@ -790,7 +724,7 @@ export const showManageConnections = Commands.declare(
     }
 )
 
-export async function showAuthWebview(
+async function showAuthWebview(
     ctx: vscode.ExtensionContext,
     source: AuthSource,
     serviceToShow?: ServiceItemId
@@ -803,13 +737,7 @@ export async function showAuthWebview(
         wasInitialServiceSet = true
     }
 
-    const wasWebviewAlreadyOpen = !!activePanel
-
     activePanel ??= new Panel(ctx, CodeCatalystAuthenticationProvider.fromContext(ctx))
-
-    if (!wasWebviewAlreadyOpen) {
-        await activePanel.server.setInitialNumConnections()
-    }
 
     if (!wasInitialServiceSet && serviceToShow) {
         // Webview does not exist yet, preemptively set
@@ -829,11 +757,77 @@ export async function showAuthWebview(
     if (!subscriptions) {
         subscriptions = [
             webview.onDidDispose(() => {
-                activePanel?.server.emitWebviewClosed()
+                if (activePanel) {
+                    emitWebviewClosed(activePanel.server)
+                }
                 vscode.Disposable.from(...(subscriptions ?? [])).dispose()
                 activePanel = undefined
                 subscriptions = undefined
             }),
         ]
+    }
+}
+
+/**
+ * The metric emitted when the webview is closed by the user.
+ */
+export async function emitWebviewClosed(authWebview: ClassToInterfaceType<AuthWebview>) {
+    const [prevFeatureType, prevAuthType] = [authWebview.getPreviousFeatureType(), authWebview.getPreviousAuthType()]
+    if (prevFeatureType && prevAuthType) {
+        // We are closing the webview, and have an auth form if they were
+        // interacting but did not complete it.
+        await authWebview.stopAuthFormInteraction(prevFeatureType, prevAuthType)
+    }
+
+    const authsInitial = authWebview.getAuthsInitial()
+    const authsAdded = authWebview.getAuthsAdded()
+
+    const numConnectionsInitial = authsInitial.size
+    const numConnectionsAdded = authsAdded.length
+
+    const source = authWebview.getSource()
+    const result: Result = determineResult(source, numConnectionsInitial, numConnectionsAdded)
+
+    telemetry.auth_addedConnections.emit({
+        source: source ?? '',
+        result,
+        attempts: authWebview.getTotalAuthAttempts(),
+        reason: 'closedWebview',
+        authConnectionsCount: numConnectionsInitial + numConnectionsAdded,
+        newAuthConnectionsCount: numConnectionsAdded,
+        enabledAuthConnections: buildCommaDelimitedString(new Set([...authsInitial, ...authsAdded])),
+        newEnabledAuthConnections: buildCommaDelimitedString(authsAdded),
+    })
+
+    function determineResult(
+        source: AuthSource | undefined,
+        numConnectionsInitial: number,
+        numConnectionsAdded: number
+    ): Result {
+        let result: Result
+
+        if (numConnectionsAdded > 0) {
+            result = 'Succeeded'
+        } else if (authWebview.getTotalAuthAttempts() > 0) {
+            // There were no new auth connections added, but attempts were made
+            result = 'Failed'
+        } else {
+            // No new auth connections added, but no attempts were made
+            result = 'Cancelled'
+        }
+
+        if (source === 'firstStartup' && numConnectionsAdded === 0) {
+            if (numConnectionsInitial > 0) {
+                // This is the users first startup of the extension and no new connections were added, but they already had connections setup on their
+                // system which we discovered. We consider this a success even though they added no new connections.
+                result = 'Succeeded'
+            } else {
+                // A brand new user with no new auth connections did not add any
+                // connections
+                result = 'Failed'
+            }
+        }
+
+        return result
     }
 }

@@ -24,7 +24,8 @@ import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
 import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { Auth } from '../auth/auth'
-import { SsoConnection } from '../auth/connection'
+import { SsoConnection, defaultSsoRegion } from '../auth/connection'
+import { builderIdStartUrl } from '../auth/sso/model'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -138,6 +139,7 @@ function createClientInjector(authProvider: CodeCatalystAuthenticationProvider):
         await authProvider.restore()
         const conn = authProvider.activeConnection
         if (!conn) {
+            // TODO: In the future, it would be very nice to open a connection picker here.
             throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
         }
         const validatedConn = await validateConnection(conn, authProvider.auth)
@@ -283,11 +285,10 @@ export class CodeCatalystCommands {
             telemetry.record({ source: 'CommandPalette' })
         }
 
-        return this.withClient(openDevEnv, devenv, targetPath, async () => {
-            if (connection) {
-                await this.authProvider.connectToEnterpriseSso(connection.startUrl, connection.region)
-            }
-        })
+        // Try to ensure active connection, defaulting to BuilderID if not specified:
+        await this.authProvider.tryConnectTo(connection ?? { startUrl: builderIdStartUrl, region: defaultSsoRegion })
+
+        return this.withClient(openDevEnv, devenv, targetPath)
     }
 
     public async openDevEnvSettings(): Promise<void> {

@@ -3,13 +3,11 @@
     flex-direction: column;
     text-align: left;
     color: var(--vscode-foreground);
-
-    padding: 10px;
 }
 
 /* A grouping of related elements in an auth form */
 .auth-form .form-section {
-    margin-top: 15px;
+    margin-top: 0.6em;
 
     display: flex;
     flex-direction: column;
@@ -17,26 +15,35 @@
 
 /* Consistent margins between the elements of a grouping of elements */
 .auth-form .form-section > * {
-    margin-top: 3px;
+    margin-top: 0.3em;
 }
 
 /* Consistent margins between the elements of a grouping of elements */
 .auth-form .form-section > button {
-    margin-top: 3px;
+    /* margin-top: 1em; */
+    padding: 0.4em;
+    border-radius: 0.5rem;
 }
 
 .auth-form-title {
-    font-size: 14px;
+    font-size: 1.2rem;
     font-weight: bold;
 }
 
-.input-title {
-    font-size: 12px;
+.auth-form-description {
+    font-size: 0.9rem;
 }
 
-.small-description {
-    font-size: 10px;
+.input-title {
+    font-size: 1rem;
+}
+
+.form-description-color {
     color: var(--vscode-descriptionForeground);
+}
+
+.input-description-small {
+    font-size: 0.8rem;
 }
 
 .edit-icon {
@@ -45,7 +52,7 @@
 
 .error-text {
     color: #f14c4c;
-    font-size: 12px;
+    font-size: 0.8rem;
 }
 
 input[data-invalid='true'] {
@@ -59,6 +66,11 @@ input[data-invalid='true'] {
 input[data-invalid='true']:focus {
     /* Ensures the border stays red even when selected */
     outline: none !important;
+}
+
+.auth-form .form-section input {
+    font-size: 1rem;
+    padding: 0.5em;
 }
 
 /* Remove underline from anchor elements */

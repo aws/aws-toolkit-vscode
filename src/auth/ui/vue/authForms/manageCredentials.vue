@@ -1,5 +1,5 @@
 <template>
-    <div class="auth-form container-background border-common" id="credentials-form">
+    <div class="auth-form container-background border-common">
         <div>
             <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
 
@@ -14,7 +14,7 @@
 
             <div v-if="isFormShown">
                 <div class="form-section">
-                    <label class="small-description"
+                    <label class="form-description-color input-description-small"
                         >Credentials will be added to the appropriate `~/.aws/` files.</label
                     >
                     <div v-on:click="editCredentialsFile()" class="sub-text-color" style="cursor: pointer">
@@ -25,15 +25,21 @@
 
                 <div class="form-section">
                     <label class="input-title">Profile Name</label>
-                    <label class="small-description">The identifier for these credentials</label>
+                    <label class="form-description-color input-description-small"
+                        >The identifier for these credentials</label
+                    >
                     <input v-model="data.profileName" type="text" :data-invalid="!!errors.profileName" />
-                    <div class="small-description error-text">{{ errors.profileName }}</div>
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.profileName }}
+                    </div>
                 </div>
 
                 <div class="form-section">
                     <label class="input-title">Access Key</label>
                     <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
-                    <div class="small-description error-text">{{ errors.aws_access_key_id }}</div>
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.aws_access_key_id }}
+                    </div>
                 </div>
 
                 <div class="form-section">
@@ -43,12 +49,14 @@
                         type="password"
                         :data-invalid="!!errors.aws_secret_access_key"
                     />
-                    <div class="small-description error-text">{{ errors.aws_secret_access_key }}</div>
+                    <div class="form-description-color input-description-small error-text">
+                        {{ errors.aws_secret_access_key }}
+                    </div>
                 </div>
 
                 <div class="form-section">
-                    <button v-on:click="submitData()">Add Profile</button>
-                    <div class="small-description error-text">{{ errors.submit }}</div>
+                    <button v-on:click="submitData()" :disabled="!canSubmit">Add Profile</button>
+                    <div class="form-description-color input-description-small error-text">{{ errors.submit }}</div>
                 </div>
             </div>
         </div>
@@ -58,11 +66,13 @@
 import { PropType, defineComponent } from 'vue'
 import BaseAuthForm, { ConnectionUpdateCause } from './baseAuth.vue'
 import FormTitle from './formTitle.vue'
-import { SectionName, StaticProfile, StaticProfileKeyErrorMessage } from '../../../credentials/types'
+import { SectionName, StaticProfile } from '../../../credentials/types'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
 import { AuthForm } from './shared.vue'
 import { AuthFormId } from './types'
+import { CredentialSourceId, FeatureId } from '../../../../shared/telemetry/telemetry'
+import { emptyFields, fieldHasError } from '../types'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
@@ -86,17 +96,12 @@ export default defineComponent({
     data() {
         return {
             data: {
-                profileName: this.state.getValue('profileName'),
-                aws_access_key_id: this.state.getValue('aws_access_key_id'),
-                aws_secret_access_key: this.state.getValue('aws_secret_access_key'),
-            },
+                ...this.state.data,
+            } as CredentialsProfile,
             errors: {
-                profileName: '',
-                aws_access_key_id: '',
-                aws_secret_access_key: '',
-                submit: '',
-            },
-            canSubmit: false,
+                ...this.state.errors,
+            } as CredentialsFormErrors,
+            canSubmit: true,
             isConnected: false,
 
             /**
@@ -107,13 +112,8 @@ export default defineComponent({
         }
     },
     async created() {
-        await this.updateDataError('profileName')
-        await this.updateDataError('aws_access_key_id')
-        await this.updateDataError('aws_secret_access_key')
         this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
-        await this.updateSubmittableStatus()
-
-        this.updateConnectedStatus('created')
+        await this.updateConnectedStatus('created')
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */
@@ -122,109 +122,44 @@ export default defineComponent({
         },
     },
     methods: {
-        setNewValue(key: CredentialsDataKey, newVal: string) {
+        async setNewValue(key: CredentialsDataKey, newVal: string) {
             if (newVal) {
                 // Edge Case:
                 // Since we allow subsequent credentials to be added,
                 // we will automatically wipe the form values after success.
                 // That triggers this function, but we only want to
                 // indicate a new form interaction if the user adds text themselves.
-                client.startAuthFormInteraction('awsExplorer', 'sharedCredentials')
+                await this.state.startAuthFormInteraction()
             }
 
-            // If there is an error under the submit button
-            // we can clear it since there is new data
-            this.errors.submit = ''
+            await this.state.setData(key, newVal.trim())
 
-            this.state.setValue(key, newVal.trim())
-            this.updateSubmittableStatus()
-            this.updateDataError(key)
-        },
-        /** Updates the error using the current data */
-        async updateDataError(key: CredentialsDataKey): Promise<void> {
-            await this.state.getFormatError(key).then(error => {
-                this.errors[key] = error ?? ''
-            })
-
-            client.setInvalidInputFields(this.getFieldsWithErrors())
-        },
-        async updateSubmittableStatus() {
-            return this.state.getSubmissionErrors().then(errors => {
-                this.canSubmit = errors === undefined
-            })
+            this.updateForm()
         },
         async updateConnectedStatus(cause?: ConnectionUpdateCause) {
-            return this.state.isAuthConnected().then(isConnected => {
-                this.isConnected = this.checkIfConnected ? isConnected : false
-                this.emitAuthConnectionUpdated({ id: 'credentials', isConnected, cause })
-            })
+            const actualIsConnected = await this.state.isAuthConnected()
+            this.isConnected = this.checkIfConnected ? actualIsConnected : false
+            this.emitAuthConnectionUpdated({ id: this.state.id, isConnected: actualIsConnected, cause })
         },
         async submitData() {
-            client.startAuthFormInteraction('awsExplorer', 'sharedCredentials')
-
-            const hasEmptyFields = this.setCannotBeEmptyErrors()
-            const fieldsWithErrors = this.getFieldsWithErrors()
-            if (fieldsWithErrors.length > 0) {
-                client.failedAuthAttempt({
-                    featureType: 'awsExplorer',
-                    authType: 'sharedCredentials',
-                    reason: hasEmptyFields ? 'emptyFields' : 'fieldHasError',
-                    invalidInputFields: this.getFieldsWithErrors(),
-                })
-                return
-            }
-
-            // pre submission
+            this.state.startAuthFormInteraction()
             this.canSubmit = false // disable submit button
 
-            const error = await this.state.getAuthenticationError()
-            if (error) {
-                this.errors.submit = error.error
-                client.failedAuthAttempt({
-                    featureType: 'awsExplorer',
-                    authType: 'sharedCredentials',
-                    reason: error.key,
-                    invalidInputFields: this.getFieldsWithErrors(),
-                })
-                return // Do not allow submission since data fails authentication
+            const wasSuccessful = await this.state.submitData()
+            if (wasSuccessful) {
+                this.isFormShown = false
+                await this.updateConnectedStatus('signIn')
             }
 
-            // submission
-            const successful = await this.state.submitData()
-
-            if (successful) {
-                client.successfulAuthAttempt({
-                    featureType: 'awsExplorer',
-                    authType: 'sharedCredentials',
-                })
-            }
-
-            // post submission (successfully connected)
-            this.clearFormData()
-            this.isFormShown = false
+            this.updateForm()
             this.canSubmit = true // enable submit button
-            await this.updateConnectedStatus('signIn')
-        },
-        /**
-         * Sets the 'cannot be empty' error for each empty field
-         *
-         * @returns true if there was an empty field, otherwise false
-         */
-        setCannotBeEmptyErrors() {
-            const emptyFields = Object.keys(this.data).filter(key => !this.data[key as keyof typeof this.data])
-            emptyFields.forEach(fieldName => {
-                this.errors[fieldName as keyof typeof this.data] = 'Cannot be empty.'
-            })
-            return emptyFields.length > 0
         },
         toggleShowForm() {
             this.isFormShown = !this.isFormShown
         },
-        clearFormData() {
-            // This indirectly clears the UI, then triggers the watch handlers
-            this.data.profileName = ''
-            this.data.aws_access_key_id = ''
-            this.data.aws_secret_access_key = ''
+        updateForm() {
+            this.data = this.state.data
+            this.errors = this.state.errors
         },
         editCredentialsFile() {
             client.editCredentialsFile()
@@ -232,12 +167,6 @@ export default defineComponent({
         },
         showResourceExplorer() {
             client.showResourceExplorer()
-        },
-        /** Names of fields that have an error */
-        getFieldsWithErrors(): (keyof typeof this.errors)[] {
-            return Object.keys(this.errors).filter(
-                key => this.errors[key as keyof typeof this.errors]
-            ) as (keyof typeof this.errors)[]
         },
     },
     watch: {
@@ -254,91 +183,239 @@ export default defineComponent({
 })
 
 type CredentialsProfile = { profileName: SectionName } & StaticProfile
-type CredentialsProfileOptional = Partial<CredentialsProfile>
-type CredentialsProfileErrors = CredentialsProfileOptional
 type CredentialsDataKey = keyof CredentialsProfile
+
+type CredentialsFormErrors = {
+    profileName: string
+    aws_access_key_id: string
+    aws_secret_access_key: string
+    submit: string
+}
 
 /**
  * Manages the state of credentials data.
  */
 export class CredentialsState implements AuthForm {
-    private _data: CredentialsProfile
+    #data: CredentialsData
+    #errors: CredentialsErrors
 
-    constructor(data?: CredentialsProfile) {
-        this._data = {
-            profileName: '',
-            aws_access_key_id: '',
-            aws_secret_access_key: '',
-            ...data,
-        }
+    static #instance: CredentialsState
+
+    static get instance(): CredentialsState {
+        return (this.#instance ??= new CredentialsState())
     }
 
-    setValue(key: CredentialsDataKey, value: string) {
-        this._data[key] = value
+    private constructor() {
+        this.#data = CredentialsData.instance
+        this.#errors = CredentialsErrors.instance
     }
 
-    getValue(key: CredentialsDataKey) {
-        return this._data[key]
+    async setData(key: CredentialsDataKey, value: string) {
+        this.#data.setData(key, value)
+
+        await this.#errors.updateErrorFormatting(this.data, key)
+        // If an error under the submit button existed, we clear it out
+        // since the form data has changed since last submission
+        await this.#errors.setError('submit', '')
+    }
+
+    get data(): Readonly<CredentialsProfile> {
+        return { ...this.#data.getData() }
+    }
+
+    get errors(): Readonly<CredentialsFormErrors> {
+        return { ...this.#errors.getErrors() }
     }
 
     async isAuthConnected(): Promise<boolean> {
         return await client.isCredentialConnected()
     }
 
+    async isConnectionExists(): Promise<boolean> {
+        return client.isCredentialExists()
+    }
+
     get id(): AuthFormId {
         return 'credentials'
     }
 
-    async getFormatError(key: CredentialsDataKey): Promise<string | undefined> {
-        if (key === 'profileName') {
-            return client.getProfileNameError(this._data.profileName, false)
-        }
-
-        const result = await client.getCredentialFormatError(key, this._data[key])
-        return result
+    get featureType(): FeatureId {
+        return 'awsExplorer'
     }
 
-    async getSubmissionErrors(): Promise<CredentialsProfileErrors | undefined> {
-        const profileNameError = await client.getProfileNameError(this._data.profileName)
-        const formatErrors = await client.getCredentialsSubmissionErrors(this._data)
-
-        // No errors for anything
-        if (!profileNameError && !formatErrors) {
-            return undefined
-        }
-
-        return {
-            profileName: profileNameError,
-            ...formatErrors,
-        }
+    get authType(): CredentialSourceId {
+        return 'sharedCredentials'
     }
 
-    async getAuthenticationError(): Promise<StaticProfileKeyErrorMessage | undefined> {
-        return client.getAuthenticatedCredentialsError(this._data)
+    /**
+     * For Telemetry
+     */
+    startAuthFormInteraction() {
+        return client.startAuthFormInteraction(this.featureType, this.authType)
     }
 
+    /**
+     * Attempts to submit the current data.
+     *
+     * If there are errors, they will be updated in the state.
+     */
     async submitData(): Promise<boolean> {
-        const submit = await client.trySubmitCredentials(this._data.profileName, this._data)
-        this.clearData()
-        return submit
+        // 1. First verify the formatting of the user input
+        const hasEmptyFields = this.#errors.updateErrorEmptyFields(this.data)
+        const fieldsWithErrors = this.#errors.getFieldsWithErrors()
+        if (fieldsWithErrors.length > 0) {
+            client.failedAuthAttempt(this.id, {
+                reason: hasEmptyFields ? emptyFields : fieldHasError,
+                invalidInputFields: this.#errors.getFieldsWithErrors(),
+            })
+            return false
+        }
+
+        // 2. Pre-emptively verify the credentials actually work
+        const error = await this.#errors.authenticateCredentials(this.data)
+        if (error) {
+            client.failedAuthAttempt(this.id, {
+                reason: error.key,
+                invalidInputFields: this.#errors.getFieldsWithErrors(),
+            })
+            return false
+        }
+
+        // 3. Finally submit/save the credentials
+        const wasSuccess = await client.trySubmitCredentials(this.data.profileName, this.data)
+
+        if (wasSuccess) {
+            client.successfulAuthAttempt(this.id)
+            this.reset()
+        } else {
+            this.#errors.setError('submit', 'Unexpected extension error. See logs.')
+        }
+
+        return wasSuccess
     }
 
-    private clearData() {
-        this._data = {
+    private reset() {
+        this.#data.reset()
+        this.#errors.reset()
+    }
+}
+
+class CredentialsData {
+    private data: CredentialsProfile
+
+    setData(key: keyof CredentialsProfile, value: string) {
+        this.data[key] = value
+    }
+
+    getData(): Readonly<CredentialsProfile> {
+        return this.data
+    }
+
+    reset() {
+        this.data = CredentialsData.defaultData
+    }
+
+    private static get defaultData(): CredentialsProfile {
+        return {
             profileName: '',
             aws_access_key_id: '',
             aws_secret_access_key: '',
         }
+    }
+
+    static #instance: CredentialsData
+    static get instance(): CredentialsData {
+        return (this.#instance ??= new CredentialsData())
+    }
+    constructor() {
+        this.data = CredentialsData.defaultData
+    }
+}
+
+/** Manages the state of errors for Credentials */
+class CredentialsErrors {
+    private errors: CredentialsFormErrors
+
+    getErrors(): Readonly<CredentialsFormErrors> {
+        return this.errors
+    }
+
+    async setError(key: keyof CredentialsFormErrors, value: string) {
+        this.errors[key] = value
+        this.setInvalidInputFields()
+    }
+
+    reset() {
+        this.errors = CredentialsErrors.noErrors
+        this.setInvalidInputFields()
+    }
+
+    /** Updates the errors if required fields are empty */
+    updateErrorEmptyFields(data: CredentialsProfile): boolean {
+        const dataFieldKeys = Object.keys(data) as (keyof typeof data)[]
+        const emptyFieldKeys = dataFieldKeys.filter(key => !data[key])
+
+        emptyFieldKeys.forEach(fieldName => {
+            this.setError(fieldName as keyof CredentialsProfile, 'Cannot be empty.')
+        })
+
+        return emptyFieldKeys.length > 0
+    }
+
+    /** Updates the error if the given field has a format error */
+    async updateErrorFormatting(data: CredentialsProfile, key: CredentialsDataKey): Promise<void> {
+        if (key === 'profileName') {
+            const error = await client.getProfileNameError(data.profileName, false)
+            this.setError(key, error ?? '')
+            return
+        }
+
+        const result = await client.getCredentialFormatError(key, data[key])
+        this.setError(key, result ?? '')
+    }
+
+    /** Authenticates the given data actually works */
+    async authenticateCredentials(data: CredentialsProfile) {
+        const error = await client.getAuthenticatedCredentialsError(data)
+
+        if (error) {
+            this.setError(error.key, error.error)
+        }
+
+        return error
+    }
+
+    /** All fields that currently have an error */
+    getFieldsWithErrors(): (keyof CredentialsFormErrors)[] {
+        const errorKeys = Object.keys(this.errors) as (keyof CredentialsFormErrors)[]
+        return errorKeys.filter(key => this.errors[key])
+    }
+
+    private setInvalidInputFields() {
+        client.setInvalidInputFields(this.getFieldsWithErrors())
+    }
+
+    private static get noErrors(): CredentialsFormErrors {
+        return {
+            aws_access_key_id: '',
+            aws_secret_access_key: '',
+            profileName: '',
+            submit: '',
+        }
+    }
+
+    static #instance: CredentialsErrors
+    static get instance(): CredentialsErrors {
+        return (this.#instance ??= new CredentialsErrors())
+    }
+    private constructor() {
+        this.errors = CredentialsErrors.noErrors
     }
 }
 </script>
 <style>
 @import './sharedAuthForms.css';
 @import '../shared.css';
-
-#credentials-form {
-    width: 300px;
-}
 
 #collapsible {
     display: flex;
