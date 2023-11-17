@@ -408,17 +408,28 @@ export function logAndShowWebviewError(err: unknown, webviewId: string, command:
 }
 
 async function checkSettingsHealth(settings: Settings): Promise<boolean> {
-    const ok = await settings.isValid()
-    if (!ok) {
-        const msg = 'User settings.json file appears to be invalid. Check settings.json for syntax errors.'
-        const openSettingsItem = 'Open settings.json'
-        showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
-            if (resp === openSettingsItem) {
-                vscode.commands.executeCommand('workbench.action.openSettingsJson')
-            }
-        })
+    const r = await settings.isValid()
+    switch (r) {
+        case 'invalid': {
+            const msg = 'Failed to access settings. Check settings.json for syntax errors.'
+            const openSettingsItem = 'Open settings.json'
+            showViewLogsMessage(msg, 'error', [openSettingsItem]).then(async resp => {
+                if (resp === openSettingsItem) {
+                    vscode.commands.executeCommand('workbench.action.openSettingsJson')
+                }
+            })
+            return false
+        }
+        // Don't show a message for 'nowrite' because:
+        //  - settings.json may intentionally be readonly. #4043
+        //  - vscode will show its own error if settings.json cannot be written.
+        //
+        // Note: isValid() already logged a warning.
+        case 'nowrite':
+        case 'ok':
+        default:
+            return true
     }
-    return ok
 }
 
 async function getMachineId(): Promise<string> {
