@@ -4,6 +4,7 @@
  */
 
 import assert from 'assert'
+import os from 'os'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
 import semver from 'semver'
@@ -299,7 +300,7 @@ describe('', async function () {
                 session2UserTriggerEvent(),
                 sesssion3UserTriggerEvent({
                     codewhispererSuggestionState: 'Reject',
-                    codewhispererCursorOffset: 7,
+                    codewhispererCursorOffset: 7 + (os.EOL.length - 1),
                     codewhispererLineNumber: 1,
                 }),
             ])
