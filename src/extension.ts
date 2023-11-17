@@ -55,6 +55,7 @@ import { activate as activateDev } from './dev/activation'
 import { activate as activateRedshift } from './redshift/activation'
 import { CredentialsStore } from './auth/credentials/store'
 import { activate as activateCWChat } from './amazonq/activation'
+import { activate as activateQGumby } from './amazonqGumby/activation'
 import { getSamCliContext } from './shared/sam/cli/samCliContext'
 import { Ec2CredentialsProvider } from './auth/providers/ec2CredentialsProvider'
 import { EnvVarsCredentialsProvider } from './auth/providers/envVarsCredentialsProvider'
@@ -262,6 +263,8 @@ export async function activate(context: vscode.ExtensionContext) {
         await activateSchemas(extContext)
 
         await activateCWChat(extContext)
+
+        await activateQGumby(extContext)
 
         await activateStepFunctions(context, awsContext, toolkitOutputChannel)
 
