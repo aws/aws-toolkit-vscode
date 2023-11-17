@@ -368,12 +368,19 @@ describe('', async function () {
             // states will not be cleaned until reportUserDecision is called
             assert.strictEqual(session.sessionId, 'session_id_1')
             assert.deepStrictEqual(session.requestIdList, ['request_id_1', 'request_id_1', 'request_id_1_2'])
+            assert.ok(!RecommendationHandler.instance.isSuggestionVisible())
 
             RecommendationHandler.instance.onEditorChange()
             assertSessionClean()
+            await backsapce(editor) // todo: without this, the following manual trigger will not be displayed in the test, investigate and fix it
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+                session2UserTriggerEvent(),
             ])
         })
 
@@ -502,21 +509,6 @@ async function typing(editor: vscode.TextEditor, s: string) {
 }
 
 async function backsapce(editor: vscode.TextEditor) {
-    // const beforeLength = editor.document.getText.length
-    // const selected = editor.document.getText(new vscode.Range(editor.selection.start, editor.selection.end))
-    // if (selected.length === 0) {
-    //     return
-    // }
-
-    // await editor.edit(edit => {
-    //     edit.delete(editor.selection)
-    // })
-
-    // const afterLength = editor.document.getText.length
-    // assert.strictEqual(afterLength + selected.length, beforeLength)
-    // await sleep(2000) // see if we can use waitUntil to replace it
-    // assert cusor?
-
     return vscode.commands.executeCommand('deleteLeft')
 }
 
