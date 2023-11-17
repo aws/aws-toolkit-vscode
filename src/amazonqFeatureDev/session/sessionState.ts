@@ -241,8 +241,6 @@ export class CodeGenState extends CodeGenBase implements SessionState {
     }
 
     async interact(action: SessionStateAction): Promise<SessionStateInteraction> {
-        telemetry.amazonq_isApproachAccepted.emit({ amazonqConversationId: this.config.conversationId, enabled: true })
-
         return telemetry.amazonq_codeGenerationInvoke.run(async span => {
             try {
                 span.record({ amazonqConversationId: this.config.conversationId })
