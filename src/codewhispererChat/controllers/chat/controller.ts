@@ -112,7 +112,7 @@ export class ChatController {
 
         onDidChangeAmazonQVisibility(visible => {
             if (visible) {
-                this.telemetryHelper.recordOpenChat('click')
+                this.telemetryHelper.recordOpenChat()
             } else {
                 this.telemetryHelper.recordCloseChat()
             }
@@ -178,12 +178,7 @@ export class ChatController {
     }
 
     private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage) {
-        this.telemetryHelper.recordInteractWithMessage({
-            command: 'link-was-clicked',
-            tabID: click.tabID,
-            messageId: click.messageId,
-            url: click.link,
-        })
+        this.telemetryHelper.recordInteractWithMessage(click)
         ExternalBrowserUtils.instance.openLink(click.link)
     }
 

@@ -200,7 +200,8 @@
                 "clickFollowUp",
                 "hoverReference",
                 "upvote",
-                "downvote"
+                "downvote",
+                "clickBodyLink"
             ],
             "type": "string",
             "description": "Indicates the specific interaction type with a message in a conversation"
@@ -489,12 +490,7 @@
         },
         {
             "name": "codewhispererchat_openChat",
-            "description": "When user opens CWSPR chat panel",
-            "metadata": [
-                {
-                    "type": "cwsprChatTriggerInteraction"
-                }
-            ]
+            "description": "When user opens CWSPR chat panel"
         },
         {
             "name": "codewhispererchat_enterFocusChat",
