@@ -293,6 +293,50 @@ describe('', async function () {
         })
     })
 
+    describe('navigation', function () {
+        it('next and accept', async function () {
+            assertSessionClean()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await navigateNext()
+            await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Bar')
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
+        })
+
+        it('next and reject', async function () {
+            assertSessionClean()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await navigateNext()
+            await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), '')
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [
+                session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+            ])
+        })
+
+        it('next and accept', async function () {
+            assertSessionClean()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await navigateNext()
+            await navigatePrev()
+            await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
+        })
+    })
+
     describe('typing', function () {
         it('typeahead match accept', async function () {
             assertSessionClean()
@@ -493,6 +537,14 @@ async function acceptByTab() {
 
 async function rejectByEsc() {
     return vscode.commands.executeCommand('aws.codeWhisperer.rejectCodeSuggestion')
+}
+
+async function navigateNext() {
+    return vscode.commands.executeCommand('editor.action.inlineSuggest.showNext')
+}
+
+async function navigatePrev() {
+    return vscode.commands.executeCommand('editor.action.inlineSuggest.showPrevious')
 }
 
 async function closeActiveEditor() {
