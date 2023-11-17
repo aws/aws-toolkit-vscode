@@ -441,7 +441,6 @@ describe('CodeWhisperer telemetry', async function () {
         })
 
         it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
-            // no idea why this one doesn't work, the second inline suggestion will not be shown
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
