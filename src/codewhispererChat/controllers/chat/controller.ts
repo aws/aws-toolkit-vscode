@@ -183,11 +183,11 @@ export class ChatController {
     }
 
     private processResponseBodyLinkClick(click: ResponseBodyLinkClickMessage) {
-        this.openLinkInExternalBrowser({ ...click, command: 'body-link-was-clicked' })
+        this.openLinkInExternalBrowser(click)
     }
 
     private processSourceLinkClick(click: SourceLinkClickMessage) {
-        this.openLinkInExternalBrowser({ ...click, command: 'link-was-clicked' })
+        this.openLinkInExternalBrowser(click)
     }
 
     private processQuickActionCommand(quickActionCommand: ChatPromptCommandType) {

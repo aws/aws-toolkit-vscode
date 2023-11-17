@@ -100,6 +100,7 @@ export class UIMessageListener {
     }
     private processResponseBodyLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processResponseBodyLinkClick.publish({
+            command: msg.command,
             messageId: msg.messageId,
             tabID: msg.tabID,
             link: msg.link,
@@ -108,6 +109,7 @@ export class UIMessageListener {
 
     private processSourceLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processSourceLinkClick.publish({
+            command: msg.command,
             messageId: msg.messageId,
             tabID: msg.tabID,
             link: msg.link,

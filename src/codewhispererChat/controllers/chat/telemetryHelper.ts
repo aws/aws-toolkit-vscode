@@ -193,7 +193,7 @@ export class CWCTelemetryHelper {
                     cwsprChatInteractionType: message.vote,
                 }
                 break
-            case 'link-was-clicked':
+            case 'source-link-click':
                 message = message as SourceLinkClickMessage
                 event = {
                     cwsprChatMessageId: message.messageId,
@@ -202,7 +202,7 @@ export class CWCTelemetryHelper {
                     cwsprChatInteractionTarget: message.link,
                 }
                 break
-            case 'body-link-was-clicked':
+            case 'response-body-link-click':
                 message = message as ResponseBodyLinkClickMessage
                 event = {
                     cwsprChatMessageId: message.messageId,
