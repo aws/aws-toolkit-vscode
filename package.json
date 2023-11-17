@@ -732,7 +732,8 @@
                 {
                     "type": "webview",
                     "id": "aws.AmazonQChatView",
-                    "name": "%AWS.amazonq.chat%"
+                    "name": "%AWS.amazonq.chat%",
+                    "when": "!isCloud9"
                 }
             ],
             "aws-explorer": [
