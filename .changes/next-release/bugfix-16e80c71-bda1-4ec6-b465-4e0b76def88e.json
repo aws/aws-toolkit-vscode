@@ -1,0 +1,4 @@
+{
+  "type" : "bugfix",
+  "description" : "Fix issue where the toolkit calls the wrong CodeCatalyst service endpoint"
+}

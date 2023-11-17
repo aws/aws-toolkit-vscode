@@ -36,6 +36,7 @@ aws-bom = { module = "software.amazon.awssdk:bom", version.ref = "awsSdk" }
 aws-cloudcontrol = { module = "software.amazon.awssdk:cloudcontrol", version.ref = "awsSdk" }
 aws-cloudformation = { module = "software.amazon.awssdk:cloudformation", version.ref = "awsSdk" }
 aws-cloudwatchlogs = { module = "software.amazon.awssdk:cloudwatchlogs", version.ref = "awsSdk" }
+aws-codecatalyst = { module = "software.amazon.awssdk:codecatalyst", version.ref = "awsSdk" }
 aws-codeGen = { module = "software.amazon.awssdk:codegen", version.ref = "awsSdk" }
 aws-cognitoidentity = { module = "software.amazon.awssdk:cognitoidentity", version.ref = "awsSdk" }
 aws-dynamodb = { module = "software.amazon.awssdk:dynamodb", version.ref = "awsSdk" }

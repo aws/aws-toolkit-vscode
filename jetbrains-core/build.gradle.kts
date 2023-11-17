@@ -121,6 +121,7 @@ dependencies {
     api(libs.aws.cloudcontrol)
     api(libs.aws.cloudformation)
     api(libs.aws.cloudwatchlogs)
+    api(libs.aws.codecatalyst)
     api(libs.aws.dynamodb)
     api(libs.aws.ec2)
     api(libs.aws.ecr)
