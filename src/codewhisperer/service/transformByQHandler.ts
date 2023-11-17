@@ -190,23 +190,65 @@ function getFilesRecursively(dir: string): string[] {
     return files
 }
 
+function getProjectDependencies(modulePath: string): string[] {
+    // Make temp directory
+    const folderName = CodeWhispererConstants.dependencyFolderName
+    const folderPath = path.join(os.tmpdir(), folderName)
+
+    const baseCommand = 'mvn'
+    const args = [
+        'dependency:copy-dependencies',
+        '-DoutputDirectory=' + folderPath,
+        '-Dmdep.useRepositoryLayout=true',
+        '-Dmdep.copyPom=true',
+        '-Dmdep.addParentPoms=true',
+    ]
+    const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
+
+    if (spawnResult.error || spawnResult.status !== 0) {
+        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        getLogger().error('Error in running Maven command:')
+        // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
+        if (spawnResult.error) {
+            getLogger().error(spawnResult.error)
+        } else {
+            getLogger().error(spawnResult.stdout)
+        }
+        throw Error('Maven Dependency Error')
+    }
+
+    return [folderPath, folderName]
+}
+
 export async function zipCode(modulePath: string) {
     const sourceFolder = modulePath
-    const files = getFilesRecursively(sourceFolder)
+    const sourceFiles = getFilesRecursively(sourceFolder)
+
+    const dependencyResult = getProjectDependencies(modulePath)
+    const dependencyFolderPath = dependencyResult[0]
+    const dependencyFolderName = dependencyResult[1]
+    const dependencyFiles = getFilesRecursively(dependencyFolderPath)
 
     const zip = new AdmZip()
+    const zipManifest = new ZipManifest()
+    zipManifest.dependenciesRoot = dependencyFolderName + '/'
+    zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
 
-    const zipManifest = JSON.stringify(new ZipManifest())
-    zip.addFile('manifest.json', Buffer.from(zipManifest, 'utf-8'))
-
-    for (const file of files) {
+    for (const file of sourceFiles) {
         const relativePath = path.relative(sourceFolder, file)
         const paddedPath = path.join('sources', relativePath)
         zip.addLocalFile(file, path.dirname(paddedPath))
     }
 
+    for (const file of dependencyFiles) {
+        const relativePath = path.relative(dependencyFolderPath, file)
+        const paddedPath = path.join(dependencyFolderName, relativePath)
+        zip.addLocalFile(file, path.dirname(paddedPath))
+    }
+
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
+    fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
     return tempFilePath
 }
 

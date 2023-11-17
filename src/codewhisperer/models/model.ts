@@ -243,6 +243,7 @@ export enum DropdownStep {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
+    dependenciesRoot: string = '' // To be specified
     version: string = '1.0'
 }
 

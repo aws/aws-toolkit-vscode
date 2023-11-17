@@ -310,6 +310,14 @@ export const cancellationInProgressMessage = 'Cancellation is in-progress'
 export const noSupportedJavaProjectsFoundMessage =
     'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11.'
 
+export const dependencyDisclaimer =
+    'We have detected your project to be in JDK 8/11. This project is eligible for upgrade to Java 17. If you decide to upgrade, we will also access 1P dependencies from your local disk. Please build your code locally at least once for Amazon Q to access your 1P dependencies from your local disk. If you would like to upgrade to Java 17, please click transform or else cancel.'
+
+export const dependencyFolderName = 'transformation_dependencies_temp'
+
+export const dependencyErrorMessage =
+    'There was an error in zipping up project dependencies. Please make sure you have Maven installed and the project has been been built.'
+
 export const JDK8VersionNumber = '52'
 
 export const JDK11VersionNumber = '55'

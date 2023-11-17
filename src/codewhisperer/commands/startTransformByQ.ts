@@ -103,6 +103,16 @@ export async function startTransformByQ() {
 
     const state = await collectInputs(validModules)
 
+    const selection = await vscode.window.showWarningMessage(
+        CodeWhispererConstants.dependencyDisclaimer,
+        'Transform',
+        'Cancel'
+    )
+
+    if (selection !== 'Transform') {
+        return
+    }
+
     vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
     vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
