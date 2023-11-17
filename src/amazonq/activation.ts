@@ -13,16 +13,15 @@ import { Commands } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
 import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
-import { ExtContext } from '../shared/extensions'
 import { focusAmazonQPanel } from '../codewhisperer/commands/basicCommands'
 
-export async function activate(context: ExtContext) {
+export async function activate(context: ExtensionContext) {
     const appInitContext = new DefaultAmazonQAppInitContext()
 
     registerApps(appInitContext)
 
     const provider = new AmazonQChatViewProvider(
-        context.extensionContext,
+        context,
         appInitContext.getWebViewToAppsMessagePublishers(),
         appInitContext.getAppsToWebViewMessageListener(),
         appInitContext.onDidChangeAmazonQVisibility
@@ -30,19 +29,17 @@ export async function activate(context: ExtContext) {
 
     const cwcWebViewToAppsPublisher = appInitContext.getWebViewToAppsMessagePublishers().get('cwc')!
 
-    context.extensionContext.subscriptions.push(
+    context.subscriptions.push(
         window.registerWebviewViewProvider(AmazonQChatViewProvider.viewType, provider, {
             webviewOptions: {
                 retainContextWhenHidden: true,
             },
-        }),
-
-        amazonQWelcomeCommand.register(context.extensionContext, cwcWebViewToAppsPublisher),
-
-        learnMoreAmazonQCommand.register(),
-
-        switchToAmazonQCommand.register()
+        })
     )
+
+    amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
+    learnMoreAmazonQCommand.register()
+    switchToAmazonQCommand.register()
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

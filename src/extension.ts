@@ -262,7 +262,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
-        await activateCWChat(extContext)
+        await activateCWChat(extContext.extensionContext)
 
         await activateQGumby(extContext)
 
