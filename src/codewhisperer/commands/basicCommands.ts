@@ -13,7 +13,7 @@ import { startSecurityScanWithProgress, confirmStopSecurityScan } from './startS
 import { SecurityPanelViewProvider } from '../views/securityPanelViewProvider'
 import { CodeSuggestionsState, codeScanState } from '../models/model'
 import { connectToEnterpriseSso, getStartUrl } from '../util/getStartUrl'
-import { showConnectionPrompt } from '../util/showSsoPrompt'
+import { showCodeWhispererConnectionPrompt } from '../util/showSsoPrompt'
 import { ReferenceLogViewProvider } from '../service/referenceLogViewProvider'
 import { AuthUtil } from '../util/authUtil'
 import { isCloud9 } from '../../shared/extensionUtilities'
@@ -117,7 +117,7 @@ export const showManageCwConnections = Commands.declare(
 /** @deprecated in favor of the `Add Connection` page */
 export const showSsoSignIn = Commands.declare('aws.codeWhisperer.sso', () => async () => {
     telemetry.ui_click.emit({ elementId: 'cw_signUp_Cta' })
-    await showConnectionPrompt()
+    await showCodeWhispererConnectionPrompt()
 })
 
 // Shortcut command to directly connect to Identity Center or prompt start URL entry
