@@ -96,21 +96,8 @@ export class CWCTelemetryHelper {
         }
     }
 
-    public recordOpenChat(triggerInteractionType: TabOpenType) {
-        let cwsprChatTriggerInteraction: CwsprChatTriggerInteraction = 'click'
-        switch (triggerInteractionType) {
-            case 'click':
-                cwsprChatTriggerInteraction = 'click'
-                break
-            case 'contextMenu':
-                cwsprChatTriggerInteraction = 'contextMenu'
-                break
-            case 'hotkeys':
-                cwsprChatTriggerInteraction = 'hotkeys'
-                break
-        }
-
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
+    public recordOpenChat() {
+        telemetry.codewhispererchat_openChat.emit()
     }
 
     public recordCloseChat() {

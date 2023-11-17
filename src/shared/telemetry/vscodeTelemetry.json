@@ -489,12 +489,7 @@
         },
         {
             "name": "codewhispererchat_openChat",
-            "description": "When user opens CWSPR chat panel",
-            "metadata": [
-                {
-                    "type": "cwsprChatTriggerInteraction"
-                }
-            ]
+            "description": "When user opens CWSPR chat panel"
         },
         {
             "name": "codewhispererchat_enterFocusChat",

@@ -112,7 +112,7 @@ export class ChatController {
 
         onDidChangeAmazonQVisibility(visible => {
             if (visible) {
-                this.telemetryHelper.recordOpenChat('click')
+                this.telemetryHelper.recordOpenChat()
             } else {
                 this.telemetryHelper.recordCloseChat()
             }
