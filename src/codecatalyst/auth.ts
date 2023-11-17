@@ -17,7 +17,10 @@ import {
     SsoConnection,
     Connection,
     isBuilderIdConnection,
+    isSsoConnection,
+    createSsoProfile,
     isValidCodeCatalystConnection,
+    isIdcSsoConnection,
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
 
@@ -38,10 +41,10 @@ export class CodeCatalystAuthStorage {
 
 export const onboardingUrl = vscode.Uri.parse('https://codecatalyst.aws/onboarding/view')
 
-const defaultScopes = [...scopesSsoAccountAccess, ...scopesCodeCatalyst]
+export const defaultScopes = [...scopesSsoAccountAccess, ...scopesCodeCatalyst]
 
 export const isUpgradeableConnection = (conn: Connection): conn is SsoConnection =>
-    isBuilderIdConnection(conn) && !isValidCodeCatalystConnection(conn)
+    isSsoConnection(conn) && !isValidCodeCatalystConnection(conn)
 
 export function setCodeCatalystConnectedContext(isConnected: boolean) {
     return vscode.commands.executeCommand('setContext', 'aws.codecatalyst.connected', isConnected)
@@ -184,6 +187,76 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         throw new ToolkitError('Not connected to CodeCatalyst', { code: 'NoConnectionBadState' })
+    }
+
+    public isConnected(): boolean {
+        return this.activeConnection !== undefined
+    }
+
+    public isBuilderIdInUse(): boolean {
+        return this.isConnected() && isBuilderIdConnection(this.activeConnection)
+    }
+
+    public isEnterpriseSsoInUse(): boolean {
+        return this.isConnected() && isIdcSsoConnection(this.activeConnection)
+    }
+
+    public async connectToAwsBuilderId() {
+        let conn: SsoConnection
+        let isConnectionOnboarded: boolean
+
+        try {
+            conn = await this.tryGetBuilderIdConnection()
+
+            if (this.auth.getConnectionState(conn) === 'invalid') {
+                conn = await this.auth.reauthenticate(conn)
+            }
+
+            isConnectionOnboarded = await this.isConnectionOnboarded(conn, true)
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to connect to Builder ID', {
+                code: 'FailedToConnect',
+            })
+        }
+
+        if (!isConnectionOnboarded) {
+            await this.promptOnboarding()
+        }
+
+        return this.secondaryAuth.useNewConnection(conn)
+    }
+
+    public async connectToEnterpriseSso(startUrl: string, region: string) {
+        let conn: SsoConnection | undefined
+        let isConnectionOnboarded: boolean
+
+        try {
+            conn = (await this.auth.listConnections()).find(
+                (c): c is SsoConnection => isSsoConnection(c) && c.startUrl.toLowerCase() === startUrl.toLowerCase()
+            )
+
+            if (!conn) {
+                conn = await this.auth.createConnection(createSsoProfile(startUrl, region, defaultScopes))
+            } else if (!isValidCodeCatalystConnection(conn)) {
+                conn = await this.secondaryAuth.addScopes(conn, defaultScopes)
+            }
+
+            if (this.auth.getConnectionState(conn) === 'invalid') {
+                conn = await this.auth.reauthenticate(conn)
+            }
+
+            isConnectionOnboarded = await this.isConnectionOnboarded(conn, true)
+        } catch (e) {
+            throw ToolkitError.chain(e, 'Failed to connect to IAM Identity Center', {
+                code: 'FailedToConnect',
+            })
+        }
+
+        if (!isConnectionOnboarded) {
+            await this.promptOnboarding()
+        }
+
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {

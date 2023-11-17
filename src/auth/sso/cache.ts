@@ -105,25 +105,28 @@ export function getTokenCache(directory = getCacheDir()): KeyedCache<SsoAccess> 
     }
 
     const logger = (message: string) => getLogger().debug(`SSO token cache: ${message}`)
-    const cache = createDiskCache<StoredToken, string>((ssoUrl: string) => getTokenCacheFile(directory, ssoUrl), logger)
+    const cache = createDiskCache<StoredToken, string>((key: string) => getTokenCacheFile(directory, key), logger)
 
     return mapCache(cache, read, write)
 }
 
-function getTokenCacheFile(ssoCacheDir: string, ssoUrl: string): string {
-    const encoded = encodeURI(ssoUrl)
+function getTokenCacheFile(ssoCacheDir: string, key: string): string {
+    const encoded = encodeURI(key)
     // Per the spec: 'SSO Login Token Flow' the access token must be
     // cached as the SHA1 hash of the bytes of the UTF-8 encoded
-    // startUrl value with ".json" appended to the end.
+    // startUrl value with ".json" appended to the end. However, the
+    // cache key used by the Toolkit is an alternative arbitrary key
+    // in most scenarios. This alternative cache key still conforms
+    // to the same ${sha1(key)}.json cache location semantics.
 
     const shasum = crypto.createHash('sha1')
     // Suppress warning because:
     //   1. SHA1 is prescribed by the AWS SSO spec
-    //   2. the hashed startUrl value is not a secret
+    //   2. the hashed startUrl or other key value is not a secret
     shasum.update(encoded) // lgtm[js/weak-cryptographic-algorithm]
-    const hashedUrl = shasum.digest('hex') // lgtm[js/weak-cryptographic-algorithm]
+    const hashedKey = shasum.digest('hex') // lgtm[js/weak-cryptographic-algorithm]
 
-    return path.join(ssoCacheDir, `${hashedUrl}.json`)
+    return path.join(ssoCacheDir, `${hashedKey}.json`)
 }
 
 function getRegistrationCacheFile(ssoCacheDir: string, key: RegistrationKey): string {

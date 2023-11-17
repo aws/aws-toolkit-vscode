@@ -22,7 +22,6 @@ import { profileExists } from '../../credentials/sharedCredentials'
 import { getLogger } from '../../../shared/logger'
 import { AuthUtil as CodeWhispererAuth } from '../../../codewhisperer/util/authUtil'
 import { CodeCatalystAuthenticationProvider } from '../../../codecatalyst/auth'
-import { setupCodeCatalystBuilderId } from '../../../codecatalyst/utils'
 import { ToolkitError } from '../../../shared/errors'
 import {
     Connection,
@@ -143,7 +142,13 @@ export class AuthWebview extends VueWebview {
     }
 
     async startCodeCatalystBuilderIdSetup(): Promise<AuthError | undefined> {
-        return this.ssoSetup('startCodeCatalystBuilderIdSetup', () => setupCodeCatalystBuilderId(this.codeCatalystAuth))
+        return this.ssoSetup('startCodeCatalystBuilderIdSetup', () => this.codeCatalystAuth.connectToAwsBuilderId())
+    }
+
+    async startCodeCatalystIdentityCenterSetup(startUrl: string, regionId: Region['id']) {
+        return this.ssoSetup('startCodeCatalystIdentityCenterSetup', () => {
+            return this.codeCatalystAuth.connectToEnterpriseSso(startUrl, regionId)
+        })
     }
 
     isCodeWhispererBuilderIdConnected(): boolean {
@@ -151,7 +156,7 @@ export class AuthWebview extends VueWebview {
     }
 
     isCodeCatalystBuilderIdConnected(): boolean {
-        return this.codeCatalystAuth.isConnectionValid()
+        return this.codeCatalystAuth.isBuilderIdInUse() && this.codeCatalystAuth.isConnectionValid()
     }
 
     async signoutBuilderId(): Promise<void> {
@@ -265,6 +270,10 @@ export class AuthWebview extends VueWebview {
         return CodeWhispererAuth.instance.isEnterpriseSsoInUse() && CodeWhispererAuth.instance.isConnectionValid()
     }
 
+    isCodeCatalystIdentityCenterConnected(): boolean {
+        return this.codeCatalystAuth.isEnterpriseSsoInUse() && this.codeCatalystAuth.isConnectionValid()
+    }
+
     async signoutCWIdentityCenter(): Promise<void> {
         const activeConn = CodeWhispererAuth.instance.isEnterpriseSsoInUse()
             ? CodeWhispererAuth.instance.conn
@@ -278,6 +287,23 @@ export class AuthWebview extends VueWebview {
         }
 
         await CodeWhispererAuth.instance.secondaryAuth.deleteConnection()
+    }
+
+    async signoutCodeCatalystIdentityCenter(): Promise<void> {
+        const activeConn = this.codeCatalystAuth.isEnterpriseSsoInUse()
+            ? this.codeCatalystAuth.activeConnection
+            : undefined
+        if (!activeConn) {
+            // At this point CC is not actively using IAM IC,
+            // even if a valid IAM IC profile exists. We only
+            // want to sign out if it being actively used.
+            getLogger().warn(
+                'authWebview: Attempted to signout of CodeCatalyst identity center when it was not being used'
+            )
+            return
+        }
+
+        await this.codeCatalystAuth.secondaryAuth.deleteConnection()
     }
 
     async signoutIdentityCenter(): Promise<void> {
@@ -699,6 +725,7 @@ export type AuthUiClick =
     | 'auth_explorer_expandIAMIdentityCenter'
     | 'auth_explorer_expandIAMCredentials'
     | 'auth_codewhisperer_expandIAMIdentityCenter'
+    | 'auth_codecatalyst_expandIAMIdentityCenter'
     | 'auth_openConnectionSelector'
     | 'auth_openAWSExplorer'
     | 'auth_openCodeWhisperer'
@@ -707,6 +734,7 @@ export type AuthUiClick =
     | 'auth_codewhisperer_signoutBuilderId'
     | 'auth_codewhisperer_signoutIdentityCenter'
     | 'auth_codecatalyst_signoutBuilderId'
+    | 'auth_codecatalyst_signoutIdentityCenter'
     | 'auth_explorer_signoutIdentityCenter'
 
 // type AuthAreas = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
