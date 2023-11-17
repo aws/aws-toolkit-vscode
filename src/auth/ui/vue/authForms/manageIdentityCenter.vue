@@ -352,7 +352,7 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     }
 
     override async showView(): Promise<void> {
-        client.showCodeWhispererNode()
+        return client.showCodeWhispererView()
     }
 
     override signout(): Promise<void> {
