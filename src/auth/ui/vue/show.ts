@@ -45,7 +45,7 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { validateSsoUrl, validateSsoUrlFormat } from '../../sso/validation'
 import { debounce } from '../../../shared/utilities/functionUtils'
 import { AuthError, ServiceItemId, isServiceItemId, userCancelled } from './types'
-import { awsIdSignIn } from '../../../codewhisperer/util/showSsoPrompt'
+import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
 import { connectToEnterpriseSso } from '../../../codewhisperer/util/getStartUrl'
 import { trustedDomainCancellation } from '../../sso/model'
 import { FeatureId, CredentialSourceId, Result, telemetry } from '../../../shared/telemetry/telemetry'
@@ -741,14 +741,18 @@ export type AuthSource = (typeof AuthSources)[keyof typeof AuthSources]
 export const showManageConnections = Commands.declare(
     { id: 'aws.auth.manageConnections', compositeKey: { 1: 'source' } },
     (context: vscode.ExtensionContext) => (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+        if (_ !== placeholder) {
+            source = 'vscodeComponent'
+        }
+
         // The auth webview page does not make sense to use in C9,
         // so show the auth quick pick instead.
         if (isCloud9('any')) {
+            if (source.toLowerCase().includes('codewhisperer')) {
+                // Show CW specific quick pick for CW connections
+                return showCodeWhispererConnectionPrompt()
+            }
             return addConnection.execute()
-        }
-
-        if (_ !== placeholder) {
-            source = 'vscodeComponent'
         }
 
         if (!isServiceItemId(serviceToShow)) {
