@@ -251,7 +251,13 @@ export class FeatureDevController {
                 return
             }
 
-            this.messenger.sendFilePaths(filePaths, deletedFiles, tabID, session.uploadId)
+            this.messenger.sendCodeResult(
+                filePaths,
+                deletedFiles,
+                session.state.references ?? [],
+                tabID,
+                session.uploadId
+            )
             this.messenger.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',

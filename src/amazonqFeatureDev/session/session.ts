@@ -11,6 +11,7 @@ import { ConversationNotStartedState, PrepareCodeGenState, PrepareRefinementStat
 import type { Interaction, SessionState, SessionStateConfig } from '../types'
 import { ConversationIdNotFoundError } from '../errors'
 import { featureDevScheme } from '../constants'
+import { referenceLogText } from '../constants'
 import { FileSystemCommon } from '../../srcShared/fs'
 import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
@@ -19,6 +20,7 @@ import { SessionConfig } from './sessionConfigFactory'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
+import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
 
 const fs = FileSystemCommon.instance
 
@@ -109,6 +111,7 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
             this.approach,
             [],
             [],
+            [],
             this.tabID,
             0
         )
@@ -170,9 +173,14 @@ aws-toolkit-vscode version: ${extensionVersion}</code></pre>
             await fs.mkdir(path.dirname(absolutePath))
             await fs.writeFile(absolutePath, decodedContent)
         }
+
         for (const filePath of this.state.deletedFiles ?? []) {
             const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(this.config.workspaceRoot, filePath)
             await fs.delete(absolutePath)
+        }
+
+        for (const ref of this.state.references ?? []) {
+            ReferenceLogViewProvider.instance.addReferenceLog(referenceLogText(ref))
         }
     }
 

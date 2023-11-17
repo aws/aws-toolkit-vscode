@@ -160,7 +160,7 @@ describe('sessionState', () => {
             const testAction = mockSessionStateAction({})
 
             assert.rejects(() => {
-                return new PrepareCodeGenState(testConfig, testApproach, [], [], tabId, 0).interact(testAction)
+                return new PrepareCodeGenState(testConfig, testApproach, [], [], [], tabId, 0).interact(testAction)
             }, PrepareCodeGenState)
         })
     })
@@ -168,12 +168,12 @@ describe('sessionState', () => {
     describe('CodeGenState', () => {
         it('transitions to PrepareCodeGenState when codeGenerationStatus ready ', async () => {
             mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
-            mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [] })
+            mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
             const testAction = mockSessionStateAction({})
-            const state = new CodeGenState(testConfig, testApproach, [], [], tabId, 0)
+            const state = new CodeGenState(testConfig, testApproach, [], [], [], tabId, 0)
             const result = await state.interact(testAction)
 
-            const nextState = new PrepareCodeGenState(testConfig, testApproach, [], [], tabId, 1)
+            const nextState = new PrepareCodeGenState(testConfig, testApproach, [], [], [], tabId, 1)
 
             assert.deepStrictEqual(result, {
                 nextState,
@@ -184,7 +184,7 @@ describe('sessionState', () => {
         it('fails when codeGenerationStatus failed ', async () => {
             mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
             const testAction = mockSessionStateAction({})
-            const state = new CodeGenState(testConfig, testApproach, [], [], tabId, 0)
+            const state = new CodeGenState(testConfig, testApproach, [], [], [], tabId, 0)
             try {
                 await state.interact(testAction)
                 assert.fail('failed code generations should throw an error')

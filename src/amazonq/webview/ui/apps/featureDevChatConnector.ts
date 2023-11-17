@@ -129,13 +129,14 @@ export class Connector {
         }
     }
 
-    private processFilePathMessage = async (messageData: any): Promise<void> => {
+    private processCodeResultMessage = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived !== undefined) {
             const answer: ChatItem = {
                 type: ChatItemType.CODE_RESULT,
                 relatedContent: undefined,
                 followUp: undefined,
                 canBeVoted: true,
+                codeReference: messageData.references,
                 // TODO get the backend to store a message id in addition to conversationID
                 messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
                 fileList: {
@@ -163,8 +164,8 @@ export class Connector {
             return
         }
 
-        if (messageData.type === 'filePathMessage') {
-            await this.processFilePathMessage(messageData)
+        if (messageData.type === 'codeResultMessage') {
+            await this.processCodeResultMessage(messageData)
             return
         }
 

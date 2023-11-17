@@ -29,6 +29,7 @@ import {
 import { collectFiles, prepareRepoData } from '../util/files'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { uploadCode } from '../util/upload'
+import { CodeReference } from '../../amazonq/webview/ui/connector'
 
 const fs = FileSystemCommon.instance
 
@@ -177,6 +178,7 @@ abstract class CodeGenBase {
         newFiles: any
         newFilePaths: string[]
         deletedFiles: string[]
+        references: CodeReference[]
     }> {
         for (
             let pollingIteration = 0;
@@ -188,15 +190,15 @@ abstract class CodeGenBase {
             telemetry.setCodeGenerationResult(codegenResult.codeGenerationStatus.status)
             switch (codegenResult.codeGenerationStatus.status) {
                 case 'Complete': {
-                    const { newFileContents, deletedFiles } = await this.config.proxyClient.exportResultArchive(
-                        this.conversationId
-                    )
+                    const { newFileContents, deletedFiles, references } =
+                        await this.config.proxyClient.exportResultArchive(this.conversationId)
                     const newFilePaths = await createFilePaths(fs, newFileContents, this.uploadId)
                     telemetry.setNumberOfFilesGenerated(newFilePaths.length)
                     return {
                         newFiles: newFileContents,
                         newFilePaths,
                         deletedFiles,
+                        references,
                     }
                 }
                 case 'predict-ready':
@@ -224,6 +226,7 @@ abstract class CodeGenBase {
             newFiles: [],
             newFilePaths: [],
             deletedFiles: [],
+            references: [],
         }
     }
 }
@@ -234,6 +237,7 @@ export class CodeGenState extends CodeGenBase implements SessionState {
         public approach: string,
         public filePaths: string[],
         public deletedFiles: string[],
+        public references: CodeReference[],
         tabID: string,
         private currentIteration: number
     ) {
@@ -267,12 +271,14 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 })
                 this.filePaths = codeGeneration.newFilePaths
                 this.deletedFiles = codeGeneration.deletedFiles
+                this.references = codeGeneration.references
                 action.telemetry.recordUserCodeGenerationTelemetry(this.conversationId)
                 const nextState = new PrepareCodeGenState(
                     this.config,
                     this.approach,
                     this.filePaths,
                     this.deletedFiles,
+                    this.references,
                     this.tabID,
                     this.currentIteration + 1
                 )
@@ -321,7 +327,19 @@ export class MockCodeGenState implements SessionState {
                 this.filePaths = await createFilePaths(action.fs, newFileContents, this.uploadId)
                 this.deletedFiles = ['src/this-file-should-be-deleted.ts']
             }
-            action.messenger.sendFilePaths(this.filePaths, this.deletedFiles, this.tabID, this.uploadId)
+            action.messenger.sendCodeResult(
+                this.filePaths,
+                this.deletedFiles,
+                [
+                    {
+                        licenseName: 'MIT',
+                        repository: 'foo',
+                        url: 'foo',
+                    },
+                ],
+                this.tabID,
+                this.uploadId
+            )
             action.messenger.sendAnswer({
                 message: undefined,
                 type: 'system-prompt',
@@ -364,6 +382,7 @@ export class PrepareCodeGenState implements SessionState {
         public approach: string,
         public filePaths: string[],
         public deletedFiles: string[],
+        public references: CodeReference[],
         public tabID: string,
         private currentIteration: number
     ) {
@@ -392,6 +411,7 @@ export class PrepareCodeGenState implements SessionState {
             '',
             this.filePaths,
             this.deletedFiles,
+            this.references,
             this.tabID,
             this.currentIteration
         )
