@@ -17,7 +17,6 @@ import { Messenger } from '../controllers/chat/messenger/messenger'
 import { FeatureDevClient } from '../client/featureDev'
 import { approachRetryLimit, codeGenRetryLimit } from '../limits'
 import { SessionConfig } from './sessionConfigFactory'
-import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { TelemetryHelper } from '../util/telemetryHelper'
 import { ReferenceLogViewProvider } from '../../codewhisperer/service/referenceLogViewProvider'
@@ -56,15 +55,7 @@ export class Session {
 
             telemetry.amazonq_startChat.emit({ amazonqConversationId: this.conversationId, value: 1 })
 
-            const extensionVersion = vscode.extensions.getExtension(VSCODE_EXTENSION_ID.awstoolkit)?.packageJSON.version
-            this.messenger.sendAsyncEventProgress(
-                this.tabID,
-                true,
-                `Your conversation has been started:
-<pre><code>Conversation ID: ${this.conversationId}  
-aws-toolkit-vscode version: ${extensionVersion}</code></pre>
-`
-            )
+            this.messenger.sendAsyncEventProgress(this.tabID, true, undefined)
         }
     }
 
