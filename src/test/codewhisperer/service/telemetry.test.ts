@@ -569,7 +569,7 @@ async function acceptByTab() {
     await vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
 
     // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
-    await sleep(vsCodeCursorUpdateDelay + 10)
+    await sleep(vsCodeCursorUpdateDelay + 50)
 }
 
 async function rejectByEsc() {
