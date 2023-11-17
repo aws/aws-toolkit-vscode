@@ -164,12 +164,12 @@ export class AuthWebview extends VueWebview {
         vscode.commands.executeCommand('aws.explorer.focus')
     }
 
-    async showCodeWhispererNode(): Promise<void> {
-        vscode.commands.executeCommand('aws.developerTools.showCodeWhisperer')
+    async showCodeWhispererView(): Promise<void> {
+        vscode.commands.executeCommand('aws.codewhisperer.focus')
     }
 
     async showCodeCatalystNode(): Promise<void> {
-        vscode.commands.executeCommand('aws.developerTools.showCodeCatalyst')
+        vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {

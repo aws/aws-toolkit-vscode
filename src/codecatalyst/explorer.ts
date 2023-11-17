@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { RootNode } from '../awsexplorer/localExplorer'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
@@ -36,11 +35,11 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
         return [
             showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
-                label: 'Start',
-                iconPath: getIcon('vscode-debug-start'),
+                label: 'Sign in to get started',
+                iconPath: getIcon('vscode-account'),
             }),
             learnMoreCommand.build(docsUrl).asTreeNode({
-                label: 'Learn More about CodeCatalyst',
+                label: 'Learn more about CodeCatalyst',
                 iconPath: getIcon('vscode-question'),
             }),
         ]
@@ -49,7 +48,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     if (isCloud9()) {
         const item = reauth.build(auth.activeConnection, auth).asTreeNode({
             label: 'Failed to get the current Dev Environment. Click to try again.',
-            iconPath: getIcon(`vscode-error`),
+            iconPath: addColor(getIcon(`vscode-error`), 'notificationsErrorIcon.foreground'),
         })
 
         return [item]
@@ -93,7 +92,7 @@ function getRemoteCommands(currentDevEnv: DevEnvironment, devfileLocation: vscod
     ]
 }
 
-export class CodeCatalystRootNode implements RootNode {
+export class CodeCatalystRootNode implements TreeNode {
     public readonly id = 'codecatalyst'
     public readonly resource = this.devenv
 
@@ -103,10 +102,17 @@ export class CodeCatalystRootNode implements RootNode {
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
 
+    private refreshEmitters: (() => void)[] = []
+
     private devenv?: ConnectedDevEnv
 
     public constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
-        this.authProvider.onDidChangeActiveConnection(() => this.onDidChangeEmitter.fire())
+        this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
+        this.authProvider.onDidChangeActiveConnection(() => {
+            for (const fire of this.refreshEmitters) {
+                fire()
+            }
+        })
     }
 
     public async getChildren(): Promise<TreeNode[]> {
@@ -161,5 +167,9 @@ export class CodeCatalystRootNode implements RootNode {
                 : 'AWS Builder ID Connected'
         }
         return ''
+    }
+
+    public addRefreshEmitter(emitter: () => void) {
+        this.refreshEmitters.push(emitter)
     }
 }

@@ -9,13 +9,12 @@ import {
     createSignIn,
     createReconnect,
 } from '../../codewhisperer/explorer/codewhispererChildrenNodes'
-import { RootNode } from '../../awsexplorer/localExplorer'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { createLearnMoreNode, createTransformByQ, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 
-export class AmazonQNode implements RootNode {
+export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -100,17 +99,19 @@ export class AmazonQNode implements RootNode {
 }
 
 export const amazonQNode = new AmazonQNode()
-export const refreshCodeWhisperer = Commands.register(
-    { id: 'aws.amazonq.refresh', logging: false },
-    (showFreeTierLimitNode = false) => {
+export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, (showFreeTierLimitNode = false) => {
         amazonQNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
         amazonQNode.refresh()
-    }
-)
+        if (provider) {
+            provider.refresh()
+        }
+    })
 
-export const refreshCodeWhispererRootNode = Commands.register(
-    { id: 'aws.amazonq.refreshRootNode', logging: false },
-    () => {
+export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.amazonq.refreshRootNode', logging: false }, () => {
         amazonQNode.refreshRootNode()
-    }
-)
+        if (provider) {
+            provider.refresh()
+        }
+    })

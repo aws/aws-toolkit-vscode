@@ -17,7 +17,7 @@ export const learnMoreAmazonQCommand = Commands.declare('_aws.amazonq.learnMore'
 
 export const createLearnMoreNode = () =>
     learnMoreAmazonQCommand.build().asTreeNode({
-        label: 'Learn More About Amazon Q (Preview)',
+        label: 'Learn more about Amazon Q (Preview)',
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsAmazonQLearnMoreNode',
     })
