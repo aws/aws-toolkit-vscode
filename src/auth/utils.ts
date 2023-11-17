@@ -140,12 +140,14 @@ export const createSsoItem = () =>
         detail: `Sign in to your company's ${localizedText.iamIdentityCenter} access portal login page.`,
     } as DataQuickPickItem<'sso'>)
 
-export const createIamItem = () =>
+export const createIamItem = (cloud9: boolean = false) =>
     ({
         label: codicon`${getIcon('vscode-key')} ${localize('aws.auth.iamItem.label', 'Use IAM Credentials')}`,
         data: 'iam',
         onClick: () => telemetry.ui_click.emit({ elementId: 'connection_optionIAM' }),
-        detail: 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
+        detail: cloud9
+            ? 'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
+            : 'Activates working with resources in the Explorer. Not supported by CodeWhisperer. Requires an access key ID and secret access key.',
     } as DataQuickPickItem<'iam'>)
 
 export async function createStartUrlPrompter(title: string, requiredScopes?: string[]) {
@@ -241,11 +243,9 @@ Commands.register('aws.auth.signout', () => {
 export const addConnection = Commands.register(
     { id: 'aws.auth.addConnection', telemetryThrottleMs: false },
     async () => {
-        const c9IamItem = createIamItem()
-        c9IamItem.detail =
-            'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
         const items = isCloud9()
-            ? [createSsoItem(), c9IamItem]
+            ? // Cloud9-classic uses IAM for CodeWhisperer, hide AWS Builder Id there.
+              [...(isCloud9('codecatalyst') ? [createBuilderIdItem()] : []), createSsoItem(), createIamItem(true)]
             : [createBuilderIdItem(), createSsoItem(), createIamItem()]
 
         const resp = await showQuickPick(items, {
