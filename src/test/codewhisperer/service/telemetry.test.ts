@@ -125,7 +125,7 @@ describe('', async function () {
         return cwClient
     }
 
-    function assertCleanStates() {
+    function assertSessionClean() {
         assert.strictEqual(session.requestIdList.length, 0)
         assert.strictEqual(session.recommendations.length, 0)
         assert.strictEqual(session.completionTypes.size, 0)
@@ -145,23 +145,25 @@ describe('', async function () {
 
     describe('tab and esc', function () {
         it('single accept', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
 
         it('single reject', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), '')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -169,23 +171,26 @@ describe('', async function () {
         })
 
         it('accept - accept - accept', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
-            assertCleanStates()
+            assertSessionClean()
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'FooBaz')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
-            assertCleanStates()
+            assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
+            assert.strictEqual(anotherEditor.document.getText(), 'Qoo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent(),
@@ -195,23 +200,26 @@ describe('', async function () {
         })
 
         it('accept - reject - accept', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
-            assertCleanStates()
+            assertSessionClean()
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
-            assertCleanStates()
+            assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(anotherEditor.document.getText(), '')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent(),
@@ -221,71 +229,116 @@ describe('', async function () {
         })
 
         it('multiple reject: esc key', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), '')
 
+            assertSessionClean()
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), '')
+
+            assertSessionClean()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), '')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
                 session2UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+                sesssion3UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
             ])
         })
 
-        it('reject - esc key then invoke again', async function () {
-            assertCleanStates()
+        it('reject - accept - reject', async function () {
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), '')
 
-            assertCleanStates()
+            assertSessionClean()
             await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Baz')
+
+            assertSessionClean()
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), 'Baz')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
+                session2UserTriggerEvent(),
+                sesssion3UserTriggerEvent({ codewhispererSuggestionState: 'Reject', codewhispererCursorOffset: 3 }),
             ])
         })
     })
 
     describe('typing', function () {
-        it('typeahead match and accept', async function () {
-            assertCleanStates()
+        it('typeahead match accept', async function () {
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'F')
+            assert.strictEqual(editor.document.getText(), 'F')
             await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
 
-        it('typeahead match and accept - mixed', async function () {
-            assertCleanStates()
+        it('typeahead match, backspace and accept', async function () {
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'F')
+            assert.strictEqual(editor.document.getText(), 'F')
+            await backsapce(editor)
+            assert.strictEqual(editor.document.getText(), '')
             await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
+
+            assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
+        })
+
+        it('typeahead match accept - reject - accept', async function () {
+            assertSessionClean()
+            const editor = await openATextEditorWithText('', 'test.py')
+
+            await manualTrigger(editor, client, config)
+            await waitUntilSuggestionSeen()
+            await typing(editor, 'F')
+            assert.strictEqual(editor.document.getText(), 'F')
+            await acceptByTab()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
+            assert.strictEqual(editor.document.getText(), 'Foo')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
             await waitUntilSuggestionSeen()
             await typing(anotherEditor, 'Qo')
+            assert.strictEqual(anotherEditor.document.getText(), 'Qo')
             await acceptByTab()
+            assert.strictEqual(anotherEditor.document.getText(), 'Qoo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent(),
@@ -295,12 +348,13 @@ describe('', async function () {
         })
 
         it('typeahead not match after suggestion is shown and reject', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await typing(editor, 'H')
+            assert.strictEqual(editor.document.getText(), 'H')
 
             RecommendationHandler.instance.onEditorChange()
 
@@ -312,7 +366,7 @@ describe('', async function () {
         it('reject - typeahead not matching after suggestion is shown then invoke another round and accept', async function () {
             // no idea why this one doesn't work, the second inline suggestion will not be shown
             this.skip()
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
@@ -340,20 +394,21 @@ describe('', async function () {
 
     describe('on editor change, focus change', function () {
         it('reject: trigger then open another editor', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py', tempFolder, { preview: false })
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
 
-            await openATextEditorWithText('foo', 'another1.py', tempFolder, {
+            await openATextEditorWithText('text in 2nd editor', 'another1.py', tempFolder, {
                 preview: false,
             })
-            const anotherEditor = await openATextEditorWithText('bar', 'another2.py', tempFolder, {
+            const anotherEditor = await openATextEditorWithText('text in 3rd editor', 'another2.py', tempFolder, {
                 preview: false,
             })
 
             assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
+            assert.strictEqual(editor.document.getText(), '')
             await assertTabCount(3)
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -361,12 +416,13 @@ describe('', async function () {
         })
 
         it('reject: trigger then close editor', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await closeActiveEditor()
+            assert.strictEqual(editor.document.getText(), '')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -374,11 +430,12 @@ describe('', async function () {
         })
 
         it('reject: onFocusChange', async function () {
-            assertCleanStates()
+            assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
+            assert.strictEqual(editor.document.getText(), '')
 
             await RecommendationHandler.instance.onFocusChange()
             assertTelemetry('codewhisperer_userTriggerDecision', [
@@ -432,6 +489,25 @@ async function typing(editor: vscode.TextEditor, s: string) {
         await typeAChar(editor, char)
     }
     await sleep(2000) // see if we can use waitUntil to replace it
+}
+
+async function backsapce(editor: vscode.TextEditor) {
+    // const beforeLength = editor.document.getText.length
+    // const selected = editor.document.getText(new vscode.Range(editor.selection.start, editor.selection.end))
+    // if (selected.length === 0) {
+    //     return
+    // }
+
+    // await editor.edit(edit => {
+    //     edit.delete(editor.selection)
+    // })
+
+    // const afterLength = editor.document.getText.length
+    // assert.strictEqual(afterLength + selected.length, beforeLength)
+    // await sleep(2000) // see if we can use waitUntil to replace it
+    // assert cusor?
+
+    return vscode.commands.executeCommand('deleteLeft')
 }
 
 async function typeAChar(editor: vscode.TextEditor, s: string) {
