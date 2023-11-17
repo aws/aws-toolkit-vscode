@@ -16,6 +16,9 @@ import { ToolkitError } from './errors'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
+/** Used by isValid(). Must be something that's defined in our package.json. */
+const testSetting = 'aws.samcli.lambdaTimeout'
+
 /**
  * A class for manipulating VS Code user settings (from all extensions).
  *
@@ -93,7 +96,7 @@ export class Settings {
      * "recoverable" JSON syntax errors.
      */
     public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
-        const key = 'aws.samcli.lambdaTimeout'
+        const key = testSetting
         const config = this.getConfig()
         const tempValOld = 1234 // Legacy temp value we are migrating from.
         const tempVal = 91234 // Temp value used to check that read/write works.
@@ -122,7 +125,7 @@ export class Settings {
                 return 'nowrite'
             }
 
-            const logMsg = 'settings: invalid "settings.json": %s'
+            const logMsg = 'settings: invalid settings.json: %s'
             getLogger().error(logMsg, err.message)
 
             return 'invalid'
@@ -386,7 +389,9 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
                 }
 
                 for (const key of props.filter(isDifferent)) {
-                    this.log('key "%s" changed', key)
+                    if (`${section}.${key}` !== testSetting) {
+                        this.log('key "%s" changed', key)
+                    }
                     emitter.fire({ key })
                 }
             })
