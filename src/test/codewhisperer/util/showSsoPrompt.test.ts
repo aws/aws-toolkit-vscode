@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import assert from 'assert'
 import * as sinon from 'sinon'
 import { resetCodeWhispererGlobalVariables } from '../testUtil'
-import { awsIdSignIn, showConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
+import { awsIdSignIn, showCodeWhispererConnectionPrompt } from '../../../codewhisperer/util/showSsoPrompt'
 import { getTestLogger } from '../../globalSetup.test'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
@@ -30,7 +30,7 @@ describe('showConnectionPrompt', function () {
             picker.acceptItem(picker.items[0])
         })
 
-        await showConnectionPrompt()
+        await showCodeWhispererConnectionPrompt()
 
         assert.ok(authUtilSpy.called)
         const assertTelemetry = assertTelemetryCurried('ui_click')
