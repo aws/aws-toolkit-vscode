@@ -7,6 +7,7 @@ import assert from 'assert'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
 import semver from 'semver'
+import os from 'os'
 import { assertTabCount, assertTelemetry, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
 import {
     DefaultCodeWhispererClient,
@@ -200,7 +201,7 @@ describe('', async function () {
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
-            assert.strictEqual(normalizeLineBreaker(editor.document.getText()), 'FooBaz\nBaz')
+            assert.strictEqual(editor.document.getText(), `FooBaz${os.EOL}Baz`)
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             assertSessionClean()
@@ -286,13 +287,13 @@ describe('', async function () {
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
-            assert.strictEqual(normalizeLineBreaker(editor.document.getText()), 'Baz\nBaz')
+            assert.strictEqual(editor.document.getText(), `Baz${os.EOL}Baz`)
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await waitUntilSuggestionSeen()
             await rejectByEsc()
-            assert.strictEqual(normalizeLineBreaker(editor.document.getText()), 'Baz\nBaz')
+            assert.strictEqual(editor.document.getText(), `Baz${os.EOL}Baz`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -478,7 +479,7 @@ describe('', async function () {
             await manualTrigger(anotherEditor, client, config)
             await waitUntilSuggestionSeen()
             await acceptByTab()
-            assert.strictEqual(normalizeLineBreaker(anotherEditor.document.getText()), 'Baz\nBaz')
+            assert.strictEqual(anotherEditor.document.getText(), `Baz${os.EOL}Baz`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -539,10 +540,6 @@ describe('', async function () {
         })
     })
 })
-
-function normalizeLineBreaker(s: string) {
-    return s.replace(/\r\n/g, '\n')
-}
 
 async function manualTrigger(
     editor: vscode.TextEditor,
