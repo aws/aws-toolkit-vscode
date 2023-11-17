@@ -22,7 +22,7 @@ export function partition(memento: vscode.Memento, key: string): vscode.Memento 
     }
 }
 
-export function getMemento(): vscode.Memento {
+export function getEnvironmentSpecificMemento(): vscode.Memento {
     if (!vscode.env.remoteName) {
         // local compute: no further partitioning
         return globals.context.globalState

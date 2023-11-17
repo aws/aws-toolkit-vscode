@@ -25,7 +25,7 @@ import { asString, CredentialsId, CredentialsProvider, fromString } from './prov
 import { once } from '../shared/utilities/functionUtils'
 import { CredentialsSettings } from './credentials/utils'
 import { getCodeCatalystDevEnvId } from '../shared/vscode/env'
-import { getMemento } from '../shared/utilities/mementos'
+import { getEnvironmentSpecificMemento } from '../shared/utilities/mementos'
 import { SsoCredentialsProvider } from './providers/ssoCredentialsProvider'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { join, toStream } from '../shared/utilities/collectionUtils'
@@ -753,7 +753,7 @@ export class Auth implements AuthService, ConnectionManager {
 
     static #instance: Auth | undefined
     public static get instance() {
-        return (this.#instance ??= new Auth(new ProfileStore(getMemento())))
+        return (this.#instance ??= new Auth(new ProfileStore(getEnvironmentSpecificMemento())))
     }
 
     private getSsoProfileLabel(profile: SsoProfile) {
