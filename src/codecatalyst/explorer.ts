@@ -15,7 +15,7 @@ import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
-import { Connection, isBuilderIdConnection } from '../auth/connection'
+import { Connection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { showManageConnections } from '../auth/ui/vue/show'
 
@@ -33,7 +33,11 @@ const reauth = Commands.register(
 
 async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
-    if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
+    if (
+        !auth.activeConnection ||
+        !auth.isConnectionValid() ||
+        !(await auth.isConnectionOnboarded(auth.activeConnection))
+    ) {
         return [
             showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
                 label: 'Start',
@@ -156,9 +160,15 @@ export class CodeCatalystRootNode implements RootNode {
 
     private getDescription(): string {
         if (this.authProvider.activeConnection) {
-            return this.authProvider.secondaryAuth.isConnectionExpired
-                ? 'Expired Connection'
-                : 'AWS Builder ID Connected'
+            if (this.authProvider.secondaryAuth.isConnectionExpired) {
+                return 'Expired Connection'
+            }
+            if (this.authProvider.isBuilderIdInUse()) {
+                return 'AWS Builder ID Connected'
+            }
+            if (this.authProvider.isEnterpriseSsoInUse()) {
+                return 'IAM Identity Center Connected'
+            }
         }
         return ''
     }
