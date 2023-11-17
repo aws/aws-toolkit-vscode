@@ -26,7 +26,7 @@ export class TabDataGenerator {
     private tabInputPlaceholder: Map<TabType, string> = new Map([
         ['unknown', 'Ask a question or enter "/" for quick commands'],
         ['cwc', 'Ask a question or enter "/" for quick commands'],
-        ['featuredev', 'What problem do you want to fix?'],
+        ['featuredev', 'Briefly describe a task or issue'],
     ])
 
     private tabWelcomeMessage: Map<TabType, (name?: string) => string> = new Map([
@@ -46,9 +46,9 @@ export class TabDataGenerator {
             'featuredev',
             (name?: string) => `Welcome to ${name}. 
 
-Here I can provide cross-file code suggestions to implement a software task in your current project (looking at /src if it exists). 
+Here I can provide code suggestions across files in your current project by looking at /src, if it exists.
 
-Before I begin generating code, let's agree on an implementation plan. What problem are you looking to solve?
+Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
 `,
         ],
     ])

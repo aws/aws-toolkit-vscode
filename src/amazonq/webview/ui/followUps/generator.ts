@@ -46,6 +46,10 @@ export class FollowUpGenerator {
                     text: 'Would you like to follow up with',
                     options: [
                         {
+                            pillText: 'What are some examples of how I can use /dev?',
+                            type: 'DevExamples',
+                        },
+                        {
                             pillText: 'Modify source folder',
                             type: 'ModifyDefaultSourceFolder',
                         },
