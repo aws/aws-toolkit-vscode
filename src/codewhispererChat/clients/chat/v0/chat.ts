@@ -29,7 +29,7 @@ export class ChatSession {
         this.tokenSource = new vscode.CancellationTokenSource()
     }
 
-    public setSessionID(id?: string){
+    public setSessionID(id?: string) {
         this.sessionId = id
     }
 

@@ -56,7 +56,7 @@ export class FakeExtensionContext implements vscode.ExtensionContext {
     public storageUri: vscode.Uri | undefined
     public logUri: vscode.Uri = vscode.Uri.file('file://fake/log/uri')
     public extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test
-    public secrets = new SecretStorage()
+    public secrets = new FakeSecretStorage()
 
     public extension: vscode.Extension<any> = {
         activate: async () => undefined,
@@ -171,7 +171,7 @@ export class FakeMemento implements vscode.Memento {
     }
 }
 
-class SecretStorage implements vscode.SecretStorage {
+export class FakeSecretStorage implements vscode.SecretStorage {
     private _onDidChange = new vscode.EventEmitter<vscode.SecretStorageChangeEvent>()
     public readonly onDidChange = this._onDidChange.event
 

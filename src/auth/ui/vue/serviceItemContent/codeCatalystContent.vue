@@ -32,6 +32,22 @@
                     @auth-connection-updated="onAuthConnectionUpdated"
                 ></BuilderIdForm>
             </div>
+
+            <div>
+                <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
+                    <div style="font-weight: bold; font-size: medium" :class="identityCenterCollapsibleClass"></div>
+                    <div>
+                        <div style="font-weight: bold; font-size: 14px">Sign in with IAM Identity Center.</div>
+                    </div>
+                </div>
+            </div>
+
+            <IdentityCenterForm
+                :state="identityCenterState"
+                :allow-existing-start-url="true"
+                @auth-connection-updated="onAuthConnectionUpdated"
+                v-show="isIdentityCenterShown"
+            ></IdentityCenterForm>
         </div>
     </div>
 </template>
@@ -39,14 +55,19 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeCatalystBuilderIdState } from '../authForms/manageBuilderId.vue'
+import IdentityCenterForm, { CodeCatalystIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
 import BaseServiceItemContent from './baseServiceItemContent.vue'
 import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
+import { WebviewClientFactory } from '../../../../webviews/client'
+import { AuthWebview } from '../show'
+
+const client = WebviewClientFactory.create<AuthWebview>()
 
 export default defineComponent({
     name: 'CodeCatalystContent',
-    components: { BuilderIdForm },
+    components: { BuilderIdForm, IdentityCenterForm },
     extends: BaseServiceItemContent,
     data() {
         return {
@@ -54,11 +75,18 @@ export default defineComponent({
                 builderIdCodeCatalyst: false,
             } as Record<AuthFormId, boolean>,
             isAllAuthsLoaded: false,
+            isIdentityCenterShown: false,
         }
     },
     computed: {
         builderIdState(): CodeCatalystBuilderIdState {
             return authFormsState.builderIdCodeCatalyst
+        },
+        identityCenterState(): CodeCatalystIdentityCenterState {
+            return authFormsState.identityCenterCodeCatalyst
+        },
+        identityCenterCollapsibleClass() {
+            return this.isIdentityCenterShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
         },
     },
     methods: {
@@ -71,12 +99,18 @@ export default defineComponent({
             this.updateIsAllAuthsLoaded()
             this.emitAuthConnectionUpdated('codecatalyst', args)
         },
+        toggleIdentityCenterShown() {
+            this.isIdentityCenterShown = !this.isIdentityCenterShown
+            if (this.isIdentityCenterShown) {
+                client.emitUiClick('auth_codecatalyst_expandIAMIdentityCenter')
+            }
+        },
     },
 })
 
 export class CodeCatalystContentState extends FeatureStatus {
     override getAuthForms(): AuthForm[] {
-        return [authFormsState.builderIdCodeCatalyst]
+        return [authFormsState.builderIdCodeCatalyst, authFormsState.identityCenterCodeCatalyst]
     }
 }
 </script>
