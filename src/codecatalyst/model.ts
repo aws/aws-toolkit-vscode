@@ -252,9 +252,15 @@ export async function prepareDevEnvConnection(
 export async function openDevEnv(
     client: CodeCatalystClient,
     devenv: DevEnvironmentId,
-    targetPath?: string
+    targetPath?: string,
+    onBeforeConnect?: () => Promise<void>
 ): Promise<void> {
+    if (onBeforeConnect) {
+        await onBeforeConnect()
+    }
+
     const env = await prepareDevEnvConnection(client, devenv, { topic: 'connect' })
+
     if (!targetPath) {
         const repo = env.devenv.repositories.length === 1 ? env.devenv.repositories[0].repositoryName : undefined
         targetPath = repo ? `/projects/${repo}` : '/projects'

@@ -35,6 +35,8 @@ export async function activate(ctx: ExtContext): Promise<void> {
     const commands = new CodeCatalystCommands(authProvider)
     const remoteSourceProvider = new CodeCatalystRemoteSourceProvider(commands, authProvider)
 
+    await authProvider.restore()
+
     ctx.extensionContext.subscriptions.push(
         uriHandlers.register(ctx.uriHandler, CodeCatalystCommands.declared),
         ...Object.values(CodeCatalystCommands.declared).map(c => c.register(commands)),

@@ -360,6 +360,45 @@ export class CodeWhispererIdentityCenterState extends BaseIdentityCenterState {
     }
 }
 
+export class CodeCatalystIdentityCenterState extends BaseIdentityCenterState {
+    override get id(): AuthFormId {
+        return 'identityCenterCodeCatalyst'
+    }
+
+    override get name(): string {
+        return 'CodeCatalyst'
+    }
+
+    override get uiClickOpenId(): AuthUiClick {
+        return 'auth_openCodeCatalyst'
+    }
+
+    override get uiClickSignout(): AuthUiClick {
+        return 'auth_codecatalyst_signoutIdentityCenter'
+    }
+
+    override get featureType(): FeatureId {
+        return 'codecatalyst'
+    }
+
+    protected override async _startIdentityCenterSetup(): Promise<AuthError | undefined> {
+        const data = await this.getSubmittableDataOrThrow()
+        return client.startCodeCatalystIdentityCenterSetup(data.startUrl, data.region)
+    }
+
+    override async isAuthConnected(): Promise<boolean> {
+        return client.isCodeCatalystIdentityCenterConnected()
+    }
+
+    override async showView(): Promise<void> {
+        client.showCodeCatalystNode()
+    }
+
+    override signout(): Promise<void> {
+        return client.signoutCodeCatalystIdentityCenter()
+    }
+}
+
 /**
  * In the context of the Explorer, an Identity Center connection
  * is not required to be active. This is due to us only needing

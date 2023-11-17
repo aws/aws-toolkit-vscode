@@ -45,7 +45,6 @@ export const isValidCodeWhispererConnection = (conn?: Connection): conn is Conne
 export class AuthUtil {
     static #instance: AuthUtil
 
-    private usingEnterpriseSSO: boolean = false
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
 
@@ -79,14 +78,9 @@ export class AuthUtil {
             }
         })
 
-        this.secondaryAuth.onDidChangeActiveConnection(async conn => {
-            if (conn?.type === 'sso') {
-                this.usingEnterpriseSSO = !isBuilderIdConnection(conn)
-                if (!this.isConnectionExpired() && this.usingEnterpriseSSO) {
-                    vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
-                }
-            } else {
-                this.usingEnterpriseSSO = false
+        this.secondaryAuth.onDidChangeActiveConnection(async () => {
+            if (this.isValidEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('aws.codeWhisperer.notifyNewCustomizations')
             }
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
@@ -134,7 +128,10 @@ export class AuthUtil {
     }
 
     public isEnterpriseSsoInUse(): boolean {
-        return this.conn !== undefined && this.usingEnterpriseSSO
+        const conn = this.conn
+        // we have an sso that isn't builder id, must be IdC by process of elimination
+        const isUsingEnterpriseSso = conn?.type === 'sso' && !isBuilderIdConnection(conn)
+        return conn !== undefined && isUsingEnterpriseSso
     }
 
     // If there is an active SSO connection
