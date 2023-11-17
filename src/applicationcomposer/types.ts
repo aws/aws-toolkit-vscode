@@ -42,6 +42,7 @@ export enum MessageType {
 export interface InitResponseMessage extends Message {
     templateFileName: string
     templateFilePath: string
+    isConnectedToCodeWhisperer: boolean
 }
 
 export interface LoadFileResponseMessage extends Message {
