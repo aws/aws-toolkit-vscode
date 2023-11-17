@@ -5,13 +5,9 @@
 
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
-import { startTransformByQWithProgress } from '../../../codewhisperer/commands/startTransformByQ'
-import { transformByQState } from '../../../codewhisperer/models/model'
 import { AuthController } from '../../auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
-import * as CodeWhispererConstants from '../../../codewhisperer/models/constants'
-import vscode from 'vscode'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -42,6 +38,7 @@ export class UIMessageListener {
                 break
             case 'help':
             case 'clear':
+            case 'transform':
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break
@@ -95,17 +92,6 @@ export class UIMessageListener {
             case 'response-body-link-click':
                 this.processResponseBodyLinkClick(msg)
                 break
-            case 'transform':
-                this.processTransformByQ()
-                break
-        }
-    }
-
-    private processTransformByQ() {
-        if (transformByQState.isNotStarted()) {
-            startTransformByQWithProgress()
-        } else {
-            vscode.window.showInformationMessage(CodeWhispererConstants.jobInProgressMessage)
         }
     }
 
