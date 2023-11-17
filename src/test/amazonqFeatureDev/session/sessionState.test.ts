@@ -24,11 +24,7 @@ import { PrepareRepoFailedError } from '../../../amazonqFeatureDev/errors'
 import crypto from 'crypto'
 import { TelemetryHelper } from '../../../amazonqFeatureDev/util/telemetryHelper'
 
-interface MockSessionStateActionInput {
-    msg?: 'MOCK CODE' | 'OTHER'
-}
-
-const mockSessionStateAction = ({ msg }: MockSessionStateActionInput): SessionStateAction => {
+const mockSessionStateAction = (msg?: string): SessionStateAction => {
     return {
         task: 'test-task',
         msg: msg ?? 'test-msg',
@@ -83,7 +79,7 @@ describe('sessionState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
-            const testAction = mockSessionStateAction({})
+            const testAction = mockSessionStateAction()
 
             assert.rejects(() => {
                 return new PrepareRefinementState(testConfig, testApproach, tabId).interact(testAction)
@@ -92,7 +88,7 @@ describe('sessionState', () => {
     })
 
     describe('RefinementState', () => {
-        const testAction = mockSessionStateAction({})
+        const testAction = mockSessionStateAction()
 
         it('transitions to RefinementState and returns an approach', async () => {
             mockGeneratePlan = sinon.stub().resolves(testApproach)
@@ -142,7 +138,7 @@ describe('sessionState', () => {
     describe('MockCodeGenState', () => {
         it('loops forever in the same state', async () => {
             sinon.stub(crypto, 'randomUUID').returns('upload-id' as ReturnType<(typeof crypto)['randomUUID']>)
-            const testAction = mockSessionStateAction({})
+            const testAction = mockSessionStateAction()
             const state = new MockCodeGenState(testConfig, testApproach, tabId)
             const result = await state.interact(testAction)
 
@@ -157,7 +153,7 @@ describe('sessionState', () => {
         it('error when failing to prepare repo information', async () => {
             sinon.stub(vscode.workspace, 'findFiles').throws()
             mockCreateUploadUrl = sinon.stub().resolves({ uploadId: '', uploadUrl: '' })
-            const testAction = mockSessionStateAction({})
+            const testAction = mockSessionStateAction()
 
             assert.rejects(() => {
                 return new PrepareCodeGenState(testConfig, testApproach, [], [], [], tabId, 0).interact(testAction)
@@ -169,7 +165,8 @@ describe('sessionState', () => {
         it('transitions to PrepareCodeGenState when codeGenerationStatus ready ', async () => {
             mockGetCodeGeneration = sinon.stub().resolves({ codeGenerationStatus: { status: 'Complete' } })
             mockExportResultArchive = sinon.stub().resolves({ newFileContents: [], deletedFiles: [], references: [] })
-            const testAction = mockSessionStateAction({})
+
+            const testAction = mockSessionStateAction()
             const state = new CodeGenState(testConfig, testApproach, [], [], [], tabId, 0)
             const result = await state.interact(testAction)
 
@@ -183,7 +180,7 @@ describe('sessionState', () => {
 
         it('fails when codeGenerationStatus failed ', async () => {
             mockGetCodeGeneration = sinon.stub().rejects(new ToolkitError('Code generation failed'))
-            const testAction = mockSessionStateAction({})
+            const testAction = mockSessionStateAction()
             const state = new CodeGenState(testConfig, testApproach, [], [], [], tabId, 0)
             try {
                 await state.interact(testAction)

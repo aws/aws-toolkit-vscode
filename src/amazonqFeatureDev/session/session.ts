@@ -111,20 +111,18 @@ export class Session {
         telemetry.amazonq_isApproachAccepted.emit({ amazonqConversationId: this.conversationId, enabled: true })
     }
 
-    async send(msg: string | undefined): Promise<Interaction> {
+    async send(msg: string): Promise<Interaction> {
         // When the task/"thing to do" hasn't been set yet, we want it to be the incoming message
         if (this.task === '' && msg) {
             this.task = msg
         }
 
-        if (msg) {
-            this._latestMessage = msg
-        }
+        this._latestMessage = msg
 
         return this.nextInteraction(msg)
     }
 
-    private async nextInteraction(msg: string | undefined) {
+    private async nextInteraction(msg: string) {
         const files = await collectFiles(this.config.sourceRoot)
 
         const resp = await this.state.interact({
