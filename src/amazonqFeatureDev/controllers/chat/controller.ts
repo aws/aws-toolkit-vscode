@@ -129,7 +129,7 @@ export class FeatureDevController {
     // TODO add type
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined)
             return
         }
 
@@ -150,7 +150,12 @@ export class FeatureDevController {
             const errorMessage = createUserFacingErrorMessage(
                 `${featureName} request failed: ${err.cause?.message ?? err.message}`
             )
-            this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
+            this.messenger.sendErrorMessage(
+                errorMessage,
+                message.tabID,
+                this.retriesRemaining(session),
+                session?.state.phase
+            )
 
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
@@ -279,7 +284,12 @@ export class FeatureDevController {
             const errorMessage = createUserFacingErrorMessage(
                 `${featureName} request failed: ${err.cause?.message ?? err.message}`
             )
-            this.messenger.sendErrorMessage(errorMessage, message.tabID, this.retriesRemaining(session))
+            this.messenger.sendErrorMessage(
+                errorMessage,
+                message.tabID,
+                this.retriesRemaining(session),
+                session?.state.phase
+            )
         }
     }
 
@@ -300,7 +310,8 @@ export class FeatureDevController {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
                 message.tabID,
-                this.retriesRemaining(session)
+                this.retriesRemaining(session),
+                session?.state.phase
             )
         }
     }
@@ -329,7 +340,8 @@ export class FeatureDevController {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to retry request: ${err.message}`),
                 message.tabID,
-                this.retriesRemaining(session)
+                this.retriesRemaining(session),
+                session?.state.phase
             )
         } finally {
             // Finish processing the event
@@ -449,7 +461,8 @@ export class FeatureDevController {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(err.message),
                 message.tabID,
-                this.retriesRemaining(session)
+                this.retriesRemaining(session),
+                session?.state.phase
             )
         }
     }
