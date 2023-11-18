@@ -1446,7 +1446,7 @@
                 },
                 {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "view == aws.AmazonQChatView && !CODEWHISPERER_DISCONNECTED && !CODEWHISPERER_ENABLED",
+                    "when": "view == aws.AmazonQChatView && !aws.codewhisperer.disconnected && !CODEWHISPERER_ENABLED",
                     "group": "2_amazonQ@2"
                 },
                 {
@@ -1456,7 +1456,7 @@
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "view == aws.AmazonQChatView && CODEWHISPERER_DISCONNECTED",
+                    "when": "view == aws.AmazonQChatView && aws.codewhisperer.disconnected",
                     "group": "2_amazonQ@3"
                 }
             ],

@@ -84,7 +84,7 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
     })
 }
 
-const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | TreeNode | unknown) => {
     telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
 
     if (!(auth instanceof Auth)) {

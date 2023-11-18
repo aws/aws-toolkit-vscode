@@ -142,7 +142,11 @@ export class AuthUtil {
     public async setVscodeContextProps() {
         if (!isCloud9()) {
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
-            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_DISCONNECTED', this.isConnectionExpired())
+            await vscode.commands.executeCommand(
+                'setContext',
+                'aws.codewhisperer.disconnected',
+                this.isConnectionExpired()
+            )
         }
     }
 
