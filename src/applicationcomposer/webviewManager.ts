@@ -17,7 +17,7 @@ const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
 const cdn = 'https://d2sp2encosghg4.cloudfront.net' // apurvaja's starling build
 
-const enabledFeatures = ['ide-only', 'anything-resource', 'sfnV2']
+const enabledFeatures = ['ide-only', 'anything-resource', 'sfnV2', 'starling']
 
 export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
