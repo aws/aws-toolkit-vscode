@@ -47,6 +47,8 @@ export class ChatSession {
             )
         }
 
+        this.sessionId = response.conversationId
+
         return response
     }
 }
