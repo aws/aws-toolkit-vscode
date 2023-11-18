@@ -1,53 +1,49 @@
 <template>
-    <div class="service-item-content-container border-common" v-show="isAllAuthsLoaded">
-        <div class="service-item-content-container-title">Amazon CodeCatalyst</div>
+    <div class="feature-panel-container border-common">
+        <div class="feature-panel-container-upper">
+            <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
 
-        <div class="centered-items">
-            <img
-                class="service-item-content-image"
-                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
-                alt="CodeCatalyst example GIF"
-            />
-        </div>
+            <div class="centered-items">
+                <img
+                    class="service-item-content-image"
+                    src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
+                    alt="CodeCatalyst example GIF"
+                />
+            </div>
 
-        <div>
-            Amazon CodeCatalyst, is a cloud-based collaboration space for software development teams. You can create a
-            project that will generate resources that you can manage, including Dev Environments and workflows. Through
-            the AWS Toolkit for Visual Studio Code, you can view and manage your CodeCatalyst resources directly from VS
-            Code.
-        </div>
-
-        <div>
-            <a href="https://aws.amazon.com/codecatalyst/" v-on:click="emitUiClick('auth_learnMoreCodeCatalyst')"
-                >Learn more about CodeCatalyst.</a
-            >
+            <div class="feature-panel-container-description">
+                Spend more time coding and less time managing development environments.
+                <a href="https://aws.amazon.com/codecatalyst/" v-on:click="emitUiClick('auth_learnMoreCodeCatalyst')"
+                    >Learn more.</a
+                >
+            </div>
         </div>
 
         <hr />
 
-        <div class="service-item-content-form-section">
-            <div class="service-item-content-form-container">
+        <div class="feature-panel-form-container" :key="authFormContainerKey" v-show="isAllAuthsLoaded">
+            <div class="feature-panel-form-section">
                 <BuilderIdForm
                     :state="builderIdState"
                     @auth-connection-updated="onAuthConnectionUpdated"
                 ></BuilderIdForm>
             </div>
 
-            <div>
-                <div v-on:click="toggleIdentityCenterShown" style="cursor: pointer; display: flex; flex-direction: row">
-                    <div style="font-weight: bold; font-size: medium" :class="identityCenterCollapsibleClass"></div>
+            <div class="feature-panel-form-section">
+                <div v-on:click="toggleIdentityCenterShown" class="collapsible-title">
+                    <div :class="identityCenterCollapsibleClass" style="height: 0"></div>
                     <div>
-                        <div style="font-weight: bold; font-size: 14px">Sign in with IAM Identity Center.</div>
+                        <div>Sign in with IAM Identity Center.</div>
                     </div>
                 </div>
-            </div>
 
-            <IdentityCenterForm
-                :state="identityCenterState"
-                :allow-existing-start-url="true"
-                @auth-connection-updated="onAuthConnectionUpdated"
-                v-show="isIdentityCenterShown"
-            ></IdentityCenterForm>
+                <IdentityCenterForm
+                    :state="identityCenterState"
+                    :allow-existing-start-url="true"
+                    @auth-connection-updated="onAuthConnectionUpdated"
+                    v-show="isIdentityCenterShown"
+                ></IdentityCenterForm>
+            </div>
         </div>
     </div>
 </template>
@@ -65,18 +61,28 @@ import { AuthWebview } from '../show'
 
 const client = WebviewClientFactory.create<AuthWebview>()
 
+function initialData() {
+    return {
+        isLoaded: {
+            builderIdCodeCatalyst: false,
+        } as Record<AuthFormId, boolean>,
+        isAllAuthsLoaded: false,
+        isIdentityCenterShown: false,
+    }
+}
+
 export default defineComponent({
     name: 'CodeCatalystContent',
     components: { BuilderIdForm, IdentityCenterForm },
     extends: BaseServiceItemContent,
     data() {
-        return {
-            isLoaded: {
-                builderIdCodeCatalyst: false,
-            } as Record<AuthFormId, boolean>,
-            isAllAuthsLoaded: false,
-            isIdentityCenterShown: false,
-        }
+        return initialData()
+    },
+    created() {
+        this.refreshPanel()
+        client.onDidConnectionChangeCodeCatalyst(() => {
+            this.refreshPanel()
+        })
     },
     computed: {
         builderIdState(): CodeCatalystBuilderIdState {
@@ -90,12 +96,20 @@ export default defineComponent({
         },
     },
     methods: {
+        async refreshPanel() {
+            Object.assign(this.$data, initialData())
+            this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
+            this.refreshAuthFormContainer()
+        },
         updateIsAllAuthsLoaded() {
             const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
             this.isAllAuthsLoaded = !hasUnloaded
         },
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
             this.isLoaded[args.id] = true
+            if (args.id === 'identityCenterCodeCatalyst') {
+                this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
+            }
             this.updateIsAllAuthsLoaded()
             this.emitAuthConnectionUpdated('codecatalyst', args)
         },
