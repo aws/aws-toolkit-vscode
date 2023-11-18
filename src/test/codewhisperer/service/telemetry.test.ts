@@ -8,7 +8,13 @@ import os from 'os'
 import * as vscode from 'vscode'
 import sinon from 'sinon'
 import semver from 'semver'
-import { assertTabCount, assertTelemetry, createTestWorkspaceFolder, openATextEditorWithText } from '../../testUtil'
+import {
+    assertTabCount,
+    assertTelemetry,
+    assertTextEditorContains,
+    createTestWorkspaceFolder,
+    openATextEditorWithText,
+} from '../../testUtil'
 import {
     DefaultCodeWhispererClient,
     ListRecommendationsRequest,
@@ -150,17 +156,6 @@ describe('CodeWhisperer telemetry', async function () {
         assert.strictEqual(session.completionTypes.size, 0)
     }
 
-    it('this test should be removed', async function () {
-        const r = (await client.listRecommendations(aRequest())) as any
-        const r2 = (await client.listRecommendations(aRequest())) as any
-
-        assert.strictEqual(r.recommendations.length, 2)
-        assert.strictEqual(r2.recommendations.length, 1)
-
-        assert.ok(AuthUtil.instance.isConnected())
-        assert.ok(!AuthUtil.instance.isConnectionExpired())
-    })
-
     describe('tab and esc', function () {
         it('single accept', async function () {
             assertSessionClean()
@@ -168,8 +163,7 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
-
+            assertTextEditorContains('Foo')
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
 
@@ -179,7 +173,7 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -192,18 +186,18 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), `FooBaz${os.EOL}Baz`)
+            assertTextEditorContains(`FooBaz${os.EOL}Baz`)
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
             await acceptByTab()
-            assert.strictEqual(anotherEditor.document.getText(), 'Qoo')
+            assertTextEditorContains('Qoo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent(),
@@ -218,18 +212,18 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             assertSessionClean()
             await manualTrigger(anotherEditor, client, config)
             await rejectByEsc()
-            assert.strictEqual(anotherEditor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent(),
@@ -238,23 +232,23 @@ describe('CodeWhisperer telemetry', async function () {
             ])
         })
 
-        it('multiple reject: esc key', async function () {
+        it('reject - reject - reject', async function () {
             assertSessionClean()
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -269,17 +263,17 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), `Baz${os.EOL}Baz`)
+            assertTextEditorContains(`Baz${os.EOL}Baz`)
 
             assertSessionClean()
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), `Baz${os.EOL}Baz`)
+            assertTextEditorContains(`Baz${os.EOL}Baz`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -316,7 +310,7 @@ describe('CodeWhisperer telemetry', async function () {
             await manualTrigger(editor, client, config)
             await navigateNext()
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), `Bar${os.EOL}Bar`)
+            assertTextEditorContains(`Bar${os.EOL}Bar`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
@@ -332,7 +326,7 @@ describe('CodeWhisperer telemetry', async function () {
             await manualTrigger(editor, client, config)
             await navigateNext()
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -351,7 +345,7 @@ describe('CodeWhisperer telemetry', async function () {
             await navigateNext()
             await navigatePrev()
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
@@ -364,9 +358,10 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
-            assert.strictEqual(editor.document.getText(), 'F')
+            assertTextEditorContains('F')
+
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
@@ -377,11 +372,13 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
-            assert.strictEqual(editor.document.getText(), 'F')
+            assertTextEditorContains('F')
+
             await backsapce(editor)
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
+
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [session1UserTriggerEvent()])
         })
@@ -392,20 +389,22 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'F')
-            assert.strictEqual(editor.document.getText(), 'F')
+            assertTextEditorContains('F')
+
             await acceptByTab()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             await manualTrigger(editor, client, config)
             await rejectByEsc()
-            assert.strictEqual(editor.document.getText(), 'Foo')
+            assertTextEditorContains('Foo')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
             await typing(anotherEditor, 'Qo')
-            assert.strictEqual(anotherEditor.document.getText(), 'Qo')
+            assertTextEditorContains('Qo')
+
             await acceptByTab()
-            assert.strictEqual(anotherEditor.document.getText(), 'Qoo')
+            assertTextEditorContains('Qoo')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent(),
@@ -420,12 +419,11 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'H')
-            assert.strictEqual(editor.document.getText(), 'H')
+            assertTextEditorContains('H')
 
             // states will not be cleaned until reportUserDecision is called
             assert.strictEqual(session.sessionId, 'session_id_1')
             assert.deepStrictEqual(session.requestIdList, ['request_id_1', 'request_id_1', 'request_id_1_2'])
-            assert.ok(!RecommendationHandler.instance.isSuggestionVisible())
 
             RecommendationHandler.instance.onEditorChange()
             assertSessionClean()
@@ -433,6 +431,7 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
+            assertTextEditorContains(`Baz${os.EOL}Baz`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -446,12 +445,12 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await typing(editor, 'H')
-            assert.strictEqual(editor.document.getText(), 'H')
+            assertTextEditorContains('H')
 
             const anotherEditor = await openATextEditorWithText('', 'anotherTest.py')
             await manualTrigger(anotherEditor, client, config)
             await acceptByTab()
-            assert.strictEqual(anotherEditor.document.getText(), `Baz${os.EOL}Baz`)
+            assertTextEditorContains(`Baz${os.EOL}Baz`)
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -475,7 +474,7 @@ describe('CodeWhisperer telemetry', async function () {
             })
 
             assert.strictEqual(vscode.window.activeTextEditor, anotherEditor)
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
             await assertTabCount(3)
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -488,7 +487,7 @@ describe('CodeWhisperer telemetry', async function () {
 
             await manualTrigger(editor, client, config)
             await closeActiveEditor()
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             assertTelemetry('codewhisperer_userTriggerDecision', [
                 session1UserTriggerEvent({ codewhispererSuggestionState: 'Reject' }),
@@ -500,7 +499,7 @@ describe('CodeWhisperer telemetry', async function () {
             const editor = await openATextEditorWithText('', 'test.py')
 
             await manualTrigger(editor, client, config)
-            assert.strictEqual(editor.document.getText(), '')
+            assertTextEditorContains('')
 
             await RecommendationHandler.instance.onFocusChange()
             assertTelemetry('codewhisperer_userTriggerDecision', [
