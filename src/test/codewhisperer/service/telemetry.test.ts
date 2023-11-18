@@ -593,17 +593,6 @@ async function typeAChar(editor: vscode.TextEditor, s: string) {
     assert.ok(positionAfter.isAfter(positionBefore))
 }
 
-function aRequest(): ListRecommendationsRequest {
-    return {
-        fileContext: {
-            filename: '',
-            leftFileContent: '',
-            rightFileContent: '',
-            programmingLanguage: { languageName: '' },
-        },
-    }
-}
-
 function aResponse(
     sessionId: string,
     requestId: string,
