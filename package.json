@@ -283,7 +283,7 @@
                 },
                 "aws.amazonqFeatureDev.region": {
                     "type": "string",
-                    "default": "Gamma-IAD",
+                    "default": "Alpha-PDX",
                     "description": "AWS region to use during the invocation.",
                     "enum": [
                         "Alpha-PDX",

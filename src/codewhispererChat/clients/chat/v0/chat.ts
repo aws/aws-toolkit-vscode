@@ -3,18 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { CodeWhispererStreamingClient } from '../../../../shared/clients/codeWhispererChatStreamingClient'
-import {
-    CodeWhispererStreaming,
-    GenerateAssistantResponseCommandOutput,
-    GenerateAssistantResponseRequest,
-} from '@amzn/codewhisperer-streaming'
+import { GenerateAssistantResponseCommandOutput, GenerateAssistantResponseRequest } from '@amzn/codewhisperer-streaming'
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../../../shared/errors'
+import { FeatureDevClient } from '../../../../amazonqFeatureDev/client/featureDev'
 
 export class ChatSession {
     private sessionId?: string
-    private client: CodeWhispererStreaming | undefined
+    private featureDevClient: FeatureDevClient
+
     public get sessionIdentifier(): string | undefined {
         return this.sessionId
     }
@@ -22,6 +19,7 @@ export class ChatSession {
     public tokenSource!: vscode.CancellationTokenSource
 
     constructor() {
+        this.featureDevClient = new FeatureDevClient()
         this.createNewTokenSource()
     }
 
@@ -34,13 +32,13 @@ export class ChatSession {
     }
 
     async chat(chatRequest: GenerateAssistantResponseRequest): Promise<GenerateAssistantResponseCommandOutput> {
-        this.client = await new CodeWhispererStreamingClient().createSdkClient()
+        const client = await this.featureDevClient.getStreamingClient()
 
         if (this.sessionId !== undefined && chatRequest.conversationState !== undefined) {
             chatRequest.conversationState.conversationId = this.sessionId
         }
 
-        const response = await this.client.generateAssistantResponse(chatRequest)
+        const response = await client.generateAssistantResponse(chatRequest)
         if (!response.generateAssistantResponseResponse) {
             throw new ToolkitError(
                 `Empty chat response. Session id: ${this.sessionId} Request ID: ${response.$metadata.requestId}`

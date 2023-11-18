@@ -11,10 +11,10 @@ import path from 'path'
 import vscode from 'vscode'
 
 import { randomUUID } from 'crypto'
-import { CodeWhispererStreamingClient } from '../../shared/clients/codeWhispererChatStreamingClient'
 import { ToolkitError } from '../../shared/errors'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
+import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -220,8 +220,10 @@ export class ProposedTransformationExplorer {
     public static pathToDiffPatch = path.join('patch', 'diff.patch')
     public static pathToSrcDir = 'sources'
     public static tmpTransformedWorkspaceDir = path.join(os.tmpdir(), randomUUID())
+    private featureDevClient
 
     constructor(context: vscode.ExtensionContext) {
+        this.featureDevClient = new FeatureDevClient()
         const diffModel = new DiffModel()
         const transformDataProvider = new TransformationResultsProvider(diffModel)
         this.changeViewer = vscode.window.createTreeView(TransformationResultsProvider.viewType, {
@@ -281,7 +283,7 @@ export class ProposedTransformationExplorer {
     }
 
     public async downloadArchive(jobId: string, pathToTmpDir: string) {
-        const client = await new CodeWhispererStreamingClient().createSdkClient()
+        const client = await this.featureDevClient.getStreamingClient()
         const archivePath = path.join(pathToTmpDir, 'ExportResultArchive.zip')
         try {
             const result = await client.exportResultArchive({
