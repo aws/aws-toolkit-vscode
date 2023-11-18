@@ -8,7 +8,7 @@ import { Connector as CWChatConnector } from './apps/cwChatConnector'
 import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
 import { ExtensionMessage } from './commands'
-import { TabsStorage } from './storages/tabsStorage'
+import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
 
@@ -40,6 +40,7 @@ export interface ConnectorProps {
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
+    onNewTab: (tabType: TabType) => void
     tabsStorage: TabsStorage
 }
 

@@ -85,6 +85,12 @@ export class FeatureDevController {
                 case FollowUpTypes.DevExamples:
                     this.initialExamples(data)
                     break
+                case FollowUpTypes.NewTask:
+                    this.newTask(data)
+                    break
+                case FollowUpTypes.CloseSession:
+                    this.closeSession(data)
+                    break
             }
         })
         this.chatControllerMessageListeners.openDiff.event(data => {
@@ -336,8 +342,31 @@ export class FeatureDevController {
             })
             await session.acceptChanges()
 
-            // Unlock the chat input if the changes were accepted
-            this.messenger.sendChatInputEnabled(message.tabID, true)
+            this.messenger.sendAnswer({
+                type: 'answer',
+                tabID: message.tabID,
+                message: 'Code has been updated. Would you like to work on another task?',
+            })
+
+            this.messenger.sendAnswer({
+                type: 'system-prompt',
+                tabID: message.tabID,
+                followUps: [
+                    {
+                        pillText: 'Work on new task',
+                        type: FollowUpTypes.NewTask,
+                        status: 'info',
+                    },
+                    {
+                        pillText: 'Close session',
+                        type: FollowUpTypes.CloseSession,
+                        status: 'info',
+                    },
+                ],
+            })
+
+            // Ensure that chat input is disabled until they click a followup
+            this.messenger.sendChatInputEnabled(message.tabID, false)
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
@@ -546,6 +575,29 @@ To learn more, visit the _Amazon Q User Guide_.
 
     private tabClosed(message: any) {
         this.sessionStorage.deleteSession(message.tabID)
+    }
+
+    private newTask(message: any) {
+        const tabOpenedMessage = 'A new tab has been opened.'
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: tabOpenedMessage,
+        })
+        this.messenger.openNewTask()
+        this.messenger.sendUpdatePlaceholder(message.tabID, tabOpenedMessage)
+        this.messenger.sendChatInputEnabled(message.tabID, false)
+    }
+
+    private closeSession(message: any) {
+        const closedMessage = 'Your session is now closed.'
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: closedMessage,
+        })
+        this.messenger.sendUpdatePlaceholder(message.tabID, closedMessage)
+        this.messenger.sendChatInputEnabled(message.tabID, false)
     }
 
     private retriesRemaining(session: Session | undefined) {

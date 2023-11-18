@@ -103,6 +103,12 @@ export class ChatInputEnabledMessage extends UiMessage {
     }
 }
 
+export class OpenNewTabMessage {
+    readonly time: number = Date.now()
+    readonly sender: string = featureDevChat
+    readonly type = 'openNewTabMessage'
+}
+
 export class AuthenticationUpdateMessage {
     readonly time: number = Date.now()
     readonly sender: string = featureDevChat
@@ -187,6 +193,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendAuthNeededExceptionMessage(message: AuthNeededException) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+    
+    public sendOpenNewTask(message: OpenNewTabMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

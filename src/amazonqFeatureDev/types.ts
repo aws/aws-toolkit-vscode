@@ -29,6 +29,8 @@ export enum FollowUpTypes {
     Retry = 'Retry',
     ModifyDefaultSourceFolder = 'ModifyDefaultSourceFolder',
     DevExamples = 'DevExamples',
+    NewTask = 'NewTask',
+    CloseSession = 'CloseSession',
 }
 
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'
