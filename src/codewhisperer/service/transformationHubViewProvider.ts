@@ -110,7 +110,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (progress['transformCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     progress['returnCode']
-                )} Validating changes and returning code</p>`
+                )} Validating and preparing proposed changes</p>`
             }
         }
         return `<!DOCTYPE html>

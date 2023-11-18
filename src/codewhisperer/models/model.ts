@@ -222,6 +222,12 @@ enum TransformByQStatus {
     PartiallySucceeded = 'Partially Succeeded',
 }
 
+export enum TransformByQReviewStatus {
+    NotStarted = 'NotStarted',
+    PreparingReview = 'PreparingReview',
+    InReview = 'InReview',
+}
+
 export enum StepProgress {
     NotStarted = 'Not Started',
     Pending = 'Pending',

@@ -11,9 +11,11 @@ import { ExtContext } from '../shared/extensions'
 import { startTransformByQWithProgress, confirmStopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../codewhisperer/models/constants'
+import { ProposedTransformationExplorer } from '../codewhisperer/service/transformationResultsViewProvider'
 
 export async function activate(context: ExtContext) {
     const transformationHubViewProvider = new TransformationHubViewProvider()
+    new ProposedTransformationExplorer(context.extensionContext)
 
     context.extensionContext.subscriptions.push(
         showTransformByQ.register(context),
