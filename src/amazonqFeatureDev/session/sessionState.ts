@@ -112,7 +112,7 @@ export class RefinementState implements SessionState {
                 )
                 getLogger().debug(`Approach response: %O`, this.approach)
 
-                action.telemetry.recordUserApproachTelemetry(this.conversationId)
+                action.telemetry.recordUserApproachTelemetry(span, this.conversationId)
                 return {
                     nextState: new RefinementState(
                         {
@@ -273,7 +273,8 @@ export class CodeGenState extends CodeGenBase implements SessionState {
                 this.filePaths = codeGeneration.newFilePaths
                 this.deletedFiles = codeGeneration.deletedFiles
                 this.references = codeGeneration.references
-                action.telemetry.recordUserCodeGenerationTelemetry(this.conversationId)
+                action.telemetry.setAmazonqNumberOfReferences(this.references.length)
+                action.telemetry.recordUserCodeGenerationTelemetry(span, this.conversationId)
                 const nextState = new PrepareCodeGenState(
                     this.config,
                     this.approach,

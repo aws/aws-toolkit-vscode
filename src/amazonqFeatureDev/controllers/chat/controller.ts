@@ -378,6 +378,11 @@ export class FeatureDevController {
     }
 
     private async provideFeedbackAndRegenerateCode(message: any) {
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_isProvideFeedbackForCodeGen.emit({
+            amazonqConversationId: session.conversationId,
+            enabled: true,
+        })
         // Unblock the message button
         this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
 

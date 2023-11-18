@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../shared/logger/logger'
-import { telemetry } from '../../shared/telemetry/telemetry'
+import { AmazonqApproachInvoke, AmazonqCodeGenerationInvoke, Metric } from '../../shared/telemetry/telemetry'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
 
@@ -16,6 +16,7 @@ export class TelemetryHelper {
     public codeGenerationResult: string
     public numberOfFilesGenerated: number
     public repositorySize: number
+    public amazonqNumberOfReferences: number
 
     constructor() {
         this.generateApproachIteration = 0
@@ -25,31 +26,32 @@ export class TelemetryHelper {
         this.codeGenerationResult = ''
         this.numberOfFilesGenerated = 0
         this.repositorySize = 0
+        this.amazonqNumberOfReferences = 0
     }
 
-    public recordUserApproachTelemetry(amazonqConversationId: string) {
+    public recordUserApproachTelemetry(span: Metric<AmazonqApproachInvoke>, amazonqConversationId: string) {
         const event = {
             amazonqConversationId,
             amazonqGenerateApproachIteration: this.generateApproachIteration,
-            amazonGenerateApproachLatency: performance.now() - this.generateApproachLastInvocationTime,
+            amazonqGenerateApproachLatency: performance.now() - this.generateApproachLastInvocationTime,
         }
         getLogger().debug(`recordUserApproachTelemetry: %O`, event)
-
-        telemetry.amazonq_approachIteration.emit(event)
+        span.record(event)
     }
 
-    public recordUserCodeGenerationTelemetry(amazonqConversationId: string) {
+    public recordUserCodeGenerationTelemetry(span: Metric<AmazonqCodeGenerationInvoke>, amazonqConversationId: string) {
         const event = {
             amazonqConversationId,
             amazonqGenerateCodeIteration: this.generateCodeIteration,
             amazonqGenerateCodeResponseLatency: performance.now() - this.generateCodeLastInvocationTime,
             amazonqCodeGenerationResult: this.codeGenerationResult,
-            amazonqNumberOfFilesGenerated: this.numberOfFilesGenerated,
             amazonqRepositorySize: this.repositorySize,
+            ...(this.numberOfFilesGenerated && { amazonqNumberOfFilesGenerated: this.numberOfFilesGenerated }),
+            ...(this.amazonqNumberOfReferences && { amazonqNumberOfReferences: this.amazonqNumberOfReferences }),
         }
         getLogger().debug(`recordUserCodeGenerationTelemetry: %O`, event)
 
-        telemetry.amazonq_codeGenerationIteration.emit(event)
+        span.record(event)
     }
 
     public setGenerateApproachIteration(generateApproachIteration: number) {
@@ -78,5 +80,9 @@ export class TelemetryHelper {
 
     public setRepositorySize(repositorySize: number) {
         this.repositorySize = repositorySize
+    }
+
+    public setAmazonqNumberOfReferences(numberOfReferences: number) {
+        this.amazonqNumberOfReferences = numberOfReferences
     }
 }
