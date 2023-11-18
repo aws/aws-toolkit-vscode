@@ -17,6 +17,7 @@ import { ToolkitError } from './errors'
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
 /** Used by isValid(). Must be something that's defined in our package.json. */
+const disableSettingCheck = 'aws.settings.disableStartupCheck'
 const testSetting = 'aws.samcli.lambdaTimeout'
 
 /**
@@ -97,6 +98,7 @@ export class Settings {
      */
     public async isValid(): Promise<'ok' | 'invalid' | 'nowrite'> {
         const key = testSetting
+        const keyCheck = disableSettingCheck
         const config = this.getConfig()
         const tempValOld = 1234 // Legacy temp value we are migrating from.
         const tempVal = 91234 // Temp value used to check that read/write works.
@@ -104,6 +106,11 @@ export class Settings {
 
         try {
             const userVal = config.get<number>(key)
+            const checkDisabled = config.get<boolean>(keyCheck, false)
+            if (checkDisabled === true) {
+                getLogger().info("settings: skipping startup check as per user config")
+                return 'ok'
+            }
             // Try to write a temporary "sentinel" value to settings.json.
             await config.update(key, tempVal, this.updateTarget)
             if (userVal === undefined || [defaultVal, tempValOld, tempVal].includes(userVal)) {
