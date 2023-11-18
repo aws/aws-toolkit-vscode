@@ -22,7 +22,7 @@ export class QuickActionHandler {
     private connector: Connector
     private tabsStorage: TabsStorage
     private tabDataGenerator: TabDataGenerator
-    private isFeatureDevEnabled: boolean
+    public isFeatureDevEnabled: boolean
 
     constructor(props: QuickActionsHandlerProps) {
         this.mynahUI = props.mynahUI

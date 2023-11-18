@@ -15,7 +15,7 @@ export interface TabDataGeneratorProps {
 
 export class TabDataGenerator {
     private followUpsGenerator: FollowUpGenerator
-    private quickActionsGenerator: QuickActionGenerator
+    public quickActionsGenerator: QuickActionGenerator
 
     private tabTitle: Map<TabType, string> = new Map([
         ['unknown', 'Chat'],

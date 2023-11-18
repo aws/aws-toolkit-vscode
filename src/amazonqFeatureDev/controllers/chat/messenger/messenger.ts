@@ -5,6 +5,8 @@
 
 import { FollowUpTypes, SessionStatePhase } from '../../../types'
 import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
+import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
+import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import {
     ChatMessage,
     AsyncEventProgressMessage,
@@ -13,6 +15,7 @@ import {
     UpdatePlaceholderMessage,
     ChatInputEnabledMessage,
     AuthenticationUpdateMessage,
+    AuthNeededException,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
@@ -124,7 +127,30 @@ export class Messenger {
         this.dispatcher.sendChatInputEnabled(new ChatInputEnabledMessage(tabID, enabled))
     }
 
-    public sendAuthenticationUpdate(featureDevEnabled: boolean) {
-        this.dispatcher.sendAuthenticationUpdate(new AuthenticationUpdateMessage(featureDevEnabled))
+    public sendAuthenticationUpdate(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
+        this.dispatcher.sendAuthenticationUpdate(
+            new AuthenticationUpdateMessage(featureDevEnabled, authenticatingTabIDs)
+        )
+    }
+
+    public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string) {
+        let authType: AuthFollowUpType = 'full-auth'
+        let message = reauthenticateText
+        if (credentialState.amazonQ === 'disconnected') {
+            authType = 'full-auth'
+            message = reauthenticateText
+        }
+
+        if (credentialState.amazonQ === 'unsupported') {
+            authType = 'use-supported-auth'
+            message = enableQText
+        }
+
+        if (credentialState.amazonQ === 'expired') {
+            authType = 're-auth'
+            message = expiredText
+        }
+
+        this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
     }
 }

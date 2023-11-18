@@ -18,6 +18,8 @@ import { featureName } from '../../constants'
 import { ChatSessionStorage } from '../../storages/chatSession'
 import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
+import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { AuthController } from '../../../amazonq/auth/controller'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -27,6 +29,7 @@ export interface ChatControllerEventEmitters {
     readonly tabOpened: EventEmitter<any>
     readonly tabClosed: EventEmitter<any>
     readonly processChatItemVotedMessage: EventEmitter<any>
+    readonly authClicked: EventEmitter<any>
 }
 
 type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
@@ -34,6 +37,7 @@ export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
     private isAmazonQVisible: boolean
+    private authController: AuthController
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
@@ -43,6 +47,7 @@ export class FeatureDevController {
     ) {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
+        this.authController = new AuthController()
 
         /**
          * defaulted to true because onDidChangeAmazonQVisibility doesn't get fire'd until after
@@ -94,6 +99,9 @@ export class FeatureDevController {
         this.chatControllerMessageListeners.tabClosed.event(data => {
             this.tabClosed(data)
         })
+        this.chatControllerMessageListeners.authClicked.event(data => {
+            this.authClicked(data)
+        })
     }
 
     private async processChatItemVotedMessage(tabId: string, messageId: string, vote: string) {
@@ -139,6 +147,13 @@ export class FeatureDevController {
         let session
         try {
             session = await this.sessionStorage.getSession(message.tabID)
+
+            const authState = getChatAuthState()
+            if (authState.amazonQ !== 'connected') {
+                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                session.isAuthenticating = true
+                return
+            }
 
             switch (session.state.phase) {
                 case 'Init':
@@ -208,8 +223,6 @@ export class FeatureDevController {
      * Handle a regular incoming message when a user is in the code generation phase
      */
     private async onCodeGeneration(session: Session, message: string | undefined, tabID: string) {
-        // lock the UI/show loading bubbles
-
         // lock the UI/show loading bubbles
         this.messenger.sendAsyncEventProgress(
             tabID,
@@ -501,6 +514,13 @@ To learn more, visit the _Amazon Q User Guide_.
         let session: Session | undefined
         try {
             session = await this.sessionStorage.createSession(message.tabID)
+
+            const authState = getChatAuthState()
+            if (authState.amazonQ !== 'connected') {
+                this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
+                session.isAuthenticating = true
+                return
+            }
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(err.message),
@@ -509,6 +529,19 @@ To learn more, visit the _Amazon Q User Guide_.
                 session?.state.phase
             )
         }
+    }
+
+    private authClicked(message: any) {
+        this.authController.handleAuth(message.authType)
+
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID: message.tabID,
+            message: 'Follow instructions to re-authenticate ...',
+        })
+
+        // Explicitly ensure the user goes through the re-authenticate flow
+        this.messenger.sendChatInputEnabled(message.tabID, false)
     }
 
     private tabClosed(message: any) {

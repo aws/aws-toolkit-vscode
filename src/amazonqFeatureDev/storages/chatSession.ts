@@ -28,6 +28,11 @@ export class ChatSessionStorage {
         return sessionFromStorage
     }
 
+    // Find all sessions that are currently waiting to be authenticated
+    public getAuthenticatingSessions(): Session[] {
+        return Array.from(this.sessions.values()).filter(session => session.isAuthenticating)
+    }
+
     public deleteSession(tabID: string) {
         this.sessions.delete(tabID)
     }

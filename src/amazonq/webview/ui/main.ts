@@ -68,24 +68,30 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
-        onUpdateAuthentication: (featureDevEnabled: boolean): void => {
-            const selectedTab = tabsStorage.getSelectedTab()
-
+        onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]): void => {
             isFeatureDevEnabled = featureDevEnabled
 
-            if (!selectedTab) {
-                return
+            quickActionHandler.isFeatureDevEnabled = isFeatureDevEnabled
+            tabDataGenerator.quickActionsGenerator.isFeatureDevEnabled = isFeatureDevEnabled
+
+            // Set the new defaults for the quick action commands in all tabs now that isFeatureDevEnabled was enabled/disabled
+            for (const tab of tabsStorage.getTabs()) {
+                mynahUI.updateStore(tab.id, {
+                    quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab(tab.type),
+                })
             }
 
-            /**
-             * If someone switches authentication when they're on the main page then reset the chat items and the quick actions
-             * and that triggers a change in featureDev availability
-             */
-            if (selectedTab?.type === 'unknown') {
-                mynahUI.updateStore(selectedTab.id, {
-                    chatItems: [],
-                })
-                mynahUI.updateStore(selectedTab.id, tabDataGenerator.getTabData('unknown', true))
+            // Unlock every authenticated tab that is now authenticated
+            if (featureDevEnabled) {
+                for (const tabID of authenticatingTabIDs) {
+                    mynahUI.addChatItem(tabID, {
+                        type: ChatItemType.ANSWER,
+                        body: 'Authentication successful. Connected to Amazon Q.',
+                    })
+                    mynahUI.updateStore(tabID, {
+                        promptInputDisabledState: false,
+                    })
+                }
             }
         },
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
