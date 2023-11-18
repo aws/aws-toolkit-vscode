@@ -4,20 +4,23 @@
  */
 
 import * as vscode from 'vscode'
+import * as nls from 'vscode-nls'
 import { Commands } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
 import { focusAmazonQPanel, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
+import { amazonQHelpUrl } from '../../shared/constants'
 
-// TODO: UPDATE ME!!!
-export const learnMoreAmazonQCommand = Commands.declare('_aws.amazonq.learnMore', () => () => {
-    vscode.env.openExternal(vscode.Uri.parse('https://aws.amazon.com'))
+const localize = nls.loadMessageBundle()
+
+export const learnMoreAmazonQCommand = Commands.declare('aws.amazonq.learnMore', () => () => {
+    vscode.env.openExternal(vscode.Uri.parse(amazonQHelpUrl))
 })
 
 export const createLearnMoreNode = () =>
     learnMoreAmazonQCommand.build().asTreeNode({
-        label: 'Learn more about Amazon Q (Preview)',
+        label: localize('AWS.amazonq.learnMore', 'Learn More About Amazon Q (Preview)'),
         iconPath: getIcon('vscode-question'),
         contextValue: 'awsAmazonQLearnMoreNode',
     })
