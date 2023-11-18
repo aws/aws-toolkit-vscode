@@ -17,7 +17,6 @@ import {
 } from '../../testUtil'
 import {
     DefaultCodeWhispererClient,
-    ListRecommendationsRequest,
     ListRecommendationsResponse,
     Recommendation,
 } from '../../../codewhisperer/client/codewhisperer'
