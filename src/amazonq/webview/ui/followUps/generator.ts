@@ -47,7 +47,7 @@ export class FollowUpGenerator {
                     text: 'Would you like to follow up with',
                     options: [
                         {
-                            pillText: 'What are some examples of how I can use /dev?',
+                            pillText: 'What are some examples?',
                             type: 'DevExamples',
                         },
                         {
