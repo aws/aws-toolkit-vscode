@@ -17,9 +17,6 @@ import * as vscode from 'vscode'
 import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
-import { CodeWhispererStreamingClient } from '../../shared/clients/codeWhispererChatStreamingClient'
-import { ExportIntent } from '@amzn/codewhisperer-streaming'
-import { ToolkitError } from '../../shared/errors'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -309,33 +306,4 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         }
     }
     return status
-}
-
-export async function downloadArchive(jobId: string, pathToTmpDir: string) {
-    const client = await new CodeWhispererStreamingClient().createSdkClient()
-    const archivePath = path.join(pathToTmpDir, 'ExportResultArchive.zip')
-
-    try {
-        const result = await client.exportResultArchive({ exportId: jobId, exportIntent: ExportIntent.TRANSFORMATION })
-
-        const buffer = []
-        if (result.body === undefined) {
-            throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
-        }
-
-        for await (const chunk of result.body) {
-            if (chunk.binaryPayloadEvent) {
-                const chunkData = chunk.binaryPayloadEvent
-                if (chunkData.bytes) {
-                    buffer.push(chunkData.bytes)
-                }
-            }
-        }
-
-        fs.outputFileSync(archivePath, Buffer.concat(buffer))
-
-        return archivePath
-    } catch (error) {
-        throw new ToolkitError('There was a problem fetching the transformed code.')
-    }
 }

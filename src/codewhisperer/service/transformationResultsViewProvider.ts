@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import AdmZip from 'adm-zip'
 import os from 'os'
 import fs from 'fs-extra'
 import parseDiff from 'parse-diff'
@@ -10,6 +11,10 @@ import path from 'path'
 import vscode from 'vscode'
 
 import { randomUUID } from 'crypto'
+import { CodeWhispererStreamingClient } from '../../shared/clients/codeWhispererChatStreamingClient'
+import { ToolkitError } from '../../shared/errors'
+import { ExportIntent } from '@amzn/codewhisperer-streaming'
+import { TransformByQReviewStatus, transformByQState } from '../models/model'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -135,14 +140,17 @@ export class DiffModel {
         const changedFiles = parseDiff(diffContents)
 
         this.changes = changedFiles.flatMap(file => {
-            const originalPath = path.join(pathToWorkspace, file.from!) // what happens if these don't exist?
-            const tmpChangedPath = path.join(pathToTmpSrcDir, file.to!)
+            const originalPath = path.join(pathToWorkspace, file.from !== undefined ? file.from : '')
+            const tmpChangedPath = path.join(pathToTmpSrcDir, file.to !== undefined ? file.to : '')
 
-            if (fs.existsSync(originalPath) && fs.existsSync(tmpChangedPath)) {
+            const originalFileExist = fs.existsSync(originalPath)
+            const changedFileExists = fs.existsSync(tmpChangedPath)
+
+            if (originalFileExist && changedFileExists) {
                 return new ModifiedChangeNode(originalPath, tmpChangedPath)
-            } else if (!fs.existsSync(originalPath) && fs.existsSync(tmpChangedPath)) {
+            } else if (!originalFileExist && changedFileExists) {
                 return new AddedChangeNode(originalPath, tmpChangedPath)
-            } else if (fs.existsSync(originalPath) && !fs.existsSync(tmpChangedPath)) {
+            } else if (originalFileExist && !changedFileExists) {
                 return new RemovedChangeNode(originalPath)
             }
             return []
@@ -177,7 +185,7 @@ export class DiffModel {
 }
 
 export class TransformationResultsProvider implements vscode.TreeDataProvider<ProposedChangeNode> {
-    public static readonly viewType = 'aws.codeWhisperer.transformationProposedChangesTree'
+    public static readonly viewType = 'aws.amazonq.transformationProposedChangesTree'
 
     private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>()
     readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event
@@ -220,43 +228,86 @@ export class ProposedTransformationExplorer {
             treeDataProvider: transformDataProvider,
         })
 
-        vscode.commands.registerCommand('aws.codeWhisperer.reviewTransformationChanges.refresh', () =>
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.refresh', () =>
             transformDataProvider.refresh()
         )
-        vscode.commands.registerCommand('aws.codeWhisperer.reviewTransformationChanges.reveal', () => {
-            vscode.commands.executeCommand('setContext', 'gumby.transformationProposalInProgress', true)
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.reveal', () => {
+            vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', true)
             const root = diffModel.getRoot()
             if (root) {
                 this.changeViewer.reveal(root)
             }
         })
 
-        vscode.commands.registerCommand('aws.codeWhisperer.reviewTransformationChanges.processDiff', () => {
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
+            vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.PreparingReview)
+            const pathToArchive = await this.downloadArchive(
+                transformByQState.getJobId(),
+                ProposedTransformationExplorer.tmpTransformedWorkspaceDir
+            )
+            const pathContainingArchive = path.dirname(pathToArchive)
+            console.log(`Downloaded archive to ${pathToArchive}`)
+            const zip = new AdmZip(pathToArchive)
+            zip.extractAllTo(ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
+
             const workspaceFolders = vscode.workspace.workspaceFolders!
             diffModel.parseDiff(
-                path.join(
-                    ProposedTransformationExplorer.tmpTransformedWorkspaceDir,
-                    ProposedTransformationExplorer.pathToDiffPatch
-                ),
-                path.join(
-                    ProposedTransformationExplorer.tmpTransformedWorkspaceDir,
-                    ProposedTransformationExplorer.pathToSrcDir
-                ),
+                path.join(pathContainingArchive, ProposedTransformationExplorer.pathToDiffPatch),
+                path.join(pathContainingArchive, ProposedTransformationExplorer.pathToSrcDir),
                 workspaceFolders[0].uri.fsPath
+            )
+
+            vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
+            transformDataProvider.refresh()
+        })
+
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', () => {
+            diffModel.saveChanges()
+            vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
+            vscode.commands.executeCommand(
+                'setContext',
+                'gumby.reviewState.notStarted',
+                TransformByQReviewStatus.NotStarted
             )
             transformDataProvider.refresh()
         })
 
-        vscode.commands.registerCommand('aws.codewhisperer.transformationHub.acceptChanges', () => {
-            diffModel.saveChanges()
-            vscode.commands.executeCommand('setContext', 'gumby.transformationProposalInProgress', false)
-            transformDataProvider.refresh()
-        })
-
-        vscode.commands.registerCommand('aws.codewhisperer.transformationHub.rejectChanges', () => {
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', () => {
             diffModel.rejectChanges()
-            vscode.commands.executeCommand('setContext', 'gumby.transformationProposalInProgress', false)
+            vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
+            vscode.commands.executeCommand('setCommand', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
         })
+    }
+
+    public async downloadArchive(jobId: string, pathToTmpDir: string) {
+        const client = await new CodeWhispererStreamingClient().createSdkClient()
+        const archivePath = path.join(pathToTmpDir, 'ExportResultArchive.zip')
+        try {
+            const result = await client.exportResultArchive({
+                exportId: jobId,
+                exportIntent: ExportIntent.TRANSFORMATION,
+            })
+
+            const buffer = []
+            if (result.body === undefined) {
+                throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
+            }
+
+            for await (const chunk of result.body) {
+                if (chunk.binaryPayloadEvent) {
+                    const chunkData = chunk.binaryPayloadEvent
+                    if (chunkData.bytes) {
+                        buffer.push(chunkData.bytes)
+                    }
+                }
+            }
+
+            fs.outputFileSync(archivePath, Buffer.concat(buffer))
+
+            return archivePath
+        } catch (error) {
+            throw new ToolkitError('There was a problem fetching the transformed code.')
+        }
     }
 }

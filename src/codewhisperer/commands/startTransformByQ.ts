@@ -9,7 +9,7 @@ import * as fs from 'fs'
 import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
-import { transformByQState, StepProgress, DropdownStep } from '../models/model'
+import { transformByQState, StepProgress, DropdownStep, TransformByQReviewStatus } from '../models/model'
 import { cancel } from '../../shared/localizedText'
 import {
     throwIfCancelled,
@@ -22,13 +22,10 @@ import {
     convertToTimeString,
     convertDateToTimestamp,
     getValidModules,
-    downloadArchive,
 } from '../service/transformByQHandler'
 import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
-import AdmZip from 'adm-zip'
-import { ProposedTransformationExplorer } from '../service/transformationResultsViewProvider'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop Transform by Q')
@@ -117,6 +114,8 @@ export async function startTransformByQ() {
     vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
     vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
 
+    resetReviewInProgress()
+
     const startTime = new Date()
 
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
@@ -199,22 +198,15 @@ export async function startTransformByQ() {
             sessionPlanProgress['transformCode'] = StepProgress.Failed
             throw new Error(errorMessage)
         }
-        await vscode.commands.executeCommand('aws.amazonq.refresh')
-        throwIfCancelled()
+
         sessionPlanProgress['transformCode'] = StepProgress.Succeeded
-
-        // step 4: download transformed code archive
-
-        const pathToArchive = await downloadArchive(jobId, ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
-        const zip = new AdmZip(pathToArchive)
-        zip.extractAllTo(ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
-        await vscode.commands.executeCommand('aws.codeWhisperer.reviewTransformationChanges.reveal')
-        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         transformByQState.setToSucceeded()
         if (status === 'PARTIALLY_COMPLETED') {
             transformByQState.setToPartiallySucceeded()
         }
-        throwIfCancelled()
+
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.reviewChanges.reveal')
+        await vscode.commands.executeCommand('aws.amazonq.refresh')
         sessionPlanProgress['returnCode'] = StepProgress.Succeeded
     } catch (error) {
         if (transformByQState.isCancelled()) {
@@ -299,4 +291,9 @@ export async function confirmStopTransformByQ(jobId: string) {
         vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         stopJob(jobId)
     }
+}
+
+function resetReviewInProgress() {
+    vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+    vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
 }

@@ -774,16 +774,22 @@
                     "name": ""
                 },
                 {
-                    "id": "aws.codeWhisperer.transformationProposedChangesTree",
+                    "id": "aws.amazonq.transformationProposedChangesTree",
                     "name": "Proposed Changes",
-                    "when": "gumby.transformationProposalInProgress"
+                    "when": "gumby.transformationProposalReviewInProgress"
                 }
             ]
         },
         "viewsWelcome": [
             {
-                "view": "aws.codeWhisperer.transformationProposedChangesTree",
-                "contents": "Project transformation is complete.\n[Review Proposed Changes](command:aws.codeWhisperer.reviewTransformationChanges.processDiff)"
+                "view": "aws.amazonq.transformationProposedChangesTree",
+                "contents": "Project transformation is complete.\n[Download Proposed Changes](command:aws.amazonq.transformationHub.reviewChanges.startReview)",
+                "when": "gumby.reviewState == NotStarted"
+            },
+            {
+                "view": "aws.amazonq.transformationProposedChangesTree",
+                "contents": "Project transformation is complete.\n Downloading...",
+                "when": "gumby.reviewState == PreparingReview"
             }
         ],
         "submenus": [
@@ -1316,13 +1322,13 @@
                     "group": "navigation@4"
                 },
                 {
-                    "command": "aws.codewhisperer.transformationHub.acceptChanges",
-                    "when": "view == aws.codeWhisperer.transformationProposedChangesTree",
+                    "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
+                    "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
                     "group": "navigation@1"
                 },
                 {
-                    "command": "aws.codewhisperer.transformationHub.rejectChanges",
-                    "when": "view == aws.codeWhisperer.transformationProposedChangesTree",
+                    "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
+                    "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
                     "group": "navigation@2"
                 },
                 {
@@ -2363,12 +2369,12 @@
                 "category": "%AWS.title%"
             },
             {
-                "command": "aws.codewhisperer.transformationHub.acceptChanges",
-                "title": "Accept"
+                "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
+                "title": "%AWS.command.q.acceptChanges%"
             },
             {
-                "command": "aws.codewhisperer.transformationHub.rejectChanges",
-                "title": "Reject"
+                "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
+                "title": "%AWS.command.q.rejectChanges%"
             },
             {
                 "command": "aws.auth.switchConnections",
