@@ -12,7 +12,7 @@ import { AuthFormId } from './types'
  * The state instance of all auth forms
  */
 const authFormsState = {
-    credentials: new CredentialsState() as CredentialsState,
+    credentials: CredentialsState.instance,
     builderIdCodeWhisperer: CodeWhispererBuilderIdState.instance,
     builderIdCodeCatalyst: CodeCatalystBuilderIdState.instance,
     identityCenterCodeWhisperer: new CodeWhispererIdentityCenterState(),
@@ -48,6 +48,14 @@ export interface AuthForm {
      * If the auth form is successfully connected
      */
     isAuthConnected(): Promise<boolean>
+
+    /**
+     * Return true if the toolkit extension is aware of
+     * a connection. It does not have to be actively used
+     * for it to exist.
+     */
+    isConnectionExists(): Promise<boolean>
+
     get id(): AuthFormId
 }
 

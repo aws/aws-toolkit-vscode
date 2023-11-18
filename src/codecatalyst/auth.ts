@@ -23,6 +23,7 @@ import {
     isIdcSsoConnection,
 } from '../auth/connection'
 import { createBuilderIdConnection } from '../auth/utils'
+import { builderIdStartUrl } from '../auth/sso/model'
 
 // Secrets stored on the macOS keychain appear as individual entries for each key
 // This is fine so long as the user has only a few accounts. Otherwise this should
@@ -69,7 +70,9 @@ export class CodeCatalystAuthenticationProvider {
         })
 
         // set initial context in case event does not trigger
-        setCodeCatalystConnectedContext(this.isConnectionValid())
+        this.restore().then(() => {
+            setCodeCatalystConnectedContext(this.isConnectionValid())
+        })
     }
 
     public get activeConnection() {
@@ -257,6 +260,19 @@ export class CodeCatalystAuthenticationProvider {
         }
 
         return this.secondaryAuth.useNewConnection(conn)
+    }
+
+    /**
+     * Try to ensure a specific connection is active.
+     */
+    public async tryConnectTo(connection: { startUrl: string; region: string }) {
+        if (!this.isConnectionValid() || connection.startUrl !== this.activeConnection!.startUrl) {
+            if (connection.startUrl === builderIdStartUrl) {
+                await this.connectToAwsBuilderId()
+            } else {
+                await this.connectToEnterpriseSso(connection.startUrl, connection.region)
+            }
+        }
     }
 
     public async isConnectionOnboarded(conn: SsoConnection, recheck = false) {

@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { submitFeedback } from '../feedback/vue/submitFeedback'
 import { deleteCloudFormation } from '../lambda/commands/deleteCloudFormation'
 import { CloudFormationStackNode } from '../lambda/explorer/cloudFormationNodes'
 import globals from '../shared/extensionGlobals'
@@ -36,6 +35,7 @@ import { CodeCatalystRootNode } from '../codecatalyst/explorer'
 import { CodeCatalystAuthenticationProvider } from '../codecatalyst/auth'
 import { S3FolderNode } from '../s3/explorer/s3FolderNode'
 import { amazonQNode, refreshAmazonQ, refreshAmazonQRootNode } from '../amazonq/explorer/amazonQNode'
+import { submitFeedback } from '../feedback/vue/submitFeedback'
 
 /**
  * Activates the AWS Explorer UI and related functionality.
@@ -160,13 +160,7 @@ async function registerAwsExplorerCommands(
                 telemetry.vscode_activeRegions.emit({ value: awsExplorer.getRegionNodesSize() })
             }
         }),
-        Commands.register({ id: 'aws.submitFeedback', autoconnect: false }, async id => {
-            if (id === 'CodeWhisperer') {
-                await submitFeedback(context, 'CodeWhisperer')
-            } else {
-                await submitFeedback(context, 'AWS Toolkit')
-            }
-        }),
+        submitFeedback.register(context),
         Commands.register({ id: 'aws.refreshAwsExplorer', autoconnect: true }, async (passive: boolean = false) => {
             awsExplorer.refresh()
 
