@@ -6,7 +6,6 @@
 /**
  * SDK Client
  */
-
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
@@ -25,6 +24,10 @@ export const idleTimerPollPeriod = 25 // milliseconds
 export const showRecommendationTimerPollPeriod = 25
 
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
+
+export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AWS::', 'Description']
+
+export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
@@ -89,8 +92,11 @@ export const platformLanguageIds = [
     'golang', // Cloud9 reports Go files with this language-id
     'json',
     'yaml',
-    'hcl',
     'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
     'plaintext',
 ] as const
 
