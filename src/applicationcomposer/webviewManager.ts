@@ -15,7 +15,7 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://d2sp2encosghg4.cloudfront.net' // apurvaja's starling build
+const cdn = 'https://dwuw1icz2q5c3.cloudfront.net' // Gamma
 
 export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
