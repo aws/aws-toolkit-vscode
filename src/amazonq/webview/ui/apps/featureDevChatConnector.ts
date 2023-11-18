@@ -5,7 +5,7 @@
 
 import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/mynah-ui-chat'
 import { ExtensionMessage } from '../commands'
-import { TabsStorage } from '../storages/tabsStorage'
+import { TabType, TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from './amazonqCommonsConnector'
 import { FollowUpGenerator } from '../followUps/generator'
 
@@ -24,6 +24,7 @@ export interface ConnectorProps {
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
+    onNewTab: (tabType: TabType) => void
     tabsStorage: TabsStorage
 }
 
@@ -37,6 +38,7 @@ export class Connector {
     private readonly chatInputEnabled
     private readonly onUpdateAuthentication
     private readonly followUpGenerator: FollowUpGenerator
+    private readonly onNewTab
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -48,6 +50,7 @@ export class Connector {
         this.chatInputEnabled = props.onChatInputEnabled
         this.onUpdateAuthentication = props.onUpdateAuthentication
         this.followUpGenerator = new FollowUpGenerator()
+        this.onNewTab = props.onNewTab
     }
 
     onCodeInsertToCursorPosition = (
@@ -216,6 +219,11 @@ export class Connector {
 
         if (messageData.type === 'authNeededException') {
             this.processAuthNeededException(messageData)
+            return
+        }
+
+        if (messageData.type === 'openNewTabMessage') {
+            this.onNewTab('featuredev')
             return
         }
     }

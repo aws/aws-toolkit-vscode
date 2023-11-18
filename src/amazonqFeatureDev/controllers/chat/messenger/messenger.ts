@@ -16,6 +16,7 @@ import {
     ChatInputEnabledMessage,
     AuthenticationUpdateMessage,
     AuthNeededException,
+    OpenNewTabMessage,
 } from '../../../views/connector/connector'
 import { AppToWebViewMessageDispatcher } from '../../../views/connector/connector'
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
@@ -152,5 +153,9 @@ export class Messenger {
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(new AuthNeededException(message, authType, tabID))
+    }
+
+    public openNewTask() {
+        this.dispatcher.sendOpenNewTask(new OpenNewTabMessage())
     }
 }

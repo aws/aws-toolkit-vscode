@@ -39,7 +39,7 @@ export class QuickActionHandler {
         this.tabsStorage.resetTabTimer(tabID)
         switch (chatPrompt.command) {
             case '/dev':
-                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Dev', '/dev')
+                this.handleFeatureDevCommand(chatPrompt, tabID, 'Q - Dev')
                 break
             case '/help':
                 this.handleHelpCommand(tabID)
@@ -73,7 +73,7 @@ export class QuickActionHandler {
         this.connector.help(tabID)
     }
 
-    private handleFeatureDevCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string, commandName: string) {
+    private handleFeatureDevCommand(chatPrompt: ChatPrompt, tabID: string, taskName: string) {
         if (!this.isFeatureDevEnabled) {
             return
         }
@@ -97,7 +97,7 @@ export class QuickActionHandler {
             this.mynahUI.updateStore(affectedTabId, { chatItems: [] })
             this.mynahUI.updateStore(
                 affectedTabId,
-                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName, commandName)
+                this.tabDataGenerator.getTabData('featuredev', realPromptText === '', taskName)
             )
 
             if (realPromptText !== '') {

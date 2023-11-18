@@ -6,7 +6,7 @@ import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
-import { TabsStorage } from './storages/tabsStorage'
+import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { TabDataGenerator } from './tabs/generator'
 import { feedbackOptions } from './feedback/constants'
@@ -244,6 +244,19 @@ ${message}`,
         onUpdatePlaceholder(tabID: string, newPlaceholder: string) {
             mynahUI.updateStore(tabID, {
                 promptInputPlaceholder: newPlaceholder,
+            })
+        },
+        onNewTab(tabType: TabType) {
+            const newTabID = mynahUI.updateStore('', tabDataGenerator.getTabData(tabType, true))
+            if (!newTabID) {
+                return
+            }
+
+            tabsStorage.addTab({
+                id: newTabID,
+                status: 'free',
+                type: tabType,
+                isSelected: true,
             })
         },
     })

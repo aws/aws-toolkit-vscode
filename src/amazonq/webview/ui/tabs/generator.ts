@@ -29,22 +29,22 @@ export class TabDataGenerator {
         ['featuredev', 'Briefly describe a task or issue'],
     ])
 
-    private tabWelcomeMessage: Map<TabType, (name?: string) => string> = new Map([
+    private tabWelcomeMessage: Map<TabType, string> = new Map([
         [
             'unknown',
-            () => `Hi, I am Amazon Q. I can answer your software development questions. 
+            `Hi, I am Amazon Q. I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
         [
             'cwc',
-            () => `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
+            `Hi, I am Amazon Q (Preview). I can answer your software development questions. 
         Ask me to explain, debug, or optimize your code. 
         You can enter \`/\` to see a list of quick actions.`,
         ],
         [
             'featuredev',
-            (name?: string) => `Welcome to ${name}. 
+            `Welcome to /dev. 
 
 Here I can provide code suggestions across files in your current project by looking at /src, if it exists.
 
@@ -61,12 +61,7 @@ Before I begin generating code, let's agree on an implementation plan. What chan
         })
     }
 
-    public getTabData(
-        tabType: TabType,
-        needWelcomeMessages: boolean,
-        taskName?: string,
-        commandName?: string
-    ): MynahUIDataModel {
+    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
         return {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
@@ -77,7 +72,7 @@ Before I begin generating code, let's agree on an implementation plan. What chan
                 ? [
                       {
                           type: ChatItemType.ANSWER,
-                          body: this.tabWelcomeMessage.get(tabType)?.(commandName),
+                          body: this.tabWelcomeMessage.get(tabType),
                       },
                       {
                           type: ChatItemType.ANSWER,
