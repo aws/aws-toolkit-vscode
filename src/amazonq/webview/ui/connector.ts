@@ -39,7 +39,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
-    onUpdateAuthentication: (featureDevEnabled: boolean) => void
+    onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     tabsStorage: TabsStorage
 }
 
@@ -59,6 +59,7 @@ export class Connector {
         this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
         this.featureDevChatConnector = new FeatureDevChatConnector(props)
         this.amazonqCommonsConnector = new AmazonQCommonsConnector({
+            sendMessageToExtension: this.sendMessageToExtension,
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
         })
         this.tabsStorage = props.tabsStorage
@@ -262,10 +263,11 @@ export class Connector {
     }
 
     onAuthFollowUpClicked = (tabID: string, authType: AuthFollowUpType) => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            default:
-                this.cwChatConnector.authFollowUpClicked(tabID, authType)
-                break
+        const tabType = this.tabsStorage.getTab(tabID)?.type
+        switch (tabType) {
+            case 'cwc':
+            case 'featuredev':
+                this.amazonqCommonsConnector.authFollowUpClicked(tabID, tabType, authType)
         }
     }
 

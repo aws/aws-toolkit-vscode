@@ -24,7 +24,7 @@ import { keys } from '../../../../shared/utilities/tsUtils'
 import { getLogger } from '../../../../shared/logger/logger'
 import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
-import { AuthFollowUpType } from '../../../auth/model'
+import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 
 export type StaticTextResponseType = 'help'
 
@@ -36,23 +36,23 @@ export class Messenger {
 
     public async sendAuthNeededExceptionMessage(credentialState: FeatureAuthState, tabID: string, triggerID: string) {
         let authType: AuthFollowUpType = 'full-auth'
-        let message = "You don't have access to Amazon Q. Please authenticate to get started."
+        let message = reauthenticateText
         if (
             credentialState.codewhispererChat === 'disconnected' &&
             credentialState.codewhispererCore === 'disconnected'
         ) {
             authType = 'full-auth'
-            message = "You don't have access to Amazon Q. Please authenticate to get started."
+            message = reauthenticateText
         }
 
         if (credentialState.codewhispererCore === 'connected' && credentialState.codewhispererChat === 'expired') {
             authType = 'missing_scopes'
-            message = "You haven't enabled Amazon Q in VSCode"
+            message = enableQText
         }
 
         if (credentialState.codewhispererChat === 'expired' && credentialState.codewhispererCore === 'expired') {
             authType = 're-auth'
-            message = 'Your Amazon Q session has timed out. Re-authenticate to continue.'
+            message = expiredText
         }
 
         this.dispatcher.sendAuthNeededExceptionMessage(

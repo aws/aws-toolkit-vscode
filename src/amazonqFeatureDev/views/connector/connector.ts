@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { AuthFollowUpType } from '../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { CodeReference } from '../../../amazonq/webview/ui/connector'
 import { featureDevChat, licenseText } from '../../constants'
@@ -106,10 +107,24 @@ export class AuthenticationUpdateMessage {
     readonly time: number = Date.now()
     readonly sender: string = featureDevChat
     readonly featureDevEnabled: boolean
+    readonly authenticatingTabIDs: string[]
     readonly type = 'authenticationUpdateMessage'
 
-    constructor(featureDevEnabled: boolean) {
+    constructor(featureDevEnabled: boolean, authenticatingTabIDs: string[]) {
         this.featureDevEnabled = featureDevEnabled
+        this.authenticatingTabIDs = authenticatingTabIDs
+    }
+}
+
+export class AuthNeededException extends UiMessage {
+    readonly message: string
+    readonly authType: AuthFollowUpType
+    override type = 'authNeededException'
+
+    constructor(message: string, authType: AuthFollowUpType, tabID: string) {
+        super(tabID)
+        this.message = message
+        this.authType = authType
     }
 }
 
@@ -168,6 +183,10 @@ export class AppToWebViewMessageDispatcher {
     }
 
     public sendAuthenticationUpdate(message: AuthenticationUpdateMessage) {
+        this.appsToWebViewMessagePublisher.publish(message)
+    }
+
+    public sendAuthNeededExceptionMessage(message: AuthNeededException) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
 }

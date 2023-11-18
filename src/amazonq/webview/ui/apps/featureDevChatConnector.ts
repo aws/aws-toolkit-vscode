@@ -7,6 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/
 import { ExtensionMessage } from '../commands'
 import { TabsStorage } from '../storages/tabsStorage'
 import { CodeReference } from './amazonqCommonsConnector'
+import { FollowUpGenerator } from '../followUps/generator'
 
 interface ChatPayload {
     chatMessage: string
@@ -22,7 +23,7 @@ export interface ConnectorProps {
     onWarning: (tabID: string, message: string, title: string) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
-    onUpdateAuthentication: (featureDevEnabled: boolean) => void
+    onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
     tabsStorage: TabsStorage
 }
 
@@ -35,6 +36,7 @@ export class Connector {
     private readonly updatePlaceholder
     private readonly chatInputEnabled
     private readonly onUpdateAuthentication
+    private readonly followUpGenerator: FollowUpGenerator
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
@@ -45,6 +47,7 @@ export class Connector {
         this.updatePlaceholder = props.onUpdatePlaceholder
         this.chatInputEnabled = props.onChatInputEnabled
         this.onUpdateAuthentication = props.onUpdateAuthentication
+        this.followUpGenerator = new FollowUpGenerator()
     }
 
     onCodeInsertToCursorPosition = (
@@ -148,6 +151,28 @@ export class Connector {
         }
     }
 
+    private processAuthNeededException = async (messageData: any): Promise<void> => {
+        if (this.onChatAnswerReceived === undefined) {
+            return
+        }
+
+        this.onChatAnswerReceived(messageData.tabID, {
+            type: ChatItemType.ANSWER,
+            body: messageData.message,
+            followUp: undefined,
+            canBeVoted: false,
+        })
+
+        this.onChatAnswerReceived(messageData.tabID, {
+            type: ChatItemType.SYSTEM_PROMPT,
+            body: undefined,
+            followUp: this.followUpGenerator.generateAuthFollowUps('featuredev', messageData.authType),
+            canBeVoted: false,
+        })
+
+        return
+    }
+
     handleMessageReceive = async (messageData: any): Promise<void> => {
         if (messageData.type === 'errorMessage') {
             this.onError(messageData.tabID, messageData.message, messageData.title)
@@ -185,7 +210,12 @@ export class Connector {
         }
 
         if (messageData.type === 'authenticationUpdateMessage') {
-            this.onUpdateAuthentication(messageData.featureDevEnabled)
+            this.onUpdateAuthentication(messageData.featureDevEnabled, messageData.authenticatingTabIDs)
+            return
+        }
+
+        if (messageData.type === 'authNeededException') {
+            this.processAuthNeededException(messageData)
             return
         }
     }

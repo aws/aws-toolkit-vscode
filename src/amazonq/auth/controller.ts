@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { commands } from 'vscode'
-import { showManageCwConnections } from '../../codewhisperer/commands/basicCommands'
+import { reconnect, showManageCwConnections } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
 import { placeholder } from '../../shared/vscode/commands2'
 import { AuthFollowUpType } from './model'
@@ -12,6 +11,7 @@ import { AuthFollowUpType } from './model'
 export class AuthController {
     public handleAuth(type: AuthFollowUpType) {
         switch (type) {
+            case 'use-supported-auth':
             case 'full-auth':
                 this.handleFullAuth()
                 break
@@ -27,6 +27,6 @@ export class AuthController {
     }
 
     private handleReAuth() {
-        commands.executeCommand('aws.codewhisperer.reconnect', amazonQChatSource)
+        reconnect.execute(placeholder, amazonQChatSource)
     }
 }

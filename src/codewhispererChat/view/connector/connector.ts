@@ -7,7 +7,7 @@ import { Timestamp } from 'aws-sdk/clients/apigateway'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
 import { EditorContextCommandType } from '../../commands/registerCommands'
 import { OnboardingPageInteractionType } from '../../../amazonq/onboardingPage/model'
-import { AuthFollowUpType } from '../../auth/model'
+import { AuthFollowUpType } from '../../../amazonq/auth/model'
 
 class UiMessage {
     readonly time: number = Date.now()

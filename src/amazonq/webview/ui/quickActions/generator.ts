@@ -12,7 +12,7 @@ export interface QuickActionGeneratorProps {
 }
 
 export class QuickActionGenerator {
-    private isFeatureDevEnabled: boolean
+    public isFeatureDevEnabled: boolean
     private isGumbyEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {

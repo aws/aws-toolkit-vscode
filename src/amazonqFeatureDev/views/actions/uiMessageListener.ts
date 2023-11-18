@@ -49,6 +49,9 @@ export class UIMessageListener {
             case 'tab-was-removed':
                 this.tabClosed(msg)
                 break
+            case 'auth-follow-up-was-clicked':
+                this.authClicked(msg)
+                break
         }
     }
 
@@ -98,6 +101,13 @@ export class UIMessageListener {
     private tabClosed(msg: any) {
         this.featureDevControllerEventsEmitters?.tabClosed.fire({
             tabID: msg.tabID,
+        })
+    }
+
+    private authClicked(msg: any) {
+        this.featureDevControllerEventsEmitters?.authClicked.fire({
+            tabID: msg.tabID,
+            authType: msg.authType,
         })
     }
 }

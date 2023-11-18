@@ -35,7 +35,10 @@ export class Session {
     private _latestMessage: string = ''
     private telemetry: TelemetryHelper
 
-    constructor(public readonly config: SessionConfig, private messenger: Messenger, private readonly tabID: string) {
+    // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
+    public isAuthenticating: boolean
+
+    constructor(public readonly config: SessionConfig, private messenger: Messenger, public readonly tabID: string) {
         this._state = new ConversationNotStartedState('', tabID)
         this.proxyClient = new FeatureDevClient()
 
@@ -43,6 +46,7 @@ export class Session {
         this.codeGenRetries = codeGenRetryLimit
 
         this.telemetry = new TelemetryHelper()
+        this.isAuthenticating = false
     }
 
     /**

@@ -7,7 +7,7 @@ import { MynahIcons } from '@aws/mynah-ui-chat'
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpsBlock } from './model'
 
-export type AuthFollowUpType = 'full-auth' | 're-auth' | 'missing_scopes'
+export type AuthFollowUpType = 'full-auth' | 're-auth' | 'missing_scopes' | 'use-supported-auth'
 
 export class FollowUpGenerator {
     public generateAuthFollowUps(tabType: TabType, authType: AuthFollowUpType): FollowUpsBlock {
@@ -16,6 +16,7 @@ export class FollowUpGenerator {
             case 'full-auth':
                 pillText = 'Authenticate'
                 break
+            case 'use-supported-auth':
             case 'missing_scopes':
                 pillText = 'Enable Amazon Q'
                 break

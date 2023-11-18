@@ -17,7 +17,7 @@ import { Messenger } from './controllers/chat/messenger/messenger'
 import { AppToWebViewMessageDispatcher } from './views/connector/connector'
 import globals from '../shared/extensionGlobals'
 import { ChatSessionStorage } from './storages/chatSession'
-import { AuthUtil } from '../codewhisperer/util/authUtil'
+import { AuthUtil, getChatAuthState } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
 export function init(appContext: AmazonQAppInitContext) {
@@ -29,6 +29,7 @@ export function init(appContext: AmazonQAppInitContext) {
         stopResponse: new vscode.EventEmitter<any>(),
         tabOpened: new vscode.EventEmitter<any>(),
         tabClosed: new vscode.EventEmitter<any>(),
+        authClicked: new vscode.EventEmitter<any>(),
     }
 
     const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))
@@ -77,21 +78,22 @@ export function init(appContext: AmazonQAppInitContext) {
         'featuredev'
     )
 
-    const events = [
-        AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection,
-        AuthUtil.instance.auth.onDidChangeActiveConnection,
-        AuthUtil.instance.auth.onDidChangeConnectionState,
-        AuthUtil.instance.auth.onDidUpdateConnection,
-    ]
+    const debouncedEvent = debounce(() => {
+        const authenticated = getChatAuthState().amazonQ === 'connected'
+        let authenticatingSessionIDs: string[] = []
+        if (authenticated) {
+            const authenticatingSessions = sessionStorage.getAuthenticatingSessions()
 
-    const debouncedEvent = debounce(
-        () => messenger.sendAuthenticationUpdate(AuthUtil.instance.isEnterpriseSsoInUse()),
-        500
-    )
+            authenticatingSessionIDs = authenticatingSessions.map(session => session.tabID)
 
-    events.forEach(event =>
-        event(() => {
-            debouncedEvent()
-        })
-    )
+            // We've already authenticated these sessions
+            authenticatingSessions.forEach(session => (session.isAuthenticating = false))
+        }
+
+        messenger.sendAuthenticationUpdate(authenticated, authenticatingSessionIDs)
+    }, 500)
+
+    AuthUtil.instance.secondaryAuth.onDidChangeActiveConnection(() => {
+        debouncedEvent()
+    })
 }

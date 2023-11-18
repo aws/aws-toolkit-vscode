@@ -7,7 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
-import { AuthFollowUpType, FollowUpGenerator } from '../followUps/generator'
+import { FollowUpGenerator } from '../followUps/generator'
 
 interface ChatPayload {
     chatMessage: string
@@ -56,15 +56,6 @@ export class Connector {
             tabID,
             messageId,
             link,
-            tabType: 'cwc',
-        })
-    }
-
-    authFollowUpClicked = (tabID: string, authType: AuthFollowUpType) => {
-        this.sendMessageToExtension({
-            command: 'auth-follow-up-was-clicked',
-            authType,
-            tabID,
             tabType: 'cwc',
         })
     }

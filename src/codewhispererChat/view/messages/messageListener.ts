@@ -5,7 +5,7 @@
 
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
-import { AuthController } from '../../auth/controller'
+import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 

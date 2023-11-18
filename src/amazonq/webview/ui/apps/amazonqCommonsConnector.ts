@@ -4,10 +4,13 @@
  */
 
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
+import { AuthFollowUpType } from '../../../auth/model'
+import { ExtensionMessage } from '../commands'
 
 export type WelcomeFollowupType = 'continue-to-chat'
 
 export interface ConnectorProps {
+    sendMessageToExtension: (message: ExtensionMessage) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
 }
 export interface CodeReference {
@@ -21,9 +24,11 @@ export interface CodeReference {
 }
 
 export class Connector {
+    private readonly sendMessageToExtension
     private readonly onWelcomeFollowUpClicked
 
     constructor(props: ConnectorProps) {
+        this.sendMessageToExtension = props.sendMessageToExtension
         this.onWelcomeFollowUpClicked = props.onWelcomeFollowUpClicked
     }
 
@@ -31,5 +36,14 @@ export class Connector {
         if (followUp.type !== undefined && followUp.type === 'continue-to-chat') {
             this.onWelcomeFollowUpClicked(tabID, followUp.type)
         }
+    }
+
+    authFollowUpClicked = (tabID: string, tabType: string, authType: AuthFollowUpType): void => {
+        this.sendMessageToExtension({
+            command: 'auth-follow-up-was-clicked',
+            authType,
+            tabID,
+            tabType,
+        })
     }
 }

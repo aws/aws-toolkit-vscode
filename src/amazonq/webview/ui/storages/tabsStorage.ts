@@ -50,6 +50,10 @@ export class TabsStorage {
         return this.tabs.get(tabID)
     }
 
+    public getTabs(): Tab[] {
+        return Array.from(this.tabs.values())
+    }
+
     public isTabDead(tabID: string): boolean {
         return this.tabs.get(tabID)?.status === 'dead'
     }

@@ -27,7 +27,10 @@ export class FollowUpInteractionHandler {
     }
 
     public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
-        if (followUp.type !== undefined && ['full-auth', 're-auth', 'missing_scopes'].includes(followUp.type)) {
+        if (
+            followUp.type !== undefined &&
+            ['full-auth', 're-auth', 'missing_scopes', 'use-supported-auth'].includes(followUp.type)
+        ) {
             this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
             return
         }
