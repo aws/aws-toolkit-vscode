@@ -101,12 +101,16 @@ export interface ReferenceDetails {
     snippet?: string
 }
 
-export interface GenerateResourceRequestMessage extends RequestMessage {
+export interface GenerateResourceRequestMessage extends Message {
     prompt: string
+    traceId: string
 }
 
-export interface GenerateResourceResponseMessage {
+export interface GenerateResourceResponseMessage extends Message {
     chatResponse: string
     references: ReferenceDetails[]
     metadata: object
+    isSuccess: boolean
+    errorMessage?: string
+    traceId: string
 }
