@@ -97,7 +97,7 @@ export class FeatureDevClient {
         }
     }
 
-    public async createUploadUrl(conversationId: string, contentChecksumSha256: string) {
+    public async createUploadUrl(conversationId: string, contentChecksumSha256: string, contentLength: number) {
         try {
             const client = await this.getClient()
             const params = {
@@ -110,6 +110,7 @@ export class FeatureDevClient {
                 contentChecksumType: 'SHA_256',
                 artifactType: 'SourceCode',
                 uploadIntent: 'TASK_ASSIST_PLANNING',
+                contentLength,
             }
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
