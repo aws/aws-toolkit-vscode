@@ -53,22 +53,9 @@
         </div>
         <!-- Body -->
         <div class="body">
-            <!-- Additional Resources-->
-            <div class="resources">
-                <Shortcuts />
-                <Workshop />
-                <Resources />
-            </div>
             <!-- Functionality -->
             <div class="bodySubDiv">
                 <GenerateSuggestionTab />
-                <!-- Break Line -->
-                <div class="breakLine">
-                    <svg width="100%" height="2" viewBox="0 0 744 2" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 1H744" stroke="#2F2F2F" />
-                    </svg>
-                </div>
-                <ScanCode />
             </div>
         </div>
     </div>
@@ -76,20 +63,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import Resources from './resources.vue'
-import Shortcuts from './shortcuts.vue'
-import ScanCode from './scanCode.vue'
 import GenerateSuggestionTab from './genSuggestionTab.vue'
-import Workshop from './workshop.vue'
 
 export default defineComponent({
     name: 'Getting_Started',
     components: {
-        Resources,
-        Shortcuts,
-        ScanCode,
         GenerateSuggestionTab,
-        Workshop,
     },
     data() {
         return {
@@ -195,29 +174,17 @@ export default defineComponent({
     display: flex;
     flex-wrap: wrap-reverse;
     height: auto;
-    justify-content: center;
+    justify-content: left;
     gap: 5%;
-    justify-items: center;
+    justify-items: left;
+    padding-left: 60px;
 }
 .bodySubDiv {
     display: flex;
     flex-direction: column;
-    width: 720px;
+    width: 860;
     height: auto;
     justify-items: start;
-    align-items: start;
-}
-.breakLine {
-    display: flex;
-    width: 100%;
-    background: #2f2f2f;
-}
-.resources {
-    width: 290px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    justify-content: start;
     align-items: start;
 }
 </style>
