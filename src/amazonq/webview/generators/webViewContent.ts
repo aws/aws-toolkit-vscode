@@ -9,7 +9,7 @@ import { gumbyEnabled, featureDevEnabled } from '../../../amazonqFeatureDev/conf
 import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
-    public generate(extensionURI: Uri, webView: Webview): string {
+    public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
         const entrypoint = process.env.WEBPACK_DEVELOPER_SERVER
             ? 'http: localhost'
             : 'https: file+.vscode-resources.vscode-cdn.net'
@@ -22,14 +22,14 @@ export class WebViewContentGenerator {
             <head>
                 <meta http-equiv="Content-Security-Policy" content="${contentPolicy}">
                 <title>Amazon Q (Preview)</title>                
-                ${this.generateJS(extensionURI, webView)}                
+                ${await this.generateJS(extensionURI, webView)}                
             </head>
             <body>
             </body>
         </html>`
     }
 
-    private generateJS(extensionURI: Uri, webView: Webview): string {
+    private async generateJS(extensionURI: Uri, webView: Webview): Promise<string> {
         const source = path.join('src', 'amazonq', 'webview', 'ui', 'amazonq-ui.js')
         const assetsPath = Uri.joinPath(extensionURI)
         const javascriptUri = Uri.joinPath(assetsPath, 'dist', source)
@@ -45,9 +45,9 @@ export class WebViewContentGenerator {
         <script type="text/javascript" src="${entrypoint.toString()}" defer onload="init()"></script>
         <script type="text/javascript">
             const init = () => {
-                createMynahUI(acquireVsCodeApi(), ${featureDevEnabled && getChatAuthState().amazonQ === 'connected'}, ${
-            gumbyEnabled && AuthUtil.instance.isEnterpriseSsoInUse()
-        });
+                createMynahUI(acquireVsCodeApi(), ${
+                    featureDevEnabled && (await getChatAuthState()).amazonQ === 'connected'
+                }, ${gumbyEnabled && AuthUtil.instance.isEnterpriseSsoInUse()});
             }
     </script>
         `

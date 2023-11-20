@@ -554,7 +554,7 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = getChatAuthState()
+        const credentialsState = await getChatAuthState()
 
         if (credentialsState.codewhispererChat !== 'connected' && credentialsState.codewhispererCore !== 'connected') {
             this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
@@ -584,7 +584,7 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = getChatAuthState()
+        const credentialsState = await getChatAuthState()
 
         if (
             !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
