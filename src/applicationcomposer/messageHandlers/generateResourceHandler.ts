@@ -19,18 +19,38 @@ import { getLogger } from '../../shared/logger/logger'
 const TIMEOUT = 30_000
 
 export async function generateResourceHandler(request: GenerateResourceRequestMessage, context: WebviewContext) {
-    const { chatResponse, references, metadata } = await generateResource(request.prompt)
+    try {
+        const { chatResponse, references, metadata, isSuccess } = await generateResource(request.prompt)
 
-    context.panel.webview.postMessage({
-        command: Command.GENERATE_RESOURCE,
-        messageType: MessageType.RESPONSE,
-        chatResponse: chatResponse,
-        references: references,
-        metadata: metadata,
-    })
+        const responseMessage: GenerateResourceResponseMessage = {
+            command: Command.GENERATE_RESOURCE,
+            messageType: MessageType.RESPONSE,
+            chatResponse,
+            references,
+            metadata,
+            isSuccess,
+            traceId: request.traceId,
+        }
+        context.panel.webview.postMessage(responseMessage)
+    } catch (error: any) {
+        getLogger().error(`Error in generateResourceHandler: ${error.message}`, error)
+
+        const responseMessage: GenerateResourceResponseMessage = {
+            command: Command.GENERATE_RESOURCE,
+            messageType: MessageType.RESPONSE,
+            isSuccess: false,
+            errorMessage: error.message,
+            traceId: request.traceId,
+            chatResponse: '',
+            references: [],
+            metadata: {},
+        }
+
+        context.panel.webview.postMessage(responseMessage)
+    }
 }
 
-async function generateResource(prompt: string): Promise<GenerateResourceResponseMessage> {
+async function generateResource(prompt: string) {
     let startTime = globals.clock.Date.now()
 
     try {
@@ -63,7 +83,8 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
         }
 
         if (data.generateAssistantResponseResponse === undefined) {
-            throw new Error('No chat response')
+            getLogger().debug(`Error: Unexpected model response: ${JSON.stringify(data, undefined, 2)}`)
+            throw new Error('No model response')
         }
 
         for await (const value of data.generateAssistantResponseResponse) {
@@ -71,8 +92,8 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
                 try {
                     response += value.assistantResponseEvent.content
                 } catch (error: any) {
-                    // TODO-STARLING: Add Error Handling
                     getLogger().debug(`Warning: Failed to parse content response: ${error.message}`)
+                    throw new Error('Invalid model response')
                 }
             }
 
@@ -117,6 +138,7 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
                 conversationId,
                 queryTime: elapsedTime,
             },
+            isSuccess: true,
         }
     } catch (error: any) {
         getLogger().debug(`CW Chat error: ${error.name} - ${error.message}`)
@@ -126,8 +148,6 @@ async function generateResource(prompt: string): Promise<GenerateResourceRespons
             getLogger().debug(JSON.stringify({ requestId, cfId, extendedRequestId }, undefined, 2))
         }
 
-        // TODO-STARLING: Send error to AppComposer
-        // for now, retrhowing error
         throw error
     }
 }
