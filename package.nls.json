@@ -203,6 +203,7 @@
     "AWS.command.codewhisperer.configure": "CodeWhisperer Settings",
     "AWS.command.codewhisperer.signout": "Sign Out",
     "AWS.command.codewhisperer.reconnect": "Reconnect",
+    "AWS.command.codewhisperer.openReferencePanel": "Open Code Reference Log",
     "AWS.command.q.welcome": "Amazon Q (Preview) Welcome Page",
     "AWS.command.q.acceptChanges": "Accept",
     "AWS.command.q.rejectChanges": "Reject",

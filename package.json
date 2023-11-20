@@ -879,6 +879,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1242,10 +1246,6 @@
                     "when": "aws.isDevMode || isCloud9"
                 },
                 {
-                    "command": "aws.amazonq.welcome",
-                    "when": "false"
-                },
-                {
                     "command": "aws.amazonq.learnMore",
                     "when": "false"
                 }
@@ -1439,6 +1439,11 @@
                     "command": "aws.codecatalyst.openDevEnv",
                     "when": "view == aws.codecatalyst && !isCloud9",
                     "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "when": "view == aws.AmazonQChatView",
+                    "group": "0_topAmazonQ@1"
                 },
                 {
                     "command": "aws.amazonq.learnMore",
@@ -2345,6 +2350,11 @@
             {
                 "command": "aws.codewhisperer.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codeWhisperer.openReferencePanel",
+                "title": "%AWS.command.codewhisperer.openReferencePanel%",
                 "category": "%AWS.title%"
             },
             {
