@@ -39,10 +39,6 @@ export class TextMessageHandler {
                   }
                 : {}),
         })
-        this.mynahUI.addChatItem(tabID, {
-            type: ChatItemType.ANSWER_STREAM,
-            body: '',
-        })
 
         this.mynahUI.updateStore(tabID, {
             loadingChat: true,
