@@ -179,7 +179,7 @@ body.wordWrap pre {
 
 pre:not(.hljs),
 pre.hljs code > div {
-    padding: 16px;
+    padding: 0 16px 16px 16px;
     border-radius: 3px;
     overflow: auto;
 }
@@ -200,7 +200,7 @@ pre {
     color: var(--vscode-diffEditorOverview-insertedForeground, rgb(155, 185, 85));
     display: inline-block;
     width: 100%;
-    margin: -16px;
+    margin: 0 -16px;
     padding: 0 16px;
 }
 
@@ -209,7 +209,7 @@ pre {
     color: var(--vscode-diffEditorOverview-removedForeground, rgb(255, 0, 0));
     display: inline-block;
     width: 100%;
-    margin: -16px;
+    margin: 0 -16px;
     padding: 0 16px;
 }
 
@@ -217,11 +217,9 @@ pre {
     background-color: var(--vscode-editorMarkerNavigationInfo-headerBackground);
     color: var(--vscode-editorOverviewRuler-selectionHighlightForeground);
     display: inline-block;
-    position: relative;
     width: 100%;
-    margin: -16px;
-    padding: 10px 16px 8px 16px;
-    top: -8px;
+    margin: 0 -16px;
+    padding: 8px 16px;
 }
 
 input[type='submit'] {
