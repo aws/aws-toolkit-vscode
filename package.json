@@ -1442,27 +1442,27 @@
                 },
                 {
                     "command": "aws.amazonq.learnMore",
-                    "when": "view == aws.AmazonQChatView",
+                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
                     "group": "1_amazonQ@1"
                 },
                 {
                     "command": "aws.auth.switchConnections",
-                    "when": "view == aws.AmazonQChatView && CODEWHISPERER_ENABLED",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
                     "group": "2_amazonQ@1"
                 },
                 {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "view == aws.AmazonQChatView && !aws.codewhisperer.disconnected && !CODEWHISPERER_ENABLED",
+                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
                     "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
-                    "when": "view == aws.AmazonQChatView && CODEWHISPERER_ENABLED",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "view == aws.AmazonQChatView && aws.codewhisperer.disconnected",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.disconnected",
                     "group": "2_amazonQ@3"
                 }
             ],
