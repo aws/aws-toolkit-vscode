@@ -601,6 +601,7 @@ export class ChatController {
         let response: GenerateAssistantResponseCommandOutput | undefined = undefined
         session.createNewTokenSource()
         try {
+            this.messenger.sendInitalStream(tabID, triggerID)
             response = await session.chat(request)
             this.telemetryHelper.recordEnterFocusConversation(triggerEvent.tabID)
             this.telemetryHelper.recordStartConversation(triggerEvent, triggerPayload)
