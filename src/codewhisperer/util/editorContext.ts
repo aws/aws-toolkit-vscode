@@ -15,8 +15,8 @@ import { fetchSupplementalContext } from './supplementalContext/supplementalCont
 import { supplementalContextTimeoutInMs } from '../models/constants'
 import { getSelectedCustomization } from './customizationUtil'
 import { selectFrom } from '../../shared/utilities/tsUtils'
-import { CodeWhispererSupplementalContext } from '../models/model'
 import { checkLeftContextKeywordsForJsonAndYaml } from './commonUtil'
+import { CodeWhispererSupplementalContext } from '../models/model'
 
 let tabSize: number = getTabSizeSetting()
 
@@ -39,6 +39,17 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
             document.positionAt(offset + CodeWhispererConstants.charactersLimit)
         )
     )
+    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
+        return {
+            filename: getFileNameForRequest(editor),
+            programmingLanguage: {
+                languageName: 'plaintext',
+            },
+            leftFileContent: caretLeftFileContext,
+            rightFileContent: caretRightFileContext,
+        } as codewhispererClient.FileContext
+    }
+
     if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
         return {
             filename: getFileNameForRequest(editor),

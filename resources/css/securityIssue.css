@@ -179,7 +179,7 @@ body.wordWrap pre {
 
 pre:not(.hljs),
 pre.hljs code > div {
-    padding: 16px;
+    padding: 0 16px 16px 16px;
     border-radius: 3px;
     overflow: auto;
 }
@@ -197,16 +197,29 @@ pre {
 /* These styles are used to render code diff with markdown-it rendered output */
 .hljs-addition {
     background-color: var(--vscode-diffEditor-insertedTextBackground, rgba(155, 185, 85, 0.2));
-    color: rgb(155, 185, 85);
+    color: var(--vscode-diffEditorOverview-insertedForeground, rgb(155, 185, 85));
     display: inline-block;
     width: 100%;
+    margin: 0 -16px;
+    padding: 0 16px;
 }
 
 .hljs-deletion {
-    background: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2));
-    color: rgb(255, 0, 0);
+    background-color: var(--vscode-diffEditor-removedTextBackground, rgba(255, 0, 0, 0.2));
+    color: var(--vscode-diffEditorOverview-removedForeground, rgb(255, 0, 0));
     display: inline-block;
     width: 100%;
+    margin: 0 -16px;
+    padding: 0 16px;
+}
+
+.hljs-meta {
+    background-color: var(--vscode-editorMarkerNavigationInfo-headerBackground);
+    color: var(--vscode-editorOverviewRuler-selectionHighlightForeground);
+    display: inline-block;
+    width: 100%;
+    margin: 0 -16px;
+    padding: 8px 16px;
 }
 
 input[type='submit'] {
@@ -248,4 +261,8 @@ hr {
     border: unset;
     height: unset;
     border-bottom: 1px solid var(--vscode-menu-separatorBackground);
+}
+
+img.severity {
+    height: 0.75em;
 }

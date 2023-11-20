@@ -29,6 +29,14 @@ type Tuples<T> = T extends Keys ? [T, InstanceType<LanguageMap[T]>] : never
 type ClassType<A extends Keys> = Extract<Tuples<Keys>, [A, any]>[1]
 
 export class DependencyGraphFactory {
+    static getDependencyGraphFromFileExtensions<K extends Keys>(fileName: string): ClassType<K> {
+        if (fileName.endsWith(DependencyGraphConstants.tfExt) || fileName.endsWith(DependencyGraphConstants.hclExt)) {
+            return new languageMap['terraform']('tf' satisfies CodeWhispererConstants.PlatformLanguageId)
+        } else {
+            return undefined
+        }
+    }
+
     static getDependencyGraph<K extends Keys>(editor: vscode.TextEditor): ClassType<K> {
         switch (editor.document.languageId) {
             case 'java' satisfies CodeWhispererConstants.PlatformLanguageId:
@@ -45,18 +53,8 @@ export class DependencyGraphFactory {
                 return new languageMap['cloudformation']('yaml' satisfies CodeWhispererConstants.PlatformLanguageId)
             case 'json' satisfies CodeWhispererConstants.PlatformLanguageId:
                 return new languageMap['cloudformation']('json' satisfies CodeWhispererConstants.PlatformLanguageId)
-            case 'plaintext' satisfies CodeWhispererConstants.PlatformLanguageId:
-                // For both TF and HCL Languages
-                if (
-                    editor.document.fileName.endsWith(DependencyGraphConstants.tfExt) ||
-                    editor.document.fileName.endsWith(DependencyGraphConstants.hclExt)
-                ) {
-                    return new languageMap['terraform']('tf' satisfies CodeWhispererConstants.PlatformLanguageId)
-                } else {
-                    return undefined
-                }
             default:
-                return undefined
+                return this.getDependencyGraphFromFileExtensions(editor.document.fileName)
         }
     }
 }

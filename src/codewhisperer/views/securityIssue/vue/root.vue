@@ -3,7 +3,7 @@
 <template>
     <div class="mb-16">
         <div class="container button-container" style="justify-content: space-between">
-            <h1>{{ title }} <img :src="severityImage" /></h1>
+            <h1>{{ title }} <img class="severity" :src="severityImage" :alt="severity" /></h1>
             <input v-if="isFixAvailable" class="mt-4 ml-16" type="submit" @click="applyFix" value="Apply fix" />
         </div>
 
@@ -49,7 +49,7 @@
             <div>
                 <b>File path</b>
                 <p>
-                    <a href="#" @click="navigateToFile"> {{ relativePath }} [Ln {{ startLine }}] </a>
+                    <a href="#" @click="navigateToFile"> {{ relativePath }} [Ln {{ startLine + 1 }}] </a>
                 </p>
             </div>
         </div>
@@ -178,7 +178,7 @@ export default defineComponent({
         suggestedFixHtml() {
             return md.render(`
 \`\`\`diff
-${this.suggestedFix.replace(/^@@ -\d+,\d+ \+\d+,\d+ @@\n/, '')}
+${this.suggestedFix.replaceAll('\n\\ No newline at end of file', '')}
 \`\`\`
       `)
         },
