@@ -189,9 +189,9 @@ function getWebviewContent(webview: vscode.Webview): string {
             <div id="wrapper">
                 <div id="content">
                     <img id="qLogo" src="${logo}"/>
-                    <h1 id="header">Amazon Q is a generative AI-powered conversational assistant.</h1>
+                    <h1 id="header">Amazon Q is a generative AI-powered conversational assistant in public preview.</h1>
                     <div id="buttonContainer">
-                        <button id="sendToQButton">Ask Amazon Q a question to get started</button>
+                        <button id="sendToQButton">Ask a question</button>
                     </div>
                     <!-- spacing -->
                     <div class="spacingrow"> </div>
@@ -202,7 +202,7 @@ function getWebviewContent(webview: vscode.Webview): string {
                             <img id="codewhispererLogo"/>
                         </div>
                         <div id="textWrapper">
-                            <p>CodeWhisperer inline suggestions are also enabled.<br><a id="goToHelpLink">Try it</a></p>
+                            <p>CodeWhisperer inline suggestions are also enabled.<br><a id="goToHelpLink">Try examples</a></p>
                         </div>
                     </div>
                 </div>
