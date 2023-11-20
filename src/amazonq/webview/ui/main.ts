@@ -247,17 +247,16 @@ ${message}`,
             })
         },
         onNewTab(tabType: TabType) {
-            const newTabID = mynahUI.updateStore('', tabDataGenerator.getTabData(tabType, true))
+            const newTabID = mynahUI.updateStore('', {})
             if (!newTabID) {
                 return
             }
 
-            tabsStorage.addTab({
-                id: newTabID,
-                status: 'free',
-                type: tabType,
-                isSelected: true,
-            })
+            tabsStorage.updateTabTypeFromUnknown(newTabID, tabType)
+            connector.onKnownTabOpen(newTabID)
+            connector.onUpdateTabType(newTabID)
+
+            mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
         },
     })
 
