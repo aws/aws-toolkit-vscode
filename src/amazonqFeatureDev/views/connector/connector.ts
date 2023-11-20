@@ -195,7 +195,7 @@ export class AppToWebViewMessageDispatcher {
     public sendAuthNeededExceptionMessage(message: AuthNeededException) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
-    
+
     public sendOpenNewTask(message: OpenNewTabMessage) {
         this.appsToWebViewMessagePublisher.publish(message)
     }
