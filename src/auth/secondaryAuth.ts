@@ -177,9 +177,10 @@ export class SecondaryAuth<T extends Connection = Connection> {
     }
 
     public async useNewConnection(conn: T) {
-        if (this.auth.activeConnection !== undefined && !this.isUsable(this.auth.activeConnection)) {
-            await this.saveConnection(conn)
-        } else {
+        await this.saveConnection(conn)
+        if (this.auth.activeConnection === undefined) {
+            // Since no connection exists yet in the "primary" auth, we will make
+            // this connection available to all primary auth users
             await this.auth.useConnection(conn)
         }
     }
