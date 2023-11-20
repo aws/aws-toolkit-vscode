@@ -8,7 +8,7 @@ import globals from '../../shared/extensionGlobals'
 import { distance } from 'fastest-levenshtein'
 import { AcceptedSuggestionEntry } from '../models/model'
 import { getLogger } from '../../shared/logger/logger'
-import { CodewhispererchatModifyCode, telemetry } from '../../shared/telemetry/telemetry'
+import { AmazonqModifyCode, telemetry } from '../../shared/telemetry/telemetry'
 import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { AuthUtil } from '../util/authUtil'
 import { InsertedCode } from '../../codewhispererChat/controllers/chat/model'
@@ -102,16 +102,16 @@ export class CodeWhispererTracker {
             getLogger().verbose(`Exception Thrown from CodeWhispererTracker: ${e}`)
         } finally {
             if ('conversationID' in suggestion) {
-                const event: CodewhispererchatModifyCode = {
+                const event: AmazonqModifyCode = {
                     cwsprChatConversationId: suggestion.conversationID,
                     cwsprChatMessageId: suggestion.messageID,
                     cwsprChatModificationPercentage: percentage ? percentage : 0,
                 }
 
-                telemetry.codewhispererchat_modifyCode.emit(event)
+                telemetry.amazonq_modifyCode.emit(event)
 
                 codeWhispererClient
-                    .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_modifyCode', event))
+                    .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_modifyCode', event))
                     .then()
                     .catch(logSendTelemetryEventFailure)
             } else {
