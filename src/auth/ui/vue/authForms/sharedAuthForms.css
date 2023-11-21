@@ -1,8 +1,10 @@
-.auth-form {
+.auth-container {
     display: flex;
     flex-direction: column;
-    text-align: left;
-    color: var(--vscode-foreground);
+    text-align: center;
+    color: var(--vscode-button-foreground);
+
+    gap: 0.6em;
 }
 
 .disabled-form {
@@ -11,33 +13,36 @@
     opacity: 0.6;
 }
 
-/* A grouping of related elements in an auth form */
-.auth-form .form-section {
-    margin-top: 0.6em;
-
+/* The immediate children of the auth-container */
+.auth-container > * {
     display: flex;
     flex-direction: column;
 }
 
-/* Consistent margins between the elements of a grouping of elements */
-.auth-form .form-section > * {
-    margin-top: 0.3em;
-}
+.auth-form-container {
+    display: flex;
+    flex-direction: column;
 
-/* Consistent margins between the elements of a grouping of elements */
-.auth-form .form-section > button {
-    /* margin-top: 1em; */
-    padding: 0.4em;
+    background-color: var(--vscode-quickInput-background);
+
+    text-align: left;
+
+    padding: 1em;
+
+    gap: 0.6em;
+
     border-radius: 0.5rem;
 }
 
-.auth-form-title {
-    font-size: 1.2rem;
-    font-weight: bold;
+.auth-form-container > * {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
 }
 
-.auth-form-description {
-    font-size: 0.9rem;
+.auth-container-title {
+    font-size: 1.2rem;
+    font-weight: bold;
 }
 
 .input-title {
@@ -50,10 +55,6 @@
 
 .input-description-small {
     font-size: 0.8rem;
-}
-
-.edit-icon {
-    color: #0078d7;
 }
 
 .error-text {
@@ -74,7 +75,7 @@ input[data-invalid='true']:focus {
     outline: none !important;
 }
 
-.auth-form .form-section input {
+.auth-container input {
     font-size: 1rem;
     padding: 0.5em;
 }
@@ -82,4 +83,13 @@ input[data-invalid='true']:focus {
 /* Remove underline from anchor elements */
 a {
     text-decoration: none;
+}
+
+.auth-container-icon {
+    color: var(--vscode-button-foreground);
+}
+
+.low-priority-button {
+    background-color: var(--vscode-textSeparator-foreground);
+    border-color: var(--vscode-textSeparator-foreground);
 }

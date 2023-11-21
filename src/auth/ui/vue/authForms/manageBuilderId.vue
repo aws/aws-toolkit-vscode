@@ -1,38 +1,25 @@
 <template>
-    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-form container-background border-common">
-        <div>
-            <FormTitle :isConnected="isConnected">AWS Builder ID</FormTitle>
-
-            <div v-if="stage === 'START'">
-                <div class="form-section">
-                    <div class="auth-form-description form-description-color">
-                        {{ description }}
-                        <a :href="signUpUrl" v-on:click="emitUiClick('auth_learnMoreBuilderId')">Learn more.</a>
-                    </div>
-                </div>
-
-                <div class="form-section">
-                    <button v-on:click="startSignIn()">{{ submitButtonText }}</button>
-                    <div class="form-description-color input-description-small error-text">{{ error }}</div>
-                </div>
+    <div v-bind:class="[disabled ? 'disabled-form' : '']" class="auth-container">
+        <template v-if="stage === 'START'">
+            <div class="auth-container-section">
+                <button v-on:click="startSignIn()">{{ submitButtonText }}</button>
+                <div class="form-description-color input-description-small error-text">{{ error }}</div>
             </div>
+        </template>
 
-            <div v-if="stage === 'WAITING_ON_USER'">
-                <div class="form-section">
-                    <div>Follow instructions...</div>
-                </div>
+        <template v-if="stage === 'WAITING_ON_USER'">
+            <div class="auth-container-section">
+                <button disabled>Follow instructions...</button>
             </div>
+        </template>
 
-            <div v-if="stage === 'CONNECTED'">
-                <div class="form-section">
-                    <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
-                </div>
+        <template v-if="stage === 'CONNECTED'">
+            <FormTitle>AWS Builder ID</FormTitle>
 
-                <div class="form-section">
-                    <button v-on:click="showNodeInView()">Open {{ name }} in Toolkit</button>
-                </div>
+            <div class="auth-container-section">
+                <div v-on:click="signout()" class="text-link-color" style="cursor: pointer">Sign out</div>
             </div>
-        </div>
+        </template>
     </div>
 </template>
 <script lang="ts">
@@ -183,7 +170,7 @@ abstract class BaseBuilderIdState implements AuthForm {
      */
     async getSubmitButtonText(): Promise<string> {
         if (!(await this.anyBuilderIdConnected())) {
-            return 'Sign up or Sign in'
+            return 'Use for free with AWS Builder ID'
         } else {
             return `Connect AWS Builder ID with ${this.name}`
         }

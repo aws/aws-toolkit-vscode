@@ -16,7 +16,7 @@
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
     />
 
-    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', maxWidth: `${maxWidth}px` }">
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', width: '100em' }">
         <!-- Logo + Title -->
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 0.5vw">
@@ -127,7 +127,6 @@ export default defineComponent({
         return {
             serviceItemsAuthStatus: serviceItemsAuthStatus,
             notifications: Notifications.instance,
-            maxWidth: undefined as typeof undefined | number,
             panelActivityState: panelActivityState,
         }
     },
@@ -195,7 +194,7 @@ export default defineComponent({
 
 <style>
 #logo {
-    fill: var(--vscode-foreground);
+    fill: var(--vscode-button-foreground);
     padding-top: 0.2em;
 }
 </style>

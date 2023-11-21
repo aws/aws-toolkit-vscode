@@ -35,7 +35,7 @@ describe('SecondaryAuth', function () {
         sandbox.restore()
     })
 
-    it('When no SecondaryAuth or valid PrimaryAuth exist', async function () {
+    it('When no SecondaryAuth set or valid PrimaryAuth exist', async function () {
         assert.strictEqual(secondaryAuth.activeConnection?.id, undefined)
     })
 
@@ -101,5 +101,23 @@ describe('SecondaryAuth', function () {
         // we fallback to the PrimaryAuth connection
         assert.strictEqual(secondaryAuth.activeConnection?.id, otherConn.id)
         assert.strictEqual(onDidChangeActiveConnection.called, true)
+    })
+
+    it('When SecondaryAuth is invalid, but is reauthenticated elsewhere', async function () {
+        // PrimaryAuth has its own conn, we don't care about this
+        await auth.useConnection(conn)
+
+        // SecondaryAuth is using an invalid conn
+        const invalidConn = await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: scopes }))
+        await secondaryAuth.useNewConnection(invalidConn)
+
+        // Run a reauthentication of the invalid conn outside of the knowledge of the SecondaryAuth
+        onDidChangeActiveConnection.resetHistory()
+        await auth.reauthenticate(invalidConn)
+
+        // SecondaryAuth is aware of the change in state and emits an event to notify
+        assert.strictEqual(secondaryAuth.activeConnection?.id, invalidConn.id)
+        assert.strictEqual(onDidChangeActiveConnection.called, true)
+        assert.strictEqual(auth.getConnectionState(invalidConn), 'valid')
     })
 })

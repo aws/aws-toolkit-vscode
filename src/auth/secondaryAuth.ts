@@ -118,6 +118,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
             }
         })
 
+        this.auth.onDidChangeConnectionState(e => {
+            if (this.activeConnection?.id === e.id) {
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+            }
+        })
+
         // Register listener and handle connection immediately in case we were instantiated late
         handleConnectionChanged(this.auth.activeConnection)
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
@@ -252,6 +258,7 @@ export class SecondaryAuth<T extends Connection = Connection> {
             getLogger().warn(`auth (${this.toolId}): saved connection "${this.key}" is not valid`)
             await this.memento.update(this.key, undefined)
         } else {
+            await this.auth.refreshConnectionState(conn)
             return conn
         }
     }
