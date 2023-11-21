@@ -127,6 +127,9 @@ export class FeatureDevClient {
 
             const assistantResponse = []
             for await (const responseItem of response.planningResponseStream) {
+                if (responseItem.error !== undefined) {
+                    throw responseItem.error
+                }
                 assistantResponse.push(responseItem.assistantResponseEvent!.content)
             }
             return assistantResponse.join(' ')
@@ -203,6 +206,9 @@ export class FeatureDevClient {
                 throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
             }
             for await (const chunk of archiveResponse.body) {
+                if (chunk.internalServerException !== undefined) {
+                    throw chunk.internalServerException
+                }
                 buffer.push(...(chunk.binaryPayloadEvent?.bytes ?? []))
             }
 
