@@ -79,8 +79,8 @@ async function pickModule(
         totalSteps: DropdownStep.STEP_1,
         placeholder: CodeWhispererConstants.selectModulePrompt,
         items: validModules!,
-        activeItem: state.module,
         shouldResume: () => Promise.resolve(true),
+        ignoreFocusOut: false,
     })
     state.module = pick
 }
@@ -132,6 +132,8 @@ export async function startTransformByQ() {
         // step 1: CreateCodeUploadUrl and upload code
         transformByQState.setToRunning()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
+        await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
+
         let uploadId = ''
         throwIfCancelled()
         try {
@@ -177,7 +179,7 @@ export async function startTransformByQ() {
         sessionPlanProgress['buildCode'] = StepProgress.Succeeded
         const filePath = path.join(os.tmpdir(), 'transformation-plan.md')
         fs.writeFileSync(filePath, plan)
-        vscode.commands.executeCommand('markdown.showPreviewToSide', vscode.Uri.file(filePath))
+        vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(filePath))
         transformByQState.setPlanFilePath(filePath)
         vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
 

@@ -788,7 +788,7 @@
             },
             {
                 "view": "aws.amazonq.transformationProposedChangesTree",
-                "contents": "Project transformation is complete.\n Downloading...",
+                "contents": "Project transformation is complete.\n Downloading the updated code.",
                 "when": "gumby.reviewState == PreparingReview"
             }
         ],
@@ -1326,6 +1326,18 @@
                     "group": "navigation@4"
                 },
                 {
+                    "command": "aws.amazonq.transformationHub.summary.reveal",
+                    "when": "view == aws.amazonq.transformationHub && gumby.reviewState == InReview"
+                },
+                {
+                    "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
+                    "when": "view == aws.amazonq.transformationHub && gumby.reviewState == InReview"
+                },
+                {
+                    "command": "aws.amazonq.showTransformationPlanInHub",
+                    "when": "view == aws.amazonq.transformationHub"
+                },
+                {
                     "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
                     "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
                     "group": "navigation@1"
@@ -1334,11 +1346,6 @@
                     "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
                     "when": "view == aws.amazonq.transformationProposedChangesTree && gumby.reviewState == InReview",
                     "group": "navigation@2"
-                },
-                {
-                    "command": "aws.amazonq.showTransformationPlanInHub",
-                    "when": "view == aws.amazonq.transformationHub",
-                    "group": "navigation@5"
                 },
                 {
                     "command": "aws.submitFeedback",
@@ -2359,11 +2366,23 @@
             },
             {
                 "command": "aws.amazonq.transformationHub.reviewChanges.acceptChanges",
-                "title": "%AWS.command.q.acceptChanges%"
+                "title": "%AWS.command.q.transform.acceptChanges%"
             },
             {
                 "command": "aws.amazonq.transformationHub.reviewChanges.rejectChanges",
-                "title": "%AWS.command.q.rejectChanges%"
+                "title": "%AWS.command.q.transform.rejectChanges%"
+            },
+            {
+                "command": "aws.amazonq.transformationHub.summary.reveal",
+                "title": "%AWS.command.q.transform.showChangeSummary%"
+            },
+            {
+                "command": "aws.amazonq.transformationHub.reviewChanges.reveal",
+                "title": "%AWS.command.q.transform.showChanges%"
+            },
+            {
+                "command": "aws.amazonq.showTransformationPlanInHub",
+                "title": "%AWS.command.q.transform.showTransformationPlan%"
             },
             {
                 "command": "aws.auth.switchConnections",

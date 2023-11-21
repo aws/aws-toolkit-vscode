@@ -45,10 +45,7 @@ export async function activate(context: ExtContext) {
         }),
 
         Commands.register('aws.amazonq.showTransformationPlanInHub', async () => {
-            vscode.commands.executeCommand(
-                'markdown.showPreviewToSide',
-                vscode.Uri.file(transformByQState.getPlanFilePath())
-            )
+            vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(transformByQState.getPlanFilePath()))
         })
     )
 }
