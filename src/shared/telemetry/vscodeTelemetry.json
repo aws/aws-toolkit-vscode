@@ -120,6 +120,11 @@
             "description": "HTTP response code for message API invocation"
         },
         {
+            "name": "cwsprChatResponseErrorReason",
+            "type": "string",
+            "description": "Client error reason when processing response stream"
+        },
+        {
             "name": "cwsprChatSourceLinkCount",
             "type": "int",
             "description": "Number of links in response"
@@ -604,6 +609,10 @@
                 },
                 {
                     "type": "cwsprChatConversationType"
+                },
+                {
+                    "type": "cwsprChatResponseErrorReason",
+                    "required": false
                 }
             ]
         },

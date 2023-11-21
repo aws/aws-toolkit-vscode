@@ -289,7 +289,12 @@ export class CWCTelemetryHelper {
             .catch(logSendTelemetryEventFailure)
     }
 
-    public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
+    public recordMessageResponseError(
+        triggerPayload: TriggerPayload,
+        tabID: string,
+        responseCode: number,
+        resaon?: string
+    ) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
         telemetry.amazonq_messageResponseError.emit({
@@ -303,6 +308,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseCode: responseCode,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatConversationType: 'Chat',
+            cwsprChatResponseErrorReason: resaon, // WARN: use with extreme caution, must not log sensitive data or PII.
         })
     }
 
