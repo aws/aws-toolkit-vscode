@@ -43,6 +43,10 @@ export class TabsStorage {
             clearTimeout(this.tabActivityTimers[tabID])
             delete this.tabActivityTimers[tabID]
         }
+        // Reset the last selected tab if the deleted one is selected
+        if (tabID === this.lastSelectedTab?.id) {
+            this.lastSelectedTab = undefined
+        }
         this.tabs.delete(tabID)
     }
 
