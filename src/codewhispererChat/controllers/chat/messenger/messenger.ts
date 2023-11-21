@@ -379,8 +379,6 @@ export class Messenger {
             message += `\n\nRequest ID: ${requestID}`
         }
 
-        message += `\n\nPlease create a ticket [here](https://issues.amazon.com/issues/create?template=70dc0f1b-c867-4b8d-b54c-2c13bec80a04) with a screenshot of this error and a copy of the logs.`
-
         this.dispatcher.sendErrorMessage(
             new ErrorMessage('An error occurred while processing your request.', message.trimEnd().trimStart(), tabID)
         )
