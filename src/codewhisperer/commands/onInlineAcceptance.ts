@@ -82,10 +82,7 @@ export async function onInlineAcceptance(
          * Mitigation to right context handling mainly for auto closing bracket use case
          */
         try {
-            // Do not handle extra bracket if there is a right context merge
-            if (acceptanceEntry.recommendation === session.recommendations[acceptanceEntry.acceptIndex].content) {
-                await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end, start)
-            }
+            await handleExtraBrackets(acceptanceEntry.editor, acceptanceEntry.recommendation, end, start)
             await ImportAdderProvider.instance.onAcceptRecommendation(
                 acceptanceEntry.editor,
                 session.recommendations[acceptanceEntry.acceptIndex],
