@@ -22,8 +22,8 @@ type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
     const cwsprEndpointMap: Record<AvailableRegion, { cwsprEndpoint: string; region: string }> = {
         'Alpha-PDX': { cwsprEndpoint: 'https://rts.alpha-us-west-2.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
-        'Gamma-IAD': { cwsprEndpoint: 'https://rts-732200995377.test.codewhisperer.ai.aws.dev/', region: 'us-east-1' },
-        'Gamma-PDX': { cwsprEndpoint: 'https://rts-171763828851.test.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
+        'Gamma-IAD': { cwsprEndpoint: 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/', region: 'us-east-1' },
+        'Gamma-PDX': { cwsprEndpoint: 'https://rts.gamma-us-west-2.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
     }
     const region: string | undefined = vscode.workspace.getConfiguration('aws.amazonqFeatureDev').get('region') ?? ''
     return region in cwsprEndpointMap
