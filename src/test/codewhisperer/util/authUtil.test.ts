@@ -47,6 +47,23 @@ describe('AuthUtil', async function () {
         assert.deepStrictEqual(conn.scopes, codeWhispererChatScopes)
     })
 
+    it('if there IS an existing AwsBuilderID conn, it will upgrade the scopes and use it', async function () {
+        const existingBuilderId = await auth.createConnection(
+            createBuilderIdProfile({ scopes: codeWhispererCoreScopes })
+        )
+        getTestWindow().onDidShowQuickPick(async picker => {
+            await picker.untilReady()
+            picker.acceptItem(picker.items[1])
+        })
+
+        await authUtil.connectToAwsBuilderId()
+
+        const conn = authUtil.conn
+        assert.strictEqual(conn?.type, 'sso')
+        assert.strictEqual(conn.id, existingBuilderId.id)
+        assert.deepStrictEqual(conn.scopes, codeWhispererChatScopes)
+    })
+
     it('if there is no valid enterprise SSO conn, will create and use one', async function () {
         getTestWindow().onDidShowQuickPick(async picker => {
             await picker.untilReady()
@@ -78,6 +95,23 @@ describe('AuthUtil', async function () {
         assert.deepStrictEqual(cwConn.scopes, [randomScope, ...amazonQScopes])
     })
 
+    it('reauthenticates an existing BUT invalid Amazon Q IAM Identity Center connection', async function () {
+        const ssoConn = await auth.createInvalidSsoConnection(
+            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
+        )
+        await auth.refreshConnectionState(ssoConn)
+        assert.strictEqual(auth.getConnectionState(ssoConn), 'invalid')
+
+        // Method under test
+        await authUtil.connectToEnterpriseSso(ssoConn.startUrl, 'us-east-1')
+
+        const cwConn = authUtil.conn
+        assert.strictEqual(cwConn?.type, 'sso')
+        assert.strictEqual(cwConn.id, ssoConn.id)
+        assert.deepStrictEqual(cwConn.scopes, amazonQScopes)
+        assert.strictEqual(auth.getConnectionState(cwConn), 'valid')
+    })
+
     it('should show reauthenticate prompt', async function () {
         getTestWindow().onDidShowMessage(m => {
             if (m.severity === SeverityLevel.Information) {
@@ -95,15 +129,27 @@ describe('AuthUtil', async function () {
         )
     })
 
+    it('reauthenticate prompt reauthenticates invalid connection', async function () {
+        const conn = await auth.createInvalidSsoConnection(
+            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererChatScopes })
+        )
+        await auth.useConnection(conn)
+        getTestWindow().onDidShowMessage(m => {
+            m.selectItem('Connect with AWS')
+        })
+        assert.strictEqual(auth.getConnectionState(conn), 'invalid')
+
+        await authUtil.showReauthenticatePrompt()
+
+        assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.strictEqual(auth.getConnectionState(conn), 'valid')
+    })
+
     it('reauthenticate adds missing CodeWhisperer Chat Builder ID scopes', async function () {
         const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
         await auth.useConnection(conn)
 
-        getTestWindow().onDidShowMessage(m => {
-            m.selectItem('Connect with AWS')
-        })
-
-        await authUtil.showReauthenticatePrompt()
+        await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererChatScopes)
@@ -115,11 +161,7 @@ describe('AuthUtil', async function () {
         )
         await auth.useConnection(conn)
 
-        getTestWindow().onDidShowMessage(m => {
-            m.selectItem('Connect with AWS')
-        })
-
-        await authUtil.showReauthenticatePrompt()
+        await authUtil.reauthenticate()
 
         assert.strictEqual(authUtil.conn?.type, 'sso')
         assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
