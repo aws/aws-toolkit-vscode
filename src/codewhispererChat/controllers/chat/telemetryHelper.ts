@@ -5,8 +5,8 @@
 
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
-    CodewhispererchatAddMessage,
-    CodewhispererchatInteractWithMessage,
+    AmazonqAddMessage,
+    AmazonqInteractWithMessage,
     CwsprChatTriggerInteraction,
     CwsprChatUserIntent,
     MetricBase,
@@ -97,19 +97,19 @@ export class CWCTelemetryHelper {
     }
 
     public recordOpenChat() {
-        telemetry.codewhispererchat_openChat.emit()
+        telemetry.amazonq_openChat.emit()
     }
 
     public recordCloseChat() {
-        telemetry.codewhispererchat_closeChat.emit()
+        telemetry.amazonq_closeChat.emit()
     }
 
     public recordEnterFocusChat() {
-        telemetry.codewhispererchat_enterFocusChat.emit()
+        telemetry.amazonq_enterFocusChat.emit()
     }
 
     public recordExitFocusChat() {
-        telemetry.codewhispererchat_exitFocusChat.emit()
+        telemetry.amazonq_exitFocusChat.emit()
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
@@ -153,7 +153,7 @@ export class CWCTelemetryHelper {
             | ResponseBodyLinkClickMessage
     ) {
         const conversationId = this.getConversationId(message.tabID)
-        let event: CodewhispererchatInteractWithMessage | undefined
+        let event: AmazonqInteractWithMessage | undefined
         switch (message.command) {
             case 'insert_code_at_cursor_position':
                 message = message as InsertCodeAtCursorPosition
@@ -217,10 +217,10 @@ export class CWCTelemetryHelper {
             return
         }
 
-        telemetry.codewhispererchat_interactWithMessage.emit(event)
+        telemetry.amazonq_interactWithMessage.emit(event)
 
         codeWhispererClient
-            .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_interactWithMessage', event))
+            .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_interactWithMessage', event))
             .then()
             .catch(logSendTelemetryEventFailure)
     }
@@ -247,7 +247,7 @@ export class CWCTelemetryHelper {
 
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
 
-        telemetry.codewhispererchat_startConversation.emit({
+        telemetry.amazonq_startConversation.emit({
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
@@ -260,7 +260,7 @@ export class CWCTelemetryHelper {
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
-        const event: CodewhispererchatAddMessage = {
+        const event: AmazonqAddMessage = {
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
@@ -281,10 +281,10 @@ export class CWCTelemetryHelper {
             cwsprChatConversationType: 'Chat',
         }
 
-        telemetry.codewhispererchat_addMessage.emit(event)
+        telemetry.amazonq_addMessage.emit(event)
 
         codeWhispererClient
-            .sendTelemetryEvent(mapToClientTelemetryEvent('codewhispererchat_addMessage', event))
+            .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_addMessage', event))
             .then()
             .catch(logSendTelemetryEventFailure)
     }
@@ -292,7 +292,7 @@ export class CWCTelemetryHelper {
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
-        telemetry.codewhispererchat_messageResponseError.emit({
+        telemetry.amazonq_messageResponseError.emit({
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
@@ -309,7 +309,7 @@ export class CWCTelemetryHelper {
     public recordEnterFocusConversation(tabID: string) {
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
-            telemetry.codewhispererchat_enterFocusConversation.emit({
+            telemetry.amazonq_enterFocusConversation.emit({
                 cwsprChatConversationId: conversationId,
             })
         }
@@ -318,7 +318,7 @@ export class CWCTelemetryHelper {
     public recordExitFocusConversation(tabID: string) {
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
-            telemetry.codewhispererchat_exitFocusConversation.emit({
+            telemetry.amazonq_exitFocusConversation.emit({
                 cwsprChatConversationId: conversationId,
             })
         }

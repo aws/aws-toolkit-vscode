@@ -27,6 +27,8 @@ import {
     isIdcSsoConnection,
 } from '../../auth/connection'
 import { getLogger } from '../../shared/logger'
+import globals from '../../shared/extensionGlobals'
+import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -67,11 +69,19 @@ export const isValidAmazonQConnection = (conn?: Connection): conn is Connection 
     return isSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn) && hasScopes(conn, amazonQScopes)
 }
 
+interface HasAlreadySeenQWelcome {
+    local?: boolean
+    devEnv?: boolean
+    ssh?: boolean
+    wsl?: boolean
+}
+
 export class AuthUtil {
     static #instance: AuthUtil
 
     private reauthenticatePromptShown: boolean = false
     private _isCustomizationFeatureEnabled: boolean = false
+    private readonly mementoKey: string = 'hasAlreadySeenQWelcomeObj'
 
     public get isCustomizationFeatureEnabled(): boolean {
         return this._isCustomizationFeatureEnabled
@@ -118,14 +128,21 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
-            const prompts = PromptSettings.instance
 
-            const shouldShow = await prompts.isPromptEnabled('amazonQWelcomePage')
+            const memento = globals.context.globalState
+            const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
+                local: false,
+                devEnv: false,
+                ssh: false,
+                wsl: false,
+            }
             // To check valid connection
             if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
                 //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-                if (shouldShow) {
-                    prompts.disablePrompt('amazonQWelcomePage')
+                const key = getEnvType()
+                if (!shouldShowObject[key]) {
+                    shouldShowObject[key] = true
+                    memento.update(this.mementoKey, shouldShowObject)
                     await vscode.commands.executeCommand('aws.amazonq.welcome')
                 }
             }
@@ -413,4 +430,18 @@ function buildFeatureAuthState(state: AuthState): FeatureAuthState {
         codewhispererChat: state,
         amazonQ: state,
     }
+}
+
+function getEnvType(): keyof HasAlreadySeenQWelcome {
+    const remoteName = vscode.env.remoteName
+    if (remoteName) {
+        if (remoteName === 'ssh-remote') {
+            if (getCodeCatalystDevEnvId()) {
+                return 'devEnv'
+            }
+            return 'ssh'
+        }
+        return 'wsl'
+    }
+    return 'local'
 }

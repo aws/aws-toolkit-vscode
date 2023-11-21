@@ -224,14 +224,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateCloudFormationTemplateRegistry(context)
 
-        await activateCodeWhisperer(extContext)
-
         await activateAwsExplorer({
             context: extContext,
             regionProvider,
             toolkitOutputChannel,
             remoteInvokeOutputChannel,
         })
+
+        await activateCodeWhisperer(extContext)
 
         await activateAppRunner(extContext)
 

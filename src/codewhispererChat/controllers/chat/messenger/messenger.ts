@@ -67,6 +67,21 @@ export class Messenger {
         )
     }
 
+    public sendInitalStream(tabID: string, triggerID: string) {
+        this.dispatcher.sendChatMessage(
+            new ChatMessage(
+                {
+                    message: '',
+                    messageType: 'answer-stream',
+                    followUps: undefined,
+                    relatedSuggestions: undefined,
+                    triggerID,
+                    messageID: '',
+                },
+                tabID
+            )
+        )
+    }
     public async sendAIResponse(
         response: GenerateAssistantResponseCommandOutput,
         session: ChatSession,
@@ -85,24 +100,6 @@ export class Messenger {
                 `Empty response from CodeWhisperer Streaming service. Request ID: ${response.$metadata.requestId}`
             )
         }
-
-        this.dispatcher.sendChatMessage(
-            // TODO This one somehow doesn't return immediately to the client,
-            // stucks on the await process,
-            // We need to solve it from here
-            // then we can remove the unnecessary addition on the UI side
-            new ChatMessage(
-                {
-                    message: '',
-                    messageType: 'answer-stream',
-                    followUps: undefined,
-                    relatedSuggestions: undefined,
-                    triggerID,
-                    messageID: messageID,
-                },
-                tabID
-            )
-        )
         this.telemetryHelper.setResponseStreamStartTime(tabID)
 
         const eventCounts = new Map<string, number>()
@@ -315,7 +312,7 @@ export class Messenger {
         let message = ''
         switch (quickAction) {
             case 'help':
-                message = 'What can Amazon Q (Preview) help me with?'
+                message = 'What can Amazon Q help me with?'
                 break
         }
 
@@ -331,7 +328,7 @@ export class Messenger {
         let message
         switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
-                message = 'What can Amazon Q (Preview) help me with?'
+                message = 'What can Amazon Q help me with?'
                 break
         }
 

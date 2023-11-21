@@ -95,13 +95,12 @@ export const platformLanguageIds = [
     'golang', // Cloud9 reports Go files with this language-id
     'json',
     'yaml',
-    'hcl',
     'tf',
-    'yml',
-    'plaintext',
+    'hcl',
     'terraform',
     'terragrunt',
     'packer',
+    'plaintext',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]

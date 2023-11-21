@@ -453,23 +453,23 @@
             "metadata": [{ "type": "findingId" }, { "type": "detectorId" }, { "type": "component" }]
         },
         {
-            "name": "codewhispererchat_openChat",
+            "name": "amazonq_openChat",
             "description": "When user opens CWSPR chat panel"
         },
         {
-            "name": "codewhispererchat_enterFocusChat",
+            "name": "amazonq_enterFocusChat",
             "description": "When chat panel comes into focus"
         },
         {
-            "name": "codewhispererchat_exitFocusChat",
+            "name": "amazonq_exitFocusChat",
             "description": "When chat panel goes out of focus"
         },
         {
-            "name": "codewhispererchat_closeChat",
+            "name": "amazonq_closeChat",
             "description": "When chat panel is closed"
         },
         {
-            "name": "codewhispererchat_startConversation",
+            "name": "amazonq_startConversation",
             "description": "When user starts a new conversation",
             "metadata": [
                 {
@@ -496,7 +496,7 @@
             ]
         },
         {
-            "name": "codewhispererchat_addMessage",
+            "name": "amazonq_addMessage",
             "description": "When a message is added to the conversation",
             "metadata": [
                 {
@@ -566,7 +566,7 @@
             ]
         },
         {
-            "name": "codewhispererchat_messageResponseError",
+            "name": "amazonq_messageResponseError",
             "description": "When an error has occured in response to a prompt",
             "metadata": [
                 {
@@ -608,7 +608,7 @@
             ]
         },
         {
-            "name": "codewhispererchat_interactWithMessage",
+            "name": "amazonq_interactWithMessage",
             "description": "When a user interacts with a message in the conversation",
             "metadata": [
                 {
@@ -635,7 +635,7 @@
             ]
         },
         {
-            "name": "codewhispererchat_modifyCode",
+            "name": "amazonq_modifyCode",
             "description": "% of code modified by the user after copying/inserting code from a message",
             "metadata": [
                 {
@@ -650,7 +650,7 @@
             ]
         },
         {
-            "name": "codewhispererchat_enterFocusConversation",
+            "name": "amazonq_enterFocusConversation",
             "description": "When a conversation comes into focus",
             "metadata": [
                 {
@@ -659,7 +659,7 @@
             ]
         },
         {
-            "name": "codewhispererchat_exitFocusConversation",
+            "name": "amazonq_exitFocusConversation",
             "description": "When a conversation goes out of focus",
             "metadata": [
                 {

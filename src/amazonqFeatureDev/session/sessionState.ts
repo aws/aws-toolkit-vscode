@@ -60,7 +60,8 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
-            zipFileChecksum
+            zipFileChecksum,
+            zipFileBuffer.length
         )
 
         await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
@@ -403,7 +404,8 @@ export class PrepareCodeGenState implements SessionState {
 
         const { uploadUrl, uploadId, kmsKeyArn } = await this.config.proxyClient.createUploadUrl(
             this.config.conversationId,
-            zipFileChecksum
+            zipFileChecksum,
+            zipFileBuffer.length
         )
 
         this.uploadId = uploadId

@@ -283,7 +283,7 @@
                 },
                 "aws.amazonqFeatureDev.region": {
                     "type": "string",
-                    "default": "Alpha-PDX",
+                    "default": "Gamma-IAD",
                     "description": "AWS region to use during the invocation.",
                     "enum": [
                         "Alpha-PDX",
@@ -879,6 +879,10 @@
                     "when": "false"
                 },
                 {
+                    "command": "aws.codeWhisperer.openReferencePanel",
+                    "when": "false"
+                },
+                {
                     "command": "aws.downloadSchemaItemCode",
                     "when": "false"
                 },
@@ -1242,10 +1246,6 @@
                     "when": "aws.isDevMode || isCloud9"
                 },
                 {
-                    "command": "aws.amazonq.welcome",
-                    "when": "false"
-                },
-                {
                     "command": "aws.amazonq.learnMore",
                     "when": "false"
                 }
@@ -1441,28 +1441,33 @@
                     "group": "1_codeCatalyst@1"
                 },
                 {
-                    "command": "aws.amazonq.learnMore",
+                    "command": "aws.codeWhisperer.openReferencePanel",
                     "when": "view == aws.AmazonQChatView",
+                    "group": "0_topAmazonQ@1"
+                },
+                {
+                    "command": "aws.amazonq.learnMore",
+                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
                     "group": "1_amazonQ@1"
                 },
                 {
                     "command": "aws.auth.switchConnections",
-                    "when": "view == aws.AmazonQChatView && CODEWHISPERER_ENABLED",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
                     "group": "2_amazonQ@1"
                 },
                 {
                     "command": "aws.codewhisperer.manageConnections",
-                    "when": "view == aws.AmazonQChatView && !aws.codewhisperer.disconnected && !CODEWHISPERER_ENABLED",
+                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
                     "group": "2_amazonQ@2"
                 },
                 {
                     "command": "aws.codewhisperer.signout",
-                    "when": "view == aws.AmazonQChatView && CODEWHISPERER_ENABLED",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && CODEWHISPERER_ENABLED",
                     "group": "2_amazonQ@4"
                 },
                 {
                     "command": "aws.codewhisperer.reconnect",
-                    "when": "view == aws.AmazonQChatView && aws.codewhisperer.disconnected",
+                    "when": "(view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq) && aws.codewhisperer.disconnected",
                     "group": "2_amazonQ@3"
                 }
             ],
@@ -2345,6 +2350,11 @@
             {
                 "command": "aws.codewhisperer.reconnect",
                 "title": "%AWS.command.codewhisperer.reconnect%",
+                "category": "%AWS.title%"
+            },
+            {
+                "command": "aws.codeWhisperer.openReferencePanel",
+                "title": "%AWS.command.codewhisperer.openReferencePanel%",
                 "category": "%AWS.title%"
             },
             {
@@ -4244,7 +4254,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.0.7",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.1.0",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",

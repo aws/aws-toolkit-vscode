@@ -8,6 +8,7 @@ import {
     createFreeTierLimitMet,
     createSignIn,
     createReconnect,
+    createOpenReferenceLog,
 } from '../../codewhisperer/explorer/codewhispererChildrenNodes'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
@@ -70,12 +71,12 @@ export class AmazonQNode implements TreeNode {
             return [createSignIn('tree'), createLearnMoreNode()]
         }
         if (this._showFreeTierLimitReachedNode) {
-            return [createFreeTierLimitMet('tree')]
+            return [createFreeTierLimitMet('tree'), createOpenReferenceLog('tree')]
         } else {
             // logged in
             if (AuthUtil.instance.isConnectionValid() && AuthUtil.instance.isEnterpriseSsoInUse()) {
                 vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
-                return [switchToAmazonQNode(), createTransformByQ()] // transform only available for IdC users
+                return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
             }
             return [switchToAmazonQNode()]
         }

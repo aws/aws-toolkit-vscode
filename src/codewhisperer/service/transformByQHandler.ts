@@ -189,7 +189,7 @@ function getFilesRecursively(dir: string): string[] {
 
 function getProjectDependencies(modulePath: string): string[] {
     // Make temp directory
-    const folderName = CodeWhispererConstants.dependencyFolderName + Date.now()
+    const folderName = (CodeWhispererConstants.dependencyFolderName as string) + Date.now().toString()
     const folderPath = path.join(os.tmpdir(), folderName)
 
     const baseCommand = 'mvn'

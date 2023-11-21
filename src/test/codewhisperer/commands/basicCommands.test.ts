@@ -13,7 +13,6 @@ import {
     toggleCodeSuggestions,
     showSecurityScan,
     applySecurityFix,
-    showTransformByQ,
     showReferenceLog,
     selectCustomizationPrompt,
     reconnect,
@@ -516,30 +515,6 @@ describe('CodeWhisperer-basicCommands', function () {
                 result: 'Failed',
                 reason: 'Error: Writing to file failed.',
             })
-        })
-    })
-
-    describe('showTransformByQ', function () {
-        let mockExtContext: ExtContext
-
-        beforeEach(async function () {
-            resetCodeWhispererGlobalVariables()
-            mockExtContext = await FakeExtensionContext.getFakeExtContext()
-        })
-
-        afterEach(function () {
-            targetCommand?.dispose()
-            sinon.restore()
-        })
-
-        it('prompts user to reauthenticate if connection is expired', async function () {
-            targetCommand = testCommand(showTransformByQ, mockExtContext)
-
-            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
-            const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
-
-            await targetCommand.execute('qTreeNode')
-            assert.ok(spy.called)
         })
     })
 })

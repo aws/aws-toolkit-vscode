@@ -51,27 +51,33 @@ describe('securityIssueHoverProvider', () => {
                     JSON.stringify([issues[0], mockDocument.fileName, 'hover'])
                 )} "Apply suggested fix")\n` +
                 '### Suggested Fix Preview\n\n' +
-                '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
+                '<span class="codicon codicon-none" style="background-color:var(--vscode-editorMarkerNavigationInfo-headerBackground);">\n\n' +
+                '```undefined\n' +
+                '@@ -1,1 +1,1 @@  \n' +
+                '```\n\n' +
+                '</span>\n' +
+                '<br />\n' +
+                '<span class="codicon codicon-none" style="background-color:var(--vscode-diffEditor-unchangedCodeBackground);">\n\n' +
                 '```language\n' +
-                'first line    \n' +
+                'first line       \n' +
                 '```\n\n' +
                 '</span>\n' +
                 '<br />\n' +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-diffEditor-removedTextBackground);">\n\n' +
                 '```diff\n' +
-                '-second line  \n' +
+                '-second line     \n' +
                 '```\n\n' +
                 '</span>\n' +
                 '<br />\n' +
                 '<span class="codicon codicon-none" style="background-color:var(--vscode-diffEditor-insertedTextBackground);">\n\n' +
                 '```diff\n' +
-                '+third line   \n' +
+                '+third line      \n' +
                 '```\n\n' +
                 '</span>\n' +
                 '<br />\n' +
-                '<span class="codicon codicon-none" style="background-color:var(--vscode-textCodeBlock-background);">\n\n' +
+                '<span class="codicon codicon-none" style="background-color:var(--vscode-diffEditor-unchangedCodeBackground);">\n\n' +
                 '```language\n' +
-                'fourth line   \n' +
+                'fourth line      \n' +
                 '```\n\n' +
                 '</span>\n\n'
         )

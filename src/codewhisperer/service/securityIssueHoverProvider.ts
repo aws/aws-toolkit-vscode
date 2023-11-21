@@ -97,7 +97,7 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
      * @returns The markdown string
      */
     private _makeCodeBlock(code: string, language?: string) {
-        const lines = code.split('\n').slice(1) // Ignore the first line for diff header
+        const lines = code.replaceAll('\n\\ No newline at end of file', '').split('\n')
         const maxLineChars = lines.reduce((acc, curr) => Math.max(acc, curr.length), 0)
         const paddedLines = lines.map(line => line.padEnd(maxLineChars + 2))
 
@@ -123,10 +123,12 @@ export class SecurityIssueHoverProvider extends SecurityIssueProvider implements
                         ? '--vscode-diffEditor-removedTextBackground'
                         : section.startsWith('+')
                         ? '--vscode-diffEditor-insertedTextBackground'
-                        : '--vscode-textCodeBlock-background'
+                        : section.startsWith('@@')
+                        ? '--vscode-editorMarkerNavigationInfo-headerBackground'
+                        : '--vscode-diffEditor-unchangedCodeBackground'
                 });">
 
-\`\`\`${section.startsWith('-') || section.startsWith('+') ? 'diff' : language}
+\`\`\`${section.startsWith('-') || section.startsWith('+') ? 'diff' : section.startsWith('@@') ? undefined : language}
 ${section}
 \`\`\`
 
