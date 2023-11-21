@@ -280,6 +280,16 @@
                     "type": "object",
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
+                },
+                "aws.amazonqFeatureDev.region": {
+                    "type": "string",
+                    "default": "Gamma-IAD",
+                    "description": "AWS region to use during the invocation.",
+                    "enum": [
+                        "Alpha-PDX",
+                        "Gamma-IAD",
+                        "Gamma-PDX"
+                    ]
                 }
             }
         },
