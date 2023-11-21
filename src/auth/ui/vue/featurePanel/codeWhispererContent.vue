@@ -1,5 +1,5 @@
 <template>
-    <div class="feature-panel-container border-common">
+    <div :id="panelId" class="feature-panel-container border-common" :class="isActive ? 'feature-panel-selected' : ''">
         <div class="feature-panel-container-upper">
             <div class="feature-panel-container-title">Amazon CodeWhisperer</div>
 
@@ -62,7 +62,7 @@
 import { defineComponent } from 'vue'
 import BuilderIdForm, { CodeWhispererBuilderIdState } from '../authForms/manageBuilderId.vue'
 import IdentityCenterForm, { CodeWhispererIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
-import BaseServiceItemContent from './baseServiceItemContent.vue'
+import BaseServiceItemContent, { PanelActivityState } from './baseServiceItemContent.vue'
 import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
@@ -79,6 +79,7 @@ function initialData() {
         } as Record<AuthFormId, boolean>,
         isAllAuthsLoaded: false,
         isIdentityCenterShown: false,
+        panelId: 'codewhisperer-panel',
     }
 }
 
@@ -94,6 +95,9 @@ export default defineComponent({
         client.onDidConnectionChangeCodeWhisperer(() => {
             this.refreshPanel()
         })
+    },
+    mounted() {
+        PanelActivityState.instance.registerPanel(this.$data.panelId, 'codewhisperer')
     },
     computed: {
         builderIdState(): CodeWhispererBuilderIdState {

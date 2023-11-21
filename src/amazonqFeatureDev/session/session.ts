@@ -33,7 +33,7 @@ export class Session {
     private codeGenRetries: number
     private preloaderFinished = false
     private _latestMessage: string = ''
-    private telemetry: TelemetryHelper
+    private _telemetry: TelemetryHelper
 
     // Used to keep track of whether or not the current session is currently authenticating/needs authenticating
     public isAuthenticating: boolean
@@ -45,7 +45,7 @@ export class Session {
         this.approachRetries = approachRetryLimit
         this.codeGenRetries = codeGenRetryLimit
 
-        this.telemetry = new TelemetryHelper()
+        this._telemetry = new TelemetryHelper()
         this.isAuthenticating = false
     }
 
@@ -223,5 +223,9 @@ export class Session {
 
     get latestMessage() {
         return this._latestMessage
+    }
+
+    get telemetry() {
+        return this._telemetry
     }
 }

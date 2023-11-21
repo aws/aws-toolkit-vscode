@@ -97,20 +97,17 @@ export class SecondaryAuth<T extends Connection = Connection> {
         private readonly auth: Auth,
         private readonly memento = globals.context.globalState
     ) {
-        const handleConnectionChanged = async (conn?: Connection) => {
-            if (
-                conn === undefined &&
-                this.#savedConnection &&
-                this.#savedConnection.id === this.#activeConnection?.id
-            ) {
-                await this.clearSavedConnection()
-            } else {
-                const currentConn = this.activeConnection
-                this.#activeConnection = conn
-                if (currentConn?.id !== this.activeConnection?.id) {
-                    // The user will get a different active connection from before, so notify them.
-                    this.#onDidChangeActiveConnection.fire(this.activeConnection)
-                }
+        const handleConnectionChanged = async (newActiveConn?: Connection) => {
+            if (newActiveConn === undefined && this.#activeConnection?.id) {
+                // The active connection was removed
+                await this.clearActiveConnection()
+            }
+
+            const previousActiveId = this.activeConnection?.id
+            this.#activeConnection = newActiveConn
+            if (this.activeConnection?.id !== previousActiveId) {
+                // The user will get a different active connection from before, so notify them.
+                this.#onDidChangeActiveConnection.fire(this.activeConnection)
             }
         }
 
@@ -125,6 +122,9 @@ export class SecondaryAuth<T extends Connection = Connection> {
         handleConnectionChanged(this.auth.activeConnection)
         this.auth.onDidChangeActiveConnection(handleConnectionChanged)
         this.auth.onDidDeleteConnection(async (deletedConnId: Connection['id']) => {
+            if (deletedConnId === this.#activeConnection?.id) {
+                await this.clearActiveConnection()
+            }
             if (deletedConnId === this.#savedConnection?.id) {
                 // Our saved connection does not exist anymore, delete the reference to it.
                 await this.clearSavedConnection()
@@ -176,10 +176,23 @@ export class SecondaryAuth<T extends Connection = Connection> {
         this.#onDidChangeActiveConnection.fire(this.activeConnection)
     }
 
+    private async clearActiveConnection() {
+        this.#activeConnection = undefined
+        if (this.#savedConnection) {
+            /**
+             * No need to emit event since user is currently
+             * using the saved connection
+             */
+            return
+        }
+        this.#onDidChangeActiveConnection.fire(undefined)
+    }
+
     public async useNewConnection(conn: T) {
-        if (this.auth.activeConnection !== undefined && !this.isUsable(this.auth.activeConnection)) {
-            await this.saveConnection(conn)
-        } else {
+        await this.saveConnection(conn)
+        if (this.auth.activeConnection === undefined) {
+            // Since no connection exists yet in the "primary" auth, we will make
+            // this connection available to all primary auth users
             await this.auth.useConnection(conn)
         }
     }

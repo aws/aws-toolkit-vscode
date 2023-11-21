@@ -143,6 +143,7 @@ export class UIMessageListener {
             messageId: msg.messageId,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
+            codeReference: msg.codeReference,
         })
     }
 
@@ -153,6 +154,7 @@ export class UIMessageListener {
             messageId: msg.messageId,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
+            codeReference: msg.codeReference,
         })
     }
 

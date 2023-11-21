@@ -63,7 +63,7 @@ export const createMynahUI = (
     // eslint-disable-next-line prefer-const
     let textMessageHandler: TextMessageHandler
     // eslint-disable-next-line prefer-const
-    let messageControler: MessageController
+    let messageController: MessageController
 
     // eslint-disable-next-line prefer-const
     connector = new Connector({
@@ -95,17 +95,14 @@ export const createMynahUI = (
             }
         },
         onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
-            return messageControler.sendMessageToTab(message, 'cwc')
+            return messageController.sendMessageToTab(message, 'cwc')
         },
         onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
-            const selectedTab = tabsStorage.getSelectedTab()
-
-            if (selectedTab !== undefined && command === 'aws.amazonq.sendToPrompt') {
-                mynahUI.addToUserPrompt(selectedTab.id, message.body as string)
-                return selectedTab.id
+            if (command === 'aws.amazonq.sendToPrompt') {
+                return messageController.sendSelectedCodeToTab(message)
+            } else {
+                return messageController.sendMessageToTab(message, 'cwc')
             }
-
-            return messageControler.sendMessageToTab(message, 'cwc')
         },
         onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => {
             followUpsInteractionHandler.onWelcomeFollowUpClicked(tabID, welcomeFollowUpType)
@@ -345,7 +342,7 @@ ${message}`,
         connector,
         tabsStorage,
     })
-    messageControler = new MessageController({
+    messageController = new MessageController({
         mynahUI,
         connector,
         tabsStorage,

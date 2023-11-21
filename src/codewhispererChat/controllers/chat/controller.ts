@@ -208,7 +208,7 @@ export class ChatController {
                 })
 
                 if (quickActionCommand === 'help') {
-                    this.generateStaticTextResponse('help', triggerID)
+                    this.generateStaticTextResponse('quick-action-help', triggerID)
                     return
                 }
             })
@@ -237,7 +237,7 @@ export class ChatController {
                 })
 
                 if (interaction.type === 'onboarding-page-cwc-button-clicked') {
-                    this.generateStaticTextResponse('help', triggerID)
+                    this.generateStaticTextResponse('onboarding-help', triggerID)
                     return
                 }
 
@@ -554,7 +554,7 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = getChatAuthState()
+        const credentialsState = await getChatAuthState()
 
         if (credentialsState.codewhispererChat !== 'connected' && credentialsState.codewhispererCore !== 'connected') {
             this.messenger.sendAuthNeededExceptionMessage(credentialsState, tabID, triggerID)
@@ -584,7 +584,7 @@ export class ChatController {
 
         const tabID = triggerEvent.tabID
 
-        const credentialsState = getChatAuthState()
+        const credentialsState = await getChatAuthState()
 
         if (
             !(credentialsState.codewhispererChat === 'connected' && credentialsState.codewhispererCore === 'connected')
@@ -612,13 +612,10 @@ export class ChatController {
                 } metadata: ${JSON.stringify(response.$metadata)}`
             )
             this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
-        } catch (e) {
+        } catch (e: any) {
+            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, e?.$metadata?.httpStatusCode ?? 0)
+            // clears session, record telemetry before this call
             this.processException(e, tabID)
-            this.telemetryHelper.recordMessageResponseError(
-                triggerPayload,
-                tabID,
-                response?.$metadata?.httpStatusCode ?? 0
-            )
         }
     }
 }

@@ -263,6 +263,7 @@ export class TransformByQState {
     private targetJDKVersion: JDKVersion = JDKVersion.JDK17
 
     private planFilePath: string = ''
+    private summaryFilePath: string = ''
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -308,6 +309,10 @@ export class TransformByQState {
         return this.planFilePath
     }
 
+    public getSummaryFilePath() {
+        return this.summaryFilePath
+    }
+
     public setToNotStarted() {
         this.transformByQState = TransformByQStatus.NotStarted
     }
@@ -350,6 +355,10 @@ export class TransformByQState {
 
     public setPlanFilePath(filePath: string) {
         this.planFilePath = filePath
+    }
+
+    public setSummaryFilePath(filePath: string) {
+        this.summaryFilePath = filePath
     }
 
     public getPrefixTextForButton() {

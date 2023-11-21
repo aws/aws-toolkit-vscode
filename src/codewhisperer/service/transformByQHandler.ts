@@ -189,7 +189,7 @@ function getFilesRecursively(dir: string): string[] {
 
 function getProjectDependencies(modulePath: string): string[] {
     // Make temp directory
-    const folderName = (CodeWhispererConstants.dependencyFolderName as string) + Date.now().toString()
+    const folderName = `${CodeWhispererConstants.dependencyFolderName}${Date.now()}`
     const folderPath = path.join(os.tmpdir(), folderName)
 
     const baseCommand = 'mvn'
@@ -279,7 +279,7 @@ export async function getTransformationPlan(jobId: string) {
     const logoBase64 = getImageAsBase64(logoAbsolutePath)
     let plan = `![Transform by Q](${logoBase64}) \n # Transformation Plan by AWS Q \n\n`
     for (const step of response.transformationPlan.transformationSteps) {
-        plan += step.name + ': ' + step.description + '\n\n'
+        plan += `${step.name}: ${step.description}\n\n`
     }
     return plan
 }

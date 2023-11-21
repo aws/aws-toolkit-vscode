@@ -8,6 +8,7 @@ import { UserIntent } from '@amzn/codewhisperer-streaming'
 import { MatchPolicy, CodeQuery } from '../../clients/chat/v0/model'
 import { Selection } from 'vscode'
 import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
+import { CodeReference } from '../../view/connector/connector'
 
 export interface TriggerTabIDReceived {
     tabID: string
@@ -39,6 +40,7 @@ export interface InsertCodeAtCursorPosition {
     messageId: string
     code: string
     insertionTargetType: string | undefined
+    codeReference: CodeReference[] | undefined
 }
 
 export interface CopyCodeToClipboard {
@@ -47,6 +49,7 @@ export interface CopyCodeToClipboard {
     messageId: string
     code: string
     insertionTargetType: string | undefined
+    codeReference: CodeReference[] | undefined
 }
 
 export type ChatPromptCommandType =

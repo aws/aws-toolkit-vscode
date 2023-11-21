@@ -133,6 +133,7 @@ export interface ChatMessageProps {
     readonly message: string | undefined
     readonly messageType: ChatMessageType
     readonly followUps: FollowUp[] | undefined
+    readonly followUpsHeader: string | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly codeReference?: CodeReference[]
     readonly triggerID: string
@@ -146,6 +147,7 @@ export class ChatMessage extends UiMessage {
     readonly codeReference: CodeReference[] | undefined
     readonly relatedSuggestions: Suggestion[] | undefined
     readonly searchResults: Suggestion[] | undefined
+    readonly followUpsHeader: string | undefined
     readonly triggerID: string
     readonly messageID: string | undefined
     override type = 'chatMessage'
@@ -155,6 +157,7 @@ export class ChatMessage extends UiMessage {
         this.message = props.message
         this.messageType = props.messageType
         this.followUps = props.followUps
+        this.followUpsHeader = props.followUpsHeader
         this.relatedSuggestions = props.relatedSuggestions
         this.codeReference = props.codeReference
         this.triggerID = props.triggerID
