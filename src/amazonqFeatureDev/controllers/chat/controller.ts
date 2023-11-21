@@ -20,6 +20,7 @@ import { FollowUpTypes, SessionStatePhase } from '../../types'
 import { Messenger } from './messenger/messenger'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
+import { getLogger } from '../../../shared/logger'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -152,6 +153,8 @@ export class FeatureDevController {
 
         let session
         try {
+            getLogger().debug(`${featureName}: Processing message: ${message.message}`)
+
             session = await this.sessionStorage.getSession(message.tabID)
 
             const authState = getChatAuthState()
@@ -547,7 +550,8 @@ To learn more, visit the _Amazon Q User Guide_.
     private async tabOpened(message: any) {
         let session: Session | undefined
         try {
-            session = await this.sessionStorage.createSession(message.tabID)
+            session = await this.sessionStorage.getSession(message.tabID)
+            getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
             const authState = getChatAuthState()
             if (authState.amazonQ !== 'connected') {
