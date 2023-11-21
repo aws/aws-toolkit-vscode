@@ -77,9 +77,18 @@
             <div style="font-size: 1.6rem; font-weight: bold">Sign in to Get Started</div>
             <hr style="margin: 1em 0 1em 0; border-color: var(--vscode-textBlockQuote-border)" />
             <div style="display: flex; flex-direction: row; justify-content: space-between; gap: 1em">
-                <CodeWhispererContent :state="serviceItemsAuthStatus['codewhisperer']"></CodeWhispererContent>
-                <AwsExplorerContent :state="serviceItemsAuthStatus['awsExplorer']"></AwsExplorerContent>
-                <CodeCatalystContent :state="serviceItemsAuthStatus['codecatalyst']"></CodeCatalystContent>
+                <CodeWhispererContent
+                    :state="serviceItemsAuthStatus['codewhisperer']"
+                    :is-active="panelActivityState.isActive['codewhisperer']"
+                ></CodeWhispererContent>
+                <AwsExplorerContent
+                    :state="serviceItemsAuthStatus['awsExplorer']"
+                    :is-active="panelActivityState.isActive['awsExplorer']"
+                ></AwsExplorerContent>
+                <CodeCatalystContent
+                    :state="serviceItemsAuthStatus['codecatalyst']"
+                    :is-active="panelActivityState.isActive['codecatalyst']"
+                ></CodeCatalystContent>
             </div>
         </div>
     </div>
@@ -99,8 +108,11 @@ import { Notifications } from './notifications/notifications.vue'
 import AwsExplorerContent from './featurePanel/awsExplorerContent.vue'
 import CodeCatalystContent from './featurePanel/codeCatalystContent.vue'
 import CodeWhispererContent from './featurePanel/codeWhispererContent.vue'
+import { PanelActivityState } from './featurePanel/baseServiceItemContent.vue'
 
 const client = WebviewClientFactory.create<AuthWebview>()
+
+const panelActivityState = PanelActivityState.instance
 
 export default defineComponent({
     components: {
@@ -116,6 +128,7 @@ export default defineComponent({
             serviceItemsAuthStatus: serviceItemsAuthStatus,
             notifications: Notifications.instance,
             maxWidth: undefined as typeof undefined | number,
+            panelActivityState: panelActivityState,
         }
     },
     async created() {
@@ -130,6 +143,7 @@ export default defineComponent({
         await showFoundExistingCredentials(this.notifications)
     },
     mounted() {
+        panelActivityState.setupInitialActivePanel()
         window.addEventListener('resize', this.scalePage)
     },
     computed: {},
