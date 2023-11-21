@@ -6,7 +6,7 @@ import { Connector } from './connector'
 import { ChatItem, ChatItemType, MynahUI, MynahUIDataModel, NotificationType } from '@aws/mynah-ui-chat'
 import './styles/dark.scss'
 import { ChatPrompt } from '@aws/mynah-ui-chat/dist/static'
-import { TabsStorage } from './storages/tabsStorage'
+import { TabsStorage, TabType } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { TabDataGenerator } from './tabs/generator'
 import { feedbackOptions } from './feedback/constants'
@@ -16,26 +16,44 @@ import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 
-export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: MynahUIDataModel) => {
+export const createMynahUI = (
+    ideApi: any,
+    featureDevInitEnabled: boolean,
+    gumbyInitEnabled: boolean,
+    initialData?: MynahUIDataModel
+) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
     let connector: Connector
-    const ideApi = acquireVsCodeApi()
-    const tabsStorage = new TabsStorage()
+    const tabsStorage = new TabsStorage({
+        onTabTimeout: tabID => {
+            mynahUI.addChatItem(tabID, {
+                type: ChatItemType.ANSWER,
+                body: 'This conversation has timed out after 48 hours. It will not be saved. Start a new conversation.',
+            })
+            mynahUI.updateStore(tabID, {
+                promptInputDisabledState: true,
+                promptInputPlaceholder: 'Session ended.',
+            })
+        },
+    })
     // Adding the first tab as CWC tab
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: 'unknown',
+        type: 'cwc',
         isSelected: true,
     })
 
-    // used to keep track of whether or not weaverbird is enabled and has an active idC
-    let isWeaverbirdEnabled = weaverbirdInitEnabled
+    // used to keep track of whether or not featureDev is enabled and has an active idC
+    let isFeatureDevEnabled = featureDevInitEnabled
+
+    const isGumbyEnabled = gumbyInitEnabled
 
     const tabDataGenerator = new TabDataGenerator({
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
+        isGumbyEnabled,
     })
 
     // eslint-disable-next-line prefer-const
@@ -50,30 +68,36 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
     // eslint-disable-next-line prefer-const
     connector = new Connector({
         tabsStorage,
-        onUpdateAuthentication: (weaverbirdEnabled: boolean): void => {
-            const selectedTab = tabsStorage.getSelectedTab()
+        onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]): void => {
+            isFeatureDevEnabled = featureDevEnabled
 
-            isWeaverbirdEnabled = weaverbirdEnabled
+            quickActionHandler.isFeatureDevEnabled = isFeatureDevEnabled
+            tabDataGenerator.quickActionsGenerator.isFeatureDevEnabled = isFeatureDevEnabled
 
-            if (!selectedTab) {
-                return
+            // Set the new defaults for the quick action commands in all tabs now that isFeatureDevEnabled was enabled/disabled
+            for (const tab of tabsStorage.getTabs()) {
+                mynahUI.updateStore(tab.id, {
+                    quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab(tab.type),
+                })
             }
 
-            /**
-             * If someone switches authentication when they're on the main page then reset the chat items and the quick actions
-             * and that triggers a change in weaverbird availability
-             */
-            if (selectedTab?.type === 'unknown') {
-                mynahUI.updateStore(selectedTab.id, {
-                    chatItems: [],
-                })
-                mynahUI.updateStore(selectedTab.id, tabDataGenerator.getTabData('unknown', true))
+            // Unlock every authenticated tab that is now authenticated
+            if (featureDevEnabled) {
+                for (const tabID of authenticatingTabIDs) {
+                    mynahUI.addChatItem(tabID, {
+                        type: ChatItemType.ANSWER,
+                        body: 'Authentication successful. Connected to Amazon Q.',
+                    })
+                    mynahUI.updateStore(tabID, {
+                        promptInputDisabledState: false,
+                    })
+                }
             }
         },
-        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string => {
+        onCWCOnboardingPageInteractionMessage: (message: ChatItem): string | undefined => {
             return messageControler.sendMessageToTab(message, 'cwc')
         },
-        onCWCContextCommandMessage: (message: ChatItem, command?: string): string => {
+        onCWCContextCommandMessage: (message: ChatItem, command?: string): string | undefined => {
             const selectedTab = tabsStorage.getSelectedTab()
 
             if (selectedTab !== undefined && command === 'aws.amazonq.sendToPrompt') {
@@ -88,7 +112,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
         },
         onChatInputEnabled: (tabID: string, enabled: boolean) => {
             mynahUI.updateStore(tabID, {
-                promptInputDisabledState: !enabled,
+                promptInputDisabledState: tabsStorage.isTabDead(tabID) || !enabled,
             })
         },
         onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => {
@@ -113,7 +137,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
 
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
-                promptInputDisabledState: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabID),
             })
             tabsStorage.updateTabStatus(tabID, 'free')
         },
@@ -128,7 +152,9 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
                     ...(item.codeReference !== undefined ? { codeReference: item.codeReference } : {}),
                     ...(item.body !== undefined ? { body: item.body } : {}),
                     ...(item.relatedContent !== undefined ? { relatedContent: item.relatedContent } : {}),
-                    ...(item.type === ChatItemType.CODE_RESULT ? { type: ChatItemType.CODE_RESULT } : {}),
+                    ...(item.type === ChatItemType.CODE_RESULT
+                        ? { type: ChatItemType.CODE_RESULT, fileList: item.fileList }
+                        : {}),
                 })
                 return
             }
@@ -154,7 +180,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
             if (item.type === ChatItemType.ANSWER) {
                 mynahUI.updateStore(tabID, {
                     loadingChat: false,
-                    promptInputDisabledState: false,
+                    promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
             }
@@ -170,7 +196,7 @@ export const createMynahUI = (weaverbirdInitEnabled: boolean, initialData?: Myna
             })
             mynahUI.updateStore(tabID, {
                 loadingChat: false,
-                promptInputDisabledState: false,
+                promptInputDisabledState: tabsStorage.isTabDead(tabID),
             })
             tabsStorage.updateTabStatus(tabID, 'free')
         },
@@ -184,7 +210,7 @@ ${message}`,
             if (tabID !== '') {
                 mynahUI.updateStore(tabID, {
                     loadingChat: false,
-                    promptInputDisabledState: false,
+                    promptInputDisabledState: tabsStorage.isTabDead(tabID),
                 })
                 tabsStorage.updateTabStatus(tabID, 'free')
 
@@ -196,14 +222,22 @@ ${message}`,
                     promptInputPlaceholder: '',
                     chatItems: [answer],
                 })
-                // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
-                // It means that it cannot trigger after the updateStore function returns.
-                tabsStorage.addTab({
-                    id: newTabId,
-                    status: 'busy',
-                    type: 'unknown',
-                    isSelected: true,
-                })
+                if (newTabId === undefined) {
+                    mynahUI.notify({
+                        content: uiComponentsTexts.noMoreTabsTooltip,
+                        type: NotificationType.WARNING,
+                    })
+                    return
+                } else {
+                    // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
+                    // It means that it cannot trigger after the updateStore function returns.
+                    tabsStorage.addTab({
+                        id: newTabId,
+                        status: 'busy',
+                        type: 'cwc',
+                        isSelected: true,
+                    })
+                }
             }
             return
         },
@@ -211,6 +245,18 @@ ${message}`,
             mynahUI.updateStore(tabID, {
                 promptInputPlaceholder: newPlaceholder,
             })
+        },
+        onNewTab(tabType: TabType) {
+            const newTabID = mynahUI.updateStore('', {})
+            if (!newTabID) {
+                return
+            }
+
+            tabsStorage.updateTabTypeFromUnknown(newTabID, tabType)
+            connector.onKnownTabOpen(newTabID)
+            connector.onUpdateTabType(newTabID)
+
+            mynahUI.updateStore(newTabID, tabDataGenerator.getTabData(tabType, true))
         },
     })
 
@@ -269,13 +315,14 @@ ${message}`,
         tabs: {
             'tab-1': {
                 isSelected: true,
-                store: tabDataGenerator.getTabData('unknown', true),
+                store: tabDataGenerator.getTabData('cwc', true),
             },
         },
         defaults: {
-            store: tabDataGenerator.getTabData('unknown', true),
+            store: tabDataGenerator.getTabData('cwc', true),
         },
         config: {
+            maxTabs: 10,
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
         },
@@ -285,13 +332,13 @@ ${message}`,
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled,
     })
     quickActionHandler = new QuickActionHandler({
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
+        isGumbyEnabled,
     })
     textMessageHandler = new TextMessageHandler({
         mynahUI,
@@ -302,6 +349,7 @@ ${message}`,
         mynahUI,
         connector,
         tabsStorage,
-        isWeaverbirdEnabled,
+        isFeatureDevEnabled,
+        isGumbyEnabled,
     })
 }

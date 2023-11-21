@@ -49,17 +49,18 @@ export interface CopyCodeToClipboard {
     insertionTargetType: string | undefined
 }
 
-export interface ClickLink {
-    command: string | undefined
-    tabID: string
-    messageId: string
-    url: string
-}
+export type ChatPromptCommandType =
+    | 'help'
+    | 'clear'
+    | 'follow-up-was-clicked'
+    | 'onboarding-page-cwc-button-clicked'
+    | 'chat-prompt'
+    | 'transform'
 
 export interface PromptMessage {
     message: string | undefined
     messageId: string
-    command: string | undefined
+    command: ChatPromptCommandType | undefined
     userIntent: UserIntent | undefined
     tabID: string
 }
@@ -78,20 +79,15 @@ export interface StopResponseMessage {
     tabID: string
 }
 
-export interface ClickLink {
-    command: string | undefined
-    tabID: string
-    messageId: string
-    url: string
-}
-
 export interface SourceLinkClickMessage {
+    command: string | undefined
     tabID: string
     messageId: string
     link: string
 }
 
 export interface ResponseBodyLinkClickMessage {
+    command: string | undefined
     tabID: string
     messageId: string
     link: string

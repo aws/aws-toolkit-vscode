@@ -19,11 +19,13 @@ type MessageCommand =
     | 'stop-response'
     | 'trigger-tabID-received'
     | 'clear'
+    | 'help'
     | 'chat-item-voted'
     | 'chat-item-feedback'
     | 'link-was-clicked'
     | 'onboarding-page-interaction'
     | 'source-link-click'
     | 'response-body-link-click'
+    | 'transform'
 
 export type ExtensionMessage = Record<string, any> & { command: MessageCommand }

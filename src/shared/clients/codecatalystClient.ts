@@ -40,7 +40,7 @@ export interface CodeCatalystConfig {
 
 export const defaultServiceConfig: CodeCatalystConfig = {
     region: 'us-east-1',
-    endpoint: 'https://public.codecatalyst.global.api.aws',
+    endpoint: 'https://codecatalyst.global.api.aws',
     hostname: 'codecatalyst.aws',
     gitHostname: 'codecatalyst.aws',
 }

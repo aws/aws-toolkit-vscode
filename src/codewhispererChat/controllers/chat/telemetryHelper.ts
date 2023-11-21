@@ -5,8 +5,11 @@
 
 import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
+    AmazonqAddMessage,
+    AmazonqInteractWithMessage,
     CwsprChatTriggerInteraction,
     CwsprChatUserIntent,
+    MetricBase,
     Result,
     telemetry,
 } from '../../../shared/telemetry/telemetry'
@@ -14,19 +17,51 @@ import { ChatSessionStorage } from '../../storages/chatSession'
 import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
-    ClickLink,
     CopyCodeToClipboard,
     InsertCodeAtCursorPosition,
     PromptAnswer,
     PromptMessage,
+    ResponseBodyLinkClickMessage,
+    SourceLinkClickMessage,
     TriggerPayload,
 } from './model'
 import { TriggerEvent, TriggerEventsStorage } from '../../storages/triggerEvents'
 import globals from '../../../shared/extensionGlobals'
 import { getLogger } from '../../../shared/logger'
-import { TabOpenType } from '../../../amazonq/webview/ui/storages/tabsStorage'
+import { codeWhispererClient } from '../../../codewhisperer/client/codewhisperer'
+import CodeWhispererUserClient, { Dimension } from '../../../codewhisperer/client/codewhispereruserclient'
+import { isAwsError } from '../../../shared/errors'
 
 const performance = globalThis.performance ?? require('perf_hooks').performance
+
+export function mapToClientTelemetryEvent<T extends MetricBase>(
+    name: string,
+    event: T
+): CodeWhispererUserClient.SendTelemetryEventRequest {
+    return {
+        telemetryEvent: {
+            metricData: {
+                metricName: name,
+                metricValue: 1,
+                timestamp: new Date(Date.now()),
+                dimensions: Object.keys(event).map(
+                    (key): Dimension => ({ name: key, value: event[key as keyof T]?.toString() })
+                ),
+            },
+        },
+    }
+}
+
+export function logSendTelemetryEventFailure(error: any) {
+    let requestId: string | undefined
+    if (isAwsError(error)) {
+        requestId = error.requestId
+    }
+
+    getLogger().debug(
+        `Failed to sendTelemetryEvent to CodeWhisperer, requestId: ${requestId ?? ''}, message: ${error.message}`
+    )
+}
 
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
@@ -50,60 +85,34 @@ export class CWCTelemetryHelper {
                 return 'applyCommonBestPractices'
             case UserIntent.IMPROVE_CODE:
                 return 'improveCode'
+            case UserIntent.CITE_SOURCES:
+                return 'citeSources'
+            case UserIntent.EXPLAIN_LINE_BY_LINE:
+                return 'explainLineByLine'
+            case UserIntent.SHOW_EXAMPLES:
+                return 'showExample'
             default:
                 return undefined
         }
     }
 
-    public recordOpenChat(triggerInteractionType: TabOpenType) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
-        let cwsprChatTriggerInteraction: CwsprChatTriggerInteraction = 'click'
-        switch (triggerInteractionType) {
-            case 'click':
-                cwsprChatTriggerInteraction = 'click'
-                break
-            case 'contextMenu':
-                cwsprChatTriggerInteraction = 'contextMenu'
-                break
-            case 'hotkeys':
-                cwsprChatTriggerInteraction = 'hotkeys'
-                break
-        }
-
-        telemetry.codewhispererchat_openChat.emit({ cwsprChatTriggerInteraction })
+    public recordOpenChat() {
+        telemetry.amazonq_openChat.emit()
     }
 
     public recordCloseChat() {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
-        telemetry.codewhispererchat_closeChat.emit()
+        telemetry.amazonq_closeChat.emit()
     }
 
     public recordEnterFocusChat() {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
-        telemetry.codewhispererchat_enterFocusChat.emit()
+        telemetry.amazonq_enterFocusChat.emit()
     }
 
     public recordExitFocusChat() {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
-        telemetry.codewhispererchat_exitFocusChat.emit()
+        telemetry.amazonq_exitFocusChat.emit()
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
         const logger = getLogger()
         try {
             await globals.telemetry.postFeedback({
@@ -131,73 +140,89 @@ export class CWCTelemetryHelper {
     }
 
     public recordFeedbackResult(feedbackResult: Result) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         telemetry.feedback_result.emit({ result: feedbackResult })
     }
 
     public recordInteractWithMessage(
-        message: InsertCodeAtCursorPosition | CopyCodeToClipboard | PromptMessage | ChatItemVotedMessage | ClickLink
+        message:
+            | InsertCodeAtCursorPosition
+            | CopyCodeToClipboard
+            | PromptMessage
+            | ChatItemVotedMessage
+            | SourceLinkClickMessage
+            | ResponseBodyLinkClickMessage
     ) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const conversationId = this.getConversationId(message.tabID)
-
+        let event: AmazonqInteractWithMessage | undefined
         switch (message.command) {
             case 'insert_code_at_cursor_position':
-                //TODO: has reference
                 message = message as InsertCodeAtCursorPosition
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
-                    cwsprChatHasReference: undefined,
-                })
+                    cwsprChatHasReference: undefined, //TODO
+                }
                 break
             case 'code_was_copied_to_clipboard':
-                //TODO: has reference
                 message = message as CopyCodeToClipboard
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
-                    cwsprChatHasReference: undefined,
-                })
+                    cwsprChatHasReference: undefined, //TODO
+                }
                 break
             case 'follow-up-was-clicked':
                 message = message as PromptMessage
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatMessageId: message.messageId,
                     cwsprChatInteractionType: 'clickFollowUp',
-                })
+                }
                 break
             case 'chat-item-voted':
                 message = message as ChatItemVotedMessage
-                telemetry.codewhispererchat_interactWithMessage.emit({
+                event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: message.vote,
-                })
+                }
                 break
-            case 'link-was-clicked':
-                message = message as ClickLink
-                telemetry.codewhispererchat_interactWithMessage.emit({
+            case 'source-link-click':
+                message = message as SourceLinkClickMessage
+                event = {
                     cwsprChatMessageId: message.messageId,
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: 'clickLink',
-                    cwsprChatInteractionTarget: message.url,
-                })
+                    cwsprChatInteractionTarget: message.link,
+                }
+                break
+            case 'response-body-link-click':
+                message = message as ResponseBodyLinkClickMessage
+                event = {
+                    cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatInteractionType: 'clickBodyLink',
+                    cwsprChatInteractionTarget: message.link,
+                }
                 break
         }
+
+        if (!event) {
+            return
+        }
+
+        telemetry.amazonq_interactWithMessage.emit(event)
+
+        codeWhispererClient
+            .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_interactWithMessage', event))
+            .then()
+            .catch(logSendTelemetryEventFailure)
     }
 
     public getTriggerInteractionFromTriggerEvent(triggerEvent: TriggerEvent | undefined): CwsprChatTriggerInteraction {
@@ -212,10 +237,6 @@ export class CWCTelemetryHelper {
     }
 
     public recordStartConversation(triggerEvent: TriggerEvent, triggerPayload: TriggerPayload) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         if (triggerEvent.tabID === undefined) {
             return
         }
@@ -226,7 +247,7 @@ export class CWCTelemetryHelper {
 
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
 
-        telemetry.codewhispererchat_startConversation.emit({
+        telemetry.amazonq_startConversation.emit({
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
@@ -237,14 +258,9 @@ export class CWCTelemetryHelper {
     }
 
     public recordAddMessage(triggerPayload: TriggerPayload, message: PromptAnswer) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(message.tabID)
 
-        // TODO: response code snippet count
-        telemetry.codewhispererchat_addMessage.emit({
+        const event: AmazonqAddMessage = {
             cwsprChatConversationId: this.getConversationId(message.tabID) ?? '',
             cwsprChatMessageId: message.messageID,
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
@@ -253,7 +269,7 @@ export class CWCTelemetryHelper {
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
-            cwsprChatResponseCodeSnippetCount: 0,
+            cwsprChatResponseCodeSnippetCount: 0, // TODO
             cwsprChatResponseCode: message.responseCode,
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: message.codeReferenceCount,
@@ -263,17 +279,20 @@ export class CWCTelemetryHelper {
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
-        })
+        }
+
+        telemetry.amazonq_addMessage.emit(event)
+
+        codeWhispererClient
+            .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_addMessage', event))
+            .then()
+            .catch(logSendTelemetryEventFailure)
     }
 
     public recordMessageResponseError(triggerPayload: TriggerPayload, tabID: string, responseCode: number) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
-        telemetry.codewhispererchat_messageResponseError.emit({
+        telemetry.amazonq_messageResponseError.emit({
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
@@ -288,26 +307,18 @@ export class CWCTelemetryHelper {
     }
 
     public recordEnterFocusConversation(tabID: string) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
-            telemetry.codewhispererchat_enterFocusConversation.emit({
+            telemetry.amazonq_enterFocusConversation.emit({
                 cwsprChatConversationId: conversationId,
             })
         }
     }
 
     public recordExitFocusConversation(tabID: string) {
-        if (!globals.telemetry.telemetryEnabled) {
-            return
-        }
-
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
-            telemetry.codewhispererchat_exitFocusConversation.emit({
+            telemetry.amazonq_exitFocusConversation.emit({
                 cwsprChatConversationId: conversationId,
             })
         }
@@ -318,7 +329,7 @@ export class CWCTelemetryHelper {
         this.responseStreamTimeToFirstChunk.set(tabID, undefined)
     }
 
-    public setReponseStreamTimeToFirstChunk(tabID: string) {
+    public setResponseStreamTimeToFirstChunk(tabID: string) {
         if (this.responseStreamTimeToFirstChunk.get(tabID) === undefined) {
             this.responseStreamTimeToFirstChunk.set(
                 tabID,

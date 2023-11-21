@@ -4,3 +4,8 @@ CHANGELOG.md
 src/shared/telemetry/service-2.json
 .changes
 src/testFixtures/**
+*.d.ts
+*.gen.ts
+dist/**
+types/*.d.ts
+src.gen/**

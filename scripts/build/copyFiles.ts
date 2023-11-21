@@ -28,6 +28,7 @@ interface CopyTask {
 const tasks: CopyTask[] = [
     { target: path.join('src', 'templates') },
     { target: path.join('src', 'test', 'shared', 'cloudformation', 'yaml') },
+    { target: path.join('src', 'test', 'codewhisperer', 'service', 'resources') },
     { target: path.join('src', 'testFixtures') },
 
     // SSM

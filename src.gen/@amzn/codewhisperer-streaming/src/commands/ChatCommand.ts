@@ -1,35 +1,41 @@
 // smithy-typescript generated code
 import {
-    CodeWhispererStreamingClientResolvedConfig,
-    ServiceInputTypes,
-    ServiceOutputTypes,
-} from '../CodeWhispererStreamingClient'
+  CodeWhispererStreamingClientResolvedConfig,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from "../CodeWhispererStreamingClient";
 import {
-    ChatRequest,
-    ChatRequestFilterSensitiveLog,
-    ChatResponse,
-    ChatResponseFilterSensitiveLog,
-} from '../models/models_0'
-import { de_ChatCommand, se_ChatCommand } from '../protocols/Aws_restJson1'
-import { getSerdePlugin } from '@smithy/middleware-serde'
-import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
-import { Command as $Command } from '@smithy/smithy-client'
+  ChatRequest,
+  ChatRequestFilterSensitiveLog,
+  ChatResponse,
+  ChatResponseFilterSensitiveLog,
+} from "../models/models_0";
 import {
-    FinalizeHandlerArguments,
-    Handler,
-    HandlerExecutionContext,
-    MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
-    EventStreamSerdeContext as __EventStreamSerdeContext,
-    HttpHandlerOptions as __HttpHandlerOptions,
-    MetadataBearer as __MetadataBearer,
-    SerdeContext as __SerdeContext,
-} from '@smithy/types'
+  de_ChatCommand,
+  se_ChatCommand,
+} from "../protocols/Aws_restJson1";
+import { getSerdePlugin } from "@smithy/middleware-serde";
+import {
+  HttpRequest as __HttpRequest,
+  HttpResponse as __HttpResponse,
+} from "@smithy/protocol-http";
+import { Command as $Command } from "@smithy/smithy-client";
+import {
+  FinalizeHandlerArguments,
+  Handler,
+  HandlerExecutionContext,
+  MiddlewareStack,
+  SMITHY_CONTEXT_KEY,
+  EventStreamSerdeContext as __EventStreamSerdeContext,
+  HttpHandlerOptions as __HttpHandlerOptions,
+  MetadataBearer as __MetadataBearer,
+  SerdeContext as __SerdeContext,
+} from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command }
+export { __MetadataBearer, $Command };
 /**
  * @public
  *
@@ -291,74 +297,75 @@ export interface ChatCommandOutput extends ChatResponse, __MetadataBearer {}
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class ChatCommand extends $Command<
-    ChatCommandInput,
-    ChatCommandOutput,
-    CodeWhispererStreamingClientResolvedConfig
-> {
-    // Start section: command_properties
-    // End section: command_properties
+export class ChatCommand extends $Command<ChatCommandInput, ChatCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
+  // Start section: command_properties
+  // End section: command_properties
 
-    /**
-     * @public
-     */
-    constructor(readonly input: ChatCommandInput) {
-        // Start section: command_constructor
-        super()
-        // End section: command_constructor
+  /**
+   * @public
+   */
+  constructor(readonly input: ChatCommandInput) {
+    // Start section: command_constructor
+    super();
+    // End section: command_constructor
+  }
+
+  /**
+   * @internal
+   */
+  resolveMiddleware(
+    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
+    configuration: CodeWhispererStreamingClientResolvedConfig,
+    options?: __HttpHandlerOptions
+  ): Handler<ChatCommandInput, ChatCommandOutput> {
+    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
+
+    const stack = clientStack.concat(this.middlewareStack);
+
+    const { logger } = configuration;
+    const clientName = "CodeWhispererStreamingClient";
+    const commandName = "ChatCommand";
+    const handlerExecutionContext: HandlerExecutionContext = {
+      logger,
+      clientName,
+      commandName,
+      inputFilterSensitiveLog:
+        ChatRequestFilterSensitiveLog,
+      outputFilterSensitiveLog:
+        ChatResponseFilterSensitiveLog,
+      [SMITHY_CONTEXT_KEY]: {
+        service: "AmazonCodeWhispererStreamingService",
+        operation: "Chat",
+      },
     }
+    const { requestHandler } = configuration;
+    return stack.resolve(
+      (request: FinalizeHandlerArguments<any>) =>
+        requestHandler.handle(request.request as __HttpRequest, options || {}),
+      handlerExecutionContext
+    );
+  }
 
-    /**
-     * @internal
-     */
-    resolveMiddleware(
-        clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-        configuration: CodeWhispererStreamingClientResolvedConfig,
-        options?: __HttpHandlerOptions
-    ): Handler<ChatCommandInput, ChatCommandOutput> {
-        this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
+  /**
+   * @internal
+   */
+  private serialize(
+    input: ChatCommandInput,
+    context: __SerdeContext
+  ): Promise<__HttpRequest> {
+    return se_ChatCommand(input, context);
+  }
 
-        const stack = clientStack.concat(this.middlewareStack)
+  /**
+   * @internal
+   */
+  private deserialize(
+    output: __HttpResponse,
+    context: __SerdeContext & __EventStreamSerdeContext
+  ): Promise<ChatCommandOutput> {
+    return de_ChatCommand(output, context);
+  }
 
-        const { logger } = configuration
-        const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'ChatCommand'
-        const handlerExecutionContext: HandlerExecutionContext = {
-            logger,
-            clientName,
-            commandName,
-            inputFilterSensitiveLog: ChatRequestFilterSensitiveLog,
-            outputFilterSensitiveLog: ChatResponseFilterSensitiveLog,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'Chat',
-            },
-        }
-        const { requestHandler } = configuration
-        return stack.resolve(
-            (request: FinalizeHandlerArguments<any>) =>
-                requestHandler.handle(request.request as __HttpRequest, options || {}),
-            handlerExecutionContext
-        )
-    }
-
-    /**
-     * @internal
-     */
-    private serialize(input: ChatCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
-        return se_ChatCommand(input, context)
-    }
-
-    /**
-     * @internal
-     */
-    private deserialize(
-        output: __HttpResponse,
-        context: __SerdeContext & __EventStreamSerdeContext
-    ): Promise<ChatCommandOutput> {
-        return de_ChatCommand(output, context)
-    }
-
-    // Start section: command_body_extra
-    // End section: command_body_extra
+  // Start section: command_body_extra
+  // End section: command_body_extra
 }

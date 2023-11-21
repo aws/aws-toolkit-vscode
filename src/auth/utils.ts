@@ -42,13 +42,13 @@ import {
     isIamConnection,
     isValidCodeCatalystConnection,
 } from './connection'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder, vscodeComponent } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
 import { AuthSource } from './ui/vue/show'
 import { getLogger } from '../shared/logger'
-import { isValidCodeWhispererConnection } from '../codewhisperer/util/authUtil'
+import { isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 
 // TODO: Look to do some refactoring to handle circular dependency later and move this to ./commands.ts
 export const showConnectionsPageCommand = 'aws.auth.manageConnections'
@@ -62,7 +62,7 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'sso'): Pro
     if (resp === 'addNewConnection') {
         // TODO: Cannot call function directly due to circular dependency. Refactor to fix this.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        vscode.commands.executeCommand(showConnectionsPageCommand, source)
+        vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
         return undefined
     }
 
@@ -84,14 +84,20 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
     })
 }
 
-const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | unknown) => {
+const switchConnections = Commands.register('aws.auth.switchConnections', (auth: Auth | TreeNode | unknown) => {
     telemetry.ui_click.emit({ elementId: 'devtools_connectToAws' })
 
-    if (auth instanceof Auth) {
-        return promptAndUseConnection(auth)
-    } else {
-        return promptAndUseConnection(getResourceFromTreeNode(auth, Instance(Auth)))
+    if (!(auth instanceof Auth)) {
+        try {
+            auth = getResourceFromTreeNode(auth, Instance(Auth))
+        } catch {
+            // Fall back in case this command is called from something in package.json.
+            // If so, then the value of auth will be unusable.
+            auth = Auth.instance
+        }
     }
+
+    return promptAndUseConnection(auth as Auth)
 })
 
 export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
@@ -490,7 +496,8 @@ export const login = Commands.register('aws.login', async () => {
     const auth = Auth.instance
     const connections = await auth.listConnections()
     if (connections.length === 0) {
-        return vscode.commands.executeCommand(showConnectionsPageCommand)
+        const source: AuthSource = vscodeComponent
+        return vscode.commands.executeCommand(showConnectionsPageCommand, placeholder, source)
     } else {
         return switchConnections.execute(auth)
     }
@@ -524,7 +531,12 @@ export class AuthNode implements TreeNode<Auth> {
 
         if (!this.resource.hasConnections) {
             const item = new vscode.TreeItem(`Connect to ${getIdeProperties().company} to Get Started...`)
-            item.command = { title: 'Add Connection', command: showConnectionsPageCommand }
+            const source: AuthSource = 'authNode'
+            item.command = {
+                title: 'Add Connection',
+                command: showConnectionsPageCommand,
+                arguments: [placeholder, source],
+            }
 
             return item
         }
@@ -569,7 +581,7 @@ export async function hasIamCredentials(
     return (await allConnections()).some(isIamConnection)
 }
 
-export type SsoKind = 'any' | 'codewhisperer'
+export type SsoKind = 'any' | 'codewhisperer' | 'codecatalyst'
 
 /**
  * Returns true if an Identity Center SSO connection exists.
@@ -592,7 +604,12 @@ async function findSsoConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isIdcSsoConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isIdcSsoConnection(conn) && isValidCodeWhispererCoreConnection(conn)
+            }
+            break
+        case 'codecatalyst':
+            predicate = (conn?: Connection) => {
+                return isIdcSsoConnection(conn) && isValidCodeCatalystConnection(conn)
             }
             break
         case 'any':
@@ -624,7 +641,7 @@ async function findBuilderIdConnections(
     switch (kind) {
         case 'codewhisperer':
             predicate = (conn?: Connection) => {
-                return isBuilderIdConnection(conn) && isValidCodeWhispererConnection(conn)
+                return isBuilderIdConnection(conn) && isValidCodeWhispererCoreConnection(conn)
             }
             break
         case 'codecatalyst':

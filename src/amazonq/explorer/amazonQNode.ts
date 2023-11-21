@@ -8,14 +8,14 @@ import {
     createFreeTierLimitMet,
     createSignIn,
     createReconnect,
+    createOpenReferenceLog,
 } from '../../codewhisperer/explorer/codewhispererChildrenNodes'
-import { RootNode } from '../../awsexplorer/localExplorer'
-import { TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
+import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
-import { createLearnMoreNode, runQTransformNode, switchToAmazonQNode } from './amazonQChildrenNodes'
+import { createLearnMoreNode, createTransformByQ, switchToAmazonQNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 
-export class AmazonQNode implements RootNode {
+export class AmazonQNode implements TreeNode {
     public readonly id = 'amazonq'
     public readonly resource = this
     private readonly onDidChangeChildrenEmitter = new vscode.EventEmitter<void>()
@@ -46,8 +46,10 @@ export class AmazonQNode implements RootNode {
     }
 
     private getDescription(): string {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionValid()) {
             if (AuthUtil.instance.isEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return 'IAM Identity Center Connected'
             } else if (AuthUtil.instance.isBuilderIdInUse()) {
                 return 'AWS Builder ID Connected'
@@ -61,6 +63,7 @@ export class AmazonQNode implements RootNode {
     }
 
     public getChildren() {
+        vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
         if (AuthUtil.instance.isConnectionExpired()) {
             return [createReconnect('tree'), createLearnMoreNode()]
         }
@@ -68,10 +71,14 @@ export class AmazonQNode implements RootNode {
             return [createSignIn('tree'), createLearnMoreNode()]
         }
         if (this._showFreeTierLimitReachedNode) {
-            return [createFreeTierLimitMet('tree')]
+            return [createFreeTierLimitMet('tree'), createOpenReferenceLog('tree')]
         } else {
             // logged in
-            return [switchToAmazonQNode(), runQTransformNode()]
+            if (AuthUtil.instance.isConnectionValid() && AuthUtil.instance.isEnterpriseSsoInUse()) {
+                vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
+                return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
+            }
+            return [switchToAmazonQNode()]
         }
     }
 
@@ -93,17 +100,19 @@ export class AmazonQNode implements RootNode {
 }
 
 export const amazonQNode = new AmazonQNode()
-export const refreshCodeWhisperer = Commands.register(
-    { id: 'aws.amazonq.refresh', logging: false },
-    (showFreeTierLimitNode = false) => {
+export const refreshAmazonQ = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.amazonq.refresh', logging: false }, (showFreeTierLimitNode = false) => {
         amazonQNode.updateShowFreeTierLimitReachedNode(showFreeTierLimitNode)
         amazonQNode.refresh()
-    }
-)
+        if (provider) {
+            provider.refresh()
+        }
+    })
 
-export const refreshCodeWhispererRootNode = Commands.register(
-    { id: 'aws.amazonq.refreshRootNode', logging: false },
-    () => {
+export const refreshAmazonQRootNode = (provider?: ResourceTreeDataProvider) =>
+    Commands.register({ id: 'aws.amazonq.refreshRootNode', logging: false }, () => {
         amazonQNode.refreshRootNode()
-    }
-)
+        if (provider) {
+            provider.refresh()
+        }
+    })

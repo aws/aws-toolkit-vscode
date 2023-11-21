@@ -5,25 +5,67 @@
 
 import { QuickActionCommandGroup } from '@aws/mynah-ui-chat/dist/static'
 import { TabType } from '../storages/tabsStorage'
-import { QuickActionCommands } from './constants'
 
 export interface QuickActionGeneratorProps {
-    isWeaverbirdEnabled: boolean
+    isFeatureDevEnabled: boolean
+    isGumbyEnabled: boolean
 }
 
 export class QuickActionGenerator {
-    private isWeaverbirdEnabled: boolean
+    public isFeatureDevEnabled: boolean
+    private isGumbyEnabled: boolean
 
     constructor(props: QuickActionGeneratorProps) {
-        this.isWeaverbirdEnabled = props.isWeaverbirdEnabled
+        this.isFeatureDevEnabled = props.isFeatureDevEnabled
+        this.isGumbyEnabled = props.isGumbyEnabled
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
         switch (tabType) {
-            case 'wb':
+            case 'featuredev':
                 return []
             default:
-                return QuickActionCommands(this.isWeaverbirdEnabled)
+                return [
+                    ...(this.isFeatureDevEnabled
+                        ? [
+                              {
+                                  groupName: 'Application Development',
+                                  commands: [
+                                      {
+                                          command: '/dev',
+                                          placeholder: 'Briefly describe a task or issue',
+                                          description:
+                                              'Use all project files as context for code suggestions (increases latency).',
+                                      },
+                                  ],
+                              },
+                          ]
+                        : []),
+                    ...(this.isGumbyEnabled
+                        ? [
+                              {
+                                  commands: [
+                                      {
+                                          command: '/transform',
+                                          description: 'Transform your Java 8 or 11 Maven project to Java 17',
+                                      },
+                                  ],
+                              },
+                          ]
+                        : []),
+                    {
+                        commands: [
+                            {
+                                command: '/help',
+                                description: 'Learn more about Amazon Q',
+                            },
+                            {
+                                command: '/clear',
+                                description: 'Clear this session',
+                            },
+                        ],
+                    },
+                ]
         }
     }
 }

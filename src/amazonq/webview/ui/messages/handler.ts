@@ -26,6 +26,7 @@ export class TextMessageHandler {
 
     public handle(chatPrompt: ChatPrompt, tabID: string) {
         this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+        this.tabsStorage.resetTabTimer(tabID)
         this.connector.onUpdateTabType(tabID)
         this.mynahUI.addChatItem(tabID, {
             type: ChatItemType.PROMPT,
@@ -37,10 +38,6 @@ export class TextMessageHandler {
                       },
                   }
                 : {}),
-        })
-        this.mynahUI.addChatItem(tabID, {
-            type: ChatItemType.ANSWER_STREAM,
-            body: '',
         })
 
         this.mynahUI.updateStore(tabID, {

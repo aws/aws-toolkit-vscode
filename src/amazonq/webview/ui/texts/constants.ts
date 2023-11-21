@@ -10,7 +10,7 @@ export const uiComponentsTexts = {
     feedbackFormTitle: 'Report an issue',
     feedbackFormOptionsLabel: 'What type of issue would you like to report?',
     feedbackFormCommentLabel: 'Description of issue (optional):',
-    feedbackThanks: 'Thanks!',
+    feedbackThanks: 'Thanks for your feedback!',
     feedbackReportButtonLabel: 'Report an issue',
     codeSuggestions: 'Code Suggestions',
     files: 'file(s)',
@@ -21,4 +21,7 @@ export const uiComponentsTexts = {
     submit: 'Submit',
     stopGenerating: 'Stop generating',
     copyToClipboard: 'Copied to clipboard',
+    noMoreTabsTooltip: 'You can only open ten conversation tabs at a time.',
+    codeSuggestionWithReferenceTitle: 'Some suggestions contain code with references.',
+    spinnerText: 'Amazon Q is generating your answer...',
 }

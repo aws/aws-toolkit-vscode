@@ -1,35 +1,41 @@
 // smithy-typescript generated code
 import {
-    CodeWhispererStreamingClientResolvedConfig,
-    ServiceInputTypes,
-    ServiceOutputTypes,
-} from '../CodeWhispererStreamingClient'
+  CodeWhispererStreamingClientResolvedConfig,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from "../CodeWhispererStreamingClient";
 import {
-    GenerateTaskAssistPlanRequest,
-    GenerateTaskAssistPlanRequestFilterSensitiveLog,
-    GenerateTaskAssistPlanResponse,
-    GenerateTaskAssistPlanResponseFilterSensitiveLog,
-} from '../models/models_0'
-import { de_GenerateTaskAssistPlanCommand, se_GenerateTaskAssistPlanCommand } from '../protocols/Aws_restJson1'
-import { getSerdePlugin } from '@smithy/middleware-serde'
-import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
-import { Command as $Command } from '@smithy/smithy-client'
+  GenerateTaskAssistPlanRequest,
+  GenerateTaskAssistPlanRequestFilterSensitiveLog,
+  GenerateTaskAssistPlanResponse,
+  GenerateTaskAssistPlanResponseFilterSensitiveLog,
+} from "../models/models_0";
 import {
-    FinalizeHandlerArguments,
-    Handler,
-    HandlerExecutionContext,
-    MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
-    EventStreamSerdeContext as __EventStreamSerdeContext,
-    HttpHandlerOptions as __HttpHandlerOptions,
-    MetadataBearer as __MetadataBearer,
-    SerdeContext as __SerdeContext,
-} from '@smithy/types'
+  de_GenerateTaskAssistPlanCommand,
+  se_GenerateTaskAssistPlanCommand,
+} from "../protocols/Aws_restJson1";
+import { getSerdePlugin } from "@smithy/middleware-serde";
+import {
+  HttpRequest as __HttpRequest,
+  HttpResponse as __HttpResponse,
+} from "@smithy/protocol-http";
+import { Command as $Command } from "@smithy/smithy-client";
+import {
+  FinalizeHandlerArguments,
+  Handler,
+  HandlerExecutionContext,
+  MiddlewareStack,
+  SMITHY_CONTEXT_KEY,
+  EventStreamSerdeContext as __EventStreamSerdeContext,
+  HttpHandlerOptions as __HttpHandlerOptions,
+  MetadataBearer as __MetadataBearer,
+  SerdeContext as __SerdeContext,
+} from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command }
+export { __MetadataBearer, $Command };
 /**
  * @public
  *
@@ -289,6 +295,12 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  * @throws {@link ValidationException} (client fault)
  *  This exception is thrown when the input fails to satisfy the constraints specified by the service.
  *
+ * @throws {@link ConflictException} (client fault)
+ *  This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.
+ *
+ * @throws {@link ResourceNotFoundException} (client fault)
+ *  This exception is thrown when describing a resource that does not exist.
+ *
  * @throws {@link AccessDeniedException} (client fault)
  *  This exception is thrown when the user does not have sufficient access to perform this action.
  *
@@ -296,74 +308,75 @@ export interface GenerateTaskAssistPlanCommandOutput extends GenerateTaskAssistP
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class GenerateTaskAssistPlanCommand extends $Command<
-    GenerateTaskAssistPlanCommandInput,
-    GenerateTaskAssistPlanCommandOutput,
-    CodeWhispererStreamingClientResolvedConfig
-> {
-    // Start section: command_properties
-    // End section: command_properties
+export class GenerateTaskAssistPlanCommand extends $Command<GenerateTaskAssistPlanCommandInput, GenerateTaskAssistPlanCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
+  // Start section: command_properties
+  // End section: command_properties
 
-    /**
-     * @public
-     */
-    constructor(readonly input: GenerateTaskAssistPlanCommandInput) {
-        // Start section: command_constructor
-        super()
-        // End section: command_constructor
+  /**
+   * @public
+   */
+  constructor(readonly input: GenerateTaskAssistPlanCommandInput) {
+    // Start section: command_constructor
+    super();
+    // End section: command_constructor
+  }
+
+  /**
+   * @internal
+   */
+  resolveMiddleware(
+    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
+    configuration: CodeWhispererStreamingClientResolvedConfig,
+    options?: __HttpHandlerOptions
+  ): Handler<GenerateTaskAssistPlanCommandInput, GenerateTaskAssistPlanCommandOutput> {
+    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
+
+    const stack = clientStack.concat(this.middlewareStack);
+
+    const { logger } = configuration;
+    const clientName = "CodeWhispererStreamingClient";
+    const commandName = "GenerateTaskAssistPlanCommand";
+    const handlerExecutionContext: HandlerExecutionContext = {
+      logger,
+      clientName,
+      commandName,
+      inputFilterSensitiveLog:
+        GenerateTaskAssistPlanRequestFilterSensitiveLog,
+      outputFilterSensitiveLog:
+        GenerateTaskAssistPlanResponseFilterSensitiveLog,
+      [SMITHY_CONTEXT_KEY]: {
+        service: "AmazonCodeWhispererStreamingService",
+        operation: "GenerateTaskAssistPlan",
+      },
     }
+    const { requestHandler } = configuration;
+    return stack.resolve(
+      (request: FinalizeHandlerArguments<any>) =>
+        requestHandler.handle(request.request as __HttpRequest, options || {}),
+      handlerExecutionContext
+    );
+  }
 
-    /**
-     * @internal
-     */
-    resolveMiddleware(
-        clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-        configuration: CodeWhispererStreamingClientResolvedConfig,
-        options?: __HttpHandlerOptions
-    ): Handler<GenerateTaskAssistPlanCommandInput, GenerateTaskAssistPlanCommandOutput> {
-        this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
+  /**
+   * @internal
+   */
+  private serialize(
+    input: GenerateTaskAssistPlanCommandInput,
+    context: __SerdeContext
+  ): Promise<__HttpRequest> {
+    return se_GenerateTaskAssistPlanCommand(input, context);
+  }
 
-        const stack = clientStack.concat(this.middlewareStack)
+  /**
+   * @internal
+   */
+  private deserialize(
+    output: __HttpResponse,
+    context: __SerdeContext & __EventStreamSerdeContext
+  ): Promise<GenerateTaskAssistPlanCommandOutput> {
+    return de_GenerateTaskAssistPlanCommand(output, context);
+  }
 
-        const { logger } = configuration
-        const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'GenerateTaskAssistPlanCommand'
-        const handlerExecutionContext: HandlerExecutionContext = {
-            logger,
-            clientName,
-            commandName,
-            inputFilterSensitiveLog: GenerateTaskAssistPlanRequestFilterSensitiveLog,
-            outputFilterSensitiveLog: GenerateTaskAssistPlanResponseFilterSensitiveLog,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'GenerateTaskAssistPlan',
-            },
-        }
-        const { requestHandler } = configuration
-        return stack.resolve(
-            (request: FinalizeHandlerArguments<any>) =>
-                requestHandler.handle(request.request as __HttpRequest, options || {}),
-            handlerExecutionContext
-        )
-    }
-
-    /**
-     * @internal
-     */
-    private serialize(input: GenerateTaskAssistPlanCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
-        return se_GenerateTaskAssistPlanCommand(input, context)
-    }
-
-    /**
-     * @internal
-     */
-    private deserialize(
-        output: __HttpResponse,
-        context: __SerdeContext & __EventStreamSerdeContext
-    ): Promise<GenerateTaskAssistPlanCommandOutput> {
-        return de_GenerateTaskAssistPlanCommand(output, context)
-    }
-
-    // Start section: command_body_extra
-    // End section: command_body_extra
+  // Start section: command_body_extra
+  // End section: command_body_extra
 }

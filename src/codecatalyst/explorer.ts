@@ -4,20 +4,19 @@
  */
 
 import * as vscode from 'vscode'
-import { RootNode } from '../awsexplorer/localExplorer'
 import { DevEnvironment } from '../shared/clients/codecatalystClient'
 import { isCloud9 } from '../shared/extensionUtilities'
 import { addColor, getIcon } from '../shared/icons'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
-import { Commands } from '../shared/vscode/commands2'
+import { Commands, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { CodeCatalystCommands } from './commands'
 import { ConnectedDevEnv, getDevfileLocation, getThisDevEnv } from './model'
 import * as codecatalyst from './model'
 import { getLogger } from '../shared/logger'
-import { Connection, isBuilderIdConnection } from '../auth/connection'
+import { Connection } from '../auth/connection'
 import { openUrl } from '../shared/utilities/vsCodeUtils'
-import { AuthCommandDeclarations } from '../auth/commands'
+import { showManageConnections } from '../auth/ui/vue/show'
 
 const learnMoreCommand = Commands.register('aws.learnMore', async (docsUrl: vscode.Uri) => {
     return openUrl(docsUrl)
@@ -33,16 +32,18 @@ const reauth = Commands.register(
 
 async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     const docsUrl = isCloud9() ? codecatalyst.docs.cloud9.overview : codecatalyst.docs.vscode.overview
-    if (!isBuilderIdConnection(auth.activeConnection) || !(await auth.isConnectionOnboarded(auth.activeConnection))) {
+    if (
+        !auth.activeConnection ||
+        !auth.isConnectionValid() ||
+        !(await auth.isConnectionOnboarded(auth.activeConnection))
+    ) {
         return [
-            AuthCommandDeclarations.instance.declared.showManageConnections
-                .build('codecatalystDeveloperTools', 'codecatalyst')
-                .asTreeNode({
-                    label: 'Start',
-                    iconPath: getIcon('vscode-debug-start'),
-                }),
+            showManageConnections.build(placeholder, 'codecatalystDeveloperTools', 'codecatalyst').asTreeNode({
+                label: 'Sign in to get started',
+                iconPath: getIcon('vscode-account'),
+            }),
             learnMoreCommand.build(docsUrl).asTreeNode({
-                label: 'Learn More about CodeCatalyst',
+                label: 'Learn more about CodeCatalyst',
                 iconPath: getIcon('vscode-question'),
             }),
         ]
@@ -51,7 +52,7 @@ async function getLocalCommands(auth: CodeCatalystAuthenticationProvider) {
     if (isCloud9()) {
         const item = reauth.build(auth.activeConnection, auth).asTreeNode({
             label: 'Failed to get the current Dev Environment. Click to try again.',
-            iconPath: getIcon(`vscode-error`),
+            iconPath: addColor(getIcon(`vscode-error`), 'notificationsErrorIcon.foreground'),
         })
 
         return [item]
@@ -95,7 +96,7 @@ function getRemoteCommands(currentDevEnv: DevEnvironment, devfileLocation: vscod
     ]
 }
 
-export class CodeCatalystRootNode implements RootNode {
+export class CodeCatalystRootNode implements TreeNode {
     public readonly id = 'codecatalyst'
     public readonly resource = this.devenv
 
@@ -105,10 +106,17 @@ export class CodeCatalystRootNode implements RootNode {
     public readonly onDidChangeTreeItem = this.onDidChangeEmitter.event
     public readonly onDidChangeChildren = this.onDidChangeEmitter.event
 
+    private refreshEmitters: (() => void)[] = []
+
     private devenv?: ConnectedDevEnv
 
     public constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
-        this.authProvider.onDidChangeActiveConnection(() => this.onDidChangeEmitter.fire())
+        this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
+        this.authProvider.onDidChangeActiveConnection(() => {
+            for (const fire of this.refreshEmitters) {
+                fire()
+            }
+        })
     }
 
     public async getChildren(): Promise<TreeNode[]> {
@@ -158,10 +166,20 @@ export class CodeCatalystRootNode implements RootNode {
 
     private getDescription(): string {
         if (this.authProvider.activeConnection) {
-            return this.authProvider.secondaryAuth.isConnectionExpired
-                ? 'Expired Connection'
-                : 'AWS Builder ID Connected'
+            if (this.authProvider.secondaryAuth.isConnectionExpired) {
+                return 'Expired Connection'
+            }
+            if (this.authProvider.isBuilderIdInUse()) {
+                return 'AWS Builder ID Connected'
+            }
+            if (this.authProvider.isEnterpriseSsoInUse()) {
+                return 'IAM Identity Center Connected'
+            }
         }
         return ''
+    }
+
+    public addRefreshEmitter(emitter: () => void) {
+        this.refreshEmitters.push(emitter)
     }
 }

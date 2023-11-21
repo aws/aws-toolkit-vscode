@@ -159,8 +159,13 @@ export class JavascriptDependencyGraph extends DependencyGraph {
             if (file.isDirectory() && !this._generatedDirs.has(file.name)) {
                 await this.traverseDir(absPath)
             } else if (file.isFile()) {
+                //Check for .ts and .js file extensions & zip separately for security scans
                 if (
-                    file.name.endsWith(DependencyGraphConstants.jsExt) &&
+                    file.name.endsWith(
+                        this._languageId === 'typescript'
+                            ? DependencyGraphConstants.tsExt
+                            : DependencyGraphConstants.jsExt
+                    ) &&
                     !this.reachSizeLimit(this._totalSize) &&
                     !this.willReachSizeLimit(this._totalSize, statSync(absPath).size) &&
                     !this._pickedSourceFiles.has(absPath)

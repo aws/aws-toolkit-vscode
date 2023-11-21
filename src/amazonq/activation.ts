@@ -6,13 +6,14 @@
 import { ExtensionContext, window } from 'vscode'
 import { AmazonQChatViewProvider } from './webview/webView'
 import { init as cwChatAppInit } from '../codewhispererChat/app'
-import { init as weaverbirdChatAppInit } from '../weaverbird/app'
+import { init as featureDevChatAppInit } from '../amazonqFeatureDev/app'
 import { AmazonQAppInitContext, DefaultAmazonQAppInitContext } from './apps/initContext'
-import { weaverbirdEnabled } from '../weaverbird/config'
+import { featureDevEnabled } from '../amazonqFeatureDev/config'
 import { Commands } from '../shared/vscode/commands2'
 import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
-import { learnMoreAmazonQCommand, runQTransformCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
+import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
+import { focusAmazonQPanel } from '../codewhisperer/commands/basicCommands'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = new DefaultAmazonQAppInitContext()
@@ -39,19 +40,19 @@ export async function activate(context: ExtensionContext) {
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
     learnMoreAmazonQCommand.register()
     switchToAmazonQCommand.register()
-    runQTransformCommand.register()
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {
     cwChatAppInit(appInitContext)
-    if (weaverbirdEnabled) {
-        weaverbirdChatAppInit(appInitContext)
+    if (featureDevEnabled) {
+        featureDevChatAppInit(appInitContext)
     }
 }
 
 export const amazonQWelcomeCommand = Commands.declare(
     'aws.amazonq.welcome',
     (context: ExtensionContext, publisher: MessagePublisher<any>) => () => {
+        focusAmazonQPanel()
         welcome(context, publisher)
     }
 )

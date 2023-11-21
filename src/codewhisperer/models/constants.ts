@@ -7,7 +7,9 @@
  * SDK Client
  */
 
-export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+// export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
+
+export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/' // gamma IAD
 
 export const region = 'us-east-1'
 
@@ -25,6 +27,10 @@ export const idleTimerPollPeriod = 25 // milliseconds
 export const showRecommendationTimerPollPeriod = 25
 
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
+
+export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AWS::', 'Description']
+
+export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
@@ -65,24 +71,7 @@ export const completionDetail = 'CodeWhisperer'
  */
 export const codewhisperer = 'CodeWhisperer'
 
-/**
- * Supported languages
- */
-export const java = 'java'
-
-export const python = 'python'
-
-export const javascript = 'javascript'
-
-export const typescript = 'typescript'
-
-export const jsx = 'javascriptreact'
-
-export const tsx = 'typescriptreact'
-
-export const plaintext = 'plaintext'
-
-// use vscode languageId here
+// use vscode languageId here / Supported languages
 export const platformLanguageIds = [
     'java',
     'python',
@@ -104,6 +93,14 @@ export const platformLanguageIds = [
     'sh', // Cloud9 reports bash files with this language-id
     'sql',
     'golang', // Cloud9 reports Go files with this language-id
+    'json',
+    'yaml',
+    'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
+    'plaintext',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -203,7 +200,13 @@ export const referenceLogPromptTextEnterpriseSSO =
  */
 export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
+export const codeScanCsharpPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
+
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanCFPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
@@ -276,6 +279,98 @@ export const newCustomizationMessage = 'You have access to new CodeWhisperer cus
 
 export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVAILABLE'
 
+// Transform by Q
+
+export const logoPath = '../../resources/icons/aws/codewhisperer/transform-landing-page-icon.svg'
+
+export const selectTargetLanguagePrompt = 'Select the target language'
+
+export const selectTargetVersionPrompt = 'Select the target version'
+
+export const selectModulePrompt = 'Select the module you want to transform'
+
+export const transformByQWindowTitle = 'Transform by Q'
+
+export const stopTransformByQMessage = 'Stop Transform by Q?'
+
+export const stoppingTransformByQMessage = 'Stopping Transform by Q...'
+
+export const transformByQFailedMessage = 'Transform by Q failed'
+
+export const transformByQCancelledMessage = 'Transform by Q cancelled'
+
+export const transformByQCompleted = 'Transform by Q completed'
+
+export const noPomXmlFoundMessage =
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations.'
+
+export const noOngoingJobMessage = 'No job is in-progress at the moment'
+
+export const jobInProgressMessage = 'Job is in-progress'
+
+export const cancellationInProgressMessage = 'Cancellation is in-progress'
+
+export const noSupportedJavaProjectsFoundMessage =
+    'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11.'
+
+export const dependencyDisclaimer =
+    'We have detected your project to be in JDK 8/11. This project is eligible for upgrade to Java 17. If you decide to upgrade, we will also access 1P dependencies from your local disk. Please build your code locally at least once for Amazon Q to access your 1P dependencies from your local disk. If you would like to upgrade to Java 17, please click transform or else cancel.'
+
+export const dependencyFolderName = 'transformation_dependencies_temp_'
+
+export const dependencyErrorMessage =
+    'There was an error in zipping up project dependencies. Please make sure you have Maven installed and the project has been been built.'
+
+export const JDK8VersionNumber = '52'
+
+export const JDK11VersionNumber = '55'
+
+export const numMillisecondsPerSecond = 1000
+
+export const transformByQStateRunningMessage = 'running'
+
+export const transformByQStateCancellingMessage = 'cancelling'
+
+export const transformByQStateFailedMessage = 'failed'
+
+export const transformByQStateSucceededMessage = 'succeeded'
+
+export const transformByQStoppedState = 'STOPPED'
+
+export const transformationJobPollingIntervalSeconds = 10
+
+export const transformationJobTimeoutSeconds = 36000 // TODO: adjust
+
+export const progressIntervalMs = 1000
+
+export const targetLanguages = ['Java']
+
+export const targetVersions = new Map<string, string[]>([['Java', ['JDK17']]])
+
+export const defaultLanguage = 'Java'
+
+export const contentChecksumType = 'SHA_256'
+
+export const uploadIntent = 'TRANSFORMATION'
+
+export const transformationType = 'LANGUAGE_UPGRADE'
+
+// when in one of these states, we can definitely say the plan is available
+// in other states, we keep polling/waiting
+export const validStatesForGettingPlan = ['COMPLETED', 'PARTIALLY_COMPLETED', 'PLANNED', 'TRANSFORMING', 'TRANSFORMED']
+
+export const failureStates = ['FAILED', 'STOPPING', 'STOPPED', 'REJECTED']
+
+// similarly, when in one of these states, we can stop polling, and if status is COMPLETED or PARTIALLY_COMPLETED we can download artifacts
+export const validStatesForCheckingDownloadUrl = [
+    'COMPLETED',
+    'PARTIALLY_COMPLETED',
+    'FAILED',
+    'STOPPING',
+    'STOPPED',
+    'REJECTED',
+]
+
 export enum UserGroup {
     Classifier = 'Classifier',
     CrossFile = 'CrossFile',
@@ -286,6 +381,12 @@ export enum UserGroup {
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+
+export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
+
+export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
+
+export const runSecurityScanButtonTitle = 'Run security scan'
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,

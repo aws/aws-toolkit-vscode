@@ -1,3 +1,10 @@
+## 1.99.0 2023-11-17
+
+- **Feature** CodeWhisperer: status bar lists options when clicked and shows suggestion state
+- **Feature** Don't show "invalid settings.json" message if settings.json is valid but unwritable
+- **Feature** CodeWhisperer: faster code completion by enabling HTTP connection reuse for completions API
+- **Feature** Connect to Amazon CodeCatalyst Dev Environments with IAM Identity Center
+
 ## 1.98.0 2023-11-09
 
 - **Bug Fix** CodeWhisperer, CodeCatalyst may require login again after Switching VSCode workspaces

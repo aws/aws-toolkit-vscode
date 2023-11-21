@@ -5,7 +5,7 @@
 
 import { MessageListener } from '../../../amazonq/messages/messageListener'
 import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
-import { AuthController } from '../../auth/controller'
+import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
 
@@ -36,7 +36,9 @@ export class UIMessageListener {
             case 'onboarding-page-interaction':
                 this.processOnboardingPageInteraction(msg)
                 break
+            case 'help':
             case 'clear':
+            case 'transform':
             case 'chat-prompt':
                 this.processChatMessage(msg)
                 break
@@ -98,6 +100,7 @@ export class UIMessageListener {
     }
     private processResponseBodyLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processResponseBodyLinkClick.publish({
+            command: msg.command,
             messageId: msg.messageId,
             tabID: msg.tabID,
             link: msg.link,
@@ -106,6 +109,7 @@ export class UIMessageListener {
 
     private processSourceLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processSourceLinkClick.publish({
+            command: msg.command,
             messageId: msg.messageId,
             tabID: msg.tabID,
             link: msg.link,
@@ -132,7 +136,7 @@ export class UIMessageListener {
     }
 
     private processInsertCodeAtCursorPosition(msg: any) {
-        this.referenceLogController.addReferenceLog(msg.codeReference)
+        this.referenceLogController.addReferenceLog(msg.codeReference, (msg.code as string) ?? '')
         this.chatControllerMessagePublishers.processInsertCodeAtCursorPosition.publish({
             command: msg.command,
             tabID: msg.tabID,

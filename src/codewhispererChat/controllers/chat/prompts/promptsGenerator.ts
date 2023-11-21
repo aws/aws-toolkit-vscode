@@ -24,7 +24,7 @@ export class PromptsGenerator {
     public generateForOnboardingPageInteraction(interaction: OnboardingPageInteraction): string {
         switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
-                return 'What can Amazon Q (Preview) help me with?'
+                return 'What can Q help me with?'
         }
     }
 }

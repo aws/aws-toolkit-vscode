@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type TabStatus = 'free' | 'busy'
-export type TabType = 'cwc' | 'wb' | 'unknown'
+export type TabStatus = 'free' | 'busy' | 'dead'
+export type TabType = 'cwc' | 'featuredev' | 'unknown'
 export type TabOpenType = 'click' | 'contextMenu' | 'hotkeys'
 
+const TabTimeoutDuration = 172_800_000 // 48hrs
 export interface Tab {
     readonly id: string
     status: TabStatus
@@ -19,6 +20,12 @@ export class TabsStorage {
     private tabs: Map<string, Tab> = new Map()
     private lastCreatedTabByType: Map<TabType, string> = new Map()
     private lastSelectedTab: Tab | undefined = undefined
+    private tabActivityTimers: Record<string, ReturnType<typeof setTimeout>> = {}
+    private onTabTimeout?: (tabId: string) => void
+
+    constructor(props?: { onTabTimeout: (tabId: string) => void }) {
+        this.onTabTimeout = props?.onTabTimeout
+    }
 
     public addTab(tab: Tab) {
         if (this.tabs.has(tab.id)) {
@@ -32,6 +39,10 @@ export class TabsStorage {
     }
 
     public deleteTab(tabID: string) {
+        if (this.tabActivityTimers[tabID] !== undefined) {
+            clearTimeout(this.tabActivityTimers[tabID])
+            delete this.tabActivityTimers[tabID]
+        }
         this.tabs.delete(tabID)
     }
 
@@ -39,9 +50,17 @@ export class TabsStorage {
         return this.tabs.get(tabID)
     }
 
+    public getTabs(): Tab[] {
+        return Array.from(this.tabs.values())
+    }
+
+    public isTabDead(tabID: string): boolean {
+        return this.tabs.get(tabID)?.status === 'dead'
+    }
+
     public updateTabStatus(tabID: string, tabStatus: TabStatus) {
         const currentTabValue = this.tabs.get(tabID)
-        if (currentTabValue === undefined) {
+        if (currentTabValue === undefined || currentTabValue.status === 'dead') {
             return
         }
         currentTabValue.status = tabStatus
@@ -58,6 +77,20 @@ export class TabsStorage {
 
         this.tabs.set(tabID, currentTabValue)
         this.lastCreatedTabByType.set(tabType, tabID)
+    }
+
+    public resetTabTimer(tabID: string) {
+        if (this.onTabTimeout !== undefined) {
+            if (this.tabActivityTimers[tabID] !== undefined) {
+                clearTimeout(this.tabActivityTimers[tabID])
+            }
+            this.tabActivityTimers[tabID] = setTimeout(() => {
+                if (this.onTabTimeout !== undefined) {
+                    this.updateTabStatus(tabID, 'dead')
+                    this.onTabTimeout(tabID)
+                }
+            }, TabTimeoutDuration)
+        }
     }
 
     public setSelectedTab(tabID: string): string | undefined {
