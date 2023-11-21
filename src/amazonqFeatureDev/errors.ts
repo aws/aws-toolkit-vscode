@@ -32,12 +32,6 @@ export class WorkspaceFolderNotFoundError extends ToolkitError {
     }
 }
 
-export class SessionNotFoundError extends ToolkitError {
-    constructor() {
-        super(`Session was not found`, { code: 'SessionNotFound' })
-    }
-}
-
 export class UserMessageNotFoundError extends ToolkitError {
     constructor() {
         super(`Message was not found`, { code: 'MessageNotFound' })
