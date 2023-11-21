@@ -4,26 +4,37 @@
  */
 
 import assert from 'assert'
-import { AuthUtil, defaultCwScopes } from '../../../codewhisperer/util/authUtil'
+import {
+    AuthStates,
+    AuthUtil,
+    amazonQScopes,
+    codeWhispererChatScopes,
+    codeWhispererCoreScopes,
+    getChatAuthState,
+} from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from '../../credentials/testUtil'
 import { captureEventOnce } from '../../testUtil'
-import { codewhispererScopes, isAnySsoConnection, isBuilderIdConnection } from '../../../auth/connection'
+import { isAnySsoConnection, isBuilderIdConnection } from '../../../auth/connection'
+import { SinonSandbox, createSandbox } from 'sinon'
 
 const enterpriseSsoStartUrl = 'https://enterprise.awsapps.com/start'
 
 describe('AuthUtil', async function () {
     let auth: ReturnType<typeof createTestAuth>
     let authUtil: AuthUtil
+    let sandbox: SinonSandbox
 
     beforeEach(async function () {
         auth = createTestAuth()
         authUtil = new AuthUtil(auth)
+        sandbox = createSandbox()
     })
 
     afterEach(async function () {
         await auth.logout()
+        sandbox.restore()
     })
 
     it('if there is no valid AwsBuilderID conn, it will create one and use it', async function () {
@@ -36,6 +47,7 @@ describe('AuthUtil', async function () {
         const conn = authUtil.conn
         assert.strictEqual(conn?.type, 'sso')
         assert.strictEqual(conn.label, 'AWS Builder ID')
+        assert.deepStrictEqual(conn.scopes, codeWhispererChatScopes)
     })
 
     it('if there is no valid enterprise SSO conn, will create and use one', async function () {
@@ -66,7 +78,7 @@ describe('AuthUtil', async function () {
         const cwConn = authUtil.conn
         assert.strictEqual(cwConn?.type, 'sso')
         assert.strictEqual(cwConn.label, 'IAM Identity Center (enterprise)')
-        assert.deepStrictEqual(cwConn.scopes, [randomScope, ...defaultCwScopes])
+        assert.deepStrictEqual(cwConn.scopes, [randomScope, ...amazonQScopes])
     })
 
     it('should show reauthenticate prompt', async function () {
@@ -76,7 +88,6 @@ describe('AuthUtil', async function () {
             }
         })
 
-        await auth.createInvalidSsoConnection(createBuilderIdProfile({ scopes: codewhispererScopes }))
         await authUtil.showReauthenticatePrompt()
 
         const warningMessage = getTestWindow().shownMessages.filter(m => m.severity === SeverityLevel.Information)
@@ -87,8 +98,40 @@ describe('AuthUtil', async function () {
         )
     })
 
+    it('reauthenticate adds missing CodeWhisperer Chat Builder ID scopes', async function () {
+        const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+        await auth.useConnection(conn)
+
+        getTestWindow().onDidShowMessage(m => {
+            m.selectItem('Connect with AWS')
+        })
+        sandbox.stub(auth, 'reauthenticate')
+
+        await authUtil.showReauthenticatePrompt()
+
+        assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererChatScopes)
+    })
+
+    it('reauthenticate adds missing Amazon Q IdC scopes', async function () {
+        const conn = await auth.createConnection(
+            createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
+        )
+        await auth.useConnection(conn)
+
+        getTestWindow().onDidShowMessage(m => {
+            m.selectItem('Connect with AWS')
+        })
+        sandbox.stub(auth, 'reauthenticate')
+
+        await authUtil.showReauthenticatePrompt()
+
+        assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.deepStrictEqual(authUtil.conn?.scopes, amazonQScopes)
+    })
+
     it('CodeWhisperer uses fallback connection when switching to an unsupported connection', async function () {
-        const supportedConn = await auth.createConnection(createBuilderIdProfile({ scopes: codewhispererScopes }))
+        const supportedConn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererChatScopes }))
         const unsupportedConn = await auth.createConnection(createSsoProfile())
 
         await auth.useConnection(supportedConn)
@@ -104,6 +147,8 @@ describe('AuthUtil', async function () {
         assert.ok(authUtil.isConnected())
         assert.ok(authUtil.isUsingSavedConnection)
         assert.notStrictEqual(auth.activeConnection?.id, authUtil.conn?.id)
+        assert.strictEqual(authUtil.conn?.type, 'sso')
+        assert.deepStrictEqual(authUtil.conn?.scopes, codeWhispererChatScopes)
     })
 
     it('does not prompt to sign out of duplicate builder ID connections', async function () {
@@ -128,6 +173,7 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authUtil.conn?.id, upgradeableConn.id)
         assert.strictEqual(authUtil.conn.startUrl, upgradeableConn.startUrl)
         assert.strictEqual(authUtil.conn.ssoRegion, upgradeableConn.ssoRegion)
+        assert.deepStrictEqual(authUtil.conn.scopes, codeWhispererChatScopes)
         assert.strictEqual((await auth.listConnections()).filter(isAnySsoConnection).length, 1)
     })
 
@@ -139,5 +185,112 @@ describe('AuthUtil', async function () {
         assert.strictEqual(authUtil.reformatStartUrl(expected + '#/'), expected)
         assert.strictEqual(authUtil.reformatStartUrl(expected + '/#/'), expected)
         assert.strictEqual(authUtil.reformatStartUrl(expected + '####'), expected)
+    })
+})
+
+describe('getChatAuthState()', function () {
+    let auth: ReturnType<typeof createTestAuth>
+    let authUtil: AuthUtil
+
+    beforeEach(async function () {
+        auth = createTestAuth()
+        authUtil = new AuthUtil(auth)
+    })
+
+    afterEach(async function () {
+        await auth.logout()
+    })
+
+    it('indicates nothing connected when no auth connection exists', async function () {
+        const result = getChatAuthState(authUtil)
+        assert.deepStrictEqual(result, {
+            codewhispererChat: AuthStates.disconnected,
+            codewhispererCore: AuthStates.disconnected,
+            amazonQ: AuthStates.disconnected,
+        })
+    })
+
+    describe('Builder ID', function () {
+        it('indicates only CodeWhisperer core is connected when only CW core scopes are set', async function () {
+            const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererCoreScopes }))
+            await auth.useConnection(conn)
+
+            const result = getChatAuthState(authUtil)
+            assert.deepStrictEqual(result, {
+                codewhispererCore: AuthStates.connected,
+                codewhispererChat: AuthStates.expired,
+                amazonQ: AuthStates.unsupported,
+            })
+        })
+
+        it('indicates all SUPPORTED features connected when all scopes are set', async function () {
+            const conn = await auth.createConnection(createBuilderIdProfile({ scopes: codeWhispererChatScopes }))
+            await auth.useConnection(conn)
+
+            const result = getChatAuthState(authUtil)
+            assert.deepStrictEqual(result, {
+                codewhispererCore: AuthStates.connected,
+                codewhispererChat: AuthStates.connected,
+                amazonQ: AuthStates.unsupported,
+            })
+        })
+
+        it('indicates all SUPPORTED features expired when connection is invalid', async function () {
+            const conn = await auth.createInvalidSsoConnection(
+                createBuilderIdProfile({ scopes: codeWhispererChatScopes })
+            )
+            await auth.useConnection(conn)
+
+            const result = getChatAuthState(authUtil)
+            assert.deepStrictEqual(result, {
+                codewhispererCore: AuthStates.expired,
+                codewhispererChat: AuthStates.expired,
+                amazonQ: AuthStates.unsupported,
+            })
+        })
+    })
+
+    describe('Identity Center', function () {
+        it('indicates only CW core is connected when only CW core scopes are set', async function () {
+            const conn = await auth.createConnection(
+                createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: codeWhispererCoreScopes })
+            )
+            await auth.useConnection(conn)
+
+            const result = getChatAuthState(authUtil)
+            assert.deepStrictEqual(result, {
+                codewhispererCore: AuthStates.connected,
+                codewhispererChat: AuthStates.expired,
+                amazonQ: AuthStates.expired,
+            })
+        })
+
+        it('indicates all features connected when all scopes are set', async function () {
+            const conn = await auth.createConnection(
+                createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
+            )
+            await auth.useConnection(conn)
+
+            const result = getChatAuthState(authUtil)
+            assert.deepStrictEqual(result, {
+                codewhispererCore: AuthStates.connected,
+                codewhispererChat: AuthStates.connected,
+                amazonQ: AuthStates.connected,
+            })
+        })
+
+        it('indicates all features expired when connection is invalid', async function () {
+            const conn = await auth.createInvalidSsoConnection(
+                createSsoProfile({ startUrl: enterpriseSsoStartUrl, scopes: amazonQScopes })
+            )
+            await auth.useConnection(conn)
+
+            const result = getChatAuthState(authUtil)
+            assert.deepStrictEqual(result, {
+                codewhispererCore: AuthStates.expired,
+                codewhispererChat: AuthStates.expired,
+                amazonQ: AuthStates.expired,
+            })
+        })
     })
 })

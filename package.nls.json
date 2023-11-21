@@ -205,12 +205,19 @@
     "AWS.command.codewhisperer.configure": "CodeWhisperer Settings",
     "AWS.command.codewhisperer.signout": "Sign Out",
     "AWS.command.codewhisperer.reconnect": "Reconnect",
+    "AWS.command.codewhisperer.openReferencePanel": "Open Code Reference Log",
     "AWS.command.q.welcome": "Amazon Q (Preview) Welcome Page",
+    "AWS.command.q.acceptChanges": "Accept",
+    "AWS.command.q.rejectChanges": "Reject",
     "AWS.lambda.explorerTitle": "Explorer",
     "AWS.developerTools.explorerTitle": "Developer Tools",
+    "AWS.codewhisperer.explorerTitle": "CodeWhisperer",
+    "AWS.appcomposer.explorerTitle": "Application Composer",
+    "AWS.cdk.explorerTitle": "CDK",
+    "AWS.codecatalyst.explorerTitle": "CodeCatalyst",
     "AWS.cwl.limit.desc": "Maximum amount of log entries pulled per request from CloudWatch Logs (max 10000)",
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
-    "AWS.submenu.amazonqEditorContextSubmenu.title": "Amazon Q (Preview)",
+    "AWS.submenu.amazonqEditorContextSubmenu.title": "Send to Amazon Q",
     "AWS.submenu.auth.title": "Authentication",
     "AWS.generic.create": "Create...",
     "AWS.generic.save": "Save",
@@ -240,5 +247,6 @@
     "AWS.codewhisperer.submenu.title": "Manage CodeWhisperer",
     "AWS.amazonq.submenu.title": "Manage Amazon Q (Preview)",
     "AWS.amazonq.title": "Amazon Q (Preview)",
-    "AWS.amazonq.chat": "Chat"
+    "AWS.amazonq.chat": "Chat",
+    "AWS.amazonq.learnMore": "Learn More About Amazon Q (Preview)"
 }

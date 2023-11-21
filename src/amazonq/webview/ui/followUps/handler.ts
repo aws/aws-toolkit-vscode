@@ -7,32 +7,37 @@ import { ChatItemFollowUp, ChatItemType, MynahUI } from '@aws/mynah-ui-chat'
 import { Connector } from '../connector'
 import { TabsStorage } from '../storages/tabsStorage'
 import { WelcomeFollowupType } from '../apps/amazonqCommonsConnector'
-import { TabDataGenerator } from '../tabs/generator'
 import { AuthFollowUpType } from './generator'
 
 export interface FollowUpInteractionHandlerProps {
     mynahUI: MynahUI
     connector: Connector
     tabsStorage: TabsStorage
-    isWeaverbirdEnabled: boolean
 }
 
 export class FollowUpInteractionHandler {
     private mynahUI: MynahUI
     private connector: Connector
     private tabsStorage: TabsStorage
-    private tabDataGenerator: TabDataGenerator
 
     constructor(props: FollowUpInteractionHandlerProps) {
         this.mynahUI = props.mynahUI
         this.connector = props.connector
         this.tabsStorage = props.tabsStorage
-        this.tabDataGenerator = new TabDataGenerator({ isWeaverbirdEnabled: props.isWeaverbirdEnabled })
     }
 
     public onFollowUpClicked(tabID: string, messageId: string, followUp: ChatItemFollowUp) {
-        if (followUp.type !== undefined && ['full-auth', 're-auth'].includes(followUp.type)) {
+        if (
+            followUp.type !== undefined &&
+            ['full-auth', 're-auth', 'missing_scopes', 'use-supported-auth'].includes(followUp.type)
+        ) {
             this.connector.onAuthFollowUpClicked(tabID, followUp.type as AuthFollowUpType)
+            return
+        }
+        if (followUp.type !== undefined && followUp.type === 'help') {
+            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
+            this.connector.onUpdateTabType(tabID)
+            this.connector.help(tabID)
             return
         }
         // we need to check if there is a prompt
@@ -52,36 +57,19 @@ export class FollowUpInteractionHandler {
                 body: '',
             })
             this.tabsStorage.updateTabStatus(tabID, 'busy')
+            this.tabsStorage.resetTabTimer(tabID)
+
+            if (followUp.type !== undefined && followUp.type === 'init-prompt') {
+                this.connector.requestGenerativeAIAnswer(tabID, {
+                    chatMessage: followUp.prompt,
+                })
+                return
+            }
         }
         this.connector.onFollowUpClicked(tabID, messageId, followUp)
     }
 
     public onWelcomeFollowUpClicked(tabID: string, welcomeFollowUpType: WelcomeFollowupType) {
-        if (welcomeFollowUpType === 'assign-code-task') {
-            const newTabId = this.mynahUI.updateStore(
-                '',
-                this.tabDataGenerator.getTabData('wb', true, 'Q - Dev', '/dev')
-            )
-            // TODO remove this since it will be added with the onTabAdd and onTabAdd is now sync,
-            // It means that it cannot trigger after the updateStore function returns.
-            this.tabsStorage.addTab({
-                id: newTabId,
-                status: 'busy',
-                type: 'unknown',
-                isSelected: true,
-                openInteractionType: 'click',
-            })
-
-            this.tabsStorage.updateTabTypeFromUnknown(tabID, 'cwc')
-            this.connector.onUpdateTabType(tabID)
-            this.tabsStorage.updateTabTypeFromUnknown(newTabId, 'wb')
-            this.connector.onUpdateTabType(newTabId)
-
-            // Let weaverbird know a wb tab has been opened
-            this.connector.onKnownTabOpen(newTabId)
-            return
-        }
-
         if (welcomeFollowUpType === 'continue-to-chat') {
             this.mynahUI.addChatItem(tabID, {
                 type: ChatItemType.ANSWER,

@@ -9,7 +9,7 @@ import * as sinon from 'sinon'
 import assert from 'assert'
 import { ToolkitError } from '../../../shared/errors'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { Commands, defaultTelemetryThrottleMs } from '../../../shared/vscode/commands2'
+import { Commands, defaultTelemetryThrottleMs, unsetSource } from '../../../shared/vscode/commands2'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 
@@ -153,7 +153,9 @@ describe('runCommand', function () {
                 assert.strictEqual(events.length, 1)
             })
 
-            it('throws when compositeKey has key out of index', async function () {
+            it('sets "unset" source if it does not exist in args', async function () {
+                // We do this so that an error isn't thrown but will indicate
+                // something is wrong in telemetry that needs to be fixed
                 const command = Commands.register(
                     {
                         id: '_test.telemetryName.outOfIndex',
@@ -161,30 +163,13 @@ describe('runCommand', function () {
                     },
                     (source: any) => {}
                 )
-                await assert.rejects(
-                    () => command.execute(1),
-                    new ToolkitError(`Unique arg indexes exceed the # of args for: "_test.telemetryName.outOfIndex"`)
-                )
-            })
-
-            it('throws when typeof indexed arg is not supported', async function () {
-                const command = Commands.register(
-                    {
-                        id: '_test.telemetryName.unsupportedType',
-                        compositeKey: { 0: 'source' },
-                    },
-                    (source: any) => {}
-                )
-
-                // supported
-                await command.execute('stringsAreSupported')
-                await command.execute(true)
-
-                // unsupported
-                await assert.rejects(
-                    () => command.execute(1),
-                    new ToolkitError(`Cannot create unique key for type: "number"`)
-                )
+                await command.execute(1)
+                assertTelemetry('vscode_executeCommand', {
+                    passive: true,
+                    command: command.id,
+                    result: 'Succeeded',
+                    source: unsetSource,
+                })
             })
         })
     })

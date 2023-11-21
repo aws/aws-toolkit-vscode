@@ -7,7 +7,7 @@ import { ChatItem, ChatItemFollowUp, ChatItemType, FeedbackPayload } from '@aws/
 import { ExtensionMessage } from '../commands'
 import { CodeReference } from './amazonqCommonsConnector'
 import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
-import { AuthFollowUpType, FollowUpGenerator } from '../followUps/generator'
+import { FollowUpGenerator } from '../followUps/generator'
 
 interface ChatPayload {
     chatMessage: string
@@ -18,7 +18,7 @@ export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
     onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string
+    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
     onError: (tabID: string, message: string, title: string) => void
     onWarning: (tabID: string, message: string, title: string) => void
     tabsStorage: TabsStorage
@@ -38,7 +38,7 @@ export class Connector {
         this.onWarning = props.onWarning
         this.onError = props.onError
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
-        this.followUpGenerator = new FollowUpGenerator({ isWeaverbirdEnabled: false })
+        this.followUpGenerator = new FollowUpGenerator()
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -56,15 +56,6 @@ export class Connector {
             tabID,
             messageId,
             link,
-            tabType: 'cwc',
-        })
-    }
-
-    authFollowUpClicked = (tabID: string, authType: AuthFollowUpType) => {
-        this.sendMessageToExtension({
-            command: 'auth-follow-up-was-clicked',
-            authType,
-            tabID,
             tabType: 'cwc',
         })
     }
@@ -187,6 +178,15 @@ export class Connector {
         })
     }
 
+    help = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'help',
+            chatMessage: '',
+            tabType: 'cwc',
+        })
+    }
+
     private sendTriggerMessageProcessed = async (requestID: any): Promise<void> => {
         this.sendMessageToExtension({
             command: 'trigger-message-processed',
@@ -203,7 +203,10 @@ export class Connector {
             },
             messageData.command
         )
-        this.sendTriggerTabIDReceived(messageData.triggerID, triggerTabID)
+        this.sendTriggerTabIDReceived(
+            messageData.triggerID,
+            triggerTabID !== undefined ? triggerTabID : 'no-available-tabs'
+        )
     }
 
     private sendTriggerTabIDReceived = async (triggerID: string, tabID: string): Promise<void> => {
@@ -227,7 +230,7 @@ export class Connector {
             const followUps =
                 messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
-                          text: 'Would you like to follow up with one of these?',
+                          text: 'Suggested follow up questions:',
                           options: messageData.followUps,
                       }
                     : undefined
@@ -274,7 +277,7 @@ export class Connector {
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
-                              text: 'Would you like to follow up with one of these?',
+                              text: 'Suggested follow up questions:',
                               options: messageData.followUps,
                           }
                         : undefined,
@@ -283,6 +286,15 @@ export class Connector {
 
             return
         }
+    }
+
+    transform = (tabID: string): void => {
+        this.sendMessageToExtension({
+            tabID: tabID,
+            command: 'transform',
+            chatMessage: 'transform',
+            tabType: 'cwc',
+        })
     }
 
     private processAuthNeededException = async (messageData: any): Promise<void> => {

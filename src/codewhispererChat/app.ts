@@ -140,7 +140,11 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
     }
 
-    new CwChatController(cwChatControllerMessageListeners, appContext.getAppsToWebViewMessagePublisher())
+    new CwChatController(
+        cwChatControllerMessageListeners,
+        appContext.getAppsToWebViewMessagePublisher(),
+        appContext.onDidChangeAmazonQVisibility.event
+    )
 
     const cwChatUIInputEventEmitter = new EventEmitter<any>()
 

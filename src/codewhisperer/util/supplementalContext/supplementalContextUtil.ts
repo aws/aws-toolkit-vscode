@@ -20,7 +20,7 @@ export async function fetchSupplementalContext(
     cancellationToken: vscode.CancellationToken
 ): Promise<CodeWhispererSupplementalContext | undefined> {
     const timesBeforeFetching = performance.now()
-    const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor.document.languageId)
+    const dependencyGraph = DependencyGraphFactory.getDependencyGraph(editor)
 
     const isUtg = await isTestFile(editor.document.uri.fsPath, {
         languageId: editor.document.languageId,

@@ -1,35 +1,41 @@
 // smithy-typescript generated code
 import {
-    CodeWhispererStreamingClientResolvedConfig,
-    ServiceInputTypes,
-    ServiceOutputTypes,
-} from '../CodeWhispererStreamingClient'
+  CodeWhispererStreamingClientResolvedConfig,
+  ServiceInputTypes,
+  ServiceOutputTypes,
+} from "../CodeWhispererStreamingClient";
 import {
-    GenerateAssistantResponseRequest,
-    GenerateAssistantResponseRequestFilterSensitiveLog,
-    GenerateAssistantResponseResponse,
-    GenerateAssistantResponseResponseFilterSensitiveLog,
-} from '../models/models_0'
-import { de_GenerateAssistantResponseCommand, se_GenerateAssistantResponseCommand } from '../protocols/Aws_restJson1'
-import { getSerdePlugin } from '@smithy/middleware-serde'
-import { HttpRequest as __HttpRequest, HttpResponse as __HttpResponse } from '@smithy/protocol-http'
-import { Command as $Command } from '@smithy/smithy-client'
+  GenerateAssistantResponseRequest,
+  GenerateAssistantResponseRequestFilterSensitiveLog,
+  GenerateAssistantResponseResponse,
+  GenerateAssistantResponseResponseFilterSensitiveLog,
+} from "../models/models_0";
 import {
-    FinalizeHandlerArguments,
-    Handler,
-    HandlerExecutionContext,
-    MiddlewareStack,
-    SMITHY_CONTEXT_KEY,
-    EventStreamSerdeContext as __EventStreamSerdeContext,
-    HttpHandlerOptions as __HttpHandlerOptions,
-    MetadataBearer as __MetadataBearer,
-    SerdeContext as __SerdeContext,
-} from '@smithy/types'
+  de_GenerateAssistantResponseCommand,
+  se_GenerateAssistantResponseCommand,
+} from "../protocols/Aws_restJson1";
+import { getSerdePlugin } from "@smithy/middleware-serde";
+import {
+  HttpRequest as __HttpRequest,
+  HttpResponse as __HttpResponse,
+} from "@smithy/protocol-http";
+import { Command as $Command } from "@smithy/smithy-client";
+import {
+  FinalizeHandlerArguments,
+  Handler,
+  HandlerExecutionContext,
+  MiddlewareStack,
+  SMITHY_CONTEXT_KEY,
+  EventStreamSerdeContext as __EventStreamSerdeContext,
+  HttpHandlerOptions as __HttpHandlerOptions,
+  MetadataBearer as __MetadataBearer,
+  SerdeContext as __SerdeContext,
+} from "@smithy/types";
 
 /**
  * @public
  */
-export { __MetadataBearer, $Command }
+export { __MetadataBearer, $Command };
 /**
  * @public
  *
@@ -226,6 +232,7 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * const command = new GenerateAssistantResponseCommand(input);
  * const response = await client.send(command);
  * // { // GenerateAssistantResponseResponse
+ * //   conversationId: "STRING_VALUE", // required
  * //   generateAssistantResponseResponse: { // ChatResponseStream Union: only one key present
  * //     messageMetadataEvent: { // MessageMetadataEvent
  * //       conversationId: "STRING_VALUE",
@@ -291,74 +298,75 @@ export interface GenerateAssistantResponseCommandOutput extends GenerateAssistan
  * <p>Base exception class for all service exceptions from CodeWhispererStreaming service.</p>
  *
  */
-export class GenerateAssistantResponseCommand extends $Command<
-    GenerateAssistantResponseCommandInput,
-    GenerateAssistantResponseCommandOutput,
-    CodeWhispererStreamingClientResolvedConfig
-> {
-    // Start section: command_properties
-    // End section: command_properties
+export class GenerateAssistantResponseCommand extends $Command<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput, CodeWhispererStreamingClientResolvedConfig> {
+  // Start section: command_properties
+  // End section: command_properties
 
-    /**
-     * @public
-     */
-    constructor(readonly input: GenerateAssistantResponseCommandInput) {
-        // Start section: command_constructor
-        super()
-        // End section: command_constructor
+  /**
+   * @public
+   */
+  constructor(readonly input: GenerateAssistantResponseCommandInput) {
+    // Start section: command_constructor
+    super();
+    // End section: command_constructor
+  }
+
+  /**
+   * @internal
+   */
+  resolveMiddleware(
+    clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
+    configuration: CodeWhispererStreamingClientResolvedConfig,
+    options?: __HttpHandlerOptions
+  ): Handler<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput> {
+    this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize));
+
+    const stack = clientStack.concat(this.middlewareStack);
+
+    const { logger } = configuration;
+    const clientName = "CodeWhispererStreamingClient";
+    const commandName = "GenerateAssistantResponseCommand";
+    const handlerExecutionContext: HandlerExecutionContext = {
+      logger,
+      clientName,
+      commandName,
+      inputFilterSensitiveLog:
+        GenerateAssistantResponseRequestFilterSensitiveLog,
+      outputFilterSensitiveLog:
+        GenerateAssistantResponseResponseFilterSensitiveLog,
+      [SMITHY_CONTEXT_KEY]: {
+        service: "AmazonCodeWhispererStreamingService",
+        operation: "GenerateAssistantResponse",
+      },
     }
+    const { requestHandler } = configuration;
+    return stack.resolve(
+      (request: FinalizeHandlerArguments<any>) =>
+        requestHandler.handle(request.request as __HttpRequest, options || {}),
+      handlerExecutionContext
+    );
+  }
 
-    /**
-     * @internal
-     */
-    resolveMiddleware(
-        clientStack: MiddlewareStack<ServiceInputTypes, ServiceOutputTypes>,
-        configuration: CodeWhispererStreamingClientResolvedConfig,
-        options?: __HttpHandlerOptions
-    ): Handler<GenerateAssistantResponseCommandInput, GenerateAssistantResponseCommandOutput> {
-        this.middlewareStack.use(getSerdePlugin(configuration, this.serialize, this.deserialize))
+  /**
+   * @internal
+   */
+  private serialize(
+    input: GenerateAssistantResponseCommandInput,
+    context: __SerdeContext
+  ): Promise<__HttpRequest> {
+    return se_GenerateAssistantResponseCommand(input, context);
+  }
 
-        const stack = clientStack.concat(this.middlewareStack)
+  /**
+   * @internal
+   */
+  private deserialize(
+    output: __HttpResponse,
+    context: __SerdeContext & __EventStreamSerdeContext
+  ): Promise<GenerateAssistantResponseCommandOutput> {
+    return de_GenerateAssistantResponseCommand(output, context);
+  }
 
-        const { logger } = configuration
-        const clientName = 'CodeWhispererStreamingClient'
-        const commandName = 'GenerateAssistantResponseCommand'
-        const handlerExecutionContext: HandlerExecutionContext = {
-            logger,
-            clientName,
-            commandName,
-            inputFilterSensitiveLog: GenerateAssistantResponseRequestFilterSensitiveLog,
-            outputFilterSensitiveLog: GenerateAssistantResponseResponseFilterSensitiveLog,
-            [SMITHY_CONTEXT_KEY]: {
-                service: 'AmazonCodeWhispererStreamingService',
-                operation: 'GenerateAssistantResponse',
-            },
-        }
-        const { requestHandler } = configuration
-        return stack.resolve(
-            (request: FinalizeHandlerArguments<any>) =>
-                requestHandler.handle(request.request as __HttpRequest, options || {}),
-            handlerExecutionContext
-        )
-    }
-
-    /**
-     * @internal
-     */
-    private serialize(input: GenerateAssistantResponseCommandInput, context: __SerdeContext): Promise<__HttpRequest> {
-        return se_GenerateAssistantResponseCommand(input, context)
-    }
-
-    /**
-     * @internal
-     */
-    private deserialize(
-        output: __HttpResponse,
-        context: __SerdeContext & __EventStreamSerdeContext
-    ): Promise<GenerateAssistantResponseCommandOutput> {
-        return de_GenerateAssistantResponseCommand(output, context)
-    }
-
-    // Start section: command_body_extra
-    // End section: command_body_extra
+  // Start section: command_body_extra
+  // End section: command_body_extra
 }

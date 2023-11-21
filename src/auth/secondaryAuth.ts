@@ -105,8 +105,12 @@ export class SecondaryAuth<T extends Connection = Connection> {
             ) {
                 await this.clearSavedConnection()
             } else {
+                const currentConn = this.activeConnection
                 this.#activeConnection = conn
-                this.#onDidChangeActiveConnection.fire(this.activeConnection)
+                if (currentConn?.id !== this.activeConnection?.id) {
+                    // The user will get a different active connection from before, so notify them.
+                    this.#onDidChangeActiveConnection.fire(this.activeConnection)
+                }
             }
         }
 
@@ -157,13 +161,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
     /**
      * Globally deletes the connection that this secondary auth is using,
      * effectively doing a signout.
-     *
-     * The deletion automatically propogates to the other users of this
-     * connection, assuming they've configured the event listeners.
      */
     public async deleteConnection() {
         if (this.activeConnection) {
             await this.auth.deleteConnection(this.activeConnection)
+            await this.clearSavedConnection()
         }
     }
 

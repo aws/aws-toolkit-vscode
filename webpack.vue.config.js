@@ -58,6 +58,10 @@ const vueConfig = {
                 test: /\.css$/,
                 use: ['vue-style-loader', 'css-loader'],
             },
+            {
+                test: /\.(png|jpg|gif|svg)$/,
+                use: 'file-loader',
+            },
             // sass loaders for Mynah
             { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] }
         ),
