@@ -368,8 +368,9 @@ export class FeatureDevController {
                 ],
             })
 
-            // Ensure that chat input is disabled until they click a followup
-            this.messenger.sendChatInputEnabled(message.tabID, false)
+            // Ensure that chat input is enabled so that they can provide additional iterations if they choose
+            this.messenger.sendChatInputEnabled(message.tabID, true)
+            this.messenger.sendUpdatePlaceholder(message.tabID, 'Provide input on additional improvements')
         } catch (err: any) {
             this.messenger.sendErrorMessage(
                 createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
@@ -587,15 +588,18 @@ To learn more, visit the _Amazon Q User Guide_.
     }
 
     private async newTask(message: any) {
-        const tabOpenedMessage = 'A new tab has been opened.'
+        // Old session for the tab is ending, delete it so we can create a new one for the message id
+        this.sessionStorage.deleteSession(message.tabID)
+
+        // Re-run the opening flow, where we check auth + create a session
+        this.tabOpened(message)
+
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: tabOpenedMessage,
+            message: 'What change would you like to make?',
         })
-        this.messenger.openNewTask()
-        this.messenger.sendUpdatePlaceholder(message.tabID, tabOpenedMessage)
-        this.messenger.sendChatInputEnabled(message.tabID, false)
+        this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
 
         const session = await this.sessionStorage.getSession(message.tabID)
         telemetry.amazonq_endChat.emit({
