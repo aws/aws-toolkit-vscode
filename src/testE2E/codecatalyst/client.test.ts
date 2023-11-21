@@ -86,7 +86,7 @@ let projectName: CodeCatalystProject['name']
  *     integ tests, but using the ssh hostname that we get from
  *     {@link prepareDevEnvConnection}.
  */
-describe.skip('Test how this codebase uses the CodeCatalyst API', function () {
+describe('Test how this codebase uses the CodeCatalyst API', function () {
     let client: CodeCatalystClient
     let commands: CodeCatalystCommands
     let webviewClient: CodeCatalystCreateWebview
