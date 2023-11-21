@@ -218,20 +218,22 @@ export class AuthUtil {
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
-        const existingConn = (await this.auth.listConnections()).find(
+        let conn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
 
-        if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, amazonQScopes))
-            return this.secondaryAuth.useNewConnection(conn)
-        } else if (isValidAmazonQConnection(existingConn)) {
-            return this.secondaryAuth.useNewConnection(existingConn)
-        } else if (isSsoConnection(existingConn)) {
-            const conn = await this.secondaryAuth.addScopes(existingConn, amazonQScopes)
-            return this.secondaryAuth.useNewConnection(conn)
+        if (!conn) {
+            conn = await this.auth.createConnection(createSsoProfile(startUrl, region, amazonQScopes))
+        } else if (!isValidAmazonQConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, amazonQScopes)
         }
+
+        if (this.auth.getConnectionState(conn) === 'invalid') {
+            conn = await this.auth.reauthenticate(conn)
+        }
+
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public static get instance() {
