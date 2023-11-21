@@ -60,9 +60,9 @@ export function skipTest(testOrCtx: Mocha.Context | Mocha.Test | undefined, reas
     let test
 
     if (testOrCtx?.type === 'test') {
-        test = (testOrCtx as Mocha.Test)
+        test = testOrCtx as Mocha.Test
     } else {
-        const context = (testOrCtx as Mocha.Context | undefined)
+        const context = testOrCtx as Mocha.Context | undefined
         test = context?.currentTest ?? context?.test
     }
 
@@ -222,10 +222,17 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
 
             const openStub = patchObject(vscode.env, 'openExternal', async target => {
                 try {
+                    const url = new URL(target.toString(true))
+                    const userCode = url.searchParams.get('user_code')
+
+                    // TODO: Update this to just be the full URL if the authorizer lambda ever
+                    // supports the verification URI with user code embedded (VerificationUriComplete).
+                    const verificationUri = url.origin
+
                     await invokeLambda(lambdaId, {
                         secret,
-                        userCode: await vscode.env.clipboard.readText(),
-                        verificationUri: target.toString(),
+                        userCode,
+                        verificationUri,
                     })
                 } finally {
                     openStub.dispose()
