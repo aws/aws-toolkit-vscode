@@ -210,6 +210,10 @@ export class ChatController {
                 if (quickActionCommand === 'help') {
                     this.generateStaticTextResponse('quick-action-help', triggerID)
                     return
+                } else if (quickActionCommand === 'transform') {
+                    this.generateStaticTextResponse('transform', triggerID)
+                    processTransformByQ()
+                    return
                 }
             })
             .catch(e => {
@@ -452,9 +456,6 @@ export class ChatController {
             return
         }
         switch (message.command) {
-            case 'transform':
-                processTransformByQ()
-                return
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
                 this.triggerEventsStorage.removeTabEvents(message.tabID)

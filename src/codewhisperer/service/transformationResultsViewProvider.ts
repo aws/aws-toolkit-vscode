@@ -13,7 +13,9 @@ import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
-import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../amazonqFeatureDev/util/download'
+import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
+import { ToolkitError } from '../../shared/errors'
+
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -256,17 +258,23 @@ export class ProposedTransformationExplorer {
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
                 'ExportResultsArchive.zip'
+
             )
             const cwStreamingClient = await this.featureDevClient.getStreamingClient()
-
-            await downloadExportResultArchive(
-                cwStreamingClient,
-                {
-                    exportId: transformByQState.getJobId(),
-                    exportIntent: ExportIntent.TRANSFORMATION,
-                },
-                pathToArchive
-            )
+            try {
+                await downloadExportResultArchive(
+                    cwStreamingClient,
+                    {
+                        exportId: transformByQState.getJobId(),
+                        exportIntent: ExportIntent.TRANSFORMATION,
+                    },
+                    pathToArchive
+                )
+            } catch (error) {
+                // This allows the customer to retry the download
+                vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+                throw new ToolkitError('There was a problem fetching the transformed code.')
+            }
             const pathContainingArchive = path.dirname(pathToArchive)
             console.log(`Downloaded transformation results archive to ${pathToArchive}`)
             const zip = new AdmZip(pathToArchive)

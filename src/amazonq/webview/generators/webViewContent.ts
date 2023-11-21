@@ -5,8 +5,8 @@
 
 import path from 'path'
 import { Uri, Webview } from 'vscode'
-import { gumbyEnabled, featureDevEnabled } from '../../../amazonqFeatureDev/config'
-import { AuthUtil, getChatAuthState } from '../../../codewhisperer/util/authUtil'
+import { featureDevEnabled, gumbyEnabled } from '../../../amazonqFeatureDev/config'
+import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 
 export class WebViewContentGenerator {
     public async generate(extensionURI: Uri, webView: Webview): Promise<string> {
@@ -47,7 +47,7 @@ export class WebViewContentGenerator {
             const init = () => {
                 createMynahUI(acquireVsCodeApi(), ${
                     featureDevEnabled && (await getChatAuthState()).amazonQ === 'connected'
-                }, ${gumbyEnabled && AuthUtil.instance.isEnterpriseSsoInUse()});
+                }, ${gumbyEnabled && (await getChatAuthState()).amazonQ === 'connected'});
             }
     </script>
         `

@@ -7,6 +7,7 @@
  * SDK Client
  */
 
+
 // export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const endpoint = 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/' // gamma IAD
@@ -281,8 +282,6 @@ export const newCustomizationAvailableKey = 'CODEWHISPERER_NEW_CUSTOMIZATION_AVA
 
 // Transform by Q
 
-export const logoPath = '../../resources/icons/aws/codewhisperer/transform-landing-page-icon.svg'
-
 export const selectTargetLanguagePrompt = 'Select the target language'
 
 export const selectTargetVersionPrompt = 'Select the target version'
@@ -302,24 +301,30 @@ export const transformByQCancelledMessage = 'Transform by Q cancelled'
 export const transformByQCompleted = 'Transform by Q completed'
 
 export const noPomXmlFoundMessage =
-    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations.'
+    'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
 
 export const noOngoingJobMessage = 'No job is in-progress at the moment'
 
-export const jobInProgressMessage = 'Job is in-progress'
+export const jobInProgressMessage = 'Job is already in-progress'
 
 export const cancellationInProgressMessage = 'Cancellation is in-progress'
 
 export const noSupportedJavaProjectsFoundMessage =
-    'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11.'
+    'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
 
 export const dependencyDisclaimer =
-    'We have detected your project to be in JDK 8/11. This project is eligible for upgrade to Java 17. If you decide to upgrade, we will also access 1P dependencies from your local disk. Please build your code locally at least once for Amazon Q to access your 1P dependencies from your local disk. If you would like to upgrade to Java 17, please click transform or else cancel.'
+    'We have detected your project to be in Java JAVA_VERSION_HERE. This project is eligible for upgrade to Java 17.\n If you decide to upgrade, we will also access first-party dependencies from your local disk. Please build your code for Amazon Q to access these dependencies.\n If you would like to upgrade to Java 17, please click transform or else cancel.'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const dependencyErrorMessage =
     'There was an error in zipping up project dependencies. Please make sure you have Maven installed and the project has been been built.'
+
+export const planIntroductionMessage =
+    'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
+
+export const planDisclaimerMessage =
+    '**Proposed transformation changes** \n\n *Please note that the plan is to be used for guidance only. The final code changes produced may deviate.*\n\n\n'
 
 export const JDK8VersionNumber = '52'
 
@@ -335,13 +340,15 @@ export const transformByQStateFailedMessage = 'failed'
 
 export const transformByQStateSucceededMessage = 'succeeded'
 
+export const transformByQStatePartialSuccessMessage = 'partially succeeded'
+
 export const transformByQStoppedState = 'STOPPED'
 
 export const transformationJobPollingIntervalSeconds = 10
 
-export const transformationJobTimeoutSeconds = 36000 // TODO: adjust
+export const transformationJobTimeoutSeconds = 72000
 
-export const progressIntervalMs = 1000
+export const progressIntervalMs = 3000
 
 export const targetLanguages = ['Java']
 

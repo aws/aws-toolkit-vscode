@@ -359,7 +359,7 @@
             "type": "structure",
             "required": ["programmingLanguage", "acceptedCharacterCount", "totalCharacterCount", "timestamp"],
             "members": {
-                "customizationArn": { "shape": "ResourceArn" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalCharacterCount": { "shape": "PrimitiveInteger" },
@@ -512,10 +512,16 @@
             "type": "structure",
             "required": ["arn"],
             "members": {
-                "arn": { "shape": "ResourceArn" },
+                "arn": { "shape": "CustomizationArn" },
                 "name": { "shape": "CustomizationName" },
                 "description": { "shape": "Description" }
             }
+        },
+        "CustomizationArn": {
+            "type": "string",
+            "max": 950,
+            "min": 0,
+            "pattern": "$|^arn:[-.a-z0-9]{1,63}:codewhisperer:([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "CustomizationName": {
             "type": "string",
@@ -559,21 +565,6 @@
             "type": "string",
             "enum": ["ERROR", "WARNING", "INFORMATION", "HINT"]
         },
-        "DocumentSymbol": {
-            "type": "structure",
-            "required": ["name", "type"],
-            "members": {
-                "name": { "shape": "String" },
-                "type": { "shape": "SymbolType" },
-                "source": { "shape": "String" }
-            }
-        },
-        "DocumentSymbols": {
-            "type": "list",
-            "member": { "shape": "DocumentSymbol" },
-            "max": 1000,
-            "min": 0
-        },
         "Dimension": {
             "type": "structure",
             "members": {
@@ -598,6 +589,31 @@
             "max": 1024,
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "DocumentSymbol": {
+            "type": "structure",
+            "required": ["name", "type"],
+            "members": {
+                "name": { "shape": "DocumentSymbolNameString" },
+                "type": { "shape": "SymbolType" },
+                "source": { "shape": "DocumentSymbolSourceString" }
+            }
+        },
+        "DocumentSymbolNameString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "DocumentSymbolSourceString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "DocumentSymbols": {
+            "type": "list",
+            "member": { "shape": "DocumentSymbol" },
+            "max": 1000,
+            "min": 0
         },
         "Double": {
             "type": "double",
@@ -703,7 +719,7 @@
                 "nextToken": { "shape": "GenerateCompletionsRequestNextTokenString" },
                 "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
                 "supplementalContexts": { "shape": "SupplementalContextList" },
-                "customizationArn": { "shape": "ResourceArn" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "optOutPreference": { "shape": "OptOutPreference" },
                 "userContext": { "shape": "UserContext" }
             }
@@ -896,12 +912,6 @@
             "type": "long",
             "box": true
         },
-        "OperatingSystem": {
-            "type": "string",
-            "enum": ["MAC", "WINDOWS", "LINUX"],
-            "max": 64,
-            "min": 1
-        },
         "MetricData": {
             "type": "structure",
             "required": ["metricName", "metricValue", "timestamp"],
@@ -917,6 +927,12 @@
             "max": 1024,
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "OperatingSystem": {
+            "type": "string",
+            "enum": ["MAC", "WINDOWS", "LINUX"],
+            "max": 64,
+            "min": 1
         },
         "OptOutPreference": {
             "type": "string",
@@ -951,7 +967,13 @@
         },
         "ProgrammingLanguageLanguageNameString": {
             "type": "string",
-            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql)"
+            "max": 128,
+            "min": 1,
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf)"
+        },
+        "ProgressUpdates": {
+            "type": "list",
+            "member": { "shape": "TransformationProgressUpdate" }
         },
         "Range": {
             "type": "structure",
@@ -1005,7 +1027,8 @@
         "ResourceArn": {
             "type": "string",
             "max": 1224,
-            "min": 0
+            "min": 0,
+            "pattern": "arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "ResourceNotFoundException": {
             "type": "structure",
@@ -1019,10 +1042,22 @@
             "type": "structure",
             "required": ["source", "severity", "message"],
             "members": {
-                "source": { "shape": "SensitiveString" },
+                "source": { "shape": "RuntimeDiagnosticSourceString" },
                 "severity": { "shape": "DiagnosticSeverity" },
-                "message": { "shape": "SensitiveString" }
+                "message": { "shape": "RuntimeDiagnosticMessageString" }
             }
+        },
+        "RuntimeDiagnosticMessageString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "RuntimeDiagnosticSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
         },
         "SendTelemetryEventRequest": {
             "type": "structure",
@@ -1213,6 +1248,7 @@
         },
         "TaskAssistPlanningUploadContext": {
             "type": "structure",
+            "required": ["conversationId"],
             "members": {
                 "conversationId": { "shape": "ConversationId" }
             }
@@ -1232,9 +1268,9 @@
             "type": "structure",
             "required": ["relativeFilePath"],
             "members": {
-                "relativeFilePath": { "shape": "SensitiveString" },
+                "relativeFilePath": { "shape": "TextDocumentRelativeFilePathString" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
-                "text": { "shape": "SensitiveString" },
+                "text": { "shape": "TextDocumentTextString" },
                 "documentSymbols": { "shape": "DocumentSymbols" }
             }
         },
@@ -1246,8 +1282,26 @@
                 "range": { "shape": "Range" },
                 "source": { "shape": "SensitiveString" },
                 "severity": { "shape": "DiagnosticSeverity" },
-                "message": { "shape": "SensitiveString" }
+                "message": { "shape": "TextDocumentDiagnosticMessageString" }
             }
+        },
+        "TextDocumentDiagnosticMessageString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "TextDocumentRelativeFilePathString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
+        },
+        "TextDocumentTextString": {
+            "type": "string",
+            "max": 10240,
+            "min": 0,
+            "sensitive": true
         },
         "ThrottlingException": {
             "type": "structure",
@@ -1287,6 +1341,21 @@
                 "transformationSteps": { "shape": "TransformationSteps" }
             }
         },
+        "TransformationProgressUpdate": {
+            "type": "structure",
+            "required": ["name", "status"],
+            "members": {
+                "name": { "shape": "String" },
+                "status": { "shape": "TransformationProgressUpdateStatus" },
+                "description": { "shape": "String" },
+                "startTime": { "shape": "Timestamp" },
+                "endTime": { "shape": "Timestamp" }
+            }
+        },
+        "TransformationProgressUpdateStatus": {
+            "type": "string",
+            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED"]
+        },
         "TransformationProjectState": {
             "type": "structure",
             "members": {
@@ -1323,12 +1392,20 @@
         },
         "TransformationStep": {
             "type": "structure",
-            "required": ["id", "name", "description"],
+            "required": ["id", "name", "description", "status"],
             "members": {
                 "id": { "shape": "StepId" },
                 "name": { "shape": "String" },
-                "description": { "shape": "String" }
+                "description": { "shape": "String" },
+                "status": { "shape": "TransformationStepStatus" },
+                "progressUpdates": { "shape": "ProgressUpdates" },
+                "startTime": { "shape": "Timestamp" },
+                "endTime": { "shape": "Timestamp" }
             }
+        },
+        "TransformationStepStatus": {
+            "type": "string",
+            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED"]
         },
         "TransformationSteps": {
             "type": "list",
@@ -1378,10 +1455,16 @@
             "type": "structure",
             "required": ["content"],
             "members": {
-                "content": { "shape": "SensitiveString" },
+                "content": { "shape": "UserInputMessageContentString" },
                 "userInputMessageContext": { "shape": "UserInputMessageContext" },
                 "userIntent": { "shape": "UserIntent" }
             }
+        },
+        "UserInputMessageContentString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
         },
         "UserInputMessageContext": {
             "type": "structure",
@@ -1410,7 +1493,7 @@
                 "requestId": { "shape": "UUID" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "modificationPercentage": { "shape": "Double" },
-                "customizationArn": { "shape": "ResourceArn" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "timestamp": { "shape": "Timestamp" }
             }
         },
@@ -1428,7 +1511,7 @@
             "members": {
                 "sessionId": { "shape": "UUID" },
                 "requestId": { "shape": "UUID" },
-                "customizationArn": { "shape": "ResourceArn" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "completionType": { "shape": "CompletionType" },
                 "suggestionState": { "shape": "SuggestionState" },

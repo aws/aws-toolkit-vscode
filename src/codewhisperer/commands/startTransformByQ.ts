@@ -26,6 +26,8 @@ import {
 import { QuickPickItem } from 'vscode'
 import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowController'
 import path from 'path'
+import { sleep } from '../../shared/utilities/timeoutUtils'
+import * as he from 'he'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop Transform by Q')
@@ -83,11 +85,10 @@ async function pickModule(
         ignoreFocusOut: false,
     })
     state.module = pick
+    transformByQState.setModuleName(he.encode(state.module.label)) // encode to avoid HTML injection risk
 }
 
 export async function startTransformByQ() {
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms * 1000))
-
     let validModules: vscode.QuickPickItem[] | undefined
     try {
         validModules = await getValidModules()
@@ -96,41 +97,41 @@ export async function startTransformByQ() {
         throw err
     }
 
-    // TODO: if only 1 workspace module open, skip collectInputs
-
     const state = await collectInputs(validModules)
 
-    const selection = await vscode.window.showWarningMessage(
-        CodeWhispererConstants.dependencyDisclaimer,
-        'Transform',
-        'Cancel'
+    const disclaimerMessage = CodeWhispererConstants.dependencyDisclaimer.replace(
+        'JAVA_VERSION_HERE',
+        transformByQState.getSourceJDKVersion()
     )
+    const selection = await vscode.window.showWarningMessage(disclaimerMessage, { modal: true }, 'Transform')
 
     if (selection !== 'Transform') {
         return
     }
 
-    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
-    vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
-    vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
-
-    resetReviewInProgress()
-
-    const startTime = new Date()
-
+    transformByQState.setToRunning()
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
     sessionPlanProgress['returnCode'] = StepProgress.Pending
+    const startTime = new Date()
+
+    vscode.commands.executeCommand('workbench.view.extension.aws-codewhisperer-transformation-hub')
+    vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
+    vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', true)
+    vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+    vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', false)
+    resetReviewInProgress()
+
+    await vscode.commands.executeCommand('aws.amazonq.refresh')
 
     let intervalId = undefined
     let errorMessage = ''
     try {
         intervalId = setInterval(() => {
-            vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub')
+            vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
         }, CodeWhispererConstants.progressIntervalMs)
         // step 1: CreateCodeUploadUrl and upload code
-        transformByQState.setToRunning()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
 
@@ -138,6 +139,7 @@ export async function startTransformByQ() {
         throwIfCancelled()
         try {
             const payloadFileName = await zipCode(state.module.description!)
+            await vscode.commands.executeCommand('aws.amazonq.refresh') // so that button updates
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
             errorMessage = 'Failed to zip code and upload it to S3'
@@ -146,8 +148,10 @@ export async function startTransformByQ() {
         sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
         await vscode.commands.executeCommand('aws.amazonq.refresh')
 
-        // step 2: StartJob and store the returned jobId in TransformByQState
+        await sleep(2000) // sleep before starting job to prevent ThrottlingException
         throwIfCancelled()
+
+        // step 2: StartJob and store the returned jobId in TransformByQState
         let jobId = ''
         try {
             jobId = await startJob(uploadId)
@@ -158,6 +162,9 @@ export async function startTransformByQ() {
         }
         transformByQState.setJobId(jobId)
         await vscode.commands.executeCommand('aws.amazonq.refresh')
+
+        await sleep(2000) // sleep before polling job to prevent ThrottlingException
+        throwIfCancelled()
 
         // intermediate step: show transformation-plan.md file
         // TO-DO: on IDE restart, resume here if a job was ongoing
@@ -177,10 +184,10 @@ export async function startTransformByQ() {
             throw error
         }
         sessionPlanProgress['buildCode'] = StepProgress.Succeeded
-        const filePath = path.join(os.tmpdir(), 'transformation-plan.md')
-        fs.writeFileSync(filePath, plan)
-        vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(filePath))
-        transformByQState.setPlanFilePath(filePath)
+        const planFilePath = path.join(os.tmpdir(), 'transformation-plan.md')
+        fs.writeFileSync(planFilePath, plan)
+        vscode.commands.executeCommand('markdown.showPreview', vscode.Uri.file(planFilePath))
+        transformByQState.setPlanFilePath(planFilePath)
         vscode.commands.executeCommand('setContext', 'gumby.isPlanAvailable', true)
 
         // step 3: poll until artifacts are ready to download
@@ -241,7 +248,7 @@ export async function startTransformByQ() {
             sessionJobHistory = processHistory(
                 sessionJobHistory,
                 convertDateToTimestamp(startTime),
-                state.module.label,
+                transformByQState.getModuleName(),
                 transformByQState.getStatus(),
                 convertToTimeString(durationInMs),
                 transformByQState.getJobId()
@@ -250,10 +257,11 @@ export async function startTransformByQ() {
         if (transformByQState.isSucceeded()) {
             vscode.window.showInformationMessage(CodeWhispererConstants.transformByQCompleted)
         }
-        await sleep(1) // needed as a buffer to allow TransformationHub to update before state is updated
+        await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
         clearInterval(intervalId)
         transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
         await vscode.commands.executeCommand('aws.amazonq.refresh')
+        vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
     }
 }
 
