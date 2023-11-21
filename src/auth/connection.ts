@@ -56,7 +56,7 @@ export const isAnySsoConnection = (conn?: Connection): conn is SsoConnection => 
 export const isIdcSsoConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'idc')
 export const isBuilderIdConnection = (conn?: Connection): conn is SsoConnection => isSsoConnection(conn, 'builderId')
 
-export const isValidCodeCatalystConnection = (conn: Connection): conn is SsoConnection =>
+export const isValidCodeCatalystConnection = (conn?: Connection): conn is SsoConnection =>
     isSsoConnection(conn) && hasScopes(conn, scopesCodeCatalyst)
 
 export function hasScopes(target: SsoConnection | SsoProfile, scopes: string[]): boolean {
