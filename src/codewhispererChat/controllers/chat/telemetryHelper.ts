@@ -163,7 +163,7 @@ export class CWCTelemetryHelper {
                     cwsprChatInteractionType: 'insertAtCursor',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
-                    cwsprChatHasReference: undefined, //TODO
+                    cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                 }
                 break
             case 'code_was_copied_to_clipboard':
@@ -174,7 +174,7 @@ export class CWCTelemetryHelper {
                     cwsprChatInteractionType: 'copySnippet',
                     cwsprChatAcceptedCharactersLength: message.code.length,
                     cwsprChatInteractionTarget: message.insertionTargetType,
-                    cwsprChatHasReference: undefined, //TODO
+                    cwsprChatHasReference: message.codeReference && message.codeReference.length > 0,
                 }
                 break
             case 'follow-up-was-clicked':
@@ -252,7 +252,7 @@ export class CWCTelemetryHelper {
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
             cwsprChatUserIntent: telemetryUserIntent,
-            cwsprChatHasCodeSnippet: triggerPayload.codeSelection !== undefined,
+            cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
         })
     }
@@ -265,7 +265,7 @@ export class CWCTelemetryHelper {
             cwsprChatMessageId: message.messageID,
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
-            cwsprChatHasCodeSnippet: !triggerPayload.codeSelection?.isEmpty,
+            cwsprChatHasCodeSnippet: triggerPayload.codeSelection && !triggerPayload.codeSelection.isEmpty,
             cwsprChatProgrammingLanguage: triggerPayload.fileLanguage,
             cwsprChatActiveEditorTotalCharacters: triggerPayload.fileText?.length,
             cwsprChatActiveEditorImportCount: triggerPayload.codeQuery?.fullyQualifiedNames?.used?.length,
@@ -331,15 +331,14 @@ export class CWCTelemetryHelper {
 
     public setResponseStreamTimeToFirstChunk(tabID: string) {
         if (this.responseStreamTimeToFirstChunk.get(tabID) === undefined) {
-            this.responseStreamTimeToFirstChunk.set(
-                tabID,
-                performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
-            )
+            const chunkTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+            this.responseStreamTimeToFirstChunk.set(tabID, Math.round(chunkTime))
         }
     }
 
     public setResponseStreamTotalTime(tabID: string) {
-        this.responseStreamTotalTime.set(tabID, performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0))
+        const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
+        this.responseStreamTotalTime.set(tabID, Math.round(totalTime))
     }
 
     public getConversationId(tabID: string): string | undefined {

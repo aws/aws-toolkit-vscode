@@ -612,13 +612,10 @@ export class ChatController {
                 } metadata: ${JSON.stringify(response.$metadata)}`
             )
             this.messenger.sendAIResponse(response, session, tabID, triggerID, triggerPayload)
-        } catch (e) {
+        } catch (e: any) {
+            this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, e?.$metadata?.httpStatusCode ?? 0)
+            // clears session, record telemetry before this call
             this.processException(e, tabID)
-            this.telemetryHelper.recordMessageResponseError(
-                triggerPayload,
-                tabID,
-                response?.$metadata?.httpStatusCode ?? 0
-            )
         }
     }
 }

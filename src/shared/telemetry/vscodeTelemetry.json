@@ -91,7 +91,7 @@
         {
             "name": "cwsprChatConversationType",
             "type": "string",
-            "allowedValues": ["Chat", "WB", "Gumby"],
+            "allowedValues": ["Chat", "Assign", "Transform"],
             "description": "Identifies the type of conversation"
         },
         {
