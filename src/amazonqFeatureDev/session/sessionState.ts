@@ -64,7 +64,7 @@ export class PrepareRefinementState implements Omit<SessionState, 'uploadId'> {
             zipFileBuffer.length
         )
 
-        await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
+        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
         const nextState = new RefinementState({ ...this.config, uploadId }, this.approach, this.tabID, 0)
         return nextState.interact(action)
     }
@@ -409,7 +409,7 @@ export class PrepareCodeGenState implements SessionState {
         )
 
         this.uploadId = uploadId
-        await uploadCode(uploadUrl, zipFileBuffer, kmsKeyArn)
+        await uploadCode(uploadUrl, zipFileBuffer, zipFileChecksum, kmsKeyArn)
         const nextState = new CodeGenState(
             { ...this.config, uploadId },
             '',

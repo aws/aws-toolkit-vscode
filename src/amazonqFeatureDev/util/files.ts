@@ -13,11 +13,11 @@ import { GitIgnoreFilter } from './gitignore'
 
 import AdmZip from 'adm-zip'
 import { FileSystemCommon } from '../../srcShared/fs'
-import { getStringHash } from '../../shared/utilities/textUtilities'
 import { TelemetryHelper } from './telemetryHelper'
 import { PrepareRepoFailedError } from '../errors'
 import { getLogger } from '../../shared/logger/logger'
 import { maxFileSizeBytes } from '../limits'
+import { createHash } from 'crypto'
 
 export function getExcludePattern(additionalPatterns: string[] = []) {
     const globAlwaysExcludedDirs = getGlobDirExcludedPatterns().map(pattern => `**/${pattern}/*`)
@@ -76,6 +76,8 @@ export async function collectFiles(rootPath: string, respectGitIgnore: boolean =
     return storage
 }
 
+const getSha256 = (file: Buffer) => createHash('sha256').update(file).digest('base64')
+
 /**
  * given the root path of the repo it zips its files in memory and generates a checksum for it.
  */
@@ -107,7 +109,7 @@ export async function prepareRepoData(repoRootPath: string, telemetry: Telemetry
         const zipFileBuffer = zip.toBuffer()
         return {
             zipFileBuffer,
-            zipFileChecksum: getStringHash(zipFileBuffer),
+            zipFileChecksum: getSha256(zipFileBuffer),
         }
     } catch (error) {
         getLogger().debug(`featureDev: Failed to prepare repo: ${error}`)
