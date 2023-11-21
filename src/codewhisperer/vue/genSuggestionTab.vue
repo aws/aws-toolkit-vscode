@@ -8,7 +8,12 @@
         <div>
             <div class="tableDivSub" v-for="(row, index) in tabs[activeTab].tableData" :key="index">
                 <div v-for="(column, columnIndex) in [row.column1, row.column2, row.column3]" :key="columnIndex">
-                    <div class="generateSuggestionTabRow">
+                    <div
+                        :class="[
+                            'generateSuggestionTabRow',
+                            columnIndex % 2 === 1 ? 'generateSuggestionTabMachineColorGroup1' : '',
+                        ]"
+                    >
                         <div class="generateSuggestionTabRowLabel">
                             <template v-if="columnIndex === 0"> Generate code suggestions as you type </template>
                             <template v-else-if="columnIndex === 1">
@@ -172,6 +177,9 @@ export default defineComponent({
     display: flex;
     flex-direction: row;
     padding-left: 10px;
+}
+.generateSuggestionTabMachineColorGroup1 {
+    background-color: var(--vscode-editorWidget-background);
 }
 .generateSuggestionTabMachineText {
     padding-left: 5px;
