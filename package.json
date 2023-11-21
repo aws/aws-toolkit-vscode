@@ -4259,7 +4259,6 @@
         "circular-dependency-plugin": "^5.2.2",
         "css-loader": "^6.7.3",
         "diff": "^5.1.0",
-        "esbuild": "^0.19.7",
         "esbuild-loader": "2.20.0",
         "eslint": "^8.26.0",
         "eslint-config-prettier": "8.8",
