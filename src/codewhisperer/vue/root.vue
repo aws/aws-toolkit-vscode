@@ -47,7 +47,7 @@
                 <!-- Text -->
                 <div class="titleDiv">
                     <div class="titleHeader">Amazon CodeWhisperer</div>
-                    <div class="titleSubHeader">Your AI coding companion</div>
+                    <div class="titleSubHeader">Your AI-powered productivity tool for the IDE</div>
                 </div>
             </div>
         </div>
