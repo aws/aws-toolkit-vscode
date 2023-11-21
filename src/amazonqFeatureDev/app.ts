@@ -78,8 +78,8 @@ export function init(appContext: AmazonQAppInitContext) {
         'featuredev'
     )
 
-    const debouncedEvent = debounce(() => {
-        const authenticated = getChatAuthState().amazonQ === 'connected'
+    const debouncedEvent = debounce(async () => {
+        const authenticated = (await getChatAuthState()).amazonQ === 'connected'
         let authenticatingSessionIDs: string[] = []
         if (authenticated) {
             const authenticatingSessions = sessionStorage.getAuthenticatingSessions()

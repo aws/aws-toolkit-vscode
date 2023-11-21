@@ -157,7 +157,7 @@ export class FeatureDevController {
 
             session = await this.sessionStorage.getSession(message.tabID)
 
-            const authState = getChatAuthState()
+            const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true
@@ -554,7 +554,7 @@ To learn more, visit the _Amazon Q User Guide_.
             session = await this.sessionStorage.getSession(message.tabID)
             getLogger().debug(`${featureName}: Session created with id: ${session.tabID}`)
 
-            const authState = getChatAuthState()
+            const authState = await getChatAuthState()
             if (authState.amazonQ !== 'connected') {
                 this.messenger.sendAuthNeededExceptionMessage(authState, message.tabID)
                 session.isAuthenticating = true

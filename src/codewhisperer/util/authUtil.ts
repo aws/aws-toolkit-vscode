@@ -218,20 +218,22 @@ export class AuthUtil {
     }
 
     public async connectToEnterpriseSso(startUrl: string, region: string) {
-        const existingConn = (await this.auth.listConnections()).find(
+        let conn = (await this.auth.listConnections()).find(
             (conn): conn is SsoConnection =>
                 isSsoConnection(conn) && conn.startUrl.toLowerCase() === startUrl.toLowerCase()
         )
 
-        if (!existingConn) {
-            const conn = await this.auth.createConnection(createSsoProfile(startUrl, region, amazonQScopes))
-            return this.secondaryAuth.useNewConnection(conn)
-        } else if (isValidAmazonQConnection(existingConn)) {
-            return this.secondaryAuth.useNewConnection(existingConn)
-        } else if (isSsoConnection(existingConn)) {
-            const conn = await this.secondaryAuth.addScopes(existingConn, amazonQScopes)
-            return this.secondaryAuth.useNewConnection(conn)
+        if (!conn) {
+            conn = await this.auth.createConnection(createSsoProfile(startUrl, region, amazonQScopes))
+        } else if (!isValidAmazonQConnection(conn)) {
+            conn = await this.secondaryAuth.addScopes(conn, amazonQScopes)
         }
+
+        if (this.auth.getConnectionState(conn) === 'invalid') {
+            conn = await this.auth.reauthenticate(conn)
+        }
+
+        return this.secondaryAuth.useNewConnection(conn)
     }
 
     public static get instance() {
@@ -363,16 +365,19 @@ export class AuthUtil {
  * Returns a snapshot of the overall auth state of
  * CodeWhisperer + Chat features.
  */
-export function getChatAuthState(cwAuth = AuthUtil.instance): FeatureAuthState {
+export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<FeatureAuthState> {
     const currentConnection = cwAuth.conn
 
-    // base cases
     if (currentConnection === undefined) {
         return buildFeatureAuthState(AuthStates.disconnected)
     }
     if (!isSsoConnection(currentConnection)) {
         throw new ToolkitError(`Connection is not a valid type: ${currentConnection}`)
     }
+
+    // The state of the connection may not have been properly validated
+    // and the current state we see may be stale, so refresh for latest state.
+    await cwAuth.auth.refreshConnectionState(currentConnection)
 
     // default to expired to indicate reauth is needed if unmodified
     const state: FeatureAuthState = buildFeatureAuthState(AuthStates.expired)
@@ -410,12 +415,21 @@ export type Feature = (typeof Features)[keyof typeof Features]
 export type AuthState = (typeof AuthStates)[keyof typeof AuthStates]
 
 export const AuthStates = {
+    /** The current connection is working and supports this feature. */
     connected: 'connected',
-    /** No connection exists */
+    /** No connection exists, so this feature cannot be used*/
     disconnected: 'disconnected',
-    /** Connection exists, but needs to be reauthenticated */
+    /**
+     * The current connection exists, but needs to be reauthenticated for this feature to work
+     *
+     * Look to use {@link AuthUtil.reauthenticate}
+     */
     expired: 'expired',
-    /** Feature is unsupported with the current connection type */
+    /**
+     * A connection exists, but does not support this feature.
+     *
+     * Eg: We are currently using Builder ID, but must use Identity Center.
+     */
     unsupported: 'unsupported',
 } as const
 const Features = {
