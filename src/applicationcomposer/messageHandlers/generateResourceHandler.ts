@@ -12,7 +12,7 @@ import {
     MessageType,
 } from '../types'
 import { ChatSession } from '../../codewhispererChat/clients/chat/v0/chat'
-import { AuthUtil, isValidCodeWhispererConnection } from '../../codewhisperer/util/authUtil'
+import { AuthUtil, getChatAuthState } from '../../codewhisperer/util/authUtil'
 import globals from '../../shared/extensionGlobals'
 import { getLogger } from '../../shared/logger/logger'
 
@@ -168,10 +168,11 @@ function debugConnection() {
     const isConnected = AuthUtil.instance.isConnected()
     const isValid = AuthUtil.instance.isConnectionValid()
     const isExpired = AuthUtil.instance.isConnectionExpired()
-    const isValidConnection = isValidCodeWhispererConnection(AuthUtil.instance.conn)
+    const authState = getChatAuthState(AuthUtil.instance)
+    const isConnectedToCodeWhisperer = authState.codewhispererChat === 'connected'
 
-    getLogger().debug(`DEBUG: createCodeWhispererChatClient - isConnected = ${isConnected}`)
-    getLogger().debug(`DEBUG: createCodeWhispererChatClient - isValid = ${isValid}`)
-    getLogger().debug(`DEBUG: createCodeWhispererChatClient - isExpired = ${isExpired}`)
-    getLogger().debug(`DEBUG: createCodeWhispererChatClient - isValidConnection = ${isValidConnection}`)
+    getLogger().debug(`DEBUG: debugConnection - isConnected = ${isConnected}`)
+    getLogger().debug(`DEBUG: debugConnection - isValid = ${isValid}`)
+    getLogger().debug(`DEBUG: debugConnection - isExpired = ${isExpired}`)
+    getLogger().debug(`DEBUG: debugConnection - isConnectedToCodeWhisperer = ${isConnectedToCodeWhisperer}`)
 }
