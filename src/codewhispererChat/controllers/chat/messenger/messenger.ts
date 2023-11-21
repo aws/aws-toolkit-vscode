@@ -13,7 +13,11 @@ import {
     QuickActionMessage,
 } from '../../../view/connector/connector'
 import { EditorContextCommandType } from '../../../commands/registerCommands'
-import { GenerateAssistantResponseCommandOutput, SupplementaryWebLink } from '@amzn/codewhisperer-streaming'
+import {
+    CodeWhispererStreamingServiceException,
+    GenerateAssistantResponseCommandOutput,
+    SupplementaryWebLink,
+} from '@amzn/codewhisperer-streaming'
 import { ChatMessage, ErrorMessage, FollowUp, Suggestion } from '../../../view/connector/connector'
 import { ChatSession } from '../../../clients/chat/v0/chat'
 import { ChatException } from './model'
@@ -93,8 +97,8 @@ export class Messenger {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
         let codeReference: CodeReference[] = []
-        const followUps: FollowUp[] = []
-        const relatedSuggestions: Suggestion[] = []
+        let followUps: FollowUp[] = []
+        let relatedSuggestions: Suggestion[] = []
 
         if (response.generateAssistantResponseResponse === undefined) {
             throw new ToolkitError(
@@ -186,58 +190,81 @@ export class Messenger {
                 return true
             },
             { timeout: 60000, truthy: true }
-        ).finally(() => {
-            if (relatedSuggestions.length !== 0) {
+        )
+            .catch((error: any) => {
+                let errorMessage = 'Error reading chat stream.'
+                let statusCode = undefined
+                let requestID = undefined
+
+                if (error instanceof CodeWhispererStreamingServiceException) {
+                    errorMessage = error.message
+                    statusCode = error.$metadata?.httpStatusCode ?? 0
+                    requestID = error.$metadata.requestId
+                }
+
+                this.showChatExceptionMessage(
+                    { errorMessage, statusCode: statusCode?.toString(), sessionID: undefined },
+                    tabID,
+                    requestID
+                )
+                getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
+
+                followUps = []
+                relatedSuggestions = []
+                this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
+            })
+            .finally(() => {
+                if (relatedSuggestions.length !== 0) {
+                    this.dispatcher.sendChatMessage(
+                        new ChatMessage(
+                            {
+                                message: undefined,
+                                messageType: 'answer-part',
+                                followUpsHeader: undefined,
+                                followUps: undefined,
+                                relatedSuggestions,
+                                triggerID,
+                                messageID,
+                            },
+                            tabID
+                        )
+                    )
+                }
+
                 this.dispatcher.sendChatMessage(
                     new ChatMessage(
                         {
                             message: undefined,
-                            messageType: 'answer-part',
+                            messageType: 'answer',
+                            followUps: followUps,
                             followUpsHeader: undefined,
-                            followUps: undefined,
-                            relatedSuggestions,
+                            relatedSuggestions: undefined,
                             triggerID,
                             messageID,
                         },
                         tabID
                     )
                 )
-            }
 
-            this.dispatcher.sendChatMessage(
-                new ChatMessage(
-                    {
-                        message: undefined,
-                        messageType: 'answer',
-                        followUps: followUps,
-                        followUpsHeader: undefined,
-                        relatedSuggestions: undefined,
-                        triggerID,
-                        messageID,
-                    },
-                    tabID
+                getLogger().info(
+                    `All events received. requestId=%s counts=%s`,
+                    response.$metadata.requestId,
+                    Object.fromEntries(eventCounts)
                 )
-            )
 
-            getLogger().info(
-                `All events received. requestId=%s counts=%s`,
-                response.$metadata.requestId,
-                Object.fromEntries(eventCounts)
-            )
+                this.telemetryHelper.setResponseStreamTotalTime(tabID)
 
-            this.telemetryHelper.setResponseStreamTotalTime(tabID)
-
-            const responseCode = response?.$metadata.httpStatusCode ?? 0
-            this.telemetryHelper.recordAddMessage(triggerPayload, {
-                followUpCount: followUps.length,
-                suggestionCount: relatedSuggestions.length,
-                tabID: tabID,
-                messageLength: message.length,
-                messageID,
-                responseCode,
-                codeReferenceCount: codeReference.length,
+                const responseCode = response?.$metadata.httpStatusCode ?? 0
+                this.telemetryHelper.recordAddMessage(triggerPayload, {
+                    followUpCount: followUps.length,
+                    suggestionCount: relatedSuggestions.length,
+                    tabID: tabID,
+                    messageLength: message.length,
+                    messageID,
+                    responseCode,
+                    codeReferenceCount: codeReference.length,
+                })
             })
-        })
     }
 
     public sendErrorMessage(errorMessage: string | undefined, tabID: string, requestID: string | undefined) {
