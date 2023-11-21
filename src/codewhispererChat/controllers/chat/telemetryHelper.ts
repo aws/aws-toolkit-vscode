@@ -293,7 +293,7 @@ export class CWCTelemetryHelper {
         triggerPayload: TriggerPayload,
         tabID: string,
         responseCode: number,
-        resaon?: string
+        reason?: string
     ) {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
@@ -308,7 +308,7 @@ export class CWCTelemetryHelper {
             cwsprChatResponseCode: responseCode,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatConversationType: 'Chat',
-            cwsprChatResponseErrorReason: resaon, // WARN: use with extreme caution, must not log sensitive data or PII.
+            cwsprChatResponseErrorReason: reason, // WARN: use with extreme caution, must not log sensitive data or PII.
         })
     }
 
