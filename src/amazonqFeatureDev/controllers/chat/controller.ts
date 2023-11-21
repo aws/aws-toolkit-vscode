@@ -582,7 +582,7 @@ To learn more, visit the _Amazon Q User Guide_.
         this.sessionStorage.deleteSession(message.tabID)
     }
 
-    private newTask(message: any) {
+    private async newTask(message: any) {
         const tabOpenedMessage = 'A new tab has been opened.'
         this.messenger.sendAnswer({
             type: 'answer',
@@ -592,9 +592,15 @@ To learn more, visit the _Amazon Q User Guide_.
         this.messenger.openNewTask()
         this.messenger.sendUpdatePlaceholder(message.tabID, tabOpenedMessage)
         this.messenger.sendChatInputEnabled(message.tabID, false)
+
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_endChat.emit({
+            amazonqConversationId: session.conversationId,
+            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+        })
     }
 
-    private closeSession(message: any) {
+    private async closeSession(message: any) {
         const closedMessage = 'Your session is now closed.'
         this.messenger.sendAnswer({
             type: 'answer',
@@ -603,6 +609,12 @@ To learn more, visit the _Amazon Q User Guide_.
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, closedMessage)
         this.messenger.sendChatInputEnabled(message.tabID, false)
+
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_endChat.emit({
+            amazonqConversationId: session.conversationId,
+            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+        })
     }
 
     private retriesRemaining(session: Session | undefined) {
