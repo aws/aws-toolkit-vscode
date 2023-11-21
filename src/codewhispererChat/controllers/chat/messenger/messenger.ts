@@ -97,8 +97,8 @@ export class Messenger {
         let message = ''
         const messageID = response.$metadata.requestId ?? ''
         let codeReference: CodeReference[] = []
-        const followUps: FollowUp[] = []
-        const relatedSuggestions: Suggestion[] = []
+        let followUps: FollowUp[] = []
+        let relatedSuggestions: Suggestion[] = []
 
         if (response.generateAssistantResponseResponse === undefined) {
             throw new ToolkitError(
@@ -209,6 +209,8 @@ export class Messenger {
                 )
                 getLogger().error(`error: ${errorMessage} tabID: ${tabID} requestID: ${requestID}`)
 
+                followUps = []
+                relatedSuggestions = []
                 this.telemetryHelper.recordMessageResponseError(triggerPayload, tabID, statusCode ?? 0)
             })
             .finally(() => {
