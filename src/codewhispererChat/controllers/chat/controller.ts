@@ -208,7 +208,7 @@ export class ChatController {
                 })
 
                 if (quickActionCommand === 'help') {
-                    this.generateStaticTextResponse('help', triggerID)
+                    this.generateStaticTextResponse('quick-action-help', triggerID)
                     return
                 }
             })
@@ -237,7 +237,7 @@ export class ChatController {
                 })
 
                 if (interaction.type === 'onboarding-page-cwc-button-clicked') {
-                    this.generateStaticTextResponse('help', triggerID)
+                    this.generateStaticTextResponse('onboarding-help', triggerID)
                     return
                 }
 

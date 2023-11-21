@@ -230,7 +230,7 @@ export class Connector {
             const followUps =
                 messageData.followUps !== undefined && messageData.followUps.length > 0
                     ? {
-                          text: 'Suggested follow up questions:',
+                          text: messageData.followUpsHeader ?? 'Suggested follow up questions:',
                           options: messageData.followUps,
                       }
                     : undefined

@@ -26,7 +26,7 @@ import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/mo
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 
-export type StaticTextResponseType = 'help'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help'
 
 export class Messenger {
     public constructor(
@@ -74,6 +74,7 @@ export class Messenger {
                     message: '',
                     messageType: 'answer-stream',
                     followUps: undefined,
+                    followUpsHeader: undefined,
                     relatedSuggestions: undefined,
                     triggerID,
                     messageID: '',
@@ -145,6 +146,7 @@ export class Messenger {
                                     message: message,
                                     messageType: 'answer-part',
                                     followUps: undefined,
+                                    followUpsHeader: undefined,
                                     relatedSuggestions: undefined,
                                     codeReference,
                                     triggerID,
@@ -191,6 +193,7 @@ export class Messenger {
                         {
                             message: undefined,
                             messageType: 'answer-part',
+                            followUpsHeader: undefined,
                             followUps: undefined,
                             relatedSuggestions,
                             triggerID,
@@ -207,6 +210,7 @@ export class Messenger {
                         message: undefined,
                         messageType: 'answer',
                         followUps: followUps,
+                        followUpsHeader: undefined,
                         relatedSuggestions: undefined,
                         triggerID,
                         messageID,
@@ -258,8 +262,10 @@ export class Messenger {
 
     public sendStaticTextResponse(type: StaticTextResponseType, triggerID: string, tabID: string) {
         let message
+        let followUps
+        let followUpsHeader
         switch (type) {
-            case 'help':
+            case 'quick-action-help':
                 message = `I'm Amazon Q, a generative AI assistant. Learn more about me below. Your feedback will help me improve.
                 \n\n### What I can do:                
                 \n\n- Answer questions about AWS
@@ -279,17 +285,42 @@ export class Messenger {
                 \n\n- What is the syntax of declaring a variable in TypeScript?                
                 \n\n### Special Commands                
                 \n\n- /clear - Clear the conversation.
-                \n\n- /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."
-                \n\n- /transform - Transform your code. Use to upgrade Java code versions.
-                \n\n- /help - View chat topics and commands.
-                \n\n- Right click context menu to ask Amazon Q about a piece of selected code
-                \n\n- Right-click a highlighted code snippet to open a context menu with actions                 
+                \n\n- /dev - Get code suggestions across files in your current project. Provide a brief prompt, such as "Implement a GET API."<strong> Only available through CodeWhisperer Professional Tier.</strong>
+                \n\n- /transform - Transform your code. Use to upgrade Java code versions. <strong>Only available through CodeWhisperer Professional Tier.</strong>
+                \n\n- /help - View chat topics and commands.                             
                 \n\n### Things to note:                
                 \n\n- I may not always provide completely accurate or current information. 
                 \n\n- Provide feedback by choosing the like or dislike buttons that appear below answers.
-                \n\n- By default, your conversation data is stored to help improve my answers. You can opt-out of sharing this data by following the steps in AI services opt-out policies.
+                \n\n- When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/sharing-data.html">here</a>
                 \n\n- Do not enter any confidential, sensitive, or personal information.                
                 \n\n*For additional help, visit the Amazon Q User Guide.*`
+                break
+            case 'onboarding-help':
+                message = `### What I can do:                
+                \n\n- Answer questions about AWS
+                \n\n- Answer questions about general programming concepts
+                \n\n- Explain what a line of code or code function does
+                \n\n- Write unit tests and code
+                \n\n- Debug and fix code
+                \n\n- Refactor code`
+                followUps = [
+                    {
+                        type: '',
+                        pillText: 'Should I use AWS Lambda or EC2 for a scalable web application backend?',
+                        prompt: 'Should I use AWS Lambda or EC2 for a scalable web application backend?',
+                    },
+                    {
+                        type: '',
+                        pillText: 'What is the syntax of declaring a variable in TypeScript?',
+                        prompt: 'What is the syntax of declaring a variable in TypeScript?',
+                    },
+                    {
+                        type: '',
+                        pillText: 'Write code for uploading a file to an s3 bucket in typescript',
+                        prompt: 'Write code for uploading a file to an s3 bucket in typescript',
+                    },
+                ]
+                followUpsHeader = 'Try Examples:'
                 break
         }
 
@@ -298,7 +329,8 @@ export class Messenger {
                 {
                     message,
                     messageType: 'answer',
-                    followUps: undefined,
+                    followUpsHeader,
+                    followUps,
                     relatedSuggestions: undefined,
                     triggerID,
                     messageID: 'static_message_' + triggerID,
@@ -328,7 +360,7 @@ export class Messenger {
         let message
         switch (interaction.type) {
             case 'onboarding-page-cwc-button-clicked':
-                message = 'What can Amazon Q help me with?'
+                message = 'What can Amazon Q do and what are some example questions?'
                 break
         }
 

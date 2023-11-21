@@ -4,8 +4,8 @@
  */
 
 import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
-import { AuthFollowUpType } from '../../../auth/model'
 import { ExtensionMessage } from '../commands'
+import { AuthFollowUpType } from '../followUps/generator'
 
 export type WelcomeFollowupType = 'continue-to-chat'
 
