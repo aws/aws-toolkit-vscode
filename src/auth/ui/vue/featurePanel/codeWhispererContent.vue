@@ -1,7 +1,7 @@
 <template>
     <div :id="panelId" class="feature-panel-container border-common" :class="isActive ? 'feature-panel-selected' : ''">
         <div class="feature-panel-container-upper">
-            <div class="feature-panel-container-title">Amazon CodeWhisperer</div>
+            <div class="feature-panel-container-title">Amazon Q + CodeWhisperer</div>
 
             <div class="centered-items">
                 <img
@@ -12,7 +12,7 @@
             </div>
 
             <div class="feature-panel-container-description">
-                An AI coding companion that generates code suggestions as you type.
+                Build, maintain, and transform applications using generative AI.
                 <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
                     >Learn more.</a
                 >
