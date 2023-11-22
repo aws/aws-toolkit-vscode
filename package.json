@@ -3725,12 +3725,12 @@
             },
             {
                 "command": "aws.amazonq.showPlanProgressInHub",
-                "title": "Show Plan Progress",
+                "title": "Show Transformation Status",
                 "icon": "$(checklist)"
             },
             {
                 "command": "aws.amazonq.showHistoryInHub",
-                "title": "Show Job History",
+                "title": "Show Job Status",
                 "icon": "$(history)"
             },
             {

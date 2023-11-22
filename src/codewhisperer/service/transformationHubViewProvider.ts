@@ -68,7 +68,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             </style>
             </head>
             <body>
-            <p><b>Last Run</b></p>
+            <p><b>Job Status</b></p>
             ${history.length === 0 ? '<p>No job to display</p>' : this.getTableMarkup(history)}
             </body>
             </html>`
@@ -107,12 +107,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
         if (planProgress['buildCode'] === StepProgress.Succeeded) {
             planSteps = await getTransformationSteps(transformByQState.getJobId())
         }
-        let progressHtml = `<p><b>Plan Progress</b></p><p>No job is in-progress at the moment</p>`
+        let progressHtml = `<p><b>Transformation Status</b></p><p>No job is in-progress at the moment</p>`
         if (planProgress['returnCode'] !== StepProgress.NotStarted) {
-            progressHtml = `<p><b>Plan Progress</b></p>`
+            progressHtml = `<p><b>Transformation Status</b></p>`
             progressHtml += `<p> ${this.getProgressIconMarkup(
                 planProgress['uploadCode']
-            )} Uploading code to dedicated environment</p>`
+            )} Uploading code to secure build environment</p>`
             if (planProgress['uploadCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['buildCode']
@@ -124,7 +124,12 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                 )} Stepping through transformation plan</p>`
                 // now get the details of each sub-step of the "transformCode" step
                 if (planSteps !== undefined) {
+                    const stepStatuses = []
                     for (const step of planSteps) {
+                        stepStatuses.push(step.status)
+                    }
+                    for (let i = 0; i < planSteps.length; i++) {
+                        const step = planSteps[i]
                         const stepStatus = step.status
                         let stepProgress = undefined
                         if (stepStatus === 'COMPLETED' || stepStatus === 'PARTIALLY_COMPLETED') {
@@ -138,7 +143,8 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                         } else {
                             stepProgress = StepProgress.Pending
                         }
-                        if (step.startTime && step.endTime) {
+                        // include check for the previous step not being CREATED, as this means it has finished, so we can display the next step
+                        if (step.startTime && step.endTime && (i === 0 || stepStatuses[i - 1] !== 'CREATED')) {
                             const stepTime = step.endTime.toLocaleDateString('en-US', {
                                 hour: '2-digit',
                                 minute: '2-digit',
@@ -148,7 +154,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
                             progressHtml += `<p style="margin-left: 20px">${this.getProgressIconMarkup(stepProgress)} ${
                                 step.name
                             } [finished on ${stepTime}] <span style="color:grey">${stepDuration}</span></p>`
-                        } else {
+                        } else if (stepStatuses[i - 1] !== 'CREATED') {
                             progressHtml += `<p style="margin-left: 20px">${this.getProgressIconMarkup(stepProgress)} ${
                                 step.name
                             }</p>`
@@ -164,7 +170,7 @@ export class TransformationHubViewProvider implements vscode.WebviewViewProvider
             if (planProgress['transformCode'] === StepProgress.Succeeded) {
                 progressHtml += `<p> ${this.getProgressIconMarkup(
                     planProgress['returnCode']
-                )} Returning code with proposed changes</p>`
+                )} Validating and preparing proposed changes</p>`
             }
         }
         const isJobInProgress = transformByQState.isRunning()

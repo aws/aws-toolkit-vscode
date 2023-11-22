@@ -257,6 +257,7 @@ export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
 
     private moduleName: string = ''
+    private modulePath: string = ''
 
     private jobId: string = ''
 
@@ -295,6 +296,10 @@ export class TransformByQState {
 
     public getModuleName() {
         return this.moduleName
+    }
+
+    public getModulePath() {
+        return this.modulePath
     }
 
     public getJobId() {
@@ -351,6 +356,10 @@ export class TransformByQState {
 
     public setModuleName(name: string) {
         this.moduleName = name
+    }
+
+    public setModulePath(path: string) {
+        this.modulePath = path
     }
 
     public setJobId(id: string) {

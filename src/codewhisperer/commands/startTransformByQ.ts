@@ -10,7 +10,6 @@ import * as os from 'os'
 import { getLogger } from '../../shared/logger'
 import * as CodeWhispererConstants from '../models/constants'
 import { transformByQState, StepProgress, DropdownStep, TransformByQReviewStatus } from '../models/model'
-import { cancel } from '../../shared/localizedText'
 import {
     throwIfCancelled,
     startJob,
@@ -30,7 +29,7 @@ import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as he from 'he'
 
 const localize = nls.loadMessageBundle()
-export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop Transform by Q')
+export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
 
 let sessionJobHistory: { timestamp: string; module: string; status: string; duration: string; id: string }[] = []
 
@@ -99,17 +98,18 @@ export async function startTransformByQ() {
 
     const state = await collectInputs(validModules)
 
-    const disclaimerMessage = CodeWhispererConstants.dependencyDisclaimer.replace(
-        'JAVA_VERSION_HERE',
-        transformByQState.getSourceJDKVersion()
+    const selection = await vscode.window.showWarningMessage(
+        CodeWhispererConstants.dependencyDisclaimer,
+        { modal: true },
+        'Transform'
     )
-    const selection = await vscode.window.showWarningMessage(disclaimerMessage, { modal: true }, 'Transform')
 
     if (selection !== 'Transform') {
         return
     }
 
     transformByQState.setToRunning()
+    transformByQState.setModulePath(state.module.description!)
     sessionPlanProgress['uploadCode'] = StepProgress.Pending
     sessionPlanProgress['buildCode'] = StepProgress.Pending
     sessionPlanProgress['transformCode'] = StepProgress.Pending
@@ -196,13 +196,13 @@ export async function startTransformByQ() {
         try {
             status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
         } catch (error) {
-            errorMessage = 'Failed to poll transformation job for status'
+            errorMessage = 'Failed to get transformation job status'
             getLogger().error(errorMessage, error)
             throw error
         }
 
         if (!(status === 'COMPLETED' || status === 'PARTIALLY_COMPLETED')) {
-            errorMessage = 'Failed to complete modernization'
+            errorMessage = 'Failed to complete transformation'
             getLogger().error(errorMessage)
             sessionPlanProgress['transformCode'] = StepProgress.Failed
             throw new Error(errorMessage)
@@ -225,7 +225,7 @@ export async function startTransformByQ() {
             transformByQState.setToFailed()
             let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
             if (errorMessage !== '') {
-                displayedErrorMessage += ': ' + errorMessage
+                displayedErrorMessage = errorMessage
             }
             vscode.window.showErrorMessage(displayedErrorMessage)
         }
@@ -260,6 +260,7 @@ export async function startTransformByQ() {
         await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
         clearInterval(intervalId)
         transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
+        vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
     }
@@ -290,8 +291,8 @@ export function getPlanProgress() {
 export async function confirmStopTransformByQ(jobId: string) {
     const resp = await vscode.window.showWarningMessage(
         CodeWhispererConstants.stopTransformByQMessage,
-        stopTransformByQButton,
-        cancel
+        { modal: true },
+        stopTransformByQButton
     )
     if (resp === stopTransformByQButton && transformByQState.isRunning()) {
         getLogger().verbose('User requested to stop transform by Q. Stopping transform by Q.')

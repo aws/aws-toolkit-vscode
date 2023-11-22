@@ -287,17 +287,17 @@ export const selectTargetVersionPrompt = 'Select the target version'
 
 export const selectModulePrompt = 'Select the module you want to transform'
 
-export const transformByQWindowTitle = 'Transform by Q'
+export const transformByQWindowTitle = 'Transform'
 
-export const stopTransformByQMessage = 'Stop Transform by Q?'
+export const stopTransformByQMessage = 'Stop Transformation?'
 
-export const stoppingTransformByQMessage = 'Stopping Transform by Q...'
+export const stoppingTransformByQMessage = 'Stopping Transformation...'
 
-export const transformByQFailedMessage = 'Transform by Q failed'
+export const transformByQFailedMessage = 'Transformation failed'
 
-export const transformByQCancelledMessage = 'Transform by Q cancelled'
+export const transformByQCancelledMessage = 'Transformation cancelled'
 
-export const transformByQCompleted = 'Transform by Q completed'
+export const transformByQCompleted = 'Transformation completed'
 
 export const noPomXmlFoundMessage =
     'We could not find a valid configuration file. We currently support Maven build tool and require a POM.xml to identify build configurations. Be sure to also build your project.'
@@ -312,18 +312,17 @@ export const noSupportedJavaProjectsFoundMessage =
     'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
 
 export const dependencyDisclaimer =
-    'We have detected your project to be in Java JAVA_VERSION_HERE. This project is eligible for upgrade to Java 17.\n If you decide to upgrade, we will also access first-party dependencies from your local disk. Please build your code for Amazon Q to access these dependencies.\n If you would like to upgrade to Java 17, please click transform or else cancel.'
+    "Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and it's dependency binaries from your machine to start the upgrade. If you haven't yet compiled the application on your local machine, please do so once before starting the upgrade."
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const dependencyErrorMessage =
-    'There was an error in zipping up project dependencies. Please make sure you have Maven installed and the project has been been built.'
+    'We could not upload your project dependencies. Please make sure you have Maven installed and the project has been been built at least once.'
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'
 
-export const planDisclaimerMessage =
-    '**Proposed transformation changes** \n\n *Please note that the plan is to be used for guidance only. The final code changes produced may deviate.*\n\n\n'
+export const planDisclaimerMessage = '**Proposed transformation changes** \n\n\n'
 
 export const JDK8VersionNumber = '52'
 

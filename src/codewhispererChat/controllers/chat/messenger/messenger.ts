@@ -349,6 +349,9 @@ export class Messenger {
                 ]
                 followUpsHeader = 'Try Examples:'
                 break
+            case 'transform':
+                message = 'Attempting to start transformation with Amazon Q'
+                break
         }
 
         this.dispatcher.sendChatMessage(
