@@ -1412,23 +1412,33 @@
                 },
                 {
                     "command": "aws.codecatalyst.cloneRepo",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codecatalyst.createDevEnv",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codecatalyst.listCommands",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codecatalyst.openDevEnv",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.manageConnections",
+                    "when": "view == aws.codecatalyst && !isCloud9 && !aws.codecatalyst.connected",
+                    "group": "2_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.signout",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
+                    "group": "2_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codeWhisperer.openReferencePanel",
