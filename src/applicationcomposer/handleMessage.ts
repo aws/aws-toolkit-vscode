@@ -28,7 +28,7 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
     if (messageType === MessageType.REQUEST) {
         switch (command) {
             case Command.INIT:
-                initMessageHandler(context)
+                await initMessageHandler(context)
                 break
             case Command.LOAD_FILE:
                 await loadFileMessageHandler(message as LoadFileRequestMessage, context)
