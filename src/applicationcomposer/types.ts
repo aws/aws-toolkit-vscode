@@ -31,6 +31,9 @@ export enum Command {
     DEPLOY = 'DEPLOY',
     FILE_CHANGED = 'FILE_CHANGED',
     GENERATE_RESOURCE = 'GENERATE_RESOURCE',
+    LOG = 'LOG',
+    EMIT_TELEMETRY = 'EMIT_TELEMETRY',
+    OPEN_FEEDBACK = 'OPEN_FEEDBACK',
 }
 
 export enum MessageType {
@@ -93,6 +96,24 @@ export interface SaveFileRequestMessage extends Message {
 export interface AddFileWatchRequestMessage extends Message {
     eventId: string
     fileName: string
+}
+
+export interface NotifyUserRequestMessage extends Message {
+    eventId?: string
+    notification: string
+    notificationType: 'INFO' | 'WARNING' | 'ERROR'
+}
+
+export interface LogMessage extends Message {
+    eventId?: string
+    logMessage: string
+    logType: 'INFO' | 'WARNING' | 'ERROR'
+}
+
+export interface EmitTelemetryMessage extends Message {
+    eventId?: string
+    eventType: 'GENERATE_CLICKED' | 'REGENERATE_CLICKED' | 'GENERATE_ACCEPTED' | 'GENERATE_REJECTED'
+    resourceId: string
 }
 
 export interface ReferenceDetails {

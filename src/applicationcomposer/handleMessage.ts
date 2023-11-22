@@ -7,7 +7,9 @@ import { loadFileMessageHandler } from './messageHandlers/loadFileMessageHandler
 import { initMessageHandler } from './messageHandlers/initMessageHandler'
 import {
     Command,
+    EmitTelemetryMessage,
     LoadFileRequestMessage,
+    LogMessage,
     Message,
     WebviewContext,
     SaveFileRequestMessage,
@@ -19,6 +21,9 @@ import { saveFileMessageHandler } from './messageHandlers/saveFileMessageHandler
 import { addFileWatchMessageHandler } from './messageHandlers/addFileWatchMessageHandler'
 import { deployMessageHandler } from './messageHandlers/deployMessageHandler'
 import { generateResourceHandler } from './messageHandlers/generateResourceHandler'
+import { logMessageHandler } from './messageHandlers/logMessageHandler'
+import { emitTelemetryMessageHandler } from './messageHandlers/emitTelemetryMessageHandler'
+import { openFeedbackMessageHandler } from './messageHandlers/openFeedbackMessageHandler'
 
 export async function handleMessage(message: unknown, context: WebviewContext) {
     const composerMessage = message as Message
@@ -31,19 +36,31 @@ export async function handleMessage(message: unknown, context: WebviewContext) {
                 await initMessageHandler(context)
                 break
             case Command.LOAD_FILE:
-                await loadFileMessageHandler(message as LoadFileRequestMessage, context)
+                void loadFileMessageHandler(message as LoadFileRequestMessage, context)
                 break
             case Command.SAVE_FILE:
-                await saveFileMessageHandler(message as SaveFileRequestMessage, context)
+                void saveFileMessageHandler(message as SaveFileRequestMessage, context)
                 break
             case Command.ADD_FILE_WATCH:
-                addFileWatchMessageHandler(message as AddFileWatchRequestMessage, context)
+                void addFileWatchMessageHandler(message as AddFileWatchRequestMessage, context)
                 break
             case Command.DEPLOY:
                 deployMessageHandler(context)
                 break
             case Command.GENERATE_RESOURCE:
-                generateResourceHandler(message as GenerateResourceRequestMessage, context)
+                void generateResourceHandler(message as GenerateResourceRequestMessage, context)
+                break
+        }
+    } else if (messageType === MessageType.BROADCAST) {
+        switch (command) {
+            case Command.LOG:
+                logMessageHandler(message as LogMessage)
+                break
+            case Command.EMIT_TELEMETRY:
+                emitTelemetryMessageHandler(message as EmitTelemetryMessage)
+                break
+            case Command.OPEN_FEEDBACK:
+                openFeedbackMessageHandler()
                 break
         }
     }

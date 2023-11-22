@@ -5,9 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import fetch from 'node-fetch'
+import fetch from '../common/request'
 import { ApplicationComposer } from './composerWebview'
-import { getLogger, Logger } from '../shared/logger'
+import { getLogger } from '../shared/logger'
 
 const localize = nls.loadMessageBundle()
 
@@ -25,6 +25,7 @@ export class ApplicationComposerManager {
     protected readonly managedVisualizations = new Map<string, ApplicationComposer>()
     protected extensionContext: vscode.ExtensionContext
     protected webviewHtml?: string
+    protected readonly logger = getLogger()
 
     public constructor(extensionContext: vscode.ExtensionContext) {
         this.extensionContext = extensionContext
@@ -33,7 +34,7 @@ export class ApplicationComposerManager {
 
     private async fetchWebviewHtml() {
         const source = isLocalDev ? localhost : cdn
-        const response = await fetch(`${source}/index.html`)
+        const response = await fetch('GET', `${source}/index.html`).response
         this.webviewHtml = await response.text()
         for (const visualization of this.managedVisualizations.values()) {
             await visualization.refreshPanel(this.extensionContext)
@@ -61,11 +62,7 @@ export class ApplicationComposerManager {
         return htmlFileSplit[0] + '<head>' + baseTag + localeTag + darkModeTag + featuresTag + htmlFileSplit[1]
     }
 
-    public async visualizeTemplate(
-        globalStorage: vscode.Memento,
-        target: vscode.TextDocument | vscode.Uri
-    ): Promise<vscode.WebviewPanel | undefined> {
-        const logger: Logger = getLogger()
+    public async visualizeTemplate(target: vscode.TextDocument | vscode.Uri): Promise<vscode.WebviewPanel | undefined> {
         const document = target instanceof vscode.Uri ? await vscode.workspace.openTextDocument(target) : target
 
         // Attempt to retrieve existing visualization if it exists.
@@ -83,13 +80,11 @@ export class ApplicationComposerManager {
 
             return newVisualization.getPanel()
         } catch (err) {
-            this.handleErr(err as Error, logger)
+            this.handleErr(err as Error)
         }
     }
 
     public async createTemplate(): Promise<vscode.WebviewPanel | undefined> {
-        const logger: Logger = getLogger()
-
         try {
             const document = await vscode.workspace.openTextDocument({
                 language: 'yaml',
@@ -99,7 +94,7 @@ export class ApplicationComposerManager {
 
             return newVisualization.getPanel()
         } catch (err) {
-            this.handleErr(err as Error, logger)
+            this.handleErr(err as Error)
         }
     }
 
@@ -107,7 +102,7 @@ export class ApplicationComposerManager {
         return this.managedVisualizations.get(key)
     }
 
-    protected handleErr(err: Error, logger: Logger): void {
+    protected handleErr(err: Error): void {
         vscode.window.showInformationMessage(
             localize(
                 'AWS.applicationcomposer.visualisation.errors.rendering',
@@ -115,8 +110,8 @@ export class ApplicationComposerManager {
             )
         )
 
-        logger.debug(`${this.name}: Unable to setup webview panel.`)
-        logger.error(`${this.name}: unexpected exception: %s`, err)
+        this.logger.debug(`${this.name}: Unable to setup webview panel.`)
+        this.logger.error(`${this.name}: unexpected exception: %s`, err)
     }
 
     protected handleNewVisualization(key: string, visualization: ApplicationComposer): void {
