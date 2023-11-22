@@ -44,7 +44,7 @@ describe('file utils', () => {
             const result = await prepareRepoData(workspace.uri.fsPath, telemetry)
             assert.strictEqual(Buffer.isBuffer(result.zipFileBuffer), true)
             // checksum is not the same across different test executions because some unique random folder names are generated
-            assert.strictEqual(result.zipFileChecksum.length, 64)
+            assert.strictEqual(result.zipFileChecksum.length, 44)
             assert.strictEqual(telemetry.repositorySize, 24)
         })
     })

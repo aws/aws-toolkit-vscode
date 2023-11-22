@@ -70,9 +70,7 @@ export class CodeCatalystAuthenticationProvider {
         })
 
         // set initial context in case event does not trigger
-        this.restore().then(() => {
-            setCodeCatalystConnectedContext(this.isConnectionValid())
-        })
+        setCodeCatalystConnectedContext(this.isConnectionValid())
     }
 
     public get activeConnection() {
@@ -146,6 +144,13 @@ export class CodeCatalystAuthenticationProvider {
 
         type ConnectionFlowEvent = Partial<MetricShapes[MetricName]> & {
             readonly codecatalyst_connectionFlow: 'Create' | 'Switch' | 'Upgrade' // eslint-disable-line @typescript-eslint/naming-convention
+        }
+
+        const existingBuilderId = (await this.auth.listConnections()).find(isBuilderIdConnection)
+        if (isValidCodeCatalystConnection(existingBuilderId)) {
+            // A Builder ID with the correct scopes already exists so we can use this immediately
+            await this.secondaryAuth.useNewConnection(existingBuilderId)
+            return this.activeConnection!
         }
 
         const conn = (await this.auth.listConnections()).find(isBuilderIdConnection)

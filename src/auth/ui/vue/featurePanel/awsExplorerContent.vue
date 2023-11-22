@@ -1,5 +1,5 @@
 <template>
-    <div class="feature-panel-container border-common">
+    <div :id="panelId" class="feature-panel-container border-common" :class="isActive ? 'feature-panel-selected' : ''">
         <div class="feature-panel-container-upper">
             <div class="feature-panel-container-title">AWS Explorer</div>
 
@@ -100,7 +100,7 @@
 import { defineComponent } from 'vue'
 import CredentialsForm, { CredentialsState } from '../authForms/manageCredentials.vue'
 import IdentityCenterForm, { ExplorerIdentityCenterState } from '../authForms/manageIdentityCenter.vue'
-import BaseServiceItemContent from './baseServiceItemContent.vue'
+import BaseServiceItemContent, { PanelActivityState } from './baseServiceItemContent.vue'
 import authFormsState, { AuthForm, FeatureStatus } from '../authForms/shared.vue'
 import { AuthFormId } from '../authForms/types'
 import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
@@ -122,6 +122,7 @@ function initialData() {
         isCredentialsShown: false,
         isIdentityCenterShown: false,
         isAnyAuthConnected: false,
+        panelId: 'explorer-panel',
     }
 }
 
@@ -138,6 +139,9 @@ export default defineComponent({
         client.onDidConnectionChangeExplorer(() => {
             this.refreshPanel()
         })
+    },
+    mounted() {
+        PanelActivityState.instance.registerPanel(this.$data.panelId, 'awsExplorer')
     },
     computed: {
         credentialsFormState(): CredentialsState {

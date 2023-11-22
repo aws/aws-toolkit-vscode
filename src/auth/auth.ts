@@ -311,6 +311,21 @@ export class Auth implements AuthService, ConnectionManager {
         return connections.find(c => c.id === connection.id)
     }
 
+    /**
+     * Validate/update the given connections state.
+     *
+     * @return A connection with the latest state after being validated. Otherwise, `undefined` if the given connection does not exist.
+     */
+    public async refreshConnectionState(connection: Pick<Connection, 'id'>): Promise<undefined> {
+        const profile = this.store.getProfile(connection.id)
+
+        if (profile === undefined) {
+            return
+        }
+
+        await this.validateConnection(connection.id, profile)
+    }
+
     public async updateConnection(connection: Pick<SsoConnection, 'id'>, profile: SsoProfile): Promise<SsoConnection>
     public async updateConnection(connection: Pick<Connection, 'id'>, profile: Profile): Promise<Connection> {
         if (profile.type === 'iam') {

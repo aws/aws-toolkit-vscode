@@ -161,7 +161,7 @@ async function generateResource(prompt: string) {
         }
     } catch (error: any) {
         getLogger().debug(`CW Chat error: ${error.name} - ${error.message}`)
-        debugConnection()
+        await debugConnection()
         if (error.$metadata) {
             const { requestId, cfId, extendedRequestId } = error.$metadata
             getLogger().debug(JSON.stringify({ requestId, cfId, extendedRequestId }, undefined, 2))
@@ -183,12 +183,13 @@ function timeout<T>(promise: Promise<T>, ms: number, timeoutError = new Error('P
 // TODO-STARLING
 // Temporary function to assist with debug as Starling is coded
 // This will likely be removed prior to launch
-function debugConnection() {
+async function debugConnection() {
     const isConnected = AuthUtil.instance.isConnected()
     const isValid = AuthUtil.instance.isConnectionValid()
     const isExpired = AuthUtil.instance.isConnectionExpired()
-    const authState = getChatAuthState(AuthUtil.instance)
-    const isConnectedToCodeWhisperer = authState.codewhispererChat === 'connected'
+    const authState = await getChatAuthState(AuthUtil.instance)
+    const isConnectedToCodeWhisperer =
+        authState.codewhispererChat === 'connected' || authState.codewhispererChat === 'expired'
 
     getLogger().debug(`DEBUG: debugConnection - isConnected = ${isConnected}`)
     getLogger().debug(`DEBUG: debugConnection - isValid = ${isValid}`)

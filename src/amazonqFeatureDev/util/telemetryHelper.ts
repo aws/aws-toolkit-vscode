@@ -17,6 +17,7 @@ export class TelemetryHelper {
     public numberOfFilesGenerated: number
     public repositorySize: number
     public amazonqNumberOfReferences: number
+    public sessionStartTime: number
 
     constructor() {
         this.generateApproachIteration = 0
@@ -27,6 +28,7 @@ export class TelemetryHelper {
         this.numberOfFilesGenerated = 0
         this.repositorySize = 0
         this.amazonqNumberOfReferences = 0
+        this.sessionStartTime = performance.now()
     }
 
     public recordUserApproachTelemetry(span: Metric<AmazonqApproachInvoke>, amazonqConversationId: string) {

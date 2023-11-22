@@ -36,7 +36,11 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
         this.webViewContentGenerator = new WebViewContentGenerator()
     }
 
-    public resolveWebviewView(webviewView: WebviewView, context: WebviewViewResolveContext, _token: CancellationToken) {
+    public async resolveWebviewView(
+        webviewView: WebviewView,
+        context: WebviewViewResolveContext,
+        _token: CancellationToken
+    ) {
         webviewView.onDidChangeVisibility(() => {
             this.onDidChangeAmazonQVisibility.fire(webviewView.visible)
         })
@@ -53,7 +57,7 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
 
         dispatchAppsMessagesToWebView(webviewView.webview, this.appsMessagesListener)
 
-        webviewView.webview.html = this.webViewContentGenerator.generate(
+        webviewView.webview.html = await this.webViewContentGenerator.generate(
             this.extensionContext.extensionUri,
             webviewView.webview
         )

@@ -10,11 +10,10 @@ import parseDiff from 'parse-diff'
 import path from 'path'
 import vscode from 'vscode'
 
-import { randomUUID } from 'crypto'
-import { ToolkitError } from '../../shared/errors'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
+import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../amazonqFeatureDev/util/download'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -217,9 +216,7 @@ export class TransformationResultsProvider implements vscode.TreeDataProvider<Pr
 export class ProposedTransformationExplorer {
     private changeViewer: vscode.TreeView<ProposedChangeNode>
 
-    public static pathToDiffPatch = path.join('patch', 'diff.patch')
-    public static pathToSrcDir = 'sources'
-    public static tmpTransformedWorkspaceDir = path.join(os.tmpdir(), randomUUID())
+    public static TmpDir = os.tmpdir()
     private featureDevClient
 
     constructor(context: vscode.ExtensionContext) {
@@ -237,33 +234,73 @@ export class ProposedTransformationExplorer {
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', true)
             const root = diffModel.getRoot()
             if (root) {
-                this.changeViewer.reveal(root)
+                this.changeViewer.reveal(root, {
+                    expand: true,
+                })
+            }
+        })
+
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.summary.reveal', async () => {
+            if (transformByQState.getSummaryFilePath() !== '') {
+                await vscode.commands.executeCommand(
+                    'markdown.showPreview',
+                    vscode.Uri.file(transformByQState.getSummaryFilePath())
+                )
             }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.PreparingReview)
-            const pathToArchive = await this.downloadArchive(
+
+            const pathToArchive = path.join(
+                ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
-                ProposedTransformationExplorer.tmpTransformedWorkspaceDir
+                'ExportResultsArchive.zip'
+            )
+            const cwStreamingClient = await this.featureDevClient.getStreamingClient()
+
+            await downloadExportResultArchive(
+                cwStreamingClient,
+                {
+                    exportId: transformByQState.getJobId(),
+                    exportIntent: ExportIntent.TRANSFORMATION,
+                },
+                pathToArchive
             )
             const pathContainingArchive = path.dirname(pathToArchive)
-            console.log(`Downloaded archive to ${pathToArchive}`)
+            console.log(`Downloaded transformation results archive to ${pathToArchive}`)
             const zip = new AdmZip(pathToArchive)
-            zip.extractAllTo(ProposedTransformationExplorer.tmpTransformedWorkspaceDir)
+            zip.extractAllTo(pathContainingArchive)
 
             const workspaceFolders = vscode.workspace.workspaceFolders!
             diffModel.parseDiff(
-                path.join(pathContainingArchive, ProposedTransformationExplorer.pathToDiffPatch),
-                path.join(pathContainingArchive, ProposedTransformationExplorer.pathToSrcDir),
+                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
+                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
                 workspaceFolders[0].uri.fsPath
             )
 
             vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
             transformDataProvider.refresh()
+
+            transformByQState.setSummaryFilePath(
+                path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
+            )
+
+            const reviewDiffAction = 'View diff'
+            const reviewSummaryAction = 'View transformation summary'
+            const reviewResponse = await vscode.window.showInformationMessage(
+                'Transformation job successfully finished. You can view the changes and accept changes to further test the transformed code and push it to production.',
+                reviewDiffAction,
+                reviewSummaryAction
+            )
+            if (reviewResponse === reviewDiffAction) {
+                await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
+            } else if (reviewResponse === reviewSummaryAction) {
+                await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
+            }
         })
 
-        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', () => {
+        vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand(
@@ -272,6 +309,8 @@ export class ProposedTransformationExplorer {
                 TransformByQReviewStatus.NotStarted
             )
             transformDataProvider.refresh()
+
+            await vscode.window.showInformationMessage('Changes applied')
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', () => {
@@ -280,36 +319,5 @@ export class ProposedTransformationExplorer {
             vscode.commands.executeCommand('setCommand', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
         })
-    }
-
-    public async downloadArchive(jobId: string, pathToTmpDir: string) {
-        const client = await this.featureDevClient.getStreamingClient()
-        const archivePath = path.join(pathToTmpDir, 'ExportResultArchive.zip')
-        try {
-            const result = await client.exportResultArchive({
-                exportId: jobId,
-                exportIntent: ExportIntent.TRANSFORMATION,
-            })
-
-            const buffer = []
-            if (result.body === undefined) {
-                throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
-            }
-
-            for await (const chunk of result.body) {
-                if (chunk.binaryPayloadEvent) {
-                    const chunkData = chunk.binaryPayloadEvent
-                    if (chunkData.bytes) {
-                        buffer.push(chunkData.bytes)
-                    }
-                }
-            }
-
-            fs.outputFileSync(archivePath, Buffer.concat(buffer))
-
-            return archivePath
-        } catch (error) {
-            throw new ToolkitError('There was a problem fetching the transformed code.')
-        }
     }
 }

@@ -33,6 +33,34 @@ export class MessageController {
         })
     }
 
+    public sendSelectedCodeToTab(message: ChatItem): string | undefined {
+        const selectedTab = { ...this.tabsStorage.getSelectedTab() }
+        if (selectedTab?.id === undefined || selectedTab?.type === 'featuredev') {
+            // Create a new tab if there's none
+            const newTabID: string | undefined = this.mynahUI.updateStore(
+                '',
+                this.tabDataGenerator.getTabData('cwc', false)
+            )
+            if (newTabID === undefined) {
+                this.mynahUI.notify({
+                    content: uiComponentsTexts.noMoreTabsTooltip,
+                    type: NotificationType.WARNING,
+                })
+                return undefined
+            }
+            this.tabsStorage.addTab({
+                id: newTabID,
+                type: 'cwc',
+                status: 'free',
+                isSelected: true,
+            })
+            selectedTab.id = newTabID
+        }
+        this.mynahUI.addToUserPrompt(selectedTab.id, message.body as string)
+
+        return selectedTab.id
+    }
+
     public sendMessageToTab(message: ChatItem, tabType: TabType): string | undefined {
         const selectedTab = this.tabsStorage.getSelectedTab()
 
@@ -68,6 +96,7 @@ export class MessageController {
             })
             return undefined
         } else {
+            this.mynahUI.addChatItem(newTabID, message)
             this.mynahUI.addChatItem(newTabID, {
                 type: ChatItemType.ANSWER_STREAM,
                 body: '',
