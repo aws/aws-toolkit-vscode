@@ -68,11 +68,8 @@ export class FeatureDevController {
                 case FollowUpTypes.DevExamples:
                     this.initialExamples(data)
                     break
-                case FollowUpTypes.NewTask:
-                    this.newTask(data)
-                    break
-                case FollowUpTypes.CloseSession:
-                    this.closeSession(data)
+                case FollowUpTypes.NewPlan:
+                    this.newPlan(data)
                     break
                 case FollowUpTypes.SendFeedback:
                     this.sendFeedback()
@@ -179,12 +176,18 @@ export class FeatureDevController {
     private async onApproachGeneration(session: Session, message: string, tabID: string) {
         await session.preloader(message)
 
-        // Ensure that the loading icon stays showing
-        this.messenger.sendAsyncEventProgress(tabID, true, 'Ok, let me create a plan. This may take a few minutes.')
+        this.messenger.sendAnswer({
+            type: 'answer',
+            tabID,
+            message: 'Ok, let me create a plan. This may take a few minutes.',
+        })
 
-        this.messenger.sendUpdatePlaceholder(tabID, 'Generating approach ...')
+        // Ensure that the loading icon stays showing
+        this.messenger.sendAsyncEventProgress(tabID, true, undefined)
+
+        this.messenger.sendUpdatePlaceholder(tabID, 'Generating implementation plan ...')
         const interactions = await session.send(message)
-        this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the approach')
+        this.messenger.sendUpdatePlaceholder(tabID, 'Add more detail to iterate on the implementation plan')
 
         // Resolve the "..." with the content
         this.messenger.sendAnswer({
@@ -241,14 +244,13 @@ export class FeatureDevController {
             case 'Approach':
                 return [
                     {
-                        pillText: 'Work on new task',
-                        type: FollowUpTypes.NewTask,
+                        pillText: 'Discuss a new plan',
+                        type: FollowUpTypes.NewPlan,
                         status: 'info',
                     },
                     {
-                        pillText: 'Close session',
-                        type: FollowUpTypes.CloseSession,
-                        status: 'info',
+                        pillText: 'Coming soon: Generate code',
+                        type: FollowUpTypes.GenerateCode,
                     },
                 ]
             default:
@@ -298,10 +300,8 @@ export class FeatureDevController {
     private initialExamples(message: any) {
         const examples = `
 You can use /dev to:
-- Add a new feature or logic
-- Write tests 
-- Fix a bug in your project
-- Generate a README for a file, folder, or project
+- Plan a code change
+- Coming soon: Generate code suggestions
 
 To learn more, visit the _Amazon Q User Guide_.
 `
@@ -388,7 +388,7 @@ To learn more, visit the _Amazon Q User Guide_.
         this.sessionStorage.deleteSession(message.tabID)
     }
 
-    private async newTask(message: any) {
+    private async newPlan(message: any) {
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         this.sessionStorage.deleteSession(message.tabID)
 
@@ -398,26 +398,9 @@ To learn more, visit the _Amazon Q User Guide_.
         this.messenger.sendAnswer({
             type: 'answer',
             tabID: message.tabID,
-            message: 'What change would you like to make?',
+            message: 'What change would you like to discuss?',
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
-
-        const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-        })
-    }
-
-    private async closeSession(message: any) {
-        const closedMessage = 'Your session is now closed.'
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID: message.tabID,
-            message: closedMessage,
-        })
-        this.messenger.sendUpdatePlaceholder(message.tabID, closedMessage)
-        this.messenger.sendChatInputEnabled(message.tabID, false)
 
         const session = await this.sessionStorage.getSession(message.tabID)
         telemetry.amazonq_endChat.emit({
