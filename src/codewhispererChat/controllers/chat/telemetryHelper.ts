@@ -376,7 +376,7 @@ export class CWCTelemetryHelper {
             }
 
             const trimmed = JSON.stringify(chunkDeltaTimes).slice(0, 2_000)
-            const fixed = trimmed.endsWith(',') ? `${trimmed}0` : trimmed
+            const fixed = trimmed.endsWith(',') ? trimmed.slice(0, -1) : trimmed
             return fixed.endsWith(']') ? fixed : `${fixed}]`
         } catch (e) {
             return '[-1]'
