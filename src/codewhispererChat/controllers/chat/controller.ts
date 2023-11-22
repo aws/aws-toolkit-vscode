@@ -24,6 +24,7 @@ import {
     SourceLinkClickMessage,
     ResponseBodyLinkClickMessage,
     ChatPromptCommandType,
+    FooterInfoLinkClick,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -63,6 +64,7 @@ export interface ChatControllerMessagePublishers {
     readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
+    readonly processFooterInfoLinkClick: MessagePublisher<FooterInfoLinkClick>
 }
 
 export interface ChatControllerMessageListeners {
@@ -81,6 +83,7 @@ export interface ChatControllerMessageListeners {
     readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
+    readonly processFooterInfoLinkClick: MessageListener<FooterInfoLinkClick>
 }
 
 export class ChatController {
@@ -175,9 +178,18 @@ export class ChatController {
         this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage(data => {
             this.processResponseBodyLinkClick(data)
         })
+        this.chatControllerMessageListeners.processFooterInfoLinkClick.onMessage(data => {
+            this.processFooterInfoLinkClick(data)
+        })
     }
 
-    private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage) {
+    private processFooterInfoLinkClick(click: FooterInfoLinkClick) {
+        this.openLinkInExternalBrowser(click)
+    }
+
+    private openLinkInExternalBrowser(
+        click: ResponseBodyLinkClickMessage | SourceLinkClickMessage | FooterInfoLinkClick
+    ) {
         this.telemetryHelper.recordInteractWithMessage(click)
         ExternalBrowserUtils.instance.openLink(click.link)
     }

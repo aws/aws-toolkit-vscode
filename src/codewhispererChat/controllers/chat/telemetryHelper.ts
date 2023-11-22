@@ -19,6 +19,7 @@ import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
+    FooterInfoLinkClick,
     InsertCodeAtCursorPosition,
     PromptAnswer,
     PromptMessage,
@@ -160,6 +161,7 @@ export class CWCTelemetryHelper {
             | ChatItemVotedMessage
             | SourceLinkClickMessage
             | ResponseBodyLinkClickMessage
+            | FooterInfoLinkClick
     ) {
         const conversationId = this.getConversationId(message.tabID)
         let event: AmazonqInteractWithMessage | undefined
@@ -215,6 +217,15 @@ export class CWCTelemetryHelper {
                 message = message as ResponseBodyLinkClickMessage
                 event = {
                     cwsprChatMessageId: message.messageId,
+                    cwsprChatConversationId: conversationId ?? '',
+                    cwsprChatInteractionType: 'clickBodyLink',
+                    cwsprChatInteractionTarget: message.link,
+                }
+                break
+            case 'footer-info-link-click':
+                message = message as FooterInfoLinkClick
+                event = {
+                    cwsprChatMessageId: 'footer',
                     cwsprChatConversationId: conversationId ?? '',
                     cwsprChatInteractionType: 'clickBodyLink',
                     cwsprChatInteractionTarget: message.link,
