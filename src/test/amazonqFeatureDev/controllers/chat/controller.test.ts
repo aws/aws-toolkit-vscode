@@ -143,8 +143,15 @@ describe('Controller', () => {
                 messengerSpy.calledWith({
                     tabID,
                     type: 'answer',
-                    followUps: sinon.match.any,
                     message: new SelectedFolderNotInWorkspaceFolderError().message,
+                }),
+                true
+            )
+            assert.deepStrictEqual(
+                messengerSpy.calledWith({
+                    tabID,
+                    type: 'system-prompt',
+                    followUps: sinon.match.any,
                 }),
                 true
             )

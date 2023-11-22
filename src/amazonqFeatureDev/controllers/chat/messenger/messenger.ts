@@ -45,12 +45,7 @@ export class Messenger {
         )
     }
 
-    public sendErrorMessage(
-        errorMessage: string,
-        tabID: string,
-        retries: number,
-        phase: SessionStatePhase | undefined
-    ) {
+    public sendErrorMessage(errorMessage: string, tabID: string, retries: number, phase?: SessionStatePhase) {
         if (retries === 0) {
             this.dispatcher.sendErrorMessage(
                 new ErrorMessage(
@@ -82,9 +77,10 @@ export class Messenger {
                 )
                 break
             default:
+                // used to send generic error messages when we don't want to send the response as part of a phase
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
-                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
+                        `Sorry, we encountered a problem when processing your request.`,
                         errorMessage,
                         tabID
                     )

@@ -11,7 +11,7 @@ import { EventEmitter } from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { featureDevScheme } from '../../constants'
-import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
+import { ContentLengthError, SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
@@ -174,15 +174,30 @@ export class FeatureDevController {
                     break
             }
         } catch (err: any) {
-            const errorMessage = createUserFacingErrorMessage(
-                `${featureName} request failed: ${err.cause?.message ?? err.message}`
-            )
-            this.messenger.sendErrorMessage(
-                errorMessage,
-                message.tabID,
-                this.retriesRemaining(session),
-                session?.state.phase
-            )
+            if (err instanceof ContentLengthError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Select files for context',
+                            type: 'ModifyDefaultSourceFolder',
+                            status: 'info',
+                        },
+                    ],
+                })
+            } else {
+                const errorMessage = createUserFacingErrorMessage(
+                    `${featureName} request failed: ${err.cause?.message ?? err.message}`
+                )
+                this.messenger.sendErrorMessage(
+                    errorMessage,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    session?.state.phase
+                )
+            }
 
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
@@ -473,13 +488,18 @@ export class FeatureDevController {
             this.messenger.sendAnswer({
                 tabID: message.tabID,
                 type: 'answer',
+                message: new SelectedFolderNotInWorkspaceFolderError().message,
+            })
+            this.messenger.sendAnswer({
+                tabID: message.tabID,
+                type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: 'Modify source folder',
+                        pillText: 'Select files for context',
                         type: 'ModifyDefaultSourceFolder',
+                        status: 'info',
                     },
                 ],
-                message: new SelectedFolderNotInWorkspaceFolderError().message,
             })
             return
         }
