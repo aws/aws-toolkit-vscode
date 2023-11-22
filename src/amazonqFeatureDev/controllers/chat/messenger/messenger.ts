@@ -54,6 +54,18 @@ export class Messenger {
                     tabID
                 )
             )
+            this.sendAnswer({
+                message: undefined,
+                type: 'system-prompt',
+                followUps: [
+                    {
+                        pillText: 'Send feedback',
+                        type: FollowUpTypes.SendFeedback,
+                        status: 'info',
+                    },
+                ],
+                tabID,
+            })
             return
         }
 

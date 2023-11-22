@@ -21,6 +21,8 @@ import { Messenger } from './messenger/messenger'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
+import { submitFeedback } from '../../../feedback/vue/submitFeedback'
+import { placeholder } from '../../../shared/vscode/commands2'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -91,6 +93,9 @@ export class FeatureDevController {
                     break
                 case FollowUpTypes.CloseSession:
                     this.closeSession(data)
+                    break
+                case FollowUpTypes.SendFeedback:
+                    this.sendFeedback()
                     break
             }
         })
@@ -647,6 +652,10 @@ To learn more, visit the _Amazon Q User Guide_.
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
         })
+    }
+
+    private sendFeedback() {
+        submitFeedback.execute(placeholder, 'AmazonQ')
     }
 
     private retriesRemaining(session: Session | undefined) {
