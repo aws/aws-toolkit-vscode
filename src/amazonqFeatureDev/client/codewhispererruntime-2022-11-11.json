@@ -588,32 +588,6 @@
                 }
             }
         },
-        "CodeGenerationId": {
-            "type": "string",
-            "documentation": "<p>ID which represents a single code generation in a conversation</p>",
-            "max": 128,
-            "min": 1
-        },
-        "CodeGenerationStatus": {
-            "type": "structure",
-            "required": ["status", "currentStage"],
-            "members": {
-                "status": {
-                    "shape": "CodeGenerationWorkflowStatus"
-                },
-                "currentStage": {
-                    "shape": "CodeGenerationWorkflowStage"
-                }
-            }
-        },
-        "CodeGenerationWorkflowStage": {
-            "type": "string",
-            "enum": ["InitialCodeGeneration", "CodeRefinement"]
-        },
-        "CodeGenerationWorkflowStatus": {
-            "type": "string",
-            "enum": ["InProgress", "Complete", "Failed"]
-        },
         "CodeScanEvent": {
             "type": "structure",
             "required": ["programmingLanguage", "codeScanJobId", "timestamp"],
