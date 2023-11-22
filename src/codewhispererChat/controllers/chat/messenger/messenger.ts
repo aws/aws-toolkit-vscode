@@ -159,7 +159,7 @@ export class Messenger {
                                 tabID
                             )
                         )
-                        this.telemetryHelper.setResponseStreamTimeToFirstChunk(tabID)
+                        this.telemetryHelper.setResponseStreamTimeForChunks(tabID)
                     }
 
                     if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks !== undefined) {

@@ -5,6 +5,7 @@
 
 import { reconnect, showManageCwConnections } from '../../codewhisperer/commands/basicCommands'
 import { amazonQChatSource } from '../../codewhisperer/commands/types'
+import { recordTelemetryChatRunCommand } from '../../codewhispererChat/controllers/chat/telemetryHelper'
 import { placeholder } from '../../shared/vscode/commands2'
 import { AuthFollowUpType } from './model'
 
@@ -14,10 +15,12 @@ export class AuthController {
             case 'use-supported-auth':
             case 'full-auth':
                 this.handleFullAuth()
+                recordTelemetryChatRunCommand('auth', type)
                 break
             case 'missing_scopes':
             case 're-auth':
                 this.handleReAuth()
+                recordTelemetryChatRunCommand('auth', type)
                 break
         }
     }

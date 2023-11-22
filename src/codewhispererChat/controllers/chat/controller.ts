@@ -38,7 +38,7 @@ import {
     GenerateAssistantResponseCommandOutput,
 } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
-import { CWCTelemetryHelper } from './telemetryHelper'
+import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
@@ -209,10 +209,12 @@ export class ChatController {
 
                 if (quickActionCommand === 'help') {
                     this.generateStaticTextResponse('quick-action-help', triggerID)
+                    recordTelemetryChatRunCommand('help')
                     return
                 } else if (quickActionCommand === 'transform') {
                     this.generateStaticTextResponse('transform', triggerID)
                     processTransformByQ()
+                    recordTelemetryChatRunCommand('transform')
                     return
                 }
             })
@@ -459,6 +461,7 @@ export class ChatController {
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
+                recordTelemetryChatRunCommand('clear')
                 return
             default:
                 this.processQuickActionCommand(message.command)

@@ -7,6 +7,7 @@ import { UserIntent } from '@amzn/codewhisperer-streaming'
 import {
     AmazonqAddMessage,
     AmazonqInteractWithMessage,
+    CwsprChatCommandType,
     CwsprChatTriggerInteraction,
     CwsprChatUserIntent,
     MetricBase,
@@ -63,12 +64,20 @@ export function logSendTelemetryEventFailure(error: any) {
     )
 }
 
+export function recordTelemetryChatRunCommand(type: CwsprChatCommandType, command?: string) {
+    telemetry.amazonq_runCommand.emit({
+        result: 'Succeeded',
+        cwsprChatCommandType: type,
+        cwsprChatCommandName: command,
+    })
+}
+
 export class CWCTelemetryHelper {
     private sessionStorage: ChatSessionStorage
     private triggerEventsStorage: TriggerEventsStorage
     private responseStreamStartTime: Map<string, number> = new Map()
     private responseStreamTotalTime: Map<string, number> = new Map()
-    private responseStreamTimeToFirstChunk: Map<string, number | undefined> = new Map()
+    private responseStreamTimeForChunks: Map<string, number[]> = new Map()
 
     constructor(sessionStorage: ChatSessionStorage, triggerEventsStorage: TriggerEventsStorage) {
         this.sessionStorage = sessionStorage
@@ -97,19 +106,19 @@ export class CWCTelemetryHelper {
     }
 
     public recordOpenChat() {
-        telemetry.amazonq_openChat.emit()
+        telemetry.amazonq_openChat.emit({ result: 'Succeeded' })
     }
 
     public recordCloseChat() {
-        telemetry.amazonq_closeChat.emit()
+        telemetry.amazonq_closeChat.emit({ result: 'Succeeded' })
     }
 
     public recordEnterFocusChat() {
-        telemetry.amazonq_enterFocusChat.emit()
+        telemetry.amazonq_enterFocusChat.emit({ result: 'Succeeded' })
     }
 
     public recordExitFocusChat() {
-        telemetry.amazonq_exitFocusChat.emit()
+        telemetry.amazonq_exitFocusChat.emit({ result: 'Succeeded' })
     }
 
     public async recordFeedback(message: ChatItemFeedbackMessage) {
@@ -217,7 +226,7 @@ export class CWCTelemetryHelper {
             return
         }
 
-        telemetry.amazonq_interactWithMessage.emit(event)
+        telemetry.amazonq_interactWithMessage.emit({ result: 'Succeeded', ...event })
 
         codeWhispererClient
             .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_interactWithMessage', event))
@@ -248,6 +257,7 @@ export class CWCTelemetryHelper {
         const telemetryUserIntent = this.getUserIntentForTelemetry(triggerPayload.userIntent)
 
         telemetry.amazonq_startConversation.emit({
+            result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(triggerEvent.tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatConversationType: 'Chat',
@@ -274,14 +284,15 @@ export class CWCTelemetryHelper {
             cwsprChatSourceLinkCount: message.suggestionCount,
             cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
-            cwsprChatTimeToFirstChunk: this.responseStreamTimeToFirstChunk.get(message.tabID) ?? 0,
+            cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID),
+            cwsprChatTimeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
             cwsprChatConversationType: 'Chat',
         }
 
-        telemetry.amazonq_addMessage.emit(event)
+        telemetry.amazonq_addMessage.emit({ result: 'Succeeded', ...event })
 
         codeWhispererClient
             .sendTelemetryEvent(mapToClientTelemetryEvent('amazonq_addMessage', event))
@@ -293,6 +304,7 @@ export class CWCTelemetryHelper {
         const triggerEvent = this.triggerEventsStorage.getLastTriggerEventByTabID(tabID)
 
         telemetry.amazonq_messageResponseError.emit({
+            result: 'Succeeded',
             cwsprChatConversationId: this.getConversationId(tabID) ?? '',
             cwsprChatTriggerInteraction: this.getTriggerInteractionFromTriggerEvent(triggerEvent),
             cwsprChatUserIntent: this.getUserIntentForTelemetry(triggerPayload.userIntent),
@@ -310,6 +322,7 @@ export class CWCTelemetryHelper {
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
             telemetry.amazonq_enterFocusConversation.emit({
+                result: 'Succeeded',
                 cwsprChatConversationId: conversationId,
             })
         }
@@ -319,6 +332,7 @@ export class CWCTelemetryHelper {
         const conversationId = this.getConversationId(tabID)
         if (conversationId) {
             telemetry.amazonq_exitFocusConversation.emit({
+                result: 'Succeeded',
                 cwsprChatConversationId: conversationId,
             })
         }
@@ -326,14 +340,27 @@ export class CWCTelemetryHelper {
 
     public setResponseStreamStartTime(tabID: string) {
         this.responseStreamStartTime.set(tabID, performance.now())
-        this.responseStreamTimeToFirstChunk.set(tabID, undefined)
+        this.responseStreamTimeForChunks.set(tabID, [performance.now()])
     }
 
-    public setResponseStreamTimeToFirstChunk(tabID: string) {
-        if (this.responseStreamTimeToFirstChunk.get(tabID) === undefined) {
-            const chunkTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
-            this.responseStreamTimeToFirstChunk.set(tabID, Math.round(chunkTime))
+    public setResponseStreamTimeForChunks(tabID: string) {
+        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? []
+        this.responseStreamTimeForChunks.set(tabID, [...chunkTimes, performance.now()])
+    }
+
+    private getResponseStreamTimeToFirstChunk(tabID: string): number {
+        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0, 0]
+        return Math.round(chunkTimes[1] - chunkTimes[0])
+    }
+
+    private getResponseStreamTimeBetweenChunks(tabID: string): string {
+        const chunkDeltaTimes: number[] = []
+        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
+        for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
+            chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
         }
+
+        return JSON.stringify(chunkDeltaTimes)
     }
 
     public setResponseStreamTotalTime(tabID: string) {
