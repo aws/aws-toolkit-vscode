@@ -823,6 +823,14 @@
                 "label": "%AWS.codecatalyst.submenu.title%",
                 "icon": "$(ellipsis)",
                 "when": "isCloud9 || !aws.isWebExtHost"
+            },
+            {
+                "label": "%AWS.generic.feedback%",
+                "id": "aws.submenu.feedback"
+            },
+            {
+                "label": "%AWS.generic.help%",
+                "id": "aws.submenu.help"
             }
         ],
         "menus": {
@@ -1398,59 +1406,44 @@
                     "group": "3_lambda@3"
                 },
                 {
-                    "command": "aws.quickStart",
-                    "when": "view == aws.explorer",
+                    "submenu": "aws.submenu.feedback",
+                    "when": "view != aws.AmazonQChatView",
                     "group": "y_toolkitMeta@1"
                 },
                 {
-                    "command": "aws.help",
-                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
+                    "submenu": "aws.submenu.help",
+                    "when": "view != aws.AmazonQChatView",
                     "group": "y_toolkitMeta@2"
                 },
                 {
-                    "command": "aws.github",
-                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_toolkitMeta@3"
-                },
-                {
-                    "command": "aws.createIssueOnGitHub",
-                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_toolkitMeta@4"
-                },
-                {
-                    "command": "aws.submitFeedback",
-                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "y_toolkitMeta@5"
-                },
-                {
-                    "command": "aws.aboutToolkit",
-                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "z_about@1"
-                },
-                {
-                    "command": "aws.viewLogs",
-                    "when": "view == aws.explorer || !aws.explorer.visible && view =~ /^aws/",
-                    "group": "z_about@1"
-                },
-                {
                     "command": "aws.codecatalyst.cloneRepo",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codecatalyst.createDevEnv",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codecatalyst.listCommands",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codecatalyst.openDevEnv",
-                    "when": "view == aws.codecatalyst && !isCloud9",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
                     "group": "1_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.manageConnections",
+                    "when": "view == aws.codecatalyst && !isCloud9 && !aws.codecatalyst.connected",
+                    "group": "2_codeCatalyst@1"
+                },
+                {
+                    "command": "aws.codecatalyst.signout",
+                    "when": "view == aws.codecatalyst && !isCloud9 && aws.codecatalyst.connected",
+                    "group": "2_codeCatalyst@1"
                 },
                 {
                     "command": "aws.codeWhisperer.openReferencePanel",
@@ -1459,7 +1452,12 @@
                 },
                 {
                     "command": "aws.amazonq.learnMore",
-                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
+                    "when": "view == aws.AmazonQChatView || view == aws.amazonq",
+                    "group": "1_amazonQ@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.introduction",
+                    "when": "view == aws.codewhisperer",
                     "group": "1_amazonQ@1"
                 },
                 {
@@ -2174,6 +2172,38 @@
                     "command": "aws.auth.signout",
                     "enablement": "!isCloud9",
                     "group": "0@3"
+                }
+            ],
+            "aws.submenu.feedback": [
+                {
+                    "command": "aws.submitFeedback",
+                    "group": "1_feedback@1"
+                },
+                {
+                    "command": "aws.createIssueOnGitHub",
+                    "group": "1_feedback@2"
+                }
+            ],
+            "aws.submenu.help": [
+                {
+                    "command": "aws.quickStart",
+                    "group": "1_help@1"
+                },
+                {
+                    "command": "aws.help",
+                    "group": "1_help@2"
+                },
+                {
+                    "command": "aws.github",
+                    "group": "1_help@3"
+                },
+                {
+                    "command": "aws.aboutToolkit",
+                    "group": "1_help@4"
+                },
+                {
+                    "command": "aws.viewLogs",
+                    "group": "1_help@5"
                 }
             ]
         },
