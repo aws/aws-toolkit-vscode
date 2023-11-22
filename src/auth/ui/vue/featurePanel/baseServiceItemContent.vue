@@ -6,7 +6,6 @@
 import { PropType, defineComponent, reactive } from 'vue'
 import { FeatureStatus } from '../authForms/shared.vue'
 import { ServiceItemId } from '../types'
-import { ConnectionUpdateArgs } from '../authForms/baseAuth.vue'
 import TelemetryClient from '../telemetry.vue'
 import { WebviewClientFactory } from '../../../../webviews/client'
 import { AuthWebview } from '../show'
@@ -16,7 +15,6 @@ const client = WebviewClientFactory.create<AuthWebview>()
 export default defineComponent({
     name: 'BaseServiceItemContent',
     extends: TelemetryClient,
-    emits: ['auth-connection-updated'],
     props: {
         state: {
             type: Object as PropType<FeatureStatus>,
@@ -33,9 +31,6 @@ export default defineComponent({
         }
     },
     methods: {
-        emitAuthConnectionUpdated(id: ServiceItemId, args: ConnectionUpdateArgs) {
-            this.$emit('auth-connection-updated', id, args)
-        },
         /** Refreshes the element that has the ":key=authFormContainerKey" attribute set */
         refreshAuthFormContainer() {
             this.authFormContainerKey++

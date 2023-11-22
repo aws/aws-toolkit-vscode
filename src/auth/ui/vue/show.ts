@@ -49,7 +49,7 @@ import { handleWebviewError } from '../../../webviews/server'
 import { amazonQChatSource, cwQuickPickSource, cwTreeNodeSource } from '../../../codewhisperer/commands/types'
 import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from '../../../shared/vscode/commands2'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
-import { throttle } from 'lodash'
+import { debounce } from 'lodash'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 
 export class AuthWebview extends VueWebview {
@@ -180,6 +180,10 @@ export class AuthWebview extends VueWebview {
 
     async showCodeCatalystNode(): Promise<void> {
         vscode.commands.executeCommand('aws.codecatalyst.maybeFocus')
+    }
+
+    async showAmazonQChat(): Promise<void> {
+        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
     }
 
     async getIdentityCenterRegion(): Promise<Region | undefined> {
@@ -355,11 +359,12 @@ export class AuthWebview extends VueWebview {
         Auth.instance.onDidUpdateConnection(awsExplorerConnectionChanged)
 
         /**
-         * Multiple events can be received in rapid succession
-         * so we throttle all subsequent events after the first.
+         * Multiple events can be received in rapid succession and if
+         * we execute on the first one it is possible to get a stale
+         * state.
          */
         function createThrottle(callback: () => void) {
-            return throttle(callback, 500, { leading: true })
+            return debounce(callback, 500)
         }
     }
 

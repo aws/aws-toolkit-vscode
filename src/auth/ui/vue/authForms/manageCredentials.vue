@@ -1,29 +1,27 @@
 <template>
-    <div class="auth-form container-background border-common">
+    <div class="auth-container">
         <div>
-            <FormTitle :isConnected="isConnected">IAM Credentials</FormTitle>
+            <button v-on:click="toggleInputFormShown" :class="lowPriorityButton">
+                <div :class="collapsibleClass" class="auth-container-icon"></div>
+                {{ buttonText }}
+            </button>
 
-            <div class="form-section" v-if="isConnected">
-                <button v-on:click="showResourceExplorer">Open Resource Explorer</button>
-            </div>
+            <div v-show="isInputFormShown" class="auth-form-container">
+                <div v-if="isConnected">
+                    <button v-on:click="showResourceExplorer">Open Resource Explorer</button>
+                </div>
 
-            <div v-if="isConnected" class="form-section" v-on:click="toggleShowForm()" id="collapsible">
-                <div :class="collapsibleClass"></div>
-                <div>Add another profile</div>
-            </div>
-
-            <div v-if="isFormShown">
-                <div class="form-section">
+                <div>
                     <label class="form-description-color input-description-small"
-                        >Credentials will be added to the appropriate `~/.aws/` files.</label
+                        >Credentials will be added to the appropriate ~/.aws/ files.</label
                     >
-                    <div v-on:click="editCredentialsFile()" class="sub-text-color" style="cursor: pointer">
-                        <div class="icon icon-vscode-edit edit-icon"></div>
+                    <div v-on:click="editCredentialsFile()" class="text-link-color" style="cursor: pointer">
+                        <div class="icon icon-vscode-edit text-link-color"></div>
                         Edit file directly
                     </div>
                 </div>
 
-                <div class="form-section">
+                <div>
                     <label class="input-title">Profile Name</label>
                     <label class="form-description-color input-description-small"
                         >The identifier for these credentials</label
@@ -34,7 +32,7 @@
                     </div>
                 </div>
 
-                <div class="form-section">
+                <div>
                     <label class="input-title">Access Key</label>
                     <input v-model="data.aws_access_key_id" :data-invalid="!!errors.aws_access_key_id" type="text" />
                     <div class="form-description-color input-description-small error-text">
@@ -42,7 +40,7 @@
                     </div>
                 </div>
 
-                <div class="form-section">
+                <div>
                     <label class="input-title">Secret Key</label>
                     <input
                         v-model="data.aws_secret_access_key"
@@ -54,7 +52,7 @@
                     </div>
                 </div>
 
-                <div class="form-section">
+                <div>
                     <button v-on:click="submitData()" :disabled="!canSubmit">Add Profile</button>
                     <div class="form-description-color input-description-small error-text">{{ errors.submit }}</div>
                 </div>
@@ -108,20 +106,30 @@ export default defineComponent({
              * This is for the edge case when we use an accordion and
              * need to know if we should show the form
              */
-            isFormShown: false,
+            isInputFormShown: false,
+            lowPriorityButton: 'low-priority-button',
+            buttonText: '',
         }
     },
     async created() {
-        this.isFormShown = this.checkIfConnected ? !(await this.state.isAuthConnected()) : true
+        if (!this.checkIfConnected && (await this.state.isAuthConnected())) {
+            this.buttonText = 'Add an IAM Role Credential'
+        } else {
+            this.buttonText = 'Or, provide IAM Roles Credentials'
+        }
+
         await this.updateConnectedStatus('created')
     },
     computed: {
         /** The appropriate accordion symbol (collapsed/uncollapsed) */
         collapsibleClass() {
-            return this.isFormShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
+            return this.isInputFormShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
         },
     },
     methods: {
+        toggleInputFormShown() {
+            this.isInputFormShown = !this.isInputFormShown
+        },
         async setNewValue(key: CredentialsDataKey, newVal: string) {
             if (newVal) {
                 // Edge Case:
@@ -147,7 +155,7 @@ export default defineComponent({
 
             const wasSuccessful = await this.state.submitData()
             if (wasSuccessful) {
-                this.isFormShown = false
+                this.isInputFormShown = false
                 await this.updateConnectedStatus('signIn')
             }
 
@@ -155,7 +163,7 @@ export default defineComponent({
             this.canSubmit = true // enable submit button
         },
         toggleShowForm() {
-            this.isFormShown = !this.isFormShown
+            this.isInputFormShown = !this.isInputFormShown
         },
         updateForm() {
             this.data = this.state.data
