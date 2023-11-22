@@ -16,7 +16,6 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
 import { ToolkitError } from '../../shared/errors'
 
-
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
 
@@ -258,7 +257,6 @@ export class ProposedTransformationExplorer {
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
                 'ExportResultsArchive.zip'
-
             )
             const cwStreamingClient = await this.featureDevClient.getStreamingClient()
             try {
