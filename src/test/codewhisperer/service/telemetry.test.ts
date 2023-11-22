@@ -543,12 +543,13 @@ async function acceptByTab() {
     // we have to wait until the inline suggestion is shown in the editor however we don't have an useable API for that so hacky wait to know if the accept is taking effect
     await waitUntil(
         async () => {
+            await sleep(50)
             await vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
             if (editor.document.getText() !== originalContent) {
                 return true
             }
         },
-        { interval: 50 }
+        { interval: 10 }
     )
 
     // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed "before" onAcceptance hook
