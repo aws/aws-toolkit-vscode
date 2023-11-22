@@ -1447,7 +1447,12 @@
                 },
                 {
                     "command": "aws.amazonq.learnMore",
-                    "when": "view == aws.AmazonQChatView || view == aws.codewhisperer ||  view == aws.amazonq",
+                    "when": "view == aws.AmazonQChatView || view == aws.amazonq",
+                    "group": "1_amazonQ@1"
+                },
+                {
+                    "command": "aws.codeWhisperer.introduction",
+                    "when": "view == aws.codewhisperer",
                     "group": "1_amazonQ@1"
                 },
                 {
