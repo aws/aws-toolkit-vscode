@@ -88,17 +88,6 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
-            const prompts = PromptSettings.instance
-
-            const shouldShow = await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')
-            // To check valid connection
-            if (this.isValidEnterpriseSsoInUse() || (this.isBuilderIdInUse() && !this.isConnectionExpired())) {
-                //If user login old or new, If welcome message is not shown then open the Getting Started Page after this mark it as SHOWN.
-                if (shouldShow) {
-                    vscode.commands.executeCommand('aws.codeWhisperer.gettingStarted')
-                    prompts.disablePrompt('codeWhispererNewWelcomeMessage')
-                }
-            }
             await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
         })
     }
