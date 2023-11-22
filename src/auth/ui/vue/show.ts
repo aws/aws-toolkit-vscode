@@ -391,7 +391,7 @@ export class AuthWebview extends VueWebview {
     }
 
     openFeedbackForm() {
-        submitFeedback.execute('AWS Toolkit')
+        submitFeedback.execute(placeholder, 'AWS Toolkit')
     }
 
     // -------------------- Telemetry Stuff --------------------
