@@ -3734,7 +3734,10 @@
                 "command": "aws.openInApplicationComposer",
                 "title": "%AWS.command.applicationComposer.open%",
                 "category": "%AWS.title%",
-                "icon": "$(aws-applicationcomposer-icon)",
+                "icon": {
+                    "dark": "resources/icons/aws/applicationcomposer/icon-dark.svg",
+                    "light": "resources/icons/aws/applicationcomposer/icon.svg"
+                },
                 "cloud9": {
                     "cn": {
                         "category": "%AWS.title.cn%"
