@@ -65,10 +65,9 @@ export class SystemUtilities {
         return os.homedir()
     }
 
-    public static async readFile(file: string | vscode.Uri): Promise<string> {
+    public static async readFile(file: string | vscode.Uri, decoder: TextDecoder = new TextDecoder()): Promise<string> {
         const uri = typeof file === 'string' ? vscode.Uri.file(file) : file
         const errorHandler = createPermissionsErrorHandler(uri, 'r**')
-        const decoder = new TextDecoder()
 
         if (isCloud9()) {
             return decoder.decode(await fs.readFile(uri.fsPath).catch(errorHandler))
