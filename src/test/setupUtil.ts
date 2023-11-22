@@ -10,6 +10,7 @@ import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
 import { getTestWindow, printPendingUiElements } from './shared/vscode/window'
 import { ToolkitError, formatError } from '../shared/errors'
+import { proceedToBrowser } from '../auth/sso/model'
 
 const runnableTimeout = Symbol('runnableTimeout')
 
@@ -56,8 +57,14 @@ export function setRunnableTimeout(test: Mocha.Runnable, maxTestDuration: number
 }
 
 export function skipTest(testOrCtx: Mocha.Context | Mocha.Test | undefined, reason?: string) {
-    const test =
-        testOrCtx?.type === 'test' ? (testOrCtx as Mocha.Test) : (testOrCtx as Mocha.Context | undefined)?.currentTest
+    let test
+
+    if (testOrCtx?.type === 'test') {
+        test = testOrCtx as Mocha.Test
+    } else {
+        const context = testOrCtx as Mocha.Context | undefined
+        test = context?.currentTest ?? context?.test
+    }
 
     if (test) {
         test.title += ` (skipped${reason ? ` - ${reason}` : ''})`
@@ -203,7 +210,7 @@ function maskArns(text: string) {
  */
 export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
     return getTestWindow().onDidShowMessage(message => {
-        if (message.items[0].title.match(/Copy Code/)) {
+        if (message.items[0].title.match(new RegExp(proceedToBrowser))) {
             if (!lambdaId) {
                 const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
                 if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
@@ -215,10 +222,17 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
 
             const openStub = patchObject(vscode.env, 'openExternal', async target => {
                 try {
+                    const url = new URL(target.toString(true))
+                    const userCode = url.searchParams.get('user_code')
+
+                    // TODO: Update this to just be the full URL if the authorizer lambda ever
+                    // supports the verification URI with user code embedded (VerificationUriComplete).
+                    const verificationUri = url.origin
+
                     await invokeLambda(lambdaId, {
                         secret,
-                        userCode: await vscode.env.clipboard.readText(),
-                        verificationUri: target.toString(),
+                        userCode,
+                        verificationUri,
                     })
                 } finally {
                     openStub.dispose()
