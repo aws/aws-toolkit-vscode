@@ -73,12 +73,7 @@ function mapToAggregatedList(
                 filePath: filePath,
                 issues: issues.map(issue => {
                     return {
-                        startLine:
-                            issue.startLine === issue.endLine
-                                ? issue.startLine - 1 >= 0
-                                    ? issue.startLine - 1
-                                    : 0
-                                : issue.endLine,
+                        startLine: issue.startLine - 1 >= 0 ? issue.startLine - 1 : 0,
                         endLine: issue.endLine,
                         comment: `${issue.title.trim()}: ${issue.description.text.trim()}`,
                         title: issue.title,
