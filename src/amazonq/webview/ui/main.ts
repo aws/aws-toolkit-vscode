@@ -195,7 +195,7 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
             const answer: ChatItem = {
                 type: ChatItemType.ANSWER,
                 body: `**${title}** 
-${message}`,
+ ${message}`,
             }
 
             if (tabID !== '') {
