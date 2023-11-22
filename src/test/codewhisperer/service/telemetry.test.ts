@@ -373,7 +373,7 @@ describe('CodeWhisperer telemetry', async function () {
             await typing(editor, 'F')
             assertTextEditorContains('F')
 
-            await backsapce(editor)
+            await backspace(editor)
             assertTextEditorContains('')
 
             await acceptByTab()
@@ -426,7 +426,7 @@ describe('CodeWhisperer telemetry', async function () {
 
             RecommendationHandler.instance.onEditorChange()
             assertSessionClean()
-            await backsapce(editor) // todo: without this, the following manual trigger will not be displayed in the test, investigate and fix it
+            await backspace(editor) // todo: without this, the following manual trigger will not be displayed in the test, investigate and fix it
 
             await manualTrigger(editor, client, config)
             await acceptByTab()
@@ -566,7 +566,7 @@ async function typing(editor: vscode.TextEditor, s: string) {
     await sleep(100)
 }
 
-async function backsapce(editor: vscode.TextEditor) {
+async function backspace(editor: vscode.TextEditor) {
     return vscode.commands.executeCommand('deleteLeft')
 }
 
