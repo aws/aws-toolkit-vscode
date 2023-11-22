@@ -109,6 +109,21 @@ async function generateResource(prompt: string) {
 
             if (value.codeReferenceEvent?.references && value.codeReferenceEvent.references.length > 0) {
                 references = references.concat(value.codeReferenceEvent.references)
+
+                // Code References are not expected for these single resource prompts
+                // As we don't yet have the workflows needed to accept references, create the properly structured
+                // CW Reference log event, we will reject responses that have code references
+                let errorMessage = 'Code references found for this response, rejecting.'
+
+                if (conversationId) {
+                    errorMessage += ` cID(${conversationId})`
+                }
+
+                if (metadata?.requestId) {
+                    errorMessage += ` rID(${metadata.requestId})`
+                }
+
+                throw new Error(errorMessage)
             }
         }
 
