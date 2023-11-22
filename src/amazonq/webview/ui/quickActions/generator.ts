@@ -35,7 +35,7 @@ export class QuickActionGenerator {
                                           command: '/dev',
                                           placeholder: 'Briefly describe a task or issue',
                                           description:
-                                              'Use all project files as context for code suggestions (increases latency).',
+                                              'Generate implementation plan for a change, code generation coming soon.',
                                       },
                                   ],
                               },
