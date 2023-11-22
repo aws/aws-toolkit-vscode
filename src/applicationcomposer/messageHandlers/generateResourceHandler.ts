@@ -72,6 +72,10 @@ async function generateResource(prompt: string) {
         let supplementaryWebLinks: SupplementaryWebLink[] = []
         let references: Reference[] = []
 
+        if (AuthUtil.instance.isConnectionExpired()) {
+            await AuthUtil.instance.showReauthenticatePrompt()
+        }
+
         startTime = globals.clock.Date.now()
         // TODO-STARLING - Revisit to see if timeout still needed prior to launch
         const data = await timeout(chatSession.chat(request), TIMEOUT)
