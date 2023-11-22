@@ -16,7 +16,6 @@ import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
-import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { ContentLengthError } from '../errors'
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
@@ -124,6 +123,7 @@ export class FeatureDevClient {
             throw new ToolkitError((e as Error).message, { code: 'CreateUploadUrlFailed' })
         }
     }
+
     public async generatePlan(conversationId: string, uploadId: string, userMessage: string) {
         try {
             const streamingClient = await this.getStreamingClient()
@@ -157,110 +157,6 @@ export class FeatureDevClient {
                 `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
             )
             throw new ToolkitError((e as Error).message, { code: 'GeneratePlanFailed' })
-        }
-    }
-
-    public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
-        try {
-            const client = await this.getClient()
-            const params = {
-                conversationState: {
-                    conversationId,
-                    currentMessage: {
-                        userInputMessage: { content: message },
-                    },
-                    chatTriggerType: 'MANUAL',
-                },
-                workspaceState: {
-                    uploadId,
-                    programmingLanguage: { languageName: 'javascript' },
-                },
-            }
-            getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
-            const response = await client.startTaskAssistCodeGeneration(params).promise()
-
-            return response
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to start code generation: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
-        }
-    }
-
-    public async getCodeGeneration(conversationId: string, codeGenerationId: string) {
-        try {
-            const client = await this.getClient()
-            const params = {
-                codeGenerationId,
-                conversationId,
-            }
-            getLogger().debug(`Executing getTaskAssistCodeGeneration with %O`, params)
-            const response = await client.getTaskAssistCodeGeneration(params).promise()
-
-            return response
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to start get code generation results: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'GetCodeGenerationFailed' })
-        }
-    }
-
-    public async exportResultArchive(conversationId: string) {
-        try {
-            const streamingClient = await this.getStreamingClient()
-            const params = {
-                exportId: conversationId,
-                exportIntent: 'TASK_ASSIST',
-            }
-            getLogger().debug(`Executing exportResultArchive with %O`, params)
-            const archiveResponse = await streamingClient.exportResultArchive(params)
-            const buffer: number[] = []
-            if (archiveResponse.body === undefined) {
-                throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
-            }
-            for await (const chunk of archiveResponse.body) {
-                if (chunk.internalServerException !== undefined) {
-                    throw chunk.internalServerException
-                }
-                buffer.push(...(chunk.binaryPayloadEvent?.bytes ?? []))
-            }
-
-            const {
-                code_generation_result: {
-                    new_file_contents: newFiles = [],
-                    deleted_files: deletedFiles = [],
-                    references = [],
-                },
-            } = JSON.parse(new TextDecoder().decode(Buffer.from(buffer))) as {
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                code_generation_result: {
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    new_file_contents?: Record<string, string>
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    deleted_files?: string[]
-                    references?: CodeReference[]
-                }
-            }
-
-            const newFileContents: { filePath: string; fileContent: string }[] = []
-            for (const [filePath, fileContent] of Object.entries(newFiles)) {
-                newFileContents.push({ filePath, fileContent })
-            }
-
-            return { newFileContents, deletedFiles, references }
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to export archive result: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
         }
     }
 }

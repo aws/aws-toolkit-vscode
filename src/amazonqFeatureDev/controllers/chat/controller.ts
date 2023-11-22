@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemFollowUp, MynahIcons } from '@aws/mynah-ui-chat'
+import { ChatItemFollowUp } from '@aws/mynah-ui-chat'
 import { existsSync } from 'fs'
 import * as path from 'path'
 import * as vscode from 'vscode'
@@ -39,7 +39,6 @@ type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; del
 export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
-    private isAmazonQVisible: boolean
     private authController: AuthController
 
     public constructor(
@@ -52,16 +51,6 @@ export class FeatureDevController {
         this.sessionStorage = sessionStorage
         this.authController = new AuthController()
 
-        /**
-         * defaulted to true because onDidChangeAmazonQVisibility doesn't get fire'd until after
-         * the view is opened
-         */
-        this.isAmazonQVisible = true
-
-        onDidChangeAmazonQVisibility(visible => {
-            this.isAmazonQVisible = visible
-        })
-
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data)
         })
@@ -70,15 +59,6 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.followUpClicked.event(data => {
             switch (data.followUp.type) {
-                case FollowUpTypes.WriteCode:
-                    this.writeCodeClicked(data)
-                    break
-                case FollowUpTypes.AcceptCode:
-                    this.acceptCode(data)
-                    break
-                case FollowUpTypes.ProvideFeedbackAndRegenerateCode:
-                    this.provideFeedbackAndRegenerateCode(data)
-                    break
                 case FollowUpTypes.Retry:
                     this.retryRequest(data)
                     break
@@ -133,26 +113,13 @@ export class FeatureDevController {
                     })
                 }
                 break
-            case 'Codegen':
-                if (vote === 'upvote') {
-                    telemetry.amazonq_codeGenerationThumbsUp.emit({
-                        amazonqConversationId: session?.conversationId,
-                        value: 1,
-                    })
-                } else if (vote === 'downvote') {
-                    telemetry.amazonq_codeGenerationThumbsDown.emit({
-                        amazonqConversationId: session?.conversationId,
-                        value: 1,
-                    })
-                }
-                break
         }
     }
 
     // TODO add type
     private async processUserChatMessage(message: any) {
         if (message.message === undefined) {
-            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0, undefined)
+            this.messenger.sendErrorMessage('chatMessage should be set', message.tabID, 0)
             return
         }
 
@@ -169,17 +136,10 @@ export class FeatureDevController {
                 return
             }
 
-            if (session.state.phase === 'Approach' && /yes|ya|y|yeah|ok/i.test(message.message)) {
-                return this.writeCodeClicked(message)
-            }
-
             switch (session.state.phase) {
                 case 'Init':
                 case 'Approach':
                     await this.onApproachGeneration(session, message.message, message.tabID)
-                    break
-                case 'Codegen':
-                    await this.onCodeGeneration(session, message.message, message.tabID)
                     break
             }
         } catch (err: any) {
@@ -234,13 +194,6 @@ export class FeatureDevController {
             canBeVoted: true,
         })
 
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID,
-            message:
-                'Would you like me to generate a suggestion for this? You will be able to review a file diff before inserting code in your project.',
-        })
-
         // Follow up with action items and complete the request stream
         this.messenger.sendAnswer({
             type: 'system-prompt', // show the followups on the right side
@@ -250,177 +203,6 @@ export class FeatureDevController {
 
         // Unlock the prompt again so that users can iterate
         this.messenger.sendAsyncEventProgress(tabID, false, undefined)
-    }
-
-    /**
-     * Handle a regular incoming message when a user is in the code generation phase
-     */
-    private async onCodeGeneration(session: Session, message: string, tabID: string) {
-        // lock the UI/show loading bubbles
-        this.messenger.sendAsyncEventProgress(
-            tabID,
-            true,
-            `This may take a few minutes. I will send a notification when it's complete if you navigate away from this panel`
-        )
-
-        try {
-            this.messenger.sendAnswer({
-                message: 'Requesting changes ...',
-                type: 'answer-stream',
-                tabID,
-            })
-            this.messenger.sendUpdatePlaceholder(tabID, 'Writing code ...')
-            await session.send(message)
-            const filePaths = session.state.filePaths ?? []
-            const deletedFiles = session.state.deletedFiles ?? []
-            if (filePaths.length === 0 && deletedFiles.length === 0) {
-                this.messenger.sendAnswer({
-                    message: 'Unable to generate any file changes',
-                    type: 'answer',
-                    tabID: tabID,
-                })
-                this.messenger.sendAnswer({
-                    type: 'system-prompt',
-                    tabID: tabID,
-                    followUps:
-                        this.retriesRemaining(session) > 0
-                            ? [
-                                  {
-                                      pillText: 'Retry',
-                                      type: FollowUpTypes.Retry,
-                                      status: 'warning',
-                                  },
-                              ]
-                            : [],
-                })
-                // Lock the chat input until they explicitly click retry
-                this.messenger.sendChatInputEnabled(tabID, false)
-                return
-            }
-
-            // Only add the follow up accept/deny buttons when the tab hasn't been closed/request hasn't been cancelled
-            if (session?.state.tokenSource.token.isCancellationRequested) {
-                return
-            }
-
-            this.messenger.sendCodeResult(
-                filePaths,
-                deletedFiles,
-                session.state.references ?? [],
-                tabID,
-                session.uploadId
-            )
-            this.messenger.sendAnswer({
-                message: undefined,
-                type: 'system-prompt',
-                followUps: this.getFollowUpOptions(session?.state.phase),
-                tabID: tabID,
-            })
-            this.messenger.sendUpdatePlaceholder(tabID, 'Select an option above to proceed')
-        } finally {
-            // Finish processing the event
-            this.messenger.sendAsyncEventProgress(tabID, false, undefined)
-
-            // Lock the chat input until they explicitly click one of the follow ups
-            this.messenger.sendChatInputEnabled(tabID, false)
-
-            if (!this.isAmazonQVisible) {
-                const open = 'Open chat'
-                const resp = await vscode.window.showInformationMessage(
-                    'Your code suggestions from Amazon Q are ready to review',
-                    open
-                )
-                if (resp === open) {
-                    await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-                    // TODO add focusing on the specific tab once that's implemented
-                }
-            }
-        }
-    }
-
-    // TODO add type
-    private async writeCodeClicked(message: any) {
-        let session
-        try {
-            session = await this.sessionStorage.getSession(message.tabID)
-            session.initCodegen()
-            await this.onCodeGeneration(session, '', message.tabID)
-        } catch (err: any) {
-            const errorMessage = createUserFacingErrorMessage(
-                `${featureName} request failed: ${err.cause?.message ?? err.message}`
-            )
-            this.messenger.sendErrorMessage(
-                errorMessage,
-                message.tabID,
-                this.retriesRemaining(session),
-                session?.state.phase
-            )
-        }
-    }
-
-    // TODO add type
-    private async acceptCode(message: any) {
-        let session
-        try {
-            session = await this.sessionStorage.getSession(message.tabID)
-            telemetry.amazonq_isAcceptedCodeChanges.emit({
-                amazonqConversationId: session.conversationId,
-                enabled: true,
-            })
-            await session.acceptChanges()
-
-            this.messenger.sendAnswer({
-                type: 'answer',
-                tabID: message.tabID,
-                message: 'Code has been updated. Would you like to work on another task?',
-            })
-
-            this.messenger.sendAnswer({
-                type: 'system-prompt',
-                tabID: message.tabID,
-                followUps: [
-                    {
-                        pillText: 'Work on new task',
-                        type: FollowUpTypes.NewTask,
-                        status: 'info',
-                    },
-                    {
-                        pillText: 'Close session',
-                        type: FollowUpTypes.CloseSession,
-                        status: 'info',
-                    },
-                ],
-            })
-
-            // Ensure that chat input is enabled so that they can provide additional iterations if they choose
-            this.messenger.sendChatInputEnabled(message.tabID, true)
-            this.messenger.sendUpdatePlaceholder(message.tabID, 'Provide input on additional improvements')
-        } catch (err: any) {
-            this.messenger.sendErrorMessage(
-                createUserFacingErrorMessage(`Failed to accept code changes: ${err.message}`),
-                message.tabID,
-                this.retriesRemaining(session),
-                session?.state.phase
-            )
-        }
-    }
-
-    private async provideFeedbackAndRegenerateCode(message: any) {
-        const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_isProvideFeedbackForCodeGen.emit({
-            amazonqConversationId: session.conversationId,
-            enabled: true,
-        })
-        // Unblock the message button
-        this.messenger.sendAsyncEventProgress(message.tabID, false, undefined)
-
-        this.messenger.sendAnswer({
-            type: 'answer',
-            tabID: message.tabID,
-            message: 'How can the code be improved?',
-        })
-
-        this.messenger.sendUpdatePlaceholder(message.tabID, 'Feedback, comments ...')
     }
 
     private async retryRequest(message: any) {
@@ -459,23 +241,13 @@ export class FeatureDevController {
             case 'Approach':
                 return [
                     {
-                        pillText: 'Write Code',
-                        type: FollowUpTypes.WriteCode,
+                        pillText: 'Work on new task',
+                        type: FollowUpTypes.NewTask,
                         status: 'info',
                     },
-                ]
-            case 'Codegen':
-                return [
                     {
-                        pillText: 'Accept changes',
-                        type: FollowUpTypes.AcceptCode,
-                        icon: 'ok' as MynahIcons,
-                        status: 'success',
-                    },
-                    {
-                        pillText: 'Provide feedback & regenerate',
-                        type: FollowUpTypes.ProvideFeedbackAndRegenerateCode,
-                        icon: 'refresh' as MynahIcons,
+                        pillText: 'Close session',
+                        type: FollowUpTypes.CloseSession,
                         status: 'info',
                     },
                 ]

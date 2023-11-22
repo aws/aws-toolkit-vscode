@@ -4,14 +4,12 @@
  */
 
 import { FollowUpTypes, SessionStatePhase } from '../../../types'
-import { CodeReference } from '../../../../amazonq/webview/ui/apps/amazonqCommonsConnector'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import {
     ChatMessage,
     AsyncEventProgressMessage,
     ErrorMessage,
-    CodeResultMessage,
     UpdatePlaceholderMessage,
     ChatInputEnabledMessage,
     AuthenticationUpdateMessage,
@@ -79,15 +77,6 @@ export class Messenger {
                     )
                 )
                 break
-            case 'Codegen':
-                this.dispatcher.sendErrorMessage(
-                    new ErrorMessage(
-                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
-                        errorMessage,
-                        tabID
-                    )
-                )
-                break
             default:
                 // used to send generic error messages when we don't want to send the response as part of a phase
                 this.dispatcher.sendErrorMessage(
@@ -112,16 +101,6 @@ export class Messenger {
             ],
             tabID,
         })
-    }
-
-    public sendCodeResult(
-        filePaths: string[],
-        deletedFiles: string[],
-        references: CodeReference[],
-        tabID: string,
-        uploadId: string
-    ) {
-        this.dispatcher.sendCodeResult(new CodeResultMessage(filePaths, deletedFiles, references, tabID, uploadId))
     }
 
     public sendAsyncEventProgress(tabID: string, inProgress: boolean, message: string | undefined) {
