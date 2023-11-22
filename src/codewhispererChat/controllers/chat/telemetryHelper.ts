@@ -361,17 +361,26 @@ export class CWCTelemetryHelper {
 
     private getResponseStreamTimeToFirstChunk(tabID: string): number {
         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0, 0]
+        if (chunkTimes.length === 1) {
+            return Math.round(performance.now() - chunkTimes[0])
+        }
         return Math.round(chunkTimes[1] - chunkTimes[0])
     }
 
     private getResponseStreamTimeBetweenChunks(tabID: string): string {
-        const chunkDeltaTimes: number[] = []
-        const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
-        for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
-            chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
-        }
+        try {
+            const chunkDeltaTimes: number[] = []
+            const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
+            for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
+                chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
+            }
 
-        return JSON.stringify(chunkDeltaTimes)
+            const trimmed = JSON.stringify(chunkDeltaTimes).slice(0, 2_000)
+            const fixed = trimmed.endsWith(',') ? `${trimmed}0` : trimmed
+            return fixed.endsWith(']') ? fixed : `${fixed}]`
+        } catch (e) {
+            return '[-1]'
+        }
     }
 
     public setResponseStreamTotalTime(tabID: string) {
