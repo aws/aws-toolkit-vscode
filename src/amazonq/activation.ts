@@ -14,6 +14,7 @@ import { MessagePublisher } from './messages/messagePublisher'
 import { welcome } from './onboardingPage'
 import { learnMoreAmazonQCommand, switchToAmazonQCommand } from './explorer/amazonQChildrenNodes'
 import { focusAmazonQPanel } from '../codewhisperer/commands/basicCommands'
+import { activateBadge } from './util/viewBadgeHandler'
 
 export async function activate(context: ExtensionContext) {
     const appInitContext = new DefaultAmazonQAppInitContext()
@@ -40,6 +41,8 @@ export async function activate(context: ExtensionContext) {
     amazonQWelcomeCommand.register(context, cwcWebViewToAppsPublisher)
     learnMoreAmazonQCommand.register()
     switchToAmazonQCommand.register()
+
+    await activateBadge()
 }
 
 function registerApps(appInitContext: AmazonQAppInitContext) {

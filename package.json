@@ -734,6 +734,11 @@
                     "id": "aws.AmazonQChatView",
                     "name": "%AWS.amazonq.chat%",
                     "when": "!isCloud9"
+                },
+                {
+                    "id": "aws.AmazonQNeverShowBadge",
+                    "name": "",
+                    "when": "false"
                 }
             ],
             "aws-explorer": [
