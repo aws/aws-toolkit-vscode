@@ -75,7 +75,7 @@ export class Messenger {
             case 'Codegen':
                 this.dispatcher.sendErrorMessage(
                     new ErrorMessage(
-                        `Sorry, we're experiencing an issue on our side. Restarting generation...`,
+                        `Sorry, we're experiencing an issue on our side. Would you like to try again?`,
                         errorMessage,
                         tabID
                     )
