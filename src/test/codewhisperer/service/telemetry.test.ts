@@ -535,9 +535,23 @@ async function waitUntilSuggestionSeen(index: number = 0) {
 }
 
 async function acceptByTab() {
-    await vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
+    const editor = vscode.window.activeTextEditor
+    if (!editor) {
+        throw new Error('no active editor')
+    }
+    const originalContent = editor.document.getText()
+    // we have to wait until the inline suggestion is shown in the editor however we don't have an useable API for that so hacky wait to know if the accept is taking effect
+    await waitUntil(
+        async () => {
+            await vscode.commands.executeCommand('editor.action.inlineSuggest.commit')
+            if (editor.document.getText() !== originalContent) {
+                return true
+            }
+        },
+        { interval: 50 }
+    )
 
-    // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed before onAcceptance hook
+    // required because oninlineAcceptance has sleep(vsCodeCursorUpdateDelay), otherwise assertion will be executed "before" onAcceptance hook
     await sleep(vsCodeCursorUpdateDelay + 50)
 }
 
@@ -558,12 +572,12 @@ async function closeActiveEditor() {
 }
 
 async function typing(editor: vscode.TextEditor, s: string) {
+    const initialContent = editor.document.getText()
     for (const char of s) {
         await typeAChar(editor, char)
     }
-    // waitUntilSuggestionSeen doesn't work for this
-    // see if we can find another way to wait
-    await sleep(100)
+
+    assertTextEditorContains(initialContent + s)
 }
 
 async function backspace(editor: vscode.TextEditor) {
