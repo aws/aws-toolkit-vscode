@@ -305,6 +305,22 @@ export class Auth implements AuthService, ConnectionManager {
         this.#onDidDeleteConnection.fire(connId)
     }
 
+    /**
+     * @warning Only intended for Dev mode purposes
+     *
+     * Put the SSO connection in to an expired state
+     */
+    public async expireConnection(conn: Pick<SsoConnection, 'id'>): Promise<void> {
+        const profile = this.store.getProfileOrThrow(conn.id)
+        if (profile.type === 'iam') {
+            throw new ToolkitError('Auth: Cannot force expire an IAM connection')
+        }
+        const provider = this.getTokenProvider(conn.id, profile)
+        await provider.invalidate()
+        // updates the state of the connection
+        await this.validateConnection(conn.id, profile)
+    }
+
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
         const connections = await this.listConnections()
 
