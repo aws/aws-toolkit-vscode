@@ -17,6 +17,7 @@ import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { CodeReference } from '../../amazonq/webview/ui/connector'
+import { ContentLengthError } from '../errors'
 
 type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
 const getCodeWhispererRegionAndEndpoint = () => {
@@ -115,8 +116,11 @@ export class FeatureDevClient {
             getLogger().debug(`Executing createUploadUrl with %O`, omit(params, 'contentChecksum'))
             const response = await client.createUploadUrl(params).promise()
             return response
-        } catch (e) {
+        } catch (e: any) {
             getLogger().error(`${featureName}: failed to generate presigned url: ${(e as Error).message}`)
+            if (e.code === 'ValidationException' && e.message.includes('Invalid contentLength')) {
+                throw new ContentLengthError()
+            }
             throw new ToolkitError((e as Error).message, { code: 'CreateUploadUrlFailed' })
         }
     }

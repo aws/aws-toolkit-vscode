@@ -31,6 +31,7 @@ export enum FollowUpTypes {
     DevExamples = 'DevExamples',
     NewTask = 'NewTask',
     CloseSession = 'CloseSession',
+    SendFeedback = 'SendFeedback',
 }
 
 export type SessionStatePhase = 'Init' | 'Approach' | 'Codegen'

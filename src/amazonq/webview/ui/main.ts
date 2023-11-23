@@ -16,12 +16,7 @@ import { QuickActionHandler } from './quickActions/handler'
 import { TextMessageHandler } from './messages/handler'
 import { MessageController } from './messages/controller'
 
-export const createMynahUI = (
-    ideApi: any,
-    featureDevInitEnabled: boolean,
-    gumbyInitEnabled: boolean,
-    initialData?: MynahUIDataModel
-) => {
+export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumbyInitEnabled: boolean) => {
     // eslint-disable-next-line prefer-const
     let mynahUI: MynahUI
     // eslint-disable-next-line prefer-const
@@ -119,8 +114,7 @@ export const createMynahUI = (
                     promptInputDisabledState: true,
                 })
                 if (message) {
-                    mynahUI.addChatItem(tabID, {
-                        type: ChatItemType.ANSWER,
+                    mynahUI.updateLastChatAnswer(tabID, {
                         body: message,
                     })
                 }
@@ -201,7 +195,7 @@ export const createMynahUI = (
             const answer: ChatItem = {
                 type: ChatItemType.ANSWER,
                 body: `**${title}** 
-${message}`,
+ ${message}`,
             }
 
             if (tabID !== '') {
@@ -267,6 +261,12 @@ ${message}`,
                 return
             }
 
+            if (tabsStorage.getTab(tabID)?.type === 'featuredev') {
+                mynahUI.addChatItem(tabID, {
+                    type: ChatItemType.ANSWER_STREAM,
+                })
+            }
+
             if (prompt.command !== undefined && prompt.command.trim() !== '') {
                 quickActionHandler.handle(prompt, tabID)
                 return
@@ -303,6 +303,12 @@ ${message}`,
             mouseEvent?.stopPropagation()
             mouseEvent?.stopImmediatePropagation()
             connector.onResponseBodyLinkClick(tabId, messageId, link)
+        },
+        onInfoLinkClick: (tabId: string, link: string, mouseEvent?: MouseEvent) => {
+            mouseEvent?.preventDefault()
+            mouseEvent?.stopPropagation()
+            mouseEvent?.stopImmediatePropagation()
+            connector.onInfoLinkClick(tabId, link)
         },
         onResetStore: () => {},
         onFollowUpClicked: (tabID, messageId, followUp) => {

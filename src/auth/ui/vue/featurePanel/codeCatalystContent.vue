@@ -3,13 +3,11 @@
         <div class="feature-panel-container-upper">
             <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
 
-            <div class="centered-items">
-                <img
-                    class="service-item-content-image"
-                    src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
-                    alt="CodeCatalyst example GIF"
-                />
-            </div>
+            <img
+                class="service-item-content-image"
+                src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
+                alt="CodeCatalyst example GIF"
+            />
 
             <div class="feature-panel-container-description">
                 Spend more time coding and less time managing development environments.
@@ -21,30 +19,24 @@
 
         <hr />
 
-        <div class="feature-panel-form-container" :key="authFormContainerKey" v-show="isAllAuthsLoaded">
-            <div class="feature-panel-form-section">
+        <template v-if="!removeAuthForms">
+            <div class="feature-panel-auth-container" :key="authFormContainerKey" v-show="canShowAuthForms">
                 <BuilderIdForm
+                    v-if="connectedAuth === undefined || connectedAuth === 'builderIdCodeCatalyst'"
                     :state="builderIdState"
                     @auth-connection-updated="onAuthConnectionUpdated"
                 ></BuilderIdForm>
-            </div>
-
-            <div class="feature-panel-form-section">
-                <div v-on:click="toggleIdentityCenterShown" class="collapsible-title">
-                    <div :class="identityCenterCollapsibleClass" style="height: 0"></div>
-                    <div>
-                        <div>Sign in with IAM Identity Center.</div>
-                    </div>
-                </div>
 
                 <IdentityCenterForm
+                    v-if="connectedAuth === undefined || connectedAuth === 'identityCenterCodeCatalyst'"
                     :state="identityCenterState"
                     :allow-existing-start-url="true"
                     @auth-connection-updated="onAuthConnectionUpdated"
-                    v-show="isIdentityCenterShown"
                 ></IdentityCenterForm>
+
+                <button v-if="connectedAuth" v-on:click="showCodeCatalystNode()">Open CodeCatalyst in Toolkit</button>
             </div>
-        </div>
+        </template>
     </div>
 </template>
 
@@ -65,10 +57,13 @@ function initialData() {
     return {
         isLoaded: {
             builderIdCodeCatalyst: false,
-        } as Record<AuthFormId, boolean>,
-        isAllAuthsLoaded: false,
-        isIdentityCenterShown: false,
+            identityCenterCodeCatalyst: false,
+        } as { [id in AuthFormId]?: boolean },
         panelId: 'codecatalyst-panel',
+        connectedAuth: undefined as
+            | Extract<AuthFormId, 'builderIdCodeCatalyst' | 'identityCenterCodeCatalyst'>
+            | undefined,
+        removeAuthForms: false,
     }
 }
 
@@ -80,7 +75,6 @@ export default defineComponent({
         return initialData()
     },
     created() {
-        this.refreshPanel()
         client.onDidConnectionChangeCodeCatalyst(() => {
             this.refreshPanel()
         })
@@ -95,33 +89,37 @@ export default defineComponent({
         identityCenterState(): CodeCatalystIdentityCenterState {
             return authFormsState.identityCenterCodeCatalyst
         },
-        identityCenterCollapsibleClass() {
-            return this.isIdentityCenterShown ? 'icon icon-vscode-chevron-down' : 'icon icon-vscode-chevron-right'
+        canShowAuthForms() {
+            if (this.connectedAuth) {
+                return true
+            }
+
+            const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
+            return !hasUnloaded
         },
     },
     methods: {
         async refreshPanel() {
             Object.assign(this.$data, initialData())
-            this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
             this.refreshAuthFormContainer()
         },
-        updateIsAllAuthsLoaded() {
-            const hasUnloaded = Object.values(this.isLoaded).filter(val => !val).length > 0
-            this.isAllAuthsLoaded = !hasUnloaded
-        },
         async onAuthConnectionUpdated(args: ConnectionUpdateArgs) {
+            if (args.cause === 'signOut') {
+                // Clears all auth forms to prevent UI stuttering due to
+                // auth changes. We are expecting an event for force this panel
+                // to refresh and restore the forms.
+                this.removeAuthForms = true
+                return
+            }
+
+            if (args.isConnected) {
+                this.connectedAuth = args.id as any
+            }
+
             this.isLoaded[args.id] = true
-            if (args.id === 'identityCenterCodeCatalyst') {
-                this.isIdentityCenterShown = await this.identityCenterState.isAuthConnected()
-            }
-            this.updateIsAllAuthsLoaded()
-            this.emitAuthConnectionUpdated('codecatalyst', args)
         },
-        toggleIdentityCenterShown() {
-            this.isIdentityCenterShown = !this.isIdentityCenterShown
-            if (this.isIdentityCenterShown) {
-                client.emitUiClick('auth_codecatalyst_expandIAMIdentityCenter')
-            }
+        showCodeCatalystNode() {
+            client.showCodeCatalystNode()
         },
     },
 })

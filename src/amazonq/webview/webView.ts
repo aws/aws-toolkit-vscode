@@ -19,6 +19,7 @@ import { dispatchAppsMessagesToWebView, dispatchWebViewMessagesToApps } from './
 import { MessageListener } from '../messages/messageListener'
 import { MessagePublisher } from '../messages/messagePublisher'
 import { TabType } from './ui/storages/tabsStorage'
+import { deactivateInitialViewBadge } from '../util/viewBadgeHandler'
 
 export class AmazonQChatViewProvider implements WebviewViewProvider {
     public static readonly viewType = 'aws.AmazonQChatView'
@@ -61,5 +62,10 @@ export class AmazonQChatViewProvider implements WebviewViewProvider {
             this.extensionContext.extensionUri,
             webviewView.webview
         )
+
+        // if a user EVER enters Q, we should never show the badge again.
+        // the webview view only loads if the user clicks the view container,
+        // so we can essentially use this as a guarantee that a user has entered Q.
+        deactivateInitialViewBadge()
     }
 }

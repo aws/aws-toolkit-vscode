@@ -155,6 +155,11 @@
             "description": "Time taken in ms to get back the first chunk"
         },
         {
+            "name": "cwsprChatTimeBetweenChunks",
+            "type": "string",
+            "description": "Time (list of int) taken in ms between chunks"
+        },
+        {
             "name": "cwsprChatFullResponseLatency",
             "type": "int",
             "description": "Time taken to get the full response in ms"
@@ -204,6 +209,17 @@
             "name": "cwsprChatModificationPercentage",
             "type": "double",
             "description": "% of characters edited by user after copying/inserting code from a message"
+        },
+        {
+            "name": "cwsprChatCommandType",
+            "type": "string",
+            "allowedValues": ["clear", "help", "transform", "auth"],
+            "description": "Type of chat command (/command) executed"
+        },
+        {
+            "name": "cwsprChatCommandName",
+            "type": "string",
+            "description": "Type of chat command name executed"
         }
     ],
     "metrics": [
@@ -591,6 +607,9 @@
                     "type": "cwsprChatTimeToFirstChunk"
                 },
                 {
+                    "type": "cwsprChatTimeBetweenChunks"
+                },
+                {
                     "type": "cwsprChatFullResponseLatency"
                 },
                 {
@@ -708,6 +727,19 @@
             "metadata": [
                 {
                     "type": "cwsprChatConversationId"
+                }
+            ]
+        },
+        {
+            "name": "amazonq_runCommand",
+            "description": "When a chat command is executed",
+            "metadata": [
+                {
+                    "type": "cwsprChatCommandType"
+                },
+                {
+                    "type": "cwsprChatCommandName",
+                    "required": false
                 }
             ]
         }

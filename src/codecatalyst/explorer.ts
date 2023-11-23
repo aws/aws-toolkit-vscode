@@ -109,6 +109,7 @@ export class CodeCatalystRootNode implements TreeNode {
     private refreshEmitters: (() => void)[] = []
 
     private devenv?: ConnectedDevEnv
+    private resolveDevEnv: Promise<boolean> | undefined = undefined
 
     public constructor(private readonly authProvider: CodeCatalystAuthenticationProvider) {
         this.addRefreshEmitter(() => this.onDidChangeEmitter.fire())
@@ -120,6 +121,8 @@ export class CodeCatalystRootNode implements TreeNode {
     }
 
     public async getChildren(): Promise<TreeNode[]> {
+        await this.initDevEnvLoad()
+
         if (!this.devenv) {
             return getLocalCommands(this.authProvider)
         }
@@ -142,12 +145,9 @@ export class CodeCatalystRootNode implements TreeNode {
     }
 
     public async getTreeItem() {
-        await this.authProvider.restore()
+        await this.initDevEnvLoad()
 
-        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(err => {
-            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err)
-            return undefined
-        })
+        await this.authProvider.restore()
 
         const item = new vscode.TreeItem('CodeCatalyst', vscode.TreeItemCollapsibleState.Collapsed)
         item.contextValue = this.authProvider.isUsingSavedConnection
@@ -181,5 +181,32 @@ export class CodeCatalystRootNode implements TreeNode {
 
     public addRefreshEmitter(emitter: () => void) {
         this.refreshEmitters.push(emitter)
+    }
+
+    /**
+     * CALL THIS BEFORE USING `this.devenv`
+     * Ensures that the node has attempted to load the `devenv` field by
+     * creating a promise that can be awaited if init has already begun and is being called elsewhere.
+     */
+    private async initDevEnvLoad() {
+        if (this.resolveDevEnv) {
+            await this.resolveDevEnv
+            return
+        }
+        let resolve: ((val: boolean) => void) | undefined
+        if (this.resolveDevEnv === undefined) {
+            this.resolveDevEnv = new Promise<boolean>(res => {
+                resolve = res
+            })
+        }
+
+        this.devenv = (await getThisDevEnv(this.authProvider))?.unwrapOrElse(e => {
+            const err = e as Error
+            getLogger().warn('codecatalyst: failed to get current Dev Enviroment: %s', err.message)
+            return undefined
+        })
+        if (resolve !== undefined) {
+            resolve(true)
+        }
     }
 }

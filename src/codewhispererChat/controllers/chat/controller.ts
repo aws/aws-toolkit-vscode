@@ -24,6 +24,7 @@ import {
     SourceLinkClickMessage,
     ResponseBodyLinkClickMessage,
     ChatPromptCommandType,
+    FooterInfoLinkClick,
 } from './model'
 import { AppToWebViewMessageDispatcher } from '../../view/connector/connector'
 import { MessagePublisher } from '../../../amazonq/messages/messagePublisher'
@@ -38,7 +39,7 @@ import {
     GenerateAssistantResponseCommandOutput,
 } from '@amzn/codewhisperer-streaming'
 import { UserIntentRecognizer } from './userIntent/userIntentRecognizer'
-import { CWCTelemetryHelper } from './telemetryHelper'
+import { CWCTelemetryHelper, recordTelemetryChatRunCommand } from './telemetryHelper'
 import { CodeWhispererTracker } from '../../../codewhisperer/tracker/codewhispererTracker'
 import { getLogger } from '../../../shared/logger/logger'
 import { triggerPayloadToChatRequest } from './chatRequest/converter'
@@ -63,6 +64,7 @@ export interface ChatControllerMessagePublishers {
     readonly processOnboardingPageInteraction: MessagePublisher<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessagePublisher<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessagePublisher<ResponseBodyLinkClickMessage>
+    readonly processFooterInfoLinkClick: MessagePublisher<FooterInfoLinkClick>
 }
 
 export interface ChatControllerMessageListeners {
@@ -81,6 +83,7 @@ export interface ChatControllerMessageListeners {
     readonly processOnboardingPageInteraction: MessageListener<OnboardingPageInteraction>
     readonly processSourceLinkClick: MessageListener<SourceLinkClickMessage>
     readonly processResponseBodyLinkClick: MessageListener<ResponseBodyLinkClickMessage>
+    readonly processFooterInfoLinkClick: MessageListener<FooterInfoLinkClick>
 }
 
 export class ChatController {
@@ -175,9 +178,18 @@ export class ChatController {
         this.chatControllerMessageListeners.processResponseBodyLinkClick.onMessage(data => {
             this.processResponseBodyLinkClick(data)
         })
+        this.chatControllerMessageListeners.processFooterInfoLinkClick.onMessage(data => {
+            this.processFooterInfoLinkClick(data)
+        })
     }
 
-    private openLinkInExternalBrowser(click: ResponseBodyLinkClickMessage | SourceLinkClickMessage) {
+    private processFooterInfoLinkClick(click: FooterInfoLinkClick) {
+        this.openLinkInExternalBrowser(click)
+    }
+
+    private openLinkInExternalBrowser(
+        click: ResponseBodyLinkClickMessage | SourceLinkClickMessage | FooterInfoLinkClick
+    ) {
         this.telemetryHelper.recordInteractWithMessage(click)
         ExternalBrowserUtils.instance.openLink(click.link)
     }
@@ -209,6 +221,12 @@ export class ChatController {
 
                 if (quickActionCommand === 'help') {
                     this.generateStaticTextResponse('quick-action-help', triggerID)
+                    recordTelemetryChatRunCommand('help')
+                    return
+                } else if (quickActionCommand === 'transform') {
+                    this.generateStaticTextResponse('transform', triggerID)
+                    processTransformByQ()
+                    recordTelemetryChatRunCommand('transform')
                     return
                 }
             })
@@ -452,12 +470,10 @@ export class ChatController {
             return
         }
         switch (message.command) {
-            case 'transform':
-                processTransformByQ()
-                return
             case 'clear':
                 this.sessionStorage.deleteSession(message.tabID)
                 this.triggerEventsStorage.removeTabEvents(message.tabID)
+                recordTelemetryChatRunCommand('clear')
                 return
             default:
                 this.processQuickActionCommand(message.command)

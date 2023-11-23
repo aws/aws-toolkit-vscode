@@ -50,17 +50,6 @@ export function extractContextForCodeWhisperer(editor: vscode.TextEditor): codew
         } as codewhispererClient.FileContext
     }
 
-    if (checkLeftContextKeywordsForJsonAndYaml(caretLeftFileContext, editor.document.languageId)) {
-        return {
-            filename: getFileNameForRequest(editor),
-            programmingLanguage: {
-                languageName: 'plaintext',
-            },
-            leftFileContent: caretLeftFileContext,
-            rightFileContent: caretRightFileContext,
-        } as codewhispererClient.FileContext
-    }
-
     return {
         filename: getFileNameForRequest(editor),
         programmingLanguage: {

@@ -13,7 +13,9 @@ import vscode from 'vscode'
 import { ExportIntent } from '@amzn/codewhisperer-streaming'
 import { TransformByQReviewStatus, transformByQState } from '../models/model'
 import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
-import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../amazonqFeatureDev/util/download'
+import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
+import { ToolkitError } from '../../shared/errors'
+import { getLogger } from '../../shared/logger'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -25,9 +27,11 @@ export abstract class ProposedChangeNode {
     public saveChange(): void {
         try {
             this.saveFile()
-        } catch (error) {
+        } catch (err) {
             //to do: file system-related error handling
-            console.log(error)
+            if (err instanceof Error) {
+                getLogger().error(err.message)
+            }
         }
     }
 
@@ -80,7 +84,7 @@ export class AddedChangeNode extends ProposedChangeNode {
     override generateCommand(): vscode.Command {
         return {
             command: 'vscode.open',
-            arguments: [vscode.Uri.file(this.pathToWorkspaceFile)],
+            arguments: [vscode.Uri.file(this.pathToTmpFile)],
             title: 'Added Change',
         }
     }
@@ -258,25 +262,28 @@ export class ProposedTransformationExplorer {
                 'ExportResultsArchive.zip'
             )
             const cwStreamingClient = await this.featureDevClient.getStreamingClient()
-
-            await downloadExportResultArchive(
-                cwStreamingClient,
-                {
-                    exportId: transformByQState.getJobId(),
-                    exportIntent: ExportIntent.TRANSFORMATION,
-                },
-                pathToArchive
-            )
+            try {
+                await downloadExportResultArchive(
+                    cwStreamingClient,
+                    {
+                        exportId: transformByQState.getJobId(),
+                        exportIntent: ExportIntent.TRANSFORMATION,
+                    },
+                    pathToArchive
+                )
+            } catch (error) {
+                // This allows the customer to retry the download
+                vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
+                throw new ToolkitError('There was a problem fetching the transformed code.')
+            }
             const pathContainingArchive = path.dirname(pathToArchive)
-            console.log(`Downloaded transformation results archive to ${pathToArchive}`)
             const zip = new AdmZip(pathToArchive)
             zip.extractAllTo(pathContainingArchive)
 
-            const workspaceFolders = vscode.workspace.workspaceFolders!
             diffModel.parseDiff(
                 path.join(pathContainingArchive, ExportResultArchiveStructure.PathToDiffPatch),
                 path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSourceDir),
-                workspaceFolders[0].uri.fsPath
+                transformByQState.getModulePath()
             )
 
             vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.InReview)
@@ -286,18 +293,10 @@ export class ProposedTransformationExplorer {
                 path.join(pathContainingArchive, ExportResultArchiveStructure.PathToSummary)
             )
 
-            const reviewDiffAction = 'View diff'
-            const reviewSummaryAction = 'View transformation summary'
-            const reviewResponse = await vscode.window.showInformationMessage(
-                'Transformation job successfully finished. You can view the changes and accept changes to further test the transformed code and push it to production.',
-                reviewDiffAction,
-                reviewSummaryAction
+            await vscode.window.showInformationMessage(
+                'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
+                { modal: true }
             )
-            if (reviewResponse === reviewDiffAction) {
-                await vscode.commands.executeCommand('aws.amazonq.transformationHub.focus')
-            } else if (reviewResponse === reviewSummaryAction) {
-                await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
-            }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {

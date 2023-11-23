@@ -33,7 +33,7 @@ type CommandFactory<T extends Callback, U extends any[]> = (...parameters: U) =>
  * **So as a workaround**, commands who meet the above criteria should
  * - have this type as their first arg as a placeholder
  * - When executing the command from within the code, pass in {@link placeholder} as the first arg.
- * - In the command check if the first arg is NOT `undefined`, and if so you will need to
+ * - In the command check if the first arg !== {@link placeholder}, and if so you will need to
  *   set values for the other args since they will not exist.
  */
 export type VsCodeCommandArg = typeof placeholder
