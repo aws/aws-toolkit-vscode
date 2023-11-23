@@ -79,6 +79,9 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
+            case 'featuredev':
+                this.featureDevChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
+                break
         }
     }
 
