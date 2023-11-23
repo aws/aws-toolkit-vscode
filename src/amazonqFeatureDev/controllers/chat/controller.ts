@@ -257,6 +257,8 @@ export class FeatureDevController {
                     {
                         pillText: 'Coming soon: Generate code',
                         type: FollowUpTypes.GenerateCode,
+                        description: `Soon you'll be able to generate code based off of your plan`,
+                        disabled: true,
                     },
                 ]
             default:
