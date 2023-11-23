@@ -30,6 +30,7 @@ export function createMockChatEmitters(): ChatControllerEventEmitters {
         tabOpened: new vscode.EventEmitter<any>(),
         tabClosed: new vscode.EventEmitter<any>(),
         authClicked: new vscode.EventEmitter<any>(),
+        processResponseBodyLinkClick: new vscode.EventEmitter<any>(),
     }
 }
 

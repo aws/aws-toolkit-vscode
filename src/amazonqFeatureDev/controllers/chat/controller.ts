@@ -23,6 +23,8 @@ import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
 import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
+import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
+import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -33,6 +35,7 @@ export interface ChatControllerEventEmitters {
     readonly tabClosed: EventEmitter<any>
     readonly processChatItemVotedMessage: EventEmitter<any>
     readonly authClicked: EventEmitter<any>
+    readonly processResponseBodyLinkClick: EventEmitter<any>
 }
 
 type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
@@ -90,6 +93,9 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.authClicked.event(data => {
             this.authClicked(data)
+        })
+        this.chatControllerMessageListeners.processResponseBodyLinkClick.event(data => {
+            this.processLink(data)
         })
     }
 
@@ -303,7 +309,7 @@ You can use /dev to:
 - Plan a code change
 - Coming soon: Generate code suggestions
 
-To learn more, visit the _Amazon Q User Guide_.
+To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 `
         this.messenger.sendAnswer({
             type: 'answer',
@@ -411,6 +417,10 @@ To learn more, visit the _Amazon Q User Guide_.
 
     private sendFeedback() {
         submitFeedback.execute(placeholder, 'AmazonQ')
+    }
+
+    private processLink(message: any) {
+        ExternalBrowserUtils.instance.openLink(message.link)
     }
 
     private retriesRemaining(session: Session | undefined) {

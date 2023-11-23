@@ -29,6 +29,7 @@ import { getLogger } from '../../../../shared/logger/logger'
 import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/model'
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
+import { userGuideURL } from '../../../../amazonq/webview/ui/texts/constants'
 
 export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
@@ -320,7 +321,7 @@ export class Messenger {
                 \n\n- Provide feedback by choosing the like or dislike buttons that appear below answers.
                 \n\n- When you use Amazon Q, AWS may, for service improvement purposes, store data about your usage and content. You can opt-out of sharing this data by following the steps in AI services opt-out policies. See <a href="https://docs.aws.amazon.com/codewhisperer/latest/userguide/sharing-data.html">here</a>
                 \n\n- Do not enter any confidential, sensitive, or personal information.                
-                \n\n*For additional help, visit the Amazon Q User Guide.*`
+                \n\n*For additional help, visit the [Amazon Q User Guide](${userGuideURL}).*`
                 break
             case 'onboarding-help':
                 message = `### What I can do:                
