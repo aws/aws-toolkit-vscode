@@ -351,7 +351,8 @@ export class Messenger {
                 followUpsHeader = 'Try Examples:'
                 break
             case 'transform':
-                message = 'Attempting to start transformation with Amazon Q'
+                message =
+                    'I will analyze the code and then attempt to transform the compatible application. You can select the next steps in the opened dialog window. You can view the progress of your transformation in the "Transformation Hub."'
                 break
         }
 
@@ -378,7 +379,7 @@ export class Messenger {
                 message = 'What can Amazon Q help me with?'
                 break
             case 'transform':
-                message = 'Transform my project with Amazon Q'
+                message = '/transform'
                 break
         }
 

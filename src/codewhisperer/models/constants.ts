@@ -312,12 +312,12 @@ export const noSupportedJavaProjectsFoundMessage =
     'We could not find an upgrade-eligible application. We currently support upgrade of Java applications of version 8 and 11. Be sure to also build your project.'
 
 export const dependencyDisclaimer =
-    "Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and it's dependency binaries from your machine to start the upgrade. If you haven't yet compiled the application on your local machine, please do so once before starting the upgrade."
+    'Please confirm you are ready to proceed with the transformation. Amazon Q will upload the application code and its dependency binaries from your machine to start the upgrade. If you have not yet compiled the application on your local machine, please do so once before starting the upgrade. Install Maven to ensure all module dependencies are picked for Transformation.'
 
 export const dependencyFolderName = 'transformation_dependencies_temp_'
 
 export const dependencyErrorMessage =
-    'We could not upload your project dependencies. Please make sure you have Maven installed and the project has been been built at least once.'
+    'Failed to execute Maven. It is possible that the upload does not include all dependencies.'
 
 export const planIntroductionMessage =
     'We reviewed your Java JAVA_VERSION_HERE application and generated a transformation plan. Any code changes made to your application will be done in the sandbox so as to not interfere with your working repository. Once the transformation job is done, we will share the new code which you can review before acccepting the code changes. In the meantime, you can work on your codebase and invoke Q Chat to answer questions about your codebase.'

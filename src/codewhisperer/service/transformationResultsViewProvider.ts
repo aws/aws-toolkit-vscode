@@ -16,6 +16,8 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
 import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
+import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -274,7 +276,14 @@ export class ProposedTransformationExplorer {
             } catch (error) {
                 // This allows the customer to retry the download
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-                throw new ToolkitError('There was a problem fetching the transformed code.')
+                const errorMessage = 'There was a problem fetching the transformed code.'
+                telemetry.codeTransform_logApiError.emit({
+                    codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransform_ApiName: 'ExportResultArchive',
+                    codeTransform_ApiErrorId: 'cannotDownloadExportResultArchive',
+                    codeTransform_JobId: transformByQState.getJobId(),
+                })
+                throw new ToolkitError(errorMessage)
             }
             const pathContainingArchive = path.dirname(pathToArchive)
             const zip = new AdmZip(pathToArchive)

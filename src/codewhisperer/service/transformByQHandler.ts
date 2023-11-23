@@ -18,6 +18,8 @@ import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
 import globals from '../../shared/extensionGlobals'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -63,7 +65,7 @@ export async function getValidModules() {
     const folders = vscode.workspace.workspaceFolders
     const validModules: vscode.QuickPickItem[] = []
     if (folders === undefined) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         throw Error('No Java projects found since no projects are open')
     }
     let containsSupportedJava = false // workspace must contain Java 8 or Java 11 code for this to be true
@@ -108,11 +110,11 @@ export async function getValidModules() {
         validModules.push({ label: folder.name, description: folder.uri.fsPath })
     }
     if (!containsSupportedJava) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage)
+        vscode.window.showErrorMessage(CodeWhispererConstants.noSupportedJavaProjectsFoundMessage, { modal: true })
         throw Error('No Java projects found')
     }
     if (!containsPomXml) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage)
+        vscode.window.showErrorMessage(CodeWhispererConstants.noPomXmlFoundMessage, { modal: true })
         throw Error('No build file found')
     }
     return validModules
@@ -152,14 +154,21 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
 }
 
 export async function stopJob(jobId: string) {
-    let response = undefined
     if (jobId !== '') {
-        response = await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
-            transformationJobId: jobId,
-        })
-    }
-    if (response?.transformationStatus !== CodeWhispererConstants.transformByQStoppedState) {
-        getLogger().error('Error stopping job')
+        try {
+            await codeWhisperer.codeWhispererClient.codeModernizerStopCodeTransformation({
+                transformationJobId: jobId,
+            })
+        } catch (err) {
+            const errorMessage = 'Error stopping job'
+            telemetry.codeTransform_logApiError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_ApiName: 'StopTransformation',
+                codeTransform_ApiErrorId: 'cannotStopJob',
+                codeTransform_JobId: jobId,
+            })
+            getLogger().error(errorMessage)
+        }
     }
 }
 
@@ -210,7 +219,7 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
-        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage)
+        vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage, { modal: true })
         getLogger().error('Error in running Maven command:')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case
         if (spawnResult.error) {
@@ -234,20 +243,22 @@ export async function zipCode(modulePath: string) {
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
-    const [dependencyFolderPath, dependencyFolderName] = getProjectDependencies(modulePath)
+    let dependencyFolderInfo: string[] = []
+    let mavenFailed = false
+    try {
+        dependencyFolderInfo = getProjectDependencies(modulePath)
+    } catch (err) {
+        mavenFailed = true
+    }
+
+    const dependencyFolderPath = dependencyFolderInfo[0]
+    const dependencyFolderName = dependencyFolderInfo[1]
 
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
-
-    const dependencyFiles = getFilesRecursively(dependencyFolderPath)
 
     const zip = new AdmZip()
     const zipManifest = new ZipManifest()
-    zipManifest.dependenciesRoot += `${dependencyFolderName}/`
-    zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
-
-    await sleep(2000) // pause to give time to recognize potential cancellation
-    throwIfCancelled()
 
     for (const file of sourceFiles) {
         const relativePath = path.relative(sourceFolder, file)
@@ -258,15 +269,27 @@ export async function zipCode(modulePath: string) {
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
-    for (const file of dependencyFiles) {
-        const relativePath = path.relative(dependencyFolderPath, file)
-        const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
-        zip.addLocalFile(file, path.dirname(paddedPath))
+    if (!mavenFailed) {
+        const dependencyFiles = getFilesRecursively(dependencyFolderPath)
+        for (const file of dependencyFiles) {
+            const relativePath = path.relative(dependencyFolderPath, file)
+            const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
+            zip.addLocalFile(file, path.dirname(paddedPath))
+        }
+        zipManifest.dependenciesRoot += `${dependencyFolderName}/`
+    } else {
+        zipManifest.dependenciesRoot = undefined
     }
+    zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
+
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
 
     const tempFilePath = path.join(os.tmpdir(), 'zipped-code.zip')
     fs.writeFileSync(tempFilePath, zip.toBuffer())
-    fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
+    if (!mavenFailed) {
+        fs.rmSync(dependencyFolderPath, { recursive: true, force: true })
+    }
     return tempFilePath
 }
 
@@ -330,6 +353,9 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
         const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformation({
             transformationJobId: jobId,
         })
+        if (response.transformationJob.reason) {
+            transformByQState.setJobFailureReason(response.transformationJob.reason)
+        }
         status = response.transformationJob.status!
         transformByQState.setPolledJobStatus(status)
         await vscode.commands.executeCommand('aws.amazonq.refresh')
