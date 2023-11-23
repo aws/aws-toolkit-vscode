@@ -13,12 +13,12 @@ import { telemetry } from '../shared/telemetry/telemetry'
 export const openTemplateInComposerCommand = Commands.declare(
     'aws.openInApplicationComposer',
     (manager: ApplicationComposerManager) => async (arg?: vscode.TextEditor | vscode.Uri) => {
-        const authState = getChatAuthState(AuthUtil.instance)
+        const authState = await getChatAuthState(AuthUtil.instance)
 
         let result: vscode.WebviewPanel | undefined
         await telemetry.appcomposer_openTemplate.run(async span => {
             span.record({
-                hasChatAuth: authState.codewhispererChat === 'connected',
+                hasChatAuth: authState.codewhispererChat === 'connected' || authState.codewhispererChat === 'expired',
             })
             arg ??= vscode.window.activeTextEditor
             const input = arg instanceof vscode.Uri ? arg : arg?.document
