@@ -30,7 +30,7 @@ import { OnboardingPageInteraction } from '../../../../amazonq/onboardingPage/mo
 import { FeatureAuthState } from '../../../../codewhisperer/util/authUtil'
 import { AuthFollowUpType, expiredText, enableQText, reauthenticateText } from '../../../../amazonq/auth/model'
 
-export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help'
+export type StaticTextResponseType = 'quick-action-help' | 'onboarding-help' | 'transform' | 'help'
 
 export class Messenger {
     public constructor(
@@ -159,7 +159,7 @@ export class Messenger {
                                 tabID
                             )
                         )
-                        this.telemetryHelper.setResponseStreamTimeToFirstChunk(tabID)
+                        this.telemetryHelper.setResponseStreamTimeForChunks(tabID)
                     }
 
                     if (chatEvent.supplementaryWebLinksEvent?.supplementaryWebLinks !== undefined) {
@@ -349,6 +349,9 @@ export class Messenger {
                 ]
                 followUpsHeader = 'Try Examples:'
                 break
+            case 'transform':
+                message = 'Attempting to start transformation with Amazon Q'
+                break
         }
 
         this.dispatcher.sendChatMessage(
@@ -372,6 +375,9 @@ export class Messenger {
         switch (quickAction) {
             case 'help':
                 message = 'What can Amazon Q help me with?'
+                break
+            case 'transform':
+                message = 'Transform my project with Amazon Q'
                 break
         }
 

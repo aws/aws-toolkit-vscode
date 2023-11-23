@@ -249,12 +249,15 @@ export enum DropdownStep {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string = '' // To be specified
+    dependenciesRoot: string = 'dependencies/'
     version: string = '1.0'
 }
 
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
+
+    private moduleName: string = ''
+    private modulePath: string = ''
 
     private jobId: string = ''
 
@@ -264,6 +267,8 @@ export class TransformByQState {
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
+
+    private polledJobStatus: string = ''
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -289,6 +294,14 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
     }
 
+    public getModuleName() {
+        return this.moduleName
+    }
+
+    public getModulePath() {
+        return this.modulePath
+    }
+
     public getJobId() {
         return this.jobId
     }
@@ -303,6 +316,10 @@ export class TransformByQState {
 
     public getStatus() {
         return this.transformByQState
+    }
+
+    public getPolledJobStatus() {
+        return this.polledJobStatus
     }
 
     public getPlanFilePath() {
@@ -337,6 +354,14 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setModuleName(name: string) {
+        this.moduleName = name
+    }
+
+    public setModulePath(path: string) {
+        this.modulePath = path
+    }
+
     public setJobId(id: string) {
         this.jobId = id
     }
@@ -355,6 +380,10 @@ export class TransformByQState {
 
     public setPlanFilePath(filePath: string) {
         this.planFilePath = filePath
+    }
+
+    public setPolledJobStatus(status: string) {
+        this.polledJobStatus = status
     }
 
     public setSummaryFilePath(filePath: string) {

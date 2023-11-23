@@ -55,6 +55,15 @@ export class PrepareRepoFailedError extends ToolkitError {
     }
 }
 
+export class ContentLengthError extends ToolkitError {
+    constructor() {
+        super(
+            'The project you have selected for source code is too large to use as context. Please select a different folder to use for this conversation',
+            { code: 'ContentLengthError' }
+        )
+    }
+}
+
 const denyListedErrors: string[] = ['Deserialization error', 'Inaccessible host']
 
 export function createUserFacingErrorMessage(message: string) {

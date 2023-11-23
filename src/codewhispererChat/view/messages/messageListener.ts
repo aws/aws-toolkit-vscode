@@ -92,11 +92,21 @@ export class UIMessageListener {
             case 'response-body-link-click':
                 this.processResponseBodyLinkClick(msg)
                 break
+            case 'footer-info-link-click':
+                this.processFooterInfoLinkClick(msg)
+                break
         }
     }
 
     private processAuthFollowUpWasClicked(msg: any) {
         this.authController.handleAuth(msg.authType)
+    }
+    private processFooterInfoLinkClick(msg: any) {
+        this.chatControllerMessagePublishers.processFooterInfoLinkClick.publish({
+            tabID: msg.tabID,
+            link: msg.link,
+            command: 'footer-info-link-click',
+        })
     }
     private processResponseBodyLinkClick(msg: any) {
         this.chatControllerMessagePublishers.processResponseBodyLinkClick.publish({

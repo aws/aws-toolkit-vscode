@@ -37,6 +37,7 @@ export const toggleCodeSuggestions = Commands.declare(
     { id: 'aws.codeWhisperer.toggleCodeSuggestion', compositeKey: { 1: 'source' } },
     (suggestionState: CodeSuggestionsState) => async (_: VsCodeCommandArg, source: CodeWhispererSource) => {
         const isSuggestionsEnabled = await suggestionState.toggleSuggestions()
+        await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
         telemetry.aws_modifySetting.emit({
             settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
             settingState: isSuggestionsEnabled

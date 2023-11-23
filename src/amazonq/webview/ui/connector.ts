@@ -82,6 +82,14 @@ export class Connector {
         }
     }
 
+    onInfoLinkClick = (tabID: string, link: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            default:
+                this.cwChatConnector.onInfoLinkClick(tabID, link)
+                break
+        }
+    }
+
     requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             if (this.isUIReady) {

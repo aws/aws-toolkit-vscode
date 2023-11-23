@@ -222,6 +222,8 @@
     "AWS.samcli.deploy.bucket.recentlyUsed": "Buckets recently used for SAM deployments",
     "AWS.submenu.amazonqEditorContextSubmenu.title": "Send to Amazon Q",
     "AWS.submenu.auth.title": "Authentication",
+    "AWS.generic.feedback": "Feedback",
+    "AWS.generic.help": "Help",
     "AWS.generic.create": "Create...",
     "AWS.generic.save": "Save",
     "AWS.generic.close": "Close",

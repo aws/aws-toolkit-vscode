@@ -16,7 +16,7 @@
         src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
     />
 
-    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', maxWidth: `${maxWidth}px` }">
+    <div :style="{ display: 'flex', flexDirection: 'column', gap: '1.2em', width: '100em' }">
         <!-- Logo + Title -->
         <div>
             <div style="display: flex; justify-content: left; align-items: center; gap: 0.5vw">
@@ -127,12 +127,12 @@ export default defineComponent({
         return {
             serviceItemsAuthStatus: serviceItemsAuthStatus,
             notifications: Notifications.instance,
-            maxWidth: undefined as typeof undefined | number,
             panelActivityState: panelActivityState,
         }
     },
     async created() {
-        this.scalePage()
+        // Sets size that all uses of `em` and `rem` in CSS are relative to
+        this.setRelativeSize()
 
         // TODO: Due to design constraints, we determine the existing Auths in the frontend code
         //       since we have all the classes that figure this out in vue. If eventually we are able
@@ -144,7 +144,6 @@ export default defineComponent({
     },
     mounted() {
         panelActivityState.setupInitialActivePanel()
-        window.addEventListener('resize', this.scalePage)
     },
     computed: {},
     methods: {
@@ -182,46 +181,12 @@ export default defineComponent({
             client.openFeedbackForm()
         },
         /**
-         * A mediocre attempt at scaling the content when the webview
-         * stretches or the user zooms in/out. The goal is to keep
-         * all the content in frame withtout having to scroll.
+         * IMPORTANT: This is the root of all sizing (em, rem)
+         * Here we set the size that all references of rem and em
+         * are relative to
          */
-        scalePage() {
-            this.adjustAspectRatio()
-
-            /**
-             * The font size we want is 14px. But when the user zooms in/out
-             * the font size does not change respective to the zoom.
-             * {@link window.devicePixelRatio} helps us scale the font size
-             * relative to the zoom.
-             */
-            document.documentElement.style.fontSize = `${14 / window.devicePixelRatio}px`
-        },
-        /**
-         * If the aspect ratio of the webview becomes too wide the
-         * content becomes stretched and ugly. This adjusts the width
-         * of the content container to keep the aspect ratio below the
-         * {@link maxAspectRatio}
-         */
-        adjustAspectRatio() {
-            /**
-             * **Are you trying to modify this?**
-             *
-             * At the moment of writing this there are 3 panels,
-             * so the current aspect ratio looks nice.
-             * If this changes we will want to adjust the aspect ratio
-             * to fit whatever the new content is.
-             */
-            const maxAspectRatio = 5 / 4
-
-            const currentAspectRatio = window.innerWidth / window.innerHeight
-            if (currentAspectRatio > maxAspectRatio) {
-                // Dervived from: AspectRatio = Width / Height
-                let newMaxWidth = window.innerHeight * maxAspectRatio
-                this.maxWidth = newMaxWidth
-            } else {
-                this.maxWidth = window.innerWidth
-            }
+        setRelativeSize() {
+            document.documentElement.style.fontSize = '14px'
         },
     },
 })
@@ -229,7 +194,7 @@ export default defineComponent({
 
 <style>
 #logo {
-    fill: var(--vscode-foreground);
+    fill: var(--vscode-button-foreground);
     padding-top: 0.2em;
 }
 </style>

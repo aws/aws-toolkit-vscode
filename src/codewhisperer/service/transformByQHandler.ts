@@ -17,6 +17,7 @@ import * as vscode from 'vscode'
 import { spawnSync } from 'child_process'
 import AdmZip from 'adm-zip'
 import fetch from '../../common/request'
+import globals from '../../shared/extensionGlobals'
 
 /* TODO: once supported in all browsers and past "experimental" mode, use Intl DurationFormat:
  * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DurationFormat#browser_compatibility
@@ -29,7 +30,8 @@ export function convertToTimeString(durationInMs: number) {
         return `${numSeconds} sec`
     } else if (duration < 3600) {
         const numMinutes = Math.floor(duration / 60)
-        return `${numMinutes} min`
+        const numSeconds = Math.floor(duration % 60)
+        return `${numMinutes} min ${numSeconds} sec`
     } else {
         const numHours = Math.floor(duration / 3600)
         const numMinutes = Math.floor((duration % 3600) / 60)
@@ -79,7 +81,7 @@ export async function getValidModules() {
         const baseCommand = 'javap'
         const args = ['-v', classFilePath]
         const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
-        if (spawnResult.error) {
+        if (spawnResult.error || spawnResult.status !== 0) {
             continue // if cannot get Java version, move on to other projects in workspace
         }
         const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
@@ -141,6 +143,9 @@ export async function uploadArtifactToS3(fileName: string, resp: CreateUploadUrl
         }
     }
 
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
+
     const response = await fetch('PUT', resp.uploadUrl, { body: fs.readFileSync(fileName), headers: headersObj })
         .response
     getLogger().info(`Status from S3 Upload = ${response.status}`)
@@ -160,6 +165,8 @@ export async function stopJob(jobId: string) {
 
 export async function uploadPayload(payloadFileName: string) {
     const sha256 = getSha256(payloadFileName)
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
     const response = await codeWhisperer.codeWhispererClient.createUploadUrl({
         contentChecksum: sha256,
         contentChecksumType: CodeWhispererConstants.contentChecksumType,
@@ -218,18 +225,29 @@ function getProjectDependencies(modulePath: string): string[] {
 }
 
 export async function zipCode(modulePath: string) {
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
+
     const sourceFolder = modulePath
     const sourceFiles = getFilesRecursively(sourceFolder)
 
-    const dependencyResult = getProjectDependencies(modulePath)
-    const dependencyFolderPath = dependencyResult[0]
-    const dependencyFolderName = dependencyResult[1]
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
+
+    const [dependencyFolderPath, dependencyFolderName] = getProjectDependencies(modulePath)
+
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
+
     const dependencyFiles = getFilesRecursively(dependencyFolderPath)
 
     const zip = new AdmZip()
     const zipManifest = new ZipManifest()
-    zipManifest.dependenciesRoot = dependencyFolderName + '/'
+    zipManifest.dependenciesRoot += `${dependencyFolderName}/`
     zip.addFile('manifest.json', Buffer.from(JSON.stringify(zipManifest), 'utf-8'))
+
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
 
     for (const file of sourceFiles) {
         const relativePath = path.relative(sourceFolder, file)
@@ -237,9 +255,12 @@ export async function zipCode(modulePath: string) {
         zip.addLocalFile(file, path.dirname(paddedPath))
     }
 
+    await sleep(2000) // pause to give time to recognize potential cancellation
+    throwIfCancelled()
+
     for (const file of dependencyFiles) {
         const relativePath = path.relative(dependencyFolderPath, file)
-        const paddedPath = path.join(dependencyFolderName, relativePath)
+        const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)
         zip.addLocalFile(file, path.dirname(paddedPath))
     }
 
@@ -275,13 +296,30 @@ export async function getTransformationPlan(jobId: string) {
     const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
         transformationJobId: jobId,
     })
-    const logoAbsolutePath = path.join(__dirname, CodeWhispererConstants.logoPath)
+    const logoAbsolutePath = globals.context.asAbsolutePath(
+        path.join('resources', 'icons', 'aws', 'amazonq', 'transform-landing-page-icon.svg')
+    )
     const logoBase64 = getImageAsBase64(logoAbsolutePath)
-    let plan = `![Transform by Q](${logoBase64}) \n # Transformation Plan by AWS Q \n\n`
+    let plan = `![Transform by Q](${logoBase64}) \n # Code Transformation Plan by Amazon Q \n\n`
+    plan += CodeWhispererConstants.planIntroductionMessage.replace(
+        'JAVA_VERSION_HERE',
+        transformByQState.getSourceJDKVersion()
+    )
+    plan += `\n\nExpected total transformation steps: ${response.transformationPlan.transformationSteps.length}\n\n`
+    plan += CodeWhispererConstants.planDisclaimerMessage
     for (const step of response.transformationPlan.transformationSteps) {
-        plan += `${step.name}: ${step.description}\n\n`
+        plan += `**${step.name}**\n\n- ${step.description}\n\n\n`
     }
+
     return plan
+}
+
+export async function getTransformationSteps(jobId: string) {
+    await sleep(2000) // prevent ThrottlingException
+    const response = await codeWhisperer.codeWhispererClient.codeModernizerGetCodeTransformationPlan({
+        transformationJobId: jobId,
+    })
+    return response.transformationPlan.transformationSteps
 }
 
 export async function pollTransformationJob(jobId: string, validStates: string[]) {
@@ -293,6 +331,8 @@ export async function pollTransformationJob(jobId: string, validStates: string[]
             transformationJobId: jobId,
         })
         status = response.transformationJob.status!
+        transformByQState.setPolledJobStatus(status)
+        await vscode.commands.executeCommand('aws.amazonq.refresh')
         if (validStates.includes(status)) {
             break
         }

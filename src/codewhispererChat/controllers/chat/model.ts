@@ -96,6 +96,12 @@ export interface ResponseBodyLinkClickMessage {
     link: string
 }
 
+export interface FooterInfoLinkClick {
+    command: string
+    tabID: string
+    link: string
+}
+
 export interface ChatItemVotedMessage {
     tabID: string
     command: string

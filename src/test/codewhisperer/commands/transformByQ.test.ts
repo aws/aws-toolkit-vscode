@@ -35,7 +35,7 @@ describe('transformByQ', function () {
 
     it('WHEN converting medium duration in milliseconds THEN converts correctly', async function () {
         const durationTimeString = convertToTimeString(65 * 1000)
-        assert.strictEqual(durationTimeString, '1 min')
+        assert.strictEqual(durationTimeString, '1 min 5 sec')
     })
 
     it('WHEN converting long duration in milliseconds THEN converts correctly', async function () {

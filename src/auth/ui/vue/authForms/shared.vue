@@ -8,6 +8,16 @@ import {
 } from './manageIdentityCenter.vue'
 import { AuthFormId } from './types'
 
+export const AuthFormIds = {
+    credentials: 'credentials',
+    builderIdCodeWhisperer: 'builderIdCodeWhisperer',
+    builderIdCodeCatalyst: 'builderIdCodeCatalyst',
+    identityCenterCodeWhisperer: 'identityCenterCodeWhisperer',
+    identityCenterCodeCatalyst: 'identityCenterCodeCatalyst',
+    identityCenterExplorer: 'identityCenterExplorer',
+    aggregateExplorer: 'aggregateExplorer',
+} as const
+
 /**
  * The state instance of all auth forms
  */

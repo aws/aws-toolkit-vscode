@@ -103,7 +103,14 @@ export async function prepareRepoData(repoRootPath: string, telemetry: Telemetry
 
             const relativePath = getWorkspaceRelativePath(file.fsPath)
             const zipFolderPath = relativePath ? path.dirname(relativePath) : ''
-            zip.addLocalFile(file.fsPath, zipFolderPath)
+            try {
+                await SystemUtilities.readFile(file, new TextDecoder('utf8', { fatal: true }))
+                zip.addLocalFile(file.fsPath, zipFolderPath)
+            } catch (error) {
+                getLogger().debug(
+                    `featureDev: Failed to read file ${file.fsPath} when collecting repository: ${error}. Skipping the file`
+                )
+            }
         }
         telemetry.setRepositorySize(totalBytes)
         const zipFileBuffer = zip.toBuffer()

@@ -59,6 +59,14 @@ export class Connector {
             tabType: 'cwc',
         })
     }
+    onInfoLinkClick = (tabID: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'footer-info-link-click',
+            tabID,
+            link,
+            tabType: 'cwc',
+        })
+    }
 
     followUpClicked = (tabID: string, messageId: string, followUp: ChatItemFollowUp): void => {
         this.sendMessageToExtension({

@@ -24,8 +24,8 @@ export class TabDataGenerator {
     ])
 
     private tabInputPlaceholder: Map<TabType, string> = new Map([
-        ['unknown', 'Ask a question or enter "/" for quick commands'],
-        ['cwc', 'Ask a question or enter "/" for quick commands'],
+        ['unknown', 'Ask a question or enter "/" for quick actions'],
+        ['cwc', 'Ask a question or enter "/" for quick actions'],
         ['featuredev', 'Briefly describe a task or issue'],
     ])
 
@@ -46,7 +46,7 @@ export class TabDataGenerator {
             'featuredev',
             `Welcome to /dev. 
 
-Here I can provide code suggestions across files in your current project by looking at /src, if it exists.
+Here I can provide code suggestions across files in your current project.
 
 Before I begin generating code, let's agree on an implementation plan. What change would you like to make?
 `,
@@ -65,7 +65,7 @@ Before I begin generating code, let's agree on an implementation plan. What chan
         return {
             tabTitle: taskName ?? this.tabTitle.get(tabType),
             promptInputInfo:
-                'Amazon Q may produce inaccurate information. Verify all provided code or information before using it in any environment or workload.',
+                'Use of Amazon Q is subject to the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
             promptInputPlaceholder: this.tabInputPlaceholder.get(tabType),
             chatItems: needWelcomeMessages

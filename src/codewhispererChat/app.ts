@@ -13,6 +13,7 @@ import {
     ChatItemFeedbackMessage,
     ChatItemVotedMessage,
     CopyCodeToClipboard,
+    FooterInfoLinkClick,
     InsertCodeAtCursorPosition,
     PromptMessage,
     ResponseBodyLinkClickMessage,
@@ -44,6 +45,7 @@ export function init(appContext: AmazonQAppInitContext) {
         processOnboardingPageInteraction: new EventEmitter<OnboardingPageInteraction>(),
         processSourceLinkClick: new EventEmitter<SourceLinkClickMessage>(),
         processResponseBodyLinkClick: new EventEmitter<ResponseBodyLinkClickMessage>(),
+        processFooterInfoLinkClick: new EventEmitter<FooterInfoLinkClick>(),
     }
 
     const cwChatControllerMessageListeners = {
@@ -89,6 +91,9 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processResponseBodyLinkClick: new MessageListener<ResponseBodyLinkClickMessage>(
             cwChatControllerEventEmitters.processResponseBodyLinkClick
+        ),
+        processFooterInfoLinkClick: new MessageListener<FooterInfoLinkClick>(
+            cwChatControllerEventEmitters.processFooterInfoLinkClick
         ),
     }
 
@@ -137,6 +142,9 @@ export function init(appContext: AmazonQAppInitContext) {
         ),
         processResponseBodyLinkClick: new MessagePublisher<ResponseBodyLinkClickMessage>(
             cwChatControllerEventEmitters.processResponseBodyLinkClick
+        ),
+        processFooterInfoLinkClick: new MessagePublisher<FooterInfoLinkClick>(
+            cwChatControllerEventEmitters.processFooterInfoLinkClick
         ),
     }
 

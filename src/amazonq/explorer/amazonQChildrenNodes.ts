@@ -36,16 +36,23 @@ export const switchToAmazonQNode = () =>
 
 export const createTransformByQ = () => {
     const prefix = transformByQState.getPrefixTextForButton()
-    let status = ''
+    let status = transformByQState.getPolledJobStatus().toLowerCase()
     if (transformByQState.isRunning()) {
-        status = CodeWhispererConstants.transformByQStateRunningMessage
         vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', false)
+        if (status === '') {
+            // job is running but polling has not started yet, so display generic messsage
+            status = CodeWhispererConstants.transformByQStateRunningMessage
+        }
     } else if (transformByQState.isCancelled()) {
         status = CodeWhispererConstants.transformByQStateCancellingMessage
     } else if (transformByQState.isFailed()) {
         status = CodeWhispererConstants.transformByQStateFailedMessage
     } else if (transformByQState.isSucceeded()) {
         status = CodeWhispererConstants.transformByQStateSucceededMessage
+    } else if (transformByQState.isPartiallySucceeded()) {
+        status = CodeWhispererConstants.transformByQStatePartialSuccessMessage
+    } else if (transformByQState.isNotStarted()) {
+        status = ''
     }
     return showTransformByQ.build('qTreeNode').asTreeNode({
         label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,

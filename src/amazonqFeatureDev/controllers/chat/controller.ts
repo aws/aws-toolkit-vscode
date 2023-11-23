@@ -11,7 +11,7 @@ import { EventEmitter } from 'vscode'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 import { createSingleFileDialog } from '../../../shared/ui/common/openDialog'
 import { featureDevScheme } from '../../constants'
-import { SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
+import { ContentLengthError, SelectedFolderNotInWorkspaceFolderError, createUserFacingErrorMessage } from '../../errors'
 import { defaultRetryLimit } from '../../limits'
 import { Session } from '../../session/session'
 import { featureName } from '../../constants'
@@ -21,6 +21,8 @@ import { Messenger } from './messenger/messenger'
 import { getChatAuthState } from '../../../codewhisperer/util/authUtil'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { getLogger } from '../../../shared/logger'
+import { submitFeedback } from '../../../feedback/vue/submitFeedback'
+import { placeholder } from '../../../shared/vscode/commands2'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -91,6 +93,9 @@ export class FeatureDevController {
                     break
                 case FollowUpTypes.CloseSession:
                     this.closeSession(data)
+                    break
+                case FollowUpTypes.SendFeedback:
+                    this.sendFeedback()
                     break
             }
         })
@@ -164,6 +169,10 @@ export class FeatureDevController {
                 return
             }
 
+            if (session.state.phase === 'Approach' && /yes|ya|y|yeah|ok/i.test(message.message)) {
+                return this.writeCodeClicked(message)
+            }
+
             switch (session.state.phase) {
                 case 'Init':
                 case 'Approach':
@@ -174,15 +183,30 @@ export class FeatureDevController {
                     break
             }
         } catch (err: any) {
-            const errorMessage = createUserFacingErrorMessage(
-                `${featureName} request failed: ${err.cause?.message ?? err.message}`
-            )
-            this.messenger.sendErrorMessage(
-                errorMessage,
-                message.tabID,
-                this.retriesRemaining(session),
-                session?.state.phase
-            )
+            if (err instanceof ContentLengthError) {
+                this.messenger.sendErrorMessage(err.message, message.tabID, this.retriesRemaining(session))
+                this.messenger.sendAnswer({
+                    type: 'system-prompt',
+                    tabID: message.tabID,
+                    followUps: [
+                        {
+                            pillText: 'Select files for context',
+                            type: 'ModifyDefaultSourceFolder',
+                            status: 'info',
+                        },
+                    ],
+                })
+            } else {
+                const errorMessage = createUserFacingErrorMessage(
+                    `${featureName} request failed: ${err.cause?.message ?? err.message}`
+                )
+                this.messenger.sendErrorMessage(
+                    errorMessage,
+                    message.tabID,
+                    this.retriesRemaining(session),
+                    session?.state.phase
+                )
+            }
 
             // Lock the chat input until they explicitly click one of the follow ups
             this.messenger.sendChatInputEnabled(message.tabID, false)
@@ -473,13 +497,18 @@ export class FeatureDevController {
             this.messenger.sendAnswer({
                 tabID: message.tabID,
                 type: 'answer',
+                message: new SelectedFolderNotInWorkspaceFolderError().message,
+            })
+            this.messenger.sendAnswer({
+                tabID: message.tabID,
+                type: 'system-prompt',
                 followUps: [
                     {
-                        pillText: 'Modify source folder',
+                        pillText: 'Select files for context',
                         type: 'ModifyDefaultSourceFolder',
+                        status: 'info',
                     },
                 ],
-                message: new SelectedFolderNotInWorkspaceFolderError().message,
             })
             return
         }
@@ -623,6 +652,10 @@ To learn more, visit the _Amazon Q User Guide_.
             amazonqConversationId: session.conversationId,
             amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
         })
+    }
+
+    private sendFeedback() {
+        submitFeedback.execute(placeholder, 'AmazonQ')
     }
 
     private retriesRemaining(session: Session | undefined) {

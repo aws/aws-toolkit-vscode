@@ -37,11 +37,11 @@ export async function activate(context: ExtContext) {
         }),
 
         Commands.register('aws.amazonq.showHistoryInHub', async () => {
-            transformationHubViewProvider.updateContent('job history')
+            transformationHubViewProvider.updateContent('job history', 0) // 0 is dummy value for startTime - not used
         }),
 
-        Commands.register('aws.amazonq.showPlanProgressInHub', async () => {
-            transformationHubViewProvider.updateContent('plan progress')
+        Commands.register('aws.amazonq.showPlanProgressInHub', async (startTime: number) => {
+            transformationHubViewProvider.updateContent('plan progress', startTime)
         }),
 
         Commands.register('aws.amazonq.showTransformationPlanInHub', async () => {
