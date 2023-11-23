@@ -410,7 +410,7 @@ To learn more, visit the _Amazon Q User Guide_.
     }
 
     private sendFeedback() {
-        submitFeedback.execute(placeholder, 'AmazonQ')
+        submitFeedback.execute(placeholder, 'Amazon Q')
     }
 
     private retriesRemaining(session: Session | undefined) {
