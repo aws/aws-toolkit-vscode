@@ -30,10 +30,14 @@ export class Logging {
 
     public constructor(private readonly defaultLogUri: vscode.Uri, private readonly logger: Logger) {}
 
-    public async openLogUri(logUri = this.defaultLogUri): Promise<vscode.TextEditor | undefined> {
+    public async openLogUri(logUri?: vscode.Uri | unknown): Promise<vscode.TextEditor | undefined> {
         telemetry.toolkit_viewLogs.emit() // Perhaps add additional argument to know which log was viewed?
 
-        return vscode.window.showTextDocument(logUri)
+        // If the command is called directly from a package.json menu item, then logUri may be a random object
+        if (!(logUri instanceof vscode.Uri)) {
+            logUri = this.defaultLogUri
+        }
+        return vscode.window.showTextDocument(logUri as vscode.Uri)
     }
 
     public async openLogId(logId: number, logUri = this.defaultLogUri) {
