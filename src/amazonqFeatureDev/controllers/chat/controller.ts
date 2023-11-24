@@ -397,11 +397,19 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
     }
 
     private async newPlan(message: any) {
+        // Emit the ending of the old session before creating a new one
+        const session = await this.sessionStorage.getSession(message.tabID)
+        telemetry.amazonq_endChat.emit({
+            amazonqConversationId: session.conversationId,
+            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
+            result: 'Succeeded',
+        })
+
         // Old session for the tab is ending, delete it so we can create a new one for the message id
         this.sessionStorage.deleteSession(message.tabID)
 
         // Re-run the opening flow, where we check auth + create a session
-        this.tabOpened(message)
+        await this.tabOpened(message)
 
         this.messenger.sendAnswer({
             type: 'answer',
@@ -409,12 +417,6 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
             message: 'What change would you like to discuss?',
         })
         this.messenger.sendUpdatePlaceholder(message.tabID, 'Briefly describe a task or issue')
-
-        const session = await this.sessionStorage.getSession(message.tabID)
-        telemetry.amazonq_endChat.emit({
-            amazonqConversationId: session.conversationId,
-            amazonqEndOfTheConversationLatency: performance.now() - session.telemetry.sessionStartTime,
-        })
     }
 
     private sendFeedback() {
