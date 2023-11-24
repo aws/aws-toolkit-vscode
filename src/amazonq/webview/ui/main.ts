@@ -250,7 +250,14 @@ export const createMynahUI = (ideApi: any, featureDevInitEnabled: boolean, gumby
 
     mynahUI = new MynahUI({
         onReady: connector.uiReady,
-        onTabAdd: connector.onTabAdd,
+        onTabAdd: (tabID: string) => {
+            // If featureDev has changed availability inbetween the default store settings and now
+            // make sure to show/hide it accordingly
+            mynahUI.updateStore(tabID, {
+                quickActionCommands: tabDataGenerator.quickActionsGenerator.generateForTab('unknown'),
+            })
+            connector.onTabAdd(tabID)
+        },
         onTabRemove: connector.onTabRemove,
         onTabChange: connector.onTabChange,
         onChatPrompt: (tabID: string, prompt: ChatPrompt) => {
