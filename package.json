@@ -707,7 +707,7 @@
             "panel": [
                 {
                     "id": "aws-codewhisperer-reference-log",
-                    "title": "CodeWhisperer Reference Log",
+                    "title": "Code Reference Log",
                     "icon": "media/aws-logo.svg"
                 },
                 {

@@ -171,10 +171,10 @@ export const suggestionShowDelay = 250
 // add 200ms more delay on top of inline default 30-50ms
 export const inlineSuggestionShowDelay = 200
 
-export const referenceLog = 'CodeWhisperer Reference Log'
+export const referenceLog = 'Code Reference Log'
 
 export const suggestionDetailReferenceText = (licenses: string) =>
-    `Reference code under ${licenses}. View full details in CodeWhisperer reference log.`
+    `Reference code under ${licenses}. View full details in Code Reference Log.`
 
 export const hoverInlayText = (licenseName: string | undefined, repository: string | undefined) =>
     `Reference code under the ${licenseName} license from repository ${repository}`
