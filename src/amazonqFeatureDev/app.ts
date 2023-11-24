@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { UIMessageListener } from './views/actions/uiMessageListener'
-import { FeatureDevController } from './controllers/chat/controller'
+import { ChatControllerEventEmitters, FeatureDevController } from './controllers/chat/controller'
 import { AmazonQAppInitContext } from '../amazonq/apps/initContext'
 import { MessagePublisher } from '../amazonq/messages/messagePublisher'
 import { MessageListener } from '../amazonq/messages/messageListener'
@@ -16,7 +16,7 @@ import { AuthUtil, getChatAuthState } from '../codewhisperer/util/authUtil'
 import { debounce } from 'lodash'
 
 export function init(appContext: AmazonQAppInitContext) {
-    const featureDevChatControllerEventEmitters = {
+    const featureDevChatControllerEventEmitters: ChatControllerEventEmitters = {
         processHumanChatMessage: new vscode.EventEmitter<any>(),
         followUpClicked: new vscode.EventEmitter<any>(),
         openDiff: new vscode.EventEmitter<any>(),
@@ -26,6 +26,7 @@ export function init(appContext: AmazonQAppInitContext) {
         tabClosed: new vscode.EventEmitter<any>(),
         authClicked: new vscode.EventEmitter<any>(),
         processResponseBodyLinkClick: new vscode.EventEmitter<any>(),
+        insertCodeAtPositionClicked: new vscode.EventEmitter<any>(),
     }
 
     const messenger = new Messenger(new AppToWebViewMessageDispatcher(appContext.getAppsToWebViewMessagePublisher()))

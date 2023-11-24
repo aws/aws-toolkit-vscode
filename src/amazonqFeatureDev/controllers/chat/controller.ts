@@ -25,6 +25,7 @@ import { submitFeedback } from '../../../feedback/vue/submitFeedback'
 import { placeholder } from '../../../shared/vscode/commands2'
 import { ExternalBrowserUtils } from '../../../amazonq/commons/externalBrowser/externalBrowserUtils'
 import { userGuideURL } from '../../../amazonq/webview/ui/texts/constants'
+import { EditorContentController } from '../../../amazonq/commons/controllers/contentController'
 
 export interface ChatControllerEventEmitters {
     readonly processHumanChatMessage: EventEmitter<any>
@@ -36,6 +37,7 @@ export interface ChatControllerEventEmitters {
     readonly processChatItemVotedMessage: EventEmitter<any>
     readonly authClicked: EventEmitter<any>
     readonly processResponseBodyLinkClick: EventEmitter<any>
+    readonly insertCodeAtPositionClicked: EventEmitter<any>
 }
 
 type OpenDiffMessage = { tabID: string; messageId: string; filePath: string; deleted: boolean }
@@ -43,6 +45,7 @@ export class FeatureDevController {
     private readonly messenger: Messenger
     private readonly sessionStorage: ChatSessionStorage
     private authController: AuthController
+    private contentController: EditorContentController
 
     public constructor(
         private readonly chatControllerMessageListeners: ChatControllerEventEmitters,
@@ -53,6 +56,7 @@ export class FeatureDevController {
         this.messenger = messenger
         this.sessionStorage = sessionStorage
         this.authController = new AuthController()
+        this.contentController = new EditorContentController()
 
         this.chatControllerMessageListeners.processHumanChatMessage.event(data => {
             this.processUserChatMessage(data)
@@ -96,6 +100,9 @@ export class FeatureDevController {
         })
         this.chatControllerMessageListeners.processResponseBodyLinkClick.event(data => {
             this.processLink(data)
+        })
+        this.chatControllerMessageListeners.insertCodeAtPositionClicked.event(data => {
+            this.insertCodeAtPosition(data)
         })
     }
 
@@ -425,6 +432,10 @@ To learn more, visit the _[Amazon Q User Guide](${userGuideURL})_.
 
     private processLink(message: any) {
         ExternalBrowserUtils.instance.openLink(message.link)
+    }
+
+    private insertCodeAtPosition(message: any) {
+        this.contentController.insertTextAtCursorPosition(message.code, () => {})
     }
 
     private retriesRemaining(session: Session | undefined) {

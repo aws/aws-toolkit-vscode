@@ -55,6 +55,9 @@ export class UIMessageListener {
             case 'response-body-link-click':
                 this.processResponseBodyLinkClick(msg)
                 break
+            case 'insert_code_at_cursor_position':
+                this.insertCodeAtPosition(msg)
+                break
         }
     }
 
@@ -120,6 +123,17 @@ export class UIMessageListener {
             messageId: msg.messageId,
             tabID: msg.tabID,
             link: msg.link,
+        })
+    }
+
+    private insertCodeAtPosition(msg: any) {
+        this.featureDevControllerEventsEmitters?.insertCodeAtPositionClicked.fire({
+            command: msg.command,
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            code: msg.code,
+            insertionTargetType: msg.insertionTargetType,
+            codeReference: msg.codeReference,
         })
     }
 }
