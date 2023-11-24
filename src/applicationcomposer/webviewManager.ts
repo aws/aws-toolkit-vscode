@@ -43,6 +43,7 @@ export class ApplicationComposerManager {
 
     private getWebviewContent = () => {
         if (!this.webviewHtml) {
+            void this.fetchWebviewHtml()
             return ''
         }
         const htmlFileSplit = this.webviewHtml.split('<head>')
