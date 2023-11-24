@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import vscode from 'vscode'
+import { submitFeedback } from '../../feedback/vue/submitFeedback'
+import { placeholder } from '../../shared/vscode/commands2'
 
 export function openFeedbackMessageHandler() {
-    void vscode.commands.executeCommand('aws.submitFeedback')
+    void submitFeedback.execute(placeholder, 'Application Composer')
 }
