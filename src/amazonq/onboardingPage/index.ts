@@ -189,7 +189,7 @@ function getWebviewContent(webview: vscode.Webview): string {
             <div id="wrapper">
                 <div id="content">
                     <img id="qLogo" src="${logo}"/>
-                    <h1 id="header">Amazon Q is a generative AI-powered conversational assistant in public preview.</h1>
+                    <h1 id="header">Hello I'm Amazon Q, your generative AI assistant.</h1>
                     <div id="buttonContainer">
                         <button id="sendToQButton">Ask a question</button>
                     </div>
