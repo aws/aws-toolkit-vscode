@@ -328,9 +328,11 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * Validate/update the given connections state.
+     * Sets the given connection as valid or invalid.
+     * You must retrieve the updated state separately using {@link Auth.getConnectionState()}
      *
-     * @return A connection with the latest state after being validated. Otherwise, `undefined` if the given connection does not exist.
+     * Alternatively you can use the `getToken()` call on an SSO connection to do the same thing,
+     * but it will additionally prompt for reauthentication if the connection is invalid.
      */
     public async refreshConnectionState(connection: Pick<Connection, 'id'>): Promise<undefined> {
         const profile = this.store.getProfile(connection.id)
