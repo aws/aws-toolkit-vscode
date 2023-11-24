@@ -4,11 +4,6 @@ import {
   CodeWhispererStreamingClientConfig,
 } from "./CodeWhispererStreamingClient";
 import {
-  ChatCommand,
-  ChatCommandInput,
-  ChatCommandOutput,
-} from "./commands/ChatCommand";
-import {
   ExportResultArchiveCommand,
   ExportResultArchiveCommandInput,
   ExportResultArchiveCommandOutput,
@@ -27,30 +22,12 @@ import { createAggregatedClient } from "@smithy/smithy-client";
 import { HttpHandlerOptions as __HttpHandlerOptions } from "@smithy/types";
 
 const commands = {
-  ChatCommand,
   ExportResultArchiveCommand,
   GenerateAssistantResponseCommand,
   GenerateTaskAssistPlanCommand,
 }
 
 export interface CodeWhispererStreaming {
-  /**
-   * @see {@link ChatCommand}
-   */
-  chat(
-    args: ChatCommandInput,
-    options?: __HttpHandlerOptions,
-  ): Promise<ChatCommandOutput>;
-  chat(
-    args: ChatCommandInput,
-    cb: (err: any, data?: ChatCommandOutput) => void
-  ): void;
-  chat(
-    args: ChatCommandInput,
-    options: __HttpHandlerOptions,
-    cb: (err: any, data?: ChatCommandOutput) => void
-  ): void;
-
   /**
    * @see {@link ExportResultArchiveCommand}
    */

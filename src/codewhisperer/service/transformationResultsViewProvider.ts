@@ -16,6 +16,8 @@ import { FeatureDevClient } from '../../amazonqFeatureDev/client/featureDev'
 import { ExportResultArchiveStructure, downloadExportResultArchive } from '../../shared/utilities/download'
 import { ToolkitError } from '../../shared/errors'
 import { getLogger } from '../../shared/logger'
+import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 export abstract class ProposedChangeNode {
     abstract readonly resourcePath: string
@@ -250,12 +252,13 @@ export class ProposedTransformationExplorer {
                     'markdown.showPreview',
                     vscode.Uri.file(transformByQState.getSummaryFilePath())
                 )
+                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
             }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.PreparingReview)
-
+            telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
@@ -274,7 +277,14 @@ export class ProposedTransformationExplorer {
             } catch (error) {
                 // This allows the customer to retry the download
                 vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
-                throw new ToolkitError('There was a problem fetching the transformed code.')
+                const errorMessage = 'There was a problem fetching the transformed code.'
+                telemetry.codeTransform_logApiError.emit({
+                    codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                    codeTransform_ApiName: 'ExportResultArchive',
+                    codeTransform_ApiErrorId: 'cannotDownloadExportResultArchive',
+                    codeTransform_JobId: transformByQState.getJobId(),
+                })
+                throw new ToolkitError(errorMessage)
             }
             const pathContainingArchive = path.dirname(pathToArchive)
             const zip = new AdmZip(pathToArchive)
@@ -301,6 +311,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
+            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand(
                 'setContext',
@@ -314,6 +325,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', () => {
             diffModel.rejectChanges()
+            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand('setCommand', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()

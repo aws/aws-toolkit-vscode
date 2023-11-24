@@ -27,6 +27,8 @@ import { MultiStepInputFlowController } from '../../shared//multiStepInputFlowCo
 import path from 'path'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import * as he from 'he'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { codeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
 
 const localize = nls.loadMessageBundle()
 export const stopTransformByQButton = localize('aws.codewhisperer.stop.transform.by.q', 'Stop')
@@ -143,6 +145,11 @@ export async function startTransformByQ() {
             uploadId = await uploadPayload(payloadFileName)
         } catch (error) {
             errorMessage = 'Failed to zip code and upload it to S3'
+            telemetry.codeTransform_logApiError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_ApiName: 'CreateUploadUrl',
+                codeTransform_ApiErrorId: 'cannotUploadCode',
+            })
             throw error // do not log the error due to security issues (may contain the uploadUrl)
         }
         sessionPlanProgress['uploadCode'] = StepProgress.Succeeded
@@ -157,6 +164,11 @@ export async function startTransformByQ() {
             jobId = await startJob(uploadId)
         } catch (error) {
             errorMessage = 'Failed to start job'
+            telemetry.codeTransform_logApiError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_ApiName: 'StartTransformation',
+                codeTransform_ApiErrorId: 'cannotStartJob',
+            })
             getLogger().error(errorMessage, error)
             throw error
         }
@@ -172,6 +184,12 @@ export async function startTransformByQ() {
             await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForGettingPlan)
         } catch (error) {
             errorMessage = 'Failed to poll transformation job for plan availability, or job itself failed'
+            telemetry.codeTransform_logApiError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_ApiName: 'GetTransformation',
+                codeTransform_ApiErrorId: 'cannotPollJobForPlan',
+                codeTransform_JobId: jobId,
+            })
             getLogger().error(errorMessage, error)
             throw error
         }
@@ -180,6 +198,12 @@ export async function startTransformByQ() {
             plan = await getTransformationPlan(jobId)
         } catch (error) {
             errorMessage = 'Failed to get transformation plan'
+            telemetry.codeTransform_logApiError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_ApiName: 'GetTransformationPlan',
+                codeTransform_ApiErrorId: 'cannotGetPlan',
+                codeTransform_JobId: jobId,
+            })
             getLogger().error(errorMessage, error)
             throw error
         }
@@ -197,6 +221,12 @@ export async function startTransformByQ() {
             status = await pollTransformationJob(jobId, CodeWhispererConstants.validStatesForCheckingDownloadUrl)
         } catch (error) {
             errorMessage = 'Failed to get transformation job status'
+            telemetry.codeTransform_logApiError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_ApiName: 'GetTransformation',
+                codeTransform_ApiErrorId: 'cannotPollJobForStatus',
+                codeTransform_JobId: jobId,
+            })
             getLogger().error(errorMessage, error)
             throw error
         }
@@ -220,14 +250,17 @@ export async function startTransformByQ() {
     } catch (error) {
         if (transformByQState.isCancelled()) {
             stopJob(transformByQState.getJobId())
-            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage)
+            vscode.window.showErrorMessage(CodeWhispererConstants.transformByQCancelledMessage, { modal: true })
         } else {
             transformByQState.setToFailed()
             let displayedErrorMessage = CodeWhispererConstants.transformByQFailedMessage
             if (errorMessage !== '') {
                 displayedErrorMessage = errorMessage
             }
-            vscode.window.showErrorMessage(displayedErrorMessage)
+            if (transformByQState.getJobFailureReason() !== '') {
+                displayedErrorMessage += `: ${transformByQState.getJobFailureReason()}`
+            }
+            vscode.window.showErrorMessage(displayedErrorMessage, { modal: true })
         }
         if (sessionPlanProgress['uploadCode'] !== StepProgress.Succeeded) {
             sessionPlanProgress['uploadCode'] = StepProgress.Failed
@@ -244,6 +277,12 @@ export async function startTransformByQ() {
     } finally {
         vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
         const durationInMs = new Date().getTime() - startTime.getTime()
+        telemetry.codeTransform_totalRunTime.emit({
+            codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransform_RunTimeLatency: durationInMs,
+            codeTransform_ResultStatusMessage: transformByQState.getStatus(),
+            codeTransform_JobId: transformByQState.getJobId(),
+        })
         if (state.module) {
             sessionJobHistory = processHistory(
                 sessionJobHistory,
@@ -298,7 +337,6 @@ export async function confirmStopTransformByQ(jobId: string) {
         getLogger().verbose('User requested to stop transform by Q. Stopping transform by Q.')
         transformByQState.setToCancelled()
         await vscode.commands.executeCommand('aws.amazonq.refresh')
-        vscode.window.showInformationMessage(CodeWhispererConstants.stoppingTransformByQMessage)
         vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         stopJob(jobId)
     }

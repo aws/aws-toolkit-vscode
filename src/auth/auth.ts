@@ -295,14 +295,57 @@ export class Auth implements AuthService, ConnectionManager {
 
     public async deleteConnection(connection: Pick<Connection, 'id'>): Promise<void> {
         const connId = connection.id
-        if (connId === this.#activeConnection?.id) {
-            await this.logout()
-        } else {
-            await this.invalidateConnection(connId)
+        const profile = this.store.getProfile(connId)
+
+        // it is possible the connection was already deleted
+        // but was still requested to be deleted. We pretend
+        // we deleted it and continue as normal
+        if (profile) {
+            if (connId === this.#activeConnection?.id) {
+                await this.logout()
+            } else {
+                await this.invalidateConnection(connId)
+            }
+
+            await this.store.deleteProfile(connId)
+
+            if (profile.type === 'sso') {
+                // There may have been linked IAM credentials attached to this
+                // so we will want to clear them.
+                await this.clearStaleLinkedIamConnections()
+            }
         }
 
-        await this.store.deleteProfile(connId)
         this.#onDidDeleteConnection.fire(connId)
+    }
+
+    private async clearStaleLinkedIamConnections() {
+        // Updates our store, evicting stale IAM credential profiles if the
+        // SSO they are linked to was removed.
+        await loadIamProfilesIntoStore(this.store, this.iamProfileProvider)
+
+        // If we were using a IAM credential linked to the SSO it can exist as the
+        // active connection but was deleted everywhere else. So we check and clear if needed.
+        if (this.#activeConnection && this.store.getProfile(this.#activeConnection.id) === undefined) {
+            this.#activeConnection = undefined
+            this.#onDidChangeActiveConnection.fire(undefined)
+        }
+    }
+
+    /**
+     * @warning Only intended for Dev mode purposes
+     *
+     * Put the SSO connection in to an expired state
+     */
+    public async expireConnection(conn: Pick<SsoConnection, 'id'>): Promise<void> {
+        const profile = this.store.getProfileOrThrow(conn.id)
+        if (profile.type === 'iam') {
+            throw new ToolkitError('Auth: Cannot force expire an IAM connection')
+        }
+        const provider = this.getTokenProvider(conn.id, profile)
+        await provider.invalidate()
+        // updates the state of the connection
+        await this.validateConnection(conn.id, profile)
     }
 
     public async getConnection(connection: Pick<Connection, 'id'>): Promise<Connection | undefined> {
@@ -312,9 +355,11 @@ export class Auth implements AuthService, ConnectionManager {
     }
 
     /**
-     * Validate/update the given connections state.
+     * Sets the given connection as valid or invalid.
+     * You must retrieve the updated state separately using {@link Auth.getConnectionState()}
      *
-     * @return A connection with the latest state after being validated. Otherwise, `undefined` if the given connection does not exist.
+     * Alternatively you can use the `getToken()` call on an SSO connection to do the same thing,
+     * but it will additionally prompt for reauthentication if the connection is invalid.
      */
     public async refreshConnectionState(connection: Pick<Connection, 'id'>): Promise<undefined> {
         const profile = this.store.getProfile(connection.id)

@@ -17,6 +17,6 @@ export function processTransformByQ() {
     if (transformByQState.isNotStarted()) {
         startTransformByQWithProgress()
     } else {
-        vscode.window.showInformationMessage(jobInProgressMessage)
+        vscode.window.showInformationMessage(jobInProgressMessage, { modal: true })
     }
 }

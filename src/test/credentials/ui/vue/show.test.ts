@@ -3,10 +3,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { Uri } from 'vscode'
 import { SinonSandbox, createSandbox, SinonStubbedInstance } from 'sinon'
 import { AuthWebview, buildCommaDelimitedString, emitWebviewClosed } from '../../../../auth/ui/vue/show'
-import { assertTelemetry } from '../../../testUtil'
+import { assertTelemetry, getProjectDir } from '../../../testUtil'
 import { AuthFormId } from '../../../../auth/ui/vue/authForms/types'
+import assert from 'assert'
+import { FileSystemCommon } from '../../../../srcShared/fs'
 
 describe('emitWebviewClosed()', function () {
     let authWebview: SinonStubbedInstance<AuthWebview>
@@ -162,5 +165,19 @@ describe('emitWebviewClosed()', function () {
                 newEnabledAuthConnections: undefined,
             })
         })
+    })
+})
+
+describe('Add Connection webview', function () {
+    const fs = FileSystemCommon.instance
+
+    it('has all images used by the webview', async function () {
+        // We are in the root of the built, `dist`, but we want the root of the actual project
+        const projectRoot = Uri.joinPath(Uri.file(getProjectDir()), '..', '..')
+        const marketplaceImagesRoot = Uri.joinPath(projectRoot, 'docs/marketplace/vscode')
+
+        assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'CC_dev_env.gif')))
+        assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'awsExplorer.gif')))
+        assert(await fs.fileExists(Uri.joinPath(marketplaceImagesRoot, 'codewhisperer.gif')))
     })
 })

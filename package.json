@@ -280,16 +280,6 @@
                     "type": "object",
                     "description": "%AWS.configuration.description.lambda.recentlyUploaded%",
                     "default": []
-                },
-                "aws.amazonqFeatureDev.region": {
-                    "type": "string",
-                    "default": "Gamma-IAD",
-                    "description": "AWS region to use during the invocation.",
-                    "enum": [
-                        "Alpha-PDX",
-                        "Gamma-IAD",
-                        "Gamma-PDX"
-                    ]
                 }
             }
         },
@@ -717,7 +707,7 @@
             "panel": [
                 {
                     "id": "aws-codewhisperer-reference-log",
-                    "title": "CodeWhisperer Reference Log",
+                    "title": "Code Reference Log",
                     "icon": "media/aws-logo.svg"
                 },
                 {
@@ -4307,8 +4297,8 @@
         "@typescript-eslint/eslint-plugin": "^5.59.0",
         "@typescript-eslint/parser": "^5.59.1",
         "@vscode/codicons": "^0.0.33",
-        "@vscode/test-electron": "^2.3.4",
-        "@vscode/test-web": "^0.0.45",
+        "@vscode/test-electron": "^2.3.8",
+        "@vscode/test-web": "^0.0.48",
         "@vscode/vsce": "^2.19.0",
         "@vue/compiler-sfc": "^3.3.2",
         "circular-dependency-plugin": "^5.2.2",
@@ -4361,7 +4351,7 @@
         "@aws-sdk/shared-ini-file-loader": "^3.46.0",
         "@aws-sdk/smithy-client": "^3.46.0",
         "@aws-sdk/util-arn-parser": "^3.46.0",
-        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.2.2",
+        "@aws/mynah-ui-chat": "npm:@aws/mynah-ui@3.2.5",
         "@gerhobbelt/gitignore-parser": "^0.2.0-9",
         "@iarna/toml": "^2.2.5",
         "@vscode/debugprotocol": "^1.57.0",
