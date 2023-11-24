@@ -181,7 +181,7 @@ export async function loginWithMostRecentCredentials(
             }
             getLogger().info('autoconnect: connected: %O', asString(creds))
             if (popup) {
-                vscode.window.showInformationMessage(
+                await vscode.window.showInformationMessage(
                     localize(
                         'AWS.message.credentials.connected',
                         'Connected to {0} with {1}',
@@ -329,7 +329,7 @@ function createCredentialsShim(
             }
 
             const credentials = await provider.getCredentials()
-            store.setCredentials(credentials, provider)
+            await store.setCredentials(credentials, provider)
             getLogger().debug(`credentials: refresh succeeded for: ${formatProviderId()}`)
             result = 'Succeeded'
 
@@ -338,13 +338,13 @@ function createCredentialsShim(
             if (error instanceof ToolkitError && error.cancelled) {
                 result = 'Cancelled'
             } else {
-                showViewLogsMessage(`Failed to refresh credentials: ${(error as any)?.message}`)
+                void showViewLogsMessage(`Failed to refresh credentials: ${(error as any)?.message}`)
             }
 
             state.credentials = undefined
             store.invalidateCredentials(providerId)
             globals.awsContext.credentialsShim = undefined
-            globals.awsContext.setCredentials(undefined, true)
+            await globals.awsContext.setCredentials(undefined, true)
 
             throw error
         } finally {
