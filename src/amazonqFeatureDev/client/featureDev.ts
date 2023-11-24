@@ -7,7 +7,6 @@ import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
 import { Service, Token } from 'aws-sdk'
 import { ConfiguredRetryStrategy } from '@aws-sdk/util-retry'
 import { omit } from 'lodash'
-import * as vscode from 'vscode'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { ToolkitError } from '../../shared/errors'
@@ -17,30 +16,17 @@ import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
 import { ContentLengthError } from '../errors'
-
-type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
-const getCodeWhispererRegionAndEndpoint = () => {
-    const cwsprEndpointMap: Record<AvailableRegion, { cwsprEndpoint: string; region: string }> = {
-        'Alpha-PDX': { cwsprEndpoint: 'https://rts.alpha-us-west-2.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
-        'Gamma-IAD': { cwsprEndpoint: 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/', region: 'us-east-1' },
-        'Gamma-PDX': { cwsprEndpoint: 'https://rts.gamma-us-west-2.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
-    }
-    const region: string | undefined = vscode.workspace.getConfiguration('aws.amazonqFeatureDev').get('region') ?? ''
-    return region in cwsprEndpointMap
-        ? cwsprEndpointMap[region as keyof typeof cwsprEndpointMap]
-        : cwsprEndpointMap['Gamma-IAD']
-}
+import { endpoint, region } from '../../codewhisperer/models/constants'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
-    const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
         {
             apiConfig: apiConfig,
-            region: region,
-            endpoint: cwsprEndpoint,
+            region,
+            endpoint,
             token: new Token({ token: bearerToken }),
             // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
             maxRetries: 0,
@@ -56,10 +42,9 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
 // Create a client for featureDev streaming based off of aws sdk v3
 async function createFeatureDevStreamingClient(): Promise<CodeWhispererStreaming> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
-    const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
     const streamingClient = new CodeWhispererStreaming({
-        endpoint: cwsprEndpoint,
-        region: region,
+        region,
+        endpoint,
         token: { token: bearerToken },
         // SETTING max attempts to 0 FOR BETA. RE-ENABLE FOR RE-INVENT
         // Implement exponential back off starting with a base of 500ms (500 + attempt^10)
