@@ -655,6 +655,7 @@ export type AuthUiClick =
     | 'auth_infoIAMIdentityCenter'
     | 'auth_learnMoreAWSResources'
     | 'auth_learnMoreCodeWhisperer'
+    | 'auth_learnMoreAmazonQ'
     | 'auth_learnMoreCodeCatalyst'
     | 'auth_learnMoreBuilderId'
     | 'auth_learnMoreProfessionalTierCodeWhisperer'

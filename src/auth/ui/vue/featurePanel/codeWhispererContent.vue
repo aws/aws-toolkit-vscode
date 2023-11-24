@@ -11,9 +11,14 @@
 
             <div class="feature-panel-container-description">
                 Build, maintain, and transform applications using generative AI.
-                <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')"
-                    >Learn more.</a
-                >
+                <br />
+                <br />
+                Learn more about
+                <a href="https://aws.amazon.com/q/" v-on:click="emitUiClick('auth_learnMoreAmazonQ')"> Amazon Q</a>
+                and
+                <a href="https://aws.amazon.com/codewhisperer/" v-on:click="emitUiClick('auth_learnMoreCodeWhisperer')">
+                    CodeWhisperer</a
+                >.
             </div>
         </div>
 
