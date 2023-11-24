@@ -130,9 +130,11 @@ export default defineComponent({
         },
         showCodeWhispererView() {
             client.showCodeWhispererView()
+            client.emitUiClick('auth_openCodeWhisperer')
         },
         showAmazonQChat() {
             client.showAmazonQChat()
+            client.emitUiClick('auth_amazonQChat')
         },
     },
 })

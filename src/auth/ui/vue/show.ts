@@ -665,6 +665,7 @@ export type AuthUiClick =
     | 'auth_openConnectionSelector'
     | 'auth_openAWSExplorer'
     | 'auth_openCodeWhisperer'
+    | 'auth_amazonQChat'
     | 'auth_openCodeCatalyst'
     | 'auth_editCredentials'
     | 'auth_codewhisperer_signoutBuilderId'

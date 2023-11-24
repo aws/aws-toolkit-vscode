@@ -120,6 +120,7 @@ export default defineComponent({
         },
         showCodeCatalystNode() {
             client.showCodeCatalystNode()
+            client.emitUiClick('auth_openCodeCatalyst')
         },
     },
 })
