@@ -129,6 +129,8 @@ export class AuthUtil {
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
             ])
 
+            await vscode.commands.executeCommand('setContext', 'CODEWHISPERER_ENABLED', this.isConnected())
+
             const memento = globals.context.globalState
             const shouldShowObject: HasAlreadySeenQWelcome = memento.get(this.mementoKey) ?? {
                 local: false,
