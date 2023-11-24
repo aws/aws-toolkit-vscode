@@ -4,7 +4,7 @@
             <div class="feature-panel-container-title">Amazon Q + CodeWhisperer</div>
 
             <img
-                class="service-item-content-image"
+                class="feature-panel-image"
                 src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/codewhisperer.gif"
                 alt="CodeWhisperer example GIF"
             />

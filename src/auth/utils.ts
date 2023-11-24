@@ -596,7 +596,7 @@ export async function hasSso(
     return (await findSsoConnections(kind, allConnections)).length > 0
 }
 
-async function findSsoConnections(
+export async function findSsoConnections(
     kind: SsoKind = 'any',
     allConnections = () => Auth.instance.listConnections()
 ): Promise<SsoConnection[]> {

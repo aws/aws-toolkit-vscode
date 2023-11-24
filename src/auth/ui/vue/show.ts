@@ -35,6 +35,7 @@ import {
     hasBuilderId,
     hasSso,
     BuilderIdKind,
+    findSsoConnections,
 } from '../../utils'
 import { Region } from '../../../shared/regions/endpoints'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
@@ -61,7 +62,7 @@ export class AuthWebview extends VueWebview {
     /** If the backend needs to tell the frontend to select/show a specific service to the user */
     public readonly onDidSelectService = new vscode.EventEmitter<ServiceItemId>()
 
-    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider) {
+    constructor(private readonly codeCatalystAuth: CodeCatalystAuthenticationProvider, readonly auth = Auth.instance) {
         super()
     }
 
@@ -106,28 +107,24 @@ export class AuthWebview extends VueWebview {
         return hasIamCredentials()
     }
 
-    isCredentialConnected(): boolean {
-        const conn = Auth.instance.activeConnection
+    async isExplorerConnected(type: 'idc' | 'iam') {
+        if (type === 'idc') {
+            // Explorer only cares a valid IdC exists, it doesn't have to be
+            // in use since we really just want the credentials derived from it.
+            const idcConns = await findSsoConnections('any')
+            const validIdcConns = idcConns.filter(conn => {
+                return this.auth.getConnectionState(conn) === 'valid'
+            })
+            return validIdcConns.length > 0
+        } else {
+            const conn = this.auth.activeConnection
 
-        if (!conn) {
-            return false
+            if (!conn) {
+                return false
+            }
+
+            return conn.type === 'iam' && this.auth.getConnectionState(conn) === 'valid'
         }
-        // Maybe need to use SecondaryAuth registerAuthListener()
-        /**
-         *
-         * When a Builder ID is active and cred is not, the BID is
-         * the main active connection. BID's are saveable and checked
-         * by registerAuthListenter().
-         *
-         * What this means is that when creds are activated they become
-         * the main Auth.instance.activeConnection and BID is a secondary
-         * one.
-         *
-         * TODO: Show the quickpick and tell them to pick a credentials
-         * connection to use.
-         *
-         */
-        return conn.type === 'iam' && conn.state === 'valid'
     }
 
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
