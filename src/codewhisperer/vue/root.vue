@@ -3,23 +3,6 @@
     <div>
         <!-- Header -->
         <div class="headerDiv">
-            <!-- Banner -->
-            <div v-if="active === 0 && bannerVisible" class="banner">
-                <div class="bannerDiv">
-                    <div class="infoIcon">
-                        <svg width="15" height="16" viewBox="0 0 15 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M8.58667 1.01333C9.36889 1.12 10.1156 1.35111 10.8267 1.70667C11.5733 2.02667 12.2133 2.47111 12.7467 3.04C13.6 3.89333 14.1867 4.87111 14.5067 5.97333C14.8267 7.07556 14.88 8.19556 14.6667 9.33333C14.4533 10.4711 13.9733 11.5022 13.2267 12.4267C12.5511 13.28 11.7156 13.9378 10.72 14.4C9.76 14.8267 8.74667 15.0222 7.68 14.9867C6.61333 14.9511 5.6 14.6844 4.64 14.1867C3.92889 13.7956 3.30667 13.2978 2.77333 12.6933C2.24 12.0889 1.81333 11.4133 1.49333 10.6667C1.20889 9.92 1.04889 9.15556 1.01333 8.37333C0.977778 7.55556 1.06667 6.75556 1.28 5.97333C1.52889 5.19111 1.88444 4.48 2.34667 3.84C2.80889 3.2 3.37778 2.64889 4.05333 2.18667C4.72889 1.72444 5.44 1.40444 6.18667 1.22667C6.96889 1.01333 7.76889 0.942222 8.58667 1.01333ZM9.06667 13.8667C9.70667 13.7244 10.3111 13.4756 10.88 13.12C11.4844 12.7644 12 12.32 12.4267 11.7867C13.0667 11.0044 13.4756 10.1333 13.6533 9.17333C13.8667 8.17778 13.8311 7.21778 13.5467 6.29333C13.2622 5.33333 12.7644 4.48 12.0533 3.73333C11.4133 3.09333 10.6489 2.63111 9.76 2.34667C8.90667 2.02667 8.01778 1.93778 7.09333 2.08C6.20444 2.18667 5.38667 2.48889 4.64 2.98667C3.75111 3.59111 3.07556 4.37333 2.61333 5.33333C2.15111 6.25778 1.93778 7.25333 1.97333 8.32C2.04444 9.35111 2.34667 10.3111 2.88 11.2C3.44889 12.0889 4.19556 12.7822 5.12 13.28C5.72444 13.6 6.36444 13.8133 7.04 13.92C7.71556 14.0267 8.37333 14.0089 9.01333 13.8667H9.06667ZM7.36 5.97333H8.64V5.01333H7.36V5.97333ZM8.64 6.98667V10.9867H7.36V6.98667H8.64Z"
-                                fill="#C5C5C5"
-                            />
-                        </svg>
-                    </div>
-                    <div class="bannerDescription">
-                        You can always return to this page by clicking “Learn” in Developer Tools > CodeWhisperer
-                    </div>
-                </div>
-                <div v-on:click="closeStatusBar" class="icon icon-lg icon-vscode-chrome-close closeBanner"></div>
-            </div>
             <!-- Logo + Title -->
             <div class="logoIcon">
                 <!-- Icon -->
@@ -47,28 +30,15 @@
                 <!-- Text -->
                 <div class="titleDiv">
                     <div class="titleHeader">Amazon CodeWhisperer</div>
-                    <div class="titleSubHeader">Your AI coding companion</div>
+                    <div class="titleSubHeader">Your AI-powered productivity tool for the IDE</div>
                 </div>
             </div>
         </div>
         <!-- Body -->
         <div class="body">
-            <!-- Additional Resources-->
-            <div class="resources">
-                <Shortcuts />
-                <Workshop />
-                <Resources />
-            </div>
             <!-- Functionality -->
             <div class="bodySubDiv">
                 <GenerateSuggestionTab />
-                <!-- Break Line -->
-                <div class="breakLine">
-                    <svg width="100%" height="2" viewBox="0 0 744 2" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M0 1H744" stroke="#2F2F2F" />
-                    </svg>
-                </div>
-                <ScanCode />
             </div>
         </div>
     </div>
@@ -76,20 +46,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import Resources from './resources.vue'
-import Shortcuts from './shortcuts.vue'
-import ScanCode from './scanCode.vue'
 import GenerateSuggestionTab from './genSuggestionTab.vue'
-import Workshop from './workshop.vue'
 
 export default defineComponent({
     name: 'Getting_Started',
     components: {
-        Resources,
-        Shortcuts,
-        ScanCode,
         GenerateSuggestionTab,
-        Workshop,
     },
     data() {
         return {
@@ -195,29 +157,17 @@ export default defineComponent({
     display: flex;
     flex-wrap: wrap-reverse;
     height: auto;
-    justify-content: center;
+    justify-content: left;
     gap: 5%;
-    justify-items: center;
+    justify-items: left;
+    padding-left: 60px;
 }
 .bodySubDiv {
     display: flex;
     flex-direction: column;
-    width: 720px;
+    width: 860;
     height: auto;
     justify-items: start;
-    align-items: start;
-}
-.breakLine {
-    display: flex;
-    width: 100%;
-    background: #2f2f2f;
-}
-.resources {
-    width: 290px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    justify-content: start;
     align-items: start;
 }
 </style>
