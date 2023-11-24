@@ -84,12 +84,16 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     public update(info: AppRunner.ServiceSummary | AppRunner.Service): void {
         // update can be called multiple times during an event loop
         // this would rarely cause the node's status to appear as 'Operation in progress'
-        this.lock.acquire(this._info.ServiceId, done => {
-            const lastLabel = this.label
-            this.updateInfo(info)
-            this.updateStatus(typeof lastLabel === 'string' ? lastLabel : lastLabel?.label)
-            done()
-        })
+        this.lock
+            .acquire(this._info.ServiceId, done => {
+                const lastLabel = this.label
+                this.updateInfo(info)
+                this.updateStatus(typeof lastLabel === 'string' ? lastLabel : lastLabel?.label)
+                done()
+            })
+            .catch(e => {
+                getLogger().error('AsyncLock.acquire failed: %s', e.message)
+            })
     }
 
     private updateStatus(lastLabel?: string): void {
@@ -134,7 +138,7 @@ export class AppRunnerServiceNode extends CloudWatchLogsBase implements AWSResou
     private updateInfo(info: AppRunner.ServiceSummary | AppRunner.Service): void {
         if (info.Status === 'OPERATION_IN_PROGRESS' && this.currentOperation.Type === undefined) {
             // Asynchronous since it is not currently possible for race-conditions to occur with updating operations
-            this.updateOperation()
+            void this.updateOperation()
         }
 
         this._info = Object.assign(this._info, info)

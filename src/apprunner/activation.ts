@@ -38,7 +38,7 @@ const deployServiceFailed = localize(
 const deleteServiceFailed = localize('aws.apprunner.deleteService.failed', 'Failed to delete App Runner service')
 
 const copyUrl = async (node: AppRunnerServiceNode) => {
-    copyToClipboard(node.url, 'URL')
+    await copyToClipboard(node.url, 'URL')
     telemetry.apprunner_copyServiceUrl.emit({ passive: false })
 }
 const openUrl = async (node: AppRunnerServiceNode) => {
@@ -86,7 +86,7 @@ export async function activate(context: ExtContext): Promise<void> {
                     await command(...args)
                 } catch (err) {
                     getLogger().error(`${tuple[1]}: %s`, err)
-                    showViewLogsMessage(tuple[1])
+                    await showViewLogsMessage(tuple[1])
                 }
             })
         )

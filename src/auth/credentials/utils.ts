@@ -17,6 +17,7 @@ import { fromExtensionManifest } from '../../shared/settings'
 import { Profile } from './sharedCredentials'
 import { createInputBox, promptUser } from '../../shared/ui/input'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
+import { getLogger } from '../../shared/logger'
 
 const credentialsTimeout = 300000 // 5 minutes
 const credentialsProgressDelay = 1000
@@ -44,14 +45,17 @@ export function showLoginFailedMessage(credentialsId: string, errMsg: string): v
         localize('AWS.message.credentials.invalid', 'Credentials "{0}" failed to connect: {1}', credentialsId, errMsg),
         'error',
         buttons
-    ).then((selection: string | undefined) => {
-        if (selection === getHelp) {
-            openUrl(vscode.Uri.parse(authHelpUrl))
-        }
-        if (selection === editCreds) {
-            vscode.commands.executeCommand('aws.credentials.edit')
-        }
-    })
+    )
+        .then((selection: string | undefined) => {
+            if (selection === getHelp) {
+                return openUrl(vscode.Uri.parse(authHelpUrl))
+            } else if (selection === editCreds) {
+                return vscode.commands.executeCommand('aws.credentials.edit')
+            }
+        })
+        .catch(e => {
+            getLogger().error('xxx failed: %s', (e as Error).message)
+        })
 }
 
 export function hasProfileProperty(profile: Profile, propertyName: string): boolean {
