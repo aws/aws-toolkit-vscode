@@ -249,7 +249,7 @@ export enum DropdownStep {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string = 'dependencies/'
+    dependenciesRoot: string | undefined = 'dependencies/'
     version: string = '1.0'
 }
 
@@ -269,6 +269,8 @@ export class TransformByQState {
     private summaryFilePath: string = ''
 
     private polledJobStatus: string = ''
+
+    private jobFailureReason: string = ''
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -330,6 +332,10 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getJobFailureReason() {
+        return this.jobFailureReason
+    }
+
     public setToNotStarted() {
         this.transformByQState = TransformByQStatus.NotStarted
     }
@@ -388,6 +394,10 @@ export class TransformByQState {
 
     public setSummaryFilePath(filePath: string) {
         this.summaryFilePath = filePath
+    }
+
+    public setJobFailureReason(reason: string) {
+        this.jobFailureReason = reason
     }
 
     public getPrefixTextForButton() {

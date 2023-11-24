@@ -23,7 +23,14 @@
      * This must be the height of the tallest feature panel.
      * This ensures all the borders of the feature panels are the same height.
      */
-    min-height: 28em;
+    min-height: 22em;
+}
+
+.feature-panel-image {
+    border-radius: 1em;
+
+    max-height: 15em;
+    margin: 0 auto;
 }
 
 .feature-panel-container-title {
@@ -34,13 +41,6 @@
 
 .feature-panel-container-description {
     font-size: 1rem;
-}
-
-.service-item-content-image {
-    border-radius: 1em;
-    height: auto;
-    width: 25em;
-    margin: 0 auto;
 }
 
 .feature-panel-container hr {

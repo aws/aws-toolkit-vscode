@@ -236,7 +236,7 @@ export class CredentialsState implements AuthForm {
     }
 
     async isAuthConnected(): Promise<boolean> {
-        return await client.isCredentialConnected()
+        return await client.isExplorerConnected('iam')
     }
 
     async isConnectionExists(): Promise<boolean> {

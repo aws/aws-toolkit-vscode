@@ -7,7 +7,6 @@ import { CodeWhispererStreaming } from '@amzn/codewhisperer-streaming'
 import { Service, Token } from 'aws-sdk'
 import { ConfiguredRetryStrategy } from '@aws-sdk/util-retry'
 import { omit } from 'lodash'
-import * as vscode from 'vscode'
 import { AuthUtil } from '../../codewhisperer/util/authUtil'
 import { ServiceOptions } from '../../shared/awsClientBuilder'
 import { ToolkitError } from '../../shared/errors'
@@ -16,32 +15,18 @@ import { getLogger } from '../../shared/logger'
 import * as FeatureDevProxyClient from './featuredevproxyclient'
 import apiConfig = require('./codewhispererruntime-2022-11-11.json')
 import { featureName } from '../constants'
-import { CodeReference } from '../../amazonq/webview/ui/connector'
 import { ContentLengthError } from '../errors'
-
-type AvailableRegion = 'Alpha-PDX' | 'Gamma-IAD' | 'Gamma-PDX'
-const getCodeWhispererRegionAndEndpoint = () => {
-    const cwsprEndpointMap: Record<AvailableRegion, { cwsprEndpoint: string; region: string }> = {
-        'Alpha-PDX': { cwsprEndpoint: 'https://rts.alpha-us-west-2.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
-        'Gamma-IAD': { cwsprEndpoint: 'https://rts.gamma-us-east-1.codewhisperer.ai.aws.dev/', region: 'us-east-1' },
-        'Gamma-PDX': { cwsprEndpoint: 'https://rts.gamma-us-west-2.codewhisperer.ai.aws.dev/', region: 'us-west-2' },
-    }
-    const region: string | undefined = vscode.workspace.getConfiguration('aws.amazonqFeatureDev').get('region') ?? ''
-    return region in cwsprEndpointMap
-        ? cwsprEndpointMap[region as keyof typeof cwsprEndpointMap]
-        : cwsprEndpointMap['Gamma-IAD']
-}
+import { endpoint, region } from '../../codewhisperer/models/constants'
 
 // Create a client for featureDev proxy client based off of aws sdk v2
 export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClient> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
-    const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
     return (await globals.sdkClientBuilder.createAwsService(
         Service,
         {
             apiConfig: apiConfig,
-            region: region,
-            endpoint: cwsprEndpoint,
+            region,
+            endpoint,
             token: new Token({ token: bearerToken }),
             // SETTING TO 0 FOR BETA. RE-ENABLE FOR RE-INVENT
             maxRetries: 0,
@@ -57,10 +42,9 @@ export async function createFeatureDevProxyClient(): Promise<FeatureDevProxyClie
 // Create a client for featureDev streaming based off of aws sdk v3
 async function createFeatureDevStreamingClient(): Promise<CodeWhispererStreaming> {
     const bearerToken = await AuthUtil.instance.getBearerToken()
-    const { region, cwsprEndpoint } = getCodeWhispererRegionAndEndpoint()
     const streamingClient = new CodeWhispererStreaming({
-        endpoint: cwsprEndpoint,
-        region: region,
+        region,
+        endpoint,
         token: { token: bearerToken },
         // SETTING max attempts to 0 FOR BETA. RE-ENABLE FOR RE-INVENT
         // Implement exponential back off starting with a base of 500ms (500 + attempt^10)
@@ -124,6 +108,7 @@ export class FeatureDevClient {
             throw new ToolkitError((e as Error).message, { code: 'CreateUploadUrlFailed' })
         }
     }
+
     public async generatePlan(conversationId: string, uploadId: string, userMessage: string) {
         try {
             const streamingClient = await this.getStreamingClient()
@@ -157,110 +142,6 @@ export class FeatureDevClient {
                 `${featureName}: failed to execute planning: ${(e as Error).message} RequestId: ${(e as any).requestId}`
             )
             throw new ToolkitError((e as Error).message, { code: 'GeneratePlanFailed' })
-        }
-    }
-
-    public async startCodeGeneration(conversationId: string, uploadId: string, message: string) {
-        try {
-            const client = await this.getClient()
-            const params = {
-                conversationState: {
-                    conversationId,
-                    currentMessage: {
-                        userInputMessage: { content: message },
-                    },
-                    chatTriggerType: 'MANUAL',
-                },
-                workspaceState: {
-                    uploadId,
-                    programmingLanguage: { languageName: 'javascript' },
-                },
-            }
-            getLogger().debug(`Executing startTaskAssistCodeGeneration with %O`, params)
-            const response = await client.startTaskAssistCodeGeneration(params).promise()
-
-            return response
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to start code generation: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'StartCodeGenerationFailed' })
-        }
-    }
-
-    public async getCodeGeneration(conversationId: string, codeGenerationId: string) {
-        try {
-            const client = await this.getClient()
-            const params = {
-                codeGenerationId,
-                conversationId,
-            }
-            getLogger().debug(`Executing getTaskAssistCodeGeneration with %O`, params)
-            const response = await client.getTaskAssistCodeGeneration(params).promise()
-
-            return response
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to start get code generation results: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'GetCodeGenerationFailed' })
-        }
-    }
-
-    public async exportResultArchive(conversationId: string) {
-        try {
-            const streamingClient = await this.getStreamingClient()
-            const params = {
-                exportId: conversationId,
-                exportIntent: 'TASK_ASSIST',
-            }
-            getLogger().debug(`Executing exportResultArchive with %O`, params)
-            const archiveResponse = await streamingClient.exportResultArchive(params)
-            const buffer: number[] = []
-            if (archiveResponse.body === undefined) {
-                throw new ToolkitError('Empty response from CodeWhisperer Streaming service.')
-            }
-            for await (const chunk of archiveResponse.body) {
-                if (chunk.internalServerException !== undefined) {
-                    throw chunk.internalServerException
-                }
-                buffer.push(...(chunk.binaryPayloadEvent?.bytes ?? []))
-            }
-
-            const {
-                code_generation_result: {
-                    new_file_contents: newFiles = [],
-                    deleted_files: deletedFiles = [],
-                    references = [],
-                },
-            } = JSON.parse(new TextDecoder().decode(Buffer.from(buffer))) as {
-                // eslint-disable-next-line @typescript-eslint/naming-convention
-                code_generation_result: {
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    new_file_contents?: Record<string, string>
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    deleted_files?: string[]
-                    references?: CodeReference[]
-                }
-            }
-
-            const newFileContents: { filePath: string; fileContent: string }[] = []
-            for (const [filePath, fileContent] of Object.entries(newFiles)) {
-                newFileContents.push({ filePath, fileContent })
-            }
-
-            return { newFileContents, deletedFiles, references }
-        } catch (e) {
-            getLogger().error(
-                `${featureName}: failed to export archive result: ${(e as Error).message} RequestId: ${
-                    (e as any).requestId
-                }`
-            )
-            throw new ToolkitError((e as Error).message, { code: 'ExportResultArchiveFailed' })
         }
     }
 }

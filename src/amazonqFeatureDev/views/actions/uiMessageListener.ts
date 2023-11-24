@@ -52,6 +52,12 @@ export class UIMessageListener {
             case 'auth-follow-up-was-clicked':
                 this.authClicked(msg)
                 break
+            case 'response-body-link-click':
+                this.processResponseBodyLinkClick(msg)
+                break
+            case 'insert_code_at_cursor_position':
+                this.insertCodeAtPosition(msg)
+                break
         }
     }
 
@@ -108,6 +114,26 @@ export class UIMessageListener {
         this.featureDevControllerEventsEmitters?.authClicked.fire({
             tabID: msg.tabID,
             authType: msg.authType,
+        })
+    }
+
+    private processResponseBodyLinkClick(msg: any) {
+        this.featureDevControllerEventsEmitters?.processResponseBodyLinkClick.fire({
+            command: msg.command,
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            link: msg.link,
+        })
+    }
+
+    private insertCodeAtPosition(msg: any) {
+        this.featureDevControllerEventsEmitters?.insertCodeAtPositionClicked.fire({
+            command: msg.command,
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            code: msg.code,
+            insertionTargetType: msg.insertionTargetType,
+            codeReference: msg.codeReference,
         })
     }
 }

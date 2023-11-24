@@ -4,7 +4,7 @@
             <div class="feature-panel-container-title">Amazon CodeCatalyst</div>
 
             <img
-                class="service-item-content-image"
+                class="feature-panel-image"
                 src="https://github.com/aws/aws-toolkit-vscode/raw/HEAD/docs/marketplace/vscode/CC_dev_env.gif"
                 alt="CodeCatalyst example GIF"
             />
@@ -120,6 +120,7 @@ export default defineComponent({
         },
         showCodeCatalystNode() {
             client.showCodeCatalystNode()
+            client.emitUiClick('auth_openCodeCatalyst')
         },
     },
 })

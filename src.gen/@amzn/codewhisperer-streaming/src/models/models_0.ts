@@ -1422,50 +1422,6 @@ export interface WorkspaceState {
 
 /**
  * @public
- * Structure to represent a new chat request.
- */
-export interface ChatRequest {
-  /**
-   * @public
-   * Structure to represent the current state of a chat conversation.
-   */
-  conversationState: ConversationState | undefined;
-}
-
-/**
- * @internal
- */
-export const ChatRequestFilterSensitiveLog = (obj: ChatRequest): any => ({
-  ...obj,
-  ...(obj.conversationState && { conversationState:
-    ConversationStateFilterSensitiveLog(obj.conversationState)
-  }),
-})
-
-/**
- * @public
- * Structure to represent chat response.
- */
-export interface ChatResponse {
-  /**
-   * @public
-   * Streaming events from UniDirectional Streaming Conversational APIs.
-   */
-  chatResponse: AsyncIterable<ChatResponseStream> | undefined;
-}
-
-/**
- * @internal
- */
-export const ChatResponseFilterSensitiveLog = (obj: ChatResponse): any => ({
-  ...obj,
-  ...(obj.chatResponse && { chatResponse:
-    'STREAMING_CONTENT'
-  }),
-})
-
-/**
- * @public
  * Structure to represent a new generate assistant response request.
  */
 export interface GenerateAssistantResponseRequest {

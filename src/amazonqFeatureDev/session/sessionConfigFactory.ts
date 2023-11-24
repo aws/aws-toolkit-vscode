@@ -4,9 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { featureDevScheme } from '../constants'
-import { VirtualFileSystem } from '../../shared/virtualFilesystem'
-import { VirtualMemoryFile } from '../../shared/virtualMemoryFile'
 import { SelectedFolderNotInWorkspaceFolderError, WorkspaceFolderNotFoundError } from '../errors'
 import { getSourceCodePath } from '../util/files'
 
@@ -15,7 +12,6 @@ export interface SessionConfig {
     readonly workspaceRoot: string
     // The path on disk to where the source code lives
     sourceRoot: string
-    readonly fs: VirtualFileSystem
 }
 
 /**
@@ -30,14 +26,6 @@ export async function createSessionConfig(): Promise<SessionConfig> {
 
     let workspaceRoot = workspaceFolders[0].uri.fsPath
     let sourceRoot = await getSourceCodePath(workspaceRoot, 'src')
-
-    const fs = new VirtualFileSystem()
-
-    // Register an empty featureDev file that's used when a new file is being added by the LLM
-    fs.registerProvider(
-        vscode.Uri.from({ scheme: featureDevScheme, path: 'empty' }),
-        new VirtualMemoryFile(new Uint8Array())
-    )
 
     return Promise.resolve({
         set sourceRoot(newSourceRoot: string) {
@@ -55,6 +43,5 @@ export async function createSessionConfig(): Promise<SessionConfig> {
         get workspaceRoot(): string {
             return workspaceRoot
         },
-        fs,
     })
 }

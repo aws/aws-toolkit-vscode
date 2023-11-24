@@ -135,25 +135,6 @@ export class Connector {
         }
     }
 
-    private processCodeResultMessage = async (messageData: any): Promise<void> => {
-        if (this.onChatAnswerReceived !== undefined) {
-            const answer: ChatItem = {
-                type: ChatItemType.CODE_RESULT,
-                relatedContent: undefined,
-                followUp: undefined,
-                canBeVoted: true,
-                codeReference: messageData.references,
-                // TODO get the backend to store a message id in addition to conversationID
-                messageId: messageData.messageID ?? messageData.triggerID ?? messageData.conversationID,
-                fileList: {
-                    filePaths: messageData.filePaths,
-                    deletedFiles: messageData.deletedFiles,
-                },
-            }
-            this.onChatAnswerReceived(messageData.tabID, answer)
-        }
-    }
-
     private processAuthNeededException = async (messageData: any): Promise<void> => {
         if (this.onChatAnswerReceived === undefined) {
             return
@@ -189,11 +170,6 @@ export class Connector {
 
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
-            return
-        }
-
-        if (messageData.type === 'codeResultMessage') {
-            await this.processCodeResultMessage(messageData)
             return
         }
 
@@ -261,6 +237,16 @@ export class Connector {
             messageId: messageId,
             vote: vote,
             command: 'chat-item-voted',
+            tabType: 'featuredev',
+        })
+    }
+
+    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
+        this.sendMessageToExtension({
+            command: 'response-body-link-click',
+            tabID,
+            messageId,
+            link,
             tabType: 'featuredev',
         })
     }
