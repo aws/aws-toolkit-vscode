@@ -227,6 +227,11 @@
             "description": "A general string field to represent the key/id to be used so that we can map to a specific API error message"
         },
         {
+            "name": "codeTransform_RuntimeErrorId",
+            "type": "string",
+            "description": "A general string field to represent the key/id to be used so that we can map to a specific runtime error message"
+        },
+        {
             "name": "codeTransform_SessionId",
             "type": "string",
             "description": "A general string field to represent the IDE session from when users start the transformation process"
@@ -744,6 +749,21 @@
                 {
                     "type": "cwsprChatCommandName",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "codeTransform_logRuntimeError",
+            "passive": true,
+            "description": "A general logging measure for all runtime errors.",
+            "metadata": [
+                {
+                    "type": "codeTransform_SessionId",
+                    "required": true
+                },
+                {
+                    "type": "codeTransform_RuntimeErrorId",
+                    "required": true
                 }
             ]
         },

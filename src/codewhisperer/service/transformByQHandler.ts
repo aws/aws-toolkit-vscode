@@ -84,6 +84,10 @@ export async function getValidModules() {
         const args = ['-v', classFilePath]
         const spawnResult = spawnSync(baseCommand, args, { shell: false, encoding: 'utf-8' })
         if (spawnResult.error || spawnResult.status !== 0) {
+            telemetry.codeTransform_logRuntimeError.emit({
+                codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+                codeTransform_RuntimeErrorId: 'cannotRunJavaShellCommand',
+            })
             continue // if cannot get Java version, move on to other projects in workspace
         }
         const majorVersionIndex = spawnResult.stdout.indexOf('major version: ')
@@ -219,6 +223,10 @@ function getProjectDependencies(modulePath: string): string[] {
     const spawnResult = spawnSync(baseCommand, args, { cwd: modulePath, shell: false, encoding: 'utf-8' })
 
     if (spawnResult.error || spawnResult.status !== 0) {
+        telemetry.codeTransform_logRuntimeError.emit({
+            codeTransform_SessionId: codeTransformTelemetryState.getSessionId(),
+            codeTransform_RuntimeErrorId: 'cannotRunMavenShellCommand',
+        })
         vscode.window.showErrorMessage(CodeWhispererConstants.dependencyErrorMessage, { modal: true })
         getLogger().error('Error in running Maven command:')
         // Maven command can still go through and still return an error. Won't be caught in spawnResult.error in this case

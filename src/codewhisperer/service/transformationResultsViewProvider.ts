@@ -252,12 +252,13 @@ export class ProposedTransformationExplorer {
                     'markdown.showPreview',
                     vscode.Uri.file(transformByQState.getSummaryFilePath())
                 )
+                telemetry.ui_click.emit({ elementId: 'transformationHub_viewSummary' })
             }
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.startReview', async () => {
             vscode.commands.executeCommand('setContext', 'gumby.reviewState', TransformByQReviewStatus.PreparingReview)
-
+            telemetry.ui_click.emit({ elementId: 'transformationHub_startDownloadExportResultArchive' })
             const pathToArchive = path.join(
                 ProposedTransformationExplorer.TmpDir,
                 transformByQState.getJobId(),
@@ -310,6 +311,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {
             diffModel.saveChanges()
+            telemetry.ui_click.emit({ elementId: 'transformationHub_acceptChanges' })
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand(
                 'setContext',
@@ -323,6 +325,7 @@ export class ProposedTransformationExplorer {
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.rejectChanges', () => {
             diffModel.rejectChanges()
+            telemetry.ui_click.emit({ elementId: 'transformationHub_rejectChanges' })
             vscode.commands.executeCommand('setContext', 'gumby.transformationProposalReviewInProgress', false)
             vscode.commands.executeCommand('setCommand', 'gumby.reviewState', TransformByQReviewStatus.NotStarted)
             transformDataProvider.refresh()
