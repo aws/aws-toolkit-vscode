@@ -86,6 +86,8 @@ Complex programs often require more than just simple functions to act as entry-p
 
 ## Exceptions
 
+_See also [CODE_GUIDELINES.md](./CODE_GUIDELINES.md#exceptions)._
+
 Large applications often have a correspondingly large number of failure points. For feature-level logic, these failures are often non-recoverable. The best we can do is show the user that something went wrong and maybe offer guidance on how to fix it.
 
 Because this is such a common pattern, shared error handling logic is defined by `ToolkitError` found [here](../src/shared/errors.ts). This class provides the basic structure for errors throughout the Toolkit.
