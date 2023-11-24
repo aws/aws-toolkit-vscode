@@ -413,7 +413,7 @@ async function requestLocalApi(
                 } else if (!notificationShown && obj.attemptCount >= retryLimit) {
                     notificationShown = true
                     getLogger().debug('Local API: showing cancel notification')
-                    showMessageWithCancel('Waiting for local API to start...', timeout)
+                    void showMessageWithCancel('Waiting for local API to start...', timeout)
                 }
 
                 getLogger().debug(`Local API: retry (${obj.attemptCount}): ${uri}: ${obj.error.message}`)

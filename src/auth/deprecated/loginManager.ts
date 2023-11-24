@@ -148,7 +148,9 @@ export class LoginManager {
             await loginWithMostRecentCredentials(new CredentialsSettings(), loginManager)
         } catch (err) {
             getLogger().error('credentials: failed to auto-connect: %s', err)
-            showViewLogsMessage(localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting'))
+            void showViewLogsMessage(
+                localize('AWS.credentials.autoconnect.fatal', 'Exception occurred while connecting')
+            )
         }
         return !!(await awsContext.getCredentials())
     }

@@ -200,6 +200,8 @@ async function showProgressWithTimeout(
 /**
  * Shows a Progress message which allows the user to cancel a pending `timeout` task.
  *
+ * Logs on failure; call with `void` if you don't need the result.
+ *
  * @param message Message to display
  * @param timeout Timeout object that will be killed if the user clicks 'Cancel'
  * @param showAfterMs Do not show the progress message until `showAfterMs` milliseconds.
