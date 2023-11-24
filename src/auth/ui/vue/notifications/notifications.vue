@@ -37,10 +37,10 @@ export class Notifications {
 
     showCredentialsNotification(id: AuthFormId) {
         this.model.authName = AuthFormDisplayName[id]
-        this.model.showSuccessfulConnection = true
+        this.model.showFoundCredentials = true
     }
     clearCredentialsNotification() {
-        this.model.showSuccessfulConnection = false
+        this.model.showFoundCredentials = false
     }
 }
 </script>
