@@ -302,19 +302,21 @@ export class AuthUtil {
 
     public async reauthenticate() {
         try {
-            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
-            // the new scopes to existing connections.
-            if (this.conn?.type === 'sso') {
-                if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
-                    this.secondaryAuth.useNewConnection(conn)
-                } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
-                    const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
-                    this.secondaryAuth.useNewConnection(conn)
-                }
+            if (this.conn?.type !== 'sso') {
+                return
             }
 
-            await this.auth.reauthenticate(this.conn!)
+            // Edge Case: With the addition of Amazon Q/Chat scopes we may need to add
+            // the new scopes to existing connections.
+            if (isBuilderIdConnection(this.conn) && !isValidCodeWhispererChatConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, codeWhispererChatScopes)
+                this.secondaryAuth.useNewConnection(conn)
+            } else if (isIdcSsoConnection(this.conn) && !isValidAmazonQConnection(this.conn)) {
+                const conn = await this.secondaryAuth.addScopes(this.conn, amazonQScopes)
+                this.secondaryAuth.useNewConnection(conn)
+            } else {
+                await this.auth.reauthenticate(this.conn)
+            }
         } catch (err) {
             throw ToolkitError.chain(err, 'Unable to authenticate connection')
         } finally {

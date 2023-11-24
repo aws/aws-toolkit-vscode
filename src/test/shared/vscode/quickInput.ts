@@ -22,6 +22,7 @@ const pickerEvents = [
     'onDidAccept',
     'onDidChangeValue',
     'onDidTriggerButton',
+    'onDidTriggerItemButton',
     // 'onDidChangeActive',
     // 'onDidChangeSelection',
     // 'onDidHide',
@@ -60,7 +61,7 @@ function filterItems<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>
     return picker.items.filter(filter)
 }
 
-type ItemMatcher<T extends vscode.QuickPickItem = vscode.QuickPickItem> = string | RegExp | T
+type ItemMatcher<T extends vscode.QuickPickItem> = string | RegExp | T
 function matchItem<T extends vscode.QuickPickItem>(item: T, expected: ItemMatcher<T>): boolean {
     if (expected instanceof RegExp) {
         return expected.test(item.label)
@@ -82,6 +83,21 @@ function matchItems<T extends vscode.QuickPickItem>(source: T[], ...expected: It
     })
 }
 
+type ItemButtonMatcher<B extends vscode.QuickInputButton = vscode.QuickInputButton> = string | RegExp | Partial<B>
+function matchItemButton<T extends vscode.QuickInputButton>(item: T, expected: ItemButtonMatcher<T>): boolean {
+    if (expected instanceof RegExp) {
+        return expected.test(item.tooltip ?? '')
+    } else if (typeof expected === 'string') {
+        return item.tooltip === expected
+    } else {
+        return JSON.stringify(item) === JSON.stringify(expected)
+    }
+}
+
+function matchItemButtons<T extends vscode.QuickInputButton>(source: T[], expected: ItemButtonMatcher<T>): T[] {
+    return source.filter(item => matchItemButton(item, expected))
+}
+
 const throwError = (message: string, actual?: any, expected?: any) => {
     throw new AssertionError({ message, actual, expected })
 }
@@ -98,6 +114,18 @@ function assertItems<T extends vscode.QuickPickItem>(actual: T[], expected: Item
     })
 }
 
+function assertItemButtons<T extends vscode.QuickInputButton>(actual: T[], expected: ItemButtonMatcher<T>[]): void {
+    if (actual.length !== expected.length) {
+        return throwError('Item had different number of buttons', actual, expected)
+    }
+
+    actual.forEach((actualItem, index) => {
+        if (!matchItemButton(actualItem, expected[index])) {
+            throwError(`Unexpected item button found at index ${index}`, actual, expected[index])
+        }
+    })
+}
+
 function findButtonOrThrow(
     input: vscode.QuickPick<vscode.QuickPickItem> | vscode.InputBox,
     button: string | vscode.QuickInputButton
@@ -110,16 +138,30 @@ function findButtonOrThrow(
     return target
 }
 
-const printMatcher = (matcher: ItemMatcher) =>
+function printMatcher<T extends vscode.QuickPickItem>(matcher: ItemMatcher<T>) {
     matcher instanceof RegExp
         ? matcher.source
         : typeof matcher === 'string'
         ? matcher
         : JSON.stringify(matcher, undefined, 4)
+}
 
-function findItemOrThrow<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>, item: ItemMatcher<T>) {
+function findItemOrThrow<T extends vscode.QuickPickItem>(picker: vscode.QuickPick<T>, item: ItemMatcher<T>): T {
     const filteredItems = filterItems(picker)
     const match = matchItems(filteredItems, item)[0]
+    if (match === undefined) {
+        throwError(`Unable to find item: ${printMatcher(item)}`)
+    }
+
+    return match
+}
+
+function findItemButtonOrThrow<T extends vscode.QuickInputButton>(
+    item: vscode.QuickPickItem,
+    itemButton: ItemButtonMatcher<T>
+) {
+    const itemButtons = item.buttons ? [...item.buttons] : []
+    const match = matchItemButtons(itemButtons, itemButton)[0]
     if (match === undefined) {
         throwError(`Unable to find item: ${printMatcher(item)}`)
     }
@@ -154,6 +196,15 @@ export class PickerTester<T extends vscode.QuickPickItem> {
     }
 
     /**
+     * Press the button of a specific quick pick item
+     */
+    public pressItemButton(item: ItemMatcher<T>, itemButton: ItemButtonMatcher) {
+        const _item = findItemOrThrow(this.picker, item)
+        const _itemButton = findItemButtonOrThrow(_item, itemButton)
+        this.triggers.onDidTriggerItemButton.fire({ button: _itemButton, item: _item })
+    }
+
+    /**
      * Attempts to accept the given item.
      *
      * If a string is given, then the item will be matched based off label. Otherwise a deep compare will be performed.
@@ -182,6 +233,18 @@ export class PickerTester<T extends vscode.QuickPickItem> {
     public assertItems(items: ItemMatcher<T>[]): void {
         const filteredItems = filterItems(this.picker)
         assertItems(filteredItems, items)
+    }
+
+    /**
+     * Asserts that the buttons of the given quick pick item exist.
+     */
+    public assertItemButtons<B extends vscode.QuickInputButton>(
+        item: ItemMatcher<T>,
+        itemButtons: ItemButtonMatcher<B>[]
+    ) {
+        const _item = findItemOrThrow(this.picker, item)
+        const buttons = _item.buttons ? [..._item.buttons] : []
+        assertItemButtons(buttons, itemButtons)
     }
 
     /**
