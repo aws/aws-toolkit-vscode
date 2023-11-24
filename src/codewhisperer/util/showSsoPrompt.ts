@@ -16,6 +16,7 @@ import { createCommonButtons } from '../../shared/ui/buttons'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { isCloud9 } from '../../shared/extensionUtilities'
 import { createBuilderIdItem, createSsoItem, createIamItem } from '../../auth/utils'
+import { Commands } from '../../shared/vscode/commands2'
 
 export const showCodeWhispererConnectionPrompt = async () => {
     const items = isCloud9('classic')
@@ -52,7 +53,7 @@ export async function awsIdSignIn() {
         throw ToolkitError.chain(e, failedToConnectAwsBuilderId, { code: 'FailedToConnect' })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
+    await Commands.tryExecute('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
 }
 
