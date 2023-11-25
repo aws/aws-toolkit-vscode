@@ -27,5 +27,5 @@ body div,
 body h1,
 body h2,
 body h3 {
-    color: var(--vscode-button-foreground);
+    color: var(--vscode-foreground);
 }
