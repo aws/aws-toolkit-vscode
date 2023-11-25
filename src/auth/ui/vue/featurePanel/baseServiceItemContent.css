@@ -23,7 +23,7 @@
      * This must be the height of the tallest feature panel.
      * This ensures all the borders of the feature panels are the same height.
      */
-    min-height: 22em;
+    min-height: 24em;
 }
 
 .feature-panel-image {
