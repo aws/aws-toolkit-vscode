@@ -5,12 +5,13 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { focusAmazonQPanel, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
+import { focusAmazonQPanel, reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
+import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 
 const localize = nls.loadMessageBundle()
 
@@ -32,6 +33,19 @@ export const switchToAmazonQNode = () =>
         label: 'Switch to Q Chat',
         iconPath: getIcon('vscode-comment'),
         contextValue: 'awsToAmazonQChatNode',
+    })
+
+/*
+ * This node is meant to be displayed when the user's active connection is missing scopes required for Amazon Q.
+ * For example, users with active CodeWhisperer connections who updates to a toolkit version with Amazon Q (Preview)
+ * will be missing these scopes.
+ */
+export const enableAmazonQNode = () =>
+    // Simply trigger re-auth to obtain the proper scopes- same functionality as if requested in the chat window.
+    reconnect.build(placeholder, cwTreeNodeSource).asTreeNode({
+        label: localize('AWS.amazonq.enable', 'Enable Amazon Q (Preview)'),
+        iconPath: getIcon('vscode-debug-start'),
+        contextValue: 'awsEnableAmazonQ',
     })
 
 export const createTransformByQ = () => {
