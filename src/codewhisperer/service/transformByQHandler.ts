@@ -259,8 +259,8 @@ export async function zipCode(modulePath: string) {
         mavenFailed = true
     }
 
-    const dependencyFolderPath = dependencyFolderInfo[0]
-    const dependencyFolderName = dependencyFolderInfo[1]
+    const dependencyFolderPath = !mavenFailed ? dependencyFolderInfo[0] : ''
+    const dependencyFolderName = !mavenFailed ? dependencyFolderInfo[1] : ''
 
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
@@ -277,8 +277,12 @@ export async function zipCode(modulePath: string) {
     await sleep(2000) // pause to give time to recognize potential cancellation
     throwIfCancelled()
 
+    let dependencyFiles: string[] = []
     if (!mavenFailed) {
-        const dependencyFiles = getFilesRecursively(dependencyFolderPath)
+        dependencyFiles = getFilesRecursively(dependencyFolderPath)
+    }
+
+    if (!mavenFailed && dependencyFiles.length > 0) {
         for (const file of dependencyFiles) {
             const relativePath = path.relative(dependencyFolderPath, file)
             const paddedPath = path.join(`dependencies/${dependencyFolderName}`, relativePath)

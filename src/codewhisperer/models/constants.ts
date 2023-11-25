@@ -344,7 +344,7 @@ export const transformationJobPollingIntervalSeconds = 10
 
 export const transformationJobTimeoutSeconds = 72000
 
-export const progressIntervalMs = 3000
+export const progressIntervalMs = 1000
 
 export const targetLanguages = ['Java']
 

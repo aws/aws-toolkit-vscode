@@ -307,6 +307,7 @@ export class ProposedTransformationExplorer {
                 'Transformation job completed. You can view the transformation summary along with the proposed changes and accept or reject them in the Proposed Changes panel.',
                 { modal: true }
             )
+            await vscode.commands.executeCommand('aws.amazonq.transformationHub.summary.reveal')
         })
 
         vscode.commands.registerCommand('aws.amazonq.transformationHub.reviewChanges.acceptChanges', async () => {

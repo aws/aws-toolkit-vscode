@@ -299,6 +299,7 @@ export async function startTransformByQ() {
         await sleep(2000) // needed as a buffer to allow TransformationHub to update before state is updated
         clearInterval(intervalId)
         transformByQState.setToNotStarted() // so that the "Transform by Q" button resets
+        transformByQState.setPolledJobStatus('') // reset polled job status too
         vscode.commands.executeCommand('setContext', 'gumby.isStopButtonAvailable', false)
         await vscode.commands.executeCommand('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.amazonq.showPlanProgressInHub', startTime.getTime())
