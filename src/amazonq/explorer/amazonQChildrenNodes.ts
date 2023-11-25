@@ -7,11 +7,17 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import { Commands, placeholder } from '../../shared/vscode/commands2'
 import { getIcon } from '../../shared/icons'
-import { focusAmazonQPanel, reconnect, showTransformByQ } from '../../codewhisperer/commands/basicCommands'
+import {
+    focusAmazonQPanel,
+    reconnect,
+    showTransformByQ,
+    transformTreeNode,
+} from '../../codewhisperer/commands/basicCommands'
 import { transformByQState } from '../../codewhisperer/models/model'
 import * as CodeWhispererConstants from '../../codewhisperer/models/constants'
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
+import { telemetry } from '../../shared/telemetry/telemetry'
 
 const localize = nls.loadMessageBundle()
 
@@ -26,7 +32,13 @@ export const createLearnMoreNode = () =>
         contextValue: 'awsAmazonQLearnMoreNode',
     })
 
-export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => focusAmazonQPanel)
+export const switchToAmazonQCommand = Commands.declare('_aws.amazonq.focusView', () => () => {
+    telemetry.ui_click.emit({
+        elementId: 'amazonq_switchToQChat',
+        passive: false,
+    })
+    focusAmazonQPanel()
+})
 
 export const switchToAmazonQNode = () =>
     switchToAmazonQCommand.build().asTreeNode({
@@ -68,7 +80,7 @@ export const createTransformByQ = () => {
     } else if (transformByQState.isNotStarted()) {
         status = ''
     }
-    return showTransformByQ.build('qTreeNode').asTreeNode({
+    return showTransformByQ.build(transformTreeNode).asTreeNode({
         label: status !== '' ? `${prefix} Transform [Job status: ` + status + `]` : `Transform`,
         iconPath: transformByQState.getIconForButton(),
         tooltip: `${prefix} Transform`,

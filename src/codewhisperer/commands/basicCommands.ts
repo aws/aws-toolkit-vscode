@@ -97,6 +97,7 @@ export const showSecurityScan = Commands.declare(
         }
 )
 
+export const transformTreeNode = 'qTreeNode'
 export const showTransformByQ = Commands.declare(
     { id: 'aws.awsq.transform', compositeKey: { 0: 'source' } },
     (context: ExtContext) => async (source: string) => {
@@ -110,6 +111,13 @@ export const showTransformByQ = Commands.declare(
             vscode.window.showInformationMessage(CodeWhispererConstants.cancellationInProgressMessage)
         } else if (transformByQState.isRunning()) {
             await confirmStopTransformByQ(transformByQState.getJobId())
+        }
+        // emit telemetry if clicked from tree node
+        if (source === transformTreeNode) {
+            telemetry.ui_click.emit({
+                elementId: 'amazonq_transform',
+                passive: false,
+            })
         }
         await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     }

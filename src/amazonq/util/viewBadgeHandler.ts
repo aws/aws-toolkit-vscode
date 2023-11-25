@@ -49,25 +49,38 @@ export function deactivateInitialViewBadge() {
 }
 
 /**
- * Determines if a user should see an attract badge to entice them to use Amazon Q
- * Shows a badge on the Amazon Q View Container IF:
- * * the user has never, ever clicked into Amazon Q
- * * The user has codewhispererCore auth and not codewhispererChat auth
+ * Show users a '1' badge on the Amazon Q icon if {@link shouldShowBadge} is true.
  *
  * This is intended to target users who are already using CWSPR and
  * are autoupdating to a version of the extension with Q,
  * since they may not know it exists otherwise.
  */
 async function showInitialViewBadge() {
+    if (await shouldShowBadge()) {
+        changeViewBadge({
+            value: 1,
+            tooltip: '',
+        })
+    }
+}
+
+/**
+ * Determines if a user should see an attract badge to entice them to use Amazon Q
+ * Shows a badge on the Amazon Q View Container IF:
+ * * the user has never, ever clicked into Amazon Q
+ * * The user has codewhispererCore auth and not codewhispererChat auth
+ *
+ * @returns True if the badge should be shown, false otherwise
+ */
+export async function shouldShowBadge(): Promise<boolean> {
     const memento = globals.context.globalState
     const hasAlreadyShown = memento.get(mementoKey)
     if (!hasAlreadyShown) {
         const state = await getChatAuthState()
         if (state.codewhispererCore === 'connected' && state.codewhispererChat !== 'connected') {
-            changeViewBadge({
-                value: 1,
-                tooltip: '',
-            })
+            return true
         }
     }
+
+    return false
 }

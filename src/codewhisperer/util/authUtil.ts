@@ -29,7 +29,7 @@ import {
 import { getLogger } from '../../shared/logger'
 import globals from '../../shared/extensionGlobals'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
-import { Commands } from '../../shared/vscode/commands2'
+import { Commands, placeholder } from '../../shared/vscode/commands2'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -146,7 +146,7 @@ export class AuthUtil {
                 if (!shouldShowObject[key]) {
                     shouldShowObject[key] = true
                     memento.update(this.mementoKey, shouldShowObject)
-                    await vscode.commands.executeCommand('aws.amazonq.welcome')
+                    await vscode.commands.executeCommand('aws.amazonq.welcome', placeholder, key)
                 }
             }
             await this.setVscodeContextProps()
