@@ -46,9 +46,9 @@ export class TabDataGenerator {
             'featuredev',
             `Welcome to /dev. 
 
-Here I can provide a plan for a code change specific to your project. What would you like to plan?
+I can help you create a plan or define an approach to development. I'll reference and make suggestions based on your open project.
 
-Coming soon: code suggestions across files to implement the plan.
+_Coming soon_: I'll provide code suggestions to help you implement the plan.
 `,
         ],
     ])
