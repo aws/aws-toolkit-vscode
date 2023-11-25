@@ -29,6 +29,7 @@ import {
 import { getLogger } from '../../shared/logger'
 import globals from '../../shared/extensionGlobals'
 import { getCodeCatalystDevEnvId } from '../../shared/vscode/env'
+import { Commands } from '../../shared/vscode/commands2'
 
 /** Backwards compatibility for connections w pre-chat scopes */
 export const codeWhispererCoreScopes = [...scopesSsoAccountAccess, ...scopesCodeWhispererCore]
@@ -95,7 +96,7 @@ export class AuthUtil {
         }
         this._isCustomizationFeatureEnabled = value
         vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-        vscode.commands.executeCommand('aws.amazonq.refresh')
+        void Commands.tryExecute('aws.amazonq.refresh')
         vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar')
     }
 
@@ -123,7 +124,7 @@ export class AuthUtil {
             await Promise.all([
                 vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-                vscode.commands.executeCommand('aws.amazonq.refresh'),
+                Commands.tryExecute('aws.amazonq.refresh'),
                 vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
                 vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
                 vscode.commands.executeCommand('aws.codeWhisperer.updateReferenceLog'),
@@ -328,7 +329,7 @@ export class AuthUtil {
         await Promise.all([
             vscode.commands.executeCommand('aws.codeWhisperer.refresh'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshRootNode'),
-            vscode.commands.executeCommand('aws.amazonq.refresh'),
+            Commands.tryExecute('aws.amazonq.refresh'),
             vscode.commands.executeCommand('aws.amazonq.refreshRootNode'),
             vscode.commands.executeCommand('aws.codeWhisperer.refreshStatusBar'),
         ])

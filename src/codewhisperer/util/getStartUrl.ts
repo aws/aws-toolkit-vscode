@@ -12,6 +12,7 @@ import { ToolkitError } from '../../shared/errors'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { createStartUrlPrompter, showRegionPrompter } from '../../auth/utils'
 import { Region } from '../../shared/regions/endpoints'
+import { Commands } from '../../shared/vscode/commands2'
 
 export const getStartUrl = async () => {
     const inputBox = await createStartUrlPrompter('IAM Identity Center', amazonQScopes)
@@ -36,5 +37,6 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
     await vscode.commands.executeCommand('aws.amazonq.refresh')
+    await Commands.tryExecute('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
 }
