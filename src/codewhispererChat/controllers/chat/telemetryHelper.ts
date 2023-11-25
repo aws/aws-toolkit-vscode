@@ -296,7 +296,7 @@ export class CWCTelemetryHelper {
             cwsprChatReferencesCount: message.codeReferenceCount,
             cwsprChatFollowUpCount: message.followUpCount,
             cwsprChatTimeToFirstChunk: this.getResponseStreamTimeToFirstChunk(message.tabID),
-            cwsprChatTimeBetweenChunks: this.getResponseStreamTimeBetweenChunks(message.tabID),
+            cwsprChatTimeBetweenChunks: '', // this.getResponseStreamTimeBetweenChunks(message.tabID), //TODO: allow '[', ']' and ',' chars
             cwsprChatFullResponseLatency: this.responseStreamTotalTime.get(message.tabID) ?? 0,
             cwsprChatRequestLength: triggerPayload.message?.length ?? 0,
             cwsprChatResponseLength: message.messageLength,
@@ -367,21 +367,21 @@ export class CWCTelemetryHelper {
         return Math.round(chunkTimes[1] - chunkTimes[0])
     }
 
-    private getResponseStreamTimeBetweenChunks(tabID: string): string {
-        try {
-            const chunkDeltaTimes: number[] = []
-            const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
-            for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
-                chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
-            }
+    // private getResponseStreamTimeBetweenChunks(tabID: string): string {
+    //     try {
+    //         const chunkDeltaTimes: number[] = []
+    //         const chunkTimes = this.responseStreamTimeForChunks.get(tabID) ?? [0]
+    //         for (let idx = 0; idx < chunkTimes.length - 1; idx++) {
+    //             chunkDeltaTimes.push(Math.round(chunkTimes[idx + 1] - chunkTimes[idx]))
+    //         }
 
-            const trimmed = JSON.stringify(chunkDeltaTimes).slice(0, 2_000)
-            const fixed = trimmed.endsWith(',') ? trimmed.slice(0, -1) : trimmed
-            return fixed.endsWith(']') ? fixed : `${fixed}]`
-        } catch (e) {
-            return '[-1]'
-        }
-    }
+    //         const trimmed = JSON.stringify(chunkDeltaTimes).slice(0, 2_000)
+    //         const fixed = trimmed.endsWith(',') ? trimmed.slice(0, -1) : trimmed
+    //         return fixed.endsWith(']') ? fixed : `${fixed}]`
+    //     } catch (e) {
+    //         return '[-1]'
+    //     }
+    // }
 
     public setResponseStreamTotalTime(tabID: string) {
         const totalTime = performance.now() - (this.responseStreamStartTime.get(tabID) ?? 0)
