@@ -78,7 +78,7 @@ export class AmazonQNode implements TreeNode {
                 vscode.commands.executeCommand('setContext', 'gumby.isTransformAvailable', true)
                 return [switchToAmazonQNode(), createTransformByQ(), createOpenReferenceLog('tree')] // transform only available for IdC users
             }
-            return [switchToAmazonQNode()]
+            return [switchToAmazonQNode(), createOpenReferenceLog('tree')]
         }
     }
 
