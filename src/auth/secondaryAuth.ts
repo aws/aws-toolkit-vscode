@@ -11,7 +11,6 @@ import { cast, Optional } from '../shared/utilities/typeConstructors'
 import { Auth } from './auth'
 import { once } from '../shared/utilities/functionUtils'
 import { isNonNullable } from '../shared/utilities/tsUtils'
-import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { Connection, SsoConnection, StatefulConnection } from './connection'
 
 let currentConn: Auth['activeConnection']
@@ -221,11 +220,11 @@ export class SecondaryAuth<T extends Connection = Connection> {
         try {
             return await this.auth.reauthenticate(updatedConn)
         } catch (e) {
-            if (CancellationError.isUserCancelled(e)) {
-                // We updated the connection scopes, but the user cancelled reauth.
-                // Revert to old connection scopes, otherwise the new scopes persist.
-                await updateConnectionScopes(oldScopes)
-            }
+            // We updated the connection scopes pre-emptively, but if there is some issue (e.g. user cancels,
+            // InvalidGrantException, etc), then we need to revert to the old connection scopes. Otherwise,
+            // this could soft-lock users into a broken connection that cannot be re-authenticated without
+            // first deleting the connection.
+            await updateConnectionScopes(oldScopes)
             throw e
         }
     }
