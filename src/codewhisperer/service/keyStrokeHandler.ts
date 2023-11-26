@@ -119,7 +119,8 @@ export class KeyStrokeHandler {
             if (
                 rightContextAtCurrentLine.length &&
                 !rightContextAtCurrentLine.startsWith(' ') &&
-                rightContextAtCurrentLine.trim() !== '}'
+                rightContextAtCurrentLine.trim() !== '}' &&
+                rightContextAtCurrentLine.trim() !== ')'
             ) {
                 return
             }

@@ -90,7 +90,19 @@ const mockCodeScanFindings = JSON.stringify([
             text: 'text',
             markdown: 'markdown',
         },
-    },
+        detectorId: 'detectorId',
+        detectorName: 'detectorName',
+        findingId: 'findingId',
+        relatedVulnerabilities: [],
+        severity: 'High',
+        remediation: {
+            recommendation: {
+                text: 'text',
+                url: 'url',
+            },
+            suggestedFixes: [],
+        },
+    } satisfies model.RawCodeScanIssue,
 ])
 
 const mockListCodeScanFindingsResponse = {
