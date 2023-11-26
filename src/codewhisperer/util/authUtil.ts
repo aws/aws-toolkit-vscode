@@ -377,7 +377,7 @@ export async function getChatAuthState(cwAuth = AuthUtil.instance): Promise<Feat
         return buildFeatureAuthState(AuthStates.disconnected)
     }
     if (!isSsoConnection(currentConnection)) {
-        throw new ToolkitError(`Connection is not a valid type: ${currentConnection}`)
+        throw new ToolkitError(`Connection "${currentConnection.id}" is not a valid type: ${currentConnection.type}`)
     }
 
     // The state of the connection may not have been properly validated
