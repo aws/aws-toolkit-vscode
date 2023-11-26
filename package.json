@@ -3559,23 +3559,23 @@
                 "command": "aws.codeWhisperer",
                 "key": "alt+c",
                 "mac": "alt+c",
-                "when": "editorTextFocus && CODEWHISPERER_ENABLED"
+                "when": "editorTextFocus && (CODEWHISPERER_ENABLED || isCloud9)"
             },
             {
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && (CODEWHISPERER_ENABLED || isCloud9)"
             },
             {
                 "key": "right",
                 "command": "editor.action.inlineSuggest.showNext",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && (CODEWHISPERER_ENABLED || isCloud9)"
             },
             {
                 "key": "left",
                 "command": "editor.action.inlineSuggest.showPrevious",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED"
+                "when": "inlineSuggestionVisible && !editorReadonly && (CODEWHISPERER_ENABLED || isCloud9)"
             }
         ],
         "grammars": [
