@@ -262,7 +262,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
         await activateSchemas(extContext)
 
-        if (isCloud9()) {
+        if (!isCloud9()) {
             await activateCWChat(extContext.extensionContext)
             await activateQGumby(extContext)
         }
