@@ -25,14 +25,6 @@ export async function invokeRecommendation(
     client: DefaultCodeWhispererClient,
     config: ConfigurationEntry
 ) {
-    if (!AuthUtil.instance.isConnectionValid()) {
-        if (AuthUtil.instance.isConnectionExpired()) {
-            await AuthUtil.instance.showReauthenticatePrompt()
-        }
-
-        return
-    }
-
     if (!config.isManualTriggerEnabled) {
         return
     }
@@ -86,6 +78,9 @@ export async function invokeRecommendation(
                     false
                 )
             } else {
+                if (AuthUtil.instance.isConnectionExpired()) {
+                    await AuthUtil.instance.showReauthenticatePrompt()
+                }
                 response = await RecommendationHandler.instance.getRecommendations(
                     client,
                     editor,

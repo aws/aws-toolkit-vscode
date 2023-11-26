@@ -11,7 +11,6 @@ import { ConfigurationEntry } from '../../../codewhisperer/models/model'
 import { invokeRecommendation } from '../../../codewhisperer/commands/invokeRecommendation'
 import { InlineCompletionService } from '../../../codewhisperer/service/inlineCompletionService'
 import { isInlineCompletionEnabled } from '../../../codewhisperer/util/commonUtil'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 
 describe('invokeRecommendation', function () {
     describe('invokeRecommendation', function () {
@@ -35,19 +34,8 @@ describe('invokeRecommendation', function () {
                 isAutomatedTriggerEnabled: true,
                 isSuggestionsWithCodeReferencesEnabled: true,
             }
-            sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(true)
             await invokeRecommendation(mockEditor, mockClient, config)
-            assert.strictEqual(
-                getRecommendationStub.called,
-                isInlineCompletionEnabled() && AuthUtil.instance.isConnectionValid()
-            )
-
-            sinon.restore()
-            getRecommendationStub = sinon.stub(InlineCompletionService.instance, 'getPaginatedRecommendation')
-
-            sinon.stub(AuthUtil.instance, 'isConnectionValid').returns(false)
-            await invokeRecommendation(mockEditor, mockClient, config)
-            assert.ok(!getRecommendationStub.called)
+            assert.strictEqual(getRecommendationStub.called, isInlineCompletionEnabled())
         })
     })
 })
