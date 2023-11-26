@@ -36,7 +36,6 @@ export async function connectToEnterpriseSso(startUrl: string, region: Region['i
         })
     }
     await vscode.commands.executeCommand('aws.codeWhisperer.refresh')
-    await vscode.commands.executeCommand('aws.amazonq.refresh')
     await Commands.tryExecute('aws.amazonq.refresh')
     await vscode.commands.executeCommand('aws.codeWhisperer.enableCodeSuggestions')
 }
