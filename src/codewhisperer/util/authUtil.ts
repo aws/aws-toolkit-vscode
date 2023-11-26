@@ -204,10 +204,6 @@ export class AuthUtil {
     }
 
     public isConnectionValid(): boolean {
-        if (!this.isConnected()) {
-            return false
-        }
-
         const connectionValid = this.conn !== undefined && !this.secondaryAuth.isConnectionExpired
         getLogger().debug(`codewhisperer: Connection is valid = ${connectionValid}, 
                             connection is undefined = ${this.conn === undefined},
