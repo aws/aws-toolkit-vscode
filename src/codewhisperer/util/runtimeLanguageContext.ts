@@ -27,6 +27,9 @@ const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'shell',
     'sql',
     'typescript',
+    'json',
+    'yaml',
+    'tf',
 ])
 
 export class RuntimeLanguageContext {
@@ -56,11 +59,15 @@ export class RuntimeLanguageContext {
             csharp: 'csharp',
             c_cpp: 'cpp',
             go: 'go',
+            golang: 'go',
+            hcl: 'tf',
             java: 'java',
             javascript: 'javascript',
             javascriptreact: 'jsx',
+            json: 'json',
             jsx: 'jsx',
             kotlin: 'kotlin',
+            packer: 'tf',
             plaintext: 'plaintext',
             php: 'php',
             python: 'python',
@@ -71,18 +78,24 @@ export class RuntimeLanguageContext {
             shell: 'shell',
             shellscript: 'shell',
             sql: 'sql',
+            terraform: 'tf',
+            terragrunt: 'tf',
+            tf: 'tf',
             tsx: 'tsx',
             typescript: 'typescript',
             typescriptreact: 'tsx',
-            golang: 'go',
+            yml: 'yaml',
+            yaml: 'yaml',
         })
         this.supportedLanguageExtensionMap = createConstantMap<CodewhispererLanguage, string>({
             c: 'c',
             cpp: 'cpp',
             csharp: 'cs',
             go: 'go',
+            hcl: 'tf',
             java: 'java',
             javascript: 'js',
+            json: 'json',
             jsx: 'jsx',
             kotlin: 'kt',
             plaintext: 'txt',
@@ -93,8 +106,11 @@ export class RuntimeLanguageContext {
             scala: 'scala',
             shell: 'sh',
             sql: 'sql',
+            tf: 'tf',
             tsx: 'tsx',
             typescript: 'ts',
+            yaml: 'yaml',
+            yml: 'yaml',
         })
     }
 

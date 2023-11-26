@@ -6,7 +6,6 @@
 /**
  * SDK Client
  */
-
 export const endpoint = 'https://codewhisperer.us-east-1.amazonaws.com/'
 
 export const region = 'us-east-1'
@@ -25,6 +24,10 @@ export const idleTimerPollPeriod = 25 // milliseconds
 export const showRecommendationTimerPollPeriod = 25
 
 export const specialCharactersList = ['{', '[', '(', ':', '\t', '\n']
+
+export const AWSTemplateKeyWords = ['AWSTemplateFormatVersion', 'Resources', 'AWS::', 'Description']
+
+export const AWSTemplateCaseInsensitiveKeyWords = ['cloudformation', 'cfn', 'template', 'description']
 
 export const normalTextChangeRegex = /[A-Za-z0-9]/g
 
@@ -65,24 +68,7 @@ export const completionDetail = 'CodeWhisperer'
  */
 export const codewhisperer = 'CodeWhisperer'
 
-/**
- * Supported languages
- */
-export const java = 'java'
-
-export const python = 'python'
-
-export const javascript = 'javascript'
-
-export const typescript = 'typescript'
-
-export const jsx = 'javascriptreact'
-
-export const tsx = 'typescriptreact'
-
-export const plaintext = 'plaintext'
-
-// use vscode languageId here
+// use vscode languageId here / Supported languages
 export const platformLanguageIds = [
     'java',
     'python',
@@ -104,6 +90,14 @@ export const platformLanguageIds = [
     'sh', // Cloud9 reports bash files with this language-id
     'sql',
     'golang', // Cloud9 reports Go files with this language-id
+    'json',
+    'yaml',
+    'tf',
+    'hcl',
+    'terraform',
+    'terragrunt',
+    'packer',
+    'plaintext',
 ] as const
 
 export type PlatformLanguageId = (typeof platformLanguageIds)[number]
@@ -203,7 +197,13 @@ export const referenceLogPromptTextEnterpriseSSO =
  */
 export const codeScanJavaPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
 
+export const codeScanCsharpPayloadSizeLimitBytes = Math.pow(2, 20) // 1 MB
+
 export const codeScanPythonPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanCFPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
+
+export const codeScanTerraformPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
 export const codeScanJavascriptPayloadSizeLimitBytes = 200 * Math.pow(2, 10) // 200 KB
 
@@ -286,6 +286,12 @@ export enum UserGroup {
 export const isClassifierEnabledKey = 'CODEWHISPERER_CLASSIFIER_TRIGGER_ENABLED'
 
 export const supplemetalContextFetchingTimeoutMsg = 'codewhisperer supplemental context fetching timeout'
+
+export const codeFixAppliedSuccessMessage = 'Code fix was applied. Run a security scan to validate the fix.'
+
+export const codeFixAppliedFailedMessage = 'Failed to apply suggested code fix.'
+
+export const runSecurityScanButtonTitle = 'Run security scan'
 
 export const crossFileContextConfig = {
     numberOfChunkToFetch: 60,

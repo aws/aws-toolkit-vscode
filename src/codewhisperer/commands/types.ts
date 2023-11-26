@@ -12,7 +12,7 @@ export const cwQuickPickSource = 'codewhispererQuickPick'
 
 /**
  * Indicates what caused the CodeWhisperer command to be executed, since a command can be executed from different "sources"
- * 
+ *
  * This source is mainly used for telemetry purposes, setting the `source` field in the command execution metric.
  *
  * **This is typically used in conjunction with {@link CompositeKey} and {@link Commands} even though
