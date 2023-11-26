@@ -1,0 +1,14 @@
+{
+  "date" : "2023-11-26",
+  "version" : "1.89",
+  "entries" : [ {
+    "type" : "feature",
+    "description" : "CodeWhisperer: Uses Generative AI and automated reasoning to rewrite lines of code flagged for security vulnerabilities during a security scan."
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer now supports new IaC languages: JSON, YAML and Terraform."
+  }, {
+    "type" : "feature",
+    "description" : "CodeWhisperer security scans support typescript, csharp, json, yaml, tf and hcl files."
+  } ]
+}

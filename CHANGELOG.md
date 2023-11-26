@@ -1,3 +1,6 @@
+# _1.88_ (2023-11-17)
+- **(Bug Fix)** Fix issue where the toolkit calls the wrong CodeCatalyst service endpoint
+
 # _1.87_ (2023-11-10)
 - **(Bug Fix)** Fix issue where images in 'Authenticate' panel do not show up
 - **(Deprecation)** An upcoming release will remove support for JetBrains Gateway version 2023.2 and for for IDEs based on the 2022.3 platform

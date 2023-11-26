@@ -1,4 +1,0 @@
-{
-  "type" : "feature",
-  "description" : "CodeWhisperer: Uses Generative AI and automated reasoning to rewrite lines of code flagged for security vulnerabilities during a security scan."
-}
