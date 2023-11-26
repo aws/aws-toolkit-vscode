@@ -3565,7 +3565,7 @@
                 "command": "aws.codeWhisperer.rejectCodeSuggestion",
                 "key": "escape",
                 "mac": "escape",
-                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED || inlineSuggestionVisible && !editorReadonly && isCloud9"
+                "when": "inlineSuggestionVisible && !editorReadonly && CODEWHISPERER_ENABLED || suggestWidgetVisible && !editorReadonly && isCloud9"
             },
             {
                 "key": "right",
