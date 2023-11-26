@@ -98,6 +98,16 @@ object AwsIcons {
 
         object CodeWhisperer {
             @JvmField val CUSTOM = load("icons/resources/CodewhispererCustom.svg") // 16 * 16
+
+            @JvmField val SEVERITY_INFO = load("/icons/resources/codewhisperer/severity-info.svg")
+
+            @JvmField val SEVERITY_LOW = load("/icons/resources/codewhisperer/severity-low.svg")
+
+            @JvmField val SEVERITY_MEDIUM = load("/icons/resources/codewhisperer/severity-medium.svg")
+
+            @JvmField val SEVERITY_HIGH = load("/icons/resources/codewhisperer/severity-high.svg")
+
+            @JvmField val SEVERITY_CRITICAL = load("/icons/resources/codewhisperer/severity-critical.svg")
         }
     }
 

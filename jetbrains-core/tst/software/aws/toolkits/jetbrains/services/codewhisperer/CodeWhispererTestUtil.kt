@@ -164,6 +164,9 @@ object CodeWhispererTestUtil {
     const val pythonTestLeftContext = "def addTwoNumbers"
     const val cppTestLeftContext = "int addTwoNumbers"
     const val javaTestContext = "public class Test {\n    public static void main\n}"
+    const val yaml_langauge = "yaml"
+    const val leftContext_success_Iac = "# Create an S3 Bucket named CodeWhisperer in CloudFormation"
+    const val leftContext_failure_Iac = "Create an S3 Bucket named CodeWhisperer"
 
     internal fun pythonResponseWithToken(token: String): GenerateCompletionsResponse =
         pythonResponse.toBuilder().nextToken(token).build()

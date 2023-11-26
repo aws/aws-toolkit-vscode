@@ -153,6 +153,7 @@ data class CodeScanResponseContext(
     val serviceInvocationContext: CodeScanServiceInvocationContext,
     val codeScanJobId: String? = null,
     val codeScanTotalIssues: Int = 0,
+    val codeScanIssuesWithFixes: Int = 0,
     val reason: String? = null
 )
 

@@ -115,6 +115,18 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
                 "description": {
                     "text": "global variable",
                     "markdown": "### global variable"
+                },
+                "detectorId": "detectorId",
+                "detectorName": "detectorName",
+                "findingId": "findingId",
+                "relatedVulnerabilities": [],
+                "severity": "severity",
+                "remediation": {
+                    "recommendation": {
+                        "text": "recommendationText",
+                        "url": "recommendationUrl"
+                    },
+                    "suggestedFixes": []
                 }
             },
             {
@@ -125,7 +137,19 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
                 "description": {
                     "text": "global variable",
                     "markdown": "### global variable"
-                }                    
+                },
+                "detectorId": "detectorId",
+                "detectorName": "detectorName",
+                "findingId": "findingId",
+                "relatedVulnerabilities": [],
+                "severity": "severity",
+                "remediation": {
+                    "recommendation": {
+                        "text": "recommendationText",
+                        "url": "recommendationUrl"
+                    },
+                    "suggestedFixes": []
+                }
             }
         ]
     """
@@ -186,7 +210,19 @@ open class CodeWhispererCodeScanTestBase(projectRule: CodeInsightTestFixtureRule
                 "description": {
                     "text": "global variable",
                     "markdown": "### global variable"
-                }                    
+                },
+                "detectorId": "detectorId",
+                "detectorName": "detectorName",
+                "findingId": "findingId",
+                "relatedVulnerabilities": [],
+                "severity": "severity",
+                "remediation": {
+                    "recommendation": {
+                        "text": "recommendationText",
+                        "url": "recommendationUrl"
+                    },
+                    "suggestedFixes": []
+                }
             }
         ]                
     """

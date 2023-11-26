@@ -50,10 +50,12 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererCon
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorManager
+import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.checkLeftContextKeywordsForJsonAndYaml
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil.getCaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererEnabled
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.isCodeWhispererExpired
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.DetailContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextInfo
@@ -121,7 +123,8 @@ class CodeWhispererService {
         }
 
         val language = requestContext.fileContextInfo.programmingLanguage
-        if (!language.isCodeCompletionSupported()) {
+        val leftContext = requestContext.fileContextInfo.caretContext.leftFileContext
+        if (!language.isCodeCompletionSupported() || (checkLeftContextKeywordsForJsonAndYaml(leftContext, language.languageId))) {
             LOG.debug { "Programming language $language is not supported by CodeWhisperer" }
             if (triggerTypeInfo.triggerType == CodewhispererTriggerType.OnDemand) {
                 showCodeWhispererInfoHint(

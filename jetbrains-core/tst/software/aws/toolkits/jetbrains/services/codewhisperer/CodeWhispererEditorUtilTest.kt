@@ -11,8 +11,10 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.leftContext_success_Iac
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonFileName
 import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.pythonTestLeftContext
+import software.aws.toolkits.jetbrains.services.codewhisperer.CodeWhispererTestUtil.yaml_langauge
 import software.aws.toolkits.jetbrains.services.codewhisperer.editor.CodeWhispererEditorUtil
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPython
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
@@ -72,5 +74,14 @@ class CodeWhispererEditorUtilTest {
         assertThat(caretContext.leftFileContext).isEqualTo("$pythonComment$pythonTestLeftContext")
         assertThat(caretContext.rightFileContext).isEqualTo(pythonTestRightContext)
         assertThat(caretContext.leftContextOnCurrentLine).isEqualTo(pythonTestLeftContext)
+    }
+
+    /**
+     * Test for keyword checks for json and yaml
+     */
+    @Test
+    fun `test for keyword check for json and yaml`() {
+        val result = CodeWhispererEditorUtil.checkLeftContextKeywordsForJsonAndYaml(leftContext_success_Iac, yaml_langauge)
+        assertThat(result).isEqualTo(false)
     }
 }

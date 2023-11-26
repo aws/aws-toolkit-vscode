@@ -20,7 +20,7 @@ internal class PythonCodeScanSessionConfig(
 
     private val importRegex = Regex("^(?:from\\s+(\\S+)\\s+)?(?:import\\s+((?:\\S+(?:\\s+as\\s+\\S+)?\\s*[,]?\\s*)+))\$")
     private val projectContentRoots = ProjectRootManager.getInstance(project).contentRoots
-    override val sourceExt = ".py"
+    override val sourceExt: List<String> = listOf(".py")
 
     override fun overallJobTimeoutInSeconds(): Long = PYTHON_CODE_SCAN_TIMEOUT_IN_SECONDS
 
@@ -41,7 +41,7 @@ internal class PythonCodeScanSessionConfig(
                         importStatements.split(",").forEach { statement ->
                             // Just get the first word in <module> [as <name>] statement
                             val importModule = statement.trim().split(" ").first()
-                            val importPath = fromModule + importModule.replace(".", FILE_SEPARATOR.toString()) + sourceExt
+                            val importPath = fromModule + importModule.replace(".", FILE_SEPARATOR.toString()) + sourceExt[0]
                             imports.add(importPath)
                         }
                     }

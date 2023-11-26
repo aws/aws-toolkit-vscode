@@ -36,6 +36,13 @@ object CodeWhispererConstants {
     const val IDLE_TIME_CHECK_INTERVAL: Long = 25
     const val SUPPLEMENTAL_CONTEXT_TIMEOUT = 50L
 
+    val AWSTemplateKeyWordsRegex = Regex("(AWSTemplateFormatVersion|Resources|AWS::|Description)")
+    val AWSTemplateCaseInsensitiveKeyWordsRegex = Regex("(cloudformation|cfn|template|description)")
+
+    const val USING: String = "using"
+    const val GLOBAL_USING: String = "global using"
+    const val STATIC: String = "static"
+
     // TODO: this is currently set to 2050 to account for the server side 0.5 TPS and and extra 50 ms buffer to
     // avoid ThrottlingException as much as possible.
     const val INVOCATION_INTERVAL: Long = 2050
@@ -57,6 +64,12 @@ object CodeWhispererConstants {
     val ISSUE_HIGHLIGHT_TEXT_ATTRIBUTES = TextAttributes(null, null, JBColor.YELLOW, EffectType.WAVE_UNDERSCORE, Font.PLAIN)
     const val JAVA_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val JAVA_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
+    const val CSHARP_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
+    const val CSHARP_PAYLOAD_LIMIT_IN_BYTES = 1024 * 1024 // 1MB
+    const val CLOUDFORMATION_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
+    const val CLOUDFORMATION_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
+    const val TERRAFORM_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
+    const val TERRAFORM_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val PYTHON_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60
     const val PYTHON_PAYLOAD_LIMIT_IN_BYTES = 1024 * 200 // 200KB
     const val JS_CODE_SCAN_TIMEOUT_IN_SECONDS: Long = 60

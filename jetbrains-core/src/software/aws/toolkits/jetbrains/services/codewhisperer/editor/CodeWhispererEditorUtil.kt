@@ -12,6 +12,8 @@ import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vfs.VfsUtilCore
 import com.intellij.psi.PsiFile
 import com.intellij.ui.popup.AbstractPopup
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJson
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererYaml
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.programmingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CaretPosition
@@ -19,6 +21,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.model.FileContextI
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants.LEFT_CONTEXT_ON_CURRENT_LINE
 import java.awt.Point
+import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 
@@ -97,8 +100,21 @@ object CodeWhispererEditorUtil {
 
         return rightContextCurrentLine.isNotEmpty() &&
             !rightContextCurrentLine.startsWith(" ") &&
-            rightContextCurrentLine.trim() != ("}")
+            rightContextCurrentLine.trim() != ("}") &&
+            rightContextCurrentLine.trim() != (")")
     }
+
+    /**
+     * Checks if the language is json or yaml and checks if left context contains keywords
+     */
+    fun checkLeftContextKeywordsForJsonAndYaml(leftContext: String, language: String): Boolean = (
+        (language == CodeWhispererJson.INSTANCE.languageId) ||
+            (language == CodeWhispererYaml.INSTANCE.languageId)
+        ) &&
+        (
+            (!CodeWhispererConstants.AWSTemplateKeyWordsRegex.containsMatchIn(leftContext)) &&
+                (!CodeWhispererConstants.AWSTemplateCaseInsensitiveKeyWordsRegex.containsMatchIn(leftContext.lowercase(Locale.getDefault())))
+            )
 
     /**
      * Checks if the [otherRange] overlaps this TextRange. Note that the comparison is `<` because the endOffset of TextRange is exclusive.

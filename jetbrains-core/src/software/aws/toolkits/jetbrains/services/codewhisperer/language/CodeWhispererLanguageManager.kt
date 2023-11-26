@@ -12,6 +12,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererGo
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJava
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJavaScript
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJson
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererJsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererKotlin
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererPhp
@@ -22,9 +23,11 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererScala
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererShell
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererSql
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTf
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTsx
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererTypeScript
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererUnknownLanguage
+import software.aws.toolkits.jetbrains.services.codewhisperer.language.languages.CodeWhispererYaml
 
 class CodeWhispererLanguageManager {
     // Always use this method to check for language support for CodeWhisperer features.
@@ -53,6 +56,13 @@ class CodeWhispererLanguageManager {
             fileTypeName.contains("java") -> CodeWhispererJava.INSTANCE
             fileTypeName.contains("jsx harmony") -> CodeWhispererJsx.INSTANCE
             fileTypeName.contains("c#") -> CodeWhispererCsharp.INSTANCE
+            fileTypeName.contains("json") -> CodeWhispererJson.INSTANCE
+            fileTypeName.contains("yaml") -> CodeWhispererYaml.INSTANCE
+            fileTypeName.contains("tf") -> CodeWhispererTf.INSTANCE
+            fileTypeName.contains("hcl") -> CodeWhispererTf.INSTANCE
+            fileTypeName.contains("terraform") -> CodeWhispererTf.INSTANCE
+            fileTypeName.contains("packer") -> CodeWhispererTf.INSTANCE
+            fileTypeName.contains("terragrunt") -> CodeWhispererTf.INSTANCE
             fileTypeName.contains("typescript jsx") -> CodeWhispererTsx.INSTANCE
             fileTypeName.contains("typescript") -> CodeWhispererTypeScript.INSTANCE
             fileTypeName.contains("scala") -> CodeWhispererScala.INSTANCE
@@ -63,7 +73,7 @@ class CodeWhispererLanguageManager {
             fileTypeName.contains("go") -> CodeWhispererGo.INSTANCE
             fileTypeName.contains("shell") -> CodeWhispererShell.INSTANCE
             fileTypeName.contains("rust") -> CodeWhispererRust.INSTANCE
-            fileTypeName.contains("plain_text") -> CodeWhispererPlainText.INSTANCE
+            // fileTypeName.contains("plain_text") -> CodeWhispererPlainText.INSTANCE // This needs to be removed because Hcl files are recognised as plain_text by JB
             else -> null
         }
             ?: languageExtensionsMap[fileExtension]
@@ -99,6 +109,10 @@ class CodeWhispererLanguageManager {
             listOf("ts") to CodeWhispererTypeScript.INSTANCE,
             listOf("tsx") to CodeWhispererTsx.INSTANCE,
             listOf("cs") to CodeWhispererCsharp.INSTANCE,
+            listOf("yaml") to CodeWhispererYaml.INSTANCE,
+            listOf("json") to CodeWhispererJson.INSTANCE,
+            listOf("tf") to CodeWhispererTf.INSTANCE,
+            listOf("hcl") to CodeWhispererTf.INSTANCE, // TF and HCL both emit "tf" as Telemetry Language
             listOf("kt") to CodeWhispererKotlin.INSTANCE,
             listOf("scala") to CodeWhispererScala.INSTANCE,
             listOf("c", "h") to CodeWhispererC.INSTANCE,

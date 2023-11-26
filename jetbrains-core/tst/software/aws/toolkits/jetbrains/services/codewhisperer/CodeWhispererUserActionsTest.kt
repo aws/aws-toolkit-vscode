@@ -153,6 +153,7 @@ class CodeWhispererUserActionsTest : CodeWhispererTestBase() {
     @Test
     fun `test special characters should trigger CodeWhisperer for user group when it is not immediate or is single }`() {
         testInputSpecialCharWithRightContext("}", true)
+        testInputSpecialCharWithRightContext(")", true)
         testInputSpecialCharWithRightContext(" add", true)
         testInputSpecialCharWithRightContext("\nadd", true)
     }

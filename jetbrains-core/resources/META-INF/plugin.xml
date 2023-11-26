@@ -7,53 +7,68 @@
     <version>1.0</version>
 
     <description><![CDATA[
-<p>
-    The AWS Toolkit for JetBrains makes it easier to write applications built on <a href="https://aws.amazon.com/">Amazon Web Services</a>.
-If you come across bugs with the toolkit or have feature requests, please raise an
-<a href="https://github.com/aws/aws-toolkit-jetbrains/issues">issue</a> on our GitHub repository.
-</p>
-<br/>
-<p>
-See the <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/">user guide</a> for how to get started, along
-with what features/services are supported.
-</p>
-
-<p><h2><strong>Features:</strong></h2></p>
+<h3><a href="https://aws.amazon.com/codewhisperer/">Amazon CodeWhisperer</a></h3>
+<p>An AI powered productivity tool for the IDE.</p>
 
 <ul>
     <li>
-       <a href="https://aws.amazon.com/codewhisperer">Amazon CodeWhisperer</a> - CodeWhisperer uses machine learning to generate code suggestions from the existing code and comments in your IDE. Supported languages include: Java, Python, and JavaScript.
-       <br> In addition to providing code suggestions within your current file, CodeWhisperer can scan your code package to identify security issues.
+        <b>Real-time code suggestions</b> - automatic code recommendations in 15+ languages, now including infrastructure as code (CloudFormation, AWS CDK, and Terraform)
     </li>
     <li>
-       <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/credentials">Authentication</a> - Connect to AWS using static credentials, credential process, or AWS SSO.
+        <b>Optimized for use with AWS services</b> - code suggestions are optimized for AWS APIs including Amazon Elastic Compute Cloud (Amazon EC2), AWS Lambda, and Amazon Simple Storage Service (Amazon S3)
     </li>
-
     <li>
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/aws-explorer">Resource Explorer</a> - View and manage AWS resources
-    </li>
-
-    <li>
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/lambda-local">Run/Debug Local Lambda Functions</a> - Locally test and step-through debug functions in a
-        Lambda-like execution environment provided by the AWS SAM CLI. Supports Java, Python, Node.js, and .NET Core.
-    </li>
-
-    <li>
-       <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/sam-deploy">Deploy SAM-based Applications</a> - Package, deploy & track SAM-based applications
-    </li>
-
-    <li>
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/cwl-tasks">CloudWatch Logs</a> - View and search CloudWatch log streams
-    </li>
-
-    <li>
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/s3-tasks">S3 Explorer</a> - Manage S3 buckets, and upload to/download from S3 buckets
-    </li>
-
-    <li>
-        <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/services">See the user guide</a> for a full list of services and features supported
+        <b>Built-in security scans</b> - Scan your code to detect hard-to-find vulnerabilities and get code suggestions to remediate them immediately
     </li>
 </ul>
+
+<h3><a href="https://codecatalyst.aws/explore">Amazon CodeCatalyst</a></h3>
+<p>Unified software development service to quickly build and deliver applications on AWS.</p>
+
+<ul>
+    <li>
+        <b>Dev Environments</b> - launch JetBrains IDEs in a cloud development environment, available on-demand in the cloud and automatically created with branch code and consistent project settings, providing faster setup, development, and testing
+    </li>
+</ul>
+</p>
+
+<h3>View, modify, and deploy AWS resources</h3>
+
+<ul>
+    <li>
+        <b>Authentication</b> - Connect to AWS using static credentials, credential process, or AWS identity center
+    </li>
+    <li>
+        <b>Resource Explorer</b> - View and manage AWS resources
+    </li>
+    <li>
+        <b>Run/Debug Local Lambda Functions</b> - Locally test and step-through debug functions in a Lambda-like execution environment provided by the AWS SAM CLI. Supports Java, Python, Node.js, and .NET.
+    </li>
+    <li>
+        <b>Deploy SAM-based Applications</b> - Package, deploy  track SAM-based applications
+    </li>
+    <li>
+        <b>CloudWatch Logs</b> - View and search CloudWatch log streams
+    </li>
+    <li>
+        <b>S3 Explorer</b> - Manage S3 buckets, and upload to/download from S3 buckets
+    </li>
+    <li>
+        See the <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/">user guide</a> for a full list of services and features supported
+    </li>
+</ul>
+
+<h3>About</h3>
+<p>
+    The AWS Toolkit for JetBrains makes it easier to write applications built on <a href="https://aws.amazon.com/">Amazon Web Services</a>.
+</p>
+<p>
+    If you come across bugs with the toolkit or have feature requests, please raise an <a href="https://github.com/aws/aws-toolkit-jetbrains/issues">issue</a> on our GitHub repository.
+</p>
+
+<p>
+    See the <a href="https://docs.aws.amazon.com/console/toolkit-for-jetbrains/">user guide</a> for how to get started
+</p>
     ]]></description>
 
     <vendor email="aws-toolkit-jetbrains@amazon.com" url="https://github.com/aws/aws-toolkit-jetbrains">AWS</vendor>

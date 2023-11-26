@@ -16,6 +16,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.CodeWhispererR
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.coroutines.projectCoroutineScope
+import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.CodeWhispererCodeScanIssue
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.CodeScanTelemetryEvent
@@ -41,6 +42,8 @@ import software.aws.toolkits.telemetry.CodewhispererPreviousSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererSuggestionState
 import software.aws.toolkits.telemetry.CodewhispererTelemetry
 import software.aws.toolkits.telemetry.CodewhispererTriggerType
+import software.aws.toolkits.telemetry.Component
+import software.aws.toolkits.telemetry.Result
 import java.time.Duration
 import java.time.Instant
 import java.util.Queue
@@ -274,12 +277,18 @@ class CodeWhispererTelemetryService {
     }
 
     fun sendSecurityScanEvent(codeScanEvent: CodeScanTelemetryEvent, project: Project? = null) {
-        val (payloadContext, serviceInvocationContext, codeScanJobId, totalIssues, reason) = codeScanEvent.codeScanResponseContext
+        val payloadContext = codeScanEvent.codeScanResponseContext.payloadContext
+        val serviceInvocationContext = codeScanEvent.codeScanResponseContext.serviceInvocationContext
+        val codeScanJobId = codeScanEvent.codeScanResponseContext.codeScanJobId
+        val totalIssues = codeScanEvent.codeScanResponseContext.codeScanTotalIssues
+        val issuesWithFixes = codeScanEvent.codeScanResponseContext.codeScanIssuesWithFixes
+        val reason = codeScanEvent.codeScanResponseContext.reason
         val startUrl = getConnectionStartUrl(codeScanEvent.connection)
 
         LOG.debug {
             "Recording code security scan event. \n" +
                 "Total number of security scan issues found: $totalIssues, \n" +
+                "Number of security scan issues with fixes: $issuesWithFixes, \n" +
                 "Language: ${payloadContext.language}, \n" +
                 "Uncompressed source payload size in bytes: ${payloadContext.srcPayloadSize}, \n" +
                 "Uncompressed build payload size in bytes: ${payloadContext.buildPayloadSize}, \n" +
@@ -301,6 +310,7 @@ class CodeWhispererTelemetryService {
             codewhispererCodeScanBuildPayloadBytes = payloadContext.buildPayloadSize?.toInt(),
             codewhispererCodeScanSrcZipFileBytes = payloadContext.srcZipFileSize.toInt(),
             codewhispererCodeScanTotalIssues = totalIssues,
+            codewhispererCodeScanIssuesWithFixes = issuesWithFixes,
             codewhispererLanguage = payloadContext.language,
             duration = codeScanEvent.duration,
             contextTruncationDuration = payloadContext.totalTimeInMilliseconds.toInt(),
@@ -309,6 +319,23 @@ class CodeWhispererTelemetryService {
             reason = reason,
             result = codeScanEvent.result,
             credentialStartUrl = startUrl
+        )
+    }
+
+    fun sendCodeScanIssueHoverEvent(issue: CodeWhispererCodeScanIssue) {
+        CodewhispererTelemetry.codeScanIssueHover(
+            findingId = issue.findingId,
+            detectorId = issue.detectorId
+        )
+    }
+
+    fun sendCodeScanIssueApplyFixEvent(issue: CodeWhispererCodeScanIssue, result: Result, reason: String? = null) {
+        CodewhispererTelemetry.codeScanIssueApplyFix(
+            findingId = issue.findingId,
+            detectorId = issue.detectorId,
+            component = Component.Hover,
+            result = result,
+            reason = reason
         )
     }
 

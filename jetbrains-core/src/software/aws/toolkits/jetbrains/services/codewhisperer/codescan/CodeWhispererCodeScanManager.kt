@@ -491,6 +491,13 @@ data class CodeWhispererCodeScanIssue(
     val endCol: Int,
     val title: @InspectionMessage String,
     val description: Description,
+    val detectorId: String,
+    val detectorName: String,
+    val findingId: String,
+    val relatedVulnerabilities: List<String>,
+    val severity: String,
+    val recommendation: Recommendation,
+    val suggestedFixes: List<SuggestedFix>,
     val issueSeverity: HighlightDisplayLevel = HighlightDisplayLevel.WARNING,
     val isInvalid: Boolean = false,
     var rangeHighlighter: RangeHighlighterEx? = null
