@@ -60,6 +60,10 @@ const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () 
 })
 
 const rejectCommand = Commands.declare('aws.codeWhisperer.rejectCodeSuggestion', () => async () => {
+    if (!AuthUtil.instance.isConnectionValid()) {
+        return
+    }
+
     RecommendationHandler.instance.reportUserDecisions(-1)
 })
 
